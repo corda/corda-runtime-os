@@ -12,13 +12,12 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("Unused")
 @Component(
-    service = [MemberLookup::class, SingletonSerializeAsToken::class],
-    scope = ServiceScope.PROTOTYPE,
-    property = ["corda.system=true"]
+    service = [ MemberLookup::class, SingletonSerializeAsToken::class ],
+    scope = PROTOTYPE
 )
 class MemberLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)

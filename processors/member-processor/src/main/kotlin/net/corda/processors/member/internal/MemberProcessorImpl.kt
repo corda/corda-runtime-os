@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -58,6 +59,8 @@ class MemberProcessorImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = SynchronisationProxy::class)
     private val synchronisationProxy: SynchronisationProxy,
+    @Reference(service = StableKeyPairDecryptor::class)
+    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
 ) : MemberProcessor {
 
     private companion object {
@@ -78,7 +81,8 @@ class MemberProcessorImpl @Activate constructor(
         ::membershipQueryClient,
         ::registrationManagementService,
         ::membershipGroupReaderProvider,
-        ::synchronisationProxy
+        ::synchronisationProxy,
+        ::stableKeyPairDecryptor,
     )
 
     private val coordinator =

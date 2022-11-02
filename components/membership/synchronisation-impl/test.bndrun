@@ -18,6 +18,7 @@
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
+    bnd.identity;id='net.corda.crypto-ecies-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\

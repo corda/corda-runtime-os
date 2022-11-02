@@ -6,6 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CountDownLatch
 
 class TestStateEventProcessor(
@@ -18,6 +19,11 @@ class TestStateEventProcessor(
     StateAndEventProcessor<String,
             DemoStateRecord,
             DemoRecord> {
+
+    companion object {
+        private val log = contextLogger()
+    }
+
     override val keyClass: Class<String>
         get() = String::class.java
     override val stateValueClass: Class<DemoStateRecord>
@@ -28,6 +34,7 @@ class TestStateEventProcessor(
 
     override fun onNext(state: DemoStateRecord?, event: Record<String, DemoRecord>): Response<DemoStateRecord> {
         onNextLatch.countDown()
+        log.info("Received record, ${onNextLatch.count} remaining")
 
         if (delayProcessorOnFirst != null) {
             Thread.sleep(delayProcessorOnFirst!!)

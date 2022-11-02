@@ -29,8 +29,8 @@ class PermissionValidatorImpl(
         running = false
     }
 
-    override fun authorizeUser(loginName: String, permission: String): Boolean {
-        logger.debug { "Checking permissions for $permission for user $loginName" }
+    override fun authorizeUser(loginName: String, operation: String): Boolean {
+        logger.debug { "Checking permissions for $operation for user $loginName" }
 
         val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
             "Permission validation cache is null."
@@ -55,21 +55,21 @@ class PermissionValidatorImpl(
 
         logger.debug { "Permission summary found for user $loginName with permissions: ${permissionSummary.permissions.joinToString()}." }
 
-        return findPermissionMatch(permissionSummary, permission)
+        return findPermissionMatch(permissionSummary, operation)
     }
 
-    private fun findPermissionMatch(permissionSummary: UserPermissionSummary, permission: String): Boolean {
+    private fun findPermissionMatch(permissionSummary: UserPermissionSummary, operation: String): Boolean {
 
         val (denies, allows) = permissionSummary.permissions
             .partition { it.permissionType == AvroPermissionType.DENY }
 
-        val maybeFirstDeny = denies.firstOrNull { wildcardMatch(it.permissionString, permission) }
+        val maybeFirstDeny = denies.firstOrNull { wildcardMatch(it.permissionString, operation) }
         if (maybeFirstDeny != null) {
             logger.debug { "Explicitly denied by: '$maybeFirstDeny'" }
             return false
         }
 
-        val maybeFirstAllow = allows.firstOrNull { wildcardMatch(it.permissionString, permission) }
+        val maybeFirstAllow = allows.firstOrNull { wildcardMatch(it.permissionString, operation) }
         if (maybeFirstAllow != null) {
             logger.debug { "Explicitly allowed by: '$maybeFirstAllow'" }
             return true

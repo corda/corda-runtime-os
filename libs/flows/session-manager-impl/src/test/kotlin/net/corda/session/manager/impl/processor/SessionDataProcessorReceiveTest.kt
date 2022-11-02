@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -9,7 +10,6 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class SessionDataProcessorReceiveTest {
 
@@ -82,6 +82,24 @@ class SessionDataProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
+    }
+
+
+    @Test
+    fun `Receive multiple data in order without acknowledging older received messages`() {
+        val dataEvent1 = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData())
+        val dataEvent2 = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData())
+
+        val inputState = buildSessionState(
+            SessionStateType.CONFIRMED, 3, mutableListOf(dataEvent1), 0, mutableListOf()
+        )
+
+        val result = SessionDataProcessorReceive("key", inputState, dataEvent2, Instant.now()).execute()
+        assertThat(result).isNotNull
+        assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(result.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
+        assertThat(result.receivedEventsState.lastProcessedSequenceNum).isEqualTo(4)
         assertThat(result.sendAck).isTrue
     }
 

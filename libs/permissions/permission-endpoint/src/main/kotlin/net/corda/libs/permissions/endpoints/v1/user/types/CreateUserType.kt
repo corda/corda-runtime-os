@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rbac.schema.RbacKeys.USER_REGEX
 import java.time.Instant
 import java.util.UUID
 
@@ -68,10 +69,10 @@ data class CreateUserType(
             errors[nextErrKey()] = "Login name must not be blank."
         }
 
-        "a-zA-Z0-9.@\\-#".let {
-            val regEx = Regex("[$it]*")
+        USER_REGEX.let {
+            val regEx = Regex(it)
             if (!regEx.matches(loginName)) {
-                errors[nextErrKey()] = "Login name contains invalid characters. Allowed characters are: '$it'."
+                errors[nextErrKey()] = "Login name contains invalid characters. Correct pattern is: '$it'."
             }
         }
 

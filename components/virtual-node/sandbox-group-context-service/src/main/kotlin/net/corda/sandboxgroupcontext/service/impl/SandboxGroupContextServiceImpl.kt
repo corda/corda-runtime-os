@@ -4,20 +4,30 @@ package net.corda.sandboxgroupcontext.service.impl
 import java.security.AccessControlContext
 import java.security.AccessControlException
 import java.util.Collections.singleton
+import java.util.Collections.unmodifiableSet
+import java.util.Deque
 import java.util.Hashtable
+import java.util.LinkedList
+import java.util.SortedMap
+import java.util.TreeMap
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.CORDA_SYSTEM_FILTER
+import net.corda.sandboxgroupcontext.CustomMetadataConsumer
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.SANDBOX_SINGLETONS
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
@@ -25,17 +35,18 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
-import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceObjects
 import org.osgi.framework.ServicePermission
 import org.osgi.framework.ServicePermission.GET
+import org.osgi.framework.ServiceReference
 import org.osgi.framework.ServiceRegistration
+import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 
-private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
+typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
 /**
  * This is the underlying implementation of the [SandboxGroupContextService]
@@ -54,25 +65,30 @@ class SandboxGroupContextServiceImpl(
     var cache: SandboxGroupContextCache
 ) : SandboxGroupContextService {
     private companion object {
-        private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)(!$CORDA_SYSTEM_FILTER))"
-        private const val SYSTEM_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)$CORDA_SYSTEM_FILTER)"
+        private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
 
+        private val systemFilter = FrameworkUtil.createFilter(CORDA_SYSTEM_FILTER)
         private val logger = loggerFor<SandboxGroupContextServiceImpl>()
 
         private val sandboxServiceProperties = Hashtable<String, Any?>().apply {
             put(CORDA_SANDBOX, true)
         }
 
-        private fun <R> runIgnoringExceptions(action: () -> R) {
-            try {
-                action()
-            } catch(e: Exception) {
-                logger.warn("Ignoring exception", e)
+        private fun ServiceReference<*>.copyPropertiesForSandbox(): Hashtable<String, Any?> {
+            return Hashtable(sandboxServiceProperties).also { props ->
+                propertyKeys.forEach { key ->
+                    props[key] = getProperty(key)
+                }
             }
         }
 
-        private fun ComponentDescriptionDTO.toShortString(): String
-            = "Component(class=$implementationClass, services=${serviceInterfaces.joinToString()}, scope=$scope, enabled=$defaultEnabled)"
+        private fun <R> runIgnoringExceptions(action: () -> R) {
+            try {
+                action()
+            } catch (e: Exception) {
+                logger.warn("Ignoring exception", e)
+            }
+        }
     }
 
     fun remove(virtualNodeContext: VirtualNodeContext) {
@@ -80,150 +96,119 @@ class SandboxGroupContextServiceImpl(
     }
 
     override fun getOrCreate(
-
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return cache.get(virtualNodeContext) {
-            val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
-            if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
-                logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
-                logger.error("Wanted all of:  ${virtualNodeContext.cpkFileChecksums}")
-                val receivedIdentifiers = cpks.map { it.metadata.cpkId }
-                val missing = setOf(virtualNodeContext.cpkFileChecksums) - setOf(receivedIdentifiers)
-                logger.error("Returned:  $receivedIdentifiers")
-                logger.error("Missing:  $missing")
-                throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
-            }
-
-            val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, virtualNodeContext.sandboxGroupType.name)
-
-            // Default implementation doesn't do anything on close()`
-            val sandboxGroupContext = SandboxGroupContextImpl(virtualNodeContext, sandboxGroup)
-
-            // Register common OSGi services for use within this sandbox.
-            val commonServiceRegistrations = registerCommonServices(virtualNodeContext, sandboxGroup.metadata.keys)
-
-            // Run the caller's initializer.
-            val initializerAutoCloseable =
-                initializer.initializeSandboxGroupContext(virtualNodeContext.holdingIdentity, sandboxGroupContext)
-
-            // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
-
-            // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
-            val newContext = CloseableSandboxGroupContextImpl(sandboxGroupContext) {
-                // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                initializerAutoCloseable.close()
-
-                // Remove this sandbox's common services.
-                commonServiceRegistrations?.forEach { closeable ->
-                    runIgnoringExceptions(closeable::close)
+        return cache.get(virtualNodeContext) { vnc ->
+            val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
+                .forVirtualNode(vnc.holdingIdentity.shortHash.value)
+                .withTag(CordaMetrics.Tag.SandboxGroupType, vnc.sandboxGroupType.name)
+                .build()
+            sandboxTimer.recordCallable<CloseableSandboxGroupContext> {
+                val cpks = vnc.cpkFileChecksums.mapNotNull(cpkReadService::get)
+                if (cpks.size != vnc.cpkFileChecksums.size) {
+                    val receivedIdentifiers = cpks.map { it.metadata.cpkId }
+                    val missing = setOf(vnc.cpkFileChecksums) - setOf(receivedIdentifiers)
+                    logger.error("Not all CPKs could be retrieved for this virtual node context ({})\r\n" +
+                        "- Wanted all of: {}\r\n" +
+                        "- Returned: {}\r\n" +
+                        "- Missing: {}",
+                        vnc, vnc.cpkFileChecksums, receivedIdentifiers, missing
+                    )
+                    throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($vnc)")
                 }
 
-                // And unload the (OSGi) sandbox group
-                sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
-            }
-            newContext
+                val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, vnc.sandboxGroupType.name)
+
+                // Default implementation doesn't do anything on close()`
+                val sandboxGroupContext = SandboxGroupContextImpl(vnc, sandboxGroup)
+
+                // Register common OSGi services for use within this sandbox.
+                val commonServiceRegistrations = registerCommonServices(vnc, sandboxGroup.metadata.keys)?.let {
+                    sandboxGroupContext.putObjectByKey(SANDBOX_SINGLETONS, it.first)
+                    it.second
+                }
+
+                // Run the caller's initializer.
+                val initializerAutoCloseable =
+                    initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
+
+                // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
+
+                // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
+                CloseableSandboxGroupContextImpl(sandboxGroupContext) {
+                    // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
+                    initializerAutoCloseable.close()
+
+                    // Remove this sandbox's common services.
+                    commonServiceRegistrations?.forEach { closeable ->
+                        runIgnoringExceptions(closeable::close)
+                    }
+
+                    // And unload the (OSGi) sandbox group
+                    sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
+                }
+            }!!
         }
     }
 
-    private fun registerCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): List<AutoCloseable>? {
-        val bundleContext = bundles.firstOrNull()?.bundleContext ?: return null
-        return (fetchCommonServices(vnc, bundles) + fetchSystemServices(vnc)).mapNotNull { requirement ->
-            registerCommonServiceFor(requirement.first, requirement.second, bundleContext)
-        }
+    private fun registerCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): Pair<Set<*>, Collection<AutoCloseable>>? {
+        val targetContext = bundles.firstOrNull()?.bundleContext ?: return null
+        return createSandboxServiceContext(vnc, bundles).registerInjectables(targetContext)
     }
 
     /**
      * Locate suitable "prototype-scope" OSGi services to instantiate inside
      * the sandbox. We assume that the OSGi isolation hooks protect us from
      * finding any pre-existing services inside the sandbox itself.
+     *
+     * Identify which of these services should be registered with the OSGi framework.
      */
-    private fun fetchCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): List<ServiceDefinition> {
+    @Suppress("ComplexMethod")
+    private fun createSandboxServiceContext(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): SandboxServiceContext {
+        val injectables = mutableMapOf<ServiceReference<*>, ServiceDefinition>()
+        val serviceIndex = mutableMapOf<String, MutableSet<ServiceReference<*>>>()
+
         // Access control context for the sandbox's "main" bundles.
         // All "main" bundles are assumed to have equal access rights.
         val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
         val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
         val serviceMarkerTypeName = vnc.serviceMarkerType.name
-        return bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).mapNotNull { serviceRef ->
+        bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).forEach { serviceRef ->
             try {
-                @Suppress("unchecked_cast")
-                (serviceRef.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray())
+                serviceRef.serviceClassNames
                     .filterNot(serviceMarkerTypeName::equals)
-                    .filter { checkServicePermission(accessControlContext, it) }
-                    .mapNotNullTo(ArrayList(), bundles::loadCommonService)
-                    .takeIf(List<*>::isNotEmpty)
-                    ?.let { injectables ->
+                    .onEach { serviceType ->
+                        serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
+                    }.mapNotNullTo(ArrayList()) { serviceType ->
+                        if (systemFilter.match(serviceRef)) {
+                            // We always load interfaces for system services.
+                            serviceRef.loadCommonService(serviceType)
+                        } else if (accessControlContext.checkServicePermission(serviceType)) {
+                            // Only accept those service types for which this sandbox also has a bundle wiring.
+                            bundles.loadCommonService(serviceType)
+                        } else {
+                            logger.debug("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
+                            null
+                        }
+                    }.takeIf(List<*>::isNotEmpty)
+                    ?.also { injectableTypes ->
                         // Every service object must implement the service
                         // marker type and at least one other type too.
-                        logger.debug { "Fetching common service: $serviceRef holding id ${vnc.holdingIdentity}" }
-                        injectables += vnc.serviceMarkerType
-                        bundleContext.getServiceObjects(serviceRef)?.let { serviceObj ->
-                            serviceObj to injectables
+                        logger.debug("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
+                        injectableTypes += vnc.serviceMarkerType
+
+                        // We filtered on services having a component name, so we
+                        // should be guaranteed to find its component description.
+                        serviceComponentRuntime.getComponentDescriptionDTO(serviceRef)?.also { description ->
+                            injectables[serviceRef] = ServiceDefinition(injectableTypes, description)
                         }
                     }
             } catch (e: Exception) {
                 logger.warn("Failed to identify injectable services from $serviceRef", e)
-                null
             }
         }
-    }
-
-    private fun fetchSystemServices(vnc: VirtualNodeContext): List<ServiceDefinition> {
-        val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SYSTEM_FACTORY_FILTER$filter)" } ?: SYSTEM_FACTORY_FILTER
-        val serviceMarkerTypeName = vnc.serviceMarkerType.name
-        return bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).mapNotNull { serviceRef ->
-            try {
-                @Suppress("unchecked_cast")
-                (serviceRef.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray())
-                    .filterNot(serviceMarkerTypeName::equals)
-                    .mapNotNullTo(ArrayList(), singleton(serviceRef.bundle)::loadCommonService)
-                    .takeIf(List<*>::isNotEmpty)
-                    ?.let { injectables ->
-                        // Every service object must implement the service
-                        // marker type and at least one other type too.
-                        logger.debug { "Fetching system service: $serviceRef holding id ${vnc.holdingIdentity}" }
-                        injectables += vnc.serviceMarkerType
-                        bundleContext.getServiceObjects(serviceRef)?.let { serviceObj ->
-                            serviceObj to injectables
-                        }
-                    }
-            } catch (e: Exception) {
-                logger.warn("Failed to identify injectable system services from $serviceRef", e)
-                null
-            }
-        }
-    }
-
-    private fun registerCommonServiceFor(
-        serviceFactory: ServiceObjects<out Any>,
-        serviceClasses: Iterable<Class<*>>,
-        bundleContext: BundleContext
-    ): AutoCloseable? {
-        val serviceObj = try {
-            serviceFactory.service ?: return null
-        } catch (e: Exception) {
-            logger.warn("Service ${serviceFactory.serviceReference} is not available.", e)
-            throw SandboxException("Service ${serviceFactory.serviceReference} is unavailable", e)
-        }
-        return try {
-            val serviceRegistration = bundleContext.registerService(
-                serviceClasses.mapTo(LinkedHashSet(), Class<*>::getName).toTypedArray(),
-                serviceObj,
-                sandboxServiceProperties
-            )
-            logger.info("Registered sandbox service [{}] for bundle [{}][{}]",
-                serviceClasses.joinToString(transform = Class<*>::getName),
-                bundleContext.bundle.symbolicName,
-                bundleContext.bundle.bundleId
-            )
-            CommonServiceRegistration(serviceFactory, serviceObj, serviceRegistration)
-        } catch (e: Exception) {
-            logger.warn("Cannot create sandbox service ${serviceObj::class.java.name}", e)
-            @Suppress("unchecked_cast")
-            (serviceFactory as ServiceObjects<Any>).ungetService(serviceObj)
-            null
-        }
+        return SandboxServiceContext(bundleContext, serviceComponentRuntime, serviceIndex, injectables)
     }
 
     override fun registerMetadataServices(
@@ -241,7 +226,8 @@ class SandboxGroupContextServiceImpl(
         }
 
         // Register each metadata service as an OSGi service for its host main bundle.
-        val registrations = registerMetadataServices(serviceMarkerType.name, services)
+        val (instances, registrations) = registerMetadataServices(serviceMarkerType.name, services)
+        (sandboxGroupContext as? MutableSandboxGroupContext)?.putObjectByKey(serviceMarkerType.name, instances)
         return AutoCloseable {
             registrations.forEach { registration ->
                 runIgnoringExceptions(registration::close)
@@ -252,35 +238,19 @@ class SandboxGroupContextServiceImpl(
     private fun registerMetadataServices(
         serviceMarkerTypeName: String,
         services: Iterable<Pair<Class<*>, Bundle>>
-    ): List<AutoCloseable> {
-        val extraCloseables = mutableListOf<AutoCloseable>()
-        return services.mapNotNull { (serviceClass, serviceBundle) ->
+    ): Pair<Set<Any>, Deque<AutoCloseable>> {
+        // These are the steps needed to unregister these services afterwards.
+        // We will accumulate these clean-up steps as we go...
+        val allCloseables = LinkedList<AutoCloseable>()
+
+        // Create an instance of each service type, and register it as an OSGi service.
+        return services.mapNotNullTo(LinkedHashSet()) { (serviceClass, serviceBundle) ->
             try {
-                val serviceContext = serviceBundle.bundleContext
-                val component = serviceComponentRuntime.getComponentDescriptionDTOs(serviceBundle).find { description ->
-                    description.implementationClass == serviceClass.name
-                }
-                val serviceInterfaces = mutableSetOf(serviceMarkerTypeName)
-                val serviceObj = if (component == null) {
-                    serviceInterfaces += serviceClass.name
-                    serviceClass.getConstructor().newInstance()
-                } else if (component.defaultEnabled
-                    && component.scope == SCOPE_SINGLETON
-                    && component.implementationClass in component.serviceInterfaces) {
-                    serviceInterfaces += component.serviceInterfaces
-                    serviceContext.getServiceReference(component.implementationClass)?.let { reference ->
-                        serviceContext.getService(reference)?.also {
-                            // Ensure we can "unget" this service later.
-                            extraCloseables.add(AutoCloseable { serviceContext.ungetService(reference) })
-                        }
-                    } ?: throw IllegalStateException("No ${component.toShortString()} active for bundle $serviceBundle")
-                } else {
-                    logger.warn("Ignoring misconfigured OSGi ${component.toShortString()} for service ${serviceClass.name}")
-                    return@mapNotNull null
-                }
+                val serviceInterfaces = mutableSetOf(serviceMarkerTypeName, serviceClass.name)
+                val serviceObj = serviceClass.getConstructor().newInstance()
 
                 // Register this service object with the OSGi framework.
-                val registration = serviceContext.registerService(
+                val registration = serviceBundle.bundleContext.registerService(
                     serviceInterfaces.toTypedArray(),
                     serviceObj,
                     sandboxServiceProperties
@@ -289,13 +259,24 @@ class SandboxGroupContextServiceImpl(
                 logger.info("Registered Metadata Service [{}] for bundle [{}][{}]",
                     serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId)
 
-                // Return an AutoCloseable that can unregister this service.
-                AutoCloseable(registration::unregister)
+                // Add an AutoCloseable that can unregister this service.
+                allCloseables.addFirst(AutoCloseable(registration::unregister))
+
+                // Return this service instance.
+                serviceObj
             } catch (e: Exception) {
                 logger.warn("Cannot create service ${serviceClass.name}", e)
                 null
             }
-        } + extraCloseables
+        } to allCloseables
+    }
+
+    override fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext) {
+        sandboxGroupContext.getObjectByKey<Iterable<Any>>(SANDBOX_SINGLETONS)
+            ?.filterIsInstance<CustomMetadataConsumer>()
+            ?.forEach { customMetadataConsumer ->
+                customMetadataConsumer.accept(sandboxGroupContext)
+            }
     }
 
     override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
@@ -311,8 +292,8 @@ class SandboxGroupContextServiceImpl(
             cpkReadService.get(it) == null
         }
 
-        if(logger.isInfoEnabled && missingCpks.isNotEmpty()) {
-            logger.info("CPK(s) not (yet) found in cache: $missingCpks")
+        if (logger.isInfoEnabled && missingCpks.isNotEmpty()) {
+            logger.info("CPK(s) not (yet) found in cache: {}", missingCpks)
         }
 
         return missingCpks.isEmpty()
@@ -322,7 +303,13 @@ class SandboxGroupContextServiceImpl(
         cache.close()
     }
 
-    private class CommonServiceRegistration(
+    /**
+     * An [AutoCloseable] associated with an injectable service, i.e. one which
+     * has also been registered with the OSGi framework as a singleton. Closing
+     * this object will unregister the service and release all the references
+     * to its dependencies.
+     */
+    private class InjectableServiceRegistration(
         private val serviceFactory: ServiceObjects<out Any>,
         private val serviceObj: Any,
         private val serviceRegistration: ServiceRegistration<*>
@@ -335,20 +322,328 @@ class SandboxGroupContextServiceImpl(
     }
 
     /**
-     * Check whether this [accessControlContext] is allowed to GET service [serviceType].
+     * An [AutoCloseable] associated with a non-injectable service. This service
+     * has not been registered with the OSGi framework, but may still hold
+     * references to other OSGi services which should be released at the end.
      */
-    private fun checkServicePermission(accessControlContext: AccessControlContext, serviceType: String): Boolean {
-        val sm = System.getSecurityManager()
-        if (sm != null) {
-            try {
-                sm.checkPermission(ServicePermission(serviceType, GET), accessControlContext)
-            } catch (ace: AccessControlException) {
-                logger.error("This service failed GET permission check: $serviceType")
-                return false
+    private class NonInjectableService(
+        private val serviceFactory: ServiceObjects<out Any>,
+        private val serviceObj: Any
+    ) : AutoCloseable {
+        override fun close() {
+            @Suppress("unchecked_cast")
+            runIgnoringExceptions { (serviceFactory as ServiceObjects<Any>).ungetService(serviceObj) }
+        }
+    }
+
+    /**
+     * We need to create instances of every injectable service that we have identified.
+     * These injectables will all be created using "constructor injection", and will
+     * likely require several other - possible non-injectable - services as parameters
+     * too. The algorithm is therefore a bit tricky.
+     *
+     * @property sourceContext the [BundleContext] of [SandboxGroupContextComponentImpl].
+     * @property serviceComponentRuntime a reference to OSGi's [ServiceComponentRuntime].
+     * @property injectables the services we know we still need to create.
+     * @property serviceIndex our "universe" of potential sandbox services, of which
+     * both [injectables] and [nonInjectables] are subsets.
+     *
+     * Every service we successfully create is added into [serviceRegistry]. If we fail
+     * to create a service then we mark it as broken, and do not try to create it again.
+     *
+     * We never add new entries into [injectables]. If we discover that a service requires
+     * another service that exists in [serviceIndex], but doesn't already exist in either
+     * [injectables], [nonInjectables] or [serviceRegistry] then we add that service into
+     * [nonInjectables].
+     *
+     * We can create a new service as soon all its dependent sandbox services have been
+     * created, i.e. all its references from [serviceIndex] exist in [serviceRegistry].
+     * Any other services it requires are fetched from the OSGi framework using
+     * [BundleContext.getService].
+     *
+     * The goal is to keep creating new services until [injectables] becomes empty,
+     * by which point [nonInjectables] should also be empty. However, we will also
+     * abort this process if we ever iterate over [injectables] without achieving
+     * anything new.
+     */
+    private class SandboxServiceContext(
+        private val sourceContext: BundleContext,
+        private val serviceComponentRuntime: ServiceComponentRuntime,
+        private val serviceIndex: Map<String, MutableSet<ServiceReference<*>>>,
+        private val injectables: MutableMap<ServiceReference<*>, ServiceDefinition>
+    ) {
+        private val nonInjectables = mutableMapOf<ServiceReference<*>, ServiceDefinition>()
+        private val serviceRegistry = mutableMapOf<ServiceReference<*>, Any>()
+
+        init {
+            for (injectable in injectables.values) {
+                injectable.initialise(serviceIndex)
             }
         }
-        return true
+
+        /**
+         * Create the requested injectable services, along with any non-injectable services
+         * that they may also require. Register the injectable services as singletons for
+         * [targetContext], and return both the services and whatever [AutoCloseable]
+         * clean-up actions are required to dispose of them all nicely afterwards.
+         */
+        fun registerInjectables(targetContext: BundleContext): Pair<Set<*>, Collection<AutoCloseable>> {
+            val closeables = LinkedList<AutoCloseable>()
+            return try {
+                // Register all injectables which don't reference other prototype services.
+                // We can ask the OSGi framework to create these.
+                registerSimpleInjectables(targetContext, closeables)
+
+                // Register the remaining injectables, which we must create ourselves.
+                while (injectables.isNotEmpty()) {
+                    // Create as many non-injectable services as we can before
+                    // trying to create any more injectable ones. These may
+                    // require other non-injectable services themselves.
+                    createNonInjectables(closeables)
+
+                    if (!registerComplexInjectables(targetContext, closeables)) {
+                        logger.warn("Failed to create sandbox injectables: {}",
+                            injectables.values
+                                .flatMapTo(LinkedHashSet(), ServiceDefinition::serviceClassNames)
+                                .joinToString()
+                        )
+                        break
+                    }
+                }
+
+                // This shouldn't log anything unless we also failed to create some injectables.
+                if (nonInjectables.isNotEmpty()) {
+                    logger.warn("Failed to create sandbox non-injectables: {}", nonInjectables.values.joinToString())
+                }
+
+                Pair(unmodifiableSet(serviceRegistry.values.toSet()), closeables)
+            } catch (e: Exception) {
+                closeables.forEach(::closeSafely)
+                throw e
+            }
+        }
+
+        private fun registerSimpleInjectables(targetContext: BundleContext, closeables: Deque<AutoCloseable>) {
+            val totalRequirements = mutableSetOf<ServiceReference<*>>()
+            val iter = injectables.iterator()
+            while (iter.hasNext()) {
+                val entry = iter.next()
+                val injectable = entry.value
+                val sandboxRequirements = injectable.sandboxReferences
+                if (sandboxRequirements.isEmpty()) {
+                    // This service doesn't use any of our prototypes, which means that
+                    // the OSGi framework can safely create our new service instance.
+                    sourceContext.getServiceObjects(entry.key)?.also { serviceObj ->
+                        registerInjectableSandboxService(
+                            serviceObj,
+                            injectable.serviceClassNames,
+                            targetContext
+                        )?.also { svc ->
+                            closeables.addFirst(svc)
+                            iter.remove()
+                        } ?: run(injectable::broken)
+                    }
+                } else if (!injectable.isByConstructor) {
+                    logger.warn("{} must only use constructor injection - IGNORED", injectable)
+                    injectable.broken()
+                } else {
+                    sandboxRequirements.values.forEach(totalRequirements::addAll)
+                }
+            }
+
+            // Discover any new and unsatisfied service references, which will be non-injectable.
+            getUnknownServicesFrom(totalRequirements).forEach { nonInjectable ->
+                addNonInjectable(nonInjectable, closeables)
+            }
+        }
+
+        private fun registerComplexInjectables(targetContext: BundleContext, closeables: Deque<AutoCloseable>): Boolean {
+            var modified = false
+            val iter = injectables.iterator()
+            while (iter.hasNext()) {
+                val entry = iter.next()
+                val injectable = entry.value
+                if (injectable.isBroken) {
+                    continue
+                }
+
+                val sandboxRequirements = injectable.sandboxReferences
+                val satisfied = satisfy(sandboxRequirements)
+                if (satisfied != null) {
+                    registerInjectableSandboxService(
+                        SandboxServiceObjects(entry.key, injectable, satisfied),
+                        injectable.serviceClassNames,
+                        targetContext
+                    )?.also { svc ->
+                        closeables.addFirst(svc)
+                        modified = true
+                        iter.remove()
+                    }
+                }
+            }
+            return modified
+        }
+
+        private fun registerInjectableSandboxService(
+            serviceFactory: ServiceObjects<out Any>,
+            serviceClassNames: Set<String>,
+            targetContext: BundleContext
+        ): AutoCloseable? {
+            val serviceObj = try {
+                serviceFactory.service ?: return null
+            } catch (e: Exception) {
+                throw SandboxException("Service ${serviceFactory.serviceReference} is unavailable", e)
+            }
+            return try {
+                val serviceRegistration = targetContext.registerService(
+                    serviceClassNames.toTypedArray(),
+                    serviceObj,
+                    serviceFactory.serviceReference.copyPropertiesForSandbox()
+                )
+                logger.info("Registered sandbox service [{}] for bundle [{}][{}]",
+                    serviceClassNames.joinToString(),
+                    targetContext.bundle.symbolicName,
+                    targetContext.bundle.bundleId
+                )
+                serviceRegistry[serviceFactory.serviceReference] = serviceObj
+                InjectableServiceRegistration(serviceFactory, serviceObj, serviceRegistration)
+            } catch (e: Exception) {
+                logger.warn("Cannot create sandbox service ${serviceObj::class.java.name}", e)
+                @Suppress("unchecked_cast")
+                (serviceFactory as ServiceObjects<Any>).ungetService(serviceObj)
+                null
+            }
+        }
+
+        private tailrec fun createNonInjectables(closeables: Deque<AutoCloseable>) {
+            var modified = false
+            val totalRequirements = mutableSetOf<ServiceReference<*>>()
+
+            // Create any non-injectable services whose requirements are already satisfied.
+            val iter = nonInjectables.iterator()
+            while (iter.hasNext()) {
+                val entry = iter.next()
+                val nonInjectable = entry.value
+                if (nonInjectable.isBroken) {
+                    continue
+                }
+
+                val requirements = nonInjectable.sandboxReferences
+                val satisfied = satisfy(requirements)
+                if (satisfied != null) {
+                    val serviceFactory = SandboxServiceObjects(entry.key, nonInjectable, satisfied)
+                    registerNonInjectableSandboxService(serviceFactory)?.also { svc ->
+                        closeables.addFirst(svc)
+                        modified = true
+                        iter.remove()
+                    }
+                } else {
+                    requirements.values.forEach(totalRequirements::addAll)
+                }
+            }
+
+            // Discover any new and unsatisfied service references, which will also be non-injectable.
+            getUnknownServicesFrom(totalRequirements).forEach { ref ->
+                if (addNonInjectable(ref, closeables)) {
+                    modified = true
+                }
+            }
+
+            // This is the "tail-recursive" step:
+            // Determine whether our actions have allowed us to create/discover other non-injectables.
+            if (modified) {
+                createNonInjectables(closeables)
+            }
+        }
+
+        private fun addNonInjectable(serviceRef: ServiceReference<*>, closeables: Deque<AutoCloseable>): Boolean {
+            var modified = false
+            serviceComponentRuntime.getComponentDescriptionDTO(serviceRef)?.let { description ->
+                val nonInjectable = ServiceDefinition(description).initialise(serviceIndex)
+                if (nonInjectable.sandboxReferences.isEmpty()) {
+                    // This service doesn't use any of our prototypes, which means that
+                    // the OSGi framework can safely create our new service instance.
+                    sourceContext.getServiceObjects(serviceRef)
+                        ?.let(::registerNonInjectableSandboxService)
+                        ?: run {
+                            nonInjectables[serviceRef] = nonInjectable.broken()
+                            null
+                        }
+                } else if (nonInjectable.isByConstructor) {
+                    logger.debug("Discovered non-injectable sandbox service {}", serviceRef)
+                    nonInjectables[serviceRef] = nonInjectable
+                    modified = true
+                    null
+                } else {
+                    logger.warn("{} must only use constructor injection - IGNORED", nonInjectable)
+                    nonInjectables[serviceRef] = nonInjectable.broken()
+                    null
+                }
+            }?.also { closeable ->
+                closeables.addFirst(closeable)
+                modified = true
+            }
+            return modified
+        }
+
+        private fun registerNonInjectableSandboxService(serviceFactory: ServiceObjects<out Any>): AutoCloseable? {
+            val serviceRef = serviceFactory.serviceReference
+            return try {
+                serviceFactory.service
+            } catch (e: Exception) {
+                throw SandboxException("Service $serviceRef is unavailable", e)
+            }?.let { serviceObj ->
+                logger.info("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
+                serviceRegistry[serviceRef] = serviceObj
+                NonInjectableService(serviceFactory, serviceObj)
+            }
+        }
+
+        private fun getUnknownServicesFrom(services: Set<ServiceReference<*>>): Set<ServiceReference<*>> {
+            return services - serviceRegistry.keys - injectables.keys - nonInjectables.keys
+        }
+
+        private fun satisfy(requirements: Map<String, Set<ServiceReference<*>>>): SatisfiedServiceReferences? {
+            return buildMap {
+                requirements.forEach { (svcType, svcRefs) ->
+                    svcRefs.forEach { svcRef ->
+                        // If we've already created the service for this ServiceReference
+                        // then add it to our satisfied requirements. Otherwise, we cannot
+                        // possibly have everything we need yet and so should ABORT NOW!
+                        serviceRegistry[svcRef]?.also { obj ->
+                            // Sort the ServiceReference objects by decreasing rank.
+                            (computeIfAbsent(svcType) { TreeMap(reverseOrder()) })[svcRef] = obj
+                        } ?: return null
+                    }
+                }
+            }
+        }
     }
+}
+
+/**
+ * Close an [AutoCloseable] while ignoring any exceptions.
+ */
+fun closeSafely(closeable: AutoCloseable) {
+    try {
+        closeable.close()
+    } catch (_: Exception) {
+    }
+}
+
+/**
+ * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
+ */
+private fun AccessControlContext.checkServicePermission(serviceType: String): Boolean {
+    val sm = System.getSecurityManager()
+    if (sm != null) {
+        try {
+            sm.checkPermission(ServicePermission(serviceType, GET), this)
+        } catch (ace: AccessControlException) {
+            return false
+        }
+    }
+    return true
 }
 
 /**
@@ -367,8 +662,16 @@ private fun Iterable<Bundle>.loadCommonService(serviceClassName: String): Class<
 }
 
 /**
- * Locate the metadata service implementation called [serviceClassName] within this
- * [Bundle].
+ * Try to load an interface for a service in the core platform.
+ * Returns `null` if this [ServiceReference]'s [Bundle] has no
+ * wiring for that service interface.
+ */
+private fun ServiceReference<*>.loadCommonService(serviceClassName: String): Class<*>? {
+    return singleton(bundle).loadCommonService(serviceClassName)
+}
+
+/**
+ * Locate the metadata service implementation called [serviceClassName] within this [Bundle].
  */
 private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataService: (Class<*>) -> Boolean): Pair<Class<*>, Bundle>? {
     try {
@@ -384,4 +687,14 @@ private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataServi
     } catch (_: ClassNotFoundException) {
     }
     return null
+}
+
+private val ServiceReference<*>.serviceClassNames: Array<String>
+    get() {
+        @Suppress("unchecked_cast")
+        return getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray()
+    }
+
+private fun ServiceComponentRuntime.getComponentDescriptionDTO(serviceRef: ServiceReference<*>): ComponentDescriptionDTO? {
+    return getComponentDescriptionDTO(serviceRef.bundle, serviceRef.getProperty(COMPONENT_NAME).toString())
 }

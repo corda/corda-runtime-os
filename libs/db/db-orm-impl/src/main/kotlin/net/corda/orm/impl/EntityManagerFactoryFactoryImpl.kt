@@ -80,6 +80,10 @@ class EntityManagerFactoryFactoryImpl(
             "hibernate.hbm2ddl.auto" to configuration.ddlManage.convert(),
             "hibernate.jdbc.time_zone" to configuration.jdbcTimezone,
             // should these also be configurable?
+            //
+            // TODO - statistics integration isn't working in OSGi.
+            // https://r3-cev.atlassian.net/browse/CORE-7168
+            //"hibernate.generate_statistics" to true.toString(),
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders

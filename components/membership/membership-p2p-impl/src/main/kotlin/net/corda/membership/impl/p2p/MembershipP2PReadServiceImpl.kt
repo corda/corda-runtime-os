@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,6 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.p2p.MembershipP2PReadService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -24,10 +26,12 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [MembershipP2PReadService::class])
 class MembershipP2PReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -37,7 +41,13 @@ class MembershipP2PReadServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = StableKeyPairDecryptor::class)
+    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MembershipP2PReadService {
 
     companion object {
@@ -77,7 +87,9 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     )
                 )
             }
@@ -131,7 +143,12 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     CONSUMER_GROUP,
                     P2P_IN_TOPIC
                 ),
-                MembershipP2PProcessor(avroSchemaRegistry),
+                MembershipP2PProcessor(
+                    avroSchemaRegistry,
+                    stableKeyPairDecryptor,
+                    keyEncodingService,
+                    membershipGroupReaderProvider
+                ),
                 messagingConfig,
                 null
             ),

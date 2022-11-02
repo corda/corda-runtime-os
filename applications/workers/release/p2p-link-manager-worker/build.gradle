@@ -14,6 +14,7 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:platform-info')
     implementation project(':processors:link-manager-processor')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

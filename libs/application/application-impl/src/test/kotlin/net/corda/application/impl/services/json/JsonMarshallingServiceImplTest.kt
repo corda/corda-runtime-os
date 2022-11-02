@@ -4,11 +4,12 @@ import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
-import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.lang.reflect.ParameterizedType
 
 class JsonMarshallingServiceImplTest {
 
@@ -37,6 +38,29 @@ class JsonMarshallingServiceImplTest {
         }
     }
 
+    data class NestedField(
+        var contents: String? = null
+    )
+
+    data class ComplexDto(
+        var name: String? = null,
+        var field: NestedField? = null
+    )
+
+    class NestedFieldSerializer : JsonSerializer<NestedField> {
+        override fun serialize(item: NestedField, jsonWriter: JsonWriter) {
+            jsonWriter.writeString(item.contents + "-written-nested-field")
+        }
+    }
+
+    class NestedFieldDeserializer : JsonDeserializer<NestedField> {
+        /**
+         * jsonRoot in this case is treated directly as a value not an object type
+         */
+        override fun deserialize(jsonRoot: JsonNodeReader): NestedField =
+            NestedField(contents = jsonRoot.asText() + "-deserialized")
+    }
+
     @Suppress("EmptyClassBlock")
     class OtherDto {}
 
@@ -63,6 +87,20 @@ class JsonMarshallingServiceImplTest {
     private fun instanceOf(instanceClass: String): Any {
         val serializerClazz = Class.forName(instanceClass)
         return serializerClazz.getConstructor().newInstance()
+    }
+
+    /**
+     * This simulates how the serializing type is extracted from serializers/deserializers at runtime
+     */
+    private inline fun <reified T : Any> extractSerializingType(jsonSerializer: T): Class<*> {
+        val types = jsonSerializer::class.java.genericInterfaces
+            .filterIsInstance<ParameterizedType>()
+            .filter { it.rawType === T::class.java }
+            .flatMap { it.actualTypeArguments.asList() }
+        if (types.size != 1) {
+            throw IllegalStateException("Unable to determine serialized type from JsonSerializer")
+        }
+        return Class.forName(types.first().typeName)
     }
 
     @Test
@@ -117,23 +155,6 @@ class JsonMarshallingServiceImplTest {
     }
 
     @Test
-    fun `Can deserialize member X500 name`() {
-        val name = JsonMarshallingServiceImpl().parse(
-            "\"C=GB, O=Alice, L=London\"",
-            MemberX500Name::class.java
-        )
-
-        assertThat(name.organization).isEqualTo("Alice")
-    }
-
-    @Test
-    fun `Can serialize member X500 name`() {
-        val json = JsonMarshallingServiceImpl().format(MemberX500Name.parse("C=GB, O=Alice, L=London"))
-
-        assertThat(json).isEqualTo("\"O=Alice, L=London, C=GB\"")
-    }
-
-    @Test
     fun `Serialize with custom serializer`() {
         // In the real world the serializer is instantiated at run time, so we simulate that here in order to test we
         // never rely on compile time type information passed to generic methods or classes
@@ -142,7 +163,7 @@ class JsonMarshallingServiceImplTest {
         )
 
         val jms = JsonMarshallingServiceImpl()
-        jms.setSerializer(instance as JsonSerializer<*>)
+        jms.setSerializer(instance as JsonSerializer<*>, extractSerializingType(instance))
 
         val dto = SimpleDto(
             name = "n1",
@@ -164,7 +185,7 @@ class JsonMarshallingServiceImplTest {
         )
 
         val jms = JsonMarshallingServiceImpl()
-        jms.setDeserializer(instance as JsonDeserializer<*>)
+        jms.setDeserializer(instance as JsonDeserializer<*>, extractSerializingType(instance))
 
         val dto = jms.parse("""
             {
@@ -179,18 +200,43 @@ class JsonMarshallingServiceImplTest {
     @Test
     fun `Duplicate serializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setSerializer(SimpleSerializer()))
-        assertTrue(jms.setSerializer(OtherSerializer()))
-        assertFalse(jms.setSerializer(SimpleSerializer())) // exact duplicate
-        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer())) // different serializer, same serializing type
+        assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
+        assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
+        assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java)) // exact duplicate
+        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer(), SimpleDto::class.java)) // different serializer, same type
     }
 
     @Test
     fun `Duplicate deserializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setDeserializer(SimpleDeserializer()))
-        assertTrue(jms.setDeserializer(OtherDeserializer()))
-        assertFalse(jms.setDeserializer(SimpleDeserializer())) // exact duplicate
-        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer())) // different deserializer, same deserializing type
+        assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
+        assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
+        assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java)) // exact duplicate
+        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer(), SimpleDto::class.java)) // different deserializer, same type
+    }
+
+    @Test
+    fun `Nested field with custom serializer and deserializer picks them up correctly`() {
+        val jms = JsonMarshallingServiceImpl()
+
+        // ComplexDto has no explicit serializer or deserializer but contains a field which does. The
+        // JsonMarshallingService should automatically recognise the custom field serialization even though the outer
+        // class is using default serialization.
+        jms.setDeserializer(NestedFieldDeserializer(), NestedField::class.java)
+        jms.setSerializer(NestedFieldSerializer(), NestedField::class.java)
+
+        val dtoToSerialize = ComplexDto(name = "name-test", field = NestedField(contents = "anything"))
+        val serializedJson = jms.format(dtoToSerialize)
+
+        assertEquals("""
+            {
+              "name": "name-test",
+              "field": "anything-written-nested-field"
+            }
+        """.filter { !it.isWhitespace() }, serializedJson)
+
+        val dto = jms.parse(serializedJson, ComplexDto::class.java)
+        assertEquals("name-test", dto.name)
+        assertEquals("anything-written-nested-field-deserialized", dto.field?.contents)
     }
 }

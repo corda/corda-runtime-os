@@ -22,7 +22,7 @@ interface EphemeralKeyPairEncryptor {
      * the keys and secrets. The digest algorithm for HKDF is infered based on the key scheme - e.g. SECP256R1 will
      * use SHA-256 and SECP384 will use SHA-384.
      *
-     * @param params a [EciesParamsProvider] which used to get the salt and aad
+     * @param params a [EciesParamsProvider] which is used to get the salt and aad.
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme. The key scheme of the
      * public key must support Diffie–Hellman key agreement, see [net.corda.v5.cipher.suite.schemes.KeyScheme] and

@@ -8,8 +8,9 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.JsonDeserializerAdaptor
+import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.SerializationCustomizer
-import net.corda.common.json.serializers.standardTypesModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
@@ -42,8 +43,6 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
 
         // Register Kotlin after resetting the AnnotationIntrospector.
         registerModule(KotlinModule.Builder().build())
-
-        registerModule(standardTypesModule())
     }
 
     private val customSerializableClasses = mutableSetOf<Class<*>>()
@@ -79,8 +78,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         }
     }
 
-    override fun setSerializer(serializer: JsonSerializer<*>): Boolean {
-        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer)
+    override fun setSerializer(serializer: JsonSerializer<*>, type: Class<*>): Boolean {
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer, type)
         if (customSerializableClasses.contains(jsonSerializerAdaptor.serializingType)) return false
         customSerializableClasses.add(jsonSerializerAdaptor.serializingType)
 
@@ -91,8 +90,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         return true
     }
 
-    override fun setDeserializer(deserializer: JsonDeserializer<*>): Boolean {
-        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer)
+    override fun setDeserializer(deserializer: JsonDeserializer<*>, type: Class<*>): Boolean {
+        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer, type)
         if (customDeserializableClasses.contains(jsonDeserializerAdaptor.deserializingType)) return false
         customDeserializableClasses.add(jsonDeserializerAdaptor.deserializingType)
 

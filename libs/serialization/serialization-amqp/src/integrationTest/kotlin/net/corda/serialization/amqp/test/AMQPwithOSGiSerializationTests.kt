@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
@@ -16,6 +17,7 @@ import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toByteSequence
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -141,6 +143,46 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @Test
+    fun `same class gets loaded from different class loaders when deserialized from different sandbox groups`() {
+        val sandboxGroup1 = sandboxFactory.loadSandboxGroup("META-INF/TestSerializable4-workflows.cpb")
+        val sandboxGroup2 = sandboxFactory.loadSandboxGroup("META-INF/TestSerializable4-workflows.cpb")
+        try {
+            // Initialised two serialisation factories to avoid having successful tests due to caching
+            val factory1 = testDefaultFactory(sandboxGroup1)
+            val factory11 = testDefaultFactory(sandboxGroup1)
+            val factory2 = testDefaultFactory(sandboxGroup2)
+
+            // Initialise two different serialization contexts one per sandbox group
+            val testSerializationContext1 = testSerializationContext.withSandboxGroup(sandboxGroup1)
+            val testSerializationContext2 = testSerializationContext.withSandboxGroup(sandboxGroup2)
+
+            // Serialise our object using `sandboxGroup1` context
+            val cashClass = sandboxGroup1.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
+            val serialised = SerializationOutput(factory1).serialize(cashInstance, testSerializationContext1)
+
+            // Perform deserialisations and check if the correct classes are deserialised
+            val deserialised1 =
+                DeserializationInput(factory11).deserializeAndReturnEnvelope(serialised, testSerializationContext1)
+            val deserialised2 =
+                DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext2)
+
+            val expectedClass2 = sandboxGroup2.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val deserialisedClass1 = deserialised1.obj::class.java
+            val deserialisedClass2 = deserialised2.obj::class.java
+            val classLoader1 = deserialisedClass1.classLoader
+            val classLoader2 = deserialisedClass2.classLoader
+            assertThat(cashClass).isEqualTo(deserialisedClass1)
+            assertThat(expectedClass2).isEqualTo(deserialisedClass2)
+            assertThat(deserialisedClass1).isNotEqualTo(deserialisedClass2)
+            assertThat(classLoader1).isNotEqualTo(classLoader2)
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup1)
+            sandboxFactory.unloadSandboxGroup(sandboxGroup2)
+        }
+    }
+
+    @Test
     fun `amqp to be serialized objects can only live in cpk's main bundle`() {
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
         try {
@@ -159,6 +201,55 @@ class AMQPwithOSGiSerializationTests {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
     }
+
+    @CordaSerializable
+    data class SignableDataAmqpTest(val contents: String)
+
+    @CordaSerializable
+    data class TestMapOfSignableData(val signableData: Map<Int, SignableDataAmqpTest>)
+
+    @Test
+    fun mapOfSignableData() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            registerCustomSerializers(factory)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val testObject = TestMapOfSignableData(mapOf(1 to SignableDataAmqpTest("mapOfSignableData")))
+
+            val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
+            val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
+
+            assertEquals(testObject, deserialize)
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @CordaSerializable
+    data class TestListOfSignableData(val signableData: List<SignableDataAmqpTest>)
+
+    @Test
+    fun listOfSignableData() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            registerCustomSerializers(factory)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val testObject = TestListOfSignableData(listOf(SignableDataAmqpTest("listOfSignableData")))
+
+            val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
+            val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
+
+            assertEquals(testObject, deserialize)
+
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
 
     // Based on writeTestResource from AMQPTestUtils.kt which is not available as an OSGi exported package
     @Suppress("unused")

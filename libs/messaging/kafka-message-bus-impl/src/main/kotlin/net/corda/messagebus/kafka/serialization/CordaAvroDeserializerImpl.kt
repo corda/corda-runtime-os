@@ -34,7 +34,7 @@ class CordaAvroDeserializerImpl<T : Any>(
                     val classType = schemaRegistry.getClassType(dataBuffer)
                     schemaRegistry.deserialize(dataBuffer, classType, null)
                 } catch (ex: Throwable) {
-                    log.error("Failed to deserialise to expected class $expectedClass", ex)
+                    log.warn("Failed to deserialise to expected class $expectedClass", ex)
                     // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
                     // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
                     // and return a null.  This will mean the record gets treated as 'deleted' in the processors
