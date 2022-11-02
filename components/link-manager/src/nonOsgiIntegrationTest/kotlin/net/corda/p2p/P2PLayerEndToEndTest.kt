@@ -96,6 +96,8 @@ class P2PLayerEndToEndTest {
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
         private const val TLS_KEY_TENANT_ID = "p2p"
+        private const val URL_PATH = "/gateway"
+
         private const val MAX_REQUEST_SIZE = 50_000_000L
 
         fun Key.toPem(): String {
