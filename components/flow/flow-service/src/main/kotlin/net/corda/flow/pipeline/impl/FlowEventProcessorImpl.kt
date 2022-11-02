@@ -15,13 +15,10 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
-import net.corda.logging.mdc.FlowMDCFields.MDC_CLIENT_ID
-import net.corda.logging.mdc.FlowMDCFields.MDC_VNODE_ID
-import net.corda.logging.mdc.withMDCAndReturn
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.utilities.withMDC
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 
@@ -34,6 +31,9 @@ class FlowEventProcessorImpl(
 
     private companion object {
         val log = contextLogger()
+        const val MDC_CLIENT_ID = "client_id"
+        const val MDC_VNODE_ID = "vnode_id"
+        const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 
     override val keyClass = String::class.java
@@ -52,7 +52,7 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = getFlowMDCLogging(state, flowEvent)
-        return withMDCAndReturn(mdcProperties) {
+        return withMDC(mdcProperties) {
             getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
         }
     }

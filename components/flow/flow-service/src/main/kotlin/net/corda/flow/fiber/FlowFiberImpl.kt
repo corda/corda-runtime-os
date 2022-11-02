@@ -10,8 +10,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.logging.mdc.clearMDC
-import net.corda.logging.mdc.setMDC
+import net.corda.utilities.clearMDC
+import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -81,7 +81,7 @@ class FlowFiberImpl(
     @Suspendable
     private fun runFlow() {
         initialiseThreadContext()
-        setLoggingContext()
+        resetLoggingContext()
         suspend(FlowIORequest.InitialCheckpoint)
 
         val outcomeOfFlow = try {
@@ -122,13 +122,14 @@ class FlowFiberImpl(
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("Flow suspending.")
         parkAndSerialize(SerializableFiberWriter { _, _ ->
+            resetLoggingContext()
             log.info("Parking...")
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
             log.info("Parked.")
         })
 
-        setLoggingContext()
+        resetLoggingContext()
         log.info("Flow resuming.")
 
         @Suppress("unchecked_cast")
@@ -213,7 +214,8 @@ class FlowFiberImpl(
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
     }
 
-    private fun setLoggingContext() {
+    private fun resetLoggingContext() {
+        //fully clear the fiber before setting the MDC
         clearMDC()
         flowFiberExecutionContext?.mdcLoggingData?.let {
             setMDC(it)
