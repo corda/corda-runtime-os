@@ -133,7 +133,7 @@ fun CpiPersistence.persistCpiToDatabase(
             )
         } else {
             throw UnsupportedOperationException(
-                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery}" +
+                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery} " +
                         "already exists and cannot be replaced."
             )
         }

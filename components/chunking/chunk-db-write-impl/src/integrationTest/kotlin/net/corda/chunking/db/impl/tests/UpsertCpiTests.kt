@@ -201,7 +201,7 @@ class UpsertCpiTests {
     }
 
     @Test
-    fun `can upsert a cpi into an empty database`() {
+    fun `can insert a cpi into an empty database`() {
         assertDoesNotThrow {
             cpiPersistence.validateCanUpsertCpi(
                 "anything",
@@ -215,7 +215,7 @@ class UpsertCpiTests {
     }
 
     @Test
-    fun `cannot force upsert a cpi ithat doesn't exist`() {
+    fun `cannot force update a cpi ithat doesn't exist`() {
         assertThrows<ValidationException> {
             cpiPersistence.validateCanUpsertCpi(
                 "anything" + UUID.randomUUID().toString(),
@@ -228,7 +228,7 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can force upsert cpi with same name, signer version and group id`() {
+    @Test fun `can force update cpi with same name, signer version and group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -248,7 +248,7 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot force upsert cpi with same name, signer version and different group id`() {
+    @Test fun `cannot force update cpi with same name, signer version and different group id`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -268,7 +268,7 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot upsert cpis with different group ids and same name, signer and version`() {
+    @Test fun `cannot insert cpis with different group ids and same name, signer and version`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -288,7 +288,7 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can upsert cpis with same group id and different name`() {
+    @Test fun `can insert cpis with same group id and different name`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -308,7 +308,27 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `can upsert cpis with same group id and different signer`() {
+    @Test fun `can insert cpis with same group id and different version`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version + UUID.randomUUID().toString(),
+                groupId,
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `can insert cpis with same group id and different signer`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
@@ -328,7 +348,7 @@ class UpsertCpiTests {
         }
     }
 
-    @Test fun `cannot upsert duplicate CPI`() {
+    @Test fun `cannot insert or update duplicate CPI`() {
         val groupId = "abcdef"
         val name = "test"
         val version = "1.0"
