@@ -11,6 +11,8 @@ import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.converter.toRequestDtoType
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -107,6 +109,15 @@ class PermissionEndpointImpl @Activate constructor(
         }
 
         return permissions.map { it.convertToEndpointType() }
+    }
+
+    override fun createAndAssignPermissions(permissionsToCreate: BulkCreatePermissionsRequestType):
+            ResponseEntity<BulkCreatePermissionsResponseType> {
+        // Validate RoleIds passed in
+
+        // Construct and send Kafka message and wait for response
+
+        TODO("Not yet implemented")
     }
 
     override val isRunning: Boolean
