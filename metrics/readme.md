@@ -21,5 +21,7 @@ When running Grafana for the first time, it will be pre-configured with the
 
 This can be found by going to `Dashboards` -> `Browse`, then searching for `JVM`. The dashboard can be "starred" when it is opened.
 
-Custom metrics can be added to a dashboard by choosing the metrics name from the datasource. E.g. `http_server_requests_total`
+Custom metrics can be added to a dashboard by choosing the metrics name from the datasource. E.g. `http_server_requests_total`.
+An example Corda dashboard has been added (`grafana/provisioning/dashboards/corda.json`). Please note that this is for testing and 
+development purpose and is not officially supported. Feel free to add/change/improve.
 
