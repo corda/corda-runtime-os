@@ -7,6 +7,7 @@ import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 
 interface SmartConfigFactory {
     companion object {
@@ -38,11 +39,11 @@ interface SmartConfigFactory {
             }
 
             // if nothing configured, fall back to MaskedSecretsLookupService
-            logger.warn("Secrets Provider not found from config: ${config.root().render()}")
-            logger.warn("Falling back on MaskedSecretsLookupService. " +
+            logger.debug { "Secrets Provider not found from config: ${config.root().render()}" }
+            logger.debug { "Falling back on MaskedSecretsLookupService. " +
                     "This means secrets configuration will not be supported and all configuration" +
                     "values that are marked as \"${SmartConfig.SECRET_KEY}\" will return " +
-                    "\"${MaskedSecretsLookupService.MASK_VALUE}\" when resolved.")
+                    "\"${MaskedSecretsLookupService.MASK_VALUE}\" when resolved." }
             return SmartConfigFactoryImpl(
                 MaskedSecretsLookupService(),
                 object: SecretsCreateService {
