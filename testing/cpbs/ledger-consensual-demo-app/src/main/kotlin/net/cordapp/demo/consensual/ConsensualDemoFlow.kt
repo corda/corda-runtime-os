@@ -6,6 +6,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -16,8 +17,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 import java.security.PublicKey
 
 /**
@@ -58,11 +57,13 @@ class ConsensualDemoFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
+            val request = requestBody.getRequestBodyAs<String>(jsonMarshallingService)
+
             val alice = memberLookup.myInfo()
             val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
             val testConsensualState = TestConsensualState(
-                "test",
+                request,
                 listOf(
                     alice.ledgerKeys.first(),
                     bob.ledgerKeys.first(),
@@ -74,9 +75,11 @@ class ConsensualDemoFlow : RPCStartableFlow {
                 .withStates(testConsensualState)
                 .sign(alice.ledgerKeys.first())
 
+            val session = flowMessaging.initiateFlow(bob.name)
+
             val finalizedSignedTransaction = consensualLedgerService.finality(
                 signedTransaction,
-                listOf(flowMessaging.initiateFlow(bob.name))
+                listOf(session)
             )
 
             val resultMessage = ResultMessage(text = finalizedSignedTransaction.toString())
@@ -101,16 +104,16 @@ class ConsensualResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-
-        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(
-            session,
-            // Cannot have a normal lambda without providing an `inline` version of this method.
-            object : ConsensualSignedTransactionVerifier {
-                override fun verify(signedTransaction: ConsensualSignedTransaction) {
-                    log.info("Verified the transaction with a callback 12345 - $signedTransaction")
-                }
+        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { signedTransaction ->
+            val ledgerTransaction = signedTransaction.toLedgerTransaction()
+            val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
+            if (state.testField == "fail") {
+                log.info("Failed to verify the transaction - $signedTransaction")
+                throw IllegalStateException("Failed verification")
             }
-        )
+            log.info("Verified the transaction- $signedTransaction")
+        }
+
         log.info("Finished responder flow - $finalizedSignedTransaction")
     }
 }
