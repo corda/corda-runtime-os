@@ -36,7 +36,7 @@ class VirtualNodeReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                DbReconcilerReader(
+                ClusterDbReconcilerReader(
                     coordinatorFactory,
                     dbConnectionManager,
                     HoldingIdentity::class.java,

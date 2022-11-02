@@ -35,7 +35,7 @@ class ConfigReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                DbReconcilerReader(
+                ClusterDbReconcilerReader(
                     coordinatorFactory,
                     dbConnectionManager,
                     String::class.java,

@@ -36,7 +36,7 @@ class CpiReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                DbReconcilerReader(
+                ClusterDbReconcilerReader(
                     coordinatorFactory,
                     dbConnectionManager,
                     CpiIdentifier::class.java,
