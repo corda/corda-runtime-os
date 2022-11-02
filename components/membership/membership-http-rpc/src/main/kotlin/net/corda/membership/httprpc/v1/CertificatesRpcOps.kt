@@ -25,7 +25,6 @@ interface CertificatesRpcOps : RpcOps {
         const val SIGNATURE_SPEC = "signatureSpec"
     }
 
-
     /**
      * The [importCertificateChain] method enables you to import a cluster level certificate chain. A certificate chain
      * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
@@ -47,7 +46,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcPUT(
         path = "{usage}/cluster",
-        description = "This method imports a certificate chain for a specified tenant."
+        description = "This method imports a certificate chain for a cluster."
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
