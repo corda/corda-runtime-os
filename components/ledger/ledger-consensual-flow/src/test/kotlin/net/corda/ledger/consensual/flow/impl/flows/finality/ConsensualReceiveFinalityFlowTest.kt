@@ -85,7 +85,7 @@ class ConsensualReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `that received transaction is only signed with ledger keys in the transaction's missing signatories`() {
+    fun `the received transaction is only signed with ledger keys in the transaction's missing signatories`() {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, mock()))
 
         callReceiveFinalityFlow()
