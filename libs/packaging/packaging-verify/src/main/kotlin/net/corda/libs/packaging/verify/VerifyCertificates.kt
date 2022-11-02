@@ -54,7 +54,7 @@ internal fun validateCertPath(
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
         val index = if (e.index >= 0) ", certificate at index [${e.index}]" else ""
-        val msg = "Error validating $certPathName certificate path [$certPath]$index: ${e.message}"
+        val msg = "Error validating $certPathName certificate path$index: ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
     }
 }
