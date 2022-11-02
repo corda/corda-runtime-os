@@ -25,55 +25,6 @@ interface CertificatesRpcOps : RpcOps {
         const val SIGNATURE_SPEC = "signatureSpec"
     }
 
-    /**
-     * The [importCertificateChain] method enables you to import a certificate chain for a virtual node. A certificate chain
-     * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
-     * method). This method does not return anything if the import is successful.
-     *
-     * Example usage:
-     * ```
-     * certificatesOps.importCertificateChain(usage = "rpc-api-tls", alias = "cert58B6030FABDD",
-     * holdingIdentityId = "58B6030FABDD",
-     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
-     * ```
-     *
-     * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
-     *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
-     *     * 'code-signer' for a certificate of the code signing service
-     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
-     * @param alias The unique alias under which the certificate chain will be stored.
-     * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
-     */
-    @HttpRpcPUT(
-        path = "{usage}/{holdingIdentityId}",
-        description = "This method imports a certificate chain for a virtual node."
-    )
-    fun importCertificateChain(
-        @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
-                "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
-                "or 'code-signer' for a certificate of the code signing service."
-        )
-        usage: String,
-        @HttpRpcPathParameter(
-            description = "The certificate holding identity ID",
-        )
-        holdingIdentityId: String?,
-        @HttpRpcRequestBodyParameter(
-            description = "The unique alias under which the certificate chain will be stored",
-            required = true,
-        )
-        alias: String,
-        @HttpRpcRequestBodyParameter(
-            description = "A valid certificate chain in PEM format obtained from a certificate authority",
-            required = true,
-            name = "certificate"
-        )
-        certificates: List<HttpFileUpload>,
-    )
 
     /**
      * The [importCertificateChain] method enables you to import a cluster level certificate chain. A certificate chain
@@ -122,6 +73,56 @@ interface CertificatesRpcOps : RpcOps {
         alias = alias,
         holdingIdentityId = null,
         certificates = certificates,
+    )
+
+    /**
+     * The [importCertificateChain] method enables you to import a certificate chain for a virtual node. A certificate chain
+     * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
+     * method). This method does not return anything if the import is successful.
+     *
+     * Example usage:
+     * ```
+     * certificatesOps.importCertificateChain(usage = "rpc-api-tls", alias = "cert58B6030FABDD",
+     * holdingIdentityId = "58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
+     * ```
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @param alias The unique alias under which the certificate chain will be stored.
+     * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
+     */
+    @HttpRpcPUT(
+        path = "{usage}/{holdingIdentityId}",
+        description = "This method imports a certificate chain for a virtual node."
+    )
+    fun importCertificateChain(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcPathParameter(
+            description = "The certificate holding identity ID",
+        )
+        holdingIdentityId: String?,
+        @HttpRpcRequestBodyParameter(
+            description = "The unique alias under which the certificate chain will be stored",
+            required = true,
+        )
+        alias: String,
+        @HttpRpcRequestBodyParameter(
+            description = "A valid certificate chain in PEM format obtained from a certificate authority",
+            required = true,
+            name = "certificate"
+        )
+        certificates: List<HttpFileUpload>,
     )
 
     /**
