@@ -3,7 +3,6 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
-
 description 'Corda Non-Validating Notary Plugin API'
 
 cordapp {
@@ -27,6 +26,3 @@ dependencies {
 
     cordaProvided project(":notary-plugins:notary-plugin-common")
 }
-
-
-

@@ -75,23 +75,22 @@ fun generateRequestSignature(notarisationRequest: NotarisationRequest,
  */
 @Suspendable
 fun UniquenessCheckResponse.toNotarisationResponse(): NotarisationResponse {
-    val (signature, notaryError) = when (val uniquenessResult = result) {
-        is UniquenessCheckResultSuccess -> Pair(
+    return when (val uniquenessResult = result) {
+        is UniquenessCheckResultSuccess -> NotarisationResponse(
             listOf(signature!!),
             null
         )
-        is UniquenessCheckResultFailure -> Pair(
+        is UniquenessCheckResultFailure -> NotarisationResponse(
             emptyList(),
             uniquenessResult.error.toNotaryError()
         )
-        else -> Pair(
+        else -> NotarisationResponse(
             emptyList(),
             NotaryErrorGeneralImpl(
                 "Unknown uniqueness check result: $uniquenessResult"
             )
         )
     }
-    return NotarisationResponse(signature, notaryError)
 }
 
 /**

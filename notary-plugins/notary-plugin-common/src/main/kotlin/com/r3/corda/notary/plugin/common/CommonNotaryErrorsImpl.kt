@@ -37,6 +37,3 @@ data class NotaryErrorMalformedRequestImpl(
 data class NotaryErrorGeneralImpl(
     override val errorText: String
 ) : NotaryErrorGeneral
-
-// TODO CORE-7249 Extend with more errors once FilteredTransaction support has been added
-

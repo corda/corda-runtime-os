@@ -50,5 +50,3 @@ interface NotaryErrorMalformedRequest : NotaryError {
 interface NotaryErrorGeneral : NotaryError {
     val errorText: String
 }
-
-// TODO CORE-7249 Extend with more errors once FilteredTransaction support has been added
