@@ -9,5 +9,6 @@ val transactionMetaDataExample = TransactionMetaData(linkedMapOf(
     TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
     TransactionMetaData.PLATFORM_VERSION_KEY to 123,
     TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
-    TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
+    TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample,
+    TransactionMetaData.SCHEMA_VERSION_KEY to 1
 ))

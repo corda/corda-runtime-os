@@ -9,7 +9,8 @@
     "ledgerVersion",
     "cpiMetadata",
     "cpkMetadata",
-    "digestSettings"
+    "digestSettings",
+    "schemaVersion"
   ],
   "properties": {
     "ledgerModel": {
@@ -109,8 +110,7 @@
       "default": "",
       "examples": [
         1
-      ],
-      "pattern": "^.*$"
+      ]
     },
     "cpiMetadata": {
       "title": "CPI metadata",
@@ -125,6 +125,14 @@
         "title": "Items",
         "$ref": "#/definitions/package_metadata"
       }
+    },
+    "schemaVersion": {
+      "title": "Metadata schema version",
+      "type": "integer",
+      "default": "",
+      "examples": [
+        1
+      ]
     }
   },
   "allOf": [

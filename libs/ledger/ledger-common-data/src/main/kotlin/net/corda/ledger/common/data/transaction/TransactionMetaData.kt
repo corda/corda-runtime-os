@@ -16,6 +16,7 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
+        const val SCHEMA_VERSION_KEY = "schemaVersion"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -52,8 +53,19 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
         }
     }
 
-    fun getDigestSettings(): LinkedHashMap<String, Any>{
+    fun getDigestSettings(): LinkedHashMap<String, Any> {
         @Suppress("UNCHECKED_CAST")
         return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
+    }
+
+    fun getSchemaVersion(): Int {
+        val version = this[SCHEMA_VERSION_KEY].toString()
+
+        try {
+            return Integer.parseInt(version)
+        } catch (e: NumberFormatException) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
+        }
     }
 }

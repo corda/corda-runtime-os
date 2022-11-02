@@ -90,7 +90,8 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
                 TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
                 TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries()
+                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries(),
+                TransactionMetaData.SCHEMA_VERSION_KEY to 1
             )
         )
 }
