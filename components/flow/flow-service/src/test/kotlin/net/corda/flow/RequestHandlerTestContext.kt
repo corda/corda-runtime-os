@@ -1,5 +1,6 @@
 package net.corda.flow
 
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -36,6 +37,8 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
 
     init {
         flowStartContext.identity = holdingIdentity
+        flowStartContext.createdTimestamp = Instant.now()
+        flowStartContext.flowClassName = "net.corda.test.Flow"
         flowStartContext.statusKey = FlowKey("request id", holdingIdentity)
 
         whenever(flowCheckpoint.flowContext).thenReturn(flowContext)
