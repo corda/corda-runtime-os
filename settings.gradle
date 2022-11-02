@@ -101,6 +101,7 @@ include 'data:rbac-schema'
 include 'ledger:ledger-common'
 include 'ledger:ledger-consensual'
 include 'ledger:ledger-utxo'
+include 'ledger:notary-plugin'
 include 'membership'
 include 'serialization'
 

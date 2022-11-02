@@ -23,6 +23,7 @@ dependencies {
         api project(':ledger:ledger-common')
         api project(':ledger:ledger-consensual')
         api project(':ledger:ledger-utxo')
+        api project(':ledger:notary-plugin')
         api project(':membership')
         api project(':serialization')
 

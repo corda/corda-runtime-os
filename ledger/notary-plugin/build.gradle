@@ -1,0 +1,23 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Notary Plugin API and Core'
+
+dependencies {
+    api platform(project(':corda-api'))
+
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'javax.persistence:javax.persistence-api'
+    api 'org.slf4j:slf4j-api'
+
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api project(":application")
+    api project(":crypto")
+    api project(":ledger:ledger-common")
+    api project(":ledger:ledger-utxo")
+}
+
