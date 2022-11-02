@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * An RPC Ops endpoint for Permission operations.
  */
+@Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
 class PermissionEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -113,11 +114,31 @@ class PermissionEndpointImpl @Activate constructor(
 
     override fun createAndAssignPermissions(permissionsToCreate: BulkCreatePermissionsRequestType):
             ResponseEntity<BulkCreatePermissionsResponseType> {
+
+        // Validate non-empty set of permissions requested
+        if(permissionsToCreate.permissionsToCreate.isEmpty()) {
+            throw InvalidInputDataException("No permissions requested to be created")
+        }
+
         // Validate RoleIds passed in
+        if (permissionsToCreate.roleIds.isNotEmpty()) {
+            val allRoleIds = permissionManagementService.permissionManager.getRoles().map { it.id }
+            val intersection = allRoleIds.intersect(permissionsToCreate.roleIds)
+            if (intersection != permissionsToCreate.roleIds) {
+                val notFoundRoles = permissionsToCreate.roleIds.subtract(intersection)
+                throw InvalidInputDataException("Roles with the following ids cannot be found: $notFoundRoles")
+            }
+        }
 
-        // Construct and send Kafka message and wait for response
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
 
-        TODO("Not yet implemented")
+        // Construct and send Kafka message and wait for the response
+        val createPermissionsResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            createPermissions(permissionsToCreate.convertToDto(principal))
+        }
+
+        return ResponseEntity.created(createPermissionsResult.convertToEndpointType())
     }
 
     override val isRunning: Boolean
