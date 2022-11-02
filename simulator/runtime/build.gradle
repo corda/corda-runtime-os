@@ -11,7 +11,7 @@ ext {
 dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-application:$cordaApiVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
