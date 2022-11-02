@@ -94,7 +94,7 @@ class SessionManagerTest {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
-        const val SESSION_REFRESH_THRESHOLD_KEY = 432000000
+        const val SESSION_REFRESH_THRESHOLD_KEY = 432000
         const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
@@ -1631,7 +1631,7 @@ class SessionManagerTest {
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         val session = mock<Session>()
 
-        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
+        whenever(session.sessionId).thenReturn(protocolInitiator.sessionId)
         whenever(protocolInitiator.getSession()).thenReturn(session)
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
@@ -1718,14 +1718,22 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         startSendingHeartbeats(sessionManager)
 
-        val heartbeatsExpected = 5
 
-        repeat(heartbeatsExpected) {
+        fun advanceTimeAndAcknowledgeMessages() {
             mockTimeFacilitiesProvider.advanceTime(longTimePeriodConfigWithHeartbeat.heartbeatPeriod.plus(5.millis))
             sessionManager.messageAcknowledged(protocolInitiator.sessionId)
         }
 
-        assertThat(heartbeatsExpected - messages.size).isEqualTo(1)
+        val heartbeatsExpected = 4
+
+        repeat(heartbeatsExpected) {
+            advanceTimeAndAcknowledgeMessages()
+        }
+
+        //trigger session expiry
+        advanceTimeAndAcknowledgeMessages()
+
+        assertThat(heartbeatsExpected).isEqualTo(messages.size)
 
         for (message in messages) {
             val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)

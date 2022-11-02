@@ -30,7 +30,7 @@ class LinkManagerConfigurationTest {
         const val HEARTBEAT_MESSAGE_REPLAY_PERIOD = 200L
         const val SESSION_TIMEOUT = 10L
         const val SESSIONS_PER_PEER = 4L
-        const val SESSION_REFRESH_THRESHOLD = 432000000L
+        const val SESSION_REFRESH_THRESHOLD = 432000L
     }
 
 

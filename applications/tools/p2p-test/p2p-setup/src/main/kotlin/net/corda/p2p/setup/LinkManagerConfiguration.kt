@@ -85,9 +85,9 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
 
     @Option(
         names = ["--sessionRefreshThreshold"],
-        description = ["Session refresh threshold in milliseconds - *important* do not change"]
+        description = ["Session refresh threshold in seconds"]
     )
-    var sessionRefreshThreshold = 432000000L
+    var sessionRefreshThreshold = 432000L
 
     override fun call(): Collection<Record<String, Configuration>> {
         val baseConfiguration = ConfigFactory.empty()

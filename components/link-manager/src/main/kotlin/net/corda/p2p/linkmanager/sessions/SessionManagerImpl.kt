@@ -120,7 +120,7 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4, 432000000)
+        SessionManagerConfig(1000000, 4, 432000)
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -562,7 +562,7 @@ internal class SessionManagerImpl(
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
-            TimeUnit.MILLISECONDS
+            TimeUnit.SECONDS
         )
         return null
     }
