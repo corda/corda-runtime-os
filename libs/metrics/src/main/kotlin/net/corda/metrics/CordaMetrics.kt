@@ -66,6 +66,7 @@ object CordaMetrics {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
                     if(
+                        id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
                         id.name.startsWith("system") ||
                         id.name.startsWith("process")) {
