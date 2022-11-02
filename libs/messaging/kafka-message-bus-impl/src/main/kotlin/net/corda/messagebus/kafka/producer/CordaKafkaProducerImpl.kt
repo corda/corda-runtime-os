@@ -192,7 +192,6 @@ class CordaKafkaProducerImpl(
             is UnsupportedVersionException,
             is UnsupportedForMessageFormatException,
             is AuthorizationException,
-            is InvalidProducerEpochException,
             is FencedInstanceIdException -> {
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
@@ -201,6 +200,10 @@ class CordaKafkaProducerImpl(
                 // Failure to commit here might be due to consumer kicked from group.
                 // Return as intermittent to trigger retry
             is CommitFailedException,
+            is InvalidProducerEpochException,
+                // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
+                // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
+                // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             is KafkaException -> {
                 if (canAbort) {
                     abortTransaction()

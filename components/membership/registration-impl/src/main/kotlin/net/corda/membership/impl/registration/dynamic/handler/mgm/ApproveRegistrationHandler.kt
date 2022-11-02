@@ -20,13 +20,16 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
@@ -148,6 +151,17 @@ internal class ApproveRegistrationHandler(
                     RegistrationStatus.APPROVED
                 )
             )
+
+            // If approved member has notary role set, add notary to MGM's view of the group parameters.
+            memberInfo.notaryDetails
+                ?.let { membershipPersistenceClient.addNotaryToGroupParameters(mgm.holdingIdentity, memberInfo) }
+                ?.apply {
+                    if (this is MembershipPersistenceResult.Failure) {
+                        throw MembershipPersistenceException("Failed to update group parameters with notary information of" +
+                            " '${memberInfo.name}', which has role set to 'notary'.")
+                    }
+                }
+
             memberToAllMembers + memberRecord + allMembersToNewMember + persistApproveMessage
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)

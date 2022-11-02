@@ -19,9 +19,11 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -39,6 +41,7 @@ import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAG
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.util.parse
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
@@ -69,11 +72,13 @@ class ApproveRegistrationHandlerTest {
     }
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
+    private val notary = createHoldingIdentity("notary")
     private val registrationId = "registrationID"
     private val command = ApproveRegistration()
     private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
     private val key = "key"
     private val memberInfo = mockMemberInfo(member)
+    private val notaryInfo = mockMemberInfo(notary, isNotary = true)
     private val inactiveMember = mockMemberInfo(
         createHoldingIdentity("inactive"),
         status = MEMBER_STATUS_SUSPENDED
@@ -94,6 +99,14 @@ class ApproveRegistrationHandlerTest {
                 registrationId
             )
         } doReturn MembershipPersistenceResult.Success(memberInfo)
+        on {
+            setMemberAndRegistrationRequestAsApproved(
+                owner,
+                notary,
+                registrationId
+            )
+        } doReturn MembershipPersistenceResult.Success(notaryInfo)
+        on { addNotaryToGroupParameters(mgm.holdingIdentity, notaryInfo) } doReturn mock()
     }
     private val signatures = activeMembersWithoutMgm.associate {
         val name = it.name.toString()
@@ -310,6 +323,18 @@ class ApproveRegistrationHandlerTest {
     }
 
     @Test
+    fun `invoke updates the MGM's view of group parameters with notary, if approved member has notary role set`() {
+        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
+
+        handler.invoke(state, key, command)
+
+        verify(membershipPersistenceClient).addNotaryToGroupParameters(
+            viewOwningIdentity = mgm.holdingIdentity,
+            notary = notaryInfo,
+        )
+    }
+
+    @Test
     fun `Error is thrown when there is no MGM`() {
         whenever(
             memberTypeChecker.getMgmMemberInfo(owner)
@@ -360,6 +385,7 @@ class ApproveRegistrationHandlerTest {
         holdingIdentity: HoldingIdentity,
         isMgm: Boolean = false,
         status: String = MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+        isNotary: Boolean = false,
     ): MemberInfo {
         val mgmContext = mock<MGMContext> {
             on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn isMgm
@@ -368,7 +394,20 @@ class ApproveRegistrationHandlerTest {
         }
         val memberContext = mock<MemberContext> {
             on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
-            on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
+            if (isNotary) {
+                on { entries } doReturn mapOf(
+                    "member" to holdingIdentity.x500Name.toString(),
+                    "$ROLES_PREFIX.0" to "notary",
+                ).entries
+                val notaryDetails = MemberNotaryDetails(
+                    holdingIdentity.x500Name,
+                    "Notary Plugin A",
+                    listOf(mock())
+                )
+                whenever(mock.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+            } else {
+                on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
+            }
         }
         return mock {
             on { mgmProvidedContext } doReturn mgmContext

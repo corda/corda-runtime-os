@@ -18,6 +18,7 @@ class GatewayConfigurationTest {
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
             on { getInt("hostPort") } doReturn 231
+            on { getString("urlPath") } doReturn "/"
             on { getString("hostAddress") } doReturn "address"
             on { getConfig("sslConfig") } doReturn sslConfig
             on { getLong("maxRequestSize") } doReturn 1_000
@@ -29,6 +30,7 @@ class GatewayConfigurationTest {
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
                 hostPort = 231,
+                urlPath = "/",
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
                 maxRequestSize = 1_000,
@@ -58,6 +60,7 @@ class GatewayConfigurationTest {
             on { hasPath("connectionConfig") } doReturn true
             on { getInt("hostPort") } doReturn 231
             on { getString("hostAddress") } doReturn "address"
+            on { getString("urlPath") } doReturn "/"
             on { getConfig("sslConfig") } doReturn sslConfig
             on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
@@ -69,6 +72,7 @@ class GatewayConfigurationTest {
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
                 hostPort = 231,
+                urlPath = "/",
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(
                     maxClientConnections = 100,

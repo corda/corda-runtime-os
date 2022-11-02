@@ -37,7 +37,7 @@ object HttpRpcClientUtils {
         onAlreadyExists: (ResourceAlreadyExistsException) -> T = ::reThrow,
         block: () -> T
     ): T {
-        logger.info("Performing $operationName")
+        logger.info("""Performing operation "$operationName"""")
         val endTime = System.currentTimeMillis() + waitDuration.toMillis()
         var lastException: Exception?
         var sleep = 1000L
@@ -48,14 +48,14 @@ object HttpRpcClientUtils {
                 return onAlreadyExists(ex)
             } catch (ex: Exception) {
                 lastException = ex
-                logger.warn("Cannot perform $operationName yet", ex)
+                logger.warn("""Cannot perform operation "$operationName" yet""", ex)
                 val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                 Thread.sleep(sleep.coerceAtMost(remaining))
                 sleep *= 2
             }
         } while (System.currentTimeMillis() <= endTime)
 
-        errOut.error("Unable to perform $operationName", lastException)
+        errOut.error("""Unable to perform operation "$operationName"""", lastException)
         throw lastException!!
     }
 

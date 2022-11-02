@@ -56,7 +56,9 @@ class VirtualNodeService @Activate constructor(
             null
         )
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            val closeables = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
+            closeables
         }
     }
 

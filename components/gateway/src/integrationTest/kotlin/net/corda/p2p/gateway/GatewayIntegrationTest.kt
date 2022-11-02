@@ -195,6 +195,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -214,7 +215,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 val request = JavaHttpRequest.newBuilder()
                     .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
-                    .uri(URI("$serverAddress/gateway/send"))
+                    .uri(URI("$serverAddress"))
                     .header("Content-type", "application/json")
                     .build()
 
@@ -236,6 +237,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     ),
@@ -328,6 +330,7 @@ class GatewayIntegrationTest : TestBase() {
                 GatewayConfiguration(
                     recipientServerUrl.host,
                     recipientServerUrl.port,
+                    "/",
                     aliceSslConfig,
                     MAX_REQUEST_SIZE
                 ),
@@ -352,7 +355,7 @@ class GatewayIntegrationTest : TestBase() {
                     }.map {
                         URI.create("http://www.alice.net:$it")
                     }.forEach { url ->
-                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig, MAX_REQUEST_SIZE))
+                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
                             assertThat(gateway.isRunning).isTrue
                         }
@@ -412,6 +415,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -494,7 +498,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig, MAX_REQUEST_SIZE),
+                    GatewayConfiguration(serverUri.host, serverUri.port, "/", chipSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                 ).also {
                     serverListener.server = it
@@ -511,6 +515,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         gatewayAddress.first,
                         gatewayAddress.second,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -621,6 +626,7 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
+                            "/",
                             chipSslConfig,
                             MAX_REQUEST_SIZE
                         ),
@@ -638,6 +644,7 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
+                            "/",
                             daleSslConfig,
                             MAX_REQUEST_SIZE
                         ),
@@ -729,6 +736,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         port,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -742,6 +750,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         -20,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -761,6 +770,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         anotherPort,
+                        "/",
                         aliceSslConfig,
                         MAX_REQUEST_SIZE
                     )
@@ -841,6 +851,7 @@ class GatewayIntegrationTest : TestBase() {
                 GatewayConfiguration(
                     aliceAddress.host,
                     aliceAddress.port,
+                    "/",
                     aliceSslConfig,
                     MAX_REQUEST_SIZE
                 ),
@@ -933,7 +944,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Change the host
-                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig, MAX_REQUEST_SIZE))
+                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
