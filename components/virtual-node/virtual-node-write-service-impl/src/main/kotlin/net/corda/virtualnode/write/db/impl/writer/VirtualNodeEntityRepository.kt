@@ -155,7 +155,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
 
     internal fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
         entityManagerFactory.transaction {
-            val virtualNodeEntity = it.findVirtualNode(holdingIdentityShortHash)
+            val virtualNodeEntity = it.findVirtualNode(holdingIdentityShortHash.uppercase())
                 ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
             return virtualNodeEntity.run {
