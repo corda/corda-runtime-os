@@ -58,6 +58,12 @@ object CordaMetrics {
          */
         FlowClass("flowClass"),
 
+
+        /**
+         * Flow Id for which the metric is applicable.
+         */
+        FlowId("flowId"),
+
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
          */
