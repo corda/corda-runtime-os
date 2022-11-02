@@ -28,14 +28,12 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:virtual-node:sandbox-group-context")
 
-    testImplementation project(":libs:application:application-impl")
-    testImplementation project(":libs:crypto:merkle-impl")
-    testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:membership:membership-common")
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')
+    testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(":testing:test-serialization")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

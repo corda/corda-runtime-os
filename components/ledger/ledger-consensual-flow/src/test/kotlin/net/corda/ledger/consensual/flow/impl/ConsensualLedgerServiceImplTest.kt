@@ -1,15 +1,6 @@
 package net.corda.ledger.consensual.flow.impl
 
-import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.flow.application.services.FlowEngineImpl
-import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
-import net.corda.ledger.common.testkit.mockPlatformInfoProvider
+import net.corda.ledger.common.test.LedgerTest
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactoryImpl
@@ -21,24 +12,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-class ConsensualLedgerServiceImplTest {
-    private val jsonMarshallingService = JsonMarshallingServiceImpl()
-    private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
-    private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val flowFiberService = TestFlowFiberServiceWithSerialization()
-    private val flowEngine = FlowEngineImpl(flowFiberService)
-    private val serializationService = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-    private val transactionMetadataFactory =
-        TransactionMetadataFactoryImpl(flowFiberService, mockPlatformInfoProvider())
-    private val wireTransactionFactory = WireTransactionFactoryImpl(
-        merkleTreeProvider,
-        digestService,
-        jsonMarshallingService,
-        cipherSchemeMetadata,
-    )
+class ConsensualLedgerServiceImplTest: LedgerTest() {
     private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
-        serializationService,
+        serializationServiceNullCfg,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,

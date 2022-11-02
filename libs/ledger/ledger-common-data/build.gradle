@@ -25,22 +25,21 @@ dependencies {
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(":testing:kryo-serialization-testkit")
+    testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(":libs:serialization:serialization-amqp")
-    testImplementation project(":libs:crypto:cipher-suite-impl")
-    testImplementation project(":libs:crypto:merkle-impl")
-    testImplementation project(":libs:application:application-impl")
+
+//    testImplementation project(":libs:application:application-impl")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
-    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+//??    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:flows:session-manager-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-
 }
