@@ -3,6 +3,7 @@ package net.corda.membership.certificate.client.impl
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -132,7 +133,7 @@ internal class HostedIdentityEntryFactory(
         policy: GroupPolicy,
     ): List<String>? {
         if (policy.p2pParameters.sessionPki != NO_PKI && sessionCertificateChainAlias == null) {
-            throw CordaRuntimeException("The sessionCertificateChainAlias must be specified when using a group policy with sessionPki: " +
+            throw BadRequestException("The sessionCertificateChainAlias must be specified when using a group policy with sessionPki: " +
                     policy.p2pParameters.sessionPki.name
             )
         }

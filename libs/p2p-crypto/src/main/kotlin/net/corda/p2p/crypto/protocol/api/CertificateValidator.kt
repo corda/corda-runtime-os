@@ -40,11 +40,11 @@ class CertificateValidator(
         //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
         //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
         //matches the x500Name of the peer's identity.
-        val x509RootCert = (certificateChain.certificates.firstOrNull() as? X509Certificate) ?:
+        val x509LeafCert = (certificateChain.certificates.firstOrNull() as? X509Certificate) ?:
             throw InvalidPeerCertificate("Root session certificate is not an X509 certificate.")
 
-        validateX500NameMatches(x509RootCert, expectedX500Name)
-        validateKeyUsage(x509RootCert)
+        validateX500NameMatches(x509LeafCert, expectedX500Name)
+        validateKeyUsage(x509LeafCert)
         validateCertPath(certificateChain)
     }
 
@@ -54,13 +54,13 @@ class CertificateValidator(
             MemberX500Name.build(x500PrincipalFromCert)
         } catch (exception: IllegalArgumentException) {
             throw InvalidPeerCertificate(
-                "X500 principle in root session certificate ($x500PrincipalFromCert) is not a valid corda X500 Name.",
+                "X500 principal in root session certificate ($x500PrincipalFromCert) is not a valid corda X500 Name.",
                 certificate
             )
         }
         if (x500NameFromCert != expectedX500Name) {
             throw InvalidPeerCertificate(
-                "X500 principle in root session certificate ($x500NameFromCert) is different from expected ($expectedX500Name).",
+                "X500 principal in root session certificate ($x500NameFromCert) is different from expected ($expectedX500Name).",
                 certificate
             )
         }
@@ -68,7 +68,7 @@ class CertificateValidator(
 
     private fun validateKeyUsage(certificate: X509Certificate) {
         if (!certificate.keyUsage[digitalSignatureBit]) {
-            throw InvalidPeerCertificate("The key usages extension of the root session certificate does not contain " +
+            throw InvalidPeerCertificate("The key usages extension of the session certificate does not contain " +
                 "'Digital Signature', as expected.", certificate
             )
         }
