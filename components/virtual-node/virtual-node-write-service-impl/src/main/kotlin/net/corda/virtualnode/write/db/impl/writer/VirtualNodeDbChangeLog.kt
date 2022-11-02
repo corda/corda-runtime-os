@@ -2,6 +2,7 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.DbChange
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangelog
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
 
@@ -12,9 +13,8 @@ import java.io.InputStream
  * @constructor Create empty Virtual node db change log
  */
 class VirtualNodeDbChangeLog(
-    private val changeLogs: List<CpkDbChangeLogEntity>,
-
-): DbChange {
+    private val changeLogs: List<CpkDbChangelog>,
+) : DbChange {
     companion object {
         // To get going we assume the master changelog file for a CPK is XML and has this name
         // Note that this name different to the example in:
@@ -29,7 +29,7 @@ class VirtualNodeDbChangeLog(
 
     private val all by lazy {
         changeLogs.associate {
-            it.id.filePath to it.content
+            it.filePath to it.content
         }
     }
 
@@ -38,9 +38,9 @@ class VirtualNodeDbChangeLog(
             // TODO - ensure validation that a CPK with changelog files has at least 1 master file
             //  must happen during CPI installation.
             .filter {
-                it.id.filePath == MASTER_CHANGE_LOG
+                it.filePath == MASTER_CHANGE_LOG
             }.map {
-                it.id.filePath
+                it.filePath
             }
 
     override val changeLogFileList: Set<String>
