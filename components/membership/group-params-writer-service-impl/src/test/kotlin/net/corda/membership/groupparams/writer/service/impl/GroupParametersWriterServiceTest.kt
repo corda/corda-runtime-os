@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParametersOwner
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -28,7 +27,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
@@ -49,6 +50,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class GroupParametersWriterServiceTest {
+    private val viewOwner = HoldingIdentity(MemberX500Name("R3", "London", "GB"), "groupId")
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
@@ -223,9 +225,9 @@ class GroupParametersWriterServiceTest {
 
         @Test
         fun `exception is thrown if functions are called before starting the service`() {
-            val ex1 = assertThrows<IllegalStateException> { writerService.put(mock(), mock()) }
+            val ex1 = assertThrows<IllegalStateException> { writerService.put(viewOwner, mock()) }
             assertThat(ex1.message).contains("inactive")
-            val ex2 = assertThrows<IllegalStateException> { writerService.remove(mock()) }
+            val ex2 = assertThrows<IllegalStateException> { writerService.remove(viewOwner) }
             assertThat(ex2.message).contains("inactive")
         }
 
@@ -238,11 +240,11 @@ class GroupParametersWriterServiceTest {
         fun `put publishes records to kafka`() {
             postConfigChangedEvent()
 
-            val capturedPublishedList = argumentCaptor<List<Record<GroupParametersOwner, GroupParameters>>>()
+            val capturedPublishedList = argumentCaptor<List<Record<String, GroupParameters>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture()))
                 .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
 
-            val owner = GroupParametersOwner("ownerId", "groupId")
+            val ownerId = viewOwner.shortHash.toString()
             val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
                 sortedMapOf(
                     MPV_KEY to "1",
@@ -251,15 +253,15 @@ class GroupParametersWriterServiceTest {
                 ),
                 emptyList()
             )
-            writerService.put(owner, params)
+            writerService.put(viewOwner, params)
 
             val result = capturedPublishedList.firstValue
             assertSoftly {
                 it.assertThat(result.size).isEqualTo(1)
                 val record = result.first()
                 it.assertThat(record.topic).isEqualTo(GROUP_PARAMETERS_TOPIC)
-                it.assertThat(record.key).isEqualTo(owner)
-                it.assertThat(record.value).isEqualTo(params.toAvro(owner))
+                it.assertThat(record.key).isEqualTo(ownerId)
+                it.assertThat(record.value).isEqualTo(params.toAvro(viewOwner))
             }
         }
 
@@ -267,7 +269,7 @@ class GroupParametersWriterServiceTest {
         fun `remove function throws exception`() {
             postConfigChangedEvent()
 
-            val ex = assertThrows<NotImplementedException> { writerService.remove(mock()) }
+            val ex = assertThrows<NotImplementedException> { writerService.remove(viewOwner) }
             assertThat(ex.message).contains("not supported")
         }
     }

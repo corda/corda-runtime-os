@@ -9,9 +9,10 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'net.corda:corda-avro-schema'
-    implementation 'net.corda:corda-membership'
 
-    implementation project(':components:reconciliation:reconciliation')
+    api project(':components:reconciliation:reconciliation')
+    api project(':libs:virtual-node:virtual-node-info')
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-membership'
 }

@@ -1,15 +1,15 @@
 package net.corda.membership.groupparams.writer.service
 
-import net.corda.data.membership.GroupParametersOwner
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Group parameters writer (PUBLISHER) interface.
  */
-interface GroupParametersWriterService : ReconcilerWriter<GroupParametersOwner, GroupParameters>, Lifecycle {
-    override fun put(recordKey: GroupParametersOwner, recordValue: GroupParameters)
+interface GroupParametersWriterService : ReconcilerWriter<HoldingIdentity, GroupParameters>, Lifecycle {
+    override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters)
 
-    override fun remove(recordKey: GroupParametersOwner)
+    override fun remove(recordKey: HoldingIdentity)
 }

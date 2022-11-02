@@ -3,7 +3,7 @@ package net.corda.membership.groupparams.writer.service.impl
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParametersOwner
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -25,6 +25,8 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -61,9 +63,9 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun put(recordKey: GroupParametersOwner, recordValue: GroupParameters) = impl.put(recordKey, recordValue)
+    override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) = impl.put(recordKey, recordValue)
 
-    override fun remove(recordKey: GroupParametersOwner) = impl.remove(recordKey)
+    override fun remove(recordKey: HoldingIdentity) = impl.remove(recordKey)
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
@@ -81,16 +83,16 @@ class GroupParametersWriterServiceImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerGroupParametersWriterService : AutoCloseable {
-        fun put(recordKey: GroupParametersOwner, recordValue: GroupParameters)
+        fun put(recordKey: HoldingIdentity, recordValue: GroupParameters)
 
-        fun remove(recordKey: GroupParametersOwner)
+        fun remove(recordKey: HoldingIdentity)
     }
 
     private object InactiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: GroupParametersOwner, recordValue: GroupParameters) =
+        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
-        override fun remove(recordKey: GroupParametersOwner) =
+        override fun remove(recordKey: HoldingIdentity) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun close() = Unit
@@ -98,19 +100,19 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerGroupParametersWriterService {
-        override fun put(recordKey: GroupParametersOwner, recordValue: GroupParameters) {
+        override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) {
             publisher.publish(
                 listOf(
                     Record(
                         GROUP_PARAMETERS_TOPIC,
-                        recordKey,
+                        recordKey.shortHash.toString(),
                         recordValue.toAvro(recordKey)
                     )
                 )
             ).forEach { it.get() }
         }
 
-        override fun remove(recordKey: GroupParametersOwner) =
+        override fun remove(recordKey: HoldingIdentity) =
             throw NotImplementedException("Removing group parameters is not supported.")
 
         override fun close() = publisher.close()
@@ -184,15 +186,12 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("group-parameters-writer-service"),
             event.config.getConfig(MESSAGING_CONFIG)
-        )
-        _publisher?.start()
+        ).also { it.start() }
         activate(coordinator)
     }
 }
 
-typealias GroupParametersAvro = net.corda.data.membership.GroupParameters
-
-fun GroupParameters.toAvro(owner: GroupParametersOwner) = GroupParametersAvro(
-    owner,
+fun GroupParameters.toAvro(owner: HoldingIdentity) = GroupParametersAvro(
+    owner.toAvro(),
     this.toAvro()
 )
