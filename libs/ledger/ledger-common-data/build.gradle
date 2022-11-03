@@ -15,12 +15,6 @@ dependencies {
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
 
-    // TODO CORE-7101 may simplify this. Most of these are for accessing current sandbox group from fiber.
-    implementation project(":libs:sandbox")
-    implementation project(":libs:serialization:serialization-checkpoint-api")
-    implementation project(":libs:virtual-node:sandbox-group-context")
-    implementation project(":components:flow:flow-service")
-
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(":testing:test-serialization")
