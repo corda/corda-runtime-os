@@ -38,7 +38,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
 
 ### Trust your own signing key
 
-The plugin does not currently trust the private keys within the keystore when doing validation. To trust those keys, export them as certificates and import them into the keystore.
+The plugin does not currently trust the signing keys within the keystore when doing signature verification. To trust those keys, export them as certificates and import them into the keystore.
 
 ```shell
 keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1" -rfc -file signingkey1.crt
