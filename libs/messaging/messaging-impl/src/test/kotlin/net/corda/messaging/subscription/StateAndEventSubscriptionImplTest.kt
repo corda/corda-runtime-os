@@ -3,6 +3,7 @@ package net.corda.messaging.subscription
 import net.corda.data.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleException
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -19,6 +20,8 @@ import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
@@ -33,6 +36,8 @@ import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -46,6 +51,7 @@ class StateAndEventSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
+    private var lifecycleCoordinatorThrows = false
 
     private data class Mocks(
         val builder: StateAndEventBuilder,
@@ -108,7 +114,68 @@ class StateAndEventSubscriptionImplTest {
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
         doReturn("1".toByteArray()).`when`(cordaAvroSerializer).serialize(any())
 
+        setupMockLifecycleCoordinator()
+
         return Mocks(builder, producer, stateAndEventConsumer)
+    }
+
+    private fun setupMockLifecycleCoordinator() {
+        var lifecycleCoordinatorClosed = false;
+
+        // Lifecycle coordinator throws if used when closed, we must mock that behaviour here to ensure the implementation
+        // under test does not call lifecycleCoordinator improperly.
+        doAnswer {
+            lifecycleCoordinatorClosed = true
+        }.whenever(lifecycleCoordinator).close()
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).postEvent(any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).setTimer(any(), any(), any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).cancelTimer(any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).updateStatus(any(), any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).postCustomEventToFollowers(any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).followStatusChanges(any())
+
+        doAnswer {
+            if (lifecycleCoordinatorClosed) {
+                lifecycleCoordinatorThrows = true
+                throw LifecycleException("")
+            }
+        }.whenever(lifecycleCoordinator).followStatusChangesByName(any())
     }
 
     @Test
@@ -156,6 +223,8 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+
+        assertFalse(lifecycleCoordinatorThrows)
     }
 
     @Test
@@ -201,6 +270,46 @@ class StateAndEventSubscriptionImplTest {
         verify(eventConsumer, times(1)).poll(any())
         verify(producer, times(0)).beginTransaction()
         verify(rebalanceListener).close()
+
+        assertFalse(lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    fun `state and event subscription looper stops thrown Throwables reaching the thread default handler`() {
+        val (builder, _, stateAndEventConsumer) = setupMocks(5)
+
+        val lock = ReentrantLock()
+        var subscriptionThread: Thread? = null
+        var uncaughtExceptionInSubscriptionThread: Throwable? = null
+        doAnswer {
+            lock.withLock {
+                subscriptionThread = Thread.currentThread()
+            }
+            // Here's our chance to make sure there are no uncaught exceptions in this, the subscription thread
+            subscriptionThread!!.setUncaughtExceptionHandler { _, e ->
+                lock.withLock {
+                    uncaughtExceptionInSubscriptionThread = e
+                }
+            }
+            throw Throwable()
+        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        while (lock.withLock { subscriptionThread == null }) {
+            // We must wait for the callback above in order we know what thread to join below
+            Thread.sleep(10)
+        }
+        subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
+        assertNull( lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
 
     @Test

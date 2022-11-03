@@ -76,6 +76,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     @Volatile
     private var stopped = false
+    @Volatile
     private var isRunningInternal = true
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
@@ -83,7 +84,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val eventTopic = config.topic
     private val stateTopic = getStateAndEventStateTopic(config.topic)
     private lateinit var deadLetterRecords: MutableList<ByteArray>
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
+    private val lifecycleCoordinator =
+        lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
             "producerClientId ${config.clientId}."
@@ -116,25 +118,33 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * This method is for closing the loop/thread externally. From inside the loop use the private [stopConsumeLoop].
+     */
     override fun close() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.close()
+        check(Thread.currentThread().id != consumeLoopThread?.id) { "Cannot call close from consume loop thread" }
+        stopConsumeLoop()?.join(config.threadStopTimeout.toMillis())
+    }
+
+    private fun stopConsumeLoop(): Thread? = lock.withLock {
+        if (stopped) return null
+        check(consumeLoopThread != null) { "No consume loop thread in non-stopped subscription" }
+        stopped = true
+        consumeLoopThread!!.also { consumeLoopThread = null }
+    }
+
+    private fun runConsumeLoop() {
+        // As the thread entry point, ensure nothing leaks to the uncaught exception handler. This just means we at least
+        // channel uncaught Throwables through the correct logger. The subscription would still be in a bad state caused
+        // by an apparent programming error at this point.
+        try {
+            doRunConsumeLoop()
+        } catch (t: Throwable) {
+            log.error("runConsumeLoop Throwable caught, subscription in an unrecoverable bad state:", t)
         }
     }
 
-    private fun stopConsumeLoop() {
-        val thread = lock.withLock {
-            stopped = true
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
-        }
-        thread?.join(config.threadStopTimeout.toMillis())
-        isRunningInternal = false
-    }
-
-    fun runConsumeLoop() {
+    private fun doRunConsumeLoop() {
         var attempts = 0
         var nullableRebalanceListener: StateAndEventConsumerRebalanceListener? = null
 
@@ -169,6 +179,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     stateAndEventConsumerTmp.pollAndUpdateStates(true)
                     processEvents()
                 }
+
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -182,7 +193,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        close()
+                        stopConsumeLoop()
                     }
                 }
             } finally {
@@ -192,6 +203,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableRebalanceListener?.close()
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         closeStateAndEventProducerConsumer()
+        lifecycleCoordinator.close()
+        isRunningInternal = false
     }
 
     private fun closeStateAndEventProducerConsumer() {
@@ -216,6 +229,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         attempts++
                         handleProcessEventRetries(attempts, ex)
                     }
+
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic $eventTopic, group ${config.group}, " +
@@ -274,6 +288,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
+
             thisEventUpdates.markForDLQ -> {
                 log.warn("Sending event: $event, and state: $state to dead letter queue. Processor marked event for the dead letter queue")
                 outputRecords.add(generateDeadLetterRecord(event, state))
@@ -284,6 +299,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 // are outputted.
                 outputRecords.addAll(thisEventUpdates.responseEvents)
             }
+
             else -> {
                 outputRecords.addAll(thisEventUpdates.responseEvents)
                 val updatedState = thisEventUpdates.updatedState
