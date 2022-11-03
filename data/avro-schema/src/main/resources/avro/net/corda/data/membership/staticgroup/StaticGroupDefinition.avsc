@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "StaticGroupDefinition",
+  "namespace": "net.corda.data.membership.staticgroup",
+  "doc": "Avro representation of static group definition.",
+  "fields": [
+    {
+      "name": "groupId",
+      "doc": "Group which the group definition belongs to.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "groupParameters",
+      "doc": "Group Parameters entries for the group.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}
