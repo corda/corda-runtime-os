@@ -1,10 +1,10 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -14,18 +14,34 @@ import org.slf4j.LoggerFactory
 
 /**
  * A base class for all DB reconciler reader components which provides standard lifecycle handling.
+ *
+ * Implementations must override the [name], [dependencies], and [coordinatorFactory] properties.
+ * Optionally, if custom startup / shutdown logic is required, [onStatusUp] and [onStatusDown] can be implemented with
+ * that logic.
+ *
  */
 abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
-    name: String,
-    coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : DbReconcilerReader<K, V> {
 
-    internal val logger = LoggerFactory.getLogger(name)
-    final override val lifecycleCoordinatorName = LifecycleCoordinatorName(name)
+    /**
+     * Name used for logging and the lifecycle coordinator.
+     */
+    internal abstract val name: String
 
-    internal val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::processEvent)
+    /**
+     * Set of dependencies that an implementation on this class must follow lifecycle status of.
+     */
+    internal abstract val dependencies: Set<LifecycleCoordinatorName>
 
-    private var dbConnectionManagerRegistration: RegistrationHandle? = null
+    internal val logger by lazy { LoggerFactory.getLogger(name) }
+    override val lifecycleCoordinatorName by lazy { LifecycleCoordinatorName(name) }
+
+    internal val coordinator by lazy {
+        coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::processEvent)
+    }
+
+    private var dependencyRegistration: RegistrationHandle? = null
 
     @VisibleForTesting
     internal fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -38,19 +54,31 @@ abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        dbConnectionManagerRegistration?.close()
-        dbConnectionManagerRegistration = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
-            )
-        )
+        dependencyRegistration?.close()
+        dependencyRegistration = coordinator.followStatusChangesByName(dependencies)
     }
 
     private fun onStopEvent() {
         closeResources()
     }
 
-    abstract fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator)
+    private fun onRegistrationStatusChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        if (event.status == LifecycleStatus.UP) {
+            onStatusUp()
+            logger.info("Switching to UP")
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } else {
+            logger.info(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
+                        "Switching to ${event.status}"
+            )
+            coordinator.updateStatus(event.status)
+            closeResources()
+        }
+    }
 
     @Suppress("unused_parameter")
     private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
@@ -76,13 +104,21 @@ abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
         closeResources()
     }
 
-    internal fun closeResources() {
-        dbConnectionManagerRegistration?.close()
-        dbConnectionManagerRegistration = null
-        close()
+    private fun closeResources() {
+        dependencyRegistration?.close()
+        dependencyRegistration = null
+        onStatusDown()
     }
 
-    internal abstract fun close()
+    /**
+     * Implementations can override this with custom logic that should run when a component's lifecycle status is UP.
+     */
+    internal abstract fun onStatusUp()
+
+    /**
+     * Implementations can override this with custom logic that should run when a component's lifecycle status is DOWN.
+     */
+    internal abstract fun onStatusDown()
 
     internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }

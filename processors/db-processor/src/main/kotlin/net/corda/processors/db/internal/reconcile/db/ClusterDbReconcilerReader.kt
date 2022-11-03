@@ -2,10 +2,9 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReaderComponent.GetRecordsErrorEvent
 import net.corda.reconciliation.VersionedRecord
 import java.util.stream.Stream
@@ -25,29 +24,23 @@ class ClusterDbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val doGetAllVersionedRecords: (EntityManager) -> Stream<VersionedRecord<K, V>>
-): DbReconcilerReaderComponent<K, V>(
-    name = "${DbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>",
-    coordinatorFactory = coordinatorFactory
+) : DbReconcilerReaderComponent<K, V>(
+    coordinatorFactory
 ) {
+
+    override val name = "${ClusterDbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
+    override val dependencies = setOf(
+        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    )
 
     private var entityManagerFactory: EntityManagerFactory? = null
 
-    override fun onRegistrationStatusChangeEvent(
-        event: RegistrationStatusChangeEvent,
-        coordinator: LifecycleCoordinator
-    ) {
-        if (event.status == LifecycleStatus.UP) {
-            entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
-            logger.info("Switching to UP")
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } else {
-            logger.info(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
-                        "Switching to ${event.status}"
-            )
-            coordinator.updateStatus(event.status)
-            closeResources()
-        }
+    override fun onStatusUp() {
+        entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+    }
+
+    override fun onStatusDown() {
+        entityManagerFactory = null
     }
 
     /**
@@ -73,9 +66,4 @@ class ClusterDbReconcilerReader<K : Any, V : Any>(
             null
         }
     }
-
-    override fun close() {
-        entityManagerFactory = null
-    }
-
 }
