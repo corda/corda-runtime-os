@@ -8,7 +8,6 @@ import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.parse
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
@@ -24,9 +23,9 @@ class GroupParametersFactoryTest {
 
     private val groupParametersCaptor = argumentCaptor<Map<String, String>>()
     private val mockLayeredPropertyMap: LayeredPropertyMap = mock {
-        on { it.parse<Int>(EPOCH_KEY) } doReturn EPOCH.toInt()
-        on { it.parse<Int>(MPV_KEY) } doReturn MPV.toInt()
-        on { it.parse<Instant>(MODIFIED_TIME_KEY) } doReturn Instant.now()
+        on { it.parse(EPOCH_KEY, Int::class.java) } doReturn EPOCH.toInt()
+        on { it.parse(MPV_KEY, Int::class.java) } doReturn MPV.toInt()
+        on { it.parse(MODIFIED_TIME_KEY, Instant::class.java) } doReturn Instant.now()
     }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock {
         on { createMap(groupParametersCaptor.capture()) } doReturn mockLayeredPropertyMap
