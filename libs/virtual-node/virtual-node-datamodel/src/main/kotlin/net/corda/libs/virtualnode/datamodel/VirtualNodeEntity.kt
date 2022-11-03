@@ -125,7 +125,7 @@ fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNode
     }
 
     return createQuery(queryBuilder)
-        .setParameter("shortId", holdingIdentityShortHash)
+        .setParameter("shortId", holdingIdentityShortHash.uppercase())
         .setMaxResults(1)
         .resultList
         .singleOrNull()
