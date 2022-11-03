@@ -8,7 +8,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:
@@ -30,7 +30,7 @@ class FlowMapperMessageProcessor(
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
         val key = event.key
-        logger.debug { "Received event: key: $key event: ${event.value}" }
+        logger.trace { "Received event: key: $key event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
         val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
         val result = executor.execute()

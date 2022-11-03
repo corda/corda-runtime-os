@@ -130,7 +130,7 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF)
+        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF, 432000)
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -153,10 +153,13 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
+    private val executorService = executorServiceFactory()
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
+        onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
@@ -173,6 +176,7 @@ internal class SessionManagerImpl(
         val maxMessageSize: Int,
         val sessionsPerCounterparties: Int,
         val revocationConfigMode: RevocationCheckMode,
+        val sessionRefreshThreshold: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -215,7 +219,8 @@ internal class SessionManagerImpl(
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
             config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
-            config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY)
+            config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
+            config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
     }
 
@@ -303,6 +308,10 @@ internal class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
+            if(sessionInitMessage.isEmpty()) {
+                outboundSessionPool.removeSessions(counterparties)
+                return
+            }
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
                 return
@@ -586,7 +595,22 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
+        val sessionManagerConfig = config.get()
+        executorService.schedule(
+            { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
+            sessionManagerConfig.sessionRefreshThreshold.toLong(),
+            TimeUnit.SECONDS
+        )
         return null
+    }
+
+    private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {
+        logger.info(
+            "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
+                    "out to refresh ephemeral keys and it will be cleaned up."
+        )
+        refreshOutboundSession(sessionCounterparties, sessionId) 
+        heartbeatManager.stopTrackingSpecifiedSession(sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
@@ -880,6 +904,10 @@ internal class SessionManagerImpl(
             trackedSessions.clear()
         }
 
+        fun stopTrackingSpecifiedSession(sessionId: String) {
+            trackedSessions.remove(sessionId)
+        }
+
         fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
@@ -1020,4 +1048,7 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
     }
+
+
+
 }

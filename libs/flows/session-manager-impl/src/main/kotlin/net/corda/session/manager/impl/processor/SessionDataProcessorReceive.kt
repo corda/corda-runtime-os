@@ -37,7 +37,7 @@ class SessionDataProcessorReceive(
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
             val errorMessage = "Received SessionData on key $key for session which was null: SessionEvent: $sessionEvent"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
             getInboundDataEventResult(sessionState, sessionId)
@@ -80,7 +80,7 @@ class SessionDataProcessorReceive(
         return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
                     " is $currentStatus. Session mismatch error. SessionState: $sessionState"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             sessionState.apply {
                 status = SessionStateType.ERROR
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
