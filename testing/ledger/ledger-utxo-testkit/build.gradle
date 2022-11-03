@@ -1,11 +1,11 @@
 plugins {
-    id 'corda.common-library'
+    id "corda.common-library"
 }
 
-description 'Corda ledger UTXO test objects'
+description "Corda ledger UTXO test objects"
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-cipher-suite"

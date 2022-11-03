@@ -1,14 +1,14 @@
 plugins {
-    id 'corda.common-publishing'
-    id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
+    id "corda.common-publishing"
+    id "corda.common-library"
+    id "corda.osgi-test-conventions"
 }
 
-description 'Corda UTXO ledger - flow implementation'
+description "Corda UTXO ledger - flow implementation"
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation "net.corda:corda-ledger-utxo"
     implementation "net.corda:corda-cipher-suite"
@@ -23,7 +23,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
-    testImplementation project(':testing:test-serialization')
+    testImplementation project(":testing:test-serialization")
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:serialization:serialization-amqp")

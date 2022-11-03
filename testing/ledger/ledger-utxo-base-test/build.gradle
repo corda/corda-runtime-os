@@ -1,8 +1,8 @@
 plugins {
-    id 'corda.common-library'
+    id "corda.common-library"
 }
 
-description 'Corda ledger UTXO abstract test class with dependencies made available for unit tests'
+description "Corda ledger UTXO abstract test class with dependencies made available for unit tests"
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")

@@ -1,8 +1,8 @@
 plugins {
-    id 'corda.common-library'
+    id "corda.common-library"
 }
 
-description 'Corda ledger common abstract test class with dependencies made available for unit tests'
+description "Corda ledger common abstract test class with dependencies made available for unit tests"
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -13,7 +13,7 @@ dependencies {
 
     api project(":libs:crypto:cipher-suite-impl")
     api project(":libs:crypto:merkle-impl")
-    api project(':testing:test-serialization')
+    api project(":testing:test-serialization")
     api project(":components:flow:flow-service")
 
     implementation project(":libs:serialization:serialization-amqp")
