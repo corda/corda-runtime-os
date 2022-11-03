@@ -38,7 +38,7 @@ class ConsensualTransactionBuilderImpl(
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
-    private var alreadySigned: Boolean = false
+    private var alreadySigned = false
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         copy(states = this.states + states)

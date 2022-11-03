@@ -53,6 +53,7 @@ data class UtxoTransactionBuilderImpl(
     private val outputTransactionStates: List<TransactionState<*>> = emptyList()
 ) : UtxoTransactionBuilder {
 
+    private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
@@ -106,6 +107,7 @@ data class UtxoTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(signatories.toList().isNotEmpty()) {
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
@@ -119,13 +121,15 @@ data class UtxoTransactionBuilderImpl(
                 it
             )
         }
-        return UtxoSignedTransactionImpl(
+        val tx = UtxoSignedTransactionImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetaData
         )
+        alreadySigned = true
+        return tx
     }
 
     private fun buildWireTransaction(): WireTransaction {
