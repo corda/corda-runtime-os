@@ -6,6 +6,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
@@ -50,6 +51,12 @@ class AuthenticationProtocolFailureTest {
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
         )
+    private val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
+
+    @AfterEach
+    fun cleanUp() {
+        certificateValidator.close()
+    }
 
     @Test
     fun `session authentication fails if malicious actor changes initiator's handshake message`() {
@@ -216,9 +223,6 @@ class AuthenticationProtocolFailureTest {
 
     @Test
     fun `session authentication fails if responder certificate validation fails`() {
-        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java) { mock, _ ->
-            whenever(mock.validate(any(), any())).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
-        }
         val ourCertificates = listOf<String>()
         val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
 
@@ -233,6 +237,9 @@ class AuthenticationProtocolFailureTest {
         val authenticationProtocolB = AuthenticationProtocolResponder(
             sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
         )
+        val certificateValidatorResponder = certificateValidator.constructed()[1]!!
+        whenever(certificateValidatorResponder.validate(any(), any()))
+            .thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -261,12 +268,10 @@ class AuthenticationProtocolFailureTest {
                 SignatureSpec.ECDSA_SHA256,
             )
         }
-        certificateValidator.close()
     }
 
     @Test
     fun `session authentication fails if initiator certificate validation fails`() {
-        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
         val ourCertificates = listOf<String>()
         val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
 
@@ -282,7 +287,6 @@ class AuthenticationProtocolFailureTest {
             sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
         )
         val certificateValidatorInitiator = certificateValidator.constructed()[0]!!
-        //val certificateValidatorResponder = certificateValidator.constructed()[1]!!
         whenever(certificateValidatorInitiator.validate(any(), any())).thenThrow(InvalidPeerCertificate(""))
 
         // Step 1: initiator sending hello message to responder.
@@ -326,12 +330,10 @@ class AuthenticationProtocolFailureTest {
             )
         }
 
-        certificateValidator.close()
     }
 
     @Test
     fun `session authentication fails for responder if initiator doesn't send a certificate`() {
-        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
         val ourCertificates = listOf<String>()
         val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
 
@@ -374,12 +376,10 @@ class AuthenticationProtocolFailureTest {
             SignatureSpec.ECDSA_SHA256,
         )
         }
-        certificateValidator.close()
     }
 
     @Test
     fun `session authentication fails for initiator if responder doesn't send a certificate`() {
-        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
         val ourCertificates = listOf<String>()
         val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
 
@@ -436,6 +436,5 @@ class AuthenticationProtocolFailureTest {
             )
         }
 
-        certificateValidator.close()
     }
 }
