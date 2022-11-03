@@ -3,6 +3,7 @@ package net.cordapp.testing.smoketests.flow
 import java.time.Instant
 import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -21,6 +22,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
@@ -60,6 +62,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
+        "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
@@ -92,6 +95,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var memberLookupService: MemberLookup
+
+    @CordaInject
+    lateinit var signatureSpecService: SignatureSpecService
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
@@ -360,6 +366,17 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")
             true
         }.toString()
+    }
+
+    @Suspendable
+    private fun getDefaultSignatureSpec(input: RpcSmokeTestInput): String {
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
+        val digestName = DigestAlgorithmName(input.getValue("digestName"))
+        val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey, digestName)
+        return signatureSpec?.signatureName ?: "null"
     }
 
     @Suspendable

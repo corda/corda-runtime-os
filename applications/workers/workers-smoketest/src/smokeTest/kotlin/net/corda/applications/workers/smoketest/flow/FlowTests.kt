@@ -33,6 +33,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import kotlin.text.Typography.quote
+import net.corda.v5.crypto.DigestAlgorithmName
 
 @Suppress("Unused", "FunctionName")
 @Order(20)
@@ -559,6 +560,25 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
+    }
+
+    @Test
+    fun `Crypto - Get default signature spec`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_default_signature_spec"
+        requestBody.data = mapOf(
+            "memberX500" to X500_BOB,
+            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        )
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult.result).isEqualTo("SHA256withECDSA")
     }
 
     @Test
