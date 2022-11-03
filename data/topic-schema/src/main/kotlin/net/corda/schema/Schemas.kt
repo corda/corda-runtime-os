@@ -101,6 +101,8 @@ class Schemas {
      */
     class Membership {
         companion object {
+            const val GROUP_PARAMETERS_TOPIC = "membership.group.params"
+
             const val MEMBER_LIST_TOPIC = "membership.members"
             const val MEMBERSHIP_RPC_TOPIC = "membership.rpc.ops"
             const val MEMBERSHIP_RPC_RESPONSE_TOPIC = "membership.rpc.ops.resp"
