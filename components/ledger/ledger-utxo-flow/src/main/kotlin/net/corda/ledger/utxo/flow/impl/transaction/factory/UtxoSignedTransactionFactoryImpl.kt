@@ -19,6 +19,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -51,6 +52,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 ) : UtxoSignedTransactionFactory,
     SingletonSerializeAsToken {
 
+    @Suspendable
     override fun create(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
         signatories: Iterable<PublicKey>
