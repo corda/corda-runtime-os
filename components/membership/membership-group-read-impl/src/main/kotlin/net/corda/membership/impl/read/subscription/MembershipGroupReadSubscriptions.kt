@@ -1,6 +1,8 @@
 package net.corda.membership.impl.read.subscription
 
+import net.corda.data.membership.GroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.MemberInfoFactory
@@ -8,6 +10,7 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
@@ -27,7 +30,8 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache,
-        private val memberInfoFactory: MemberInfoFactory
+        private val memberInfoFactory: MemberInfoFactory,
+        private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     ) : MembershipGroupReadSubscriptions {
 
         companion object {
@@ -35,6 +39,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         }
 
         private var memberListSubscription: CompactedSubscription<String, PersistentMemberInfo>? = null
+        private var groupParamsSubscription: CompactedSubscription<String, GroupParameters>? = null
 
         private val subscriptions
             get() = listOf(
@@ -46,6 +51,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
 
         override fun start(config: SmartConfig) {
             startMemberListSubscription(config)
+            startGroupParamsSubscription(config)
         }
 
         override fun start() {
@@ -77,5 +83,27 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             }
         }
 
+        /**
+         * Start the group params subscription.
+         */
+        private fun startGroupParamsSubscription(config: SmartConfig) {
+            groupParamsSubscription?.close()
+
+            val subscriptionConfig = SubscriptionConfig(
+                CONSUMER_GROUP,
+                GROUP_PARAMETERS_TOPIC
+            )
+
+            val processor = GroupParametersProcessor(groupReadCache, layeredPropertyMapFactory)
+
+            subscriptionFactory.createCompactedSubscription(
+                subscriptionConfig,
+                processor,
+                config
+            ).apply {
+                start()
+                groupParamsSubscription = this
+            }
+        }
     }
 }

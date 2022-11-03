@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.membership.GroupParameters
 
 /**
  * Interface wrapping all caches required for the membership group read service component.
@@ -19,6 +20,8 @@ interface MembershipGroupReadCache {
      */
     val groupReaderCache: MemberDataCache<MembershipGroupReader>
 
+    val groupParametersCache: MemberDataCache<GroupParameters>
+
     /**
      * Clears all cached data.
      */
@@ -34,10 +37,12 @@ interface MembershipGroupReadCache {
 
         override var memberListCache: MemberListCache = MemberListCache.Impl()
         override var groupReaderCache: MemberDataCache<MembershipGroupReader> = MemberDataCache.Impl()
+        override val groupParametersCache: MemberDataCache<GroupParameters> = MemberDataCache.Impl()
 
         private val caches = listOf(
             memberListCache,
-            groupReaderCache
+            groupReaderCache,
+            groupParametersCache
         )
 
         override fun clear() {

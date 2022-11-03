@@ -61,6 +61,7 @@ class MembershipGroupReadSubscriptionsTest {
         membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
             subscriptionFactory,
             groupReadCache,
+            mock(),
             mock()
         )
     }
