@@ -1,9 +1,7 @@
 package net.corda.messaging.subscription
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleException
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -49,9 +47,8 @@ class StateAndEventSubscriptionImplTest {
     private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
-    private var lifecycleCoordinatorThrows = false
+    private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
     private data class Mocks(
         val builder: StateAndEventBuilder,
@@ -111,75 +108,15 @@ class StateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll(any())
 
-        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
+            .createCoordinator(any(), any())
         doReturn("1".toByteArray()).`when`(cordaAvroSerializer).serialize(any())
-
-        setupMockLifecycleCoordinator()
 
         return Mocks(builder, producer, stateAndEventConsumer)
     }
 
-    private fun setupMockLifecycleCoordinator() {
-        var lifecycleCoordinatorClosed = false;
-
-        // Lifecycle coordinator throws if used when closed, we must mock that behaviour here to ensure the implementation
-        // under test does not call lifecycleCoordinator improperly.
-        doAnswer {
-            lifecycleCoordinatorClosed = true
-        }.whenever(lifecycleCoordinator).close()
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).postEvent(any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).setTimer(any(), any(), any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).cancelTimer(any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).updateStatus(any(), any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).postCustomEventToFollowers(any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).followStatusChanges(any())
-
-        doAnswer {
-            if (lifecycleCoordinatorClosed) {
-                lifecycleCoordinatorThrows = true
-                throw LifecycleException("")
-            }
-        }.whenever(lifecycleCoordinator).followStatusChangesByName(any())
-    }
-
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription retries after intermittent exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
@@ -224,11 +161,11 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
 
-        assertFalse(lifecycleCoordinatorThrows)
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription does not retry after fatal exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
@@ -271,11 +208,11 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(0)).beginTransaction()
         verify(rebalanceListener).close()
 
-        assertFalse(lifecycleCoordinatorThrows)
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription looper stops thrown Throwables reaching the thread default handler`() {
         val (builder, _, stateAndEventConsumer) = setupMocks(5)
 
@@ -292,6 +229,7 @@ class StateAndEventSubscriptionImplTest {
                     uncaughtExceptionInSubscriptionThread = e
                 }
             }
+            @Suppress("TooGenericExceptionThrown")
             throw Throwable()
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
@@ -309,7 +247,7 @@ class StateAndEventSubscriptionImplTest {
             Thread.sleep(10)
         }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
-        assertNull( lock.withLock { uncaughtExceptionInSubscriptionThread })
+        assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
 
     @Test
@@ -531,11 +469,13 @@ class StateAndEventSubscriptionImplTest {
         }.whenever(eventConsumer).poll(any())
 
         doAnswer {
-            CompletableFuture.completedFuture(StateAndEventProcessor.Response(
-                null,
-                listOf(outputRecord),
-                true
-            ))
+            CompletableFuture.completedFuture(
+                StateAndEventProcessor.Response(
+                    null,
+                    listOf(outputRecord),
+                    true
+                )
+            )
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
