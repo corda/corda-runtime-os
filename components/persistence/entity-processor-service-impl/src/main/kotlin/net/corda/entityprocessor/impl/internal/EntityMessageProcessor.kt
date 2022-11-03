@@ -20,6 +20,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -46,6 +47,7 @@ class EntityMessageProcessor(
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val log = contextLogger()
+        const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 
     private val responseFactory = ResponseFactory(externalEventResponseFactory, log)
@@ -62,12 +64,14 @@ class EntityMessageProcessor(
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 return@mapNotNull null
             } else {
-                try {
-                    val holdingIdentity = request.holdingIdentity.toCorda()
-                    val sandbox = entitySandboxService.get(holdingIdentity)
-                    processRequestWithSandbox(sandbox, request)
-                } catch (e: Exception) {
-                    responseFactory.errorResponse(request.flowExternalEventContext, e)
+                withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
+                    try {
+                        val holdingIdentity = request.holdingIdentity.toCorda()
+                        val sandbox = entitySandboxService.get(holdingIdentity)
+                        processRequestWithSandbox(sandbox, request)
+                    } catch (e: Exception) {
+                        responseFactory.errorResponse(request.flowExternalEventContext, e)
+                    }
                 }
             }
         }

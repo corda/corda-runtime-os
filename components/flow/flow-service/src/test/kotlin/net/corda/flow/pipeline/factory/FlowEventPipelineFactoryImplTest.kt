@@ -16,7 +16,6 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfig
-import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -30,21 +29,23 @@ class FlowEventPipelineFactoryImplTest {
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
     private val config = mock<SmartConfig>()
-    private val flowCheckpointFactory = mock<FlowCheckpointFactory>().apply {
-        whenever(this.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
+    private val flowCheckpointFactory = mock<FlowCheckpointFactory>().also { factory ->
+        whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
-    private val flowEventHandler = mock<FlowEventHandler<Any>>().apply {
-        val casted: FlowEventHandler<Wakeup> = uncheckedCast(this)
+    private val flowEventHandler = mock<FlowEventHandler<Any>>().also { handler ->
+        @Suppress("unchecked_cast")
+        val casted = handler as FlowEventHandler<Wakeup>
         whenever(casted.type).thenReturn(Wakeup::class.java)
     }
-    private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().apply {
-        val casted: FlowWaitingForHandler<net.corda.data.flow.state.waiting.Wakeup> = uncheckedCast(this)
+    private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().also { flowWaiting ->
+        @Suppress("unchecked_cast")
+        val casted = flowWaiting as FlowWaitingForHandler<net.corda.data.flow.state.waiting.Wakeup>
         whenever(casted.type).thenReturn(net.corda.data.flow.state.waiting.Wakeup::class.java)
     }
-    private val flowRequestHandler = mock<FlowRequestHandler<FlowIORequest.ForceCheckpoint>>().apply {
-        whenever(type).thenReturn(FlowIORequest.ForceCheckpoint::class.java)
+    private val flowRequestHandler = mock<FlowRequestHandler<FlowIORequest.ForceCheckpoint>>().also { handler ->
+        whenever(handler.type).thenReturn(FlowIORequest.ForceCheckpoint::class.java)
     }
 
     private val factory = FlowEventPipelineFactoryImpl(
@@ -66,7 +67,7 @@ class FlowEventPipelineFactoryImplTest {
             flowGlobalPostProcessor,
             buildFlowEventContext(flowCheckpoint, flowEvent.payload, config)
         )
-        val result = factory.create(checkpoint, flowEvent, config)
+        val result = factory.create(checkpoint, flowEvent, config, emptyMap())
         assertEquals(expected.context, result.context)
     }
 }

@@ -33,6 +33,7 @@ import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -175,7 +176,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             builder.addSingletonSerializableInstances(sandboxSingletons)
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             for (serializer in checkpointInternalCustomSerializers) {
-                log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
+                log.trace { "Registering internal checkpoint serializer ${serializer::class.java.name}" }
                 builder.addSerializer(serializer.type, serializer)
             }
             builder.build()
@@ -226,14 +227,14 @@ class FlowSandboxServiceImpl @Activate constructor(
         registerCustomSerializers(factory)
 
         for (customSerializer in internalCustomSerializers) {
-            log.info("Registering internal serializer {}", customSerializer::class.java.name)
+            log.trace { "Registering internal serializer ${customSerializer::class.java.name}" }
             factory.register(customSerializer, factory)
         }
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
         getObjectByKey<Iterable<SerializationCustomSerializer<*,*>>>(CORDAPP_CUSTOM_SERIALIZER.name)?.forEach { customSerializer ->
             // Register CorDapp serializers
-            log.info("Registering CorDapp serializer {}", customSerializer::class.java.name)
+            log.trace { "Registering CorDapp serializer ${customSerializer::class.java.name}" }
             factory.registerExternal(customSerializer, factory)
         }
 

@@ -6,6 +6,7 @@ import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTrans
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
@@ -30,6 +31,10 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun getTransactionBuilder(): ConsensualTransactionBuilder {
         return consensualTransactionBuilderFactory.create()
+    }
+
+    override fun fetchTransaction(id: SecureHash): ConsensualSignedTransaction? {
+        TODO("Not yet implemented")
     }
 
     @Suspendable

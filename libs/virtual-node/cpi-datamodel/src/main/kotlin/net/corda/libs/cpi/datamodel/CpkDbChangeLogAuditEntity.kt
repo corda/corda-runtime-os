@@ -21,10 +21,10 @@ class CpkDbChangeLogAuditEntity(
     @EmbeddedId
     var id: CpkDbChangeLogAuditKey,
     @Column(name = "content", nullable = false)
-    val content: String,
+    override val content: String,
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
-) {
+) : CpkDbChangelog {
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
@@ -39,6 +39,8 @@ class CpkDbChangeLogAuditEntity(
         cpkDbChangeLogEntity.content,
         cpkDbChangeLogEntity.isDeleted
     )
+
+    override val filePath get() = id.filePath
 }
 
 @Embeddable
@@ -91,3 +93,33 @@ fun findDbChangeLogAuditForCpi(
     .setParameter("version", cpi.version)
     .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
     .resultList
+
+/*
+ * Find all the audit db changelogs for a CPI
+ *
+ *  lookup is chunked to prevent large list being passed as part of the IN clause
+ */
+fun findDbChangeLogAuditForCpi(
+    entityManager: EntityManager,
+    cpi: CpiIdentifier,
+    changesetIds: Set<UUID>
+): List<CpkDbChangeLogAuditEntity> = changesetIds.chunked(100) { changesetIdSlice ->
+    entityManager.createQuery(
+        "SELECT changelog " +
+            "FROM ${CpkDbChangeLogAuditEntity::class.simpleName} AS changelog INNER JOIN " +
+            "${CpiCpkEntity::class.simpleName} AS cpi " +
+            "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
+            "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
+            "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
+            "WHERE cpi.id.cpiName = :name AND " +
+            "      cpi.id.cpiVersion = :version AND " +
+            "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash AND " +
+            "      changelog.id.changesetId IN :changesetIds",
+        CpkDbChangeLogAuditEntity::class.java
+    )
+        .setParameter("name", cpi.name)
+        .setParameter("version", cpi.version)
+        .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
+        .setParameter("changesetIds", changesetIdSlice)
+        .resultList
+}.flatten()

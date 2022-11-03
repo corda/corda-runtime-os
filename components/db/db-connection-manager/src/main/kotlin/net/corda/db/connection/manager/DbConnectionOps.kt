@@ -73,6 +73,14 @@ interface DbConnectionOps {
     fun getClusterDataSource(): DataSource
 
     /**
+     * Create a datasource from a connectionId. Can be used to interaction with virtual node DBs.
+     *
+     * @param connectionId
+     * @return [CloseableDataSource] instance
+     */
+    fun createDatasource(connectionId: UUID): CloseableDataSource
+
+    /**
      * Get DB connection for given [name].
      *
      * @param name
