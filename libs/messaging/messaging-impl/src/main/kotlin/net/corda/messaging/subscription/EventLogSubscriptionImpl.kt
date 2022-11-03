@@ -27,6 +27,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
@@ -69,6 +70,10 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
             "${config.clientId}."
 
+    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "Durable")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .build()
 
     /**
      * Is the subscription running.
@@ -259,7 +264,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
 
         try {
             producer.beginTransaction()
-            producer.sendRecords(processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() }).toCordaProducerRecords())
+            val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
+                .toCordaProducerRecords() }!!
+            producer.sendRecords(outputs)
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(

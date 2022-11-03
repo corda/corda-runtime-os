@@ -1,5 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import java.security.PublicKey
+import java.time.Instant
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
@@ -27,8 +29,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
-import java.time.Instant
 
 class ConsensualFinalityFlowTest {
 
@@ -52,9 +52,9 @@ class ConsensualFinalityFlowTest {
     private val publicKeyAlice2 = mock<PublicKey>()
     private val publicKeyBob = mock<PublicKey>()
 
-    private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1)
-    private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2)
-    private val signatureBob = digitalSignatureAndMetadata(publicKeyBob)
+    private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
+    private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
+    private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
     private val signedTransaction = mock<ConsensualSignedTransaction>()
 
@@ -228,7 +228,7 @@ class ConsensualFinalityFlowTest {
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java))
-            .thenReturn(Payload.Success(listOf(signatureBob, digitalSignatureAndMetadata(mock()))))
+            .thenReturn(Payload.Success(listOf(signatureBob, digitalSignatureAndMetadata(mock(), byteArrayOf(1)))))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -313,9 +313,9 @@ class ConsensualFinalityFlowTest {
         flow.call()
     }
 
-    private fun digitalSignatureAndMetadata(publicKey: PublicKey): DigitalSignatureAndMetadata {
+    private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArrayOf(1, 2, 3), emptyMap()),
+            DigitalSignature.WithKey(publicKey, byteArray, emptyMap()),
             DigitalSignatureMetadata(Instant.now(), emptyMap())
         )
     }
