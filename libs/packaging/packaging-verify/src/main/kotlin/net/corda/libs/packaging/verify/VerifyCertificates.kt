@@ -2,8 +2,12 @@ package net.corda.libs.packaging.verify
 
 import java.security.CodeSigner
 import java.security.Timestamp
-import java.security.cert.*
-
+import java.security.cert.CertPath
+import java.security.cert.CertPathValidator
+import java.security.cert.CertPathValidatorException
+import java.security.cert.PKIXParameters
+import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 
 /** Verifies that code signers' signatures are valid */
 internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
@@ -48,21 +52,16 @@ internal fun validateCertPath(
     try {
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
-        val index: String; val cert: String?
+        val index: String; val cert: X509Certificate?
         if (e.index >= 0) {
             index = ", certificate at index [${e.index}]"
-            cert = certPath.certificates[e.index].toString()
+            cert = certPath.certificates[e.index] as? X509Certificate
         } else {
             index = ""
-            cert = if (certPath.certificates.size == 1) certPath.certificates.first().toString() else null
+            cert = if (certPath.certificates.size == 1) certPath.certificates.first() as? X509Certificate else null
         }
 
-        var name = ""
-        if (cert != null) {
-            val nameStart = cert.indexOf("Subject:")
-            val nameEnd = cert.indexOf("\n", nameStart)
-            name = if (nameStart != -1 && nameEnd != -1) cert.substring(nameStart+9, nameEnd) else ""
-        }
+        var name = cert?.subjectX500Principal?.name
 
         val msg = "Error validating $certPathName certificate path$index, ${certPath.type} name: $name. ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
