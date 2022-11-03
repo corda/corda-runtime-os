@@ -42,7 +42,8 @@ public class FlowSessionImplJavaTest {
             mock(FlowCheckpoint.class),
             flowSandboxGroupContext,
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
-            mock(MembershipGroupReader.class)
+            mock(MembershipGroupReader.class),
+            Map.of()
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);

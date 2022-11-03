@@ -3,20 +3,21 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
+import java.io.Serializable
+import java.nio.ByteBuffer
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
+import net.corda.utilities.clearMDC
+import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import org.slf4j.MDC
-import java.io.Serializable
-import java.nio.ByteBuffer
-import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 
 class FlowFiberImpl(
     override val flowId: UUID,
@@ -81,7 +82,7 @@ class FlowFiberImpl(
     @Suspendable
     private fun runFlow() {
         initialiseThreadContext()
-        setLoggingContext()
+        resetLoggingContext()
         suspend(FlowIORequest.InitialCheckpoint)
 
         val outcomeOfFlow = try {
@@ -121,11 +122,13 @@ class FlowFiberImpl(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         parkAndSerialize(SerializableFiberWriter { _, _ ->
+            resetLoggingContext()
+            log.info("Parking...")
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
         })
 
-        setLoggingContext()
+        resetLoggingContext()
 
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
@@ -208,10 +211,12 @@ class FlowFiberImpl(
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
     }
 
-    private fun setLoggingContext() {
-        MDC.put("flow-id", flowId.toString())
-        MDC.put("fiber-id", id.toString())
-        MDC.put("thread-id", Thread.currentThread().id.toString())
+    private fun resetLoggingContext() {
+        //fully clear the fiber before setting the MDC
+        clearMDC()
+        flowFiberExecutionContext?.mdcLoggingData?.let {
+            setMDC(it)
+        }
     }
 
     override fun attemptInterrupt() {

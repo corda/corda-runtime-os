@@ -32,7 +32,8 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
             mock(FlowCheckpoint::class.java),
             mockFlowSandboxGroupContext,
             holdingIdentity,
-            membershipGroupReader
+            membershipGroupReader,
+            emptyMap()
         )
 
         mockFlowFiber = mock(FlowFiber::class.java)
