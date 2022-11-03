@@ -65,13 +65,19 @@ class FlowEventPipelineFactoryImpl(
         flowCheckpointFactory: FlowCheckpointFactory,
         ) : this(flowRunner, flowGlobalPostProcessor,flowCheckpointFactory, mutableListOf(), mutableListOf(), mutableListOf())
 
-    override fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig): FlowEventPipeline {
+    override fun create(
+        checkpoint: Checkpoint?,
+        event: FlowEvent,
+        config: SmartConfig,
+        mdcProperties: Map<String, String>)
+    : FlowEventPipeline {
         val context = FlowEventContext<Any>(
             checkpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config),
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,
-            outputRecords = emptyList()
+            outputRecords = emptyList(),
+            mdcProperties = mdcProperties
         )
         return FlowEventPipelineImpl(
             flowEventHandlerMap,
