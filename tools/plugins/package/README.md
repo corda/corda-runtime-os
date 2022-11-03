@@ -44,8 +44,8 @@ The plugin does not currently trust the signing keys within the keystore when do
 keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1" -rfc -file signingkey1.crt
 keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 2" -rfc -file signingkey2.crt
 
-keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" --file signingkey1.crt
-keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" --file signingkey2.crt
+keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1 cert" --file signingkey1.crt
+keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 2 cert" --file signingkey2.crt
 ```
 
 ### Build a CPB
