@@ -48,20 +48,23 @@ internal fun validateCertPath(
     try {
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
-        val index : String; val cert: Certificate?
+        val index: String; val cert: String?
         if (e.index >= 0) {
             index = ", certificate at index [${e.index}]"
-            cert = certPath.certificates[e.index]
+            cert = certPath.certificates[e.index].toString()
         } else {
             index = ""
-            cert = certPath.certificates.firstOrNull()
+            cert = if (certPath.certificates.size == 1) certPath.certificates.first().toString() else null
         }
 
-        val nameStart = cert.toString().indexOf("Subject:")
-        val nameEnd = cert.toString().indexOf("\n", nameStart)
-        val name = cert?.toString()?.subSequence(nameStart+9, nameEnd)
+        var name = ""
+        if (cert != null) {
+            val nameStart = cert.indexOf("Subject:")
+            val nameEnd = cert.indexOf("\n", nameStart)
+            name = if (nameStart != -1 && nameEnd != -1) cert.substring(nameStart+9, nameEnd) else ""
+        }
 
-        val msg = "Error validating $certPathName certificate path$index, ${cert?.type} name: $name. ${e.message}"
+        val msg = "Error validating $certPathName certificate path$index, ${certPath.type} name: $name. ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
     }
 }
