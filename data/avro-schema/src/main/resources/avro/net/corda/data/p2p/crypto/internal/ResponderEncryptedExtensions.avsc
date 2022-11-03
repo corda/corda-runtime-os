@@ -6,6 +6,16 @@
     {
       "name": "maxMessageSize",
       "type": "int"
+    },
+    {
+      "name": "responderCertificate",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": "string"
+        }
+      ]
     }
   ]
 }
