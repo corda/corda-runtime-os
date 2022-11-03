@@ -27,16 +27,16 @@
       "description": "Settings relating to the Merkle tree digest algorithms.",
       "type": "object",
       "required": [
-        "ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
-        "ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
-        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64",
-        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64",
-        "COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
-        "COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
-        "COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME"
+        "rootMerkleTreeDigestProviderName",
+        "rootMerkleTreeDigestAlgorithmName",
+        "rootMerkleTreeDigestOptionsLeafPrefixB64",
+        "rootMerkleTreeDigestOptionsNodePrefixB64",
+        "componentMerkleTreeDigestProviderName",
+        "componentMerkleTreeDigestAlgorithmName",
+        "componentMerkleTreeEntropyAlgorithmName"
       ],
       "properties": {
-        "ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+        "rootMerkleTreeDigestProviderName": {
           "title": "Root Merkle tree digest provider name",
           "type": "string",
           "description": "Class name of the digest provider for the root Merkle tree.",
@@ -46,7 +46,7 @@
           ],
           "pattern": "^.*$"
         },
-        "ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+        "rootMerkleTreeDigestAlgorithmName": {
           "title": "Root Merkle tree digest algorithm name",
           "type": "string",
           "description": "Algorithm name of the digest provider for the root Merkle tree.",
@@ -56,7 +56,7 @@
           ],
           "pattern": "^.*$"
         },
-        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
+        "rootMerkleTreeDigestOptionsLeafPrefixB64": {
           "title": "Root Merkle tree digest options leaf prefix base64 encoded",
           "type": "string",
           "default": "",
@@ -65,7 +65,7 @@
           ],
           "pattern": "^.*$"
         },
-        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
+        "rootMerkleTreeDigestOptionsNodePrefixB64": {
           "title": "Root Merkle tree digest options node prefix base64 encoded",
           "type": "string",
           "default": "",
@@ -74,7 +74,7 @@
           ],
           "pattern": "^.*$"
         },
-        "COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+        "componentMerkleTreeDigestProviderName": {
           "title": "Component Merkle tree digest provider name",
           "type": "string",
           "default": "",
@@ -83,7 +83,7 @@
           ],
           "pattern": "^.*$"
         },
-        "COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+        "componentMerkleTreeDigestAlgorithmName": {
           "title": "Component Merkle tree digest algorithm name",
           "type": "string",
           "default": "",
@@ -92,7 +92,7 @@
           ],
           "pattern": "^.*$"
         },
-        "COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
+        "componentMerkleTreeEntropyAlgorithmName": {
           "title": "Component Merkle tree entropy algorithm name",
           "type": "string",
           "default": "",
