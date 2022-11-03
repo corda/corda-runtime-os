@@ -36,10 +36,12 @@ class CertificateValidatorTest {
         on { generateCertificate(any()) } doReturn certificate
     }
     private val mockInvalidPeerCertificate = Mockito.mockConstruction(InvalidPeerCertificate::class.java)
+    private val mockPKIXBuilderParameters = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
 
     @AfterEach
     fun cleanUp() {
         mockInvalidPeerCertificate.close()
+        mockPKIXBuilderParameters.close()
     }
 
     @Test
@@ -71,9 +73,7 @@ class CertificateValidatorTest {
     fun `certificate fails validation if x509 cert does not have digital signature set`() {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
         whenever(trustStore.aliases()).thenReturn(any())
-        val mock = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
-        mock.close()
     }
 }
