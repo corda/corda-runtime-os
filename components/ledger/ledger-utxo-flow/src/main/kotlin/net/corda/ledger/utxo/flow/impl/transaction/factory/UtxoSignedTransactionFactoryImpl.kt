@@ -57,7 +57,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
-        val metadata = transactionMetadataFactory.create(consensualMetadata())
+        val metadata = transactionMetadataFactory.create(utxoMetadata())
         val metadataBytes = jsonMarshallingService.format(metadata)
             .toByteArray(Charsets.UTF_8) // TODO(update with CORE-6890)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
@@ -93,7 +93,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun consensualMetadata() = linkedMapOf(
+    private fun utxoMetadata() = linkedMapOf(
         TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
     )
