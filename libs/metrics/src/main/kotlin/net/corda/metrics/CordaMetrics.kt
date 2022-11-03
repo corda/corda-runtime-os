@@ -65,6 +65,7 @@ object CordaMetrics {
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
+                    @Suppress("ComplexCondition")
                     if(
                         id.name.startsWith("corda") ||
                         id.name.startsWith("jvm") ||
