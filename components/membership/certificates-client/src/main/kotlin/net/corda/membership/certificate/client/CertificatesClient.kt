@@ -32,9 +32,9 @@ interface CertificatesClient : Lifecycle {
      * @param holdingIdentityShortHash ID of the holding identity to be published.
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
-     *   the virtual node cluster and key.
+     *   the virtual node certificate and key.
      * @param useClusterLevelSessionCertificateAndKey Should we use the P2P cluster level session certificate type and P2P key or
-     *   the virtual node cluster and key.
+     *   the virtual node certificate and key.
      * @param sessionKeyId The session key ID (will use the first one if null).
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
