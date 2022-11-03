@@ -17,9 +17,7 @@ public class UtxoLedgerTokenStateObserverJavaExample implements UtxoLedgerTokenS
 
     @NotNull
     @Override
-    public UtxoToken onProduced(@NotNull StateAndRef<? extends ExampleStateJ> stateAndRef) {
-        ExampleStateJ state = stateAndRef.getState().getContractState();
-
+    public UtxoToken onCommit(@NotNull ExampleStateJ state) {
         return new UtxoToken(
                 new UtxoTokenPoolKey(ExampleStateK.class.getName(), state.issuer, state.currency),
                 state.amount,

@@ -1,7 +1,6 @@
 package net.corda.v5.ledger.utxo.observer
 
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 
 /**
@@ -36,9 +35,7 @@ import net.corda.v5.ledger.utxo.token.selection.TokenSelection
  *
  *     @NotNull
  *     @Override
- *     public UtxoToken onProduced(@NotNull StateAndRef<? extends ExampleStateJ> stateAndRef) {
- *         ExampleStateJ state = stateAndRef.getState().getContractState();
- *
+ *     public UtxoToken onCommit(@NotNull ExampleStateJ state) {
  *         return new UtxoToken(
  *                 new UtxoTokenPoolKey(ExampleStateK.class.getName(), state.issuer, state.currency),
  *                 state.amount,
@@ -56,18 +53,17 @@ import net.corda.v5.ledger.utxo.token.selection.TokenSelection
  *     val amount: BigDecimal
  * ) : ContractState
  *
- *  * class UtxoLedgerTokenStateObserverKotlinExample : UtxoLedgerTokenStateObserver<ExampleStateK> {
+ * class UtxoLedgerTokenStateObserverKotlinExample : UtxoLedgerTokenStateObserver<ExampleStateK> {
  *
- *     override val stateType = ExampleStateK::class.java
+ *    override val stateType = ExampleStateK::class.java
  *
- *     override fun onProduced(stateAndRef: StateAndRef<ExampleStateK>): UtxoToken {
- *         val state = stateAndRef.state.contractState
- *         return UtxoToken(
- *             UtxoTokenPoolKey(ExampleStateK::class.java.name, state.issuer, state.currency),
- *             state.amount,
- *             UtxoTokenFilterFields()
- *         )
- *     }
+ *    override fun onCommit(state: ExampleStateK): UtxoToken {
+ *        return UtxoToken(
+ *            UtxoTokenPoolKey(ExampleStateK::class.java.name, state.issuer, state.currency),
+ *            state.amount,
+ *            UtxoTokenFilterFields()
+ *        )
+ *    }
  * }
  * ```
  *
@@ -78,9 +74,9 @@ interface UtxoLedgerTokenStateObserver<T : ContractState> {
     val stateType: Class<T>
 
     /***
-     * Called for each new state[T] committed to the ledger
+     * Called when a state[T] is committed to the ledger
      *
-     * @param stateAndRef Instance of the committed state and its reference.
+     * @param state Instance of the committed state.
      */
-    fun onProduced(stateAndRef: StateAndRef<T>): UtxoToken
+    fun onCommit(state: T): UtxoToken
 }

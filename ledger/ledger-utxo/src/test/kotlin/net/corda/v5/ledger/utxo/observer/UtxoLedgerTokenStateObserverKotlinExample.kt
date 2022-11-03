@@ -2,8 +2,6 @@
 
 package net.corda.v5.ledger.utxo.observer
 
-import net.corda.v5.ledger.utxo.StateAndRef
-
 /**
  * This tests validates the code example in the KDoc comments will compile
  */
@@ -11,8 +9,7 @@ class UtxoLedgerTokenStateObserverKotlinExample : UtxoLedgerTokenStateObserver<E
 
     override val stateType = ExampleStateK::class.java
 
-    override fun onProduced(stateAndRef: StateAndRef<ExampleStateK>): UtxoToken {
-        val state = stateAndRef.state.contractState
+    override fun onCommit(state: ExampleStateK): UtxoToken {
         return UtxoToken(
             UtxoTokenPoolKey(ExampleStateK::class.java.name, state.issuer, state.currency),
             state.amount,
