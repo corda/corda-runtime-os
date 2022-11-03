@@ -21,9 +21,6 @@ abstract class ConsensualLedgerTest : CommonLedgerTest() {
         jsonMarshallingService
     )
     val consensualLedgerService = ConsensualLedgerServiceImpl(consensualSignedTransactionFactory, flowEngine)
-    val consensualTransactionBuilder = ConsensualTransactionBuilderImpl(
-        consensualSignedTransactionFactory
-    )
     val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
         mockSigningService(),
@@ -31,12 +28,17 @@ abstract class ConsensualLedgerTest : CommonLedgerTest() {
     )
     val consensualSignedTransactionAMQPSerializer =
         ConsensualSignedTransactionSerializer(serializationServiceNullCfg, mockSigningService(), mock())
-    val signedTransactionExample = getConsensualSignedTransactionExample(
+    val consensualSignedTransactionExample = getConsensualSignedTransactionExample(
         digestService,
         merkleTreeProvider,
         serializationServiceWithWireTx,
         jsonMarshallingService,
         mockSigningService(),
         mock()
+    )
+
+    // This is the only not stateless.
+    val consensualTransactionBuilder = ConsensualTransactionBuilderImpl(
+        consensualSignedTransactionFactory
     )
 }

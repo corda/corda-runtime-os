@@ -9,13 +9,13 @@ import kotlin.test.assertEquals
 class WireTransactionAMQPSerializerTest: CommonLedgerTest() {
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
-        val bytes = serializationServiceWithWireTx.serialize(wireTransaction)
+        val bytes = serializationServiceWithWireTx.serialize(wireTransactionExample)
         val deserialized = serializationServiceWithWireTx.deserialize(bytes)
-        assertEquals(wireTransaction, deserialized)
+        assertEquals(wireTransactionExample, deserialized)
         Assertions.assertDoesNotThrow {
             deserialized.id
         }
 
-        assertEquals(wireTransaction.id, deserialized.id)
+        assertEquals(wireTransactionExample.id, deserialized.id)
     }
 }

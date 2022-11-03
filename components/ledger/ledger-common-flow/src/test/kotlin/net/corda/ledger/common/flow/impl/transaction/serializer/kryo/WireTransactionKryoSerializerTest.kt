@@ -18,13 +18,13 @@ class WireTransactionKryoSerializerTest : CommonLedgerTest() {
             extraClasses = setOf(PrivacySalt::class.java, PrivacySaltImpl::class.java)
         )
 
-        val bytes = serializer.serialize(wireTransaction)
+        val bytes = serializer.serialize(wireTransactionExample)
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
-        assertThat(deserialized).isEqualTo(wireTransaction)
+        assertThat(deserialized).isEqualTo(wireTransactionExample)
         org.junit.jupiter.api.Assertions.assertDoesNotThrow {
             deserialized.id
         }
-        assertEquals(wireTransaction.id, deserialized.id)
+        assertEquals(wireTransactionExample.id, deserialized.id)
     }
 }

@@ -23,18 +23,18 @@ class ConsensualSignedTransactionKryoSerializerTest: ConsensualLedgerTest() {
             setOf(
                 PrivacySaltImpl::class.java,
                 DigitalSignatureAndMetadata::class.java,
-                signedTransactionExample.signatures[0].by::class.java,
+                consensualSignedTransactionExample.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
                 DigitalSignature.WithKey::class.java
             )
         )
-        val bytes = serializer.serialize(signedTransactionExample)
+        val bytes = serializer.serialize(consensualSignedTransactionExample)
         val deserialized = serializer.deserialize(bytes, ConsensualSignedTransactionImpl::class.java)
 
-        assertThat(deserialized).isEqualTo(signedTransactionExample)
+        assertThat(deserialized).isEqualTo(consensualSignedTransactionExample)
         org.junit.jupiter.api.Assertions.assertDoesNotThrow {
             deserialized.id
         }
-        assertEquals(signedTransactionExample.id, deserialized.id)
+        assertEquals(consensualSignedTransactionExample.id, deserialized.id)
     }
 }

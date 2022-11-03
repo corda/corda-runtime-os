@@ -18,5 +18,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         jsonMarshallingService
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
+
+    // This is the only not stateless.
     val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 }

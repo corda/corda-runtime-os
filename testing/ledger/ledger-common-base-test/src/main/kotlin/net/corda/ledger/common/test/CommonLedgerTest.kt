@@ -35,5 +35,5 @@ abstract class CommonLedgerTest {
         it.register(wireTransactionAMQPSerializer, it)
     }, cipherSchemeMetadata)
 
-    val wireTransaction = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
+    val wireTransactionExample = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
 }

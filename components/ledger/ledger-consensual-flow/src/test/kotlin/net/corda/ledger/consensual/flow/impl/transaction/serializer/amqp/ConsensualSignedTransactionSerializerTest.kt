@@ -15,12 +15,12 @@ class ConsensualSignedTransactionSerializerTest: ConsensualLedgerTest() {
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
-        val bytes = serializationService.serialize(signedTransactionExample)
+        val bytes = serializationService.serialize(consensualSignedTransactionExample)
         val deserialized = serializationService.deserialize(bytes)
-        assertEquals(signedTransactionExample, deserialized)
+        assertEquals(consensualSignedTransactionExample, deserialized)
         Assertions.assertDoesNotThrow {
             deserialized.id
         }
-        assertEquals(signedTransactionExample.id, deserialized.id)
+        assertEquals(consensualSignedTransactionExample.id, deserialized.id)
     }
 }
