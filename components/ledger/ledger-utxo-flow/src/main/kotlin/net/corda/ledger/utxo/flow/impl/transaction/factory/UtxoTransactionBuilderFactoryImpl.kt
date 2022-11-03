@@ -1,12 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
-import net.corda.ledger.utxo.flow.impl.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetaData
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -31,6 +32,8 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
@@ -50,6 +53,7 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationService,
             signingService,
@@ -81,11 +85,13 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
         TransactionMetaData(
             linkedMapOf(
                 TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
+                TransactionMetaData.LEDGER_VERSION_KEY to UtxoTransactionMetaData.LEDGER_VERSION,
+                TransactionMetaData.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetaData.TransactionSubtype.GENERAL,
                 TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
                 TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries()
+                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries(),
+                TransactionMetaData.SCHEMA_VERSION_KEY to 1
             )
         )
 }
@@ -96,7 +102,7 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
 private fun getCpiSummary(): CordaPackageSummary =
     CordaPackageSummary(
         name = "CPI name",
-        version = "CPI version",
+        version = "1",
         signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
         fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
     )

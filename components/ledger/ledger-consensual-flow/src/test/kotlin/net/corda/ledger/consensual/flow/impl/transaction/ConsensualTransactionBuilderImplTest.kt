@@ -74,7 +74,7 @@ internal class ConsensualTransactionBuilderImplTest {
 
         val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",
-            "CPI version",
+            "1",
             "46616B652D76616C7565",
             "416E6F746865722D46616B652D76616C7565",
         )

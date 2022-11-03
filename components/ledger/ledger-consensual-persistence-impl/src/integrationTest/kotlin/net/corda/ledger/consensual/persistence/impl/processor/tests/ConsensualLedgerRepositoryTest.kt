@@ -20,7 +20,6 @@ import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
-import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualCpkEntity
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualLedgerEntities
@@ -382,7 +381,8 @@ class ConsensualLedgerRepositoryTest {
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetaData.PLATFORM_VERSION_KEY to 123,
             TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetaData.CPK_METADATA_KEY to cpks
+            TransactionMetaData.CPK_METADATA_KEY to cpks,
+            TransactionMetaData.SCHEMA_VERSION_KEY to 1
         ))
 
         val componentGroupLists: List<List<ByteArray>> = listOf(

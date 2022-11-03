@@ -29,6 +29,7 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetaDataExample
+import net.corda.ledger.common.testkit.transactionMetaDataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
@@ -196,20 +197,12 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(): ConsensualSignedTransactionContainer {
-        val consensualTransactionMetaDataExample = TransactionMetaData(linkedMapOf(
-            TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-            TransactionMetaData.LEDGER_VERSION_KEY to 1,
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-            TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
-        ))
         val wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
             jsonValidator,
-            consensualTransactionMetaDataExample
+            transactionMetaDataExample
         )
         return ConsensualSignedTransactionContainer(
             wireTransaction,

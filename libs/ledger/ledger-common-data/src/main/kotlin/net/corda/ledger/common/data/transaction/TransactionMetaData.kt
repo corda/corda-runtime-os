@@ -40,7 +40,7 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
         }
     }
 
-    fun getTransactionSubtype(): String = this[TRANSACTION_SUBTYPE_KEY].toString()
+    fun getTransactionSubtype(): String? = this[TRANSACTION_SUBTYPE_KEY]?.toString()
 
     fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummary.from(it) }
 

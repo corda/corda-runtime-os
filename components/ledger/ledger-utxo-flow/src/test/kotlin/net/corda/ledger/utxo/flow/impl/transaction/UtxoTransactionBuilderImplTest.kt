@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.JsonValidator
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
@@ -30,6 +32,7 @@ import kotlin.test.assertIs
 
 internal class UtxoTransactionBuilderImplTest {
     private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator: JsonValidator = JsonValidatorImpl()
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -64,11 +67,11 @@ internal class UtxoTransactionBuilderImplTest {
             .sign(publicKeyExample) as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
-        assertEquals("0.001", metadata.getLedgerVersion())
+        assertEquals(1, metadata.getLedgerVersion())
 
         val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",
-            "CPI version",
+            "1",
             "46616B652D76616C7565",
             "416E6F746865722D46616B652D76616C7565",
         )
@@ -96,6 +99,7 @@ internal class UtxoTransactionBuilderImplTest {
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeFactory,
             serializationService,
             mockSigningService(),

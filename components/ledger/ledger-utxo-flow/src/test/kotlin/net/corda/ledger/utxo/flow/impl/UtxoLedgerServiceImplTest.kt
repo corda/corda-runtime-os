@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.serialization.SerializationServiceImpl
 import net.corda.flow.fiber.FlowFiber
@@ -43,6 +44,7 @@ class TestFlowFiberServiceWithSerializationProxy constructor(
 
 class ConsensualLedgerServiceImplTest {
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator = JsonValidatorImpl()
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -54,6 +56,7 @@ class ConsensualLedgerServiceImplTest {
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationService,
             mockSigningService(),
