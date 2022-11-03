@@ -5,6 +5,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -79,7 +80,7 @@ class FlowRunnerImpl @Activate constructor(
                     localContext.counterpartySessionProperties
                 )
             },
-            updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) },
+            updateFlowStackItem = { fsi -> fsi.sessions.add(FlowStackItemSession(flowStartContext.statusKey.id, true)) },
             contextUserProperties = localContext.userProperties,
             contextPlatformProperties = localContext.platformProperties
         )

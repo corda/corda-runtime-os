@@ -27,8 +27,7 @@ import java.security.PublicKey
 
 @InitiatingFlow("consensual-flow-protocol")
 class ConsensualDemoFlow : RPCStartableFlow {
-    data class InputMessage(val number: Int)
-    data class ResultMessage(val text: String)
+    data class InputMessage(val input: String, val members: List<String>)
 
     class TestConsensualState(
         val testField: String,
@@ -57,17 +56,14 @@ class ConsensualDemoFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val request = requestBody.getRequestBodyAs<String>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
             val alice = memberLookup.myInfo()
-            val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
+            val members = request.members.map { memberLookup.lookup(MemberX500Name.parse(it))!! }
 
             val testConsensualState = TestConsensualState(
-                request,
-                listOf(
-                    alice.ledgerKeys.first(),
-                    bob.ledgerKeys.first(),
-                )
+                request.input,
+                members.map { it.ledgerKeys.first() } + alice.ledgerKeys.first()
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
@@ -75,16 +71,15 @@ class ConsensualDemoFlow : RPCStartableFlow {
                 .withStates(testConsensualState)
                 .sign(alice.ledgerKeys.first())
 
-            val session = flowMessaging.initiateFlow(bob.name)
-
+            val sessions = members.map { flowMessaging.initiateFlow(it.name) }
             val finalizedSignedTransaction = consensualLedgerService.finality(
                 signedTransaction,
-                listOf(session)
+                sessions
             )
 
-            val resultMessage = ResultMessage(text = finalizedSignedTransaction.toString())
+            val resultMessage = finalizedSignedTransaction.id.toString()
             log.info("Success! Response: $resultMessage")
-            return jsonMarshallingService.format(resultMessage)
+            return resultMessage
         } catch (e: Exception) {
             log.warn("Failed to process consensual flow for request body '$requestBody' because:'${e.message}'")
             throw e

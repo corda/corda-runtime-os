@@ -36,6 +36,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         return consensualTransactionBuilderFactory.create()
     }
 
+    @Suspendable
     override fun fetchTransaction(id: SecureHash): ConsensualSignedTransaction? {
         return persistenceService.find(id)
     }

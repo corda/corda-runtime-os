@@ -52,10 +52,10 @@ class LoadTransactionFlow : RPCStartableFlow {
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FetchTransactionParameters::class.java).transactionId
 
-        val result =
-            ledgerService.fetchTransaction(SecureHash.parse(txId))
-                ?.let { FetchTransactionResponse(it.toResult(), null) }
-                ?: FetchTransactionResponse(null, "Failed to find transaction with id $txId.")
+        val result = ledgerService
+            .fetchTransaction(SecureHash.parse(txId))
+            ?.let { FetchTransactionResponse(it.toResult(), null) }
+            ?: FetchTransactionResponse(null, "Failed to find transaction with id $txId.")
 
         return marshallingService.format(result)
     }
