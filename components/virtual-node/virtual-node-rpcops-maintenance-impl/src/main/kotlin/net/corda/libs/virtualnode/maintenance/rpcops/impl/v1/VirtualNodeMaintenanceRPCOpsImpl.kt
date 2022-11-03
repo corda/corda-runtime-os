@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
