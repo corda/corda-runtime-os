@@ -16,6 +16,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 internal class ConfigWriteEventHandler(
@@ -42,7 +43,7 @@ internal class ConfigWriteEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is BootstrapConfigEvent -> {
-                logger.info("Bootstrap config provided")
+                logger.debug { "Bootstrap config provided" }
                 if (bootstrapConfig != null) {
                     val errorString = "An attempt was made to set the bootstrap configuration twice with " +
                             "different config. Current: $bootstrapConfig, New: ${event.bootstrapConfig}"
@@ -59,25 +60,20 @@ internal class ConfigWriteEventHandler(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Switching to ${event.status}")
                     if (rpcSubscription == null) {
-                        // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
-                        //  against Kafka topic.
                         rpcSubscription =
                             rpcSubscriptionFactory.create(configMerger.getMessagingConfig(bootstrapConfig!!))
                                 .apply { start() }
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                 } else {
-                    logger.warn("Switching to ${event.status}")
-                    coordinator.updateStatus(event.status)
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
 
             is StopEvent -> {
                 rpcSubscription?.close()
                 rpcSubscription = null
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }

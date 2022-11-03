@@ -11,7 +11,7 @@ import java.io.NotSerializableException
 class AmqpMagicTests {
     @Test
     fun valueIsAsExpected() {
-        Assertions.assertArrayEquals("corda".toByteArray() + byteArrayOf(3, 0), amqpMagic.bytes)
+        Assertions.assertArrayEquals("corda".toByteArray() + byteArrayOf(4, 0), amqpMagic.bytes)
     }
 
     @Test

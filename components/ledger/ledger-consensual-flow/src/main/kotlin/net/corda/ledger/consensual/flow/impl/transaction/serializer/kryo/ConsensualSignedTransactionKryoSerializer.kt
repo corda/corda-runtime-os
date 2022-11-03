@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput

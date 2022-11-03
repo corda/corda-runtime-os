@@ -76,6 +76,12 @@ spec:
           - name: monitor
             containerPort: 7000
         {{- if not .Values.workers.p2pGateway.debug.enabled }}
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /isHealthy

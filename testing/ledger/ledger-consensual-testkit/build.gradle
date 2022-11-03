@@ -8,12 +8,11 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-consensual"
 
     implementation project(":libs:ledger:ledger-common-data")
     implementation project(":libs:ledger:ledger-consensual-data")
-    implementation project(":testing:ledger:ledger-common-testkit")
+    implementation project(":components:ledger:ledger-consensual-flow")
+    api project(":testing:ledger:ledger-common-testkit")
 }

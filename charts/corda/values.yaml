@@ -32,8 +32,8 @@ resources:
 logging:
   # -- log format; "json" or "text"
   format: "json"
-  # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
-  level: "warn"
+  # -- log level; one of "all", "trace", "debug", "info" (the default), "warn", "error", "fatal", or "off"
+  level: "info"
 
 # Metrics configuration
 metrics:

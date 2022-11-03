@@ -6,6 +6,7 @@ import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -52,6 +53,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         isMetadataService: (Class<*>) -> Boolean,
         serviceMarkerType: Class<*>
     ): AutoCloseable {
+        TODO("Not yet implemented")
+    }
+
+    override fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext) {
         TODO("Not yet implemented")
     }
 

@@ -3,7 +3,9 @@ package net.corda.applications.workers.p2p.gateway
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
@@ -24,6 +26,8 @@ class GatewayWorker @Activate constructor(
     private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider
 ) : Application {
 
     private companion object {
@@ -32,10 +36,11 @@ class GatewayWorker @Activate constructor(
 
     override fun startup(args: Array<String>) {
         logger.info("P2P Gateway worker starting.")
+        logger.loggerStartupInfo(platformInfoProvider)
 
         val params = WorkerHelpers.getParams(args, GatewayWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
-        WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams)
+        WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = WorkerHelpers.getBootstrapConfig(
             params.defaultParams,

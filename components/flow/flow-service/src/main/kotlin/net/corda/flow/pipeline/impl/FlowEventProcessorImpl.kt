@@ -21,6 +21,8 @@ import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIM
 import net.corda.utilities.withMDC
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
@@ -64,12 +66,12 @@ class FlowEventProcessorImpl(
         mdcProperties: Map<String, String>
     ): StateAndEventProcessor.Response<Checkpoint> {
         if (flowEvent == null) {
-            log.error("The incoming event record '${event}' contained a null FlowEvent, this event will be discarded")
+            log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
             return StateAndEventProcessor.Response(state, listOf())
         }
 
         val pipeline = try {
-            log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+            log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
             flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
         } catch (t: Throwable) {
             // Without a pipeline there's a limit to what can be processed.

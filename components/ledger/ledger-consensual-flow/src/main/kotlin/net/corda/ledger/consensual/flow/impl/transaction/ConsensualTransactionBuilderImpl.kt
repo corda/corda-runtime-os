@@ -4,9 +4,9 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.createTransactionSignature
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroupEnum
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -32,6 +32,7 @@ class ConsensualTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
     override val states: List<ConsensualState> = emptyList(),
@@ -98,25 +99,26 @@ class ConsensualTransactionBuilderImpl(
             .flatMap { it.participants }
             .distinct()
 
-        val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
-            componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroupEnum.METADATA ->
+        return ConsensualComponentGroup
+            .values()
+            .sorted()
+            .map { componentGroupIndex ->
+            when (componentGroupIndex) {
+                ConsensualComponentGroup.METADATA ->
                     listOf(
                         jsonMarshallingService.format(transactionMetaData)
                             .toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-6890)
-                ConsensualComponentGroupEnum.TIMESTAMP ->
+                ConsensualComponentGroup.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
-                ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
+                ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map { serializationService.serialize(it).bytes }
-                ConsensualComponentGroupEnum.OUTPUT_STATES ->
+                ConsensualComponentGroup.OUTPUT_STATES ->
                     states.map { serializationService.serialize(it).bytes }
-                ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
-                    states.map { serializationService.serialize(it::class.java.name).bytes }
+                ConsensualComponentGroup.OUTPUT_STATE_TYPES ->
+                    states.map { serializationService.serialize(currentSandboxGroup.getEvolvableTag(it::class.java)).bytes }
             }
         }
-        return componentGroupLists
     }
 
     override fun equals(other: Any?): Boolean {
@@ -141,6 +143,7 @@ class ConsensualTransactionBuilderImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
+            currentSandboxGroup,
             transactionMetaData,
             states,
         )

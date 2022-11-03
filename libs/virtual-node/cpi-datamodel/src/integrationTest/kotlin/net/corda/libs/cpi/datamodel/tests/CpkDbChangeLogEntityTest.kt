@@ -20,10 +20,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.UUID
 import javax.persistence.EntityManager
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkDbChangeLogEntityTest {
+    private val fakeId = UUID.randomUUID()
     private val dbConfig: EntityManagerConfiguration =
         DbUtils.getEntityManagerConfiguration("cpk_changelog_db")
 
@@ -65,13 +67,15 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
         val changeLog2 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
-            "other-content"
+            "other-content",
+            fakeId
         )
 
         transaction {
@@ -100,7 +104,8 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
@@ -156,7 +161,8 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
@@ -200,12 +206,65 @@ class CpkDbChangeLogEntityTest {
                     cpi.version,
                     SecureHash.parse(cpi.signerSummaryHash)
                 )
-            ).sortedBy { it.id.entityVersion }
+            ).sortedBy { it.insertTimestamp }
 
             assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
                 .isNotEqualTo(loadedDbLogAuditEntities.first().id)
             assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
                 .isEqualTo(loadedDbLogAuditEntities.last().id)
+        }
+    }
+
+    @Test
+    fun `can get changelogs based on changesetId`() {
+        val anotherFakeId = UUID.randomUUID()
+        val (cpi, cpks) = TestObject.createCpiWithCpks()
+        val cpk = cpks.first()
+        val changeset1 = (1..3).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                anotherFakeId
+            )
+        }
+
+        transaction {
+            persist(cpi)
+            changeset1.forEach { persist(it) }
+            changeset1.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
+            flush()
+        }
+
+        val changeset2 = (4..6).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                fakeId
+            )
+        }
+
+        transaction {
+            changeset2.forEach { persist(it) }
+            changeset2.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
+            flush()
+        }
+
+        transaction {
+            val loadedDbLogAuditEntities = findDbChangeLogAuditForCpi(
+                this,
+                CpiIdentifier(
+                    cpi.name,
+                    cpi.version,
+                    SecureHash.parse(cpi.signerSummaryHash)
+                ),
+                setOf(anotherFakeId)
+            ).sortedBy { it.insertTimestamp }
+
+            assertThat(loadedDbLogAuditEntities.size).isEqualTo(3)
         }
     }
 
@@ -216,7 +275,8 @@ class CpkDbChangeLogEntityTest {
         val changeLog1 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion, cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         transaction {
@@ -261,7 +321,8 @@ class CpkDbChangeLogEntityTest {
             </column>
         </createTable>
     </changeSet>
-</databaseChangeLog>"""
+</databaseChangeLog>""",
+            fakeId
         )
         val changeLog1b = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk1b.metadata.id.cpkName, cpk1b.metadata.id.cpkVersion, cpk1b.metadata.id.cpkSignerSummaryHash, "master"),
@@ -277,17 +338,20 @@ class CpkDbChangeLogEntityTest {
             </addColumn>  
         </createTable>
     </changeSet>
-</databaseChangeLog>"""
+</databaseChangeLog>""",
+            fakeId
         )
         val changeLog2 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk1.metadata.id.cpkName, cpk1.metadata.id.cpkVersion, cpk1.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
-            "other-content"
+            "other-content",
+            fakeId
         )
         val changeLog3 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk2.metadata.id.cpkName, cpk2.metadata.id.cpkVersion, cpk2.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         transaction {

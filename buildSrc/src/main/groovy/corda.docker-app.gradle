@@ -37,6 +37,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         remotePublish = jibRemotePublish.toBoolean()
     }
 
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
+    }
+
     if (project.hasProperty('isReleaseCandidate')) {
         releaseCandidate = isReleaseCandidate.toBoolean()
     }
@@ -59,5 +63,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
     if (project.hasProperty('multiArchSupport')) {
         multiArch = multiArchSupport.toBoolean()
+    }
+
+    if (project.hasProperty('workerBaseImageTag')) {
+        baseImageTag = workerBaseImageTag
     }
 }

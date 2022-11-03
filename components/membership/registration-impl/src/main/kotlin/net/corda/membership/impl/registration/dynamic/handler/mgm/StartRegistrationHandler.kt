@@ -13,7 +13,6 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -21,8 +20,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -112,6 +112,9 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(
                 pendingMemberInfo.endpoints.isNotEmpty()
             ) { "Registering member has not specified any endpoints" }
+
+            // Validate role-specific information if any role is set
+            validateRoleInformation(pendingMemberInfo)
 
             // Persist pending member info
             membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
@@ -203,5 +206,19 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature,
         )
+    }
+
+    private fun validateRoleInformation(member: MemberInfo) {
+        // If role is set to notary, notary details are specified
+        member.notaryDetails?.let { notary ->
+            validateRegistrationRequest(
+                notary.keys.isNotEmpty()
+            ) { "Registering member has role set to 'notary', but has missing notary key details." }
+            notary.servicePlugin?.let {
+                validateRegistrationRequest(
+                    it.isNotBlank()
+                ) { "Registering member has specified an invalid notary service plugin type." }
+            }
+        }
     }
 }

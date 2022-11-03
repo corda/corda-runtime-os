@@ -39,6 +39,19 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse
 
+    @HttpRpcPOST(
+        path = "{virtualNodeShortId}/vault-schema/force-resync",
+        title = "Resync the virtual node vault",
+        description = "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI " +
+            "migrations. This operation is destructive and will result in user vault data being deleted, but will " +
+            "not have any effect on system tables.",
+        responseDescription = "A list of the shortIDs or the exception encountered"
+    )
+    fun resyncVirtualNodeDb(
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to rollback")
+        virtualNodeShortId: String
+    )
+
     /**
      * Updates a virtual nodes state.
      *

@@ -17,6 +17,7 @@ class CachingSoftWrappingKeyMap(
     private val master: WrappingKey
 ) : SoftWrappingKeyMap {
     private val cache: Cache<String, WrappingKey> = CacheFactoryImpl().build(
+        "HSM-Wrapping-Keys-Map",
         Caffeine.newBuilder()
             .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
             .maximumSize(config.maximumSize))

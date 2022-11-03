@@ -1,6 +1,5 @@
 package net.corda.flow.application.serialization
 
-import java.io.NotSerializableException
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
@@ -10,7 +9,8 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.io.NotSerializableException
 
 @Component(
     service = [
@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ServiceScope
         SerializationServiceInternal::class,
         SingletonSerializeAsToken::class
     ],
-    scope = ServiceScope.PROTOTYPE,
+    scope = PROTOTYPE,
     property = [ "corda.system=true" ]
 )
 class SerializationServiceImpl @Activate constructor(
@@ -45,7 +45,7 @@ class SerializationServiceImpl @Activate constructor(
         return try {
             serializationService.deserialize(bytes, clazz)
         } catch (e: NotSerializableException) {
-            log.info("Failed to deserialize it into a ${clazz.name}", e)
+            log.error("Failed to deserialize it into a ${clazz.name}", e)
             throw e
         }
     }
@@ -76,3 +76,4 @@ class SerializationServiceImpl @Activate constructor(
         )
     }
 }
+

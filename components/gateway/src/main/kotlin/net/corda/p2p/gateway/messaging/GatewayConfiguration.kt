@@ -13,6 +13,10 @@ data class GatewayConfiguration(
      */
     val hostPort: Int,
     /**
+     * The URL path the gateway HTTP server will listen to for requests.
+     */
+    val urlPath: String,
+    /**
      * TLS configuration used for establishing the HTTPS connections
      */
     val sslConfig: SslConfiguration,
@@ -70,6 +74,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
     return GatewayConfiguration(
         hostAddress = this.getString("hostAddress"),
         hostPort = this.getInt("hostPort"),
+        urlPath = this.getString("urlPath"),
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
         maxRequestSize = this.getLong("maxRequestSize"),
         connectionConfig = connectionConfig

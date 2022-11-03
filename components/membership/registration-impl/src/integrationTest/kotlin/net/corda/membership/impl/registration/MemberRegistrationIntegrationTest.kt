@@ -9,8 +9,10 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -22,12 +24,22 @@ import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.registration.dummy.TestGroupPolicy
 import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
+import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
+import net.corda.membership.impl.registration.dummy.TestVirtualNodeInfoReadService
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -46,8 +58,11 @@ import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -58,7 +73,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
-import java.util.*
+import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -93,6 +109,10 @@ class MemberRegistrationIntegrationTest {
 
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var requestDeserializer: CordaAvroDeserializer<MembershipRegistrationRequest>
+        lateinit var unauthRequestDeserializer: CordaAvroDeserializer<UnauthenticatedRegistrationRequest>
+
+        @InjectService(timeout = 5000)
+        lateinit var testVirtualNodeInfoReadService: TestVirtualNodeInfoReadService
 
         val logger = contextLogger()
         val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
@@ -129,6 +149,10 @@ class MemberRegistrationIntegrationTest {
         const val URL_VALUE = "https://localhost:1080"
         const val PROTOCOL_KEY = "corda.endpoints.0.protocolVersion"
         const val PROTOCOL_VALUE = "1"
+        const val CPI_VERSION = "1.1"
+        const val CPI_SIGNER_HASH = "ALG:A1B2C3D4"
+        const val CPI_NAME = "cpi-name"
+        const val TEST_SERIAL = 1
 
         @JvmStatic
         @BeforeAll
@@ -153,6 +177,8 @@ class MemberRegistrationIntegrationTest {
             keyValuePairListDeserializer = serializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
             requestDeserializer =
                 serializationFactory.createAvroDeserializer({}, MembershipRegistrationRequest::class.java)
+            unauthRequestDeserializer =
+                serializationFactory.createAvroDeserializer({}, UnauthenticatedRegistrationRequest::class.java)
 
             setupConfig()
             groupPolicyProvider.start()
@@ -161,6 +187,18 @@ class MemberRegistrationIntegrationTest {
             membershipGroupReaderProvider.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
+
+
+            testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
+                VirtualNodeInfo(
+                    holdingIdentity = HoldingIdentity(memberName, groupId),
+                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, SecureHash.parse(CPI_SIGNER_HASH)),
+                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
+                    vaultDmlConnectionId = UUID.randomUUID(),
+                    timestamp = Instant.ofEpochSecond(1)
+                )
+            )
 
             eventually {
                 logger.info("Waiting for required services to start...")
@@ -226,24 +264,43 @@ class MemberRegistrationIntegrationTest {
             it.assertThat(result?.second)
                 .isNotNull
                 .isInstanceOf(AppMessage::class.java)
+
             with(result!!.second["message"] as UnauthenticatedMessage) {
                 it.assertThat(this.header.destination.x500Name).isEqualTo(mgmName.toString())
                 it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
                 it.assertThat(this.header.source.groupId).isEqualTo(groupId)
-                val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
-                    keyValuePairListDeserializer.deserialize(memberContext.array())!!
-                }
+
+                val deserializedUnauthenticatedRegistrationRequest =
+                    unauthRequestDeserializer.deserialize(payload.array())!!
+                val deserializedContext =
+                    requestDeserializer.deserialize(deserializedUnauthenticatedRegistrationRequest.payload.array())!!
+                        .run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
+
                 with(deserializedContext.items) {
-                    it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
-                    it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
-                    it.assertThat(first { pair -> pair.key == PARTY_NAME }.value).isEqualTo(memberName.toString())
-                    it.assertThat(first { pair -> pair.key == GROUP_ID }.value).isEqualTo(groupId)
-                    with (map { pair -> pair.key }) {
+                    fun getValue(key: String) = first { pair -> pair.key == key }.value
+
+                    it.assertThat(getValue(URL_KEY)).isEqualTo(URL_VALUE)
+                    it.assertThat(getValue(PROTOCOL_KEY)).isEqualTo(PROTOCOL_VALUE)
+                    it.assertThat(getValue(PARTY_NAME)).isEqualTo(memberName.toString())
+                    it.assertThat(getValue(GROUP_ID)).isEqualTo(groupId)
+                    it.assertThat(getValue(MEMBER_CPI_NAME)).isEqualTo(CPI_NAME)
+                    it.assertThat(getValue(MEMBER_CPI_VERSION)).isEqualTo(CPI_VERSION)
+                    it.assertThat(getValue(MEMBER_CPI_SIGNER_HASH)).isEqualTo(CPI_SIGNER_HASH)
+                    it.assertThat(getValue(PLATFORM_VERSION)).isEqualTo(TEST_ACTIVE_PLATFORM_VERSION.toString())
+                    it.assertThat(getValue(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
+                    it.assertThat(getValue(SERIAL)).isEqualTo(TEST_SERIAL.toString())
+
+                    with(map { pair -> pair.key }) {
                         it.assertThat(contains(String.format(LEDGER_KEYS_KEY, 0))).isTrue
                         it.assertThat(contains(String.format(LEDGER_KEY_HASHES_KEY, 0))).isTrue
                         it.assertThat(contains(PARTY_SESSION_KEY)).isTrue
                         it.assertThat(contains(SESSION_KEY_HASH)).isTrue
+                        it.assertThat(contains(REGISTRATION_ID)).isTrue
+                    }
+
+                    assertDoesNotThrow {
+                        UUID.fromString(getValue(REGISTRATION_ID))
                     }
                 }
             }
@@ -256,7 +313,7 @@ class MemberRegistrationIntegrationTest {
                 member.shortHash.value,
                 "SESSION_INIT",
                 member.shortHash.value + "session",
-                "CORDA.ECDSA.SECP256R1"
+                ECDSA_SECP256R1_CODE_NAME
             )
                 .publicKeyId()
         val ledgerKeyId =
@@ -264,16 +321,16 @@ class MemberRegistrationIntegrationTest {
                 member.shortHash.value,
                 "LEDGER",
                 member.shortHash.value + "ledger",
-                "CORDA.ECDSA.SECP256R1"
+                ECDSA_SECP256R1_CODE_NAME
             )
                 .publicKeyId()
         return mapOf(
             "corda.session.key.id" to sessionKeyId,
-            "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
+            "corda.session.key.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
+            "corda.ledger.keys.0.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
         )
     }
 

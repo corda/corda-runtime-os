@@ -20,6 +20,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -46,7 +47,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
-        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
+        log.warn("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         return StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
@@ -73,10 +74,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.info(
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}'",
-                exception
-            )
+            log.debug {
+                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
+            }
 
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
@@ -96,7 +96,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
-        log.error(msg, exception)
+        log.warn(msg, exception)
         val records = createStatusRecord(context.checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(
                 context.checkpoint,

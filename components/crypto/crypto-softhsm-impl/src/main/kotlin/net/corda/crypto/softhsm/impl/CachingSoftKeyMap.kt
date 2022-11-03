@@ -18,6 +18,7 @@ class CachingSoftKeyMap(
     private val wrapping: SoftPrivateKeyWrapping
 ) : SoftKeyMap {
     private val cache: Cache<PublicKey, PrivateKey> = CacheFactoryImpl().build(
+        "HSM-Soft-Keys-Map",
         Caffeine.newBuilder()
             .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
             .maximumSize(config.maximumSize))

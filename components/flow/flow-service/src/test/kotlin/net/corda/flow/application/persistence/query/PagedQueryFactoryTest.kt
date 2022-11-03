@@ -21,7 +21,7 @@ class PagedQueryFactoryTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
 
-    private val pagedQueryFactory = PagedQueryFactory(externalEventExecutor, serializationService)
+    private val pagedQueryFactory = PagedQueryFactoryImpl(externalEventExecutor, serializationService)
 
     @Test
     fun `creates a named query with default values for limit, offset and parameters`() {

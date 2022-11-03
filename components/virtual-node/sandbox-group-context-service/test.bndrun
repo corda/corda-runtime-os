@@ -32,6 +32,8 @@
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='net.corda.security-manager',\
+    bnd.identity;id='net.corda.test-impl-one',\
+    bnd.identity;id='net.corda.test-impl-two',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'

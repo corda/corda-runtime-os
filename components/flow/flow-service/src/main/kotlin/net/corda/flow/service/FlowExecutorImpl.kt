@@ -22,7 +22,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -110,10 +110,10 @@ class FlowExecutorImpl constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                log.debug { "Flow executor is stopping..." }
+                log.trace { "Flow executor is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 subscription?.close()
-                log.debug { "Flow executor stopped" }
+                log.trace { "Flow executor stopped" }
             }
         }
     }
