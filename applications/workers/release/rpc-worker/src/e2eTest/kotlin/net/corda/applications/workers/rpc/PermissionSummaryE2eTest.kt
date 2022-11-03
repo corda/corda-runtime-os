@@ -204,6 +204,7 @@ class PermissionSummaryE2eTest {
 
         // Check the result, eventually since it takes time to propagate
         eventually(Duration.ofSeconds(60)) {
+            // Check permissions summary
             users.forEach { user ->
                 with(adminTestHelper.getPermissionSummary(user)) {
                     assertThat(permissionsToCreate).withFailMessage("User: $user")
@@ -214,6 +215,14 @@ class PermissionSummaryE2eTest {
                     assertThat(permIds).withFailMessage("User: $user")
                         .isEqualTo(this.permissions.map { it.id }.toSet())
 
+                }
+            }
+
+            // Check roles content
+            roleIds.forEach { roleId ->
+                with(adminTestHelper.getRole(roleId)) {
+                    assertThat(this.permissions.map { it.id }.toSet()).withFailMessage("RoleId: $roleId")
+                        .isEqualTo(permIds)
                 }
             }
         }

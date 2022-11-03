@@ -171,7 +171,10 @@ class RbacE2eClientRequestHelper(
         }
     }
 
-    fun createPermissionsAndAssignToRoles(permissionsToCreate: Set<Pair<PermissionType, String>>, roleIds: Set<String>): Set<String> {
+    fun createPermissionsAndAssignToRoles(
+        permissionsToCreate: Set<Pair<PermissionType, String>>,
+        roleIds: Set<String>
+    ): Set<String> {
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
