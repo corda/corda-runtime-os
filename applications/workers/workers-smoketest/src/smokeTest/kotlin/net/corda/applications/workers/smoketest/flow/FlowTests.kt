@@ -582,6 +582,29 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - Get compatible signature specs`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_compatible_signature_specs"
+        requestBody.data = mapOf("memberX500" to X500_BOB)
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs = requireNotNull(flowResult.result).split("; ")
+        assertThat(flowOutputs).containsAll(
+            listOf(
+                "SHA256withECDSA",
+                "SHA384withECDSA",
+                "SHA512withECDSA"
+            ),
+        )
+    }
+
+    @Test
     fun `Context is propagated to initiated and sub flows`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "context_propagation"

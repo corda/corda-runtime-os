@@ -32,7 +32,8 @@ class SignatureSpecServiceImpl @Activate constructor(
 
     @Suspendable
     override fun compatibleSignatureSpecs(publicKey: PublicKey): List<SignatureSpec> {
-        TODO()
+        val keyScheme = schemeMetadata.findKeyScheme(publicKey)
+        return schemeMetadata.supportedSignatureSpec(keyScheme)
     }
 
     @Suspendable

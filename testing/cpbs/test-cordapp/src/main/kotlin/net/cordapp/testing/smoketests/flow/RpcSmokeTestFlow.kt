@@ -63,6 +63,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
+        "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
@@ -377,6 +378,19 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val digestName = DigestAlgorithmName(input.getValue("digestName"))
         val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey, digestName)
         return signatureSpec?.signatureName ?: "null"
+    }
+
+    @Suspendable
+    private fun getCompatibleSignatureSpecs(input: RpcSmokeTestInput): String {
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
+        val signatureSpecs = signatureSpecService.compatibleSignatureSpecs(publicKey)
+        val outputs = signatureSpecs.map {
+            it.signatureName
+        }
+        return outputs.joinToString("; ")
     }
 
     @Suspendable
