@@ -11,23 +11,24 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.utxo.contract.ObligationContract
 import net.cordapp.demo.utxo.contract.ObligationState
+import net.cordapp.demo.utxo.getParty
+import net.cordapp.demo.utxo.initiateFlows
 import net.cordapp.demo.utxo.messages.CreateObligationRequestMessage
 import net.cordapp.demo.utxo.messages.CreateObligationResponseMessage
 
 class CreateObligationFlow(
-    private val state: ObligationState,
+    private val obligation: ObligationState,
     private val notary: Party,
     private val sessions: Set<FlowSession>
 ) : SubFlow<UtxoSignedTransaction> {
 
-    private companion object {
-        val logger = contextLogger()
+    internal companion object {
+        const val FLOW_PROTOCOL = "create-obligation-flow"
     }
 
     @CordaInject
@@ -35,24 +36,23 @@ class CreateObligationFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        logger.info("Initializing test UTXO create flow")
 
-        val transaction = utxoLedgerService.getTransactionBuilder().apply {
+        val transaction = utxoLedgerService
+            .getTransactionBuilder()
+            .setNotary(notary)
+            .addOutputState(obligation)
+            .addCommand(ObligationContract.Create)
+            .addSignatories(listOf(obligation.issuer))
 
-            // TODO : Oops! There is no mechanism to set the notary.
-            // setNotary(notary)
+        val fullySignedTransaction = transaction.sign()
 
-            addOutputState(state)
-            addCommand(ObligationContract.Create)
-            addSignatories(listOf(state.issuer)) // We really should have a vararg option here!
-        }
+        // TODO : For now, just send them the signed transaction. We'll add finality later.
+        sessions.forEach { it.send(fullySignedTransaction) }
 
-        // TODO : How are we handling finality?
-
-        return transaction.sign()
+        return fullySignedTransaction
     }
 
-    @InitiatingFlow("utxo-create-flow")
+    @InitiatingFlow(FLOW_PROTOCOL)
     class Initiator : RPCStartableFlow {
 
         @CordaInject
@@ -72,17 +72,26 @@ class CreateObligationFlow(
 
             val request = requestBody.getRequestBodyAs(jsonService, CreateObligationRequestMessage::class.java)
 
-            val issuer = memberLookup.lookup(request.issuer)?.ledgerKeys?.first()
+            val issuer = memberLookup.lookup(request.issuer)
                 ?: throw IllegalArgumentException("Unknown issuer: ${request.issuer}.")
 
-            val holder = memberLookup.lookup(request.holder)?.ledgerKeys?.first()
-                ?: throw IllegalArgumentException("Unknown holder: ${request.issuer}.")
+            val holder = memberLookup.lookup(request.holder)
+                ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
 
-            val notary = memberLookup.lookup()
+            val notary = memberLookup.lookup(request.notary)?.getParty()
+                ?: throw IllegalArgumentException("Unknown notary: ${request.notary}.")
 
-            val state = ObligationState(issuer, holder, request.amount)
+            val sessions = flowMessaging.initiateFlows(holder)
 
-            val transaction = flowEngine.subFlow(CreateObligationFlow(state, notary, sessions))
+            val issuerKey = issuer.ledgerKeys.first()
+
+            val holderKey = holder.ledgerKeys.first()
+
+            val obligationState = ObligationState(issuerKey, holderKey, request.amount)
+
+            val createObligationFlow = CreateObligationFlow(obligationState, notary, sessions)
+
+            val transaction = flowEngine.subFlow(createObligationFlow)
 
             val response = CreateObligationResponseMessage(transaction.id)
 
