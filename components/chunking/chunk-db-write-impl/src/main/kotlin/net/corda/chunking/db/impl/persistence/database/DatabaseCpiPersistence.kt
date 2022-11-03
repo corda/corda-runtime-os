@@ -147,7 +147,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 val ret: CpkDbChangeLogEntity? = if (inDb != null) {
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
-                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum
+                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
+                        changelog.changesetId != inDb.changesetId
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false
@@ -314,10 +315,10 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     CpiCpkKey(
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
-                        cpi.metadata.cpiId.signerSummaryHash.toString(),
+                        cpi.metadata.cpiId.signerSummaryHashForDbQuery,
                         cpk.metadata.cpkId.name,
                         cpk.metadata.cpkId.version,
-                        cpk.metadata.cpkId.signerSummaryHash.toString()
+                        cpk.metadata.cpkId.signerSummaryHashForDbQuery
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),

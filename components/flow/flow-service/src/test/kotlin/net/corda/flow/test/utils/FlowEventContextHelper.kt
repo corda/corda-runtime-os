@@ -26,7 +26,8 @@ fun <T> buildFlowEventContext(
         inputEventPayload,
         config,
         outputRecords,
-        sendToDlq
+        sendToDlq,
+        emptyMap()
     )
 }
 
@@ -44,6 +45,7 @@ fun <T> buildFlowEventContext(
         inputEventPayload,
         config,
         outputRecords,
-        sendToDlq
+        sendToDlq,
+        emptyMap()
     )
 }
