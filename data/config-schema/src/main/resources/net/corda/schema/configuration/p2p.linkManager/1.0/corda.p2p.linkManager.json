@@ -78,7 +78,7 @@
       "minimum": 1
     },
     "heartbeatMessagePeriod": {
-      "description": "Heartbeat message period in milli seconds.",
+      "description": "Heartbeat message period in milliseconds.",
       "type": "integer",
       "default": 2000,
       "minimum": 500
@@ -94,6 +94,12 @@
       "type": "integer",
       "default": 4,
       "minimum": 1
+    },
+    "sessionRefreshThreshold": {
+      "description": "Session refresh threshold in seconds. The default is five days.",
+      "type": "integer",
+      "default": 432000,
+      "maximum": 432000
     }
   },
   "additionalProperties": false
