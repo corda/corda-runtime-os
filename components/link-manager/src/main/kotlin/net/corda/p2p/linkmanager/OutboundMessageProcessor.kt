@@ -106,6 +106,12 @@ internal class OutboundMessageProcessor(
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
+        if (!linkManagerHostingMap.isHostedLocally(message.header.source.toCorda())) {
+            logger.warn("Dropping outbound unauthenticated message from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()} as the source ID is not locally hosted.")
+            return emptyList()
+        }
+
         if (message.header.source.groupId != message.header.destination.groupId) {
             logger.warn("Dropping outbound unauthenticated message from ${message.header.source.toCorda()} " +
                     "to ${message.header.destination.toCorda()} as their group IDs do not match.")
@@ -149,6 +155,13 @@ internal class OutboundMessageProcessor(
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
+        }
+
+        if(!linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.source.toCorda())) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
+                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
+                    "as the source ID is not locally hosted.")
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
         }
 
         if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {

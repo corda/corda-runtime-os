@@ -804,4 +804,102 @@ class OutboundMessageProcessorTest {
         }
     }
 
+    @Test
+    fun `onNext produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
+        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
+        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        val appMessage = AppMessage(
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
+                    HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                    null, "message-id", "trace-id", "system-1"
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+        )
+        val messages = listOf(EventLogRecord(Schemas.P2P.P2P_OUT_TOPIC, "key", appMessage, 0, 0))
+
+        val records = processor.onNext(messages)
+
+        assertThat(records).hasSize(1)
+
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("message-id")
+            }
+            it.assertThat(markers).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerDiscardedMarker }).hasSize(1)
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
+        verify(messagesPendingSession, never()).queueMessage(any())
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if source ID is not locally hosted`() {
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
+                HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `OutboundMessageProcessor produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
+                HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage, 1, 0
+                )
+            )
+        )
+
+        assertThat(records).hasSize(1)
+
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("message-id")
+            }
+            it.assertThat(markers).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerDiscardedMarker }).hasSize(1)
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
+    }
+
 }
