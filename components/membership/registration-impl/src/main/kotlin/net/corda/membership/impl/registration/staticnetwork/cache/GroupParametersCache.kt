@@ -38,14 +38,32 @@ class GroupParametersCache(
 
     private val cache = ConcurrentHashMap<String, KeyValuePairList>()
 
-
+    /**
+     * Sets group parameters for the specified group. Typically used by an event processor to update the cache.
+     */
     fun set(groupId: String, groupParameters: KeyValuePairList) {
         cache[groupId] = groupParameters
     }
 
+    /**
+     * Retrieves group parameters for the specified holding identity. If group parameters do not exist, this method creates
+     * the initial group parameters snapshot for the group and publishes them to Kafka before returning them.
+     *
+     * @param holdingIdentity Holding identity of the member requesting the group parameters.
+     *
+     * @return Group parameters for the group if present, or newly created snapshot of group parameters.
+     */
     fun getOrCreateGroupParameters(holdingIdentity: HoldingIdentity): KeyValuePairList =
         cache[holdingIdentity.groupId] ?: createGroupParametersSnapshot(holdingIdentity)
 
+    /**
+     * Adds a notary to the group parameters. Adds new (or rotated) notary keys if the specified notary service exists,
+     * or creates a new notary service.
+     *
+     * @param notary Notary to be added.
+     *
+     * @return Updated group parameters with notary information.
+     */
     fun addNotary(notary: MemberInfo): KeyValuePairList? {
         val groupId = notary.groupId
         val groupParameters = cache[groupId]?.toMap()

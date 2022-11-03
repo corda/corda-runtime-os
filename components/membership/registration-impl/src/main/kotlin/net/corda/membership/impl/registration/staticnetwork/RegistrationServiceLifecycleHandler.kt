@@ -30,7 +30,7 @@ class RegistrationServiceLifecycleHandler(
     staticMemberRegistrationService: StaticMemberRegistrationService
 ) : LifecycleEventHandler {
     companion object {
-        const val CONSUMER_GROUP = "MEMBERSHIP_GROUP_PARAMETERS"
+        const val CONSUMER_GROUP = "STATIC_GROUP_DEFINITION"
     }
 
     // for watching the config changes

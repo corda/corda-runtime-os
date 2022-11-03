@@ -8,6 +8,7 @@ import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.util.parse
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
@@ -18,10 +19,15 @@ import java.time.Instant
 class GroupParametersFactoryTest {
     private companion object {
         const val MPV = "5000"
+        const val EPOCH = "1"
     }
 
     private val groupParametersCaptor = argumentCaptor<Map<String, String>>()
-    private val mockLayeredPropertyMap: LayeredPropertyMap = mock()
+    private val mockLayeredPropertyMap: LayeredPropertyMap = mock {
+        on { it.parse<Int>(EPOCH_KEY) } doReturn EPOCH.toInt()
+        on { it.parse<Int>(MPV_KEY) } doReturn MPV.toInt()
+        on { it.parse<Instant>(MODIFIED_TIME_KEY) } doReturn Instant.now()
+    }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock {
         on { createMap(groupParametersCaptor.capture()) } doReturn mockLayeredPropertyMap
     }
@@ -29,14 +35,32 @@ class GroupParametersFactoryTest {
     private val groupParametersFactory = GroupParametersFactoryImpl(layeredPropertyMapFactory)
 
     @Test
-    fun `creating GroupParameters`() {
+    fun `factory creating GroupParameters`() {
         val entries =  KeyValuePairList(listOf(
-            KeyValuePair(EPOCH_KEY, "1"),
+            KeyValuePair(EPOCH_KEY, EPOCH),
             KeyValuePair(MPV_KEY, MPV),
             KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString())
         ))
+
         groupParametersFactory.create(entries)
 
         assertThat(groupParametersCaptor.firstValue).isEqualTo(entries.toMap())
+    }
+
+    @Test
+    fun `factory successfully creates and returns GroupParameters`() {
+        val entries =  KeyValuePairList(listOf(
+            KeyValuePair(EPOCH_KEY, EPOCH),
+            KeyValuePair(MPV_KEY, MPV),
+            KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString())
+        ))
+
+        val groupParameters = groupParametersFactory.create(entries)
+
+        with(groupParameters) {
+            assertThat(epoch).isEqualTo(EPOCH.toInt())
+            assertThat(minimumPlatformVersion).isEqualTo(MPV.toInt())
+            assertThat(modifiedTime).isBefore(Instant.now())
+        }
     }
 }

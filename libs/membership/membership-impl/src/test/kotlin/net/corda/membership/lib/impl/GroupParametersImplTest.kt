@@ -11,20 +11,22 @@ import java.time.Instant
 class GroupParametersImplTest {
     private companion object {
         const val MPV = "5000"
+        const val EPOCH = "5"
     }
 
     @Test
     fun `creating GroupParameters`() {
         val map = mapOf(
-            EPOCH_KEY to "1",
+            EPOCH_KEY to EPOCH,
             MPV_KEY to MPV,
             MODIFIED_TIME_KEY to Instant.now().toString(),
         )
+
         val groupParameters = LayeredPropertyMapMocks.create<GroupParametersImpl>(map)
 
         with(groupParameters) {
-            assertThat(epoch).isEqualTo(1)
-            assertThat(minimumPlatformVersion).isEqualTo(5000)
+            assertThat(epoch).isEqualTo(EPOCH.toInt())
+            assertThat(minimumPlatformVersion).isEqualTo(MPV.toInt())
             assertThat(modifiedTime).isBefore(Instant.now())
         }
     }

@@ -95,7 +95,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.UUID
@@ -292,7 +294,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             val registrationResult = registrationService.register(registrationId, alice, mockContext)
-            Mockito.verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
             CryptoConsts.Categories.all.forEach {
                 Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
                 Mockito.verify(hsmRegistrationClient, times(1))
@@ -628,7 +630,31 @@ class StaticMemberRegistrationServiceTest {
                 .isNull()
         }
 
-        // TODO (WIP) add test case to check notary case for group params persistence
+        @Test
+        fun `registration with notary role persists group parameters for all members who have vnodes set up`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+            whenever(
+                persistenceClient.persistGroupParameters(
+                    any(),
+                    any()
+                )
+            ).doReturn(MembershipPersistenceResult.Success(1))
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, bob, context)
+
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockGroupParameters))
+            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockGroupParameters))
+        }
     }
 
     @Nested
