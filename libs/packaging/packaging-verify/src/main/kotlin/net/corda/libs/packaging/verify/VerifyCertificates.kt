@@ -61,7 +61,7 @@ internal fun validateCertPath(
             cert = if (certPath.certificates.size == 1) certPath.certificates.first() as? X509Certificate else null
         }
 
-        var name = cert?.subjectX500Principal?.name
+        val name = cert?.subjectX500Principal?.name
 
         val msg = "Error validating $certPathName certificate path$index, ${certPath.type} name: $name. ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
