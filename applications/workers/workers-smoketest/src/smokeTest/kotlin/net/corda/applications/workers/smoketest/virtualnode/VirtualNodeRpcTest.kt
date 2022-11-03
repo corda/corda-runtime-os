@@ -380,6 +380,16 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(82)
+    fun `persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
+        }
+    }
+
+    @Test
     @Order(90)
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
         cluster {
@@ -414,6 +424,18 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
+    fun `Can sync DB and persist fish`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            // Status 204 indicates a non-error but no response data
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            runSimplePersistenceCheckFlow("Could persist Floaty")
+        }
+    }
+
+    @Test
+    @Order(100)
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -437,8 +459,29 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Test
+    @Order(101)
+    fun `Can sync DB again and persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
+        }
+    }
+
     private fun runReturnAStringFlow(expectedResult: String) {
         val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+
+        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+
+        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
+    }
+
+    private fun runSimplePersistenceCheckFlow(expectedResult: String) {
+        val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 

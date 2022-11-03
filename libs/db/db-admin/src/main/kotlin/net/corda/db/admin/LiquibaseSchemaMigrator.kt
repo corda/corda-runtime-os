@@ -15,7 +15,7 @@ interface LiquibaseSchemaMigrator {
      * @param datasource
      * @param dbChange
      */
-    fun updateDb(datasource: Connection, dbChange: DbChange)
+    fun updateDb(datasource: Connection, dbChange: DbChange, tag: String? = null)
 
     /**
      * Update [datasource] using [dbChange] provided.
@@ -24,7 +24,26 @@ interface LiquibaseSchemaMigrator {
      * @param dbChange
      * @param controlTablesSchema schema for the databasechangelog tables
      */
-    fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String)
+    fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tag: String? = null)
+
+    /**
+     * Rollback [datasource] using [dbChange] provided.
+     *
+     * @param datasource
+     * @param dbChange
+     * @param tagToRollbackTo
+     */
+    fun rollBackDb(datasource: Connection, dbChange: DbChange, tagToRollbackTo: String)
+
+    /**
+     * Rollback [datasource] using [dbChange] provided.
+     *
+     * @param datasource
+     * @param dbChange
+     * @param controlTablesSchema schema for the databasechangelog tables
+     * @param tagToRollbackTo
+     */
+    fun rollBackDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tagToRollbackTo: String)
 
     /**
      * Create update [sql] for [datasource] based on [dbChange] but

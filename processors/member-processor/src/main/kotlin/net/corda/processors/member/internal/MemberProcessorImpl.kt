@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -61,6 +62,8 @@ class MemberProcessorImpl @Activate constructor(
     private val synchronisationProxy: SynchronisationProxy,
     @Reference(service = StableKeyPairDecryptor::class)
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
 ) : MemberProcessor {
 
     private companion object {
@@ -83,6 +86,7 @@ class MemberProcessorImpl @Activate constructor(
         ::membershipGroupReaderProvider,
         ::synchronisationProxy,
         ::stableKeyPairDecryptor,
+        ::groupParametersWriterService,
     )
 
     private val coordinator =

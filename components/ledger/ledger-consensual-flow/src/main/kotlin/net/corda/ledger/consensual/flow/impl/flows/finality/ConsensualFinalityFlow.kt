@@ -19,6 +19,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import java.security.PublicKey
 
 class ConsensualFinalityFlow(
     private val signedTransaction: ConsensualSignedTransaction,
@@ -55,15 +56,17 @@ class ConsensualFinalityFlow(
             session to member
         }.associate { (session, memberInfo) ->
             session to memberInfo.ledgerKeys.ifEmpty {
-                throw CordaRuntimeException("A session with ${memberInfo.name} exists but the member does not have any active ledger keys")
+                throw CordaRuntimeException(
+                    "A session with ${session.counterparty} exists but the member does not have any active ledger keys"
+                )
             }
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSigningKeys = signedTransaction.getMissingSignatories()
+        val missingSignatories = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
-        require(sessionPublicKeys.values.flatten().containsAll(missingSigningKeys)) {
-            "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
+        require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
+            "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
         // TODO [CORE-7029] Record unfinalised transaction
@@ -91,15 +94,14 @@ class ConsensualFinalityFlow(
                 CordaRuntimeException(message)
             }
 
-            log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
+            log.debug { "Received signatures from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
-            val receivedSigningKeys = signatures.map { it.by }
-            if (receivedSigningKeys.toSet() != sessionPublicKeys[session]!!.toSet()) {
-                throw CordaRuntimeException(
-                    "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                            "Expected: ${sessionPublicKeys[session]} But received: $receivedSigningKeys"
-                )
-            }
+            requireCorrectReceivedSigningKeys(
+                signatures,
+                missingSignatories,
+                ledgerKeys = sessionPublicKeys[session]!!,
+                session
+            )
 
             signatures.forEach { signature ->
                 try {
@@ -148,5 +150,21 @@ class ConsensualFinalityFlow(
         }
 
         return signedByParticipantsTransaction
+    }
+
+    private fun requireCorrectReceivedSigningKeys(
+        signatures: List<DigitalSignatureAndMetadata>,
+        missingSignatories: Set<PublicKey>,
+        ledgerKeys: List<PublicKey>,
+        session: FlowSession
+    ) {
+        val receivedSigningKeys = signatures.map { it.by }
+        val expectedSigningKeys = missingSignatories.intersect(ledgerKeys.toSet())
+        if (receivedSigningKeys.toSet() != expectedSigningKeys) {
+            throw CordaRuntimeException(
+                "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
+                        "Expected: $expectedSigningKeys But received: $receivedSigningKeys"
+            )
+        }
     }
 }

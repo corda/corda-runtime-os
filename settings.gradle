@@ -126,6 +126,8 @@ include 'components:membership:certificates-client'
 include 'components:membership:certificates-client-impl'
 include 'components:membership:certificates-service'
 include 'components:membership:certificates-service-impl'
+include 'components:membership:group-params-writer-service'
+include 'components:membership:group-params-writer-service-impl'
 include 'components:membership:group-policy'
 include 'components:membership:group-policy-impl'
 include 'components:membership:membership-client'
@@ -355,6 +357,7 @@ include 'testing:db-testkit'
 include 'testing:db-message-bus-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
+include 'testing:bundles:testing-fish'
 include 'testing:cpbs:calculator'
 include 'testing:cpbs:chat'
 include 'testing:cpbs:crypto-custom-digest-one-cpk'
@@ -432,7 +435,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
-            substitute module('net.corda:notary-plugins') using project(':notary-plugins')
+            substitute module('net.corda:corda-notary-plugin') using project(':ledger:notary-plugin')
         }
     }
 }

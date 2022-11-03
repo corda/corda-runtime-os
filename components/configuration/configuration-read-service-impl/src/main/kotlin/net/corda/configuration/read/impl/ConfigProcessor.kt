@@ -60,11 +60,11 @@ internal class ConfigProcessor(
         if (newConfig != null) {
             val config = mergeConfigs(currentData)
             val newConfigKey = newRecord.key
-            logger.info( "Received configuration for key $newConfigKey")
-            logger.debug(
+            logger.debug { "Received configuration for key $newConfigKey" }
+            logger.debug {
                 "$newConfigKey configuration: " +
                         newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-            )
+            }
             coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
         } else {
             logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
@@ -78,7 +78,7 @@ internal class ConfigProcessor(
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
         val config = currentData.mapValues { config ->
             config.value.toSmartConfig().also { smartConfig ->
-                logger.info("Received configuration for key ${config.key}")
+                logger.debug { "Received configuration for key ${config.key}" }
                 logger.debug(
                     "Received configuration for key ${config.key}: " +
                             smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
