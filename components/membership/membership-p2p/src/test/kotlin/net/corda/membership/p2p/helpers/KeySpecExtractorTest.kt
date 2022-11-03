@@ -2,12 +2,14 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -40,6 +42,31 @@ class KeySpecExtractorTest {
     fun `unknown key throws an exception`() {
         assertThrows<CordaRuntimeException> {
             extractor.getSpec(publicKeyTwo)
+        }
+    }
+
+    @Test
+    fun `validateSpecName throw exception for invalid schemeCodeName`() {
+        val key = mock<CryptoSigningKey> {
+            on { schemeCodeName } doReturn "nop"
+        }
+
+        assertThrows<IllegalArgumentException> {
+            key.validateSpecName(SignatureSpec.ECDSA_SHA256.signatureName)
+        }
+    }
+
+    @Test
+    fun `validateSpecName throw exception for invalid spec name`() {
+        assertThrows<IllegalArgumentException> {
+            signingKey.validateSpecName(SignatureSpec.RSA_SHA512.signatureName)
+        }
+    }
+
+    @Test
+    fun `validateSpecName pass with valid names`() {
+        assertDoesNotThrow {
+            signingKey.validateSpecName(SignatureSpec.ECDSA_SHA256.signatureName)
         }
     }
 }
