@@ -2,12 +2,7 @@ package net.corda.libs.packaging.verify
 
 import java.security.CodeSigner
 import java.security.Timestamp
-import java.security.cert.CertPath
-import java.security.cert.CertPathValidator
-import java.security.cert.CertPathValidatorException
-import java.security.cert.PKIXParameters
-import java.security.cert.TrustAnchor
-import java.security.cert.X509Certificate
+import java.security.cert.*
 
 
 /** Verifies that code signers' signatures are valid */
@@ -53,15 +48,20 @@ internal fun validateCertPath(
     try {
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
-        val index = if (e.index >= 0) ", certificate at index [${e.index}]" else ""
-
-        val cert = if (e.index >= 0) certPath.certificates[e.index] else certPath.certificates.first()
+        val index : String; val cert: Certificate?
+        if (e.index >= 0) {
+            index = ", certificate at index [${e.index}]"
+            cert = certPath.certificates[e.index]
+        } else {
+            index = ""
+            cert = certPath.certificates.firstOrNull()
+        }
 
         val nameStart = cert.toString().indexOf("Subject:")
         val nameEnd = cert.toString().indexOf("\n", nameStart)
-        val name = cert.toString().subSequence(nameStart+9, nameEnd)
+        val name = cert?.toString()?.subSequence(nameStart+9, nameEnd)
 
-        val msg = "Error validating $certPathName certificate path$index, ${cert.type} name: $name. ${e.message}"
+        val msg = "Error validating $certPathName certificate path$index, ${cert?.type} name: $name. ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
     }
 }
