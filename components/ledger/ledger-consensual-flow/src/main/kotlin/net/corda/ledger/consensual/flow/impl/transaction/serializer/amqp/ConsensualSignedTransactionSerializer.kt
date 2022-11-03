@@ -41,14 +41,14 @@ class ConsensualSignedTransactionSerializer @Activate constructor(
 
     override fun toProxy(obj: ConsensualSignedTransaction): ConsensualSignedTransactionProxy {
         return ConsensualSignedTransactionProxy(
-            ConsensualSignedTransactionImplVersion.VERSION_1,
+            ConsensualSignedTransactionVersion.VERSION_1,
             (obj as ConsensualSignedTransactionImpl).wireTransaction,
             obj.signatures
         )
     }
 
     override fun fromProxy(proxy: ConsensualSignedTransactionProxy): ConsensualSignedTransaction {
-        if (proxy.version == ConsensualSignedTransactionImplVersion.VERSION_1) {
+        if (proxy.version == ConsensualSignedTransactionVersion.VERSION_1) {
             return ConsensualSignedTransactionImpl(
                 serializationService,
                 signingService,
@@ -68,7 +68,7 @@ data class ConsensualSignedTransactionProxy(
     /**
      * Version of container.
      */
-    val version: ConsensualSignedTransactionImplVersion,
+    val version: ConsensualSignedTransactionVersion,
 
     /**
      * Properties for Consensual Signed transactions' serialisation.
@@ -78,9 +78,9 @@ data class ConsensualSignedTransactionProxy(
 )
 
 /**
- * Enumeration for ConsensualSignedTransactionImpl version.
+ * Enumeration for ConsensualSignedTransaction version.
  */
 @CordaSerializable
-enum class ConsensualSignedTransactionImplVersion {
+enum class ConsensualSignedTransactionVersion {
     VERSION_1
 }

@@ -32,6 +32,8 @@ dependencies {
     testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
 
+    //integrationTestImplementation project(":testing:sandboxes")
+
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
