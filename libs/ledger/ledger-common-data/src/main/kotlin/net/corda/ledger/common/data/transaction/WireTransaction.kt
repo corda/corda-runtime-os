@@ -115,7 +115,9 @@ class WireTransaction(
     val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
             val componentMerkleTree = merkleTreeProvider.createTree(
-                group,
+                    // We prepend the component groups with the their index to have something in the
+                    // Merkle trees for the otherwise empty component groups too.
+                listOf(index.toByteArray()) + group,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
             _componentMerkleTrees[index] = componentMerkleTree
