@@ -7,5 +7,5 @@ data class CreateObligationRequestMessage(
     val issuer: MemberX500Name,
     val holder: MemberX500Name,
     val amount: BigDecimal,
-    val notary: MemberX500Name?
+    val notary: MemberX500Name
 )
