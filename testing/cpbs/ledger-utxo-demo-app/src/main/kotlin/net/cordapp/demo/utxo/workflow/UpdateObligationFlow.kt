@@ -11,24 +11,23 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.utxo.contract.ObligationContract
 import net.cordapp.demo.utxo.contract.ObligationState
-import net.cordapp.demo.utxo.getParty
 import net.cordapp.demo.utxo.initiateFlows
-import net.cordapp.demo.utxo.messages.CreateObligationRequestMessage
-import net.cordapp.demo.utxo.messages.CreateObligationResponseMessage
+import net.cordapp.demo.utxo.messages.UpdateObligationRequestMessage
+import net.cordapp.demo.utxo.messages.UpdateObligationResponseMessage
 
-class CreateObligationFlow(
-    private val obligation: ObligationState,
-    private val notary: Party,
+class UpdateObligationFlow(
+    private val oldObligation: StateAndRef<ObligationState>,
+    private val newObligation: ObligationState,
     private val sessions: Set<FlowSession>
 ) : SubFlow<UtxoSignedTransaction> {
 
     internal companion object {
-        const val FLOW_PROTOCOL = "create-obligation-flow"
+        const val FLOW_PROTOCOL = "update-obligation-flow"
     }
 
     @CordaInject
@@ -39,10 +38,11 @@ class CreateObligationFlow(
 
         val transaction = utxoLedgerService
             .getTransactionBuilder()
-            .setNotary(notary)
-            .addOutputState(obligation)
-            .addCommand(ObligationContract.Create)
-            .addSignatories(listOf(obligation.issuer))
+            .setNotary(oldObligation.state.notary)
+            .addInputState(oldObligation)
+            .addOutputState(newObligation)
+            .addCommand(ObligationContract.Update)
+            .addSignatories(listOf(newObligation.holder))
 
         val fullySignedTransaction = transaction.sign()
 
@@ -70,30 +70,22 @@ class CreateObligationFlow(
         @Suspendable
         override fun call(requestBody: RPCRequestData): String {
 
-            val request = requestBody.getRequestBodyAs(jsonService, CreateObligationRequestMessage::class.java)
+            val request = requestBody.getRequestBodyAs(jsonService, UpdateObligationRequestMessage::class.java)
 
-            val issuer = memberLookup.lookup(request.issuer)
-                ?: throw IllegalArgumentException("Unknown issuer: ${request.issuer}.")
+            val oldObligation: StateAndRef<ObligationState> = TODO("Requires vault lookup mechanism.")
 
-            val holder = memberLookup.lookup(request.holder)
-                ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
+            val newObligation = oldObligation.state.contractState.settle(request.amountToSettle)
 
-            val notary = memberLookup.lookup(request.notary)?.getParty()
-                ?: throw IllegalArgumentException("Unknown notary: ${request.notary}.")
+            val issuer = memberLookup.lookup(newObligation.issuer)
+                ?: throw IllegalArgumentException("Unknown issuer: ${newObligation.issuer}.")
 
-            val sessions = flowMessaging.initiateFlows(holder)
+            val sessions = flowMessaging.initiateFlows(issuer)
 
-            val issuerKey = issuer.ledgerKeys.first()
+            val updateObligationFlow = UpdateObligationFlow(oldObligation, newObligation, sessions)
 
-            val holderKey = holder.ledgerKeys.first()
+            val transaction = flowEngine.subFlow(updateObligationFlow)
 
-            val obligationState = ObligationState(issuerKey, holderKey, request.amount)
-
-            val createObligationFlow = CreateObligationFlow(obligationState, notary, sessions)
-
-            val transaction = flowEngine.subFlow(createObligationFlow)
-
-            val response = CreateObligationResponseMessage(transaction.id)
+            val response = UpdateObligationResponseMessage(transaction.id)
 
             return jsonService.format(response)
         }

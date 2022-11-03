@@ -11,24 +11,21 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.utxo.contract.ObligationContract
 import net.cordapp.demo.utxo.contract.ObligationState
-import net.cordapp.demo.utxo.getParty
 import net.cordapp.demo.utxo.initiateFlows
-import net.cordapp.demo.utxo.messages.CreateObligationRequestMessage
-import net.cordapp.demo.utxo.messages.CreateObligationResponseMessage
+import net.cordapp.demo.utxo.messages.DeleteObligationRequestMessage
+import net.cordapp.demo.utxo.messages.DeleteObligationResponseMessage
 
-class CreateObligationFlow(
-    private val obligation: ObligationState,
-    private val notary: Party,
-    private val sessions: Set<FlowSession>
+class DeleteObligationFlow(
+    private val obligation: StateAndRef<ObligationState>, private val sessions: Set<FlowSession>
 ) : SubFlow<UtxoSignedTransaction> {
 
     internal companion object {
-        const val FLOW_PROTOCOL = "create-obligation-flow"
+        const val FLOW_PROTOCOL = "delete-obligation-flow"
     }
 
     @CordaInject
@@ -37,14 +34,16 @@ class CreateObligationFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
-        val transaction = utxoLedgerService
-            .getTransactionBuilder()
-            .setNotary(notary)
-            .addOutputState(obligation)
-            .addCommand(ObligationContract.Create)
-            .addSignatories(listOf(obligation.issuer))
+        val transaction =
+            utxoLedgerService.getTransactionBuilder().setNotary(obligation.state.notary).addInputState(obligation)
+                .addCommand(ObligationContract.Delete)
+                .addSignatories(listOf(obligation.state.contractState.issuer, obligation.state.contractState.holder))
 
-        val fullySignedTransaction = transaction.sign()
+        val partiallySignedTransaction = transaction.sign()
+
+        // TODO : For now, just send them the partially signed transaction. We'll add counter-signing later.
+        val fullySignedTransaction =
+            sessions.map { it.sendAndReceive(UtxoSignedTransaction::class.java, partiallySignedTransaction) }.last()
 
         // TODO : For now, just send them the signed transaction. We'll add finality later.
         sessions.forEach { it.send(fullySignedTransaction) }
@@ -70,30 +69,21 @@ class CreateObligationFlow(
         @Suspendable
         override fun call(requestBody: RPCRequestData): String {
 
-            val request = requestBody.getRequestBodyAs(jsonService, CreateObligationRequestMessage::class.java)
+            val request = requestBody.getRequestBodyAs(jsonService, DeleteObligationRequestMessage::class.java)
 
-            val issuer = memberLookup.lookup(request.issuer)
-                ?: throw IllegalArgumentException("Unknown issuer: ${request.issuer}.")
+            val oldObligation: StateAndRef<ObligationState> = TODO("Requires vault lookup mechanism.")
 
-            val holder = memberLookup.lookup(request.holder)
-                ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
+            val issuer = memberLookup.lookup(oldObligation.state.contractState.issuer)
+                ?: throw IllegalArgumentException("Unknown issuer: ${oldObligation.state.contractState.issuer}.")
 
-            val notary = memberLookup.lookup(request.notary)?.getParty()
-                ?: throw IllegalArgumentException("Unknown notary: ${request.notary}.")
+            // TODO : If this flow can be called by either party, we need the flow session for the counter-party.
+            val sessions = flowMessaging.initiateFlows(issuer)
 
-            val sessions = flowMessaging.initiateFlows(holder)
+            val deleteObligationFlow = DeleteObligationFlow(oldObligation, sessions)
 
-            val issuerKey = issuer.ledgerKeys.first()
+            val transaction = flowEngine.subFlow(deleteObligationFlow)
 
-            val holderKey = holder.ledgerKeys.first()
-
-            val obligationState = ObligationState(issuerKey, holderKey, request.amount)
-
-            val createObligationFlow = CreateObligationFlow(obligationState, notary, sessions)
-
-            val transaction = flowEngine.subFlow(createObligationFlow)
-
-            val response = CreateObligationResponseMessage(transaction.id)
+            val response = DeleteObligationResponseMessage(transaction.id)
 
             return jsonService.format(response)
         }
