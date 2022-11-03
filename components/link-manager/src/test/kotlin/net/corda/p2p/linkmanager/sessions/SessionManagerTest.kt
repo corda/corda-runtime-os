@@ -53,7 +53,9 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.base.util.days
 import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
@@ -92,18 +94,19 @@ class SessionManagerTest {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
+        const val SESSION_REFRESH_THRESHOLD_KEY = 432000
         const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
-        private const val longPeriodMilliSec = 10000000L
+        private val sixDaysInMillis = 6.days.toMillis()
         private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
         private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            Duration.ofMillis(longPeriodMilliSec),
-            Duration.ofMillis(longPeriodMilliSec)
+            Duration.ofMillis(sixDaysInMillis),
+            Duration.ofMillis(sixDaysInMillis)
         )
 
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
@@ -266,7 +269,8 @@ class SessionManagerTest {
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             null,
             mock(),
@@ -324,7 +328,6 @@ class SessionManagerTest {
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
-        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
     }
 
@@ -448,11 +451,13 @@ class SessionManagerTest {
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             mock(),
         )
@@ -845,7 +850,7 @@ class SessionManagerTest {
         sessionManager.inboundSessionEstablished(sessionId)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES, SESSION_REFRESH_THRESHOLD_KEY),
             mock(),
             mock(),
         )
@@ -1194,7 +1199,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1247,7 +1252,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1321,7 +1326,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1385,7 +1390,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1448,7 +1453,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1470,8 +1475,8 @@ class SessionManagerTest {
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
-            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
             resourcesHolder,
         )
 
@@ -1518,7 +1523,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1589,7 +1594,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1610,4 +1615,183 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
     }
+
+    @Test
+    fun `sessions are refreshed after 5 days`() {
+        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+
+        whenever(session.sessionId).doAnswer { protocolInitiator.sessionId }
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
+
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
+        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
+        )
+    }
+
+    @Test
+    fun `sessions that have been refreshed are not tracked by the heartbeat manager`() {
+        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofDays(1),
+            Duration.ofDays(10)
+        )
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+            val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            return listOf(CompletableFuture.completedFuture(Unit))
+        }
+
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = SessionManagerImpl(
+            groups, members,
+            cryptoService,
+            pendingSessionMessageQueues,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock {
+                val dominoTile = mock<SimpleDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                on { it.dominoTile } doReturn dominoTile
+            },
+            linkManagerHostingMap,
+            protocolFactory,
+            mockTimeFacilitiesProvider.clock,
+            sessionReplayer,
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                null,
+                mock(),
+            )
+            heartbeatConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
+        }
+        @Suppress("UNCHECKED_CAST")
+        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+            whenever(it.publish(any())).doAnswer { invocation ->
+                callback(invocation.arguments.first() as List<Record<*, *>>)
+            }
+        }
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        startSendingHeartbeats(sessionManager)
+
+
+        fun advanceTimeAndAcknowledgeMessages() {
+            mockTimeFacilitiesProvider.advanceTime(longTimePeriodConfigWithHeartbeat.heartbeatPeriod.plus(5.millis))
+            sessionManager.messageAcknowledged(protocolInitiator.sessionId)
+        }
+
+        val heartbeatsExpected = 4
+
+        repeat(heartbeatsExpected) {
+            advanceTimeAndAcknowledgeMessages()
+        }
+
+        //trigger session expiry
+        advanceTimeAndAcknowledgeMessages()
+
+        assertThat(heartbeatsExpected).isEqualTo(messages.size)
+
+        for (message in messages) {
+            val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
+            assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
+        }
+
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
+
+    @Test
+    fun `sessions are removed even if groupInfo is missing`() {
+        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+
+        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
+
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
+
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(outboundSessionPool.constructed().last()).removeSessions(counterparties)
+
+    }
+
 }
