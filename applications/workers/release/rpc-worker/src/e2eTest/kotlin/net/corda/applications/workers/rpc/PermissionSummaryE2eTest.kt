@@ -175,7 +175,7 @@ class PermissionSummaryE2eTest {
     @Test
     fun `check permission summary when multiple users are assigned multiple roles with multiple permissions using bulk operation`() {
         val newUserPassword: String = testToolkit.uniqueName
-        val users = (1..2).map { testToolkit.uniqueName + "_user" }
+        val users = (1..2).map { testToolkit.uniqueName }
         users.map { adminTestHelper.createUser(it, newUserPassword, passwordExpiry) }
 
         users.map {
