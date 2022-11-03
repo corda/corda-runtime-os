@@ -24,6 +24,7 @@
         "net.corda.data.permissions.management.user.RemoveRoleFromUserRequest",
         "net.corda.data.permissions.management.role.CreateRoleRequest",
         "net.corda.data.permissions.management.permission.CreatePermissionRequest",
+        "net.corda.data.permissions.management.permission.BulkCreatePermissionsRequest",
         "net.corda.data.permissions.management.role.AddPermissionToRoleRequest",
         "net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest"
       ]
