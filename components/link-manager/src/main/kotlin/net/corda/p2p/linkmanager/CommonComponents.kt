@@ -26,7 +26,6 @@ internal class CommonComponents(
     clock: Clock,
 ) : LifecycleWithDominoTile {
     internal val inboundAssignmentListener = InboundAssignmentListener(
-        lifecycleCoordinatorFactory,
         Schemas.P2P.LINK_IN_TOPIC
     )
 

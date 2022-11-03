@@ -4,7 +4,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -254,12 +253,7 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
-        mock {
-            val dominoTile = mock<SimpleDominoTile> {
-                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-            }
-            on { it.dominoTile } doReturn dominoTile
-        },
+        mock(),
         linkManagerHostingMap,
         protocolFactory,
         mockTimeFacilitiesProvider.clock,
@@ -1186,12 +1180,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1239,12 +1228,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1313,12 +1297,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1377,12 +1356,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1440,12 +1414,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1510,12 +1479,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1581,12 +1545,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
@@ -1686,12 +1645,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock {
-                val dominoTile = mock<SimpleDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                on { it.dominoTile } doReturn dominoTile
-            },
+            mock(),
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,

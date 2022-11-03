@@ -154,7 +154,7 @@ internal class SessionManagerImpl(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
-            linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
+            linkManagerHostingMap.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
             publisher.dominoTile.toNamedLifecycle()),

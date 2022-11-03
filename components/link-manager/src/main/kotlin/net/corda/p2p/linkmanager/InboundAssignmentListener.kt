@@ -1,22 +1,12 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 internal class InboundAssignmentListener(
-    coordinatorFactory: LifecycleCoordinatorFactory,
     private val observedTopic: String,
-) : PartitionAssignmentListener, LifecycleWithDominoTile {
-
-    override val dominoTile = SimpleDominoTile(
-        this::class.java.simpleName,
-        coordinatorFactory,
-    )
+) : PartitionAssignmentListener {
 
     private val partitions = ConcurrentHashMap.newKeySet<Int>()
     private val callbacks = ConcurrentHashMap.newKeySet<(partitions: Set<Int>) -> Unit>()
@@ -36,7 +26,6 @@ internal class InboundAssignmentListener(
 
         if (partitions.isEmpty()) {
             logger.warn("No partitions assigned to $observedTopic.")
-            dominoTile.updateState(LifecycleStatus.DOWN)
         } else {
             callCallbacks()
         }
@@ -54,7 +43,6 @@ internal class InboundAssignmentListener(
             }
         }
         if (partitions.isNotEmpty()) {
-            dominoTile.updateState(LifecycleStatus.UP)
             callCallbacks()
         }
     }
@@ -65,16 +53,12 @@ internal class InboundAssignmentListener(
 
     fun registerCallbackForTopic(callback: (partitions: Set<Int>) -> Unit) {
         callbacks.add(callback)
-        if (dominoTile.isRunning) {
-            callback.invoke(partitions)
-        }
+        callback.invoke(partitions)
     }
 
     private fun callCallbacks() {
-        if (dominoTile.isRunning) {
-            callbacks.forEach {
-                it.invoke(partitions)
-            }
+        callbacks.forEach {
+            it.invoke(partitions)
         }
     }
 }
