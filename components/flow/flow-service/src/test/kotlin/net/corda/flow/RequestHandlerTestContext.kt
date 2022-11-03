@@ -47,6 +47,6 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity.toCorda())
     }
 
-    val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, mock(), recordList)
+    val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, mock(), recordList, mdcProperties = emptyMap())
 }
 
