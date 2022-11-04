@@ -1,10 +1,13 @@
 package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.databind.JsonNode
+import java.io.IOException
 import java.time.Duration
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThatThrownBy
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -59,6 +62,13 @@ fun updateConfig(config: String, section: String) {
 fun waitForConfigurationChange(section: String, key: String, value: String, timeout: Duration = Duration.ofMinutes(1)) {
     cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        // Wait for the service to become unavailable
+        eventually(timeout) {
+            assertThatThrownBy {
+                getConfig(section)
+            }.hasCauseInstanceOf(IOException::class.java)
+        }
 
         // Wait for the service to become available again and have the expected configuration value
         assertWithRetryIgnoringExceptions {
