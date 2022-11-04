@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -27,7 +28,9 @@ internal class StubGroupPolicyProvider(
                 this.holdingIdentity.toCorda(),
                 this.networkType,
                 this.protocolModes.toSet(),
-                this.trustedCertificates
+                this.trustedCertificates,
+                GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
+                null
             )
         }
     }

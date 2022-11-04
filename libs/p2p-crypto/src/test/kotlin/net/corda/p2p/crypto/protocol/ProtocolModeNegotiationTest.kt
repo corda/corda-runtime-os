@@ -1,6 +1,6 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol
 
-import net.corda.p2p.crypto.protocol.ProtocolModeNegotiation
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

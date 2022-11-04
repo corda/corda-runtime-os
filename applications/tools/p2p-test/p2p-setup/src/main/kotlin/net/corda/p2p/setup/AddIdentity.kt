@@ -55,6 +55,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
                     sessionKeyTenantId,
                     tlsCertificates,
                     publicSessionKey,
+                    null
                 )
             )
         }
