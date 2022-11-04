@@ -27,7 +27,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
@@ -178,8 +178,12 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if (!checkSourceLocallyHosted(messageAndKey)) return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
-        if (!checkDestinationSourceGroupsMatch(messageAndKey)) return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        if (!checkSourceLocallyHosted(messageAndKey)) {
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
+        }
+        if (!checkDestinationSourceGroupsMatch(messageAndKey)) {
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
