@@ -19,7 +19,8 @@ public class ConsensualLedgerServiceJavaApiTest {
         final ConsensualTransactionBuilder consensualTransactionBuilder = mock(ConsensualTransactionBuilder.class);
         when(consensualLedgerService.getTransactionBuilder()).thenReturn(consensualTransactionBuilder);
 
-        when(consensualLedgerService.fetchTransaction(any(SecureHash.class))).thenReturn(null);
+        when(consensualLedgerService.findSignedTransaction(any(SecureHash.class))).thenReturn(null);
+        when(consensualLedgerService.findLedgerTransaction(any(SecureHash.class))).thenReturn(null);
 
         final ConsensualTransactionBuilder result = consensualLedgerService.getTransactionBuilder();
 
@@ -28,6 +29,7 @@ public class ConsensualLedgerServiceJavaApiTest {
         verify(consensualLedgerService, times(1)).getTransactionBuilder();
 
         SecureHash fakeTxId = new SecureHash("SHA256", "1234456".getBytes());
-        Assertions.assertThat(consensualLedgerService.fetchTransaction(fakeTxId)).isNull();
+        Assertions.assertThat(consensualLedgerService.findSignedTransaction(fakeTxId)).isNull();
+        Assertions.assertThat(consensualLedgerService.findLedgerTransaction(fakeTxId)).isNull();
     }
 }

@@ -4,6 +4,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -23,13 +24,25 @@ interface ConsensualLedgerService {
 
 
     /**
-     * Fetches a transaction from the vault
+     * Finds a transaction by id in the vault and returns it
      *
-     * @param id The id of the transaction to load
+     * @param id The id of the transaction to find
      *
      * @return The signed transaction, if it has been recorded previously. Null if not found.
      */
-    fun fetchTransaction(id: SecureHash) : ConsensualSignedTransaction?
+    @Suspendable
+    fun findSignedTransaction(id: SecureHash) : ConsensualSignedTransaction?
+
+    /**
+     * Finds a transaction by id in the vault, resolves it to a ledger transaction and returns it
+     *
+     * @param id The id of the transaction to find
+     *
+     * @return The ledger transaction, if it has been recorded previously. Null if not found.
+     */
+    @Suspendable
+    fun findLedgerTransaction(id: SecureHash) : ConsensualLedgerTransaction?
+
 
     /**
      * Collects signatures, records and broadcasts to involved peers a [ConsensualSignedTransaction].
