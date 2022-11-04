@@ -191,6 +191,7 @@ class DbReconcilerReaderComponentTest {
         }
 
         @Test
+        @Suppress("MaxLineLength")
         fun `lifecycle status DOWN after start event closes registration handle, calls super class onStatusDown function and sets coordinator status`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(

@@ -207,6 +207,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `exception creating the entity manager is caught, entity manager factory is closed, and error event is posted to the coordinator`() {
         whenever(vnode1Emf.createEntityManager()).doThrow(RuntimeException::class)
         val resultStream = assertDoesNotThrow {
@@ -220,6 +221,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `exception running the query is caught, entity manager and entity manager factory are closed, and error event is posted to the coordinator`() {
         whenever(vaultReconciliationQuery.invoke(eq(virtualNode1), eq(vnode1Em))).doThrow(RuntimeException::class)
         val resultStream = assertDoesNotThrow {
