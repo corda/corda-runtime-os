@@ -24,6 +24,7 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import kotlin.test.assertIs
@@ -89,6 +90,23 @@ internal class UtxoTransactionBuilderImplTest {
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
+    }
+
+    @Test
+    fun `can't sign twice`() {
+        assertThrows(IllegalStateException::class.java) {
+            val builder = makeTransactionBuilder()
+                .setNotary(utxoNotaryExample)
+                .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+                .addOutputState(utxoStateExample)
+                .addInputState(getUtxoInvalidStateAndRef())
+                .addReferenceInputState(getUtxoInvalidStateAndRef())
+                .addCommand(UtxoCommandExample())
+                .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+
+            builder.sign(publicKeyExample)
+            builder.sign(publicKeyExample)
+        }
     }
 
     private fun makeTransactionBuilder(): UtxoTransactionBuilder {
