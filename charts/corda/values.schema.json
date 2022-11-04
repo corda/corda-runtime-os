@@ -1750,6 +1750,11 @@
                                 "warn"
                             ],
                             "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
+                        },
+                        "override": {
+                            "type": "string",
+                            "default": "",
+                            "title": "additional Log4j 2 XML configuration"
                         }
                     },
                     "examples": [{

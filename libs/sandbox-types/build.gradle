@@ -1,0 +1,11 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Corda Sandbox Types'
+
+dependencies {
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly 'org.osgi:osgi.annotation'
+}

@@ -21,6 +21,7 @@ dependencies {
     implementation project(':components:crypto:crypto-client')
     implementation project(':libs:crypto:merkle-impl')
     implementation project(':libs:flows:flow-api')
+    implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:uniqueness:common')
     implementation project(':libs:virtual-node:virtual-node-info')

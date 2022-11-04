@@ -4,6 +4,9 @@ import java.security.PublicKey
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -16,7 +19,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ SigningService::class, SingletonSerializeAsToken::class ],
+    service = [ SigningService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
 class SigningServiceImpl @Activate constructor(
@@ -24,7 +27,7 @@ class SigningServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
-) : SigningService, SingletonSerializeAsToken {
+) : SigningService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     @Suspendable
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {

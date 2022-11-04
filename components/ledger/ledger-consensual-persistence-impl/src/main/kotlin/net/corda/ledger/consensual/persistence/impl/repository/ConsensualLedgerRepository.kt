@@ -3,14 +3,18 @@ package net.corda.ledger.consensual.persistence.impl.repository
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -18,15 +22,26 @@ import javax.persistence.Tuple
 
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
+ * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
+ * as "corda.marker.only" to force the sandbox to create it, despite it implementing
+ * only the [UsedByPersistence] marker interface.
  */
-class ConsensualLedgerRepository(
+@Component(
+    service = [ ConsensualLedgerRepository::class, UsedByPersistence::class ],
+    property = [ "corda.marker.only:Boolean=true" ],
+    scope = PROTOTYPE
+)
+class ConsensualLedgerRepository @Activate constructor(
+    @Reference
     private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference
     private val digestService: DigestService,
+    @Reference
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference
     private val serializationService: SerializationService
-) {
+) : UsedByPersistence {
     companion object {
-        private val logger = contextLogger()
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 

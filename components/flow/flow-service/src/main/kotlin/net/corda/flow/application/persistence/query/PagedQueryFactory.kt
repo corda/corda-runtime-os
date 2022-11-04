@@ -1,10 +1,10 @@
 package net.corda.flow.application.persistence.query
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -46,13 +46,13 @@ interface PagedQueryFactory {
  * be able to contain its own [PagedQueryFactory] instance which uses that
  * [SerializationService].
  */
-@Component(service = [ PagedQueryFactory::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
+@Component(service = [ PagedQueryFactory::class, UsedByFlow::class ], scope = PROTOTYPE)
 internal class PagedQueryFactoryImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-) : PagedQueryFactory, SingletonSerializeAsToken {
+) : PagedQueryFactory, UsedByFlow {
 
     override fun <R : Any> createNamedParameterizedQuery(
         queryName: String,

@@ -30,7 +30,6 @@ internal class EntityExtractorTests {
         }
 
         val classNames = EntityExtractor.getEntityClassNames(setOf(metaData1, metaData2))
-        assertThat(classNames.size).isEqualTo(classNames1.size + classNames2.size)
-        assertThat(classNames).isEqualTo(classNames1 + classNames2)
+        assertThat(classNames).containsExactlyInAnyOrderElementsOf(classNames1 + classNames2)
     }
 }
