@@ -27,7 +27,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
@@ -148,6 +148,23 @@ internal class OutboundMessageProcessor(
      * a marker for this message. If the process is restarted we reread the original marker.
      */
 
+    private fun checkSourceLocallyHosted(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>>{
+        if(!linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.source.toCorda())) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
+                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
+                    "as the source ID is not locally hosted.")
+        }
+        return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
+    }
+
+    private fun checkDestinationSourceGroupsMatch(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
+        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
+                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
+                    "as their group IDs do not match.")
+        }
+        return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+    }
     private fun processAuthenticatedMessage(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
@@ -157,19 +174,8 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if(!linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.source.toCorda())) {
-            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
-                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
-                    "as the source ID is not locally hosted.")
-            return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
-        }
-
-        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
-            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
-                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
-                    "as their group IDs do not match.")
-            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
-        }
+        checkSourceLocallyHosted(messageAndKey)
+        checkDestinationSourceGroupsMatch(messageAndKey)
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
