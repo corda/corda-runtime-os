@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
@@ -64,6 +65,8 @@ class PendingSessionMessageQueuesImplTest {
             NetworkType.CORDA_5,
             emptySet(),
             emptyList(),
+            GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
+            null
         )
     }
 

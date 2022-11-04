@@ -149,7 +149,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
 
             verify(
@@ -159,7 +160,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
         }
 
@@ -193,7 +195,8 @@ class CertificatesClientImplTest {
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
-                    "sessionAlias"
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -213,7 +216,8 @@ class CertificatesClientImplTest {
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
-                    "sessionAlias"
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -223,7 +227,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), any(), any(), any(), eq(null))
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -236,7 +240,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
 
             verify(publisher).publish(listOf(record))
