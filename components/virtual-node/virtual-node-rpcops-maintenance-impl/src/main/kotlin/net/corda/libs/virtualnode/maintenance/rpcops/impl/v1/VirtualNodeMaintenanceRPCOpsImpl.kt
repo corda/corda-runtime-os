@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
@@ -39,8 +40,6 @@ import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.Exception
-import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
@@ -109,6 +108,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    // Make sender unavailable while we're updating.
+                    //See - https://github.com/corda/corda-runtime-os/pull/2376#pullrequestreview-1166775801
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }
