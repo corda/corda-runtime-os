@@ -375,9 +375,19 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
-        val digestName = DigestAlgorithmName(input.getValue("digestName"))
-        val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey, digestName)
-        return signatureSpec?.signatureName ?: "null"
+        val digestName = try {
+            input.getValue("digestName")
+        } catch (e: IllegalStateException) {
+            null
+        }
+        log.info("Crypto - Getting default signature spec called with public key: $publicKey and digestName: $digestName ")
+
+        val defaultSignatureSpec = if (digestName != null) {
+            signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName(digestName))
+        } else {
+            signatureSpecService.defaultSignatureSpec(publicKey)
+        }
+        return defaultSignatureSpec?.signatureName ?: "null"
     }
 
     @Suspendable
@@ -391,16 +401,14 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         } catch (e: IllegalStateException) {
             null
         }
-        log.info(
-            "Crypto - Getting compatible signatures called with public key: $publicKey and digestName: $digestName "
-        )
+        log.info("Crypto - Getting compatible signature specs called with public key: $publicKey and digestName: $digestName ")
 
-        val signatureSpecs = if (digestName != null) {
+        val compatibleSignatureSpecs = if (digestName != null) {
             signatureSpecService.compatibleSignatureSpecs(publicKey, DigestAlgorithmName(digestName))
         } else {
             signatureSpecService.compatibleSignatureSpecs(publicKey)
         }
-        val outputs = signatureSpecs.map {
+        val outputs = compatibleSignatureSpecs.map {
             it.signatureName
         }
         return outputs.joinToString("; ")

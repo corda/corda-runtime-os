@@ -564,6 +564,7 @@ class FlowTests {
 
     @Test
     fun `Crypto - Get default signature spec`() {
+        // Call get default signature spec api with public key and digest algorithm name
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_default_signature_spec"
         requestBody.data = mapOf(
@@ -579,11 +580,24 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("crypto_get_default_signature_spec")
         assertThat(flowResult.result).isEqualTo("SHA256withECDSA")
+
+        // Call get default signature spec api with public key only
+        requestBody.data = mapOf(
+            "memberX500" to X500_BOB
+        )
+        val requestId1 = startRpcFlow(bobHoldingId, requestBody)
+        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
+        val flowResult1 = result1.getRpcFlowResult()
+        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result1.flowResult).isNotNull
+        assertThat(result1.flowError).isNull()
+        assertThat(flowResult1.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult1.result).isEqualTo("SHA256withECDSA")
     }
 
     @Test
     fun `Crypto - Get compatible signature specs`() {
-        // Input for get compatible signature specs api is public key only
+        // Call get compatible signature specs api with public key only
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_compatible_signature_specs"
         requestBody.data = mapOf("memberX500" to X500_BOB)
@@ -604,7 +618,7 @@ class FlowTests {
             )
         )
 
-        // Input for get compatible signature specs api is public key and digest algorithm name
+        // Call get compatible signature specs api with public key and digest algorithm name
         requestBody.data = mapOf(
             "memberX500" to X500_BOB,
             "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name

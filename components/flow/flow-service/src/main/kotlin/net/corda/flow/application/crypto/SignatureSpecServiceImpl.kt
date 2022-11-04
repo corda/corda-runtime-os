@@ -22,9 +22,8 @@ class SignatureSpecServiceImpl @Activate constructor(
 ) : SignatureSpecService, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun defaultSignatureSpec(publicKey: PublicKey): SignatureSpec {
-        TODO()
-    }
+    override fun defaultSignatureSpec(publicKey: PublicKey): SignatureSpec? =
+        schemeMetadata.inferSignatureSpec(publicKey)
 
     @Suspendable
     override fun defaultSignatureSpec(publicKey: PublicKey, digestAlgorithmName: DigestAlgorithmName): SignatureSpec? =
