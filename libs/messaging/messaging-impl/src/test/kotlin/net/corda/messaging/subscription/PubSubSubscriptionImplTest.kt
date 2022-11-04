@@ -11,6 +11,7 @@ import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.stubs.StubPubSubProcessor
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -25,6 +26,8 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class PubSubSubscriptionImplTest {
     private companion object {
@@ -38,7 +41,7 @@ class PubSubSubscriptionImplTest {
     private val mockCordaConsumer: CordaConsumer<String, ByteBuffer> = mock()
     private val mockConsumerRecords = generateMockCordaConsumerRecordList(mockRecordCount, "topic", 1)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
     private var pollInvocationCount: Int = 0
     private var builderInvocationCount: Int = 0
@@ -70,7 +73,8 @@ class PubSubSubscriptionImplTest {
             any(),
             anyOrNull()
         )
-        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
+            .createCoordinator(any(), any())
     }
 
     /**
@@ -106,14 +110,16 @@ class PubSubSubscriptionImplTest {
      */
     @Test
     fun testFatalExceptionConsumerBuild() {
-        whenever(cordaConsumerBuilder.createConsumer<String, ByteBuffer>(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            anyOrNull()
-        )).thenThrow(
+        whenever(
+            cordaConsumerBuilder.createConsumer<String, ByteBuffer>(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyOrNull()
+            )
+        ).thenThrow(
             CordaMessageAPIFatalException(
                 "Fatal Error",
                 Exception()
@@ -129,8 +135,9 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-        @Suppress("EmptyWhileBlock")
+
         while (kafkaPubSubSubscription.isRunning) {
+            Thread.sleep(10)
         }
 
         verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
@@ -143,6 +150,8 @@ class PubSubSubscriptionImplTest {
             anyOrNull()
         )
         assertThat(latch.count).isEqualTo(mockRecordCount)
+
+        Assertions.assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     /**
@@ -157,8 +166,14 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(),any(), anyOrNull())
-        whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
+        }.whenever(cordaConsumerBuilder)
+            .createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
+        whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(
+            CordaMessageAPIFatalException(
+                "Fatal Error",
+                Exception()
+            )
+        )
 
         kafkaPubSubSubscription =
             PubSubSubscriptionImpl(
@@ -169,8 +184,9 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-        @Suppress("EmptyWhileBlock")
+
         while (kafkaPubSubSubscription.isRunning) {
+            Thread.sleep(10)
         }
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
@@ -183,6 +199,8 @@ class PubSubSubscriptionImplTest {
             anyOrNull()
         )
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
+
+        Assertions.assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
 
@@ -238,5 +256,44 @@ class PubSubSubscriptionImplTest {
             any(),
             anyOrNull()
         )
+    }
+
+    @Test
+    fun testThrowablesCaughtBeforeThreadDefaultHandler() {
+        val lock = ReentrantLock()
+        var subscriptionThread: Thread? = null
+        var uncaughtExceptionInSubscriptionThread: Throwable? = null
+
+        doAnswer {
+            lock.withLock {
+                subscriptionThread = Thread.currentThread()
+            }
+            // Here's our chance to make sure there are no uncaught exceptions in this, the subscription thread
+            subscriptionThread!!.setUncaughtExceptionHandler { _, e ->
+                lock.withLock {
+                    uncaughtExceptionInSubscriptionThread = e
+                }
+            }
+            @Suppress("TooGenericExceptionThrown")
+            throw Throwable()
+        }.whenever(cordaConsumerBuilder)
+            .createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
+
+        kafkaPubSubSubscription =
+            PubSubSubscriptionImpl(
+                config,
+                cordaConsumerBuilder,
+                processor,
+                lifecycleCoordinatorFactory
+            )
+
+        kafkaPubSubSubscription.start()
+
+        while (lock.withLock { subscriptionThread == null }) {
+            // We must wait for the callback above in order we know what thread to join below
+            Thread.sleep(10)
+        }
+        subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
+        Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
 }
