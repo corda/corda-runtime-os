@@ -95,25 +95,6 @@ fun createServerSslHandler(keyStore: KeyStoreWithPassword): SslHandler {
     return sslHandler
 }
 
-fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
-    val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
-    val revocationChecker = when (revocationConfig.mode) {
-        RevocationConfigMode.OFF -> AllowAllRevocationChecker
-        RevocationConfigMode.SOFT_FAIL, RevocationConfigMode.HARD_FAIL -> {
-            val certPathBuilder = CertPathBuilder.getInstance("PKIX")
-            val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker
-            // We only set SOFT_FAIL as a checker option if specified. Everything else is left as default, which means
-            // OCSP is used if possible, CRL as a fallback
-            if (revocationConfig.mode == RevocationConfigMode.SOFT_FAIL) {
-                pkixRevocationChecker.options = setOf(PKIXRevocationChecker.Option.SOFT_FAIL)
-            }
-            pkixRevocationChecker
-        }
-    }
-    pkixParams.addCertPathChecker(revocationChecker)
-    return CertPathTrustManagerParameters(pkixParams)
-}
-
 fun Certificate.x509(): X509Certificate = requireNotNull(this as? X509Certificate) { "Not an X.509 certificate: $this" }
 
 /**
