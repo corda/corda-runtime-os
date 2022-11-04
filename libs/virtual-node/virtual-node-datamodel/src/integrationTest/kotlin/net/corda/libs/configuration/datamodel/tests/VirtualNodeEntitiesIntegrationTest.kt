@@ -194,6 +194,21 @@ class VirtualNodeEntitiesIntegrationTest {
         assertEquals(virtualNode.holdingIdentity.x500Name, vnodes.last().holdingIdentity.x500Name)
     }
 
+    @Test
+    fun `lookup returns null if no vnode found`() {
+        // "set up"
+        val numberOfVNodes = 5
+        (1..numberOfVNodes).forEach { i ->
+            newVNode("Test CPI $i", "1.0-${Generator.epochMillis()}", "hash$i")
+        }
+
+        val virtualNode = entityManagerFactory.createEntityManager().use {
+            it.findVirtualNode("something")
+        }
+
+        assertEquals(virtualNode, null)
+    }
+
     private fun newVNode(name: String, version: String, hash: String): VirtualNodeEntity {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())

@@ -17,6 +17,7 @@ import net.corda.messaging.api.records.Record
  * @param inputEventPayload The received [FlowEvent.payload].
  * @param outputRecords The [Record]s that should be sent back to the message bus when the pipeline completes.
  * @param T The type of [FlowEvent.payload].
+ * @param mdcProperties properties to set the flow fibers MDC with.
  */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
@@ -24,7 +25,8 @@ data class FlowEventContext<T>(
     var inputEventPayload: T,
     val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
-    val sendToDlq: Boolean = false
+    val sendToDlq: Boolean = false,
+    val mdcProperties: Map<String, String>
 )
 
 

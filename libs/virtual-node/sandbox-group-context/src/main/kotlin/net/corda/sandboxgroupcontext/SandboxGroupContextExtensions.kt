@@ -8,3 +8,8 @@ package net.corda.sandboxgroupcontext
  * @return null if not found
  */
 inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = this.get(key, T::class.java)
+
+/**
+ * Fetch the set of singleton services created for use by this sandbox.
+ */
+fun SandboxGroupContext.getSandboxSingletonServices(): Set<Any> = getObjectByKey(SANDBOX_SINGLETONS) ?: emptySet()

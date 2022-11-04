@@ -7,18 +7,11 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
-import java.util.Collections.unmodifiableSet
 
 class SandboxDependencyInjectorImpl(
-    singletons: Map<SingletonSerializeAsToken, Array<String>>,
+    singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
 ) : SandboxDependencyInjector {
-    private companion object {
-        private val FORBIDDEN_INTERFACES: Set<String> = unmodifiableSet(setOf(
-            SingletonSerializeAsToken::class.java.name
-        ))
-    }
-
     private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
@@ -34,7 +27,6 @@ class SandboxDependencyInjectorImpl(
     }
 
     override fun injectServices(flow: Flow) {
-
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
@@ -55,8 +47,8 @@ class SandboxDependencyInjectorImpl(
         }
     }
 
-    override fun getRegisteredSingletons(): Set<SingletonSerializeAsToken> {
-        return serviceTypeMap.values.toSet()
+    override fun getRegisteredServices(): Collection<SingletonSerializeAsToken> {
+        return serviceTypeMap.values
     }
 
     /**
@@ -83,13 +75,12 @@ class SandboxDependencyInjectorImpl(
 
     private fun registerService(
         serviceObj: SingletonSerializeAsToken,
-        serviceTypeNames: Array<String>,
+        serviceTypeNames: List<String>,
         serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
     ) {
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader
-        serviceTypeNames.filterNot(FORBIDDEN_INTERFACES::contains)
-            .mapNotNull { serviceTypeName ->
+        serviceTypeNames.mapNotNull { serviceTypeName ->
                 try {
                     FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
                         ?: Class.forName(serviceTypeName, false, serviceClassLoader)

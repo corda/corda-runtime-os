@@ -23,8 +23,9 @@ class PayloadChecker(private val maxPayloadSize: Int) {
         if (bytes.array().size > maxPayloadSize) {
             throw KafkaMessageSizeException("Payload $kb kb, exceeds max Kafka payload size ${maxPayloadSize / (1024)} kb")
         }
-        if(log.isDebugEnabled)
-            log.debug("Payload $kb kb < max Kafka payload size ${maxPayloadSize / (1024)} kb")
+        if (log.isDebugEnabled) {
+            log.debug("Payload {} kb < max Kafka payload size {} kb", kb, maxPayloadSize / 1024)
+        }
         return bytes
     }
 }

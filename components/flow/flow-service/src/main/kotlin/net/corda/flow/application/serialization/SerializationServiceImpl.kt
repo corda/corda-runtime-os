@@ -1,7 +1,7 @@
 package net.corda.flow.application.serialization
 
-import java.io.NotSerializableException
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
@@ -11,20 +11,17 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.io.NotSerializableException
 
 @Component(
-    service = [
-        SerializationService::class,
-        SerializationServiceInternal::class,
-        SingletonSerializeAsToken::class
-    ],
-    scope = PROTOTYPE,
-    property = [ "corda.system=true" ]
+    service = [ SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class ],
+    property = [ "corda.system=true" ],
+    scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : SerializationServiceInternal, SingletonSerializeAsToken {
+) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         private val log = contextLogger()
@@ -45,7 +42,7 @@ class SerializationServiceImpl @Activate constructor(
         return try {
             serializationService.deserialize(bytes, clazz)
         } catch (e: NotSerializableException) {
-            log.info("Failed to deserialize it into a ${clazz.name}", e)
+            log.error("Failed to deserialize it into a ${clazz.name}", e)
             throw e
         }
     }
@@ -76,3 +73,4 @@ class SerializationServiceImpl @Activate constructor(
         )
     }
 }
+

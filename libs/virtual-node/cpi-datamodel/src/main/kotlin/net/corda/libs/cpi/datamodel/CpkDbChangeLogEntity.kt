@@ -24,10 +24,10 @@ class CpkDbChangeLogEntity(
     @Column(name = "cpk_file_checksum", nullable = false, unique = true)
     val fileChecksum: String,
     @Column(name = "content", nullable = false)
-    val content: String,
+    override val content: String,
     @Column(name = "changeset_id", nullable = false)
     val changesetId: UUID
-) {
+) : CpkDbChangelog {
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
     // convention. See the comment in the companion object of VirtualNodeDbChangeLog.
@@ -42,6 +42,8 @@ class CpkDbChangeLogEntity(
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
+
+    override val filePath get() = id.filePath
 }
 
 /**

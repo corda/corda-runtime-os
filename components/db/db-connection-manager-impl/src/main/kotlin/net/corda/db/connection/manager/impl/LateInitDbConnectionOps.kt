@@ -40,6 +40,9 @@ class LateInitDbConnectionOps: DbConnectionOps {
 
     override fun getClusterDataSource(): DataSource = delegate.getClusterDataSource()
 
+    override fun createDatasource(connectionId: UUID): CloseableDataSource =
+        delegate.createDatasource(connectionId)
+
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         delegate.getDataSource(name, privilege)
 

@@ -12,8 +12,9 @@ dependencies {
 
     implementation "net.corda:corda-ledger-common"
 
-    implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(':libs:sandbox-types')
+    implementation project(":libs:serialization:serialization-internal")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

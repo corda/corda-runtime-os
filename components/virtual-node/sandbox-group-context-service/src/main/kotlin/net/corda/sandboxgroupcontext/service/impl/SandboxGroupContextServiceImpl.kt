@@ -13,6 +13,7 @@ import java.util.TreeMap
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -20,17 +21,19 @@ import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.CORDA_SYSTEM_FILTER
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxCrypto
 import net.corda.sandboxgroupcontext.SANDBOX_SINGLETONS
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
+import net.corda.sandboxgroupcontext.service.CacheConfiguration
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
@@ -43,6 +46,10 @@ import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServiceReference
 import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 
@@ -57,16 +64,28 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * This is a per-process service, but it must return the "same instance" for a given [VirtualNodeContext]
  * in EVERY process.
  */
-class SandboxGroupContextServiceImpl(
+@Component(service = [ SandboxGroupContextService::class ])
+@RequireSandboxCrypto
+@RequireSandboxHooks
+class SandboxGroupContextServiceImpl @Activate constructor(
+    @Reference
     private val sandboxCreationService: SandboxCreationService,
+    @Reference
     private val cpkReadService: CpkReadService,
+    @Reference
     private val serviceComponentRuntime: ServiceComponentRuntime,
-    private val bundleContext: BundleContext,
-    var cache: SandboxGroupContextCache
-) : SandboxGroupContextService {
+    private val bundleContext: BundleContext
+) : SandboxGroupContextService, CacheConfiguration {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
+        private const val CORDA_MARKER_ONLY_FILTER = "(corda.marker.only=*)"
 
+        private val MARKER_INTERFACES: Set<String> = unmodifiableSet(
+            SandboxGroupType.values()
+                .mapTo(mutableSetOf(), SandboxGroupType::serviceMarkerType)
+                .mapTo(mutableSetOf(), Class<*>::getName)
+        )
+        private val markerOnlyFilter = FrameworkUtil.createFilter(CORDA_MARKER_ONLY_FILTER)
         private val systemFilter = FrameworkUtil.createFilter(CORDA_SYSTEM_FILTER)
         private val logger = loggerFor<SandboxGroupContextServiceImpl>()
 
@@ -88,6 +107,32 @@ class SandboxGroupContextServiceImpl(
             } catch (e: Exception) {
                 logger.warn("Ignoring exception", e)
             }
+        }
+
+        private val DUMMY_CACHE = object : SandboxGroupContextCache {
+            override val capacity: Long
+                get() = 0
+
+            override fun remove(virtualNodeContext: VirtualNodeContext)
+                = throw IllegalStateException("remove: SandboxGroupContextService is not ready.")
+
+            override fun get(
+                virtualNodeContext: VirtualNodeContext,
+                createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
+            ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
+
+            override fun close() {}
+        }
+    }
+
+    private var cache: SandboxGroupContextCache = DUMMY_CACHE
+
+    override fun initCache(capacity: Long) {
+        if (capacity != cache.capacity) {
+            val oldCache = cache
+            cache = SandboxGroupContextCacheImpl(capacity)
+            oldCache.close()
+            logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacity, capacity)
         }
     }
 
@@ -173,11 +218,11 @@ class SandboxGroupContextServiceImpl(
         // All "main" bundles are assumed to have equal access rights.
         val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
         val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
-        val serviceMarkerTypeName = vnc.serviceMarkerType.name
-        bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).forEach { serviceRef ->
+        val serviceMarkerType = vnc.sandboxGroupType.serviceMarkerType
+        bundleContext.getServiceReferences(serviceMarkerType, serviceFilter).forEach { serviceRef ->
             try {
                 serviceRef.serviceClassNames
-                    .filterNot(serviceMarkerTypeName::equals)
+                    .filterNot(MARKER_INTERFACES::contains)
                     .onEach { serviceType ->
                         serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
                     }.mapNotNullTo(ArrayList()) { serviceType ->
@@ -191,12 +236,14 @@ class SandboxGroupContextServiceImpl(
                             logger.debug("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
                             null
                         }
-                    }.takeIf(List<*>::isNotEmpty)
-                    ?.also { injectableTypes ->
-                        // Every service object must implement the service
-                        // marker type and at least one other type too.
+                    }.takeIf { serviceTypes ->
+                        // Every service object must implement the service marker type
+                        // and at least one other type too, unless declared with the
+                        // corda.marker.only property.
+                        serviceTypes.isNotEmpty() || markerOnlyFilter.match(serviceRef)
+                    }?.also { injectableTypes ->
                         logger.debug("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
-                        injectableTypes += vnc.serviceMarkerType
+                        injectableTypes += serviceMarkerType
 
                         // We filtered on services having a component name, so we
                         // should be guaranteed to find its component description.
@@ -247,7 +294,11 @@ class SandboxGroupContextServiceImpl(
         return services.mapNotNullTo(LinkedHashSet()) { (serviceClass, serviceBundle) ->
             try {
                 val serviceInterfaces = mutableSetOf(serviceMarkerTypeName, serviceClass.name)
-                val serviceObj = serviceClass.getConstructor().newInstance()
+                val serviceObj = serviceClass.getConstructor().let { ctor ->
+                    // Allow instantiation of classes which are non-public.
+                    ctor.isAccessible = true
+                    ctor.newInstance()
+                }
 
                 // Register this service object with the OSGi framework.
                 val registration = serviceBundle.bundleContext.registerService(
@@ -279,14 +330,6 @@ class SandboxGroupContextServiceImpl(
             }
     }
 
-    override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
-        return registerMetadataServices(
-            sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.digestAlgorithmFactories },
-            serviceMarkerType = DigestAlgorithmFactory::class.java
-        )
-    }
-
     override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean {
         val missingCpks = cpkChecksums.filter {
             cpkReadService.get(it) == null
@@ -299,6 +342,7 @@ class SandboxGroupContextServiceImpl(
         return missingCpks.isEmpty()
     }
 
+    @Deactivate
     override fun close() {
         cache.close()
     }
@@ -500,7 +544,8 @@ class SandboxGroupContextServiceImpl(
                     serviceObj,
                     serviceFactory.serviceReference.copyPropertiesForSandbox()
                 )
-                logger.info("Registered sandbox service [{}] for bundle [{}][{}]",
+                logger.info("Registered sandbox service {}[{}] for bundle [{}][{}]",
+                    serviceObj::class.java.simpleName,
                     serviceClassNames.joinToString(),
                     targetContext.bundle.symbolicName,
                     targetContext.bundle.bundleId
