@@ -9,7 +9,6 @@ import java.security.cert.PKIXParameters
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 
-
 /** Verifies that code signers' signatures are valid */
 internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
     require(codeSigners.isNotEmpty()) {
@@ -53,8 +52,18 @@ internal fun validateCertPath(
     try {
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
-        val index = if (e.index >= 0) ", certificate at index [${e.index}]" else ""
-        val msg = "Error validating $certPathName certificate path [$certPath]$index: ${e.message}"
+        val index: String; val cert: X509Certificate?
+        if (e.index >= 0) {
+            index = ", certificate at index [${e.index}]"
+            cert = certPath.certificates[e.index] as? X509Certificate
+        } else {
+            index = ""
+            cert = if (certPath.certificates.size == 1) certPath.certificates.first() as? X509Certificate else null
+        }
+
+        val name = cert?.subjectX500Principal?.name
+
+        val msg = "Error validating $certPathName certificate path$index, ${certPath.type} name: $name. ${e.message}"
         throw CertPathValidatorException(msg, e.cause, e.certPath, e.index, e.reason)
     }
 }

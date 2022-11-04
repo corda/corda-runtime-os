@@ -134,3 +134,5 @@ node_modules/
 
 values.yaml
 debug.yaml
+/metrics/grafana/*.db
+/metrics/data/*

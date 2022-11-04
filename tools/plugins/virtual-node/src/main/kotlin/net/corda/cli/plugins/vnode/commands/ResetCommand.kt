@@ -38,7 +38,18 @@ class ResetCommand : HttpRpcCommand(), Runnable {
     )
     var wait: Boolean = false
 
+    @Option(
+        names = ["-r", "--resync"],
+        required = false,
+        description = ["A list of virtual node shortIds for the vaults to be resynchronised"]
+    )
+    var resync: List<String> = emptyList()
+
     override fun run() {
+        if (resync.isNotEmpty() && !wait) {
+            println("You cannot use the resync option without waiting")
+            return
+        }
         var virtualNodeMaintenanceResult: String
         val virtualNodeMaintenance =
             createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class)
@@ -63,6 +74,9 @@ class ResetCommand : HttpRpcCommand(), Runnable {
         }
         if (wait) {
             pollForOKStatus(virtualNodeMaintenanceResult)
+            if (resync.isNotEmpty()) {
+                resyncVaults(resync)
+            }
         } else {
             println(virtualNodeMaintenanceResult)
         }
@@ -87,6 +101,22 @@ class ResetCommand : HttpRpcCommand(), Runnable {
                 }
             }
             println("CPI Successfully Uploaded and applied. ")
+        }
+    }
+
+    private fun resyncVaults(virtualNodeShortIds: List<String>) {
+        createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class).use { client ->
+            val virtualNodeMaintenance = client.start().proxy
+            try {
+                virtualNodeShortIds.forEach { virtualNodeShortId ->
+                    virtualNodeMaintenance.resyncVirtualNodeDb(virtualNodeShortId)
+                    println("Virtual node $virtualNodeShortId successfully resynced")
+                }
+            } catch (e: Exception) {
+                println(e.message)
+                logger.error("Unexpected error when resyncing vaults", e)
+                return
+            }
         }
     }
 }
