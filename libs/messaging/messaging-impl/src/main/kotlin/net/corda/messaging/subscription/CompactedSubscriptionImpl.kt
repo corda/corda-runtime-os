@@ -35,9 +35,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
-    override fun close() {
-        threadLooper.close()
-    }
+    override fun close() = threadLooper.close()
 
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
