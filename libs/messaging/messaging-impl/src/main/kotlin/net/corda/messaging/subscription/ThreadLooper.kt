@@ -32,7 +32,7 @@ class ThreadLooper(
     @Volatile
     private var _stopped = false
     @Volatile
-    private var _isRunningInternal = true
+    private var _isRunning = true
 
     /**
      * [loopStopped] and [isRunning] are not indicating the same. [loopStopped] is an indication to the looper function
@@ -48,7 +48,7 @@ class ThreadLooper(
         get() = _stopped
 
     val isRunning:Boolean
-        get() = _isRunningInternal
+        get() = _isRunning
 
     val lifecycleCoordinatorName
         get() = lifecycleCoordinator.name
@@ -60,7 +60,7 @@ class ThreadLooper(
     private var thread: Thread? = null
 
     fun start() {
-        _isRunningInternal = true
+        _isRunning = true
         lock.withLock {
             if (thread == null) {
                 _stopped = false
@@ -119,7 +119,7 @@ class ThreadLooper(
             loopFunction()
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.close()
-            _isRunningInternal = false
+            _isRunning = false
         } catch (t: Throwable) {
             log.error("runConsumeLoop Throwable caught, subscription in an unrecoverable bad state:", t)
         }
