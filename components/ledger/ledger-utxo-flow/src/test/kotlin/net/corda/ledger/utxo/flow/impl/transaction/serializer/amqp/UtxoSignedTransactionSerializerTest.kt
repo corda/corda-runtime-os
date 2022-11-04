@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 class UtxoSignedTransactionSerializerTest: UtxoLedgerTest() {
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
-        it.register(UtxoSignedTransactionAMQPSerializer, it)
+        it.register(utxoSignedTransactionAMQPSerializer, it)
     }, cipherSchemeMetadata)
 
     @Test

@@ -26,7 +26,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockSigningService(),
         mock()
     )
-    val UtxoSignedTransactionAMQPSerializer =
+    val utxoSignedTransactionAMQPSerializer =
         UtxoSignedTransactionSerializer(serializationServiceNullCfg, mockSigningService(), mock())
     val utxoSignedTransactionExample = getUtxoSignedTransactionExample(
         digestService,
