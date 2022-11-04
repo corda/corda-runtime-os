@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO">
+    <Properties>
+        <Property name="layoutFile">log4j2-${env:CONSOLE_LOG_FORMAT:-json}-layout.xml</Property>
+    </Properties>
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
+        <Console name="json" target="SYSTEM_OUT">
             <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true" />
+        </Console>
+        <Console name="text" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
         </Console>
     </Appenders>
     <Loggers>
         <logger name="Console">
-            <AppenderRef ref="Console" level="info"/>
+            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="info"/>
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
@@ -21,7 +27,7 @@
         <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />
 
         <root level="${env:CONSOLE_LOG_LEVEL:-info}">
-            <AppenderRef ref="Console" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
+            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
         </root>
     </Loggers>
 </Configuration>
