@@ -9,10 +9,10 @@ import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
 
 class SandboxDependencyInjectorImpl(
-    singletons: Map<UsedByFlow, List<String>>,
+    singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
 ) : SandboxDependencyInjector {
-    private val serviceTypeMap: Map<Class<*>, UsedByFlow>
+    private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
         val serviceTypes = mutableMapOf<Class<*>, UsedByFlow>()
@@ -47,7 +47,7 @@ class SandboxDependencyInjectorImpl(
         }
     }
 
-    override fun getRegisteredServices(): Collection<UsedByFlow> {
+    override fun getRegisteredServices(): Collection<SingletonSerializeAsToken> {
         return serviceTypeMap.values
     }
 
@@ -74,9 +74,9 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun registerService(
-        serviceObj: UsedByFlow,
+        serviceObj: SingletonSerializeAsToken,
         serviceTypeNames: List<String>,
-        serviceTypes: MutableMap<Class<*>, UsedByFlow>
+        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
     ) {
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader

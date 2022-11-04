@@ -96,12 +96,12 @@ class SandboxDependencyInjectorImplTest {
 }
 
 interface Service1
-class Service1Impl : Service1, UsedByFlow
+class Service1Impl : Service1, UsedByFlow, SingletonSerializeAsToken
 
 interface Service2
-class Service2Impl : Service2, UsedByFlow
+class Service2Impl : Service2, UsedByFlow, SingletonSerializeAsToken
 
-class DuplicateService2Impl : Service2, UsedByFlow
+class DuplicateService2Impl : Service2, UsedByFlow, SingletonSerializeAsToken
 
 class ExampleFlow : SubFlow<String> {
     @CordaInject
@@ -142,7 +142,7 @@ interface SharedService {
     fun get(): String
 }
 
-class SharedServiceImpl : SharedService, UsedByFlow {
+class SharedServiceImpl : SharedService, UsedByFlow, SingletonSerializeAsToken {
     private val builder = StringBuilder()
 
     override fun start() {

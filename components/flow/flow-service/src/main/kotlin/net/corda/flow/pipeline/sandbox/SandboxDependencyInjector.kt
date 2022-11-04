@@ -19,5 +19,5 @@ interface SandboxDependencyInjector : AutoCloseable, NonSerializable {
     /**
      * @return A collection of services registered with the injector.
      */
-    fun getRegisteredServices(): Collection<UsedByFlow>
+    fun getRegisteredServices(): Collection<SingletonSerializeAsToken>
 }

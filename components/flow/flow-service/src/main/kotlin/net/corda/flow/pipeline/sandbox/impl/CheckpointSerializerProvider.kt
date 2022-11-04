@@ -15,7 +15,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
+import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 /**
@@ -32,8 +32,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class CheckpointSerializerProvider @Activate constructor(
     @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
-    @Reference(service = CheckpointInternalCustomSerializer::class, scope = PROTOTYPE_REQUIRED)
-    private val customSerializers: List<CheckpointInternalCustomSerializer<*>>
+    @Reference(service = CheckpointInternalCustomSerializer::class, scope = ReferenceScope.PROTOTYPE)
+    private val checkpointInternalCustomSerializers: List<CheckpointInternalCustomSerializer<*>>
 ) : UsedByFlow, CustomMetadataConsumer {
     private companion object {
         private val logger = loggerFor<CheckpointSerializerProvider>()
@@ -45,12 +45,10 @@ class CheckpointSerializerProvider @Activate constructor(
         // Get the non-injectables singletons found by FlowSandboxService.
         val nonInjectableSingletons = context.getObjectByKey<Set<SingletonSerializeAsToken>>(NON_INJECTABLE_SINGLETONS) ?: emptySet()
 
-        // These are the singleton services identified when creating the sandbox.
-        // This set includes both injectable and non-injectable singletons.
-        val sandboxServices = context.getSandboxSingletonServices()
-
-        val sandboxSingletons = sandboxServices.filterIsInstanceTo(LinkedHashSet<SingletonSerializeAsToken>())
-        val checkpointInternalCustomSerializers = sandboxServices.filterIsInstanceTo(LinkedHashSet<CheckpointInternalCustomSerializer<*>>())
+        // Identify all the singleton services created for this sandbox (both injectable
+        // and non-injectable ones) that should be passed to the checkpoint serializer.
+        val sandboxSingletons = context.getSandboxSingletonServices()
+            .filterIsInstanceTo(linkedSetOf<SingletonSerializeAsToken>())
 
         // Create and configure the checkpoint serializer
         val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->

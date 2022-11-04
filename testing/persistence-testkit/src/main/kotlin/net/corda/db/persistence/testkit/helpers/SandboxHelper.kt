@@ -2,9 +2,6 @@ package net.corda.db.persistence.testkit.helpers
 
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.v5.application.serialization.SerializationService
-import org.junit.jupiter.api.fail
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Calendar
@@ -71,9 +68,5 @@ object SandboxHelper {
             .getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
         val owner = ownerCtor.newInstance(ownerId, ownerName, ownerAge)
         return Box(catCtor.newInstance(id, name, colour, owner), id)
-    }
-
-    fun SandboxGroupContext.getSerializer(key: String): SerializationService {
-        return getObjectByKey(key) ?: fail("'$key' not found in SandboxGroupContext")
     }
 }

@@ -4,7 +4,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.checkpoint.CheckpointSerializer
@@ -37,7 +37,7 @@ class FlowSandboxGroupContextImpl(
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}",
                 )
             val amqpSerializer =
-                sandboxGroupContext.getObjectByKey<SerializationService>(AMQP_P2P_SERIALIZATION_SERVICE)
+                sandboxGroupContext.getObjectByKey<SerializationService>(AMQP_SERIALIZATION_SERVICE)
                     ?: throw FlowFatalException(
                         "The flow sandbox has not been initialized with an AMQP serializer for " +
                                 "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"

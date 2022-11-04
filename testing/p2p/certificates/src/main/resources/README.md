@@ -1,4 +1,4 @@
-The keystore files used for the Gateway integration tests have been created using www.tinycert.org in order to have a working
+The keystore files used for the p2p integration tests have been created using www.tinycert.org in order to have a working
 OCSP responder.
 
 # Overview of existing keystores
@@ -7,6 +7,7 @@ OCSP responder.
     - status: OK
     - CN: Alice
     - Alternates: www.alice.net, alice.net
+
 - sslkeystore_bob.jks
     - status: REVOKED
     - CN: Bob
@@ -21,6 +22,20 @@ OCSP responder.
     - status: OK
     - CN: Dale
     - Alternates: www.dale.net, dale.net, 127.0.0.1, https://127.0.0.1:10004
+
+For sslkeystore_alice.jks and sslkeystore_bob.jks we also downloaded the certificates into certificate_alice.pem and certificate_bob.pem respectively.
+
+The sslkeystore_c5.jks store contains the following subject alternate names. It is used for the HostnameMatcher unit tests.
+```
+SubjectAlternativeName [
+DNSName: www.test.com
+DNSName: www.test.co.uk
+DNSName: *.test.net
+IPAddress: 10.11.12.13
+IPAddress: 2001:db8:3333:4444:cccc:dddd:eeee:ffff
+IPAddress: 2001:db8:3c4d:15:0:0:1a2f:1a2b
+]
+```
 
 # How to create new truststores and keystores
 ## With support of revocation (using tinycert)

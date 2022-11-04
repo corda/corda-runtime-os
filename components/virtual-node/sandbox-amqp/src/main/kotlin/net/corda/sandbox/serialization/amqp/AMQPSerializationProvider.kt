@@ -11,7 +11,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.InternalCustomSerializer
@@ -21,8 +21,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.osgi.service.component.annotations.ServiceScope
 
 /**
  * Configures a sandbox with AMQP serialization support.
@@ -31,10 +32,10 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Component(
     service = [ UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     property = [ "corda.marker.only:Boolean=true" ],
-    scope = PROTOTYPE
+    scope = ServiceScope.PROTOTYPE
 )
 class AMQPSerializationProvider @Activate constructor(
-    @Reference(service = InternalCustomSerializer::class)
+    @Reference(service = InternalCustomSerializer::class, scope = PROTOTYPE)
     private val internalSerializers: List<InternalCustomSerializer<out Any>>,
     @Reference(service = SerializationServiceProxy::class, scope = PROTOTYPE_REQUIRED, cardinality = OPTIONAL)
     private val serializationServiceProxy: SerializationServiceProxy?
@@ -66,13 +67,13 @@ class AMQPSerializationProvider @Activate constructor(
         val serializationOutput = SerializationOutput(factory)
         val deserializationInput = DeserializationInput(factory)
 
-        val p2pSerializationService = SerializationServiceImpl(
+        val serializationService = SerializationServiceImpl(
             serializationOutput,
             deserializationInput,
             AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroup)
         )
 
-        context.putObjectByKey(AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
-        serializationServiceProxy?.wrap(p2pSerializationService)
+        context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)
+        serializationServiceProxy?.wrap(serializationService)
     }
 }

@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -34,7 +35,9 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.GroupPolicyListener
@@ -174,6 +177,7 @@ class SessionManagerTest {
     }
     private val groupInfo = mock<GroupPolicyListener.GroupInfo> {
         on { networkType } doReturn NetworkType.CORDA_5
+        on { sessionPkiMode } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
     }
     private val groups = mock<LinkManagerGroupPolicyProvider> {
         val groupDominoTile = mock<ComplexDominoTile> {
@@ -197,7 +201,8 @@ class SessionManagerTest {
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
         sessionKeyTenantId = "id",
-        sessionPublicKey = OUR_KEY.public
+        sessionPublicKey = OUR_KEY.public,
+        sessionCertificates = null
     )
 
     private val counterparties = SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
@@ -237,8 +242,8 @@ class SessionManagerTest {
     }
     private val protocolResponder = mock<AuthenticationProtocolResponder>()
     private val protocolFactory = mock<ProtocolFactory> {
-        on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator doReturn secondProtocolInitiator
-        on { createResponder(any(), any(), any()) } doReturn protocolResponder
+        on { createInitiator(any(), any(), any(), any(), any(), any()) } doReturn protocolInitiator doReturn secondProtocolInitiator
+        on { createResponder(any(), any(), any(), any()) } doReturn protocolResponder
     }
     private val resources = ResourcesHolder()
 
@@ -270,7 +275,8 @@ class SessionManagerTest {
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
                 SESSIONS_PER_COUNTERPARTIES,
-                SESSION_REFRESH_THRESHOLD_KEY
+                RevocationCheckMode.OFF,
+                SESSION_REFRESH_THRESHOLD_KEY,
             ),
             null,
             mock(),
@@ -452,12 +458,14 @@ class SessionManagerTest {
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
                 SESSIONS_PER_COUNTERPARTIES,
-                SESSION_REFRESH_THRESHOLD_KEY
+                RevocationCheckMode.OFF,
+                SESSION_REFRESH_THRESHOLD_KEY,
             ),
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
                 SESSIONS_PER_COUNTERPARTIES,
-                SESSION_REFRESH_THRESHOLD_KEY
+                RevocationCheckMode.OFF,
+                SESSION_REFRESH_THRESHOLD_KEY,
             ),
             mock(),
         )
@@ -750,6 +758,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -794,6 +803,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -829,6 +839,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -850,7 +861,12 @@ class SessionManagerTest {
         sessionManager.inboundSessionEstablished(sessionId)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES, SESSION_REFRESH_THRESHOLD_KEY),
+            SessionManagerImpl.SessionManagerConfig(
+                MAX_MESSAGE_SIZE,
+                SESSIONS_PER_COUNTERPARTIES,
+                RevocationCheckMode.OFF,
+                SESSION_REFRESH_THRESHOLD_KEY
+            ),
             mock(),
             mock(),
         )
@@ -935,8 +951,12 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), initiatorPublicKeyHash))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), initiatorPublicKeyHash))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -958,8 +978,39 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenThrow(InvalidHandshakeMessageException())
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenThrow(InvalidHandshakeMessageException())
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
+
+    @Test
+    fun `when initiator handshake is received, but validation fails due to InvalidPeerCertificate, the message is dropped`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -982,8 +1033,12 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1009,8 +1064,12 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1036,8 +1095,12 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any()))
             .thenThrow(UnsupportedAlgorithm(OUR_KEY.public))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1063,8 +1126,12 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
-            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -1144,10 +1211,33 @@ class SessionManagerTest {
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
         ).thenThrow(InvalidHandshakeResponderKeyHash())
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
+
+    @Test
+    fun `when responder handshake is received, but validation fails due to InvalidPeerCertificate, the message is dropped`() {
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(
+            protocolInitiator.validatePeerHandshakeMessage(
+                responderHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
+                PEER_KEY.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        ).thenThrow(InvalidPeerCertificate("Bad Cert"))
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         loggingInterceptor.assertSingleWarningContains("The message was discarded.")
@@ -1165,6 +1255,7 @@ class SessionManagerTest {
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -1199,7 +1290,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1252,7 +1343,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1326,7 +1417,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1390,7 +1481,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1453,7 +1544,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1475,8 +1566,8 @@ class SessionManagerTest {
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
-            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
             resourcesHolder,
         )
 
@@ -1523,7 +1614,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1594,7 +1685,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1699,7 +1790,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )

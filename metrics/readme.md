@@ -8,20 +8,20 @@ on to `http://localhost:3000/` using the initial username & password of admin/ad
 
 Prometheus is using the worker's `/metrics` endpoint exposed on port `7000` (default).
 
-## Setting up Grafana for the first time
+## Grafana datasource
 
-When running Grafana for the first time, it will not be configured. To do this, follow these steps:
+When running Grafana for the first time, it will be pre-configured with the prometheus datasource defined in 
+`grafana/provisioning/datasources/datasource.yaml`
 
-* Configure Prometheus datasource:
-  * Choose add datasource
-  * Select Prometheus
-  * Enter the Prometheus URL: `http://prometheus:9090`
-* Visualise the metrics:
-  * We can use the [official Micrometer dashboard](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/) for visualising JVM Metrics.
-  * From the Grafana homepage, choose `Dashboards` -> `+ Import`
-  * Enter ID `4701` and click `Load`
-  * Choose the Prometheus datasource
-  * Click Import
-  * The JVM metrics should now be available on the dashboard
-* Custom metrics can be added to a dashboard by choosing the metrics name from the datasource. E.g. `http_server_requests_total`
+## Grafana dashboards
+
+When running Grafana for the first time, it will be pre-configured with the 
+[official Micrometer JVM dashboard](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/), a copy of which resides in
+`grafana/provisioning/dashboards/jvm-micrometer_rev9.json`.
+
+This can be found by going to `Dashboards` -> `Browse`, then searching for `JVM`. The dashboard can be "starred" when it is opened.
+
+Custom metrics can be added to a dashboard by choosing the metrics name from the datasource. E.g. `http_server_requests_total`.
+An example Corda dashboard has been added (`grafana/provisioning/dashboards/corda.json`). Please note that this is for testing and 
+development purpose and is not officially supported. Feel free to add/change/improve.
 
