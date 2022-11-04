@@ -98,11 +98,23 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
 
     override val secureRandom: SecureRandom get() = metadataProvider.secureRandom
 
+    override fun inferSignatureSpec(publicKey: PublicKey): SignatureSpec? {
+        TODO("Not yet implemented")
+    }
+
     override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
         metadataProvider.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
     override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
         metadataProvider.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
+
+    // TODO This can now only return one `SignatureSpec` for the specified key and digest due to underlying infrastructure/ apis.
+    //  This infrastructure should be modified to take into account more crypto parameters.
+    //  `supportedSignatureSpec(scheme: KeyScheme, digest: DigestAlgorithmName)` should be able to return > 1 signature specs.
+    override fun supportedSignatureSpec(scheme: KeyScheme, digest: DigestAlgorithmName): List<SignatureSpec> =
+        metadataProvider.keySchemeInfoMap[scheme]?.getSignatureSpec(digest)?.let {
+            listOf(it)
+        } ?: emptyList()
 
     override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
         metadataProvider.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.keys?.toList() ?: emptyList()

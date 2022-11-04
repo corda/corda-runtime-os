@@ -27,8 +27,8 @@ class SignatureSpecServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun defaultSignatureSpec(publicKey: PublicKey, digestAlgorithm: DigestAlgorithmName): SignatureSpec? =
-        schemeMetadata.inferSignatureSpec(publicKey, digestAlgorithm)
+    override fun defaultSignatureSpec(publicKey: PublicKey, digestAlgorithmName: DigestAlgorithmName): SignatureSpec? =
+        schemeMetadata.inferSignatureSpec(publicKey, digestAlgorithmName)
 
     @Suspendable
     override fun compatibleSignatureSpecs(publicKey: PublicKey): List<SignatureSpec> {
@@ -37,7 +37,8 @@ class SignatureSpecServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun compatibleSignatureSpecs(publicKey: PublicKey, hash: DigestAlgorithmName): List<SignatureSpec> {
-        TODO()
+    override fun compatibleSignatureSpecs(publicKey: PublicKey, digestAlgorithmName: DigestAlgorithmName): List<SignatureSpec> {
+        val keyScheme = schemeMetadata.findKeyScheme(publicKey)
+        return schemeMetadata.supportedSignatureSpec(keyScheme, digestAlgorithmName)
     }
 }

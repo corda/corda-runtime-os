@@ -386,7 +386,20 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
-        val signatureSpecs = signatureSpecService.compatibleSignatureSpecs(publicKey)
+        val digestName = try {
+            input.getValue("digestName")
+        } catch (e: IllegalStateException) {
+            null
+        }
+        log.info(
+            "Crypto - Getting compatible signatures called with public key: $publicKey and digestName: $digestName "
+        )
+
+        val signatureSpecs = if (digestName != null) {
+            signatureSpecService.compatibleSignatureSpecs(publicKey, DigestAlgorithmName(digestName))
+        } else {
+            signatureSpecService.compatibleSignatureSpecs(publicKey)
+        }
         val outputs = signatureSpecs.map {
             it.signatureName
         }

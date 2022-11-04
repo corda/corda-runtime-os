@@ -583,6 +583,7 @@ class FlowTests {
 
     @Test
     fun `Crypto - Get compatible signature specs`() {
+        // Input for get compatible signature specs api is public key only
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_compatible_signature_specs"
         requestBody.data = mapOf("memberX500" to X500_BOB)
@@ -600,8 +601,24 @@ class FlowTests {
                 "SHA256withECDSA",
                 "SHA384withECDSA",
                 "SHA512withECDSA"
-            ),
+            )
         )
+
+        // Input for get compatible signature specs api is public key and digest algorithm name
+        requestBody.data = mapOf(
+            "memberX500" to X500_BOB,
+            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        )
+
+        val requestId1 = startRpcFlow(bobHoldingId, requestBody)
+        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
+        val flowResult1 = result1.getRpcFlowResult()
+        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result1.flowResult).isNotNull
+        assertThat(result1.flowError).isNull()
+        assertThat(flowResult1.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs1 = requireNotNull(flowResult1.result).split("; ")
+        assertThat(flowOutputs1).containsAll(listOf("SHA256withECDSA"))
     }
 
     @Test
