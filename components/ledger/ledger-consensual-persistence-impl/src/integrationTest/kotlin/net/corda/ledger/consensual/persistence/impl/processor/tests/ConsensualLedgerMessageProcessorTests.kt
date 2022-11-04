@@ -87,16 +87,11 @@ class ConsensualLedgerMessageProcessorTests {
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
-(??)    @InjectService
-(??)    lateinit var digestService: DigestService
-(??)    @InjectService
-(??)    lateinit var merkleTreeProvider: MerkleTreeProvider
-(??)    @InjectService
-(??)    lateinit var jsonMarshallingService: JsonMarshallingService
-(??)    private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
-(??)    private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
-(??)    private lateinit var ctx: DbTestContext
-(??)
+    @InjectService
+    lateinit var digestService: DigestService
+    @InjectService
+    lateinit var wireTransactionFactory: WireTransactionFactory
+
     @BeforeAll
     fun setup(
         @InjectService(timeout = TIMEOUT_MILLIS)
