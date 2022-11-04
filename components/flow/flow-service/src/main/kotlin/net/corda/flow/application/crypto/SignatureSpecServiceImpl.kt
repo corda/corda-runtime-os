@@ -1,6 +1,9 @@
 package net.corda.flow.application.crypto
 
 import java.security.PublicKey
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -13,13 +16,13 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [SignatureSpecService::class, SingletonSerializeAsToken::class],
+    service = [SignatureSpecService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
 class SignatureSpecServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
-) : SignatureSpecService, SingletonSerializeAsToken {
+) : SignatureSpecService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     @Suspendable
     override fun defaultSignatureSpec(publicKey: PublicKey): SignatureSpec? =
