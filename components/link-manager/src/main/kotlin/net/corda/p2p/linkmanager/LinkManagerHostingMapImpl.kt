@@ -126,7 +126,8 @@ internal class LinkManagerHostingMapImpl(
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
             sessionKeyTenantId = entry.sessionKeyTenantId,
-            sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
+            sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey),
+            sessionCertificates = entry.sessionCertificates
         )
         locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toCorda()] = info
         publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info

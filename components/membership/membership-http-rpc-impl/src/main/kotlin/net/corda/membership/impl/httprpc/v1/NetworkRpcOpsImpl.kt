@@ -43,6 +43,7 @@ class NetworkRpcOpsImpl @Activate constructor(
                 request.useClusterLevelTlsCertificateAndKey != false,
                 request.useClusterLevelSessionCertificateAndKey == true,
                 request.sessionKeyId,
+                request.sessionCertificateChainAlias
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)

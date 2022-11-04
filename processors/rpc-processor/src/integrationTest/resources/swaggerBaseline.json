@@ -3135,6 +3135,16 @@
             "nullable" : false,
             "example" : "string"
           },
+          "p2pTlsTenantId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "sessionCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
           "sessionKeyId" : {
             "type" : "string",
             "nullable" : true,
