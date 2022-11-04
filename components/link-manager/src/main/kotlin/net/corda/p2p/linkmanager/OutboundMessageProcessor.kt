@@ -148,22 +148,26 @@ internal class OutboundMessageProcessor(
      * a marker for this message. If the process is restarted we reread the original marker.
      */
 
-    private fun checkSourceLocallyHosted(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>>{
-        if(!linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.source.toCorda())) {
+    private fun checkSourceLocallyHosted(messageAndKey: AuthenticatedMessageAndKey): Boolean {
+        return if(linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.source.toCorda())) {
+            true
+        } else {
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
                     "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
                     "as the source ID is not locally hosted.")
+            false
         }
-        return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
     }
 
-    private fun checkDestinationSourceGroupsMatch(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
-        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
+    private fun checkDestinationSourceGroupsMatch(messageAndKey: AuthenticatedMessageAndKey): Boolean {
+        return if (messageAndKey.message.header.source.groupId == messageAndKey.message.header.destination.groupId) {
+            true
+        } else {
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
                     "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
                     "as their group IDs do not match.")
+            false
         }
-        return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
     }
     private fun processAuthenticatedMessage(
         messageAndKey: AuthenticatedMessageAndKey,
@@ -174,8 +178,8 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        checkSourceLocallyHosted(messageAndKey)
-        checkDestinationSourceGroupsMatch(messageAndKey)
+        if (!checkSourceLocallyHosted(messageAndKey)) return listOf(recordForLMDiscardedMarker(messageAndKey, "source group not locally hosted."))
+        if (!checkDestinationSourceGroupsMatch(messageAndKey)) return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
