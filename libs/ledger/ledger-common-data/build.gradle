@@ -1,10 +1,10 @@
 plugins {
-    id "corda.common-publishing"
-    id "corda.osgi-test-conventions"
-    id "corda.common-library"
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
 }
 
-description "Corda ledger common data"
+description 'Corda ledger common data'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -13,7 +13,7 @@ dependencies {
     implementation "net.corda:corda-ledger-common"
 
     implementation project(":libs:crypto:crypto-core")
-    implementation project(':libs:sandbox-types')
+    implementation project(":libs:sandbox-types")
     implementation project(":libs:serialization:serialization-internal")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

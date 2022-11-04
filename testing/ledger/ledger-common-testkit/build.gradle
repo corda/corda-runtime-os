@@ -1,8 +1,8 @@
 plugins {
-    id "corda.common-library"
+    id 'corda.common-library'
 }
 
-description "Corda ledger common test objects"
+description 'Corda ledger common test objects'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

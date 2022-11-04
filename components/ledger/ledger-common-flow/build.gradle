@@ -1,10 +1,10 @@
 plugins {
-    id "corda.common-publishing"
-    id "corda.osgi-test-conventions"
-    id "corda.common-library"
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
 }
 
-description "Corda ledger common - flow implementation"
+description 'Corda ledger common - flow implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -19,7 +19,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:layered-property-map")
-    implementation project(':libs:sandbox-types')
+    implementation project(":libs:sandbox-types")
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:platform-info")
 

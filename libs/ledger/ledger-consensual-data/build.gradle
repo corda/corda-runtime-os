@@ -1,9 +1,9 @@
 plugins {
-    id "corda.common-publishing"
-    id "corda.common-library"
+    id 'corda.common-publishing'
+    id 'corda.common-library'
 }
 
-description "Corda ledger consensual data"
+description 'Corda ledger consensual data'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

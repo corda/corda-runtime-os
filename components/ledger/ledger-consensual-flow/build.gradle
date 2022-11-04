@@ -1,10 +1,10 @@
 plugins {
-    id "corda.common-publishing"
-    id "corda.osgi-test-conventions"
-    id "corda.common-library"
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
 }
 
-description "Corda consensual ledger - flow implementation"
+description 'Corda consensual ledger - flow implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
