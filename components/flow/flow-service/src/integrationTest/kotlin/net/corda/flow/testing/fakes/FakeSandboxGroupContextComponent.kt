@@ -6,7 +6,6 @@ import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -18,6 +17,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
@@ -112,7 +112,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         override fun injectServices(flow: Flow) {
         }
 
-        override fun getRegisteredServices(): Set<UsedByFlow> {
+        override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {
             return emptySet()
         }
 

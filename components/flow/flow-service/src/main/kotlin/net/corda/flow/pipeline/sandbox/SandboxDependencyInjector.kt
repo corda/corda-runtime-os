@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
  * The Sandbox dependency injector is responsible for injecting services into CordApp flows.
@@ -19,5 +19,5 @@ interface SandboxDependencyInjector : AutoCloseable, NonSerializable {
     /**
      * @return A collection of services registered with the injector.
      */
-    fun getRegisteredServices(): Collection<UsedByFlow>
+    fun getRegisteredServices(): Collection<SingletonSerializeAsToken>
 }

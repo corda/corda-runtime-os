@@ -1,21 +1,21 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
 
 class SandboxDependencyInjectorImpl(
-    singletons: Map<UsedByFlow, List<String>>,
+    singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
 ) : SandboxDependencyInjector {
-    private val serviceTypeMap: Map<Class<*>, UsedByFlow>
+    private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
-        val serviceTypes = mutableMapOf<Class<*>, UsedByFlow>()
+        val serviceTypes = mutableMapOf<Class<*>, SingletonSerializeAsToken>()
         singletons.forEach { singleton ->
             registerService(singleton.key, singleton.value, serviceTypes)
         }
@@ -47,7 +47,7 @@ class SandboxDependencyInjectorImpl(
         }
     }
 
-    override fun getRegisteredServices(): Collection<UsedByFlow> {
+    override fun getRegisteredServices(): Collection<SingletonSerializeAsToken> {
         return serviceTypeMap.values
     }
 
@@ -74,9 +74,9 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun registerService(
-        serviceObj: UsedByFlow,
+        serviceObj: SingletonSerializeAsToken,
         serviceTypeNames: List<String>,
-        serviceTypes: MutableMap<Class<*>, UsedByFlow>
+        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
     ) {
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader
@@ -101,9 +101,9 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun registerServiceImplementation(
-        service: UsedByFlow,
+        service: SingletonSerializeAsToken,
         implementedServiceType: Class<*>,
-        serviceTypes: MutableMap<Class<*>, UsedByFlow>
+        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
     ) {
         val existingService = serviceTypes.putIfAbsent(implementedServiceType, service)
         if (existingService != null) {
