@@ -77,7 +77,7 @@ class PermissionStorageWriterProcessorImplTest {
         assertTrue(result.response is ExceptionEnvelope)
         val exception = result.response as ExceptionEnvelope
         assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
-        assertEquals("Received invalid permission request type.", exception.errorMessage)
+        assertEquals("Received invalid permission request type: kotlin.Unit", exception.errorMessage)
 
         verify(userWriter, never()).createUser(any(), eq(creatorUserId))
         verify(roleWriter, never()).createRole(any(), eq(creatorUserId))
