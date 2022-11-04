@@ -10,6 +10,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -37,9 +38,17 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         return consensualTransactionBuilderFactory.create()
     }
 
-    override fun fetchTransaction(id: SecureHash): ConsensualSignedTransaction? {
+    @Suspendable
+    override fun findSignedTransaction(id: SecureHash): ConsensualSignedTransaction? {
         return persistenceService.find(id)
     }
+
+    @Suspendable
+    override fun findLedgerTransaction(id: SecureHash): ConsensualLedgerTransaction? {
+        // For consensual ledger, it is ok to just resolve here - all it does is lazy deserialization
+        return persistenceService.find(id)?.toLedgerTransaction()
+    }
+
 
     @Suspendable
     override fun finality(

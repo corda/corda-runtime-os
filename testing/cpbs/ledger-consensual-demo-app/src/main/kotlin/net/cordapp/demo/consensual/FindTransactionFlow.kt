@@ -7,9 +7,9 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 
-data class FetchTransactionParameters(val transactionId: String)
+data class FindTransactionParameters(val transactionId: String)
 
 data class TestConsensualStateResult(val testField: String, val participants: List<ByteArray>)
 
@@ -25,8 +25,8 @@ fun ConsensualDemoFlow.TestConsensualState.toResult(): TestConsensualStateResult
 }
 
 // hacky DTO to enable JSON serialization without custom serializers
-fun ConsensualSignedTransaction.toResult(): ConsensualTransactionResult {
-    return this.toLedgerTransaction().let {
+fun ConsensualLedgerTransaction.toResult(): ConsensualTransactionResult {
+    return this.let {
         ConsensualTransactionResult(
             it.id,
             it.states.map { (it as ConsensualDemoFlow.TestConsensualState).toResult() },
@@ -34,12 +34,12 @@ fun ConsensualSignedTransaction.toResult(): ConsensualTransactionResult {
     }
 }
 
-data class FetchTransactionResponse(
+data class FindTransactionResponse(
     val transaction: ConsensualTransactionResult?,
     val errorMessage: String?
 )
 
-class LoadTransactionFlow : RPCStartableFlow {
+class FindTransactionFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: ConsensualLedgerService
@@ -50,12 +50,12 @@ class LoadTransactionFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val txId =
-            requestBody.getRequestBodyAs(marshallingService, FetchTransactionParameters::class.java).transactionId
+            requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId
 
         val result =
-            ledgerService.fetchTransaction(SecureHash.parse(txId))
-                ?.let { FetchTransactionResponse(it.toResult(), null) }
-                ?: FetchTransactionResponse(null, "Failed to find transaction with id $txId.")
+            ledgerService.findLedgerTransaction(SecureHash.parse(txId))
+                ?.let { FindTransactionResponse(it.toResult(), null) }
+                ?: FindTransactionResponse(null, "Failed to find transaction with id $txId.")
 
         return marshallingService.format(result)
     }
