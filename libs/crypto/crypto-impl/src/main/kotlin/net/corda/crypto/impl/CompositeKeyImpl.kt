@@ -28,7 +28,7 @@ fun CompositeKeyNodeAndWeight.toASN1Primitive(): ASN1Primitive {
     return DERSequence(vector)
 }
 
-class CompositeKeyImpl(val threshold: Int, val childrenUnsorted: List<CompositeKeyNodeAndWeight>) : CompositeKey {
+class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNodeAndWeight>) : CompositeKey {
     companion object {
         const val KEY_ALGORITHM = "COMPOSITE"
 
@@ -189,7 +189,7 @@ class CompositeKeyImpl(val threshold: Int, val childrenUnsorted: List<CompositeK
         // We validate keys only when checking if they're matched, as this checks sub keys as a result.
         // Doing these checks at deserialization/construction time would result in duplicate checks.
         checkValidity()
-        if (keysToCheck.any { it is net.corda.v5.crypto.CompositeKey }) return false
+        if (keysToCheck.any { it is CompositeKey }) return false
         return checkFulfilledBy(keysToCheck)
     }
 

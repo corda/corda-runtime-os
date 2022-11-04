@@ -24,6 +24,7 @@ dependencies {
     implementation project(":libs:cache:cache-caffeine")
     implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(":components:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -52,6 +53,7 @@ dependencies {
     integrationTestImplementation project(':libs:messaging:message-bus')
     integrationTestImplementation project(':libs:messaging:db-message-bus-impl')
     integrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
+    testImplementation project(":testing:p2p:certificates")
     integrationTestImplementation 'net.corda:corda-cipher-suite'
 }
 

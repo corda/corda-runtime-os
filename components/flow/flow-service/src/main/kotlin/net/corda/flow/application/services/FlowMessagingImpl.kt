@@ -9,6 +9,7 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -20,18 +21,18 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("TooManyFunctions")
-@Component(service = [FlowMessaging::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ FlowMessaging::class, UsedByFlow::class ], scope = PROTOTYPE)
 class FlowMessagingImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory,
     @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal,
-) : FlowMessaging, SingletonSerializeAsToken {
+    private val serializationService: SerializationServiceInternal
+) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
@@ -160,11 +161,15 @@ class FlowMessagingImpl @Activate constructor(
         received: Map<String, ByteArray>,
         receiveType: Map<FlowSessionInternal, Class<out Any>>
     ): Map<FlowSession, Any> {
-        return uncheckedCast(receiveType.mapValues {
+        // Please DON'T use uncheckedCast() because its behaviour is
+        // not guaranteed, and it often breaks when upgrading Kotlin!
+        // It's more likely that your generic types are wrong anyway.
+        @Suppress("unchecked_cast")
+        return receiveType.mapValues {
             val sessionId = it.key.getSessionId()
             val bytes = received[sessionId] ?: throw CordaRuntimeException("Unexpected error. $sessionId not found in received data.")
             deserializeReceivedPayload(sessionId, bytes, it.value)
-        })
+        } as Map<FlowSession, Any>
     }
 
     private fun <R : Any> deserializeReceivedPayload(

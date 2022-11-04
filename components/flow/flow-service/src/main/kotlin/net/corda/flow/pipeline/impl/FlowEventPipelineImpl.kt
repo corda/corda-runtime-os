@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -50,7 +51,7 @@ class FlowEventPipelineImpl(
         }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
-        log.info("Preprocessing of ${context.inputEventPayload::class.qualifiedName}...")
+        log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
         /**
          * If the checkpoint is in a retry step and we receive a Wakeup then we
@@ -82,7 +83,7 @@ class FlowEventPipelineImpl(
 
         val handler = getFlowWaitingForHandler(waitingFor)
 
-        log.info("Run or continue using ${handler::class.java.name} when flow is waiting for $waitingFor")
+        log.trace { "Run or continue when flow is waiting for $waitingFor" }
 
         return when (val outcome = handler.runOrContinue(context, waitingFor)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
@@ -110,7 +111,7 @@ class FlowEventPipelineImpl(
 
     override fun requestPostProcessing(): FlowEventPipelineImpl {
         output?.let {
-            log.info("Postprocessing of $output")
+            log.trace { "Postprocessing of $output" }
             context = getFlowRequestHandler(it).postProcess(context, it)
         }
         return this
@@ -152,7 +153,7 @@ class FlowEventPipelineImpl(
         val flowResult = try {
             flowResultFuture.future.get(timeoutMilliseconds, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
-            log.error("Flow execution timeout, Flow marked as failed, interrupt attempted")
+            log.warn("Flow execution timeout, Flow marked as failed, interrupt attempted")
             // This works in extremely limited circumstances. The Flow which experienced a timeout will continue to
             // show the status RUNNING. Flows started in the waiting period will end up stuck in the START_REQUESTED
             // state. The biggest benefit to this timeout is the error logging and the fact that waiting here

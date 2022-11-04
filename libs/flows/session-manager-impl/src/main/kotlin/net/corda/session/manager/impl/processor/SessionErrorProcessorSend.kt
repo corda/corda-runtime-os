@@ -7,6 +7,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.Instant
 
 /**
@@ -31,13 +32,13 @@ class SessionErrorProcessorSend(
         return if (sessionState == null) {
             val errorMessage = "Tried to send SessionError on key $key for sessionId which had null state: $sessionId. " +
                     "Error message was: $exceptionEnvelope"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
-            logger.info(
+            logger.debug {
                 "Sending Session Error on sessionId $sessionId. " +
                         "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
-            )
+            }
 
             sessionEvent.sequenceNum = null
 

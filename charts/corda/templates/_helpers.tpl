@@ -213,9 +213,44 @@ Worker environment variables
       -Djava.security.auth.login.config=/etc/config/jaas.conf
     {{- end }}
 - name: LOG4J_CONFIG_FILE
-  value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"
+  {{- if  ( get .Values.workers .worker ).logging.override }}
+  value: "/etc/log4j/log4j2.xml,/etc/log4j/log4j2-{{ .worker }}.xml"
+  {{- else }}
+  value: "/etc/log4j/log4j2.xml"
+  {{- end }}
+- name: CONSOLE_LOG_FORMAT
+  value: {{ .Values.logging.format | quote }}
 - name: CONSOLE_LOG_LEVEL
-  value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level }}
+  value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level | quote }}
+{{- end }}
+
+{{/*
+CLI log4j volume
+*/}}
+{{- define "corda.log4jVolume" -}}
+- name: log4j
+  configMap:
+    name: {{ printf "%s-log4j" (include "corda.fullname" .) }}
+{{- end }}
+
+{{/*
+Log4j volume mounts
+*/}}
+{{- define "corda.log4jVolumeMount" -}}
+- name: log4j
+  mountPath: /etc/log4j
+{{- end }}
+
+{{/*
+Corda CLI environment variables
+*/}}
+{{- define "corda.cliEnv" -}}
+- name: JAVA_TOOL_OPTIONS
+  value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+- name: CONSOLE_LOG_FORMAT
+  value: {{ .Values.logging.format }}
+- name: CONSOLE_LOG_LEVEL
+  value: {{ .Values.logging.level }}
 {{- end }}
 
 {{/*
@@ -278,7 +313,6 @@ Worker Kafka arguments
 Resources for corda workers
 */}}
 {{- define "corda.workerResources" }}
-
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
@@ -299,7 +333,7 @@ resources:
 {{/*
 Volume mounts for corda workers
 */}}
-{{- define "corda.workerVolumeMounts" }}
+{{- define "corda.workerVolumeMounts" -}}
 {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - mountPath: "/certs"
   name: "certs"
@@ -314,6 +348,7 @@ Volume mounts for corda workers
 - mountPath: /dumps
   name: dumps
 {{- end }}
+{{ include "corda.log4jVolumeMount" . }}
 {{- end }}
 
 {{/*
@@ -339,6 +374,7 @@ Volumes for corda workers
     path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
     type: DirectoryOrCreate
 {{- end }}
+{{ include "corda.log4jVolume" . }}
 {{- end }}
 
 {{/*

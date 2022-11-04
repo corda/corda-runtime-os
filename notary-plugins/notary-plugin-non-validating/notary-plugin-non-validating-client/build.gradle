@@ -1,0 +1,32 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk2'
+}
+
+description 'Corda Non-Validating Notary Plugin Client'
+
+cordapp {
+    targetPlatformVersion 1000
+    minimumPlatformVersion 999
+    workflow {
+        name "Corda Non-Validating Notary - Client"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'net.corda:corda-notary-plugin'
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'org.slf4j:slf4j-api'
+
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+
+    cordapp project(":notary-plugins:notary-plugin-common")
+    cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
+}
+
+
+

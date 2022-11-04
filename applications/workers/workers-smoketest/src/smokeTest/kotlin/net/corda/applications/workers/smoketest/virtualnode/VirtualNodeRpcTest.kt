@@ -47,9 +47,7 @@ class VirtualNodeRpcTest {
             "Holding id could not be created - this test needs to be run on a clean cluster."
 
         // Server side messages
-        // BUG: These server-side messages can change arbitrarily - not ideal at the moment, but we return all errors with code '500' and no other info.
         private const val EXPECTED_ERROR_NO_GROUP_POLICY = "CPI is missing a group policy file"
-        private const val EXPECTED_ERROR_ALREADY_UPLOADED = "CPI already uploaded with groupId"
 
         private val aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
     }
@@ -174,21 +172,41 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(31)
-    fun `cannot upload same CPI with different groupId`() {
+    fun `can upload same CPI with different groupId`() {
+        val cpiName = TEST_CPI_NAME + "_DIFFERENT_GROUP"
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val requestId = cpiUpload(
                 TEST_CPB_LOCATION,
                 "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
                 TEST_STATIC_MEMBER_LIST,
-                TEST_CPI_NAME
+                cpiName
             ).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            assertWithRetry {
+
+            val json = assertWithRetry {
+                // CPI upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
-                condition { it.code == 409 }
-            }
+                condition {
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
+                }
+                immediateFailCondition {
+                    it.code == CONFLICT.statusCode
+                            && null != it.toJson()["details"]
+                            && it.toJson()["details"]["code"].textValue().equals(CONFLICT.toString())
+                            && null != it.toJson()["title"]
+                            && it.toJson()["title"].textValue().contains("already uploaded")
+                }
+            }.toJson()
+
+            val cpiHash = json["cpiFileChecksum"].textValue()
+            assertThat(cpiHash).isNotNull.isNotEmpty
+            val actualChecksum = getCpiChecksum(cpiName)
+            assertThat(actualChecksum).isNotNull.isNotEmpty
+            assertThat(cpiHash).withFailMessage(ERROR_CPI_NOT_UPLOADED).isNotNull
+            assertThat(actualChecksum).isEqualTo(cpiHash)
         }
     }
 
@@ -214,7 +232,7 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             val json = cpiList().toJson()
-            val cpiJson = json["cpis"].first()
+            val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == TEST_CPI_NAME}
 
             val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
             assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(GROUP_ID)
@@ -362,6 +380,16 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(82)
+    fun `persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
+        }
+    }
+
+    @Test
     @Order(90)
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
         cluster {
@@ -378,7 +406,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(100)) {
+            eventually(Duration.ofSeconds(120)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -396,6 +424,18 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
+    fun `Can sync DB and persist fish`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            // Status 204 indicates a non-error but no response data
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            runSimplePersistenceCheckFlow("Could persist Floaty")
+        }
+    }
+
+    @Test
+    @Order(100)
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -419,8 +459,29 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Test
+    @Order(101)
+    fun `Can sync DB again and persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
+        }
+    }
+
     private fun runReturnAStringFlow(expectedResult: String) {
         val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+
+        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+
+        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
+    }
+
+    private fun runSimplePersistenceCheckFlow(expectedResult: String) {
+        val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 
