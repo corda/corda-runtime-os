@@ -275,6 +275,7 @@ class CordaRPCSenderImplTest {
         }.whenever(cordaProducerBuilder).createProducer(any(), any())
 
         doAnswer {
+            @Suppress("TooGenericExceptionThrown")
             throw Throwable()
         }.whenever(cordaConsumerBuilder)
             .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
