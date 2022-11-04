@@ -380,7 +380,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         } catch (e: IllegalStateException) {
             null
         }
-        log.info("Crypto - Getting default signature spec called with public key: $publicKey and digestName: $digestName ")
+        log.info("Crypto - Calling default signature spec with public key: $publicKey and digestName: $digestName ")
 
         val defaultSignatureSpec = if (digestName != null) {
             signatureSpecService.defaultSignatureSpec(publicKey, DigestAlgorithmName(digestName))
@@ -401,7 +401,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         } catch (e: IllegalStateException) {
             null
         }
-        log.info("Crypto - Getting compatible signature specs called with public key: $publicKey and digestName: $digestName ")
+        log.info("Crypto - Calling compatible signature specs with public key: $publicKey and digestName: $digestName ")
 
         val compatibleSignatureSpecs = if (digestName != null) {
             signatureSpecService.compatibleSignatureSpecs(publicKey, DigestAlgorithmName(digestName))
