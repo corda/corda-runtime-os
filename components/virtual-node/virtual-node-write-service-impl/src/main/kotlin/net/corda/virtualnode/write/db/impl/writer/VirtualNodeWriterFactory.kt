@@ -95,12 +95,8 @@ internal class VirtualNodeWriterFactory(
         val processor = VirtualNodeWriterProcessor(
             createVirtualNodeHandler,
             changeVirtualNodeStateHandler,
-            vnodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
-            vnodeDbFactory,
-            groupPolicyParser,
-            UTCClock(),
             getChangeLogs
         )
 

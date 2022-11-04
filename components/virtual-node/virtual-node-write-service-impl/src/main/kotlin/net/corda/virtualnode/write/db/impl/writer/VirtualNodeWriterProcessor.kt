@@ -22,12 +22,9 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -36,12 +33,8 @@ import net.corda.virtualnode.write.db.impl.writer.management.VirtualNodeManageme
 internal class VirtualNodeWriterProcessor(
     private val createVirtualNodeHandler: VirtualNodeManagementHandler<VirtualNodeCreateRequest>,
     private val changeVirtualNodeStateHandler: VirtualNodeManagementHandler<VirtualNodeStateChangeRequest>,
-    private val vnodePublisher: Publisher,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
-    private val vnodeDbFactory: VirtualNodeDbFactory,
-    private val groupPolicyParser: GroupPolicyParser,
-    private val clock: Clock,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
