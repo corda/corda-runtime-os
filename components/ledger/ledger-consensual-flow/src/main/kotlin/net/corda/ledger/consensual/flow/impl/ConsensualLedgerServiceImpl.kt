@@ -40,6 +40,9 @@ class ConsensualLedgerServiceImpl @Activate constructor(
             consensualSignedTransactionFactory
         )
 
+    @Suspendable
+    override fun findSignedTransaction(id: SecureHash): ConsensualSignedTransaction? {
+        return persistenceService.find(id)
     }
 
     @Suspendable
