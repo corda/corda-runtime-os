@@ -54,7 +54,6 @@ class SimpleDominoTile(
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             coordinator.updateStatus(newState)
-            logger.info("State updated from $oldState to $newState")
         }
     }
 
