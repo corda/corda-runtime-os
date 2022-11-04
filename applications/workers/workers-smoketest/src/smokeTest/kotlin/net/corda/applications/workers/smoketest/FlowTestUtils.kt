@@ -119,7 +119,7 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun getOrCreateVirtualNodeFor(x500: String, cpiName: String = TEST_CPI_NAME): String {
+fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
