@@ -11,12 +11,11 @@ import javax.persistence.EntityManagerFactory
  *  Keys to look up the per-entity sandbox objects.
  */
 object EntitySandboxContextTypes {
-    const val SANDBOX_SERIALIZER = RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE
     const val SANDBOX_EMF = "ENTITY_MANAGER_FACTORY"
 }
 
 fun SandboxGroupContext.getSerializationService(): SerializationService =
-    getObjectByKey(EntitySandboxContextTypes.SANDBOX_SERIALIZER)
+    getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
         ?: throw CordaRuntimeException(
             "Entity serialization service not found within the sandbox for identity: " +
                     "${virtualNodeContext.holdingIdentity}"

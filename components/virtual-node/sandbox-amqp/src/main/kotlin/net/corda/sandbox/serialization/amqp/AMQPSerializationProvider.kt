@@ -11,7 +11,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.InternalCustomSerializer
@@ -67,13 +67,13 @@ class AMQPSerializationProvider @Activate constructor(
         val serializationOutput = SerializationOutput(factory)
         val deserializationInput = DeserializationInput(factory)
 
-        val p2pSerializationService = SerializationServiceImpl(
+        val serializationService = SerializationServiceImpl(
             serializationOutput,
             deserializationInput,
             AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroup)
         )
 
-        context.putObjectByKey(AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
-        serializationServiceProxy?.wrap(p2pSerializationService)
+        context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)
+        serializationServiceProxy?.wrap(serializationService)
     }
 }

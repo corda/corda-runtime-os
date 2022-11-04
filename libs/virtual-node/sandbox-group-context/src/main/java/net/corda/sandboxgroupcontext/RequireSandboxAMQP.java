@@ -23,5 +23,5 @@ public @interface RequireSandboxAMQP {
     String SANDBOX_AMQP = "sandbox.amqp";
     String SANDBOX_AMQP_VERSION = "1.0.0";
 
-    String AMQP_P2P_SERIALIZATION_SERVICE = "AMQP_SERIALIZER";
+    String AMQP_SERIALIZATION_SERVICE = "AMQP_SERIALIZER";
 }

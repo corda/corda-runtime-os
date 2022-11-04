@@ -2,10 +2,10 @@ package net.corda.persistence.common.internal
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException

@@ -89,7 +89,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         private val cache = mapOf(
             FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
             FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
-            RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
+            RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE to FakeSerializationService(),
             FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE to makeProtocolStore()
         )
 

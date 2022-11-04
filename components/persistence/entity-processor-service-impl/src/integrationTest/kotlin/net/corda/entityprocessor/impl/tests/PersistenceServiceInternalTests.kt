@@ -33,7 +33,6 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
@@ -44,9 +43,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.persistence.common.getSerializationService
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
@@ -194,7 +193,7 @@ class PersistenceServiceInternalTests {
 
         val entityManager = BasicMocks.entityManager()
 
-        persistenceService.persist(sandbox.getSerializer(SANDBOX_SERIALIZER), entityManager, payload)
+        persistenceService.persist(sandbox.getSerializationService(), entityManager, payload)
 
         Mockito.verify(entityManager).persist(Mockito.any())
     }
@@ -971,10 +970,10 @@ class PersistenceServiceInternalTests {
         return cats.size
     }
 
-    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
+    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
-        getSerializer(SANDBOX_SERIALIZER).deserialize(bytes.array(), Any::class.java)
+        getSerializationService().deserialize(bytes.array(), Any::class.java)
 
 }
