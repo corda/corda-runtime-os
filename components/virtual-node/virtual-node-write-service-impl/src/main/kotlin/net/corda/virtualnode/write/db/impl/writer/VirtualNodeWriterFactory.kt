@@ -94,7 +94,14 @@ internal class VirtualNodeWriterFactory(
 
         val processor = VirtualNodeWriterProcessor(
             createVirtualNodeHandler,
-            changeVirtualNodeStateHandler
+            changeVirtualNodeStateHandler,
+            vnodePublisher,
+            dbConnectionManager,
+            virtualNodeEntityRepository,
+            vnodeDbFactory,
+            groupPolicyParser,
+            UTCClock(),
+            getChangeLogs
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
