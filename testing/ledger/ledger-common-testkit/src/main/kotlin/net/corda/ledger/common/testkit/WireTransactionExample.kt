@@ -20,7 +20,7 @@ fun getWireTransactionExample(
 ): WireTransaction {
 
     val componentGroupLists = listOf(
-        listOf(jsonMarshallingService.format(metaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
+        listOf(jsonMarshallingService.format(metaData).toByteArray()), // TODO(update with CORE-6890)
         listOf(".".toByteArray()),
         listOf("abc d efg".toByteArray()),
     )

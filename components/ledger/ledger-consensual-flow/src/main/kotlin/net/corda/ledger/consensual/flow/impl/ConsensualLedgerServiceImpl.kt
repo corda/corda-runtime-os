@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -20,13 +21,13 @@ import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
-@Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(service = [ConsensualLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(
     @Reference(service = ConsensualTransactionBuilderFactory::class)
     private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory,
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine
-) : ConsensualLedgerService, SingletonSerializeAsToken {
+) : ConsensualLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun getTransactionBuilder(): ConsensualTransactionBuilder {

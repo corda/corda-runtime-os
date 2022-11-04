@@ -23,9 +23,9 @@ dependencies {
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:db:db-connection-manager')
+    implementation project(':components:ledger:ledger-consensual-persistence')
     implementation project(':components:persistence:persistence-service-common')
     implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:ledger:ledger-consensual-persistence')
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
@@ -60,6 +60,7 @@ dependencies {
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+    cpis project(path: 'testing-datamodel', configuration: 'cordaCPB')
 
     // IMPORTANT: do NOT include cpbs (or cpks) as dependencies of the integration test.
     // This would cause OSGi to load the bundle twice (once as part of the test) and again
@@ -106,7 +107,4 @@ def integrationTestResources = tasks.named('processIntegrationTestResources', Pr
 
 tasks.named('testingBundle', Bundle) {
     dependsOn integrationTestResources
-    bnd '''\
-    DynamicImport-Package: org.hibernate.proxy
-    '''
 }
