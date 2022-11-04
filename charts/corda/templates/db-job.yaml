@@ -125,12 +125,12 @@ spec:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rpc-admin

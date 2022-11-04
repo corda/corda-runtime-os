@@ -260,26 +260,49 @@ Kafka bootstrap servers
 {{ required "Must specify kafka.bootstrapServers" .Values.kafka.bootstrapServers }}
 {{- end }}
 
-{{/*
-Initial admin user secret name
+{{/* 
+Initial adminuser secret name
 */}}
 {{- define "corda.initialAdminUserSecretName" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.name | default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{ default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+Initial adminuser user secret name
+*/}}
+{{- define "corda.initialAdminUserUsernameSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name | default ((include "corda.initialAdminUserSecretName" .)) }}
+{{- end }}
+
+{{/*
+Initial adminuser password secret name
+*/}}
+{{- define "corda.initialAdminUserPasswordSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name | default (include "corda.initialAdminUserSecretName" .) }}
 {{- end }}
 
 {{/*
 Initial admin user secret username key
 */}}
 {{- define "corda.initialAdminUserSecretUsernameKey" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.usernameKey }}
-{{- end }}
+{{- if .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name -}}
+{{ .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.key }}
+{{- else -}}
+"username"
+{{- end -}}
+{{- end -}}
 
 {{/*
 Initial admin user secret password key
 */}}
 {{- define "corda.initialAdminUserSecretPasswordKey" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.passwordKey }}
-{{- end }}
+{{- if .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name -}}
+{{ .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.key }}
+{{- else -}}
+"password"
+{{- end -}}
+{{- end -}}
+
 
 {{/*
 Worker Kafka arguments
@@ -395,13 +418,18 @@ Cluster DB port
 Cluster DB user environment variable 
 */}}
 {{- define "corda.clusterDbUseEnvr" -}}
-{{- if .Values.db.cluster.user.valueFrom.secretKeyRef.name }}
+{{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
 - name: PGUSER
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.name | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) }}
-      key: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.key | default "username"}}
+      name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
+      key: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.key }}
+{{- else }}
+- name: PGUSER
+  value: {{ .Values.db.cluster.username.value }} 
 {{- end -}}
+{{- end -}}
+
 
 {{/*
 Cluster DB name
