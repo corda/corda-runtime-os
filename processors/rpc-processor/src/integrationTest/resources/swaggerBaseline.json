@@ -3152,6 +3152,11 @@
             "nullable" : true,
             "example" : "string"
           },
+          "sessionCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
           "sessionKeyId" : {
             "type" : "string",
             "nullable" : true,

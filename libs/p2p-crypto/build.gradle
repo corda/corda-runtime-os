@@ -13,9 +13,14 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    
+    implementation project(":libs:crypto:crypto-utils")
+
     api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
 
     testImplementation "net.corda:corda-cipher-suite"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(":testing:p2p:certificates")
 }
