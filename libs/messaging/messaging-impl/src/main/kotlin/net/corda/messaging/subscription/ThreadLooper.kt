@@ -28,7 +28,7 @@ class ThreadLooper(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val threadNamePrefix: String,
     private val loopFunction: () -> Unit
-) {
+) : LifecycleStatusUpdater {
     @Volatile
     private var _stopped = false
     @Volatile
@@ -103,11 +103,11 @@ class ThreadLooper(
         doStopConsumeLoop()
     }
 
-    fun updateLifecycleStatus(newStatus: LifecycleStatus) {
+    override fun updateLifecycleStatus(newStatus: LifecycleStatus) {
         lifecycleCoordinator.updateStatus(newStatus)
     }
 
-    fun updateLifecycleStatus(newStatus: LifecycleStatus, reason: String) {
+    override fun updateLifecycleStatus(newStatus: LifecycleStatus, reason: String) {
         lifecycleCoordinator.updateStatus(newStatus, reason)
     }
 
