@@ -71,7 +71,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private const val VIRTUAL_NODE_UPGRADE_CLIENT_ID = "VIRTUAL_NODE_UPGRADE_CLIENT"
     }
 
     private val clock = clockFactory.createUTCClock()
@@ -301,6 +300,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
         throw InvalidInputDataException(message)
     }
+
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.time.Instant
 import java.util.UUID
+import net.corda.applications.workers.smoketest.VERSION_TESTING_CPB_NAME
 import net.corda.applications.workers.smoketest.VERSION_TESTING_CPB_V1
 import net.corda.applications.workers.smoketest.VERSION_TESTING_CPB_V2
 
@@ -263,42 +264,56 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(41)
-    fun `upload cpi v99`() {
+    fun `upload two versions of a CPI, create a virtual node with first version, upgrade to second version`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val requestId = cpiUpload(VERSION_TESTING_CPB_V1, "6c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
-                listOf(
-                    "CN=980b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB",
-                    "CN=5721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB"
-                )
-                , TEST_CPI_NAME, "1.0.0.99-SNAPSHOT")
+            val groupId = UUID.randomUUID().toString()
+            val cpiVersion1 = "1.0.0.99-SNAPSHOT"
+            val cpiVersion2 = "1.0.0.100-SNAPSHOT"
+
+            val groupMember1 = "CN=${UUID.randomUUID()}, OU=Application, O=R3, L=London, C=GB"
+            val groupMember2 = "CN=${UUID.randomUUID()}, OU=Application, O=R3, L=London, C=GB"
+
+            val requestId1 = cpiUpload(
+                VERSION_TESTING_CPB_V1,
+                groupId,
+                listOf(groupMember1, groupMember2),
+                VERSION_TESTING_CPB_NAME,
+                cpiVersion1
+            )
                 .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+            assertThat(requestId1).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            val requestId2 = cpiUpload(
+                VERSION_TESTING_CPB_V2,
+                groupId,
+                listOf(groupMember1, groupMember2),
+                VERSION_TESTING_CPB_NAME,
+                cpiVersion2
+            )
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId2).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            val cpiChecksum1 = getFullCpiChecksum(VERSION_TESTING_CPB_NAME, cpiVersion1)
+            val cpiChecksum2 = getFullCpiChecksum(VERSION_TESTING_CPB_NAME, cpiVersion2)
+
+            val vNodeJson = assertWithRetry {
+                command { vNodeCreate(cpiChecksum1, groupMember1) }
+                condition { it.code == 200 }
+                failMessage(ERROR_HOLDING_ID)
+            }.toJson()
+
+            val vNodeJsonAfterUpgrade = assertWithRetry {
+                command { vNodeUpgrade(vNodeJson["holdingIdentity"]["shortHash"].textValue(), cpiChecksum2) }
+                condition { it.code == 200 }
+                failMessage(ERROR_HOLDING_ID)
+            }.toJson()
+
+            assertThat(vNodeJsonAfterUpgrade["cpiIdentifier"]["cpiVersion"].textValue())
         }
     }
 
-    @Test
-    @Order(41)
-    fun `upload cpi v100`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val requestId = cpiUpload(VERSION_TESTING_CPB_V2, "5c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
-                listOf(
-                    "CN=880b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB",
-                    "CN=4721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB"
-                )
-                , TEST_CPI_NAME, "1.0.0.100-SNAPSHOT")
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-        }
-    }
-
-
-    // cpi v99 - FE952FFE869F55B0B0F32EE3A7728AFF67AC502A05CC0C28CD1EF62D78AB22AC
-    // E3B2E915CA0F - CN=980b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB
-    // 4C76A0CCC5ED - CN=5721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB
     @Test
     @Order(42)
     fun `create virtual node with CPI`() {
@@ -586,6 +601,18 @@ class VirtualNodeRpcTest {
             val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
             assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
             truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+        }
+        return cpiFileChecksum
+    }
+
+    private fun ClusterBuilder.getFullCpiChecksum(cpiName: String, cpiVersion: String): String {
+        val cpiFileChecksum = eventually {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().find {
+                it["id"]["cpiName"].textValue() == cpiName && it["id"]["cpiVersion"].textValue() == cpiVersion
+            }
+            assertNotNull(cpiJson, "Cpi with name $cpiName and version $cpiVersion not yet found in cpi list.")
+            cpiJson!!["cpiFileChecksum"].textValue()
         }
         return cpiFileChecksum
     }

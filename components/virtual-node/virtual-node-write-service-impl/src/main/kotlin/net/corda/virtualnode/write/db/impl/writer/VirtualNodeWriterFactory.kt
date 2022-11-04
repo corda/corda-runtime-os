@@ -19,6 +19,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
 import javax.persistence.EntityManager
+import net.corda.virtualnode.write.db.impl.writer.management.common.impl.VirtualNodeInfoRecordPublisherImpl
+import net.corda.virtualnode.write.db.impl.writer.management.impl.VirtualNodeUpgradeHandler
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -75,6 +77,11 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
+        val vnodeUpgradeHandler = VirtualNodeUpgradeHandler(
+            virtualNodeEntityRepository,
+            VirtualNodeInfoRecordPublisherImpl(vnodePublisher),
+            UTCClock()
+        )
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
             dbConnectionManager,
@@ -82,6 +89,7 @@ internal class VirtualNodeWriterFactory(
             vnodeDbFactory,
             groupPolicyParser,
             UTCClock(),
+            vnodeUpgradeHandler,
             getChangeLogs
         )
 

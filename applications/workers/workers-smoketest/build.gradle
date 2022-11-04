@@ -109,14 +109,14 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     def cpiForVersionUpgradeV1Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v1"
     from(cpiForVersionUpgradeV1) {
         into cpiForVersionUpgradeV1Dir
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "version-test-cordapp.cpb"
     }
 
     def cpiForVersionUpgradeV2 = configurations.cpiForVersionUpgradeV2
     def cpiForVersionUpgradeV2Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v2"
     from(cpiForVersionUpgradeV2) {
         into cpiForVersionUpgradeV2Dir
-        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "version-test-cordapp.cpb"
     }
 }
 

@@ -57,6 +57,8 @@ import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
+import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.virtualnode.write.db.impl.writer.management.VirtualNodeManagementHandler
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -82,6 +84,7 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
+    private val virtualNodeUpgradeHandler: VirtualNodeManagementHandler<VirtualNodeUpgradeRequest>,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
@@ -407,6 +410,7 @@ internal class VirtualNodeWriterProcessor(
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
             is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeUpgradeRequest -> virtualNodeUpgradeHandler.handle(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }

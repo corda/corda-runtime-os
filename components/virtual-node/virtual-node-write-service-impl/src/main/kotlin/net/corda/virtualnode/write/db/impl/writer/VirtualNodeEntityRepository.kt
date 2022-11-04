@@ -249,7 +249,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val virtualNodeState: String,
     )
 
-    internal fun updateVirtualNodeCpi(holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
+    internal fun updateVirtualNodeCpi(holdingId: HoldingIdentity, cpiId: CpiIdentifier): VirtualNodeLite {
         return entityManagerFactory.use { em ->
             em.transaction {
                 val signerSummaryHash = if (cpiId.signerSummaryHash != null) cpiId.signerSummaryHash.toString() else ""
@@ -260,6 +260,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 vNodeEntity.cpiVersion = cpiId.version
                 vNodeEntity.cpiSignerSummaryHash = signerSummaryHash
                 em.merge(vNodeEntity)
+                vNodeEntity.toVirtualNodeLite()
             }
         }
     }

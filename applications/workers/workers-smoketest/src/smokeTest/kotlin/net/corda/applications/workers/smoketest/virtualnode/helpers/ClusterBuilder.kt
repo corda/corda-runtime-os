@@ -20,7 +20,7 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
-    fun put(cmd: String, body: String) = client!!.put(cmd, body)
+    fun put(cmd: String, body: String? = null) = client!!.put(cmd, body)
 
     fun get(cmd: String) = client!!.get(cmd)
 
@@ -105,6 +105,10 @@ class ClusterBuilder {
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
+
+    /** Upgrade a virtual node */
+    fun vNodeUpgrade(virtualNodeShortHash: String, upgradeCpiHash: String) =
+        put("/api/v1/virtualnode/${virtualNodeShortHash}/cpi/$upgradeCpiHash")
 
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")

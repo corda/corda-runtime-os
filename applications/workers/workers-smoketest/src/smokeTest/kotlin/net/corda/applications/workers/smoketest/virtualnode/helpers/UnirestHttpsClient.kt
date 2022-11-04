@@ -38,12 +38,12 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         return SimpleResponse(response.status, response.body, url)
     }
 
-    override fun put(cmd: String, body: String): SimpleResponse {
+    override fun put(cmd: String, body: String?): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        val response = Unirest.put(url).basicAuth(username, password)
-            .body(body)
-            .asString()
+        val builder = Unirest.put(url).basicAuth(username, password)
+        body?.let { builder.body(it) }
+        val response = builder.asString()
 
         return SimpleResponse(response.status, response.body, url)
     }
