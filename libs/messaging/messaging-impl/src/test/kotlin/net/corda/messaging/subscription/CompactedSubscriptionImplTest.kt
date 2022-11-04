@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -16,6 +15,8 @@ import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -31,6 +32,8 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class CompactedSubscriptionImplTest {
 
@@ -49,7 +52,7 @@ class CompactedSubscriptionImplTest {
         CordaConsumerRecord(config.topic, 0, it.toLong(), it.toString(), "0", 0)
     }
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
     private class TestProcessor : CompactedProcessor<String, String> {
         val log = contextLogger()
@@ -59,26 +62,42 @@ class CompactedSubscriptionImplTest {
         override val valueClass: Class<String>
             get() = String::class.java
 
-        var fatalFailSnapshot = false
-        var intermittentFailSnapshot = false
+        val lock = ReentrantLock()
+        var subscriptionThread: Thread? = null
+        var uncaughtExceptionInSubscriptionThread: Throwable? = null
+
+        enum class SnapshotErrorToThrow { NONE, FATAL, UNEXPECTED_THROWABLE }
+
+        var snapshotErrorToThrow = SnapshotErrorToThrow.NONE
+
         val snapshotMap = mutableMapOf<String, String>()
         override fun onSnapshot(currentData: Map<String, String>) {
-            log.info("Processing snapshot: $currentData")
-            if (intermittentFailSnapshot) {
-                throw CordaMessageAPIIntermittentException("Torpedo ahead!")
-            } else if (fatalFailSnapshot) {
-                throw CordaMessageAPIFatalException("Abandon Ship!")
+            lock.withLock {
+                subscriptionThread = Thread.currentThread()
             }
-            snapshotMap.putAll(currentData)
+            // Here's our chance to make sure there are no uncaught exceptions in this, the subscription thread
+            subscriptionThread!!.setUncaughtExceptionHandler { _, e ->
+                lock.withLock {
+                    uncaughtExceptionInSubscriptionThread = e
+                }
+            }
+
+            log.info("Processing snapshot: $currentData")
+
+            when (snapshotErrorToThrow) {
+                SnapshotErrorToThrow.NONE -> snapshotMap.putAll(currentData)
+                SnapshotErrorToThrow.FATAL -> throw CordaMessageAPIFatalException("Abandon Ship!")
+                SnapshotErrorToThrow.UNEXPECTED_THROWABLE -> @Suppress("TooGenericExceptionThrown") throw Throwable()
+            }
         }
 
-        var failNext = false
+        var failNextEvent = false
         val incomingRecords = mutableListOf<Record<String, String>>()
         var latestCurrentData: Map<String, String>? = null
         override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
             log.info("Processing new record: $newRecord")
             log.info("Current Data: $currentData")
-            if (failNext) {
+            if (failNextEvent) {
                 throw CordaMessageAPIIntermittentException("Abandon Ship!")
             }
             incomingRecords += newRecord
@@ -88,7 +107,8 @@ class CompactedSubscriptionImplTest {
 
     @BeforeEach
     fun setup() {
-        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
+            .createCoordinator(any(), any())
     }
 
     @Test
@@ -96,12 +116,13 @@ class CompactedSubscriptionImplTest {
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
         val processor = TestProcessor()
-        val (consumer, consumerBuilder)  = setupStandardMocks(4) {
+        val (consumer, consumerBuilder) = setupStandardMocks(4) {
             val iteration = latch.count
             when (iteration) {
                 4L -> {
                     initialSnapshotResult
                 }
+
                 0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
@@ -152,11 +173,13 @@ class CompactedSubscriptionImplTest {
                 5L -> {
                     initialSnapshotResult
                 }
+
                 2L -> {
                     listOf(
                         CordaConsumerRecord<Any, Any>(config.topic, 0, 2, "2", null, 0)
                     )
                 }
+
                 0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
@@ -198,7 +221,7 @@ class CompactedSubscriptionImplTest {
         val processor = TestProcessor()
         val (_, consumerBuilder) = setupStandardMocks(0) { initialSnapshotResult }
 
-        processor.fatalFailSnapshot = true
+        processor.snapshotErrorToThrow = TestProcessor.SnapshotErrorToThrow.FATAL
         val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
@@ -211,6 +234,8 @@ class CompactedSubscriptionImplTest {
         while (subscription.isRunning) {
             Thread.sleep(10)
         }
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
@@ -241,6 +266,8 @@ class CompactedSubscriptionImplTest {
 
         // Three calls: First time and after each exception thrown
         verify(consumerBuilder, times(3)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
@@ -254,10 +281,18 @@ class CompactedSubscriptionImplTest {
                 6L, 4L, 2L -> {
                     initialSnapshotResult
                 }
+
                 0L -> throw CordaMessageAPIFatalException("Stop here.")
                 else -> {
                     listOf(
-                        CordaConsumerRecord(TOPIC_PREFIX + config.topic, 0, iteration, iteration.toString(), iteration.toString(), 0)
+                        CordaConsumerRecord(
+                            TOPIC_PREFIX + config.topic,
+                            0,
+                            iteration,
+                            iteration.toString(),
+                            iteration.toString(),
+                            0
+                        )
                     )
                 }
             }.also {
@@ -265,7 +300,7 @@ class CompactedSubscriptionImplTest {
             }
         }
 
-        processor.failNext = true
+        processor.failNextEvent = true
         val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
@@ -280,15 +315,42 @@ class CompactedSubscriptionImplTest {
 
         // Four calls: First time and after each exception thrown
         verify(consumerBuilder, times(4)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `subscription looper stops thrown Throwables reaching the thread default handler`() {
+        val processor = TestProcessor()
+        val (_, consumerBuilder) = setupStandardMocks(0) { initialSnapshotResult }
+
+        processor.snapshotErrorToThrow = TestProcessor.SnapshotErrorToThrow.UNEXPECTED_THROWABLE
+        val subscription = CompactedSubscriptionImpl(
+            config,
+            mapFactory,
+            consumerBuilder,
+            processor,
+            lifecycleCoordinatorFactory
+        )
+        subscription.start()
+
+        while (processor.lock.withLock { processor.subscriptionThread == null }) {
+            // We must wait for the snapshot callback to set the thread so we can then join it
+            Thread.sleep(10)
+        }
+        processor.subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
+        assertNull(processor.lock.withLock { processor.uncaughtExceptionInSubscriptionThread })
     }
 
     private fun setupStandardMocks(
         numberOfRecords: Long,
         onPoll: (InvocationOnMock) -> List<CordaConsumerRecord<*, *>>
-    ):  Pair<CordaConsumer<Any, Any>, CordaConsumerBuilder> {
+    ): Pair<CordaConsumer<Any, Any>, CordaConsumerBuilder> {
         val consumerMock: CordaConsumer<Any, Any> = mock()
         val cordaConsumerBuilder: CordaConsumerBuilder = mock()
-        doReturn(consumerMock).whenever(cordaConsumerBuilder).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+        doReturn(consumerMock).whenever(cordaConsumerBuilder)
+            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
         doReturn(mutableMapOf(CordaTopicPartition(config.topic, 0) to 0L, CordaTopicPartition(config.topic, 1) to 0L))
             .whenever(consumerMock).beginningOffsets(any())
         doReturn(
@@ -298,7 +360,9 @@ class CompactedSubscriptionImplTest {
             )
         ).whenever(consumerMock).endOffsets(any())
         doReturn(numberOfRecords + 1).whenever(consumerMock).position(any())
-        doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(consumerMock)
+        doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(
+            consumerMock
+        )
             .assignment()
         doAnswer(onPoll).whenever(consumerMock).poll(any())
         doAnswer {

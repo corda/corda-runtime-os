@@ -7,6 +7,12 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
+/**
+ * Lifecycle coordinator throws if used when closed, we must mock that behaviour here to ensure the implementation under
+ * test does not call lifecycleCoordinator improperly. Use this class to create your mock [LifecycleCoordinator] and
+ * then at the end of any tests which are validating lifecycle behaviour (e.g. error condition tests) assert that the
+ * [LifecycleCoordinator] was never used after being closed by asserting that [lifecycleCoordinatorThrows] is false.
+ */
 internal class LifeCycleCoordinatorMockHelper {
     var lifecycleCoordinatorThrows = false
     val lifecycleCoordinator: LifecycleCoordinator = mock()
@@ -14,8 +20,6 @@ internal class LifeCycleCoordinatorMockHelper {
     private var lifecycleCoordinatorClosed = false;
 
     init {
-        // Lifecycle coordinator throws if used when closed, we must mock that behaviour here to ensure the implementation
-        // under test does not call lifecycleCoordinator improperly.
         doAnswer {
             lifecycleCoordinatorClosed = true
         }.whenever(lifecycleCoordinator).close()
