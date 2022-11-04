@@ -40,12 +40,11 @@ class GroupParametersReconciliationQuery(
         em: EntityManager
     ): Collection<VersionedRecord<HoldingIdentity, GroupParameters>> {
         val criteriaBuilder = em.criteriaBuilder
-        val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
-        val root = queryBuilder.from(GroupParametersEntity::class.java)
-        val query = queryBuilder.select(root)
-            .orderBy(
-                criteriaBuilder.desc(root.get<String>("epoch"))
-            )
+        val criteriaQuery = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
+
+        val root = criteriaQuery.from(GroupParametersEntity::class.java)
+        val query = criteriaQuery.select(root)
+            .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
 
         val entity = em.createQuery(query)
             .setMaxResults(1)
@@ -59,9 +58,13 @@ class GroupParametersReconciliationQuery(
                 override val version = entity.epoch
                 override val isDeleted = false
                 override val key = vnodeInfo.holdingIdentity
-                override val value by lazy {
-                    groupParametersFactory.create(deserializedParams.items.associate { it.key to it.value })
-                }
+                override val value = groupParametersFactory
+                    .create(
+                        deserializedParams.items
+                            .associate {
+                                it.key to it.value
+                            }
+                    )
             }
         )
     }

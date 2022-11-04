@@ -45,7 +45,8 @@ class VirtualNodeVaultDbReconcilerReader<K : Any, V : Any>(
     coordinatorFactory
 ) {
 
-    override val name = "${VirtualNodeVaultDbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
+    override val name = VirtualNodeVaultDbReconcilerReader::class.java.simpleName +
+            "<${keyClass.simpleName}, ${valueClass.simpleName}>"
 
     override val dependencies = setOf(
         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
