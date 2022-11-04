@@ -63,7 +63,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransaction {
         val metadata = transactionMetadataFactory.create(utxoMetadata())
         val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray(Charsets.UTF_8) // TODO(update with CORE-6890)
+            .toByteArray() // TODO(update with CORE-6890)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
         val signaturesWithMetaData = signatories.map {

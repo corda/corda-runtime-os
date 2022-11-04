@@ -58,7 +58,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     ): ConsensualSignedTransaction {
         val metadata = transactionMetadataFactory.create(consensualMetadata())
         val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray(Charsets.UTF_8) // TODO(update with CORE-6890)
+            .toByteArray() // TODO(update with CORE-6890)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
         val signaturesWithMetaData = signatories.map {
