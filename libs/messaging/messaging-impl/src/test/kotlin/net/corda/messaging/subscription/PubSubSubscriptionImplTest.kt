@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
