@@ -9,6 +9,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionParameters
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
@@ -20,13 +21,13 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
 
 @Component(
-    service = [ ConsensualLedgerPersistenceService::class, SingletonSerializeAsToken::class ],
+    service = [ ConsensualLedgerPersistenceService::class, UsedByFlow::class ],
     property = [ "corda.system=true" ],
-    scope = ServiceScope.PROTOTYPE
+    scope = PROTOTYPE
 )
 class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
@@ -36,8 +37,8 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-) : ConsensualLedgerPersistenceService, SingletonSerializeAsToken {
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+) : ConsensualLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun find(id: SecureHash): ConsensualSignedTransaction? {

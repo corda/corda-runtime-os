@@ -29,6 +29,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.schema.Schemas
@@ -97,6 +98,7 @@ class LinkManagerIntegrationTest {
                     innerConfig.root()
                 ).root()
             )
+            .withValue(LinkManagerConfiguration.REVOCATION_CHECK_KEY, ConfigValueFactory.fromAnyRef(RevocationCheckMode.OFF.toString()))
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())

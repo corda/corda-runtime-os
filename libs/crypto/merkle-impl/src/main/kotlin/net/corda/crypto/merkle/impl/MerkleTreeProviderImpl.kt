@@ -1,5 +1,8 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -20,13 +23,13 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ MerkleTreeProvider::class, SingletonSerializeAsToken::class ],
+    service = [ MerkleTreeProvider::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
 class MerkleTreeProviderImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService
-) : MerkleTreeProvider, SingletonSerializeAsToken {
+) : MerkleTreeProvider, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     override fun createHashDigestProvider(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,

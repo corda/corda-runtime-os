@@ -1,37 +1,20 @@
 package net.corda.ledger.consensual.persistence.impl.processor.tests
 
-import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.schema.DbSchema
+import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
-import net.corda.internal.serialization.SerializationContextImpl
-import net.corda.internal.serialization.SerializationServiceImpl
-import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializerFactory
-import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualCpkEntity
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualLedgerEntities
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualTransactionComponentEntity
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualTransactionEntity
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualTransactionSignatureEntity
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualTransactionStatusEntity
+import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
+import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.field
 import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.sandbox.SandboxCreationService
-import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.InternalCustomSerializer
-import net.corda.serialization.SerializationContext
+import net.corda.persistence.common.getEntityManagerFactory
+import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -47,8 +30,10 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -58,7 +43,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
@@ -66,7 +50,7 @@ import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(PER_CLASS)
 class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -78,39 +62,19 @@ class ConsensualLedgerRepositoryTest {
     lateinit var wireTransactionFactory: WireTransactionFactory
 
     private lateinit var serializationService: SerializationService
-    private lateinit var emptySandboxGroup: SandboxGroup
+    private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualLedgerRepository
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
-    private val entityManagerFactory: EntityManagerFactory
 
     companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-vault/db.changelog-master.xml"
+        private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
+        private const val TIMEOUT_MILLIS = 10000L
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE/2).random())
-    }
-
-    init {
-        val dbChange = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    DbSchema::class.java.packageName,
-                    listOf(MIGRATION_FILE_LOCATION),
-                    DbSchema::class.java.classLoader
-                )
-            )
-        )
-        emConfig.dataSource.connection.use { connection ->
-            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-        }
-        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            ConsensualLedgerEntities.classes.toList(),
-            emConfig
-        )
     }
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -119,78 +83,48 @@ class ConsensualLedgerRepositoryTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
-            val publicKeySerializer = setup.fetchService<InternalCustomSerializer<PublicKey>>(
-                "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
-                1500
-            )
-            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            serializationService = getTestSerializationService(emptySandboxGroup) {
-                it.register(publicKeySerializer, it)
-            }
-            repository = ConsensualLedgerRepository(digestService, serializationService, wireTransactionFactory)
-            setup.withCleanup {
-                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
-            }
+            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
+            val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+            serializationService = ctx.getSerializationService()
+            entityManagerFactory = ctx.getEntityManagerFactory()
+            repository = ctx.getSandboxSingletonServices()
+                .filterIsInstance<ConsensualLedgerRepository>()
+                .singleOrNull()
+                ?: fail("No ConsensualLedgerRepository found for sandbox")
         }
-    }
-
-    private fun getTestSerializationService(
-        sandboxGroup: SandboxGroup,
-        registerMoreSerializers: (it: SerializerFactory) -> Unit,
-    ) : SerializationService {
-        val serializationContext = SerializationContextImpl(
-            preferredSerializationVersion = amqpMagic,
-            properties = mutableMapOf(),
-            objectReferencesEnabled = false,
-            useCase = SerializationContext.UseCase.Testing,
-            encoding = null,
-            sandboxGroup = sandboxGroup
-        )
-        val factory = SerializerFactoryBuilder.build(
-            sandboxGroup,
-            descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
-            allowEvolution = false
-        ).also {
-            registerCustomSerializers(it)
-            registerMoreSerializers(it)
-        }
-        return SerializationServiceImpl(
-            SerializationOutput(factory),
-            DeserializationInput(factory),
-            serializationContext)
     }
 
     @Suppress("Unused")
     @AfterAll
     fun cleanup() {
         emConfig.close()
-        entityManagerFactory.close()
     }
 
     @Test
     fun `can read signed transaction`() {
         val account = "Account"
-        val signedTransaction = createSignedTransaction()
+        val createdTs = Instant.now()
+        val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
-            val createdTs = Instant.now()
             val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
-                ConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), createdTs)
+                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), createdTs)
             }.onEach(em::persist)
 
-            ConsensualTransactionEntity(
+            entityFactory.createConsensualTransactionEntity(
                 signedTransaction.id.toHexString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
-                Instant.now()
-            ).apply {
-                components.addAll(
+                createdTs
+            ).also { transaction ->
+                transaction.field<MutableCollection<Any>>("components").addAll(
                     signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
                         componentGroup.mapIndexed { leafIndex: Int, component ->
-                            ConsensualTransactionComponentEntity(
-                                this,
+                            entityFactory.createConsensualTransactionComponentEntity(
+                                transaction,
                                 groupIndex,
                                 leafIndex,
                                 component,
@@ -200,13 +134,13 @@ class ConsensualLedgerRepositoryTest {
                         }
                     }
                 )
-                statuses.addAll(listOf(
-                    ConsensualTransactionStatusEntity(this, "V", Instant.now())
+                transaction.field<MutableCollection<Any>>("statuses").addAll(listOf(
+                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", Instant.now())
                 ))
-                signatures.addAll(
+                transaction.field<MutableCollection<Any>>("signatures").addAll(
                     signedTransaction.signatures.mapIndexed { index, signature ->
-                        ConsensualTransactionSignatureEntity(
-                            this,
+                        entityFactory.createConsensualTransactionSignatureEntity(
+                            transaction,
                             index,
                             serializationService.serialize(signature).bytes,
                             MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString(),
@@ -214,8 +148,8 @@ class ConsensualLedgerRepositoryTest {
                         )
                     }
                 )
-                this.cpks.addAll(dbExistingCpks)
-                em.persist(this)
+                transaction.field<MutableCollection<Any>>("cpks").addAll(dbExistingCpks)
+                em.persist(transaction)
             }
         }
 
@@ -230,61 +164,71 @@ class ConsensualLedgerRepositoryTest {
     fun `can persist signed transaction`() {
         val account = "Account"
         val transactionStatus = "V"
-        val signedTransaction = createSignedTransaction()
+        val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
         entityManagerFactory.createEntityManager().transaction { em ->
             repository.persistTransaction(em, signedTransaction, transactionStatus, account)
         }
 
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
+
         // Verify persisted data
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(ConsensualTransactionEntity::class.java, signedTransaction.id.toHexString())
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toHexString())
 
             assertThat(dbTransaction).isNotNull
-            assertThat(dbTransaction.privacySalt).isEqualTo(signedTransaction.wireTransaction.privacySalt.bytes)
-            assertThat(dbTransaction.accountId).isEqualTo(account)
-            assertThat(dbTransaction.created).isNotNull
-            val createdTs = dbTransaction.created
+            val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
+            val txAccountId = dbTransaction.field<String>("accountId")
+            val txCreatedTs = dbTransaction.field<Instant?>("created")
+
+            assertThat(txPrivacySalt).isEqualTo(signedTransaction.wireTransaction.privacySalt.bytes)
+            assertThat(txAccountId).isEqualTo(account)
+            assertThat(txCreatedTs).isNotNull
 
             val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
-            assertThat(dbTransaction.components).isNotNull
-            assertThat(dbTransaction.components.size).isEqualTo(componentGroupLists.size)
-            dbTransaction.components
-                .sortedWith(compareBy<ConsensualTransactionComponentEntity> { it.groupIndex }.thenBy { it.leafIndex })
-                .groupBy { it.groupIndex }.values
+            val txComponents = dbTransaction.field<Collection<Any>?>("components")
+            assertThat(txComponents).isNotNull
+                .hasSameSizeAs(componentGroupLists)
+            txComponents!!
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .groupBy { it.field<Int>("groupIndex") }.values
                 .zip(componentGroupLists)
                 .forEachIndexed { groupIndex, (dbComponentGroup, componentGroup) ->
-                    assertThat(dbComponentGroup.size).isEqualTo(componentGroup.size)
+                    assertThat(dbComponentGroup).hasSameSizeAs(componentGroup)
                     dbComponentGroup.zip(componentGroup)
                         .forEachIndexed { leafIndex, (dbComponent, component) ->
-                            assertThat(dbComponent.groupIndex).isEqualTo(groupIndex)
-                            assertThat(dbComponent.leafIndex).isEqualTo(leafIndex)
-                            assertThat(dbComponent.data).isEqualTo(component)
-                            assertThat(dbComponent.hash).isEqualTo(
+                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex)
+                            assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                            assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
+                            assertThat(dbComponent.field<String>("hash")).isEqualTo(
                                 MessageDigest.getInstance("SHA-256").digest(component).toHexString())
-                            assertThat(dbComponent.created).isEqualTo(createdTs)
+                            assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
                 }
 
-            assertThat(dbTransaction.statuses).isNotNull
-            assertThat(dbTransaction.statuses.size).isEqualTo(1)
-            val dbStatus = dbTransaction.statuses.first()
-            assertThat(dbStatus.status).isEqualTo(transactionStatus)
-            assertThat(dbStatus.created).isEqualTo(createdTs)
+            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(txStatuses)
+                .isNotNull
+                .hasSize(1)
+            val dbStatus = txStatuses!!.first()
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
 
             val signatures = signedTransaction.signatures
-            assertThat(dbTransaction.signatures).isNotNull
-            assertThat(dbTransaction.signatures.size).isEqualTo(signatures.size)
-            dbTransaction.signatures
-                .sortedBy { it.index }
+            val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
+            assertThat(txSignatures)
+                .isNotNull
+                .hasSameSizeAs(signatures)
+            txSignatures!!
+                .sortedBy { it.field<Int>("index") }
                 .zip(signatures)
                 .forEachIndexed { index, (dbSignature, signature) ->
-                    assertThat(dbSignature.index).isEqualTo(index)
-                    assertThat(dbSignature.signature).isEqualTo(serializationService.serialize(signature).bytes)
-                    assertThat(dbSignature.publicKeyHash).isEqualTo(
+                    assertThat(dbSignature.field<Int>("index")).isEqualTo(index)
+                    assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(serializationService.serialize(signature).bytes)
+                    assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
                         MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString())
-                    assertThat(dbSignature.created).isEqualTo(createdTs)
+                    assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
         }
     }
@@ -292,19 +236,21 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can persist links between signed transaction and existing CPKs`() {
         val account = "Account"
-        val signedTransaction = createSignedTransaction()
+        val createdTs = Instant.now()
+        val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             existingCpks.mapIndexed { i, cpk ->
-                ConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), Instant.now())
+                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), createdTs)
             }.forEach(em::persist)
 
-            ConsensualTransactionEntity(
+            entityFactory.createConsensualTransactionEntity(
                 signedTransaction.id.toHexString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
-                Instant.now()
+                createdTs
             ).apply(em::persist)
         }
 
@@ -316,20 +262,21 @@ class ConsensualLedgerRepositoryTest {
         // Verify persisted data
         assertThat(persistedCpkCount).isEqualTo(existingCpks.size)
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(ConsensualTransactionEntity::class.java, signedTransaction.id.toHexString())
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toHexString())
 
-            assertThat(dbTransaction.cpks).isNotNull
-            assertThat(dbTransaction.cpks.size).isEqualTo(existingCpks.size)
-            dbTransaction.cpks
-                .sortedBy { it.name }
+            val txCpks = dbTransaction.field<Collection<Any>?>("cpks")
+            assertThat(txCpks).isNotNull
+                .hasSameSizeAs(existingCpks)
+            txCpks!!
+                .sortedBy { it.field<String>("name") }
                 .zip(existingCpks)
                 .forEachIndexed { index, (dbCpk, cpk) ->
-                    assertThat(dbCpk.fileChecksum).isEqualTo(cpk.fileChecksum)
-                    assertThat(dbCpk.name).isEqualTo(cpk.name)
-                    assertThat(dbCpk.signerSummaryHash).isEqualTo(cpk.signerSummaryHash)
-                    assertThat(dbCpk.version).isEqualTo(cpk.version)
-                    assertThat(dbCpk.data).isEqualTo("file$index".toByteArray())
-                    assertThat(dbCpk.created).isNotNull
+                    assertThat(dbCpk.field<String>("fileChecksum")).isEqualTo(cpk.fileChecksum)
+                    assertThat(dbCpk.field<String>("name")).isEqualTo(cpk.name)
+                    assertThat(dbCpk.field<String>("signerSummaryHash")).isEqualTo(cpk.signerSummaryHash)
+                    assertThat(dbCpk.field<String>("version")).isEqualTo(cpk.version)
+                    assertThat(dbCpk.field<ByteArray>("data")).isEqualTo("file$index".toByteArray())
+                    assertThat(dbCpk.field<Instant>("created")).isEqualTo(createdTs)
                 }
         }
     }
@@ -337,22 +284,23 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can find file checksums of CPKs linked to transaction`() {
         val account = "Account"
-        val signedTransaction = createSignedTransaction()
+        val signedTransaction = createSignedTransaction(Instant.now())
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
-                ConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), Instant.now())
+                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), Instant.now())
             }.onEach(em::persist)
 
-            ConsensualTransactionEntity(
+            entityFactory.createConsensualTransactionEntity(
                 signedTransaction.id.toHexString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
                 Instant.now()
-            ).apply {
-                this.cpks.addAll(dbExistingCpks)
-                em.persist(this)
+            ).also { transaction ->
+                transaction.field<MutableCollection<Any>>("cpks").addAll(dbExistingCpks)
+                em.persist(transaction)
             }
         }
 
@@ -360,23 +308,23 @@ class ConsensualLedgerRepositoryTest {
             repository.findTransactionCpkChecksums(em, signedTransaction)
         }
 
-        assertThat(cpkChecksums).isEqualTo(existingCpks.map { it.fileChecksum }.toSet())
+        assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::fileChecksum))
     }
 
-    private fun createSignedTransaction(seed: String = seedSequence.incrementAndGet().toString()): ConsensualSignedTransactionContainer {
+    private fun createSignedTransaction(createdTs: Instant, seed: String = seedSequence.incrementAndGet().toString()): ConsensualSignedTransactionContainer {
         val cpks = listOf(
             CordaPackageSummary("$seed-cpk1", "signerSummaryHash1", "1.0", "$seed-fileChecksum1"),
             CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
             CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
         )
         val transactionMetaData = TransactionMetaData(
-            LinkedHashMap<String, Any>().apply {
+            linkedMapOf<String, Any>().apply {
                 put(TransactionMetaData.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
                 put(TransactionMetaData.CPK_METADATA_KEY, cpks)
             }
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)),
+            listOf(jsonMarshallingService.format(transactionMetaData).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )
@@ -395,7 +343,7 @@ class ConsensualLedgerRepositoryTest {
                     "signature".toByteArray(),
                     mapOf("contextKey1" to "contextValue1")),
                 DigitalSignatureMetadata(
-                    Instant.now(),
+                    createdTs,
                     mapOf("propertyKey1" to "propertyValue1")
                 )
             )

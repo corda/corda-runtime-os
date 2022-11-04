@@ -19,8 +19,8 @@ dependencies {
     implementation project(":components:ledger:ledger-common-flow")
     implementation project(":components:flow:flow-service")
     implementation project(":libs:serialization:serialization-checkpoint-api")
-    implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:virtual-node:sandbox-group-context")
 
     implementation project(":libs:ledger:ledger-consensual-data")
     implementation project(":libs:ledger:ledger-common-data")

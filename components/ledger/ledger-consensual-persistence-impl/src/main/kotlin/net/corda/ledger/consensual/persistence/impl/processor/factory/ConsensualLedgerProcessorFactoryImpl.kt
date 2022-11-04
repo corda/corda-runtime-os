@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
-import net.corda.v5.cipher.suite.DigestService
+(??)import net.corda.v5.cipher.suite.DigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,7 +33,6 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
-
     }
 
     override fun create(config: SmartConfig): ConsensualLedgerProcessor {
@@ -56,5 +55,4 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
 
         return ConsensualLedgerProcessorImpl(subscription)
     }
-
 }

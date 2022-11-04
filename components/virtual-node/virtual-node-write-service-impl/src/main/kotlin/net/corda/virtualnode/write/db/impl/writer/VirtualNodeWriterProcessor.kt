@@ -232,7 +232,23 @@ internal class VirtualNodeWriterProcessor(
                 //  another database.
                 it.transaction { tx ->
                     // Retrieve virtual node info
-                    val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                    val virtualNodeInfo = try {
+                        virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                    } catch (e: VirtualNodeNotFoundException) {
+                        logger.warn("Could not find the virtual node: $shortHashString", e)
+                        respFuture.complete(
+                            VirtualNodeManagementResponse(
+                                instant,
+                                VirtualNodeManagementResponseFailure(
+                                    ExceptionEnvelope(
+                                        e::class.java.name,
+                                        e.message
+                                    )
+                                )
+                            )
+                        )
+                        return
+                    }
                     // Retrieve CPI metadata
                     val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,

@@ -8,6 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.response.ResponseEntity
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 
@@ -86,4 +88,17 @@ interface PermissionEndpoint : RpcOps {
             description = "Optional permission string prefix for permissions to be located.", required = false)
         permissionStringPrefix: String? = null
         ): List<PermissionResponseType>
+
+    /**
+     * Create a set of permissions in the RBAC permission system and optionally assigns them to existing roles.
+     */
+    @HttpRpcPOST(path = "bulk",
+        description = "This method creates a set of permissions and optionally assigns them to the existing roles.",
+        responseDescription = "A set of identifiers for permissions created along with role identifiers " +
+                "they were associated with.")
+    fun createAndAssignPermissions(
+        @HttpRpcRequestBodyParameter(description = "The details of the permissions to be created along with existing role " +
+                "identifiers newly created permissions should be associated with.")
+        permissionsToCreate: BulkCreatePermissionsRequestType
+    ): ResponseEntity<BulkCreatePermissionsResponseType>
 }

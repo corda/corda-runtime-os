@@ -11,7 +11,7 @@ description 'Cats test bundle'
 group 'com.r3.testing'
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
         name 'Testing Cats CPK'
         versionId 1
@@ -20,17 +20,8 @@ cordapp {
 }
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    cordaProvided 'net.corda:corda-application'
-    cordaProvided "org.osgi:osgi.core"
+    cordaProvided 'net.corda:corda-base'
 
     cordaProvided 'javax.persistence:javax.persistence-api'
-}
-
-tasks.named('jar', Jar) {
-    bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
 }

@@ -34,7 +34,11 @@ pluginManagement {
                     password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
-            gradlePluginPortal()
+            gradlePluginPortal {
+                content {
+                    excludeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
+                }
+            }
         }
     }
     plugins {
@@ -119,6 +123,7 @@ include 'components:ledger:ledger-common-flow-api'
 include 'components:ledger:ledger-consensual-flow'
 include 'components:ledger:ledger-consensual-persistence'
 include 'components:ledger:ledger-consensual-persistence-impl'
+include 'components:ledger:ledger-consensual-persistence-impl:testing-datamodel'
 include 'components:ledger:ledger-utxo-flow'
 include 'components:link-manager'
 include 'components:p2p-test:stub-crypto-processor'
@@ -178,6 +183,8 @@ include 'components:virtual-node:cpk-read-service-impl'
 include 'components:virtual-node:cpk-write-service'
 include 'components:virtual-node:cpk-write-service-impl'
 include 'components:virtual-node:cpk-service-common'
+include 'components:virtual-node:sandbox-amqp'
+include 'components:virtual-node:sandbox-crypto'
 include 'components:virtual-node:sandbox-group-context-service'
 include 'components:virtual-node:sandbox-group-context-service:test-impl-one'
 include 'components:virtual-node:sandbox-group-context-service:test-impl-two'
@@ -206,6 +213,7 @@ include 'libs:crypto:crypto-flow'
 include 'libs:crypto:crypto-impl'
 include 'libs:crypto:merkle-impl'
 include 'libs:crypto:crypto-serialization-impl'
+include 'libs:crypto:crypto-utils'
 include 'libs:crypto:delegated-signing'
 include 'libs:crypto:certificate-generation'
 include 'libs:datasync'
@@ -300,6 +308,7 @@ include 'libs:sandbox-internal:sandbox-fragment-cpk'
 include 'libs:sandbox-internal:sandbox-fragment-cpk:fragment'
 include 'libs:sandbox-internal:sandbox-irresolvable-cpk'
 include 'libs:sandbox-internal:sandbox-shadow-cpk'
+include 'libs:sandbox-types'
 include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
 include 'libs:serialization:serialization-checkpoint-api'
@@ -391,6 +400,7 @@ include 'testing:ledger:ledger-utxo-testkit'
 include 'testing:kryo-serialization-testkit'
 include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
+include 'testing:p2p:certificates'
 include 'testing:packaging-test-utilities'
 include 'testing:persistence-testkit'
 include 'testing:sandboxes'
