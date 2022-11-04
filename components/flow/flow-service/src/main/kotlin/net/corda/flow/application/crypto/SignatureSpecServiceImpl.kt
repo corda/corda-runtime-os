@@ -26,7 +26,7 @@ class SignatureSpecServiceImpl @Activate constructor(
 
     @Suspendable
     override fun defaultSignatureSpec(publicKey: PublicKey): SignatureSpec? =
-        schemeMetadata.inferSignatureSpec(publicKey)
+        schemeMetadata.defaultSignatureSpec(publicKey)
 
     @Suspendable
     override fun defaultSignatureSpec(publicKey: PublicKey, digestAlgorithmName: DigestAlgorithmName): SignatureSpec? =
