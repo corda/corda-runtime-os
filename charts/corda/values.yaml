@@ -60,7 +60,7 @@ db:
     # -- the cluster database port
     port: 5432
     # the cluster database user configuration
-    user:
+    username:
       # -- the cluster database user
       value: user
       # the cluster database user secret configuration; used in preference to value if name is set
@@ -82,7 +82,7 @@ db:
           # -- the cluster database password secret name
           name: ""
           # -- the cluster database password secret key
-          key: ""
+          key: "password"
     database: cordacluster
   clientImage:
     # -- registry for image containing a db client, used to set up the db
@@ -127,22 +127,32 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
-
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
-    # -- Username for the initial admin user
-    username: "admin"
-    # -- Password for the initial admin user; generated if not specified
-    password: ""
-    # Reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password
-    secretRef:
-      # -- If specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password
-      name: ""
-      # -- The key name for the secret entry containing the initial admin user's username
-      usernameKey: "username"
-      # -- The key name for the secret entry containing the initial admin user's password
-      passwordKey: "password"
-
+    # -- the intialAdminUser Username configuration
+    username: 
+      # -- the intialAdminUser user
+      value: "admin"
+      # -- the intialAdminUser user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the intialAdminUser user secret key reference
+        secretKeyRef:
+          # -- the intialAdminUser user secret name
+          name: ""
+          # -- the intialAdminUser user secret key 
+          key: "username"
+    # -- the intialAdminUser password configuration
+    password: 
+      # -- the intialAdminUser password; generated if not specified
+      value: ""
+      # -- the intialAdminUser password secret configuration
+      valueFrom:
+        # -- the intialAdminUser password secret key reference
+        secretKeyRef:
+          # -- the intialAdminUser password secret name
+          name: ""
+          # -- the intialAdminUser passsword secret key 
+          key: "password"
   # Configuration for database bootstrap
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation
