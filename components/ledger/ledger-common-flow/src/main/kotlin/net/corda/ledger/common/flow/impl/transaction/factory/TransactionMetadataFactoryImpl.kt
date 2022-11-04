@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -13,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [TransactionMetadataFactory::class, SingletonSerializeAsToken::class],
+    service = [TransactionMetadataFactory::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionMetadataFactoryImpl @Activate constructor(
@@ -21,7 +22,7 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
-) : TransactionMetadataFactory, SingletonSerializeAsToken {
+) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
     override fun create(ledgerSpecificMetadata: LinkedHashMap<String, String>): TransactionMetaData {
         val metadata = linkedMapOf(
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,

@@ -14,6 +14,8 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -31,7 +33,7 @@ import java.security.PublicKey
 
 @Suppress("LongParameterList")
 @Component(
-    service = [UtxoSignedTransactionFactory::class, SingletonSerializeAsToken::class],
+    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class, UsedByPersistence::class],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
@@ -50,6 +52,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
 ) : UtxoSignedTransactionFactory,
+    UsedByFlow,
+    UsedByPersistence,
     SingletonSerializeAsToken {
 
     @Suspendable

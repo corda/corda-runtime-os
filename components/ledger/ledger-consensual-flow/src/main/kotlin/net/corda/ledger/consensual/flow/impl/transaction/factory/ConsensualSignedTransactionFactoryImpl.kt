@@ -11,6 +11,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -30,7 +31,7 @@ import java.time.Instant
 
 @Suppress("LongParameterList")
 @Component(
-    service = [ConsensualSignedTransactionFactory::class, SingletonSerializeAsToken::class],
+    service = [ConsensualSignedTransactionFactory::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class ConsensualSignedTransactionFactoryImpl @Activate constructor(
@@ -48,7 +49,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
-) : ConsensualSignedTransactionFactory, SingletonSerializeAsToken {
+) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun create(
