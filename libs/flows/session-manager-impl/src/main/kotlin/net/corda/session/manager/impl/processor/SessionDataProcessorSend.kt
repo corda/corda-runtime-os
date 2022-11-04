@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -8,6 +7,7 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
+import java.time.Instant
 
 /**
  * Process a [SessionData] event to be sent to a counterparty.
@@ -30,14 +30,14 @@ class SessionDataProcessorSend(
 
         if (sessionState == null) {
             val errorMessage = "Tried to send SessionData for sessionState which was null. Key: $key, SessionEvent: $sessionEvent"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         }
 
         return when (val currentStatus = sessionState.status) {
             SessionStateType.ERROR -> {
                 val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
-                logger.error(errorMessage)
+                logger.warn(errorMessage)
                 sessionState
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
@@ -54,7 +54,7 @@ class SessionDataProcessorSend(
                 // more data messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
                 val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId when status was : $currentStatus. " +
                         "SessionState: $sessionState"
-                logger.error(errorMessage)
+                logger.warn(errorMessage)
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages =

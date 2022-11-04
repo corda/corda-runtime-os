@@ -5,6 +5,8 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
@@ -26,7 +28,7 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         try {
             topicsTemplate.checkValid(referenceTopicsConfig())
         } catch (e: ConfigException) {
-            log.error("Error validating topic configuration")
+            log.warn("Error validating topic configuration, ${e.message}")
         }
 
         val topicTemplateList = topicsTemplate.getObjectList("topics")
@@ -50,13 +52,13 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         }
 
         try {
-            log.info("Attempting to create topics: $topics")
+            log.trace { "Attempting to create topics: $topics" }
             adminClient.createTopics(topics).all().get()
-            log.info("$topics created successfully")
+            log.trace { "$topics created successfully" }
         } catch (e: ExecutionException) {
             when (val cause = e.cause) {
                 is TopicExistsException -> {
-                    log.info("$topics already exists")
+                    log.debug { "$topics already exists" }
                 }
                 null -> throw e
                 else -> throw cause

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -94,6 +95,7 @@ class NetworkRpcOpsImplTest {
                 "tls",
                 "session-tenant",
                 "session",
+                null
             )
         }
         @Test
@@ -105,6 +107,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(CertificatesResourceNotFoundException("Nop"))
 
@@ -145,6 +148,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(RuntimeException("Nop"))
 

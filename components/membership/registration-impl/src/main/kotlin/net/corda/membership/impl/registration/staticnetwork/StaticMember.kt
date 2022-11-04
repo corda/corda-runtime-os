@@ -6,7 +6,6 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_MODIFIED_TIME
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
-import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
 import net.corda.v5.membership.EndpointInfo
 import net.corda.utilities.time.UTCClock
 
@@ -20,16 +19,12 @@ class StaticMember(
 ) : Map<String, Any> by staticMemberData {
 
     private companion object {
-        const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
         const val DEFAULT_SERIAL = "1"
         private val clock = UTCClock()
     }
 
     val name: String?
         get() = getStringValue(StaticMemberTemplateExtension.NAME)
-
-    val softwareVersion: String
-        get() = getStringValue(STATIC_SOFTWARE_VERSION, DEFAULT_SOFTWARE_VERSION)!!
 
     val serial: String
         get() = getIntValueAsString(STATIC_SERIAL, DEFAULT_SERIAL)!!

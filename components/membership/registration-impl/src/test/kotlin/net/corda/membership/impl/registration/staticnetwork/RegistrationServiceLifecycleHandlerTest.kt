@@ -21,6 +21,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,6 +61,7 @@ class RegistrationServiceLifecycleHandlerTest {
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -74,7 +76,8 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         membershipSchemaValidatorFactory,
         mock(),
-        platformInfoProvider
+        platformInfoProvider,
+        virtualNodeInfoReadService
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

@@ -8,12 +8,12 @@ import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 
-@Suppress("LongParameterList")
 class FlowFiberExecutionContext(
     val flowCheckpoint: FlowCheckpoint,
     val sandboxGroupContext: FlowSandboxGroupContext,
     val holdingIdentity: HoldingIdentity,
-    val membershipGroupReader: MembershipGroupReader
+    val membershipGroupReader: MembershipGroupReader,
+    val mdcLoggingData: Map<String, String>
 ) : NonSerializable {
     val memberX500Name: MemberX500Name = holdingIdentity.x500Name
     val flowStackService: FlowStack = flowCheckpoint.flowStack

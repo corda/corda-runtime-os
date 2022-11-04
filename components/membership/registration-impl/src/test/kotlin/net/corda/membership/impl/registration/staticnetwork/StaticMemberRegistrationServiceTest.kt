@@ -15,11 +15,16 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.impl.registration.TEST_CPI_NAME
+import net.corda.membership.impl.registration.TEST_CPI_VERSION
+import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
+import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
+import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
+import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.bobName
@@ -31,8 +36,10 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
@@ -70,9 +77,10 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -92,12 +100,12 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class StaticMemberRegistrationServiceTest {
-    companion object {
-        private const val DEFAULT_KEY = "3456"
-        private const val ALICE_KEY = "1234"
-        private const val BOB_KEY = "2345"
-        private const val CHARLIE_KEY = "6789"
-        private const val KEY_SCHEME = "corda.key.scheme"
+    private companion object {
+        const val DEFAULT_KEY = "3456"
+        const val ALICE_KEY = "1234"
+        const val BOB_KEY = "2345"
+        const val CHARLIE_KEY = "6789"
+        const val KEY_SCHEME = "corda.key.scheme"
     }
 
     private val alice = HoldingIdentity(aliceName, DUMMY_GROUP_ID)
@@ -156,9 +164,15 @@ class StaticMemberRegistrationServiceTest {
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn aliceKey
-        on { generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on {
+            generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn aliceKey
+        on {
+            generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn bobKey
+        on {
+            generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn charlieKey
         on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
@@ -221,8 +235,11 @@ class StaticMemberRegistrationServiceTest {
             }
         }
     }
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 5000
+    private val platformInfoProvider = buildMockPlatformInfoProvider()
+
+    private val virtualNodeInfo = buildTestVirtualNodeInfo(alice)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { get(eq(alice)) } doReturn virtualNodeInfo
     }
 
     private val registrationService = StaticMemberRegistrationService(
@@ -238,7 +255,8 @@ class StaticMemberRegistrationServiceTest {
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
-        platformInfoProvider
+        platformInfoProvider,
+        virtualNodeInfoReadService
     )
 
     private fun setUpPublisher() {
@@ -249,308 +267,339 @@ class StaticMemberRegistrationServiceTest {
         )
     }
 
-    @Test
-    fun `starting and stopping the service succeeds`() {
-        registrationService.start()
-        assertTrue(registrationService.isRunning)
-        registrationService.stop()
-        assertFalse(registrationService.isRunning)
-    }
+    @Nested
+    inner class SuccessfulRegistrationTests {
+        @Test
+        fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
+            setUpPublisher()
+            registrationService.start()
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+            Mockito.verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            CryptoConsts.Categories.all.forEach {
+                Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
+                Mockito.verify(hsmRegistrationClient, times(1))
+                    .assignSoftHSM(aliceId.value, it)
+            }
+            registrationService.stop()
 
-    @Test
-    fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
-        setUpPublisher()
-        registrationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val registrationResult = registrationService.register(registrationId, alice, mockContext)
-        Mockito.verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-        CryptoConsts.Categories.all.forEach {
-            Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
-            Mockito.verify(hsmRegistrationClient, times(1))
-                .assignSoftHSM(aliceId.value, it)
-        }
-        registrationService.stop()
+            val publishedList = capturedPublishedList.firstValue
+            assertEquals(4, publishedList.size)
 
-        val publishedList = capturedPublishedList.firstValue
-        assertEquals(4, publishedList.size)
+            publishedList.take(3).forEach {
+                assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
+                        || it.key.startsWith(charlieId.value))
+                assertTrue(it.key.endsWith(aliceId.value))
+            }
 
-        publishedList.take(3).forEach {
-            assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
-                    || it.key.startsWith(charlieId.value))
-            assertTrue(it.key.endsWith(aliceId.value))
-        }
+            val publishedInfo = publishedList.first()
 
-        val publishedInfo = publishedList.first()
-
-        assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
-        val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
-        val memberPublished = memberInfoFactory.create(
-            persistentMemberPublished.memberContext.toSortedMap(),
-            persistentMemberPublished.mgmContext.toSortedMap()
-        )
-        assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
-        assertNotNull(memberPublished.softwareVersion)
-        assertNotNull(memberPublished.platformVersion)
-        assertNotNull(memberPublished.serial)
-        assertNotNull(memberPublished.modifiedTime)
-
-        assertEquals(aliceKey, memberPublished.sessionInitiationKey)
-        assertEquals(1, memberPublished.ledgerKeys.size)
-        assertEquals(1, memberPublished.ledgerKeyHashes.size)
-        assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
-        assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
-        assertEquals(1, memberPublished.endpoints.size)
-
-        // we publish the hosted identity as the last item
-        val publishedHostedIdentity = publishedList.last()
-
-        assertEquals(alice.shortHash.value, publishedHostedIdentity.key)
-        assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
-        val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
-        assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
-        assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
-
-        assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
-    }
-
-    @Test
-    fun `registration persist the status`() {
-        val status = argumentCaptor<RegistrationRequest>()
-        whenever(
-            persistenceClient.persistRegistrationRequest(
-                eq(alice),
-                status.capture()
+            assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
+            val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
+            val memberPublished = memberInfoFactory.create(
+                persistentMemberPublished.memberContext.toSortedMap(),
+                persistentMemberPublished.mgmContext.toSortedMap()
             )
-        ).doReturn(MembershipPersistenceResult.success())
-        setUpPublisher()
-        registrationService.start()
+            assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
+            assertEquals(TEST_SOFTWARE_VERSION, memberPublished.softwareVersion)
+            assertEquals(TEST_PLATFORM_VERSION, memberPublished.platformVersion)
+            assertEquals(TEST_CPI_NAME, memberPublished.cpiInfo.name)
+            assertEquals(TEST_CPI_VERSION, memberPublished.cpiInfo.version)
+            assertEquals(testCpiSignerSummaryHash, memberPublished.cpiInfo.signerSummaryHash)
+            assertNotNull(memberPublished.serial)
+            assertNotNull(memberPublished.modifiedTime)
 
-        registrationService.register(registrationId, alice, mockContext)
+            assertEquals(aliceKey, memberPublished.sessionInitiationKey)
+            assertEquals(1, memberPublished.ledgerKeys.size)
+            assertEquals(1, memberPublished.ledgerKeyHashes.size)
+            assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
+            assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
+            assertEquals(1, memberPublished.endpoints.size)
 
-        assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
-    }
+            // we publish the hosted identity as the last item
+            val publishedHostedIdentity = publishedList.last()
 
-    @Test
-    fun `registration fails when name field is empty in the GroupPolicy file`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(registrationId, bob, mockContext)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Member's name is not provided in static member list."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
+            assertEquals(alice.shortHash.value, publishedHostedIdentity.key)
+            assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
+            val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
+            assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
+            assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
 
-    @Test
-    fun `registration fails when static network is missing`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(registrationId, charlie, mockContext)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Could not find static member list in group policy file."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
+            assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
+        }
 
-    @Test
-    fun `registration fails when static network is empty`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(registrationId, eric, mockContext)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Static member list inside the group policy file cannot be empty."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
+        @Test
+        fun `registration persist the status`() {
+            val status = argumentCaptor<RegistrationRequest>()
+            whenever(
+                persistenceClient.persistRegistrationRequest(
+                    eq(alice),
+                    status.capture()
+                )
+            ).doReturn(MembershipPersistenceResult.success())
+            setUpPublisher()
+            registrationService.start()
 
-    @Test
-    fun `registration fails when coordinator is not running`() {
-        setUpPublisher()
-        val registrationResult = registrationService.register(registrationId, alice, mockContext)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
-            ),
-            registrationResult
-        )
-    }
+            registrationService.register(registrationId, alice, mockContext)
 
-    @Test
-    fun `registration fails when registering member is not in the static member list`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(registrationId, daisy, mockContext)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is not listed in the static member list."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration fails when key scheme is not provided in context`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(registrationId, alice, mock())
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Key scheme must be specified."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration fails when notary role has missing information`() {
-        setUpPublisher()
-        registrationService.start()
-        val context = mapOf(
-            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-            "corda.roles.0" to "notary",
-        )
-
-        val registrationResult = registrationService.register(registrationId, alice, context)
-
-        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
-    }
-
-    @Test
-    fun `registration submitted when context has notary role`() {
-        setUpPublisher()
-        registrationService.start()
-        val context = mapOf(
-            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-            "corda.roles.0" to "notary",
-            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
-        )
-
-        val registrationResult = registrationService.register(registrationId, alice, context)
-
-        assertThat(registrationResult.outcome).isEqualTo(SUBMITTED)
-    }
-
-    @Test
-    fun `registration not submitted when context has un known role`() {
-        setUpPublisher()
-        registrationService.start()
-        val context = mapOf(
-            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-            "corda.roles.0" to "nop",
-        )
-
-        val registrationResult = registrationService.register(registrationId, alice, context)
-
-        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
-    }
-
-    @Test
-    fun `registration adds notary info to member info`() {
-        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
-        setUpPublisher()
-        registrationService.start()
-        val context = mapOf(
-            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-            "corda.roles.0" to "notary",
-            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
-        )
-
-        registrationService.register(registrationId, alice, context)
-
-        val persistentMemberPublished = capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-        val memberInfo = memberInfoFactory.create(
-            persistentMemberPublished.memberContext.toSortedMap(),
-            persistentMemberPublished.mgmContext.toSortedMap()
-        )
-        val notaryDetails = memberInfo.notaryDetails
-        assertSoftly {
-            assertThat(notaryDetails).isNotNull
-            assertThat(notaryDetails?.serviceName).isEqualTo(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"))
-            assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
-
-            assertThat(notaryDetails?.keys?.toList())
-                .hasSize(1)
-                .allMatch {
-                    it.publicKey == defaultKey
-                }
-                .allMatch {
-                    it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
-                }
-                .allMatch {
-                    it.spec.signatureName == SignatureSpec.RSA_SHA512.signatureName
-                }
+            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
         }
     }
 
-    @Test
-    fun `registration without notary will not add notary to member info`() {
-        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
-        setUpPublisher()
-        registrationService.start()
-        val context = mapOf(
-            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-        )
+    @Nested
+    inner class FailedRegistrationTests {
+        @Test
+        fun `registration fails when name field is empty in the GroupPolicy file`() {
+            setUpPublisher()
+            registrationService.start()
+            val registrationResult = registrationService.register(registrationId, bob, mockContext)
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: Member's name is not provided in static member list."
+                ),
+                registrationResult
+            )
+            registrationService.stop()
+        }
 
-        registrationService.register(registrationId, alice, context)
+        @Test
+        fun `registration fails when static network is missing`() {
+            setUpPublisher()
+            registrationService.start()
+            val registrationResult = registrationService.register(registrationId, charlie, mockContext)
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: Could not find static member list in group policy file."
+                ),
+                registrationResult
+            )
+            registrationService.stop()
+        }
 
-        val persistentMemberPublished = capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
-        val memberInfo = memberInfoFactory.create(
-            persistentMemberPublished.memberContext.toSortedMap(),
-            persistentMemberPublished.mgmContext.toSortedMap()
-        )
-        val notaryDetails = memberInfo.notaryDetails
-        assertThat(notaryDetails)
-            .isNull()
+        @Test
+        fun `registration fails when static network is empty`() {
+            setUpPublisher()
+            registrationService.start()
+            val registrationResult = registrationService.register(registrationId, eric, mockContext)
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: Static member list inside the group policy file cannot be empty."
+                ),
+                registrationResult
+            )
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when coordinator is not running`() {
+            setUpPublisher()
+            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
+                ),
+                registrationResult
+            )
+        }
+
+        @Test
+        fun `registration fails when registering member is not in the static member list`() {
+            setUpPublisher()
+            registrationService.start()
+            val registrationResult = registrationService.register(registrationId, daisy, mockContext)
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB " +
+                            "is not listed in the static member list."
+                ),
+                registrationResult
+            )
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when key scheme is not provided in context`() {
+            setUpPublisher()
+            registrationService.start()
+            val registrationResult = registrationService.register(registrationId, alice, mock())
+            assertEquals(
+                MembershipRequestRegistrationResult(
+                    NOT_SUBMITTED,
+                    "Registration failed. Reason: Key scheme must be specified."
+                ),
+                registrationResult
+            )
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when notary role has missing information`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+            )
+
+            val registrationResult = registrationService.register(registrationId, alice, context)
+
+            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+        }
+
+        @Test
+        fun `registration fails if the registration context doesn't match the schema`() {
+            setUpPublisher()
+            val err = "ERROR-MESSAGE"
+            val errReason = "ERROR-REASON"
+            whenever(
+                membershipSchemaValidator.validateRegistrationContext(
+                    eq(MembershipSchema.RegistrationContextSchema.StaticMember),
+                    any(),
+                    any()
+                )
+            ).doThrow(
+                MembershipSchemaValidationException(
+                    err,
+                    null,
+                    MembershipSchema.RegistrationContextSchema.DynamicMember,
+                    listOf(errReason)
+                )
+            )
+
+            registrationService.start()
+            val result = registrationService.register(registrationId, alice, mockContext)
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(NOT_SUBMITTED)
+                it.assertThat(result.message).contains(err)
+                it.assertThat(result.message).contains(errReason)
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when virtual node info is unavailable`() {
+            setUpPublisher()
+            registrationService.start()
+            whenever(virtualNodeInfoReadService.get((alice))).thenReturn(null)
+
+            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+
+            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+            assertThat(registrationResult.message).isNotNull.contains("Could not find virtual node")
+        }
     }
 
-    @Test
-    fun `registration fails if the registration context doesn't match the schema`() {
-        setUpPublisher()
-        val err = "ERROR-MESSAGE"
-        val errReason = "ERROR-REASON"
-        whenever(
-            membershipSchemaValidator.validateRegistrationContext(
-                eq(MembershipSchema.RegistrationContextSchema.StaticMember),
-                any(),
-                any()
+    @Nested
+    inner class NotaryRoleTests {
+        @Test
+        fun `registration submitted when context has notary role`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
-        ).doThrow(
-            MembershipSchemaValidationException(
-                err,
-                null,
-                MembershipSchema.RegistrationContextSchema.DynamicMember,
-                listOf(errReason)
-            )
-        )
 
-        registrationService.start()
-        val result = registrationService.register(registrationId, alice, mockContext)
-        SoftAssertions.assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(NOT_SUBMITTED)
-            it.assertThat(result.message).contains(err)
-            it.assertThat(result.message).contains(errReason)
+            val registrationResult = registrationService.register(registrationId, alice, context)
+
+            assertThat(registrationResult.outcome).isEqualTo(SUBMITTED)
         }
-        registrationService.stop()
+
+        @Test
+        fun `registration not submitted when context has un known role`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "nop",
+            )
+
+            val registrationResult = registrationService.register(registrationId, alice, context)
+
+            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+        }
+
+        @Test
+        fun `registration adds notary info to member info`() {
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            registrationService.register(registrationId, alice, context)
+
+            val persistentMemberPublished =
+                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+            val memberInfo = memberInfoFactory.create(
+                persistentMemberPublished.memberContext.toSortedMap(),
+                persistentMemberPublished.mgmContext.toSortedMap()
+            )
+            val notaryDetails = memberInfo.notaryDetails
+            assertSoftly {
+                assertThat(notaryDetails).isNotNull
+                assertThat(notaryDetails?.serviceName)
+                    .isEqualTo(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"))
+                assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
+
+                assertThat(notaryDetails?.keys?.toList())
+                    .hasSize(1)
+                    .allMatch {
+                        it.publicKey == defaultKey
+                    }
+                    .allMatch {
+                        it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
+                    }
+                    .allMatch {
+                        it.spec.signatureName == SignatureSpec.RSA_SHA512.signatureName
+                    }
+            }
+        }
+
+        @Test
+        fun `registration without notary will not add notary to member info`() {
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            )
+
+            registrationService.register(registrationId, alice, context)
+
+            val persistentMemberPublished =
+                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+            val memberInfo = memberInfoFactory.create(
+                persistentMemberPublished.memberContext.toSortedMap(),
+                persistentMemberPublished.mgmContext.toSortedMap()
+            )
+            val notaryDetails = memberInfo.notaryDetails
+            assertThat(notaryDetails)
+                .isNull()
+        }
+    }
+
+    @Nested
+    inner class LifecycleTests {
+        @Test
+        fun `starting and stopping the service succeeds`() {
+            registrationService.start()
+            assertTrue(registrationService.isRunning)
+            registrationService.stop()
+            assertFalse(registrationService.isRunning)
+        }
     }
 }

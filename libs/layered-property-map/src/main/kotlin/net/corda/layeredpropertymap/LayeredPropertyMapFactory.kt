@@ -1,6 +1,7 @@
 package net.corda.layeredpropertymap
 
 import net.corda.v5.base.types.LayeredPropertyMap
+import java.lang.reflect.InvocationTargetException
 
 /**
  * Factory for creating instances of [LayeredPropertyMap].
@@ -19,5 +20,10 @@ interface LayeredPropertyMapFactory {
 inline fun <reified T : LayeredPropertyMap> LayeredPropertyMapFactory.create(properties: Map<String, String?>): T {
     val constructor = T::class.java.getConstructor(LayeredPropertyMap::class.java)
     val map = createMap(properties)
-    return constructor.newInstance(map)
+    return try {
+        constructor.newInstance(map)
+    } catch (e: InvocationTargetException) {
+        // to throw the underlying exception for test cases instead of InvocationTargetException
+        throw e.cause!!
+    }
 }

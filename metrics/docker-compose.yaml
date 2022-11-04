@@ -15,9 +15,8 @@ services:
   grafana:
     image: grafana/grafana
     volumes:
-      - ./grafana:/var/lib/grafana
-      - ./grafana/datasources:/etc/grafana/datasources
-      - ./grafana/dashboards:/etc/grafana/dashboard
+      - ./grafana/db:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning/
     ports:
       - "3000:3000"
     restart: always
