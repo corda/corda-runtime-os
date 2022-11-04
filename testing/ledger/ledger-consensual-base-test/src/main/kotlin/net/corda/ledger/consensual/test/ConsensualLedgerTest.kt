@@ -20,7 +20,7 @@ abstract class ConsensualLedgerTest : CommonLedgerTest() {
         flowFiberService,
         jsonMarshallingService
     )
-    val consensualLedgerService = ConsensualLedgerServiceImpl(consensualSignedTransactionFactory, flowEngine)
+    val consensualLedgerService = ConsensualLedgerServiceImpl(consensualSignedTransactionFactory, flowEngine, mock())
     val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
         mockSigningService(),
