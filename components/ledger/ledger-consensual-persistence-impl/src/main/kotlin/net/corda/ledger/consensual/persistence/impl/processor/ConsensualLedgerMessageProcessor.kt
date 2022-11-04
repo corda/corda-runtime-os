@@ -6,7 +6,6 @@ import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
 import net.corda.messaging.api.processor.DurableProcessor
@@ -18,12 +17,12 @@ import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -36,9 +35,7 @@ import java.nio.ByteBuffer
 class ConsensualLedgerMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     externalEventResponseFactory: ExternalEventResponseFactory,
-    private val digestService: DigestService,
-    private val wireTransactionFactory: WireTransactionFactory,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     private companion object {
         val log = contextLogger()
@@ -81,9 +78,9 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val repository = ConsensualLedgerRepository(
-            digestService, serializationService, wireTransactionFactory
-        )
+        val sandboxSingletons = sandbox.getSandboxSingletonServices()
+        val repository = sandboxSingletons.filterIsInstance<ConsensualLedgerRepository>().singleOrNull()
+            ?: throw IllegalStateException("ConsensualLedgerRepository service missing from sandbox")
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {

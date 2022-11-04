@@ -17,7 +17,6 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -87,11 +86,6 @@ class ConsensualLedgerMessageProcessorTests {
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
-    @InjectService
-    lateinit var digestService: DigestService
-    @InjectService
-    lateinit var wireTransactionFactory: WireTransactionFactory
-
     @BeforeAll
     fun setup(
         @InjectService(timeout = TIMEOUT_MILLIS)
@@ -128,8 +122,6 @@ class ConsensualLedgerMessageProcessorTests {
         val processor = ConsensualLedgerMessageProcessor(
             virtualNode.entitySandboxService,
             externalEventResponseFactory,
-            digestService,
-            wireTransactionFactory,
             this::noOpPayloadCheck
         )
         val requestId = UUID.randomUUID().toString()
