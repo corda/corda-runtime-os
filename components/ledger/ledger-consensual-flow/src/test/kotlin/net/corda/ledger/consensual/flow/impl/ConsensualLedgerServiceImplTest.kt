@@ -61,14 +61,14 @@ class ConsensualLedgerServiceImplTest {
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, mock())
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, mock())
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)

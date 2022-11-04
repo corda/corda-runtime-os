@@ -30,6 +30,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
         // Permission manipulation permissions ;-)
         "CreatePermission" to "POST:/api/v1/permission",
+        "BulkCreatePermissions" to "POST:/api/v1/permission/bulk",
         "QueryPermissions" to "GET:/api/v1/permission?.*",
         "GetPermission" to "GET:/api/v1/permission/$UUID_REGEX",
 

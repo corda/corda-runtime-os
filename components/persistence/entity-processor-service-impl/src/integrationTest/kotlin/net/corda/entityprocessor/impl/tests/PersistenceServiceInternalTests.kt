@@ -13,6 +13,7 @@ import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
+import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.data.persistence.FindWithNamedQuery
@@ -20,13 +21,32 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.CAT_CLASS_NAME
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.DOG_CLASS_NAME
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCat
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCatKeyInstance
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.persistence.common.getSerializationService
+import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -55,27 +75,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
-import net.corda.data.persistence.FindEntities
-import net.corda.db.persistence.testkit.components.VirtualNodeService
-import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
-import net.corda.db.persistence.testkit.helpers.BasicMocks
-import net.corda.db.persistence.testkit.helpers.Resources
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.CAT_CLASS_NAME
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.DOG_CLASS_NAME
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCat
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCatKeyInstance
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
-import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.EntitySandboxService
-import net.corda.persistence.common.EntitySandboxServiceFactory
-import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 
 sealed class QuerySetup {
     data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
@@ -194,7 +193,7 @@ class PersistenceServiceInternalTests {
 
         val entityManager = BasicMocks.entityManager()
 
-        persistenceService.persist(sandbox.getSerializer(SANDBOX_SERIALIZER), entityManager, payload)
+        persistenceService.persist(sandbox.getSerializationService(), entityManager, payload)
 
         Mockito.verify(entityManager).persist(Mockito.any())
     }
@@ -720,8 +719,8 @@ class PersistenceServiceInternalTests {
             virtualNode.sandboxGroupContextComponent,
             cpiInfoReadService,
             virtualNodeInfoReadService,
-            dbConnectionManager,
-            BasicMocks.componentContext())
+            dbConnectionManager
+        )
 
     private fun findDogDirectInDb(dogId: UUID): Any? = findDirectInDb(dogId, dogClass)
 
@@ -971,10 +970,10 @@ class PersistenceServiceInternalTests {
         return cats.size
     }
 
-    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
+    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
-        getSerializer(SANDBOX_SERIALIZER).deserialize(bytes.array(), Any::class.java)
+        getSerializationService().deserialize(bytes.array(), Any::class.java)
 
 }

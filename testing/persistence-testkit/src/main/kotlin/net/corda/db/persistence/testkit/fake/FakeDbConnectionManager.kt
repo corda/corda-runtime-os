@@ -24,7 +24,7 @@ import javax.sql.DataSource
 //@Component(service = [DbConnectionManager::class, FakeDbConnectionManager::class])
 @Suppress("TooManyFunctions")
 class FakeDbConnectionManager(
-    private val connections: List<Pair<UUID, String>>,
+    connections: List<Pair<UUID, String>>,
     private val schemaName: String,
     private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {

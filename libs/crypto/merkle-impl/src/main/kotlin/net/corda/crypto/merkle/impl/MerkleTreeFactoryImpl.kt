@@ -1,5 +1,6 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -13,11 +14,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [ MerkleTreeFactory::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
+@Component(service = [ MerkleTreeFactory::class, UsedByFlow::class ], scope = PROTOTYPE)
 class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
-) : MerkleTreeFactory, SingletonSerializeAsToken {
+) : MerkleTreeFactory, UsedByFlow, SingletonSerializeAsToken {
     override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest): MerkleTree =
         when (digest) {
             is MerkleTreeHashDigestProvider -> merkleTreeProvider.createTree(leaves, digest)

@@ -36,6 +36,9 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+          env:
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-db-schemas
           image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
@@ -56,6 +59,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -67,6 +71,7 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -89,6 +94,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -100,6 +106,7 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -122,6 +129,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
@@ -133,6 +141,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "corda.initialAdminUserSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rpc-admin
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -177,6 +186,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -188,6 +198,7 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -206,6 +217,7 @@ spec:
       volumes:
         - name: working-volume
           emptyDir: {}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
 
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
 

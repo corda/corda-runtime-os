@@ -4,6 +4,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -18,13 +19,13 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.util.*
+import java.util.UUID
 
-@Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(service = [ FlowEngine::class, UsedByFlow::class ], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : FlowEngine, SingletonSerializeAsToken {
+) : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
 
     override val flowId: UUID
         get() = flowFiberService.getExecutingFiber().flowId
