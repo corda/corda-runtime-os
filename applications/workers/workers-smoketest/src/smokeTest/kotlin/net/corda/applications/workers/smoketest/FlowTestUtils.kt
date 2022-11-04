@@ -123,9 +123,9 @@ fun getFlowClasses(holdingId: String): List<String> {
 fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        val cpis = cpiList().toJson()["cpis"]
         // be a bit patient for the CPI info to get there in case it has just been uploaded
-        val json = eventually(duration = Duration.ofSeconds(5)) {
+        val json = eventually(duration = Duration.ofSeconds(30)) {
+            val cpis = cpiList().toJson()["cpis"]
             cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
         }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
