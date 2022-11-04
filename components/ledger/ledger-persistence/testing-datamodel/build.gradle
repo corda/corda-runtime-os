@@ -6,7 +6,7 @@ plugins {
 cordapp {
     targetPlatformVersion platformVersion.toInteger()
     minimumPlatformVersion platformVersion.toInteger()
-    workflow {
+    contract {
         name 'Ledger Testing Data-Model'
         versionId 1
         vendor 'R3'

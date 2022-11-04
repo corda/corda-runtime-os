@@ -56,9 +56,13 @@ class VirtualNodeService @Activate constructor(
     private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo, type: SandboxGroupType): SandboxGroupContext {
         val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
+        val cpks = when (type) {
+            SandboxGroupType.FLOW -> cpi.cpksMetadata
+            else -> cpi.contractCpksMetadata()
+        }
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
-            cpi.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::fileChecksum),
+            cpks.mapTo(LinkedHashSet(), CpkMetadata::fileChecksum),
             type,
             null
         )

@@ -7,6 +7,7 @@ import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -48,7 +49,7 @@ class TestFindTransactionFlow {
         val keyGenerator = KeyPairGenerator.getInstance("EC")
 
         val participantKey = keyGenerator.generateKeyPair().public
-        val testState = UtxoDemoFlow.TestUtxoState("text", listOf(participantKey) )
+        val testState = TestUtxoState("text", listOf(participantKey) )
 
         val ledgerTx = mock<UtxoLedgerTransaction>().apply {
             whenever(id).thenReturn(txIdGood)

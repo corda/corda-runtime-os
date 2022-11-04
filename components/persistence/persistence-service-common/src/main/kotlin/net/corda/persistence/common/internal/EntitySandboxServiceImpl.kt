@@ -207,7 +207,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     private fun getVirtualNodeContext(virtualNode: VirtualNodeInfo, cpks: Collection<CpkMetadata>) =
         VirtualNodeContext(
             virtualNode.holdingIdentity,
-            cpks.mapTo(linkedSetOf(), CpkMetadata::fileChecksum),
+            cpks.filter(CpkMetadata::isContractCpk).mapTo(linkedSetOf(), CpkMetadata::fileChecksum),
             SandboxGroupType.PERSISTENCE,
             null
         )
