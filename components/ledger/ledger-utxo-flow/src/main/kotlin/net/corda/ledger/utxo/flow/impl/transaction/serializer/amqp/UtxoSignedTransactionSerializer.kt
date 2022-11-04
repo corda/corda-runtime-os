@@ -2,6 +2,9 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -14,16 +17,20 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope
 
-@Component(service = [InternalCustomSerializer::class])
-class UtxoSignedTransactionSerializer @Activate constructor(
+@Component(
+    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = ServiceScope.PROTOTYPE
+)class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService
-) : BaseProxySerializer<UtxoSignedTransaction, UtxoSignedTransactionProxy>() {
+) : BaseProxySerializer<UtxoSignedTransaction, UtxoSignedTransactionProxy>(),
+    UsedByFlow, UsedByPersistence, UsedByVerification {
 
     override val type = UtxoSignedTransaction::class.java
 
