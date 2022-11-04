@@ -98,7 +98,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
 
     override val secureRandom: SecureRandom get() = metadataProvider.secureRandom
 
-    override fun inferSignatureSpec(publicKey: PublicKey): SignatureSpec? =
+    override fun defaultSignatureSpec(publicKey: PublicKey): SignatureSpec? =
         metadataProvider.keySchemeInfoMap[findKeyScheme(publicKey)]?.defaultSignatureSpec
 
     override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
