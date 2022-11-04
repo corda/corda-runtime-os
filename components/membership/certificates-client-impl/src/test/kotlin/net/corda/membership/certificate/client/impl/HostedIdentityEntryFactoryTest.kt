@@ -174,8 +174,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             sessionKeyId = null,
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelSessionCertificateAndKey = true,
-            useClusterLevelTlsCertificateAndKey = true,
+            useClusterLevelSessionCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
         )
 
         assertSoftly { softly ->

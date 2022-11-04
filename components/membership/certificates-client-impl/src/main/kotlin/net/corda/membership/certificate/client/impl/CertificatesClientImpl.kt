@@ -99,12 +99,12 @@ class CertificatesClientImpl @Activate constructor(
         sessionCertificateChainAlias: String?
     ) {
         val record = hostedIdentityEntryFactory.createIdentityRecord(
-            holdingIdentityShortHash,
-            p2pTlsCertificateChainAlias,
-            useClusterLevelTlsCertificateAndKey,
-            sessionCertificateChainAlias,
-            useClusterLevelSessionCertificateAndKey,
-            sessionKeyId,
+            holdingIdentityShortHash = holdingIdentityShortHash,
+            tlsCertificateChainAlias = p2pTlsCertificateChainAlias,
+            useClusterLevelTlsCertificateAndKey = useClusterLevelTlsCertificateAndKey,
+            sessionCertificateChainAlias = sessionCertificateChainAlias,
+            useClusterLevelSessionCertificateAndKey = useClusterLevelSessionCertificateAndKey,
+            sessionKeyId = sessionKeyId,
         )
 
         val futures = publisher?.publish(

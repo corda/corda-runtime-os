@@ -161,9 +161,9 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                "sessionAlias",
-                true,
                 null,
+                true,
+                "sessionAlias",
             )
         }
 
@@ -230,7 +230,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any(), eq(null))
+                    .createIdentityRecord(any(), any(), any(), any(), any(), any())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -244,7 +244,7 @@ class CertificatesClientImplTest {
                 false,
                 true,
                 "sessionAlias",
-                null,
+                "chain",
             )
 
             verify(publisher).publish(listOf(record))
