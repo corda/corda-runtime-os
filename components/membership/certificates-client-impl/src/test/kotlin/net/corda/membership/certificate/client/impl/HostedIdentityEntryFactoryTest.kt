@@ -9,6 +9,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -106,8 +107,14 @@ class HostedIdentityEntryFactoryTest {
         on { encodeAsString(sessionPublicKey) } doReturn PUBLIC_KEY_PEM
         on { encodeAsString(knownTenantSessionPublicKey) } doReturn KNOWN_TENANT_PUBLIC_KEY_PEM
     }
+    private val p2pParamsSessionPki: GroupPolicy.P2PParameters = mock {
+        on { tlsTrustRoots } doReturn listOf(rootPem)
+        on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
+        on { sessionTrustRoots } doReturn listOf(rootPem)
+    }
     private val p2pParams: GroupPolicy.P2PParameters = mock {
         on { tlsTrustRoots } doReturn listOf(rootPem)
+        on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
     }
     private val groupPolicy = mock<GroupPolicy> {
         on { p2pParameters } doReturn p2pParams
@@ -133,10 +140,11 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord create the correct record`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = null,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertSoftly { softly ->
@@ -148,7 +156,36 @@ class HostedIdentityEntryFactoryTest {
                     VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
-                    PUBLIC_KEY_PEM
+                    PUBLIC_KEY_PEM,
+                    null
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `createIdentityRecord create the correct record if session certificate used`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
+        val record = factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsTenantId = null,
+            sessionKeyTenantId = null,
+            sessionKeyId = null,
+            sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS
+        )
+
+        assertSoftly { softly ->
+            softly.assertThat(record.topic).isEqualTo(P2P_HOSTED_IDENTITIES_TOPIC)
+            softly.assertThat(record.key).isEqualTo(validHoldingId.shortHash.value)
+            softly.assertThat(record.value).isEqualTo(
+                HostedIdentityEntry(
+                    validHoldingId.toAvro(),
+                    VALID_NODE.toString(),
+                    VALID_NODE.toString(),
+                    listOf(certificatePem),
+                    PUBLIC_KEY_PEM,
+                    listOf(certificatePem)
                 )
             )
         }
@@ -159,22 +196,38 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = INVALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
 
     @Test
+    fun `createIdentityRecord will throw an exception if standard session pki and no sessionCertificateChainAlias specified`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
+        assertThrows<CordaRuntimeException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsTenantId = VALID_NODE.toString(),
+                sessionKeyTenantId = null,
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
+            )
+        }
+    }
+    @Test
     fun `createIdentityRecord will use session tenant ID if provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = KNOWN_TENANT,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.sessionKeyTenantId).isEqualTo(KNOWN_TENANT)
@@ -185,10 +238,11 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will default to holding identity short hash if session tenant ID is not provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE.toString())
@@ -199,10 +253,11 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will look for ID if provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(ids.firstValue)
@@ -214,10 +269,11 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will filter by category if no id is provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(filter.firstValue)
@@ -231,23 +287,39 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
 
     @Test
-    fun `createIdentityRecord will throw an exception if certificates can not be found`() {
+    fun `createIdentityRecord will throw an exception if tls certificates can not be found`() {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = "NOP",
+                tlsCertificateChainAlias = "NOP",
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
+            )
+        }
+    }
+
+    @Test
+    fun `createIdentityRecord will throw an exception if session certificates can not be found`() {
+        assertThrows<CertificatesResourceNotFoundException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsTenantId = VALID_NODE.toString(),
+                sessionKeyTenantId = null,
+                sessionKeyId = null,
+                sessionCertificateChainAlias = "NOP"
             )
         }
     }
@@ -267,26 +339,72 @@ class HostedIdentityEntryFactoryTest {
 
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(tenantId).isEqualTo("p2p")
     }
 
     @Test
+    fun `createIdentityRecord with another session tenant will call the certificates from that tenant`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
+        var tenantId =  mutableListOf<String>()
+        whenever(cryptoOpsClient.filterMyKeys(eq(KNOWN_TENANT), any())).doReturn(listOf(certificatePublicKey))
+
+        val factory = HostedIdentityEntryFactory(
+            virtualNodeInfoReadService,
+            cryptoOpsClient,
+            keyEncodingService,
+            groupPolicyProvider,
+        ) { tenant, _ ->
+            tenantId.add(tenant)
+            certificatePem
+        }
+        factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsTenantId = VALID_NODE.toString(),
+            sessionKeyTenantId = KNOWN_TENANT,
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS
+        )
+
+        assertThat(tenantId).contains(KNOWN_TENANT)
+    }
+
+    @Test
     fun `createIdentityRecord with another TLS tenant will return that ID`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.tlsTenantId).isEqualTo("p2p")
+    }
+
+    @Test
+    fun `createIdentityRecord with another session tenant will return that ID`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
+        whenever(cryptoOpsClient.filterMyKeys(eq(KNOWN_TENANT), any())).doReturn(listOf(certificatePublicKey))
+
+        val record = factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsTenantId = VALID_NODE.toString(),
+            sessionKeyTenantId = KNOWN_TENANT,
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS
+        )
+
+        assertThat(record.value?.sessionKeyTenantId).isEqualTo(KNOWN_TENANT)
     }
 
     @Test
@@ -303,10 +421,11 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -318,10 +437,11 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -336,10 +456,11 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -354,10 +475,51 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
+            )
+        }
+    }
+
+    @Test
+    fun `createIdentityRecord will throw an exception if the group sessionTrustRoots is empty`() {
+        val p2pParams: GroupPolicy.P2PParameters = mock {
+            on { tlsTrustRoots } doReturn listOf(rootPem)
+            on { sessionTrustRoots } doReturn emptyList()
+        }
+        whenever(groupPolicy.p2pParameters) doReturn p2pParams
+
+        assertThrows<CordaRuntimeException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsTenantId = null,
+                sessionKeyTenantId = null,
+                sessionKeyId = null,
+                sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS
+            )
+        }
+    }
+
+    @Test
+    fun `createIdentityRecord will throw an exception if the group sessionTrustRoots is invalid`() {
+        val p2pParams: GroupPolicy.P2PParameters = mock {
+            on { tlsTrustRoots } doReturn listOf(rootPem)
+            on { sessionTrustRoots } doReturn listOf(certificatePem)
+        }
+        whenever(groupPolicy.p2pParameters) doReturn p2pParams
+
+        assertThrows<CordaRuntimeException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsTenantId = null,
+                sessionKeyTenantId = null,
+                sessionKeyId = null,
+                sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS
             )
         }
     }

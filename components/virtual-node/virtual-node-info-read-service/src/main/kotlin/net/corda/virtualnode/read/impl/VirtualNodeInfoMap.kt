@@ -4,7 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.toCorda
-import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Map of [HoldingIdentity] to [VirtualNodeInfo] AVRO data objects
@@ -14,10 +14,8 @@ import java.util.Collections
  * This class is nothing more than two maps with different keys.
  */
 internal class VirtualNodeInfoMap {
-    private val virtualNodeInfoByHoldingIdentity: MutableMap<HoldingIdentity, VirtualNodeInfo> =
-        Collections.synchronizedMap(mutableMapOf())
-    private val virtualNodeInfoById: MutableMap<ShortHash, VirtualNodeInfo> =
-        Collections.synchronizedMap(mutableMapOf())
+    private val virtualNodeInfoByHoldingIdentity =  ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
+    private val virtualNodeInfoById = ConcurrentHashMap<ShortHash, VirtualNodeInfo>()
 
     /** Class to be used as a key for putting items. */
     data class Key(val holdingIdentity: HoldingIdentity, val holdingIdShortHash: ShortHash)

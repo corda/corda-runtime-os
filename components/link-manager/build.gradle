@@ -41,6 +41,7 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(":components:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-utils")
     implementation project(":components:membership:membership-persistence-client")
     implementation "net.corda:corda-cipher-suite"
 
@@ -64,6 +65,7 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
 
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:p2p:certificates")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"

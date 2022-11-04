@@ -26,7 +26,7 @@ fun getWireTransactionExample(
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val componentGroupLists = listOf(
-        listOf(canonicalJson.toByteArray(Charsets.UTF_8)),
+        listOf(canonicalJson.toByteArray()),
         listOf(".".toByteArray()),
         listOf("abc d efg".toByteArray()),
     )

@@ -2,8 +2,11 @@ package net.corda.libs.permissions.storage.writer.impl
 
 import java.util.concurrent.CompletableFuture
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.permission.BulkCreatePermissionsRequest
+import net.corda.data.permissions.management.permission.BulkCreatePermissionsResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
@@ -51,6 +54,40 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishNewPermission(avroPermission)
                     avroPermission
                 }
+                is BulkCreatePermissionsRequest -> {
+                    // Create permissions
+                    val permsCreated: List<Permission> =
+                        permissionRequest.permissionsToCreate.map { permToCreate: CreatePermissionRequest ->
+                            permissionWriter.createPermission(
+                                permToCreate,
+                                request.requestUserId,
+                                request.virtualNodeId
+                            )
+                        }
+
+                    // Broadcast permissions created
+                    permsCreated.map {
+                        permissionStorageReader.publishNewPermission(it)
+                    }
+
+                    val permIds = permsCreated.map { it.id }
+
+                    // Associate roles with permissions
+                    permissionRequest.roleIds.map { roleId ->
+                        val avroRoles = permIds.map { permId ->
+                            roleWriter.addPermissionToRole(AddPermissionToRoleRequest(roleId, permId), request.requestUserId)
+                        }
+                        // Once done with a role - broadcast
+                        permissionStorageReader.publishUpdatedRole(avroRoles.last())
+                    }
+
+                    // Once done with all - post update to permission summaries
+                    if (permissionRequest.roleIds.isNotEmpty()) {
+                        permissionStorageReader.reconcilePermissionSummaries()
+                    }
+
+                    BulkCreatePermissionsResponse(permIds, permissionRequest.roleIds)
+                }
                 is AddRoleToUserRequest -> {
                     val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
@@ -75,7 +112,7 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroRole
                 }
-                else -> throw IllegalArgumentException("Received invalid permission request type.")
+                else -> throw IllegalArgumentException("Received invalid permission request type: $permissionRequest")
             }
             respFuture.complete(PermissionManagementResponse(response))
         } catch (e: Exception) {

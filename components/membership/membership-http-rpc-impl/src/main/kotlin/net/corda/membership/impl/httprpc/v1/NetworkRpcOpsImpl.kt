@@ -43,6 +43,7 @@ class NetworkRpcOpsImpl @Activate constructor(
                 request.p2pTlsTenantId,
                 request.sessionKeyTenantId,
                 request.sessionKeyId,
+                request.sessionCertificateChainAlias
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)

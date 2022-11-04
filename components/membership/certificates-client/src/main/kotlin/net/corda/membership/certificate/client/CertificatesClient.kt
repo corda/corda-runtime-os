@@ -28,13 +28,16 @@ interface CertificatesClient : Lifecycle {
      * @param p2pTlsTenantId The TLS tenant ID (either p2p or the holdingIdentityShortHash, defaults to [holdingIdentityShortHash]).
      * @param sessionKeyTenantId The tenant ID under which the session initiation key is stored (defaults to [holdingIdentityShortHash]).
      * @param sessionKeyId The session key ID (will use the first one if null).
+     * @param sessionCertificateChainAlias The certificate chain alias of the Session Key. Should be null if no PKI is used for sessions.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
+    @Suppress("LongParameterList")
     fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         p2pTlsTenantId: String?,
         sessionKeyTenantId: String?,
-        sessionKeyId: String?
+        sessionKeyId: String?,
+        sessionCertificateChainAlias: String?
     )
 }

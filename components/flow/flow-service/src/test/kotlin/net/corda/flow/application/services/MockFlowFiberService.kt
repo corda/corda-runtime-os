@@ -50,7 +50,8 @@ class MockFlowFiberService : FlowFiberService {
             flowCheckpoint,
             sandboxGroupContext,
             holdingIdentity,
-            membershipGroupReader
+            membershipGroupReader,
+            emptyMap()
         )
 
         whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)

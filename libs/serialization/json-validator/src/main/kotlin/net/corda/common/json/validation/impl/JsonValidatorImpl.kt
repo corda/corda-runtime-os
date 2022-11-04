@@ -5,13 +5,17 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
 import net.corda.common.json.validation.JsonValidator
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.erdtman.jcs.JsonCanonicalizer
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 import java.io.InputStream
 
-@Component(service = [JsonValidator::class], scope = ServiceScope.PROTOTYPE)
-class JsonValidatorImpl: JsonValidator {
+@Component(service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class ], scope = ServiceScope.PROTOTYPE)
+class JsonValidatorImpl: JsonValidator,
+    UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
     private val mapper = ObjectMapper()
 
     override fun validate(json: String, schema: InputStream) {

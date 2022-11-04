@@ -60,7 +60,8 @@ class LinkManagerHostingMapImplTest {
         "id1",
         "id2",
         listOf("cert1", "cert2"),
-        "pem"
+        "pem",
+        listOf("certificate")
     )
     private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
         whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)
@@ -197,7 +198,8 @@ class LinkManagerHostingMapImplTest {
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
-                    sessionPublicKey = publicKeyOne
+                    sessionPublicKey = publicKeyOne,
+                    sessionCertificates = listOf("certificate")
                 )
             )
             it.assertThat(testObject.getInfo(byteArrayOf(1, 2, 2), "nop")).isNull()
@@ -219,7 +221,8 @@ class LinkManagerHostingMapImplTest {
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
-                    sessionPublicKey = publicKeyOne
+                    sessionPublicKey = publicKeyOne,
+                    sessionCertificates = listOf("certificate")
                 )
             )
             it.assertThat(testObject.getInfo(createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"))).isNull()
@@ -248,6 +251,7 @@ class LinkManagerHostingMapImplTest {
                 entryOne.tlsTenantId,
                 entryOne.sessionKeyTenantId,
                 publicKeyOne,
+                entryOne.sessionCertificates
             )
         )
     }

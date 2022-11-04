@@ -19,7 +19,8 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":libs:platform-info")
     implementation project(":libs:sandbox")
-    implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:json-validator") // TODO: can I remove this now?
+    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(":libs:virtual-node:sandbox-group-context")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

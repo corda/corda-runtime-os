@@ -13,8 +13,11 @@ dependencies {
     implementation "net.corda:corda-ledger-common"
 
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:json-validator")    // TODO: can I delete this now?
+    implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-internal")
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:ledger:ledger-common-testkit')

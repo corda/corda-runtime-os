@@ -2,6 +2,9 @@ package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.common.json.validation.JsonValidator
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -13,14 +16,18 @@ import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [InternalCustomSerializer::class])
+@Component(
+    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = PROTOTYPE
+)
 class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class) private val jsonValidator: JsonValidator
-) : BaseProxySerializer<WireTransaction, WireTransactionProxy>() {
+) : BaseProxySerializer<WireTransaction, WireTransactionProxy>(), UsedByFlow, UsedByPersistence, UsedByVerification {
 
     override val type = WireTransaction::class.java
 

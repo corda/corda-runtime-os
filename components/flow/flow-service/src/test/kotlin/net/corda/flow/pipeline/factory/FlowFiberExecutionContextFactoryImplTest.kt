@@ -14,9 +14,12 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.slf4j.MDC
 
 class FlowFiberExecutionContextFactoryImplTest {
 
@@ -30,6 +33,17 @@ class FlowFiberExecutionContextFactoryImplTest {
         flowSandboxService,
         membershipGroupReaderProvider
     )
+
+    val mdcMock = Mockito.mockStatic(MDC::class.java).also {
+        it.`when`<Map<String, String>> {
+            MDC.getCopyOfContextMap()
+        }.thenReturn(emptyMap())
+    }
+
+    @AfterEach
+    fun setup() {
+        mdcMock.close()
+    }
 
     @Test
     fun `create fiber execution context returns initialized context instance`() {

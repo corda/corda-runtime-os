@@ -15,10 +15,8 @@ import net.corda.data.persistence.PersistEntities
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
-import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -26,8 +24,8 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.persistence.common.getSerializationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -105,8 +103,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -142,8 +139,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -178,8 +174,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -217,15 +212,14 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
-        val serialisedDog = sandboxOne.getSerializer(SANDBOX_SERIALIZER).serialize(dog.instance).bytes
+        val serialisedDog = sandboxOne.getSerializationService().serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(

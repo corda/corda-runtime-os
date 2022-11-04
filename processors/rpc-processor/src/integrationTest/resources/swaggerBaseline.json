@@ -1994,6 +1994,43 @@
         }
       }
     },
+    "/permission/bulk" : {
+      "post" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method creates a set of permissions and optionally assigns them to the existing roles.",
+        "operationId" : "post_permission_bulk",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkCreatePermissionsRequestType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A set of identifiers for permissions created along with role identifiers they were associated with.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkCreatePermissionsResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/permission/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Permission API" ],
@@ -2611,6 +2648,54 @@
   },
   "components" : {
     "schemas" : {
+      "BulkCreatePermissionsRequestType" : {
+        "required" : [ "permissionsToCreate", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionsToCreate" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CreatePermissionType"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        },
+        "description" : "The details of the permissions to be created along with existing role identifiers newly created permissions should be associated with."
+      },
+      "BulkCreatePermissionsResponseType" : {
+        "required" : [ "permissionIds", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
+      },
       "ChangeVirtualNodeStateResponse" : {
         "required" : [ "holdingIdShortHash", "newState" ],
         "type" : "object",
@@ -3063,6 +3148,11 @@
             "example" : "string"
           },
           "p2pTlsTenantId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "sessionCertificateChainAlias" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"

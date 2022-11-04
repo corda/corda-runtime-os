@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetaData
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -21,10 +22,10 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("LongParameterList")
-@Component(service = [UtxoTransactionBuilderFactory::class], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ UtxoTransactionBuilderFactory::class, UsedByFlow::class ], scope = PROTOTYPE)
 class UtxoTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
@@ -46,7 +47,7 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : UtxoTransactionBuilderFactory {
+) : UtxoTransactionBuilderFactory, UsedByFlow {
 
     override fun create(): UtxoTransactionBuilder =
         UtxoTransactionBuilderImpl(

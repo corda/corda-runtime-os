@@ -11,6 +11,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.SerializationCustomizer
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
@@ -26,8 +28,9 @@ import java.security.PrivilegedExceptionAction
  * Simple implementation, requires alignment with other serialization such as that used
  * in the HTTP library
  */
-@Component(service = [JsonMarshallingService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
-class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsToken, SerializationCustomizer {
+@Component(service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class ], scope = PROTOTYPE)
+class JsonMarshallingServiceImpl : JsonMarshallingService,
+    UsedByFlow, UsedByPersistence, SingletonSerializeAsToken, SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
         private const val MAX_SIZE = 200
