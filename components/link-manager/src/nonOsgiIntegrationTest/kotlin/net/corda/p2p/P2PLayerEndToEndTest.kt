@@ -71,6 +71,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
@@ -86,7 +87,7 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-
+@Disabled
 class P2PLayerEndToEndTest {
 
     companion object {
@@ -169,6 +170,7 @@ class P2PLayerEndToEndTest {
         val numberOfMessages = 10
         val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "receiver")
         val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sender")
+
         Host(
             listOf(receiverId),
             "www.receiver.net",
@@ -296,6 +298,7 @@ class P2PLayerEndToEndTest {
             }
         }
     }
+
 
     private class MarkerStorageProcessor(val markers: MutableCollection<Record<String, AppMessageMarker>>) :
         DurableProcessor<String, AppMessageMarker> {
@@ -547,7 +550,7 @@ class P2PLayerEndToEndTest {
                 publisher.start()
                 publisher.publish(
                     memberInfoRecords + otherHostMemberInfoRecords +
-                        hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
+                            hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
                 ).forEach { it.get() }
             }
         }
