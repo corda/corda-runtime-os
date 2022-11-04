@@ -39,6 +39,7 @@ class ConsensualLedgerRepository @Activate constructor(
     private val digestService: DigestService,
     @Reference
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference
     private val jsonValidator: JsonValidator,
     @Reference
     private val serializationService: SerializationService
