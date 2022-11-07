@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.sandbox
 
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -16,24 +17,21 @@ class SandboxDependencyInjectorImplTest {
     private val s2 = Service2Impl()
     private val s3 = SharedServiceImpl()
 
-    private val serviceTypes1 = arrayOf(
-        Service1::class.java.name,
-        SingletonSerializeAsToken::class.java.name
+    private val serviceTypes1 = listOf(
+        Service1::class.java.name
     )
-    private val serviceTypes2 = arrayOf(
-        Service2::class.java.name,
-        SingletonSerializeAsToken::class.java.name
+    private val serviceTypes2 = listOf(
+        Service2::class.java.name
     )
-    private val serviceTypes3 = arrayOf(
-        SharedService::class.java.name,
-        SingletonSerializeAsToken::class.java.name
+    private val serviceTypes3 = listOf(
+        SharedService::class.java.name
     )
     private val flowDependencyInjector =
         SandboxDependencyInjectorImpl(mapOf(s1 to serviceTypes1, s2 to serviceTypes2, s3 to serviceTypes3), mock())
 
     @Test
-    fun `get singletons returns all singletons`() {
-        val results = flowDependencyInjector.getRegisteredSingletons()
+    fun `get services returns all services`() {
+        val results = flowDependencyInjector.getRegisteredServices()
         assertThat(results).containsExactly(s1, s2, s3)
     }
 
@@ -99,12 +97,12 @@ class SandboxDependencyInjectorImplTest {
 }
 
 interface Service1
-class Service1Impl : Service1, SingletonSerializeAsToken
+class Service1Impl : Service1, UsedByFlow, SingletonSerializeAsToken
 
 interface Service2
-class Service2Impl : Service2, SingletonSerializeAsToken
+class Service2Impl : Service2, UsedByFlow, SingletonSerializeAsToken
 
-class DuplicateService2Impl : Service2, SingletonSerializeAsToken
+class DuplicateService2Impl : Service2, UsedByFlow, SingletonSerializeAsToken
 
 class ExampleFlow : SubFlow<String> {
     @CordaInject
@@ -145,7 +143,7 @@ interface SharedService {
     fun get(): String
 }
 
-class SharedServiceImpl : SharedService, SingletonSerializeAsToken {
+class SharedServiceImpl : SharedService, UsedByFlow, SingletonSerializeAsToken {
     private val builder = StringBuilder()
 
     override fun start() {

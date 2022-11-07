@@ -12,6 +12,8 @@ class LinkManagerConfiguration {
         const val SESSION_TIMEOUT_KEY = "sessionTimeout"
         const val SESSIONS_PER_PEER_KEY = "sessionsPerPeer"
         const val REPLAY_ALGORITHM_KEY = "replayAlgorithm"
+        const val REVOCATION_CHECK_KEY = "revocationCheck.mode"
+        const val SESSION_REFRESH_THRESHOLD_KEY = "sessionRefreshThreshold"
     }
 
     enum class ReplayAlgorithm {

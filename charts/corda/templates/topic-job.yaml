@@ -41,6 +41,9 @@ spec:
               name: certs
               readOnly: true
             {{- end }}
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+          env:
+            {{ include "corda.cliEnv" . | nindent 12 }}
       initContainers:
         - name: create-trust-store
           image: {{ include "corda.bootstrapImage" . }}
@@ -93,6 +96,7 @@ spec:
               - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
                 path: ca.crt
         {{- end }}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
       restartPolicy: Never
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
   backoffLimit: 0

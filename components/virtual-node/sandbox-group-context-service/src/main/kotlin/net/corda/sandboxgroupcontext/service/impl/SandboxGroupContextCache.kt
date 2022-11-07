@@ -4,7 +4,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 
 interface SandboxGroupContextCache : AutoCloseable {
-    val cacheSize: Long
+    val capacity: Long
     fun remove(virtualNodeContext: VirtualNodeContext)
     fun get(
         virtualNodeContext: VirtualNodeContext,

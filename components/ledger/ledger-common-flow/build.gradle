@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:layered-property-map")
+    implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-internal")
 
     testImplementation project(":libs:application:application-impl")

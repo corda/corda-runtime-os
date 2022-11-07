@@ -8,9 +8,6 @@ import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.X500_CHARLIE
-import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.configWithDefaultsNode
@@ -21,7 +18,6 @@ import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
 import net.corda.applications.workers.smoketest.toJsonString
 import net.corda.applications.workers.smoketest.updateConfig
 import net.corda.applications.workers.smoketest.waitForConfigurationChange
@@ -45,9 +41,22 @@ import kotlin.text.Typography.quote
 class FlowTests {
 
     companion object {
-        var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
-        var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
-        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
+        private val testRunUniqueId = UUID.randomUUID()
+        private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+        private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+        private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private val davidX500 = "CN=David-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private var davidHoldingId: String = getHoldingIdShortHash(davidX500, GROUP_ID)
+        private val charlyX500 = "CN=Charley-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, GROUP_ID)
+        private val staticMemberList = listOf(
+            aliceX500,
+            bobX500,
+            charlyX500,
+            davidX500
+        )
 
         val invalidConstructorFlowNames = listOf(
             "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
@@ -78,12 +87,12 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID, TEST_STATIC_MEMBER_LIST)
+            conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
 
             // Make sure Virtual Nodes are created
-            val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
-            val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)
-            val davidActualHoldingId = getOrCreateVirtualNodeFor(X500_DAVID)
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+            val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, cpiName)
+            val davidActualHoldingId = getOrCreateVirtualNodeFor(davidX500, cpiName)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
@@ -187,7 +196,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "start_sessions"
             data = mapOf(
-                "sessions" to "${X500_BOB};${X500_CHARLIE}",
+                "sessions" to "${bobX500};${charlyX500}",
                 "messages" to "m1;m2"
             )
         }
@@ -202,14 +211,14 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("start_sessions")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
+            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
     @Test
     fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
-            data = mapOf("x500" to X500_BOB)
+            data = mapOf("x500" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -451,7 +460,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_BOB};${X500_CHARLIE}",
+                "sessions" to "${bobX500};${charlyX500}",
                 "messages" to "m1;m2"
             )
         }
@@ -466,7 +475,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
+            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
     @Test
@@ -475,7 +484,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_non_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_BOB};${X500_CHARLIE}",
+                "sessions" to "${bobX500};${charlyX500}",
                 "messages" to "m1;m2"
             )
         }
@@ -490,7 +499,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
+            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
     @Test
@@ -498,7 +507,7 @@ class FlowTests {
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "flow_messaging_apis"
-            data = mapOf("sessions" to X500_BOB)
+            data = mapOf("sessions" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -511,14 +520,14 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("flow_messaging_apis")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_BOB}=Completed. Sum:18")
+            .isEqualTo("${bobX500}=Completed. Sum:18")
     }
 
     @Test
     fun `Crypto - Sign and verify bytes`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
-            data = mapOf("memberX500" to X500_BOB)
+            data = mapOf("memberX500" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -537,7 +546,7 @@ class FlowTests {
     fun `Crypto - Verify invalid signature`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
-            data = mapOf("memberX500" to X500_BOB)
+            data = mapOf("memberX500" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -610,12 +619,12 @@ class FlowTests {
     @Test
     fun `flows can use inheritance and platform dependencies are correctly injected`() {
         dependencyInjectionFlowNames.forEach {
-            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), it)
+            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to charlyX500), it)
             val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
             assertThat(result.flowError).isNull()
             assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
+            assertThat(result.flowResult).isEqualTo(charlyX500)
         }
     }
 
@@ -675,7 +684,7 @@ class FlowTests {
                     bobHoldingId,
                     RpcSmokeTestInput().apply {
                         command = "crypto_sign_and_verify"
-                        data = mapOf("memberX500" to X500_BOB)
+                        data = mapOf("memberX500" to bobX500)
                     }
                 ),
 
@@ -683,7 +692,7 @@ class FlowTests {
                     bobHoldingId,
                     RpcSmokeTestInput().apply {
                         command = "lookup_member_by_x500_name"
-                        data = mapOf("id" to X500_CHARLIE)
+                        data = mapOf("id" to charlyX500)
                     }
                 )
             )
@@ -704,7 +713,7 @@ class FlowTests {
     fun `Json serialisation`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "json_serialization"
-            data = mapOf("vnode" to X500_BOB)
+            data = mapOf("vnode" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -723,7 +732,7 @@ class FlowTests {
               "firstTest": {
                 "serialized-implicitly": "combined-test-stringtest-string"
               },
-              "secondTest": "CN=Bob, OU=Application, O=R3, L=London, C=GB"
+              "secondTest": "$bobX500"
             }
             """.trimJson()
 
