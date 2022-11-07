@@ -6,6 +6,9 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
+import net.corda.ledger.persistence.processor.tests.datamodel.ConsensualEntityFactory
+import net.corda.ledger.persistence.processor.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
@@ -64,7 +67,7 @@ class ConsensualLedgerRepositoryTest {
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
-        private val seedSequence = AtomicInteger((0..Int.MAX_VALUE/2).random())
+        private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
     }
 
     @BeforeAll
@@ -106,7 +109,14 @@ class ConsensualLedgerRepositoryTest {
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
-                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), createdTs)
+                entityFactory.createConsensualCpkEntity(
+                    cpk.fileChecksum,
+                    cpk.name,
+                    cpk.signerSummaryHash!!,
+                    cpk.version,
+                    "file$i".toByteArray(),
+                    createdTs
+                )
             }.onEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
@@ -129,9 +139,11 @@ class ConsensualLedgerRepositoryTest {
                         }
                     }
                 )
-                transaction.field<MutableCollection<Any>>("statuses").addAll(listOf(
-                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", createdTs)
-                ))
+                transaction.field<MutableCollection<Any>>("statuses").addAll(
+                    listOf(
+                        entityFactory.createConsensualTransactionStatusEntity(transaction, "V", createdTs)
+                    )
+                )
                 transaction.field<MutableCollection<Any>>("signatures").addAll(
                     signedTransaction.signatures.mapIndexed { index, signature ->
                         entityFactory.createConsensualTransactionSignatureEntity(
@@ -197,7 +209,8 @@ class ConsensualLedgerRepositoryTest {
                             assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
                             assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
                             assertThat(dbComponent.field<String>("hash")).isEqualTo(
-                                MessageDigest.getInstance("SHA-256").digest(component).toHexString())
+                                MessageDigest.getInstance("SHA-256").digest(component).toHexString()
+                            )
                             assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
                 }
@@ -220,9 +233,14 @@ class ConsensualLedgerRepositoryTest {
                 .zip(signatures)
                 .forEachIndexed { index, (dbSignature, signature) ->
                     assertThat(dbSignature.field<Int>("index")).isEqualTo(index)
-                    assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(serializationService.serialize(signature).bytes)
+                    assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(
+                        serializationService.serialize(
+                            signature
+                        ).bytes
+                    )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString())
+                        MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString()
+                    )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
         }
@@ -239,7 +257,14 @@ class ConsensualLedgerRepositoryTest {
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             existingCpks.mapIndexed { i, cpk ->
-                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), createdTs)
+                entityFactory.createConsensualCpkEntity(
+                    cpk.fileChecksum,
+                    cpk.name,
+                    cpk.signerSummaryHash!!,
+                    cpk.version,
+                    "file$i".toByteArray(),
+                    createdTs
+                )
             }.forEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
@@ -307,11 +332,29 @@ class ConsensualLedgerRepositoryTest {
         assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::fileChecksum))
     }
 
-    private fun createSignedTransaction(createdTs: Instant, seed: String = seedSequence.incrementAndGet().toString()): ConsensualSignedTransactionContainer {
+    private fun createSignedTransaction(
+        createdTs: Instant,
+        seed: String = seedSequence.incrementAndGet().toString()
+    ): SignedTransactionContainer {
         val cpks = listOf(
-            CordaPackageSummary("$seed-cpk1", "signerSummaryHash1", "1.0", "$seed-fileChecksum1"),
-            CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
-            CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
+            CordaPackageSummary(
+                "$seed-cpk1",
+                "signerSummaryHash1",
+                "1.0",
+                "$seed-fileChecksum1"
+            ),
+            CordaPackageSummary(
+                "$seed-cpk2",
+                "signerSummaryHash2",
+                "2.0",
+                "$seed-fileChecksum2"
+            ),
+            CordaPackageSummary(
+                "$seed-cpk3",
+                "signerSummaryHash3",
+                "3.0",
+                "$seed-fileChecksum3"
+            )
         )
         val transactionMetadata = TransactionMetadata(
             linkedMapOf<String, Any>().apply {
@@ -337,13 +380,14 @@ class ConsensualLedgerRepositoryTest {
                 DigitalSignature.WithKey(
                     publicKey,
                     "signature".toByteArray(),
-                    mapOf("contextKey1" to "contextValue1")),
+                    mapOf("contextKey1" to "contextValue1")
+                ),
                 DigitalSignatureMetadata(
                     createdTs,
                     mapOf("propertyKey1" to "propertyValue1")
                 )
             )
         )
-        return ConsensualSignedTransactionContainer(wireTransaction, signatures)
+        return SignedTransactionContainer(wireTransaction, signatures)
     }
 }

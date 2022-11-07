@@ -1,6 +1,5 @@
-package net.corda.ledger.consensual.persistence.impl.processor.tests
+package net.corda.ledger.persistence.processor.tests
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -25,8 +24,8 @@ import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.persistence.common.MessageHandlerSelector
-import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
+import net.corda.ledger.persistence.processor.impl.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -84,6 +83,7 @@ class ConsensualLedgerMessageProcessorTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
+    private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
 
     @BeforeAll
     fun setup(
@@ -101,6 +101,7 @@ class ConsensualLedgerMessageProcessorTests {
             virtualNode = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
+            delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -118,11 +119,12 @@ class ConsensualLedgerMessageProcessorTests {
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
-        val processor = ConsensualLedgerMessageProcessor(
+        val processor = PersistenceRequestProcessor(
             virtualNode.entitySandboxService,
-            messageHandlerSelector
+            delegatedRequestHandlerSelector,
             externalEventResponseFactory
         )
+
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 
@@ -132,7 +134,8 @@ class ConsensualLedgerMessageProcessorTests {
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toHexString()))
-        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        responses =
+            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent
@@ -141,26 +144,28 @@ class ConsensualLedgerMessageProcessorTests {
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
-        val retrievedTransaction = ctx.deserialize<ConsensualSignedTransactionContainer>(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
         assertThat(retrievedTransaction).isEqualTo(transaction)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
-        val consensualTransactionMetaDataExample = TransactionMetaData(linkedMapOf(
-            TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-            TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-            TransactionMetaData.CPI_METADATA_KEY to cpiPackgeSummaryExample,
-            TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
-        ))
+        val consensualTransactionMetaDataExample = TransactionMetaData(
+            linkedMapOf(
+                TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
+                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetaData.PLATFORM_VERSION_KEY to 123,
+                TransactionMetaData.CPI_METADATA_KEY to cpiPackgeSummaryExample,
+                TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
+            )
+        )
         val wireTransaction = getWireTransactionExample(
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             consensualTransactionMetadataExample
         )
-        return  SignedTransactionContainer(
+        return SignedTransactionContainer(
             wireTransaction,
             listOf(signatureWithMetadataExample)
         )
@@ -172,7 +177,13 @@ class ConsensualLedgerMessageProcessorTests {
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
         logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
-        return LedgerPersistenceRequest(Instant.now(), holdingId.toAvro(), request, externalEventContext)
+        return LedgerPersistenceRequest(
+            Instant.now(),
+            holdingId.toAvro(),
+            LedgerTypes.CONSENSUAL,
+            request,
+            externalEventContext
+        )
     }
 
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {

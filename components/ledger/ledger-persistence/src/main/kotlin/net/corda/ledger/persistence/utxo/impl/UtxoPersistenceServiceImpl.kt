@@ -6,7 +6,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.utilities.time.UTCClock
+import net.corda.utilities.time.Clock
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 
@@ -14,7 +14,7 @@ class UtxoPersistenceServiceImpl constructor(
     private val sandbox: SandboxGroupContext,
     private val repository: UtxoRepository,
     private val sandboxDigestService: DigestService,
-    private val utcClock: UTCClock
+    private val utcClock: Clock
 ) : UtxoPersistenceService {
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {

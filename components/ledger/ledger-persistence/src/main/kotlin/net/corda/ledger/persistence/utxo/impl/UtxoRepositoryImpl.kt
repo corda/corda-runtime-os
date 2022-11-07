@@ -1,11 +1,9 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.persistence.utxo.UtxoRepository
-import org.osgi.service.component.annotations.Component
 import java.time.Instant
 import javax.persistence.EntityManager
 
-@Component(service = [UtxoRepository::class])
 class UtxoRepositoryImpl : UtxoRepository {
 
     override fun persistTransaction(

@@ -1,17 +1,15 @@
-package net.corda.ledger.consensual.persistence.impl.repository
+package net.corda.ledger.persistence.consensual
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -153,7 +151,7 @@ class ConsensualLedgerRepository @Activate constructor(
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
-            .setParameter("hash", data.hashAsHexString())
+            .setParameter("hash", data.hashAsString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -192,7 +190,7 @@ class ConsensualLedgerRepository @Activate constructor(
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
-            .setParameter("publicKeyHash", signature.by.encoded.hashAsHexString())
+            .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -233,7 +231,7 @@ class ConsensualLedgerRepository @Activate constructor(
             .mapTo(HashSet()) { r -> r.get(0) as String }
     }
 
-    private fun ByteArray.hashAsHexString() =
+    private fun ByteArray.hashAsString() =
         digestService.hash(this, DigestAlgorithmName.SHA2_256).toString()
 
     @Suppress("UNCHECKED_CAST")

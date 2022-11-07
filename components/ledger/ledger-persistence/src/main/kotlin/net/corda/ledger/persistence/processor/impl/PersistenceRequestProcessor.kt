@@ -1,8 +1,8 @@
-package net.corda.ledger.persistence.processor
+package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.persistence.common.MessageHandlerSelector
+import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
@@ -16,7 +16,7 @@ import net.corda.virtualnode.toCorda
 @Suppress("LongParameterList")
 class PersistenceRequestProcessor(
     private val entitySandboxService: EntitySandboxService,
-    private val messageHandlerSelector: MessageHandlerSelector,
+    private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
 ) : DurableProcessor<String, LedgerPersistenceRequest> {
 
@@ -37,7 +37,7 @@ class PersistenceRequestProcessor(
                 // TODOs calling get on the sandbox could throw a transient exception,
                 // we should handle this with the appropriate response type.
                 val sandbox = entitySandboxService.get(holdingIdentity)
-                messageHandlerSelector.selectHandler(sandbox, request).execute()
+                delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
             } catch (e: Exception) {
                 listOf<Record<*, *>>(externalEventResponseFactory.fatalError(request.flowExternalEventContext, e))
             }

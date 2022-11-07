@@ -13,6 +13,7 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
+    @Suppress("LongParameterList")
     fun persistTransactionComponentLeaf(
         entityManager: EntityManager,
         transactionId: String,

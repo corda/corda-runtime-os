@@ -1,9 +1,9 @@
-package net.corda.ledger.persistence.processor.factory
+package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
-import net.corda.ledger.persistence.common.MessageHandlerSelector
+import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
+import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -21,8 +21,8 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = EntitySandboxService::class)
     private val entitySandboxService: EntitySandboxService,
-    @Reference(service = MessageHandlerSelector::class)
-    private val messageHandlerSelector: MessageHandlerSelector,
+    @Reference(service = DelegatedRequestHandlerSelector::class)
+    private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory
 ) : PersistenceRequestSubscriptionFactory {
@@ -35,7 +35,7 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
 
         val processor = PersistenceRequestProcessor(
             entitySandboxService,
-            messageHandlerSelector,
+            delegatedRequestHandlerSelector,
             externalEventResponseFactory
         )
 

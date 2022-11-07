@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor
+package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -7,8 +7,8 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
-import net.corda.ledger.persistence.common.MessageHandler
-import net.corda.ledger.persistence.common.MessageHandlerSelector
+import net.corda.ledger.persistence.common.RequestHandler
+import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -23,14 +23,14 @@ import java.time.Instant
 class PersistenceRequestProcessorTest {
 
     private val entitySandboxService = mock<EntitySandboxService>()
-    private val messageHandlerSelector = mock<MessageHandlerSelector>()
+    private val delegatedRequestHandlerSelector = mock<DelegatedRequestHandlerSelector>()
     private val externalEventResponseFactory = mock<ExternalEventResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val sandbox = mock<SandboxGroupContext>()
 
     private val target = PersistenceRequestProcessor(
         entitySandboxService,
-        messageHandlerSelector,
+        delegatedRequestHandlerSelector,
         externalEventResponseFactory
     )
 
@@ -56,15 +56,15 @@ class PersistenceRequestProcessorTest {
         val responseRecord11 = Record("", "1", "")
         val responseRecord12 = Record("", "2", "")
         val request1Response = listOf(responseRecord11, responseRecord12)
-        val handler1 = mock<MessageHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
-        whenever(messageHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
+        val handler1 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
 
         val request2 = createRequest("r2")
         val requestRecord2 = Record("", "2", request2)
         val responseRecord21 = Record("", "3", "")
         val request2Response = listOf(responseRecord21)
-        val handler2 = mock<MessageHandler>().apply { whenever(this.execute()).thenReturn(request2Response) }
-        whenever(messageHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
+        val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request2Response) }
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 
@@ -78,18 +78,18 @@ class PersistenceRequestProcessorTest {
         val requestRecord1 = Record("", "1", request1)
         val responseRecord1 = Record("", "1", "")
         val request1Response = listOf(responseRecord1)
-        val handler1 = mock<MessageHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
-        whenever(messageHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
+        val handler1 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
 
         // Failure response for request 2
         val request2 = createRequest("r2")
         val requestRecord2 = Record("", "2", request2)
         val failureResponseRecord = Record("", "3", FlowEvent())
         val request2Response = IllegalStateException()
-        val handler2 = mock<MessageHandler>().apply { whenever(this.execute()).thenThrow(request2Response) }
+        val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenThrow(request2Response) }
         whenever(externalEventResponseFactory.fatalError(request2.flowExternalEventContext, request2Response))
             .thenReturn(failureResponseRecord)
-        whenever(messageHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
 
         val results = target.onNext(listOf(requestRecord1, requestRecord2))
 

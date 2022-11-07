@@ -3,7 +3,7 @@ package net.corda.ledger.persistence
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
-import net.corda.ledger.persistence.processor.factory.PersistenceRequestSubscriptionFactory
+import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.subscription.Subscription

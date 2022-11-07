@@ -1,30 +1,30 @@
-package net.corda.ledger.persistence.processor
+package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
-import net.corda.ledger.persistence.common.MessageHandler
-import net.corda.ledger.persistence.common.MessageHandlerSelector
+import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.consensual.ConsensualMessageHandlerSelector
-import net.corda.ledger.persistence.utxo.UtxoMessageHandlerSelector
+import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
+import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [MessageHandlerSelector::class])
-class MessageHandlerSelectorImpl @Activate constructor(
+@Component(service = [DelegatedRequestHandlerSelector::class])
+class DelegatedRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ConsensualMessageHandlerSelector::class)
     private val consensualMessageHandlerSelector: ConsensualMessageHandlerSelector,
-    @Reference(service = UtxoMessageHandlerSelector::class)
-    private val utxoMessageHandlerSelector: UtxoMessageHandlerSelector,
-) : MessageHandlerSelector {
+    @Reference(service = UtxoRequestHandlerSelector::class)
+    private val utxoRequestHandlerSelector: UtxoRequestHandlerSelector,
+) : DelegatedRequestHandlerSelector {
 
     companion object {
         val log = contextLogger()
     }
 
-    override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): MessageHandler {
+    override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         when (request.ledgerType) {
             LedgerTypes.CONSENSUAL -> {
                 return consensualMessageHandlerSelector.selectHandler(
@@ -34,7 +34,7 @@ class MessageHandlerSelectorImpl @Activate constructor(
             }
 
             LedgerTypes.UTXO -> {
-                return utxoMessageHandlerSelector.selectHandler(
+                return utxoRequestHandlerSelector.selectHandler(
                     sandbox,
                     request
                 )

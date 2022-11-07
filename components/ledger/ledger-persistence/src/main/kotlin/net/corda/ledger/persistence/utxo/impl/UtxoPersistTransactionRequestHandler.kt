@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.ledger.persistence.common.MessageHandler
+import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
@@ -12,13 +12,13 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 
-class UtxoPersistTransactionMessageHandler(
+class UtxoPersistTransactionRequestHandler(
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val utxoOutputRecordFactory: UtxoOutputRecordFactory
-) : MessageHandler {
+) : RequestHandler {
 
     companion object {
         val log = contextLogger()

@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor.factory
+package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.libs.configuration.SmartConfig

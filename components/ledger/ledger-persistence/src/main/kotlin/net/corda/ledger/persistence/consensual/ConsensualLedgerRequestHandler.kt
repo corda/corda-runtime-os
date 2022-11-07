@@ -5,7 +5,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.persistence.common.MessageHandler
+import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.ResponseFactory
@@ -18,18 +18,15 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
 @Suppress("LongParameterList")
-class ConsensualLedgerMessageProcessor(
-    private val entitySandboxService: EntitySandboxService,
-    externalEventResponseFactory: ExternalEventResponseFactory,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
-) : DurableProcessor<String, ConsensualLedgerRequest> {
+class ConsensualLedgerRequestHandler(
+    private val sandbox: SandboxGroupContext,
+    private val request: LedgerPersistenceRequest,
+    private val responseFactory: ResponseFactory
+) : RequestHandler{
     private companion object {
         val log = contextLogger()
         const val CORDA_ACCOUNT = "corda.account"
