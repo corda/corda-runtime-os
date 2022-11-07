@@ -3,6 +3,7 @@ package net.corda.processors.db.internal.reconcile.db.query
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -58,13 +59,7 @@ class GroupParametersReconciliationQuery(
                 override val version = entity.epoch
                 override val isDeleted = false
                 override val key = vnodeInfo.holdingIdentity
-                override val value = groupParametersFactory
-                    .create(
-                        deserializedParams.items
-                            .associate {
-                                it.key to it.value
-                            }
-                    )
+                override val value = groupParametersFactory.create(deserializedParams)
             }
         )
     }

@@ -3,8 +3,8 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.processors.db.internal.reconcile.db.query.GroupParametersFactory
 import net.corda.processors.db.internal.reconcile.db.query.GroupParametersReconciliationQuery
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters

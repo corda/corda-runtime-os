@@ -6,6 +6,8 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -45,7 +47,7 @@ class GroupParametersReconciliationQueryTest {
         on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn cordaAvroDeserializer
     }
 
-    private val groupParamsMapCaptor = argumentCaptor<Map<String, String>>()
+    private val groupParamsMapCaptor = argumentCaptor<KeyValuePairList>()
     private val groupParameters: GroupParameters = mock()
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(groupParamsMapCaptor.capture()) } doReturn groupParameters
@@ -123,7 +125,7 @@ class GroupParametersReconciliationQueryTest {
     fun `Full list of parameters are included when creating the group parameters object`() {
         groupParametersReconciliationQuery.invoke(virtualNodeInfo, entityManager)
 
-        Assertions.assertThat(groupParamsMapCaptor.firstValue)
+        Assertions.assertThat(groupParamsMapCaptor.firstValue.toMap())
             .hasSize(1)
             .containsOnlyKeys(epochKey)
             .containsEntry(epochKey, epochValue.toString())
