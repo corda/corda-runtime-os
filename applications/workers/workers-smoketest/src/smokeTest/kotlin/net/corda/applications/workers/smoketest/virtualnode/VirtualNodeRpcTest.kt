@@ -22,6 +22,7 @@ import net.corda.httprpc.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -367,6 +368,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(80)
     fun `can force upload same CPI`() {
@@ -395,6 +397,8 @@ class VirtualNodeRpcTest {
         }
     }
 
+    // This test has no effect without forceUploading
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(81)
     fun `can run the uploaded CPI`() {
@@ -415,6 +419,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(90)
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
@@ -438,6 +443,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(91)
     fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
@@ -448,6 +454,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(92)
     fun `Can sync DB and persist fish`() {
@@ -460,6 +467,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(100)
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
@@ -485,6 +493,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(101)
     fun `Can sync DB again and persist dog`() {
