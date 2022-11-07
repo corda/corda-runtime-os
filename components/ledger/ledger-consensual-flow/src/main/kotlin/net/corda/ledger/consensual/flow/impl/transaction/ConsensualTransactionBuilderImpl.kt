@@ -56,7 +56,7 @@ class ConsensualTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         val wireTransaction = buildWireTransaction()
-        val signaturesWithMetaData = signatories.map {
+        val signaturesWithMetadata = signatories.map {
             createTransactionSignature(
                 signingService,
                 serializationService,
@@ -70,7 +70,7 @@ class ConsensualTransactionBuilderImpl(
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
     }
 

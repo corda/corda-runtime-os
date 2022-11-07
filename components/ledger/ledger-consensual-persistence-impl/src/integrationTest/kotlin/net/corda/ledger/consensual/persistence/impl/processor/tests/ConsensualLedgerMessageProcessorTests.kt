@@ -20,7 +20,7 @@ import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.signatureWithMetaDataExample
+import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
@@ -166,7 +166,7 @@ class ConsensualLedgerMessageProcessorTests {
         )
         return ConsensualSignedTransactionContainer(
             wireTransaction,
-            listOf(signatureWithMetaDataExample)
+            listOf(signatureWithMetadataExample)
         )
     }
 
