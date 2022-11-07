@@ -14,7 +14,10 @@ import org.mockito.kotlin.whenever
  * [LifecycleCoordinator] was never used after being closed by asserting that [lifecycleCoordinatorThrows] is false.
  */
 internal class LifeCycleCoordinatorMockHelper {
-    var lifecycleCoordinatorThrows = false
+    private var _lifecycleCoordinatorThrows = false
+    val lifecycleCoordinatorThrows:Boolean
+        get() = _lifecycleCoordinatorThrows
+
     val lifecycleCoordinator: LifecycleCoordinator = mock()
 
     private var lifecycleCoordinatorClosed = false;
@@ -55,7 +58,7 @@ internal class LifeCycleCoordinatorMockHelper {
 
     private fun checkLifecycleCoordinatorCloseStatus() {
         if (lifecycleCoordinatorClosed) {
-            lifecycleCoordinatorThrows = true
+            _lifecycleCoordinatorThrows = true
             throw LifecycleException("")
         }
     }
