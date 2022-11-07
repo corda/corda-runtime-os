@@ -196,7 +196,7 @@ class MGMRegistrationService @Activate constructor(
                 buildNotSubmittedResponse(ex.reason)
             } catch (ex: MGMRegistrationGroupPolicyHandlingException) {
                 buildNotSubmittedResponse(ex.reason)
-            } catch(ex: MGMRegistrationOutputPublisherException){
+            } catch (ex: MGMRegistrationOutputPublisherException){
                 buildNotSubmittedResponse(ex.reason)
             } catch (e: Exception) {
                 buildNotSubmittedResponse("Registration failed. Reason: ${e.message}")

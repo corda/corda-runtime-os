@@ -475,9 +475,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
             val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId).first()
             val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
-            if (sessionPublicKey.algorithm != "EC") {
-                throw IllegalArgumentException("Session key must be created with an EC schema.")
-            }
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
                 SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,

@@ -511,17 +511,6 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration fails if the session key is not EC`() {
-            whenever(sessionKey.algorithm).thenReturn("RSA")
-            postConfigChangedEvent()
-            registrationService.start()
-
-            val result = registrationService.register(registrationResultId, member, context)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-        }
-
-        @Test
         fun `registration fails if the session key spec is invalid`() {
             val registrationContext = context + ("corda.session.key.signature.spec" to "Nop")
             postConfigChangedEvent()
