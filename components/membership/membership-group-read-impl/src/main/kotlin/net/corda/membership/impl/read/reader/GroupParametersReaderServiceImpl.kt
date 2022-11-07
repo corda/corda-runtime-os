@@ -65,7 +65,6 @@ class GroupParametersReaderServiceImpl internal constructor(
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     private var impl: InnerGroupParametersReaderService = InactiveImpl
-    //private var groupParametersCache: MemberDataCache<GroupParameters> = MemberDataCache.Impl()
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null

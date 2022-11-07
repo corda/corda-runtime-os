@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.cache
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,16 +13,15 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 class MembershipGroupReadCacheTest {
-    private lateinit var membershipGroupReadCache: MembershipGroupReadCache
+    lateinit var membershipGroupReadCache: MembershipGroupReadCache
 
-    private val memberListCache get() = membershipGroupReadCache.memberListCache
-    private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
+    val memberListCache get() = membershipGroupReadCache.memberListCache
+    val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
-    private val aliceName = TestProperties.aliceName
-    private val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
-    private val bob: MemberInfo = mock()
-    private val membershipGroupReader: MembershipGroupReader = mock()
-    private val groupParameters: GroupParameters = mock()
+    val aliceName = TestProperties.aliceName
+    val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
+    val bob: MemberInfo = mock()
+    val membershipGroupReader: MembershipGroupReader = mock()
 
     @BeforeEach
     fun setUp() {
@@ -50,15 +48,6 @@ class MembershipGroupReadCacheTest {
         assertEquals(membershipGroupReader, lookup)
     }
 
-    /*@Test
-    fun `Group parameters cache is accessible after starting initialising group cache`() {
-        assertNotNull(groupParamsCache)
-        groupParamsCache.put(aliceIdGroup1, groupParameters)
-        val lookup = groupParamsCache.get(aliceIdGroup1)
-        assertNotNull(lookup)
-        assertEquals(groupParameters, lookup)
-    }*/
-
     @Test
     fun `Member list cache is cleared after clearing group cache`() {
         memberListCache.put(aliceIdGroup1, bob)
@@ -72,11 +61,4 @@ class MembershipGroupReadCacheTest {
         membershipGroupReadCache.clear()
         assertNull(groupReaderCache.get(aliceIdGroup1))
     }
-
-    /*@Test
-    fun `Group parameters cache is cleared after starting clearing group cache`() {
-        groupParamsCache.put(aliceIdGroup1, groupParameters)
-        membershipGroupReadCache.clear()
-        assertNull(groupParamsCache.get(aliceIdGroup1))
-    }*/
 }

@@ -101,12 +101,12 @@ class GroupParametersReaderServiceImplTest {
     )
     private val groupParams = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries1))
     private val groupParams2 = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries2))
-    private val map: ConcurrentHashMap<HoldingIdentity, GroupParameters> = ConcurrentHashMap(
+    private val allGroupParams: ConcurrentHashMap<HoldingIdentity, GroupParameters> = ConcurrentHashMap(
         mapOf(alice to groupParams, bob to groupParams2)
     )
     private val groupParametersCache: MemberDataCache<GroupParameters> = mock {
         on { get(eq(alice)) } doReturn groupParams
-        on { getAll() } doReturn map
+        on { getAll() } doReturn allGroupParams
     }
     private val groupParametersReaderService = GroupParametersReaderServiceImpl(
         lifecycleCoordinatorFactory,
@@ -257,21 +257,23 @@ class GroupParametersReaderServiceImplTest {
         }
 
         @Test
-        fun `calling get all returns the versioned records as expected`() {
+        fun `calling get all returns versioned records as expected`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
             val versionedRecords = groupParametersReaderService.getAllVersionedRecords()?.collect(Collectors.toList())
             assertThat(versionedRecords?.size).isEqualTo(2)
 
-            val alika = versionedRecords?.first { it.key == alice }
-            assertThat(alika?.version).isEqualTo(1)
-            assertThat(alika?.isDeleted).isFalse()
-            assertThat(alika?.value).isEqualTo(groupParams)
+            with(versionedRecords?.first { it.key == alice }) {
+                assertThat(this?.version).isEqualTo(1)
+                assertThat(this?.isDeleted).isFalse()
+                assertThat(this?.value).isEqualTo(groupParams)
+            }
 
-            val boboka = versionedRecords?.first { it.key == bob }
-            assertThat(boboka?.version).isEqualTo(2)
-            assertThat(boboka?.isDeleted).isFalse()
-            assertThat(boboka?.value).isEqualTo(groupParams2)
+            with(versionedRecords?.first { it.key == bob }) {
+                assertThat(this?.version).isEqualTo(2)
+                assertThat(this?.isDeleted).isFalse()
+                assertThat(this?.value).isEqualTo(groupParams2)
+            }
         }
     }
 

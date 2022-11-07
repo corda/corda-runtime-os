@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.MemberInfoFactory
@@ -28,8 +27,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache,
-        private val memberInfoFactory: MemberInfoFactory,
-        private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+        private val memberInfoFactory: MemberInfoFactory
     ) : MembershipGroupReadSubscriptions {
 
         companion object {
@@ -78,5 +76,6 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 memberListSubscription = this
             }
         }
+
     }
 }

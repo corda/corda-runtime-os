@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -41,13 +40,11 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
+    val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberInfoFactory::class)
-    private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    val memberInfoFactory: MemberInfoFactory
 ) : MembershipGroupReaderProvider {
 
     companion object {
@@ -124,8 +121,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
             subscriptionFactory,
             membershipGroupReadCache,
-            memberInfoFactory,
-            layeredPropertyMapFactory,
+            memberInfoFactory
         ).also {
             it.start(configs.getConfig(ConfigKeys.MESSAGING_CONFIG))
         }

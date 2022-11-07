@@ -63,8 +63,7 @@ class MembershipGroupReaderProviderImplTest {
             configurationReadService,
             subscriptionFactory,
             lifecycleCoordinatorFactory,
-            memberInfoFactory,
-            mock()
+            memberInfoFactory
         )
     }
 
