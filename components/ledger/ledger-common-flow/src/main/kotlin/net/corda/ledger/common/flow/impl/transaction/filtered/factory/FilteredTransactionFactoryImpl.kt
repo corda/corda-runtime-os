@@ -27,7 +27,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : FilteredTransactionFactory, SingletonSerializeAsToken {
+) : FilteredTransactionFactory, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
     override fun create(

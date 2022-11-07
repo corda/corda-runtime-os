@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
 import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -12,14 +13,16 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [InternalCustomSerializer::class])
+@Component(service = [InternalCustomSerializer::class, UsedByFlow::class], scope = PROTOTYPE)
 class FilteredTransactionSerializer @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
-) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>() {
+) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow {
 
     override val proxyType = FilteredTransactionProxy::class.java
 
