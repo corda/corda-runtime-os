@@ -1,39 +1,25 @@
 package net.corda.membership.certificates.datamodel
 
-import net.corda.db.schema.DbSchema
-import java.io.Serializable
+import net.corda.db.schema.DbSchema.CLUSTER_CERTIFICATE_DB_TABLE
+import net.corda.db.schema.DbSchema.CONFIG
 import javax.persistence.Column
-import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.IdClass
-import javax.persistence.NamedQuery
 import javax.persistence.Table
 
 /**
  * An entity representing a single certificate.
  */
-@NamedQuery(
-    name = "ClusterCertificate.findByTenantId",
-    query = "from ClusterCertificate where tenantId = :tenantId"
-)
 @Entity
-@IdClass(ClusterCertificatePrimaryKey::class)
-@Table(name = DbSchema.CLUSTER_CERTIFICATES_DB_TABLE, schema = DbSchema.CERTIFICATES_SCHEME)
+@Table(name = CLUSTER_CERTIFICATE_DB_TABLE, schema = CONFIG)
 data class ClusterCertificate(
     @Id
-    @Column(name = "tenant_id", nullable = false, updatable = false)
-    val tenantId: String,
-
-    @Id
     @Column(name = "alias", nullable = false, updatable = false)
-    val alias: String,
+    override val alias: String,
+
+    @Column(name = "usage", nullable = false, updatable = false)
+    override val usage: String,
 
     @Column(name = "raw_certificate", nullable = false, updatable = true)
-    val rawCertificate: String,
-)
-@Embeddable
-data class ClusterCertificatePrimaryKey(
-    private val tenantId: String,
-    private val alias: String,
-) : Serializable
+    override val rawCertificate: String,
+) : CertificateEntity

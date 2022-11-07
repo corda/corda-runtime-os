@@ -73,7 +73,7 @@ class VirtualNodeRpcTest {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(1))
-                command { importCertificate(CODESIGNER_CERT, "codesigner", "cordadev") }
+                command { importCertificate(CODESIGNER_CERT, "code-signer", "cordadev") }
                 condition { it.code == 204 }
             }
         }
