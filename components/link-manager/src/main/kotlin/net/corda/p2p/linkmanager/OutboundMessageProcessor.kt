@@ -11,7 +11,13 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
-import net.corda.p2p.markers.*
+import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerDiscardedMarker
+import net.corda.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
+import net.corda.p2p.markers.Component
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
@@ -99,7 +105,9 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    private fun checkSourceLocallyHostedAndDestinationSourceGroupsMatch(messageID: Optional<String>, source: HoldingIdentity, destination: HoldingIdentity): Boolean {
+    private fun checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
+        messageID: Optional<String>, source: HoldingIdentity, destination: HoldingIdentity
+    ): Boolean {
         var warning = "Dropping outbound message $messageID from $source to $destination"
         return if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
             true
@@ -118,7 +126,8 @@ internal class OutboundMessageProcessor(
         val emptyMessageID: Optional<String> = Optional.empty()
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(emptyMessageID, message.header.source.toCorda(), message.header.destination.toCorda())) {
+        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
+                emptyMessageID, message.header.source.toCorda(), message.header.destination.toCorda())) {
             return emptyList()
         }
 
@@ -162,7 +171,8 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(messageID, messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda())) {
+        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
+                messageID, messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda())) {
             return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
         }
 
