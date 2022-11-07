@@ -23,16 +23,15 @@ class CordaAvroDeserializerImpl<T : Any>(
         @Suppress("unchecked_cast")
         return when (expectedClass) {
             String::class.java -> {
-                stringDeserializer.deserialize(null, data)
+                stringDeserializer.deserialize(null, data) as T?
             }
             ByteArray::class.java -> {
-                data
+                data as T?
             }
             else -> {
                 try {
                     val dataBuffer = ByteBuffer.wrap(data)
-                    val classType = schemaRegistry.getClassType(dataBuffer)
-                    schemaRegistry.deserialize(dataBuffer, classType, null)
+                    schemaRegistry.deserialize(dataBuffer, expectedClass, null)
                 } catch (ex: Throwable) {
                     log.warn("Failed to deserialise to expected class $expectedClass", ex)
                     // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
@@ -42,7 +41,7 @@ class CordaAvroDeserializerImpl<T : Any>(
                     null
                 }
             }
-        } as? T?
+        }
     }
 
     override fun deserialize(topic: String?, data: ByteArray?): T? {
