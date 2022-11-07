@@ -94,6 +94,14 @@ class SandboxDependencyInjectorImplTest {
         assertThat(flow.sharedService).isNotNull
         assertThat(flow.call(mock())).isEqualTo(SharedService.from(ConcreteChildFlow::class.java.simpleName))
     }
+
+    @Test
+    fun `a flow which injects two of the same instance runs okay`() {
+        val flow = DoubleInjectedFlow()
+        flowDependencyInjector.injectServices(flow)
+
+        assertThat(flow.service1).isSameAs(flow.service1Again)
+    }
 }
 
 interface Service1
@@ -233,4 +241,18 @@ class ConcreteChildFlow : AbstractParentFlow() {
     override fun call(requestBody: RPCRequestData): String {
         return method()
     }
+}
+
+class DoubleInjectedFlow : RPCStartableFlow {
+
+    @CordaInject
+    lateinit var service1: Service1
+
+    @CordaInject
+    lateinit var service1Again: Service1
+
+    override fun call(requestBody: RPCRequestData): String {
+        return ""
+    }
+
 }
