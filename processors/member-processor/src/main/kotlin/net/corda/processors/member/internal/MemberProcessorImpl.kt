@@ -14,6 +14,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.registration.RegistrationProxy
@@ -64,6 +65,8 @@ class MemberProcessorImpl @Activate constructor(
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersReaderService::class)
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : MemberProcessor {
 
     private companion object {
@@ -87,6 +90,7 @@ class MemberProcessorImpl @Activate constructor(
         ::synchronisationProxy,
         ::stableKeyPairDecryptor,
         ::groupParametersWriterService,
+        ::groupParametersReaderService,
     )
 
     private val coordinator =

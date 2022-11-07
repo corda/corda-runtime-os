@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -26,21 +27,34 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.stream.Stream
 
-class GroupParametersReaderServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+
+@Component(service = [GroupParametersReaderService::class])
+class GroupParametersReaderServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    /*@Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    layeredPropertyMapFactory: LayeredPropertyMapFactory,*/
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    private val groupParametersCache: MemberDataCache<GroupParameters>,
 ) : GroupParametersReaderService {
+
+    @Activate constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = LayeredPropertyMapFactory::class)
+        layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    ) : this(
+        coordinatorFactory, configurationReadService, subscriptionFactory, layeredPropertyMapFactory, MemberDataCache.Impl()
+    )
+
     private companion object {
         val logger = contextLogger()
         const val SERVICE = "GroupParametersReaderService"
@@ -51,13 +65,16 @@ class GroupParametersReaderServiceImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     private var impl: InnerGroupParametersReaderService = InactiveImpl
+    //private var groupParametersCache: MemberDataCache<GroupParameters> = MemberDataCache.Impl()
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
+    // for watching the state of the subscription
+    private var subscriptionHandle: RegistrationHandle? = null
 
-    private var groupParamsSubscription: CompactedSubscription<String, GroupParameters>? = null
+    private var groupParamsSubscription: CompactedSubscription<String, GroupParametersAvro>? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -72,61 +89,54 @@ class GroupParametersReaderServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>? {
-        TODO("Not yet implemented")
-    }
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>? =
+        impl.getAllVersionedRecords()
 
-    override fun get(identity: HoldingIdentity): GroupParameters? {
-        TODO("Not yet implemented")
-    }
+    override fun get(identity: HoldingIdentity): GroupParameters? = impl.get(identity)
 
     private interface InnerGroupParametersReaderService : AutoCloseable {
-        fun getAllVersionedRecords(): Stream<VersionedRecord<String, GroupParameters>>?
+        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>?
 
         fun get(identity: HoldingIdentity): GroupParameters?
     }
 
     private object InactiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<String, GroupParameters>>? {
-            TODO("Not yet implemented")
-        }
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> =
+            throw IllegalStateException("$SERVICE is currently inactive.")
 
-        override fun get(identity: HoldingIdentity): GroupParameters? {
-            TODO("Not yet implemented")
-        }
+        override fun get(identity: HoldingIdentity): GroupParameters =
+            throw IllegalStateException("$SERVICE is currently inactive.")
 
-        override fun close() {
-            TODO("Not yet implemented")
-        }
+        override fun close() = Unit
     }
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<String, GroupParameters>> {
-            /*val recordList: List<VersionedRecord<String, GroupParameters>> = groupParametersCache.getAll().map {
-                object : VersionedRecord<String, GroupParameters> {
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
+            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
+                object : VersionedRecord<HoldingIdentity, GroupParameters> {
                     override val version = it.value.epoch
                     override val isDeleted = false
-                    override val key = it.key.toString()
+                    override val key = it.key
                     override val value = it.value
                 }
             }
-            return recordList.stream()*/
-            TODO("Not yet implemented")
+            return recordList.stream()
         }
 
-        override fun get(identity: HoldingIdentity): GroupParameters? = TODO("Not yet implemented")//groupParametersCache.get(identity)
+        override fun get(identity: HoldingIdentity): GroupParameters? = groupParametersCache.get(identity)
 
         override fun close() {
+            groupParametersCache.clear()
         }
     }
 
     private fun activate(coordinator: LifecycleCoordinator) {
         impl = ActiveImpl()
-        coordinator.updateStatus(LifecycleStatus.UP)
+        coordinator.updateStatus(LifecycleStatus.UP, "Received config and started group parameters topic subscription.")
     }
 
-    private fun deactivate(coordinator: LifecycleCoordinator) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+    private fun deactivate(coordinator: LifecycleCoordinator, msg: String) {
+        coordinator.updateStatus(LifecycleStatus.DOWN, msg)
         impl.close()
         impl = InactiveImpl
     }
@@ -137,7 +147,7 @@ class GroupParametersReaderServiceImpl @Activate constructor(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> handleConfigChange()
+            is ConfigChangedEvent -> handleConfigChange(event)
         }
     }
 
@@ -153,9 +163,11 @@ class GroupParametersReaderServiceImpl @Activate constructor(
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         logger.info("Handling stop event.")
-        deactivate(coordinator)
+        deactivate(coordinator, "Component received stop event.")
         dependencyHandle?.close()
         dependencyHandle = null
+        subscriptionHandle?.close()
+        subscriptionHandle = null
         configHandle?.close()
         configHandle = null
         groupParamsSubscription?.close()
@@ -169,31 +181,37 @@ class GroupParametersReaderServiceImpl @Activate constructor(
         logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
-                configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
-                    coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                )
+                if (event.registration == dependencyHandle) {
+                    configHandle?.close()
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    )
+                } else if (event.registration == subscriptionHandle) {
+                    activate(coordinator)
+                }
             }
             else -> {
-                deactivate(coordinator)
-                configHandle?.close()
+                deactivate(coordinator, "Dependencies are down.")
             }
         }
     }
 
-    private fun handleConfigChange() {
+    private fun handleConfigChange(event: ConfigChangedEvent) {
         logger.info("Handling config changed event.")
-        /*val subscriptionConfig = SubscriptionConfig(
-            CONSUMER_GROUP,
-            GROUP_PARAMETERS_TOPIC
-        )*/
+        subscriptionHandle?.close()
+        subscriptionHandle = null
         groupParamsSubscription?.close()
-        /*groupParamsSubscription = subscriptionFactory.createCompactedSubscription(
-            subscriptionConfig,
-            GroupParametersProcessor(),
+        groupParamsSubscription = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(
+                CONSUMER_GROUP,
+                GROUP_PARAMETERS_TOPIC
+            ),
+            GroupParametersProcessor(groupParametersCache, layeredPropertyMapFactory),
             event.config.getConfig(MESSAGING_CONFIG)
-        ).also { it.start() }*/
-        activate(coordinator)
+        ).also {
+            it.start()
+            subscriptionHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+        }
     }
 }

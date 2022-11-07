@@ -23,4 +23,14 @@ class GroupParametersImpl(
 
     override val epoch: Int
         get() = map.parse(EPOCH_KEY, Int::class.java)
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is GroupParametersImpl) return false
+        if (this === other) return true
+        return map == other.map
+    }
+
+    override fun hashCode(): Int {
+        return map.hashCode()
+    }
 }

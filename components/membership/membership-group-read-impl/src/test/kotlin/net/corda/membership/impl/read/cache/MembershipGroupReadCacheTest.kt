@@ -18,7 +18,6 @@ class MembershipGroupReadCacheTest {
 
     private val memberListCache get() = membershipGroupReadCache.memberListCache
     private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
-    private val groupParamsCache get() = membershipGroupReadCache.groupParametersCache
 
     private val aliceName = TestProperties.aliceName
     private val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
@@ -51,14 +50,14 @@ class MembershipGroupReadCacheTest {
         assertEquals(membershipGroupReader, lookup)
     }
 
-    @Test
+    /*@Test
     fun `Group parameters cache is accessible after starting initialising group cache`() {
         assertNotNull(groupParamsCache)
         groupParamsCache.put(aliceIdGroup1, groupParameters)
         val lookup = groupParamsCache.get(aliceIdGroup1)
         assertNotNull(lookup)
         assertEquals(groupParameters, lookup)
-    }
+    }*/
 
     @Test
     fun `Member list cache is cleared after clearing group cache`() {
@@ -74,10 +73,10 @@ class MembershipGroupReadCacheTest {
         assertNull(groupReaderCache.get(aliceIdGroup1))
     }
 
-    @Test
+    /*@Test
     fun `Group parameters cache is cleared after starting clearing group cache`() {
         groupParamsCache.put(aliceIdGroup1, groupParameters)
         membershipGroupReadCache.clear()
         assertNull(groupParamsCache.get(aliceIdGroup1))
-    }
+    }*/
 }
