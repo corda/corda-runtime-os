@@ -12,6 +12,7 @@ import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -188,12 +189,24 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
-            throw ConfigVersionException(
-                exception.errorType,
-                exception.errorMessage,
-                response.schemaVersion,
-                response.config
-            )
+
+            if ("WrongConfigVersionException" in exception.errorType) {
+                throw ConfigVersionException(
+                    exception.errorType,
+                    ResponseCode.CONFLICT,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config
+                )
+            } else {
+                throw ConfigVersionException(
+                    exception.errorType,
+                    ResponseCode.INTERNAL_SERVER_ERROR,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config
+                )
+            }
         }
     }
 
