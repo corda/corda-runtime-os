@@ -20,7 +20,12 @@ class UtxoRequestHandlerSelectorImpl : UtxoRequestHandlerSelector {
                     UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,
-                    UtxoPersistenceServiceImpl(sandbox,sandbox.getService(),sandbox.getService(), UTCClock()),
+                    UtxoPersistenceServiceImpl(
+                        sandbox,
+                        UtxoRepositoryImpl(),
+                        sandbox.getService(),
+                        UTCClock()
+                    ),
                     UtxoOutputRecordFactoryImpl()
                 )
             }
@@ -37,6 +42,6 @@ class UtxoRequestHandlerSelectorImpl : UtxoRequestHandlerSelector {
      */
     inline fun <reified T> SandboxGroupContext.getService(): T {
         return this.getSandboxSingletonServices().filterIsInstance<T>().singleOrNull()
-            ?: throw IllegalStateException("Could not find an instance of '${ T::class.java}' in the sandbox")
+            ?: throw IllegalStateException("Could not find an instance of '${T::class.java}' in the sandbox")
     }
 }
