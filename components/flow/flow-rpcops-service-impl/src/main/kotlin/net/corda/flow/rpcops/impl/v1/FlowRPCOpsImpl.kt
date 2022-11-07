@@ -97,7 +97,11 @@ class FlowRPCOpsImpl @Activate constructor(
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
-            throw InvalidInputDataException("The flow that was requested is not in the list of startable flows for this holding identity.")
+            val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+            throw InvalidInputDataException(
+                "The flow that was requested is not in the list of startable flows for this holding identity. " +
+                    "CPI (${cpiMeta?.cpiId?.name}, ${cpiMeta?.cpiId?.version}, ${cpiMeta?.cpiId?.signerSummaryHash} " +
+                    "for ${vNode.holdingIdentity.x500Name} contains: $startableFlows")
         }
 
         val rpcContext = CURRENT_RPC_CONTEXT.get()
