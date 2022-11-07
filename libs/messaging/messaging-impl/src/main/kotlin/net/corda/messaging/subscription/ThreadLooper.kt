@@ -19,9 +19,10 @@ import kotlin.concurrent.withLock
  *
  * The constructor takes a [LifecycleCoordinatorFactory] in order that a [lifecycleCoordinator] is created on behalf of
  * the user of this class. [LifecycleStatus.UP] events are not handled by this class, it is assumed your function has
- * some initialisation logic to do before announcing it is UP, however [LifecycleStatus.DOWN] events are handled
- * whenever the looper is closed, these do not need to be manually triggered as the loop exits. To raise UP or other
- * lifecycle events at any time, the [updateLifecycleStatus] can be called.
+ * some initialisation logic to do before announcing it is UP. Note however that [LifecycleStatus.DOWN] events are
+ * handled by the lifecycle coordinator whenever it is closed, which the [ThreadLooper] handles for you when the loop
+ * drops out. That means you do not need to post explicit [LifecycleStatus.DOWN] events at the end of the loop function.
+ * To raise UP or other lifecycle events at any time, the [updateLifecycleStatus] can be called.
  */
 class ThreadLooper(
     private val log: Logger,
@@ -118,7 +119,6 @@ class ThreadLooper(
         // by an apparent programming error at this point.
         try {
             loopFunction()
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.close()
             _isRunning = false
         } catch (t: Throwable) {
