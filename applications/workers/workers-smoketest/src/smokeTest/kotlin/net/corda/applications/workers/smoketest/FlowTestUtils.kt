@@ -8,6 +8,7 @@ import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
+import net.corda.test.util.eventually
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions.assertThat
 
@@ -119,11 +120,14 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun getOrCreateVirtualNodeFor(x500: String, cpiName: String = TEST_CPI_NAME): String {
+fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
+        // be a bit patient for the CPI info to get there in case it has just been uploaded
+        val json = eventually(duration = Duration.ofSeconds(30)) {
+            val cpis = cpiList().toJson()["cpis"]
+            cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
+        }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodesJson = assertWithRetry {
@@ -224,6 +228,8 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, 
                 command { cpiStatus(responseStatusId) }
                 condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
             }
+            // sleep a second to let the CPKs distribute
+            //Thread.sleep(1000)
         }
     }
 }

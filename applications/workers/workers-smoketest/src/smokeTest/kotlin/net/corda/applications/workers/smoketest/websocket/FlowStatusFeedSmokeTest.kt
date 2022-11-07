@@ -1,14 +1,16 @@
 package net.corda.applications.workers.smoketest.websocket
 
-import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.SMOKE_TEST_CLASS_NAME
-import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
@@ -17,10 +19,12 @@ import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.Duration
 
 // This test relies on `VirtualNodeRpcTest` and `FlowTest` to run first which will create vNodes necessary to run this test
 @Order(30)
@@ -28,7 +32,24 @@ import org.junit.jupiter.api.TestMethodOrder
 class FlowStatusFeedSmokeTest {
 
     private companion object {
-        val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+        private val testRunUniqueId = UUID.randomUUID()
+        private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+        private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private var bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+        private val staticMemberList = listOf(
+            bobX500,
+        )
+
+        @BeforeAll
+        @JvmStatic
+        internal fun beforeAll() {
+            // Upload test flows if not already uploaded
+            conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+
+            // Make sure Virtual Nodes are created
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+        }
     }
 
     private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
