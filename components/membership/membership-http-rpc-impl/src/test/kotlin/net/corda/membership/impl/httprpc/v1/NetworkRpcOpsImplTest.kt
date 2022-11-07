@@ -83,8 +83,8 @@ class NetworkRpcOpsImplTest {
                 "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
-                    "tls",
-                    "session-tenant",
+                    true,
+                    true,
                     "session"
                 )
             )
@@ -92,8 +92,8 @@ class NetworkRpcOpsImplTest {
             verify(certificatesClient).setupLocallyHostedIdentity(
                 ShortHash.of("1234567890ab"),
                 "alias",
-                "tls",
-                "session-tenant",
+                true,
+                true,
                 "session",
                 null
             )
@@ -116,8 +116,8 @@ class NetworkRpcOpsImplTest {
                     "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        false,
+                        true,
                         "session"
                     )
                 )
@@ -131,8 +131,8 @@ class NetworkRpcOpsImplTest {
                     "id",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        false,
+                        true,
                         "session"
                     )
                 )
@@ -157,8 +157,8 @@ class NetworkRpcOpsImplTest {
                     "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        true,
+                        true,
                         "session"
                     )
                 )

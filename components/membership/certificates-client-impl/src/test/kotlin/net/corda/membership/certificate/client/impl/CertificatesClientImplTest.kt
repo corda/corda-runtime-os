@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
@@ -60,10 +61,10 @@ class CertificatesClientImplTest {
         on { createPublisher(any(), any()) } doReturn publisher
     }
     private val configurationReadService = mock<ConfigurationReadService>()
-    private var retrieveCertificates: ((String, String) -> String?)? = null
+    private var retrieveCertificates: ((ShortHash?, CertificateUsage, String) -> String?)? = null
     private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
         @Suppress("UNCHECKED_CAST")
-        retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
+        retrieveCertificates = settings.arguments()[4] as? ((ShortHash?, CertificateUsage, String) -> String?)
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
 
@@ -93,12 +94,13 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificates("tenantId", "alias", "certificate")
+            client.importCertificates(CertificateUsage.RPC_API_TLS, null, "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateUsage.RPC_API_TLS,
+                        null,
                         ImportCertificateRpcRequest(
                             "alias",
                             "certificate"
@@ -117,7 +119,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateUsage.P2P_TLS, null, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Failure")
@@ -126,7 +128,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates throws exception if client is not ready`() {
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateUsage.CODE_SIGNER, null, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Certificates client is not ready")
@@ -147,10 +149,10 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
+                true,
+                true,
                 "sessionAlias",
-                null
+                null,
             )
 
             verify(
@@ -158,10 +160,10 @@ class CertificatesClientImplTest {
             ).createIdentityRecord(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
+                true,
+                null,
+                true,
                 "sessionAlias",
-                null
             )
         }
 
@@ -174,12 +176,13 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            retrieveCertificates?.invoke("tenantId", "alias")
+            retrieveCertificates?.invoke(null, CertificateUsage.P2P_SESSION, "alias")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateUsage.P2P_SESSION,
+                        null,
                         RetrieveCertificateRpcRequest(
                             "alias",
                         )
@@ -193,8 +196,8 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
-                    "tlsTenantId",
-                    "sessionKeyTenantId",
+                    true,
+                    false,
                     "sessionAlias",
                     null
                 )
@@ -214,8 +217,8 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
-                    "tlsTenantId",
-                    "sessionKeyTenantId",
+                    false,
+                    true,
                     "sessionAlias",
                     null
                 )
@@ -227,7 +230,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any(), eq(null))
+                    .createIdentityRecord(any(), any(), any(), any(), any(), any())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -238,10 +241,10 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
+                false,
+                true,
                 "sessionAlias",
-                null
+                "chain",
             )
 
             verify(publisher).publish(listOf(record))
