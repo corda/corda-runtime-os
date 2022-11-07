@@ -185,6 +185,34 @@ class ConfigRPCOpsImplTests {
     }
 
     @Test
+    fun `updateConfig throws HttpApiException if version number is incorrect`() {
+        val exception = ExceptionEnvelope("net.corda.configuration.write.WrongConfigVersionException", "ErrorMessage.")
+        val response = req.run {
+            ConfigurationManagementResponse(
+                false,
+                exception,
+                section,
+                config.escapedJson,
+                ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
+                version
+            )
+        }
+        val future = CompletableFuture.supplyAsync { response }
+
+        val (_, configRPCOps) = getConfigRPCOps(future)
+
+        configRPCOps.createAndStartRPCSender(mock())
+        configRPCOps.setTimeout(1000)
+        val e = assertThrows<HttpApiException> {
+            configRPCOps.updateConfig(req)
+        }
+
+
+        assertEquals("net.corda.configuration.write.WrongConfigVersionException: ErrorMessage.", e.message)
+        assertEquals(ResponseCode.CONFLICT, e.responseCode)
+    }
+
+    @Test
     fun `updateConfig throws HttpApiException if request fails but no exception is provided`() {
         val (_, configRPCOps) = getConfigRPCOps(CompletableFuture.supplyAsync {
             ConfigurationManagementResponse(false, null, "", "", ConfigurationSchemaVersion(0, 0), 0)
