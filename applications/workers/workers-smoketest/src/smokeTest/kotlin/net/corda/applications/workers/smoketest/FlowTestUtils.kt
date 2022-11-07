@@ -232,6 +232,8 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, 
             val responseStatusId = uploadResponse.toJson()["id"].textValue()
 
             assertWithRetry {
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
                 command { cpiStatus(responseStatusId) }
                 condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
             }
