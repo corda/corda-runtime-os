@@ -93,66 +93,6 @@
         }
       }
     },
-    "/certificates/{tenantid}" : {
-      "put" : {
-        "tags" : [ "Certificates API" ],
-        "description" : "This method imports a certificate chain for a specified tenant.",
-        "operationId" : "put_certificates__tenantid_",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "alias" : {
-                    "type" : "string",
-                    "description" : "The unique alias under which the certificate chain will be stored",
-                    "nullable" : false,
-                    "example" : "string"
-                  },
-                  "certificate" : {
-                    "uniqueItems" : false,
-                    "type" : "array",
-                    "nullable" : false,
-                    "items" : {
-                      "type" : "string",
-                      "description" : "A content of the file to upload.",
-                      "format" : "binary",
-                      "example" : "No example available for this type"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
         "tags" : [ "Certificates API" ],
@@ -204,6 +144,137 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/{usage}/cluster" : {
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a cluster.",
+        "operationId" : "put_certificates__usage__cluster",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/{usage}/{holdingidentityid}" : {
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a virtual node.",
+        "operationId" : "put_certificates__usage___holdingidentityid_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
           },
           "401" : {
             "description" : "Unauthorized"
@@ -1614,7 +1685,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1713,7 +1784,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2899,6 +2970,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3038,6 +3110,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3147,11 +3220,6 @@
             "nullable" : false,
             "example" : "string"
           },
-          "p2pTlsTenantId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
           "sessionCertificateChainAlias" : {
             "type" : "string",
             "nullable" : true,
@@ -3162,13 +3230,18 @@
             "nullable" : true,
             "example" : "string"
           },
-          "sessionKeyTenantId" : {
-            "type" : "string",
+          "useClusterLevelSessionCertificateAndKey" : {
+            "type" : "boolean",
             "nullable" : true,
-            "example" : "string"
+            "example" : true
+          },
+          "useClusterLevelTlsCertificateAndKey" : {
+            "type" : "boolean",
+            "nullable" : true,
+            "example" : true
           }
         },
-        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)\n                sessionKeyTenantId: the tenant ID under which the session initiation key is stored\n                sessionKeyId: the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type \n                and key be used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
@@ -3323,6 +3396,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3366,6 +3440,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3448,6 +3523,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
