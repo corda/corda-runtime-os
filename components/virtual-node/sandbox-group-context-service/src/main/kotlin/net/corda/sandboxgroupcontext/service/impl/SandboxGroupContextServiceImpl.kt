@@ -255,6 +255,16 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 logger.warn("Failed to identify injectable services from $serviceRef", e)
             }
         }
+
+        // Include the service marker interfaces in our "universe" of sandbox services,
+        // but without any ServiceReference<*> objects. This effectively prevents the
+        // sandbox from injecting anything against any marker interface reference,
+        // which sandbox components are not supposed to have anyway.
+        val emptyImmutableSet = java.util.Collections.emptySet<ServiceReference<*>>()
+        MARKER_INTERFACES.forEach { markerName ->
+            serviceIndex[markerName] = emptyImmutableSet
+        }
+
         return SandboxServiceContext(bundleContext, serviceComponentRuntime, serviceIndex, injectables)
     }
 
