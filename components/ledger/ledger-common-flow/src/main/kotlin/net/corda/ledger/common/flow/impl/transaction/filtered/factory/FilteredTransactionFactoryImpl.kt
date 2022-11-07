@@ -6,6 +6,7 @@ import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -18,7 +19,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.function.Predicate
 
-@Component(service = [FilteredTransactionFactory::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(service = [FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class], scope = PROTOTYPE)
 class FilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
