@@ -9,11 +9,11 @@ import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.configuration.write.WrongConfigVersionException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
+import net.corda.configuration.rpcops.impl.exception.WrongUpdateConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -191,19 +191,21 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             }
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
 
-            val responseCode: ResponseCode
             when(exception.errorType) {
-                WrongConfigVersionException::class.java.name -> responseCode = ResponseCode.CONFLICT
-                else -> responseCode = ResponseCode.INTERNAL_SERVER_ERROR
+                WrongConfigVersionException::class.java.name -> throw WrongUpdateConfigVersionException(
+                    exception.errorType,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config)
+                else -> throw ConfigVersionException(
+                    exception.errorType,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config
+                )
             }
 
-            throw ConfigVersionException(
-                exception.errorType,
-                responseCode,
-                exception.errorMessage,
-                response.schemaVersion,
-                response.config
-            )
+
         }
     }
 
