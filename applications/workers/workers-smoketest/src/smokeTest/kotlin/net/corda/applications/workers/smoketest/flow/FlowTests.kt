@@ -568,7 +568,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_default_signature_spec"
         requestBody.data = mapOf(
-            "memberX500" to X500_BOB,
+            "memberX500" to bobX500,
             "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
         )
 
@@ -583,7 +583,7 @@ class FlowTests {
 
         // Call get default signature spec api with public key only
         requestBody.data = mapOf(
-            "memberX500" to X500_BOB
+            "memberX500" to bobX500
         )
         val requestId1 = startRpcFlow(bobHoldingId, requestBody)
         val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
@@ -600,7 +600,7 @@ class FlowTests {
         // Call get compatible signature specs api with public key only
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_compatible_signature_specs"
-        requestBody.data = mapOf("memberX500" to X500_BOB)
+        requestBody.data = mapOf("memberX500" to bobX500)
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
         val result = awaitRpcFlowFinished(bobHoldingId, requestId)
@@ -620,7 +620,7 @@ class FlowTests {
 
         // Call get compatible signature specs api with public key and digest algorithm name
         requestBody.data = mapOf(
-            "memberX500" to X500_BOB,
+            "memberX500" to bobX500,
             "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
         )
 
