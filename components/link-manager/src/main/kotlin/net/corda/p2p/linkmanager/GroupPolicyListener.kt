@@ -14,7 +14,13 @@ interface GroupPolicyListener {
         val protocolModes: Set<ProtocolMode>,
         val trustedCertificates: List<PemCertificate>,
         val sessionPkiMode: GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode,
-        val sessionTrustStore: KeyStore?
+        val sessionTrustStore: KeyStoreWithPem?
     )
+
+    data class KeyStoreWithPem(
+        val keyStore: KeyStore,
+        val pemKeyStore: List<PemCertificate>
+    )
+
     fun groupAdded(groupInfo: GroupInfo)
 }

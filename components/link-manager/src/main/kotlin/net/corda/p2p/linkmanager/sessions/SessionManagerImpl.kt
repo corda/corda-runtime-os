@@ -153,6 +153,7 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
+    private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
     private val executorService = executorServiceFactory()
 
     override val dominoTile = ComplexDominoTile(
@@ -165,9 +166,10 @@ internal class SessionManagerImpl(
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
+            revocationCheckerClient.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle()),
+            publisher.dominoTile.toNamedLifecycle(), revocationCheckerClient.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -392,9 +394,11 @@ internal class SessionManagerImpl(
                     return null
                 }
                 CertificateCheckMode.CheckCertificate(
-                    groupInfo.sessionTrustStore,
+                    groupInfo.sessionTrustStore.keyStore,
+                    groupInfo.sessionTrustStore.pemKeyStore,
                     ourIdentityInfo.sessionCertificates,
-                    sessionManagerConfig.revocationConfigMode
+                    sessionManagerConfig.revocationConfigMode,
+                    revocationCheckerClient::checkRevocation
                 )
             }
             STANDARD_EV3, CORDA_4 -> {

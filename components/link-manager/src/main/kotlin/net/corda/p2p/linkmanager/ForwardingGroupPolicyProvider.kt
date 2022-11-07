@@ -81,10 +81,12 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let {
-            convertToKeyStore(certificateFactory, it, "session") ?: return null
+        val sessionTrustStorePem = groupPolicy.p2pParameters.sessionTrustRoots
+        val sessionTrustStore = sessionTrustStorePem?.let {
+            val keyStore = convertToKeyStore(certificateFactory, it, "session") ?: return null
+            GroupPolicyListener.KeyStoreWithPem(keyStore, sessionTrustStorePem.toList())
         }
-        validateTrustStoreUsingPkiMode(sessionTrustStore, sessionPkiMode, holdingIdentity)
+        validateTrustStoreUsingPkiMode(sessionTrustStore?.keyStore, sessionPkiMode, holdingIdentity)
 
         return GroupPolicyListener.GroupInfo(
             holdingIdentity,

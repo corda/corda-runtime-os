@@ -1,5 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import java.security.KeyStore
 
 /**
@@ -18,8 +20,10 @@ sealed class CertificateCheckMode {
      */
     data class CheckCertificate(
         val truststore: KeyStore,
+        val truststorePem: List<String>,
         val ourCertificates: List<String>,
-        val revocationCheckMode: RevocationCheckMode
+        val revocationCheckMode: RevocationCheckMode,
+        val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckStatus
     ): CertificateCheckMode()
 }
 

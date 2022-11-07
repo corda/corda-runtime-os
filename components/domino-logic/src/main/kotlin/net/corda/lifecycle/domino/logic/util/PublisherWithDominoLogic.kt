@@ -28,61 +28,11 @@ class PublisherWithDominoLogic(
     coordinatorFactory: LifecycleCoordinatorFactory,
     publisherConfig: PublisherConfig,
     messagingConfiguration: SmartConfig,
-) : LifecycleWithDominoTile {
-    companion object {
-        private val instancesIndex = AtomicInteger()
-        private const val componentName = "Publisher"
-    }
-
-    private val publisher = AtomicReference<Publisher>()
-    private val lifecycleLock = ReentrantReadWriteLock()
-
-    override val dominoTile = object: DominoTile() {
-
-        override val coordinatorName = LifecycleCoordinatorName(componentName, instancesIndex.getAndAdd(1).toString())
-        override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
-
-        override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet()
-        override val managedChildren: Collection<NamedLifecycle> = emptySet()
-
-        override fun close() {
-            coordinator.postEvent(StopEvent())
-            coordinator.close()
-        }
-
-        private inner class EventHandler : LifecycleEventHandler {
-            override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-                when (event) {
-                    is StartEvent -> {
-                        lifecycleLock.write {
-                            if (coordinator.status == LifecycleStatus.DOWN) {
-                                val newPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfiguration)
-                                newPublisher.start()
-                                publisher.set(newPublisher)
-                                coordinator.updateStatus(LifecycleStatus.UP)
-                            }
-                        }
-                    }
-                    is StopEvent -> {
-                        lifecycleLock.write {
-                            if (coordinator.status != LifecycleStatus.DOWN) {
-                                val oldPublisher = publisher.getAndSet(null)
-                                oldPublisher?.close()
-                                coordinator.updateStatus(LifecycleStatus.DOWN)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fun <T> withLifecycleLock(access: () -> T): T {
-        return lifecycleLock.read {
-            access.invoke()
-        }
-    }
-
+): PublisherWithDominoLogicBase<Publisher> (coordinatorFactory, {
+    val newPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfiguration)
+    newPublisher.start()
+    newPublisher
+}) {
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
         return lifecycleLock.read {
             publisher.get()?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
