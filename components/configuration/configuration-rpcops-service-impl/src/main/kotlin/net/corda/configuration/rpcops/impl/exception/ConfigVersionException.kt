@@ -7,8 +7,13 @@ import net.corda.httprpc.exception.HttpApiException
 /**
  * Config version related exceptions.
  */
-class ConfigVersionException(errorType: String, responseCode: ResponseCode, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) :
-    HttpApiException(
+class ConfigVersionException(
+    errorType: String,
+    responseCode: ResponseCode,
+    errorMessage: String, schemaVersion:
+    ConfigurationSchemaVersion,
+    config: String
+) : HttpApiException(
         responseCode = responseCode,
         message = "$errorType: $errorMessage",
         details = mapOf(
