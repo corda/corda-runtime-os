@@ -9,7 +9,7 @@ import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSeri
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider

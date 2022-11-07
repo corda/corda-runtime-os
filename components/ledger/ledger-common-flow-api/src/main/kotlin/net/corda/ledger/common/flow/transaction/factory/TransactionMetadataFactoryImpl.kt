@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.factory
+package net.corda.ledger.common.flow.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
