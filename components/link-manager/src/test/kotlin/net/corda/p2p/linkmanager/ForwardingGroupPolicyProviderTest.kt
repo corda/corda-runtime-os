@@ -81,7 +81,7 @@ class ForwardingGroupPolicyProviderTest {
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
             listOf(),
             P2PParameters.SessionPkiMode.NO_PKI,
-            GroupPolicyListener.KeyStoreWithPem(keyStore, listOf(""))
+            GroupPolicyListener.KeyStoreWithPem(keyStore, listOf(certificate))
         )
 
     private val realGroupPolicyProvider = mock<GroupPolicyProvider>()
