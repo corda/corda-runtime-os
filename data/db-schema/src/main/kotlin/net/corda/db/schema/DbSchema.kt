@@ -12,6 +12,7 @@ object DbSchema {
     const val CONFIG_TABLE = "config"
     const val CONFIG_AUDIT_TABLE = "config_audit"
     const val CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq"
+    const val CLUSTER_CERTIFICATE_DB_TABLE = "cluster_certificate"
     const val CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
 
     const val DB_CONNECTION_TABLE = "db_connection"
@@ -37,9 +38,6 @@ object DbSchema {
     const val LEDGER_CONSENSUAL_TRANSACTION_COMPONENT_TABLE = "consensual_transaction_component"
     const val LEDGER_CONSENSUAL_CPK_TABLE = "consensual_cpk"
     const val LEDGER_CONSENSUAL_TRANSACTION_CPK_TABLE = "consensual_transaction_cpk"
-
-    const val CERTIFICATES_SCHEME = "CERTIFICATES"
-    const val CLUSTER_CERTIFICATES_DB_TABLE = "cluster_certificates"
 
     const val DB_MESSAGE_BUS = "DB_MESSAGE_BUS"
 

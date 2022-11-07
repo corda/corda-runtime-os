@@ -1,0 +1,12 @@
+{
+  "type": "enum",
+  "name": "CertificateUsage",
+  "namespace": "net.corda.data.certificates",
+  "doc": "A certificate usage.",
+  "symbols": [
+    "P2P_TLS",
+    "P2P_SESSION",
+    "RPC_API_TLS",
+    "CODE_SIGNER"
+  ]
+}

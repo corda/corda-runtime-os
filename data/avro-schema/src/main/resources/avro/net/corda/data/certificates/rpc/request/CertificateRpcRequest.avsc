@@ -5,9 +5,14 @@
   "doc": "RPC request regarding certificates.",
   "fields": [
     {
-      "name": "tenantId",
-      "doc": "'p2p', 'rpc-api', or holding identity identity ID.",
-      "type": "string"
+      "name": "usage",
+      "doc": "The certificate usage.",
+      "type": "net.corda.data.certificates.CertificateUsage"
+    },
+    {
+        "name": "holdingIdentity",
+        "doc": "The holding identity (null for cluster certificate).",
+        "type": ["null", "string"]
     },
     {
       "name": "request",

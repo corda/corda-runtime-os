@@ -311,5 +311,22 @@
                                  constraintName="FK_vnode_instance_cpi"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
+        <createTable tableName="cluster_certificate" schemaName="${schema.name}">
+            <column name="alias" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usage" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_certificate" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cluster_certificate" columnNames="alias" constraintName="certificate_pk"
+                       schemaName="${schema.name}"/>
+        <createIndex indexName="cluster_certificate_usage" tableName="cluster_certificate" schemaName="${schema.name}">
+            <column name="usage"/>
+        </createIndex>
     </changeSet>
 </databaseChangeLog>
