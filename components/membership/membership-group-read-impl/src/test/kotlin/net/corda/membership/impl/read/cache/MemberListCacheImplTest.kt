@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import kotlin.streams.asSequence
 
 class MemberListCacheImplTest {
     private lateinit var memberListCache: MemberListCache
@@ -75,8 +76,15 @@ class MemberListCacheImplTest {
 
         assertMemberList(lookupWithDefaults(), memberInfo1)
         assertMemberList(lookupWithDefaults(aliceIdGroup2), memberInfo2)
+    }
 
-        val cache = memberListCache.getAll()
+    @Test
+    fun `get all returns all information from cache`() {
+        addToCacheWithDefaults()
+        addToCacheWithDefaults(aliceIdGroup2, memberInfo = memberInfo2)
+
+        val cache = memberListCache.getAll().asSequence().toMap()
+        assertThat(cache.size).isEqualTo(2)
         assertThat(cache.size).isEqualTo(2)
         assertMemberList(cache.get(aliceIdGroup1), memberInfo1)
         assertMemberList(cache.get(aliceIdGroup2), memberInfo2)

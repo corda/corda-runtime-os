@@ -3,6 +3,7 @@ package net.corda.membership.impl.read.cache
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Stream
 
 /**
  * Interface for classes which are to be used as caches for group member data.
@@ -27,7 +28,7 @@ interface MemberDataCache<T> {
      */
     fun put(holdingIdentity: HoldingIdentity, data: T)
 
-    fun getAll(): ConcurrentHashMap<HoldingIdentity, T>
+    fun getAll(): Stream<Pair<HoldingIdentity, T>>
 
     /**
      * Clears all cached data.
@@ -52,7 +53,7 @@ interface MemberDataCache<T> {
             cache[holdingIdentity] = data
         }
 
-        override fun getAll(): ConcurrentHashMap<HoldingIdentity, T> = cache
+        override fun getAll(): Stream<Pair<HoldingIdentity, T>> = cache.map { Pair(it.key, it.value) }.stream()
 
         override fun clear() {
             logger.info("Clearing member data cache.")

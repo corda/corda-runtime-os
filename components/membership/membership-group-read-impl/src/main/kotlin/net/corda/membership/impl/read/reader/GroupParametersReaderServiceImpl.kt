@@ -110,17 +110,15 @@ class GroupParametersReaderServiceImpl internal constructor(
     }
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
-            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> =
+            groupParametersCache.getAll().map {
                 object : VersionedRecord<HoldingIdentity, GroupParameters> {
-                    override val version = it.value.epoch
+                    override val version = it.second.epoch
                     override val isDeleted = false
-                    override val key = it.key
-                    override val value = it.value
+                    override val key = it.first
+                    override val value = it.second
                 }
             }
-            return recordList.stream()
-        }
 
         override fun get(identity: HoldingIdentity): GroupParameters? = groupParametersCache.get(identity)
 

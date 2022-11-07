@@ -5,6 +5,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.util.ArrayList
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Stream
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -31,13 +32,8 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity] ?: emptyList()
-        override fun getAll(): ConcurrentHashMap<HoldingIdentity, List<MemberInfo>> {
-            val result = ConcurrentHashMap<HoldingIdentity, List<MemberInfo>>()
-            cache.forEach {
-                result[it.key] = it.value.toList()
-            }
-            return result
-        }
+        override fun getAll(): Stream<Pair<HoldingIdentity, List<MemberInfo>>> =
+            cache.mapValues { it.value.toList() }.map { Pair(it.key, it.value) }.stream()
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
             cache.compute(holdingIdentity) { _, value ->

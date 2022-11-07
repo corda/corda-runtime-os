@@ -18,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import kotlin.streams.asSequence
 
 class GroupParametersProcessorTest {
     private companion object {
@@ -89,12 +90,7 @@ class GroupParametersProcessorTest {
                 alice.toCorda().shortHash.value to aliceAvroGroupParams
             )
         )
-        with(groupParametersCache.getAll()) {
-            assertThat(this.size).isEqualTo(1)
-            assertThat(this.keys).containsExactlyInAnyOrder(alice.toCorda())
-            assertThat(this.values).containsExactlyInAnyOrder(groupParams)
-        }
-
+        // processing new record
         groupParametersProcessor.onNext(
             Record("topic", bob.toCorda().shortHash.value, bobAvroGroupParams),
             null,
@@ -102,8 +98,7 @@ class GroupParametersProcessorTest {
                 alice.toCorda().shortHash.value to aliceAvroGroupParams
             )
         )
-        with(groupParametersCache.getAll()) {
-            assertThat(this.size).isEqualTo(2)
+        with(groupParametersCache.getAll().asSequence().toMap()) {
             assertThat(this.keys).containsExactlyInAnyOrder(alice.toCorda(), bob.toCorda())
             assertThat(this.values).containsExactlyInAnyOrder(groupParams, groupParams)
         }
@@ -117,12 +112,7 @@ class GroupParametersProcessorTest {
                 bob.toCorda().shortHash.value to bobAvroGroupParams
             )
         )
-        with(groupParametersCache.getAll()) {
-            assertThat(this.size).isEqualTo(2)
-            assertThat(this.keys).containsExactlyInAnyOrder(alice.toCorda(), bob.toCorda())
-            assertThat(this.values).containsExactlyInAnyOrder(groupParams, groupParams)
-        }
-
+        // processing update for Bob
         groupParametersProcessor.onNext(
             Record("topic", bob.toCorda().shortHash.value, updatedBobAvroGroupParams),
             bobAvroGroupParams,
@@ -131,8 +121,7 @@ class GroupParametersProcessorTest {
                 bob.toCorda().shortHash.value to bobAvroGroupParams
             )
         )
-        with(groupParametersCache.getAll()) {
-            assertThat(this.size).isEqualTo(2)
+        with(groupParametersCache.getAll().asSequence().toMap()) {
             assertThat(this.keys).containsExactlyInAnyOrder(alice.toCorda(), bob.toCorda())
             assertThat(this.values).containsExactlyInAnyOrder(groupParams, updatedGroupParams)
         }

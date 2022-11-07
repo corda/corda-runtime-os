@@ -45,7 +45,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 
 class GroupParametersReaderServiceImplTest {
@@ -101,12 +100,12 @@ class GroupParametersReaderServiceImplTest {
     )
     private val groupParams = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries1))
     private val groupParams2 = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries2))
-    private val allGroupParams: ConcurrentHashMap<HoldingIdentity, GroupParameters> = ConcurrentHashMap(
-        mapOf(alice to groupParams, bob to groupParams2)
+    private val allGroupParams: List<Pair<HoldingIdentity, GroupParameters>> = listOf(
+        Pair(alice, groupParams), Pair(bob, groupParams2)
     )
     private val groupParametersCache: MemberDataCache<GroupParameters> = mock {
         on { get(eq(alice)) } doReturn groupParams
-        on { getAll() } doReturn allGroupParams
+        on { getAll() } doReturn allGroupParams.stream()
     }
     private val groupParametersReaderService = GroupParametersReaderServiceImpl(
         lifecycleCoordinatorFactory,
@@ -239,12 +238,15 @@ class GroupParametersReaderServiceImplTest {
     @Nested
     inner class ReaderServiceTests {
         @Test
-        fun `calling get or get all results in exception if service is not running`() {
+        fun `calling get results in exception if service is not running`() {
             val ex = assertThrows<IllegalStateException> { groupParametersReaderService.get(alice) }
             assertThat(ex.message).contains("inactive")
+        }
 
-            val ex2 = assertThrows<IllegalStateException> { groupParametersReaderService.getAllVersionedRecords() }
-            assertThat(ex2.message).contains("inactive")
+        @Test
+        fun `calling get all results in exception if service is not running`() {
+            val ex = assertThrows<IllegalStateException> { groupParametersReaderService.getAllVersionedRecords() }
+            assertThat(ex.message).contains("inactive")
         }
 
         @Test
