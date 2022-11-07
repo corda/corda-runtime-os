@@ -17,6 +17,7 @@ import java.security.KeyStore
 import java.security.cert.CertPathBuilder
 import java.security.cert.CertPathValidator
 import java.security.cert.CertPathValidatorException
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.PKIXRevocationChecker
@@ -73,21 +74,35 @@ class RevocationChecker(
         override fun onNext(request: RevocationCheckRequest, respFuture: CompletableFuture<RevocationCheckStatus>) {
             val revocationMode = request.mode
             if (revocationMode == null) {
-                respFuture.completeExceptionally(IllegalStateException("The revocation mode cannot be null."))
+                respFuture.completeExceptionally(
+                    IllegalStateException("Revocation check request cannot be made, revocation mode is null.")
+                )
                 return
             }
-            val trustStore = request.trustedCertificates?.let {convertToKeyStore(certificateFactory, it, "trusted") }
+            val trustStore = request.trustedCertificates?.let { convertToKeyStore(certificateFactory, it, "trusted") }
             if (trustStore == null) {
-                respFuture.completeExceptionally(IllegalStateException("The trusted certificates cannot be null."))
+                respFuture.completeExceptionally(
+                    IllegalStateException("Revocation check request cannot be made, trust store could not be parsed from pem format.")
+                )
                 return
             }
-            val certificateChain = certificateFactory.generateCertPath(request.certificates.map { pemCertificate ->
-                ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                    certificateFactory.generateCertificate(it)
-                }
-            })
+            val certificateChain = try {
+                certificateFactory.generateCertPath(request.certificates.map { pemCertificate ->
+                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                })
+            } catch (exception: CertificateException) {
+                respFuture.completeExceptionally(IllegalStateException(
+                    "Revocation check request cannot be made, certificate chain could not be parsed from pem format. Cause by:\n"
+                        + exception.message
+                ))
+                return
+            }
             if (certificateChain == null) {
-                respFuture.completeExceptionally(IllegalStateException("The revocation mode cannot be null."))
+                respFuture.completeExceptionally(
+                    IllegalStateException("Revocation check request cannot be made, certificate chain could not be parsed from pem format.")
+                )
                 return
             }
             val pkixRevocationChecker = getCertCheckingParameters(trustStore, revocationMode.toRevocationConfig())

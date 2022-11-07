@@ -14,7 +14,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.time.Duration
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 
 class RevocationCheckerTest {
     private companion object {
@@ -42,7 +45,9 @@ class RevocationCheckerTest {
             sender.close()
         }
     }
+
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
+    private val corruptedAliceCert = Certificates.aliceKeyStorePem.readText().slice(0..aliceCert.length - 10)
     private val revokedBobCert = Certificates.bobKeyStorePem.readText()
     private val trustStore = listOf(Certificates.truststoreCertificatePem.readText())
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
@@ -52,6 +57,12 @@ class RevocationCheckerTest {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
         assertThat(result).isEqualTo(RevocationCheckStatus.ACTIVE)
+    }
+
+    @Test
+    fun `corrupeted certificate causes the future to complete exceptionally`() {
+        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(corruptedAliceCert), trustStore, RevocationMode.HARD_FAIL))
+        assertThrows<ExecutionException> { resultFuture.get(5, TimeUnit.SECONDS) }
     }
 
     @Test

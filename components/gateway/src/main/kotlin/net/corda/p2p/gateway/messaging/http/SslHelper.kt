@@ -1,33 +1,23 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
-import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.certPathToString
-import net.corda.p2p.gateway.messaging.RevocationConfig
-import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.Socket
 import java.net.URI
-import java.security.KeyStore
 import java.security.SecureRandom
-import java.security.cert.CertPathBuilder
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
-import java.security.cert.PKIXBuilderParameters
-import java.security.cert.PKIXRevocationChecker
-import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
-import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.ManagerFactoryParameters
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
-import org.bouncycastle.asn1.x500.X500Name
 
 const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
