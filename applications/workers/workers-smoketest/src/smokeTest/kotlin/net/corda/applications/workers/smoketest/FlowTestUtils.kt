@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.contains
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
@@ -124,9 +125,15 @@ fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         // be a bit patient for the CPI info to get there in case it has just been uploaded
-        val json = eventually(duration = Duration.ofSeconds(30)) {
-            val cpis = cpiList().toJson()["cpis"]
-            cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
+        val json = eventually(
+            duration = Duration.ofSeconds(30)
+        ) {
+            val response = cpiList().toJson()
+            assertThat(response.contains("cpis"))
+            val cpis = response["cpis"]
+            val cpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == cpiName }
+            assertThat(cpi).isNotNull
+            cpi!!
         }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
@@ -225,11 +232,11 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, 
             val responseStatusId = uploadResponse.toJson()["id"].textValue()
 
             assertWithRetry {
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
                 command { cpiStatus(responseStatusId) }
                 condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
             }
-            // sleep a second to let the CPKs distribute
-            //Thread.sleep(1000)
         }
     }
 }
