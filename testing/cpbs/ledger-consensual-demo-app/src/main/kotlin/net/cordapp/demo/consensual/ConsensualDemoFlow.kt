@@ -58,18 +58,18 @@ class ConsensualDemoFlow : RPCStartableFlow {
         try {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
-            val alice = memberLookup.myInfo()
+            val myInfo = memberLookup.myInfo()
             val members = request.members.map { memberLookup.lookup(MemberX500Name.parse(it))!! }
 
             val testConsensualState = TestConsensualState(
                 request.input,
-                members.map { it.ledgerKeys.first() } + alice.ledgerKeys.first()
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .sign(alice.ledgerKeys.first())
+                .sign(myInfo.ledgerKeys.first())
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
             val finalizedSignedTransaction = consensualLedgerService.finality(
