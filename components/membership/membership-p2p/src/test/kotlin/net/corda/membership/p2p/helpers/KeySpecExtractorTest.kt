@@ -40,9 +40,10 @@ class KeySpecExtractorTest {
 
     @Test
     fun `unknown key throws an exception`() {
-        assertThrows<CordaRuntimeException> {
+        val exception = assertThrows<CordaRuntimeException> {
             extractor.getSpec(publicKeyTwo)
         }
+        assertThat(exception).hasMessageContaining("Public key is not owned by $tenantId")
     }
 
     @Test
@@ -51,16 +52,18 @@ class KeySpecExtractorTest {
             on { schemeCodeName } doReturn "nop"
         }
 
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             key.validateSpecName(SignatureSpec.ECDSA_SHA256.signatureName)
         }
+        assertThat(exception).hasMessageContaining("Could not identify spec for key scheme nop")
     }
 
     @Test
     fun `validateSpecName throw exception for invalid spec name`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             signingKey.validateSpecName(SignatureSpec.RSA_SHA512.signatureName)
         }
+        assertThat(exception).hasMessageContaining("Invalid key spec ${SignatureSpec.RSA_SHA512.signatureName}")
     }
 
     @Test
