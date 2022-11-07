@@ -328,7 +328,7 @@ class ConsensualLedgerRepositoryTest {
             }
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(TransactionMetadata).toByteArray()),
+            listOf(jsonMarshallingService.format(transactionMetadata).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )
