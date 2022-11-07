@@ -134,10 +134,7 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-
-        while (kafkaPubSubSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaPubSubSubscription.isRunning }
 
         verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
@@ -183,10 +180,7 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-
-        while (kafkaPubSubSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaPubSubSubscription.isRunning }
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
         verify(cordaConsumerBuilder, times(2)).createConsumer<String, ByteBuffer>(
@@ -287,11 +281,8 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-
-        while (lock.withLock { subscriptionThread == null }) {
-            // We must wait for the callback above in order we know what thread to join below
-            Thread.sleep(10)
-        }
+        // We must wait for the callback above in order we know what thread to join below
+        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }

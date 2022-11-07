@@ -20,11 +20,12 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.LifeCycleCoordinatorMockHelper
+import net.corda.messaging.subscription.waitWhile
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -101,9 +102,7 @@ class CordaRPCSenderImplTest {
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
-        while (cordaSenderImpl.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
 
         verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig))
 
@@ -211,9 +210,7 @@ class CordaRPCSenderImplTest {
                 )
             }.thenThrow(CordaRuntimeException("Stop"))
         cordaSenderImpl.start()
-        while (cordaSenderImpl.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
 
         assertThat(future)
             .isNotNull
@@ -245,9 +242,7 @@ class CordaRPCSenderImplTest {
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
-        while (cordaSenderImpl.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
 
         assertFalse(firstCall)
         verify(cordaProducerBuilder, times(2)).createProducer(any(), any())
@@ -290,11 +285,9 @@ class CordaRPCSenderImplTest {
         )
 
         cordaSenderImpl.start()
-        while (lock.withLock { subscriptionThread == null }) {
-            // We must wait for the callback above in order we know what thread to join below
-            Thread.sleep(10)
-        }
+        // We must wait for the callback above in order we know what thread to join below
+        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
-        Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
+        assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
 }

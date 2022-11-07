@@ -4,6 +4,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import org.slf4j.Logger
+import java.lang.IllegalStateException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -127,8 +128,10 @@ class ThreadLooper(
 
     private fun doStopConsumeLoop(): Thread? = lock.withLock {
         if (_stopped) return null
-        check(thread != null) { "No consume loop thread in non-stopped subscription" }
-        _stopped = true
-        thread!!.also { thread = null }
+        thread?.let {
+            _stopped = true
+            thread = null
+            it// return original Thread
+        } ?: throw IllegalStateException("thread was null on non-stopped ThreadLooper")
     }
 }

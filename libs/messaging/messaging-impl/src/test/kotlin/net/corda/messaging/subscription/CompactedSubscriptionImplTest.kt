@@ -149,9 +149,7 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
 
         verify(consumer, times(1)).assign(listOf(CordaTopicPartition(config.topic, 0)))
         assertThat(processor.snapshotMap.size).isEqualTo(10)
@@ -199,9 +197,7 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
 
         assertThat(processor.incomingRecords.size).isEqualTo(4)
         assertThat(processor.incomingRecords[0]).isEqualTo(Record(config.topic, "4", "4"))
@@ -230,11 +226,7 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
-
+        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
@@ -260,9 +252,7 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
 
         // Three calls: First time and after each exception thrown
         verify(consumerBuilder, times(3)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
@@ -309,9 +299,7 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
 
         // Four calls: First time and after each exception thrown
         verify(consumerBuilder, times(4)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
@@ -334,11 +322,8 @@ class CompactedSubscriptionImplTest {
             lifecycleCoordinatorFactory
         )
         subscription.start()
-
-        while (processor.lock.withLock { processor.subscriptionThread == null }) {
-            // We must wait for the snapshot callback to set the thread so we can then join it
-            Thread.sleep(10)
-        }
+        // We must wait for the snapshot callback to set the thread so we can then join it
+        waitWhile(TEST_TIMEOUT_SECONDS) { processor.lock.withLock { processor.subscriptionThread == null } }
         processor.subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         assertNull(processor.lock.withLock { processor.uncaughtExceptionInSubscriptionThread })
     }

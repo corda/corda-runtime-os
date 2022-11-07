@@ -148,9 +148,7 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (kafkaEventLogSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaEventLogSubscription.isRunning }
 
         verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
@@ -189,9 +187,7 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (kafkaEventLogSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaEventLogSubscription.isRunning }
 
         verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
@@ -246,9 +242,7 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (kafkaEventLogSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaEventLogSubscription.isRunning }
 
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(cordaConsumerBuilder, times(2)).createConsumer<String, ByteBuffer>(
@@ -302,9 +296,7 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (kafkaEventLogSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaEventLogSubscription.isRunning }
 
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
@@ -343,9 +335,7 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (kafkaEventLogSubscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaEventLogSubscription.isRunning }
 
         verify(mockCordaConsumer, times(0)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(1)).poll(config.pollTimeout)
@@ -395,10 +385,8 @@ class EventLogSubscriptionImplTest {
         )
 
         kafkaEventLogSubscription.start()
-        while (lock.withLock { subscriptionThread == null }) {
-            // We must wait for the callback above in order we know what thread to join below
-            Thread.sleep(10)
-        }
+        // We must wait for the callback above in order we know what thread to join below
+        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
