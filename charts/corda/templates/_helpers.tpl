@@ -388,8 +388,7 @@ Volumes for corda workers
 {{- end -}}
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
-  secret:
-    secretName: {{ include "corda.fullname" . }}-kafka-sasl
+  emptyDir: {}
 {{- end }}
 {{- if .Values.dumpHostPath }}
 - name: dumps
@@ -449,3 +448,69 @@ Cluster DB password environment variable
       key: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.key | default "password"}}
 {{- end -}}
 
+{{/*
+kafka sasl username environment variable 
+*/}}
+{{- define "corda.kafkaSaslUsername" -}}
+{{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+- name: SASLUSERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+      key: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.key }}
+{{- else }}
+- name: SASLUSERNAME
+  value: {{ .Values.kafka.sasl.username.value }} 
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+kafka sasl password environment variable 
+*/}}
+{{- define "corda.kafkaSaslPassword" -}}
+{{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
+- name: SASLPASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+      key: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.key }}
+{{- else -}}
+- name: SASLPASSWORD
+  value: {{ .Values.kafka.sasl.password.value }} 
+{{- end -}}
+{{- end -}}
+
+{{/*
+kafka init container 
+*/}}
+{{- define "corda.kafkaSaslInitContainer" -}}
+{{- if .Values.kafka.sasl.enabled }}
+- name: create-sasl-jaas-conf
+  image: {{ include "corda.workerImage" . }}
+  imagePullPolicy:  {{ .Values.imagePullPolicy }}
+  env:
+  {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
+  {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  command:
+  - /bin/bash
+  - -c
+  args:
+    - |
+        cat <<EOF > /etc/config/jaas.conf
+        KafkaClient {
+            {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+            {{- else }}
+            org.apache.kafka.common.security.scram.ScramLoginModule required
+            {{- end }}
+            username=$SASLUSERNAME
+            password=$SASLPASSWORD;
+        };    
+        EOF
+  volumeMounts:
+  - mountPath: "/etc/config"
+    name: "jaas-conf"
+    readOnly: false
+{{- end}}    
+{{- end}}
