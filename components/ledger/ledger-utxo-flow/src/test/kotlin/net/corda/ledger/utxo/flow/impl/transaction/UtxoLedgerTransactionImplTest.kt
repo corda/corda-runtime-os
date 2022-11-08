@@ -15,7 +15,7 @@ import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.ledger.utxo.testkit.utxoTransactionMetaDataExample
+import net.corda.ledger.utxo.testkit.utxoTransactionMetadataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -53,7 +53,7 @@ internal class UtxoLedgerTransactionImplTest {
             mockSigningService(),
             mock(),
             testSerializationContext.currentSandboxGroup(),
-            utxoTransactionMetaDataExample
+            utxoTransactionMetadataExample
         )
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
