@@ -141,7 +141,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
     }
 
     private fun getEndpointsByAnnotations(methods: Array<Method>) =
-        methods.filter { method ->
+        methods.sortedBy { it.name }.filter { method ->
             method.annotations.singleOrNull { it.isRpcEndpointAnnotation() } != null
         }.map { method ->
             method.toEndpoint()
