@@ -98,10 +98,17 @@ class FlowRPCOpsImpl @Activate constructor(
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
             val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
-            throw InvalidInputDataException(
-                "The flow that was requested is not in the list of startable flows for this holding identity. " +
-                    "CPI (${cpiMeta?.cpiId?.name}, ${cpiMeta?.cpiId?.version}, ${cpiMeta?.cpiId?.signerSummaryHash} " +
-                    "for ${vNode.holdingIdentity.x500Name} contains: $startableFlows")
+            val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
+            val details = mapOf(
+                "CPI-name" to cpiMeta?.cpiId?.name.toString(),
+                "CPI-version" to cpiMeta?.cpiId?.version.toString(),
+                "CPI-signer-summary-hash" to cpiMeta?.cpiId?.signerSummaryHash.toString(),
+                "virtual-node" to vNode.holdingIdentity.x500Name,
+                "group-id" to vNode.holdingIdentity.groupId,
+                "startableFlows" to startableFlows.joinToString(",")
+            )
+            log.info("$msg $details")
+            throw InvalidInputDataException(msg, details)
         }
 
         val rpcContext = CURRENT_RPC_CONTEXT.get()
