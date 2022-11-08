@@ -7,6 +7,7 @@ import net.corda.data.membership.command.registration.member.PersistMemberRegist
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
@@ -20,6 +21,7 @@ import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemb
 import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.DistributeMembershipPackageHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
@@ -69,14 +71,20 @@ class RegistrationProcessor(
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
+            clock,
+            cordaAvroSerializationFactory,
+            memberTypeChecker,
+            membershipGroupReaderProvider,
+        ),
+        DistributeMembershipPackage::class.java to DistributeMembershipPackageHandler(
             membershipQueryClient,
             cipherSchemeMetadata,
             clock,
             cryptoOpsClient,
             cordaAvroSerializationFactory,
             merkleTreeProvider,
-            memberTypeChecker,
             membershipConfig,
+            membershipGroupReaderProvider,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
@@ -134,6 +142,10 @@ class RegistrationProcessor(
                 is ApproveRegistration -> {
                     logger.info("Received approve registration command.")
                     handlers[ApproveRegistration::class.java]?.invoke(state, event)
+                }
+                is DistributeMembershipPackage -> {
+                    logger.info("Received distribute membership package command.")
+                    handlers[DistributeMembershipPackage::class.java]?.invoke(state, event)
                 }
                 is DeclineRegistration -> {
                     logger.info("Received decline registration command.")

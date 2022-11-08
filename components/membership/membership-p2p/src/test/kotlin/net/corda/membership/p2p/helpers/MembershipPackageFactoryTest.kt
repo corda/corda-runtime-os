@@ -18,6 +18,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -96,6 +97,18 @@ class MembershipPackageFactoryTest {
         on { bytes } doReturn "all".toByteArray()
         on { algorithm } doReturn allAlg
     }
+    private val groupParametersBytes = "test-group-parameters".toByteArray()
+    private val pubKey: PublicKey = mock {
+        on { encoded } doReturn "test-key".toByteArray()
+    }
+    private val signedGroupParameters: DigitalSignature.WithKey = mock {
+        on { bytes } doReturn "dummy-signature".toByteArray()
+        on { by } doReturn pubKey
+}
+    private val groupParameters: GroupParameters = mock {
+        on { serializer.serialize(mock.toAvro()) } doReturn groupParametersBytes
+        on { mgmSigner.sign(groupParametersBytes) } doReturn signedGroupParameters
+    }
 
     private val factory = MembershipPackageFactory(
         clock,
@@ -112,6 +125,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         )
 
         assertSoftly {
@@ -125,7 +139,16 @@ class MembershipPackageFactoryTest {
                 )
             )
             it.assertThat(membershipPackage.cpiAllowList).isNull()
-            it.assertThat(membershipPackage.groupParameters).isNull()
+            with(membershipPackage.groupParameters) {
+                it.assertThat(this.groupParameters).isEqualTo(ByteBuffer.wrap(groupParametersBytes))
+                it.assertThat(this.mgmSignature).isEqualTo(
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(pubKey.encoded),
+                        ByteBuffer.wrap(signedGroupParameters.bytes),
+                        KeyValuePairList(emptyList()),
+                    )
+                )
+            }
         }
     }
 
@@ -136,6 +159,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         ).memberships.hashCheck
 
         assertSoftly {
@@ -151,6 +175,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         ).memberships.memberships
 
         val expectedMembers = (1..membersCount).map { index ->
@@ -192,6 +217,7 @@ class MembershipPackageFactoryTest {
                 signature.minus(members.last().holdingIdentity),
                 members,
                 checkHash,
+                groupParameters,
             )
         }
     }

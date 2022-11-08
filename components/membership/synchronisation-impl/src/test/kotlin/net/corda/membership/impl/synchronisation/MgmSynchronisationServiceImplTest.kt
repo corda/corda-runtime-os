@@ -168,6 +168,7 @@ class MgmSynchronisationServiceImplTest {
         on { lookup(eq(MemberX500Name.parse(aliceName))) } doReturn aliceInfo
         on { lookup(eq(MemberX500Name.parse(bobName))) } doReturn bobInfo
         on { lookup(eq(MemberX500Name.parse(daisyName))) } doReturn daisyInfo
+        on { groupParameters } doReturn mock()
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(eq(mgm.toCorda())) } doReturn groupReader
@@ -224,6 +225,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(signatures),
                 eq(memberInfosWithoutMgm),
                 any(),
+                any(),
             )
         } doReturn membershipPackage1
         on {
@@ -231,6 +233,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(signer),
                 eq(signature),
                 eq(listOf(bobInfo)),
+                any(),
                 any(),
             )
         } doReturn membershipPackage2
@@ -470,7 +473,7 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any())
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), any())
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
@@ -485,7 +488,7 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any())
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), any())
         verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
