@@ -119,6 +119,11 @@ tasks.register('smokeTest', Test) {
 
     systemProperty "combinedWorkerHealthHttp",
             project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
+    systemProperty "junit.jupiter.execution.parallel.enabled", true
+    systemProperty "junit.jupiter.execution.parallel.mode.default", "concurrent"
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2) > 1
+            ? (Runtime.getRuntime().availableProcessors() / 2)
+            : 1
 }
 
 
