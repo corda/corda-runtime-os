@@ -1,5 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.utils.KeyStoreWithPem
+import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -22,7 +24,10 @@ class CertificateValidatorTest {
 
     private val aliceX500Name =  MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
     private val certX500Name =  MemberX500Name.parse("CN=cert, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
-    private val trustStore = mock<KeyStore>()
+    private val keyStore = mock<KeyStore>()
+    private val trustStoreWithPem = mock<KeyStoreWithPem>() {
+        on {keyStore} doReturn keyStore
+    }
     private val certPathValidator = mock<CertPathValidator>()
     private val certificatePemString = "certificate"
     private val certificate = mock<X509Certificate> {
@@ -46,7 +51,9 @@ class CertificateValidatorTest {
 
     @Test
     fun `certificate fails validation if X500 name doesn't match`() {
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, trustStoreWithPem, { RevocationCheckStatus.ACTIVE }, certPathValidator, certificateFactory
+        )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), aliceX500Name) }
     }
 
@@ -54,7 +61,9 @@ class CertificateValidatorTest {
     fun `certificate fails validation if cert if not an X509Certificate`() {
         val nonX500Certificate = mock<Certificate>()
         whenever(certificateChain.certificates).thenReturn(listOf(nonX500Certificate))
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, trustStoreWithPem, { RevocationCheckStatus.ACTIVE }, certPathValidator, certificateFactory
+        )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
     }
 
@@ -65,15 +74,19 @@ class CertificateValidatorTest {
             on {subjectX500Principal} doReturn x500NoLocality
         }
         whenever(certificateChain.certificates).thenReturn(listOf(certificate))
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, trustStoreWithPem, { RevocationCheckStatus.ACTIVE }, certPathValidator, certificateFactory
+        )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
     }
 
     @Test
     fun `certificate fails validation if x509 cert does not have digital signature set`() {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
-        whenever(trustStore.aliases()).thenReturn(any())
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        whenever(keyStore.aliases()).thenReturn(any())
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, trustStoreWithPem, { RevocationCheckStatus.ACTIVE }, certPathValidator, certificateFactory
+        )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
     }
 }

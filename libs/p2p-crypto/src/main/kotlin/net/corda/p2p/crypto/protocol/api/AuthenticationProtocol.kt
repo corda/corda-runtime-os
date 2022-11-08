@@ -77,7 +77,6 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
         is CertificateCheckMode.CheckCertificate -> CertificateValidator(
             certificateCheckMode.revocationCheckMode,
             certificateCheckMode.truststore,
-            certificateCheckMode.truststorePem,
             certificateCheckMode.revocationChecker
         )
     }

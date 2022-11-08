@@ -1,5 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.utils.AllowAllRevocationChecker
+import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.p2p.gateway.certificates.RevocationMode
@@ -18,8 +20,7 @@ import java.security.cert.X509Certificate
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
-    private val trustStore: KeyStore,
-    private val trustStorePem: List<String>,
+    private val trustStore: KeyStoreWithPem,
     private val checkRevocation: (RevocationCheckRequest) -> RevocationCheckStatus,
     private val certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
@@ -47,7 +48,7 @@ class CertificateValidator(
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
         validateCertPath(certificateChain)
-        validateRevocation(certificateChain, pemCertificateChain, trustStorePem)
+        validateRevocation(certificateChain, pemCertificateChain, trustStore.pemKeyStore)
     }
 
     private fun validateX500NameMatches(certificate: X509Certificate, expectedX500Name: MemberX500Name) {
@@ -89,7 +90,8 @@ class CertificateValidator(
     }
 
     private fun validateCertPath(certificateChain: CertPath) {
-        val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
+        val pkixParams = PKIXBuilderParameters(trustStore.keyStore, X509CertSelector())
+        pkixParams.addCertPathChecker(AllowAllRevocationChecker)
         try {
             certPathValidator.validate(certificateChain, pkixParams)
         } catch (exception: CertPathValidatorException) {

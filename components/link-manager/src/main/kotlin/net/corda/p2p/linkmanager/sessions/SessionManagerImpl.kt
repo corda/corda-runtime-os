@@ -394,8 +394,7 @@ internal class SessionManagerImpl(
                     return null
                 }
                 CertificateCheckMode.CheckCertificate(
-                    groupInfo.sessionTrustStore.keyStore,
-                    groupInfo.sessionTrustStore.pemKeyStore,
+                    groupInfo.sessionTrustStore,
                     ourIdentityInfo.sessionCertificates,
                     sessionManagerConfig.revocationConfigMode,
                     revocationCheckerClient::checkRevocation

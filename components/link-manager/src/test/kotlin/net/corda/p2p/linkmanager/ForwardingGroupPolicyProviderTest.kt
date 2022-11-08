@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
@@ -81,7 +82,7 @@ class ForwardingGroupPolicyProviderTest {
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
             listOf(),
             P2PParameters.SessionPkiMode.NO_PKI,
-            GroupPolicyListener.KeyStoreWithPem(keyStore, listOf(certificate))
+            KeyStoreWithPem(keyStore, listOf(certificate))
         )
 
     private val realGroupPolicyProvider = mock<GroupPolicyProvider>()

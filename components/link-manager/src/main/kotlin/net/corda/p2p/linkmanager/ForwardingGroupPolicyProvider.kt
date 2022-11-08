@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -84,7 +85,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val sessionTrustStorePem = groupPolicy.p2pParameters.sessionTrustRoots
         val sessionTrustStore = sessionTrustStorePem?.let {
             val keyStore = convertToKeyStore(certificateFactory, it, "session") ?: return null
-            GroupPolicyListener.KeyStoreWithPem(keyStore, sessionTrustStorePem.toList())
+            KeyStoreWithPem(keyStore, sessionTrustStorePem.toList())
         }
         validateTrustStoreUsingPkiMode(sessionTrustStore?.keyStore, sessionPkiMode, holdingIdentity)
 
