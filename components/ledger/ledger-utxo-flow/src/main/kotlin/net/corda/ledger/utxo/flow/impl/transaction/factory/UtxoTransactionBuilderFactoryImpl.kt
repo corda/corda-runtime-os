@@ -18,6 +18,7 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -44,7 +45,7 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : UtxoTransactionBuilderFactory, UsedByFlow {
+) : UtxoTransactionBuilderFactory, UsedByFlow, SingletonSerializeAsToken {
 
     override fun create(): UtxoTransactionBuilder =
         UtxoTransactionBuilderImpl(
