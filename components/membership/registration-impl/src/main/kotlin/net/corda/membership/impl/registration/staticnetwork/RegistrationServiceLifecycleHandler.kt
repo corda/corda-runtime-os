@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.data.KeyValuePairList
+import net.corda.data.membership.staticgroup.StaticGroupDefinition
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -53,7 +53,7 @@ class RegistrationServiceLifecycleHandler(
 
     private var _publisher: Publisher? = null
 
-    private var subscription: Subscription<String, KeyValuePairList>? = null
+    private var subscription: Subscription<String, StaticGroupDefinition>? = null
 
     /**
      * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
@@ -149,22 +149,22 @@ class RegistrationServiceLifecycleHandler(
 
     internal inner class Processor(
         private val groupParametersCache: GroupParametersCache
-    ) : CompactedProcessor<String, KeyValuePairList> {
+    ) : CompactedProcessor<String, StaticGroupDefinition> {
         override val keyClass = String::class.java
-        override val valueClass = KeyValuePairList::class.java
+        override val valueClass = StaticGroupDefinition::class.java
         override fun onNext(
-            newRecord: Record<String, KeyValuePairList>,
-            oldValue: KeyValuePairList?,
-            currentData: Map<String, KeyValuePairList>
+            newRecord: Record<String, StaticGroupDefinition>,
+            oldValue: StaticGroupDefinition?,
+            currentData: Map<String, StaticGroupDefinition>
         ) {
             with(newRecord) {
-                value?.let { groupParametersCache.set(key, it) }
+                value?.let { groupParametersCache.set(key, it.groupParameters) }
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, KeyValuePairList>) {
+        override fun onSnapshot(currentData: Map<String, StaticGroupDefinition>) {
             currentData.entries.forEach {
-                groupParametersCache.set(it.key, it.value)
+                groupParametersCache.set(it.key, it.value.groupParameters)
             }
         }
     }
