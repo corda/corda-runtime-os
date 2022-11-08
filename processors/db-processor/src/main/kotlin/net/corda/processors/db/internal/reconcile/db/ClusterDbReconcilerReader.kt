@@ -15,7 +15,7 @@ import javax.persistence.EntityManagerFactory
  * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
  * has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
  * if an error occurs during the call the exception gets captured and its lifecycle state gets notified with a
- * [GetRecordsErrorEvent]. Then depending on if the exception is a transient or not its state should be taken to
+ * [GetRecordsErrorEvent]. Then depending on if the exception is transient or not its state should be taken to
  * [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
  */
 class ClusterDbReconcilerReader<K : Any, V : Any>(
