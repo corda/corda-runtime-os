@@ -36,8 +36,8 @@ interface ConsensualTransactionBuilder {
      *
      * @return Returns a [ConsensualSignedTransaction] with signatures for any required signatories that belong to the current node.
      *
-     * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
-     *      transactions accidentally.
+     * @throws IllegalStateException when called a second time on the same object to prevent
+     *      unintentional duplicate transactions.
      */
     @Suspendable
     fun sign(): ConsensualSignedTransaction
@@ -52,8 +52,8 @@ interface ConsensualTransactionBuilder {
      * @param signatories The signatories expected to sign the current transaction.
      * @return Returns a [ConsensualSignedTransaction] with signatures for the specified signatory keys.
      *
-     * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
-     *      transactions accidentally.
+     * @throws IllegalStateException when called a second time on the same object to prevent
+     *      unintentional duplicate transactions.
      */
     @Suspendable
     fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction
@@ -68,8 +68,8 @@ interface ConsensualTransactionBuilder {
      * @param signatories The signatories expected to sign the current transaction.
      * @return Returns a [ConsensualSignedTransaction] with signatures for the specified signatory keys.
      *
-     * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
-     *      transactions accidentally.
+     * @throws IllegalStateException when called a second time on the same object to prevent
+     *      unintentional duplicate transactions.
      */
     @Suspendable
     fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction
