@@ -116,14 +116,36 @@ kafka:
       password: ""
   # SASL configuration for client connection to Kafka
   sasl:
-    # -- SASL username for client connection to Kafka
-    username: "user"
-    # -- SASL password for client connection to Kafka
-    password: ""
     # -- SASL mechanism for client connection to Kafka
     mechanism: "SCRAM-SHA-256"
     # -- enable/disable SASL for client connection to Kafka
     enabled: false
+    # -- SASL username configuration for client connection to Kafka
+    username: 
+      # -- the SASL user
+      value: "user"
+      # -- the SASL user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the SASL user secret key reference
+        secretKeyRef:
+          # -- the SASL user secret name
+          name: ""
+          # -- the SASL user secret key 
+          key: ""
+    # -- SASL password configuration for client connection to Kafka
+    password: 
+      # -- the SASL password
+      value: ""
+      # -- the SASL password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the SASL password secret key reference
+        secretKeyRef:
+          # -- the SASL password secret name
+          name: "prereqs-kafka-jaas"
+          # -- the SASL password secret key 
+          key: "system-user-password"
+
+
 
 # Configuration for cluster bootstrap
 bootstrap:
