@@ -6,7 +6,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.HoldingIdentity
-import java.security.KeyStore
 
 interface GroupPolicyListener {
     data class GroupInfo(

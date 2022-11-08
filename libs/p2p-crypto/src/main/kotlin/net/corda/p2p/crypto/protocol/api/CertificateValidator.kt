@@ -9,7 +9,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
-import java.security.KeyStore
 import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.CertPathValidatorException
