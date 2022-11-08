@@ -1,4 +1,4 @@
-package net.corda.libs.configuration.helper
+package net.corda.libs.configuration.exception
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

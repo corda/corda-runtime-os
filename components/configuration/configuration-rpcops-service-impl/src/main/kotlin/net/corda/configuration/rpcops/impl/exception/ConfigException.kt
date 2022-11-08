@@ -19,7 +19,7 @@ class ConfigException(errorType: String, errorMessage: String, schemaVersion: Co
 /**
  * Incorrect version for config update.
  */
-class UpdateConfigVersionConflictException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
+class ConfigVersionConflictException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
     responseCode = ResponseCode.CONFLICT,
     message = "$errorType: $errorMessage",
     details = mapOf(

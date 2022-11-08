@@ -1,9 +1,9 @@
 package net.corda.configuration.write.impl.writer
 
-import net.corda.configuration.write.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.orm.utils.transaction
 import java.time.Clock
 import javax.persistence.EntityManagerFactory
@@ -35,7 +35,7 @@ internal class ConfigEntityWriter(private val entityManagerFactory: EntityManage
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
             if (req.version != updatedConfig.version) {
-                throw ConfigVersionConflictException(
+                throw WrongConfigVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
                             "${updatedConfig.version}. These versions must match to update the cluster configuration."
                 )

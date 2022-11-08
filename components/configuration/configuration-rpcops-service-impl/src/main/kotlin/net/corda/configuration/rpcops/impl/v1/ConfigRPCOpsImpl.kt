@@ -7,9 +7,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.write.ConfigVersionConflictException
 import net.corda.configuration.rpcops.impl.exception.ConfigException
-import net.corda.configuration.rpcops.impl.exception.UpdateConfigVersionConflictException
+import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -25,6 +24,7 @@ import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.Lifecycle
@@ -192,7 +192,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
 
             when(exception.errorType) {
-                ConfigVersionConflictException::class.java.name -> throw UpdateConfigVersionConflictException(
+                WrongConfigVersionException::class.java.name -> throw ConfigVersionConflictException(
                     exception.errorType,
                     exception.errorMessage,
                     response.schemaVersion,
@@ -204,8 +204,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                     response.config
                 )
             }
-
-
         }
     }
 

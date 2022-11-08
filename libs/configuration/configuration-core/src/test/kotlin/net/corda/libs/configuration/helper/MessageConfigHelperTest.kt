@@ -2,6 +2,7 @@ package net.corda.libs.configuration.helper
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.exception.CordaAPIConfigException
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

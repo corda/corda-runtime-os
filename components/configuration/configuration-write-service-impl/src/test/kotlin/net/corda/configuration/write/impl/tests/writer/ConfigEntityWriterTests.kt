@@ -1,12 +1,12 @@
 package net.corda.configuration.write.impl.tests.writer
 
-import net.corda.configuration.write.ConfigVersionConflictException
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -74,7 +74,7 @@ class ConfigEntityWriterTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        val e = assertThrows<ConfigVersionConflictException> {
+        val e = assertThrows<WrongConfigVersionException> {
             configEntityWriter.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
@@ -101,7 +101,7 @@ class ConfigEntityWriterTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        assertThrows<ConfigVersionConflictException> {
+        assertThrows<WrongConfigVersionException> {
             configEntityWriter.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
