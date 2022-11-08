@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.util.RPCSenderWithDominoLogic
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import org.assertj.core.api.Assertions.assertThat
