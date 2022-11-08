@@ -83,7 +83,7 @@ abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
     @Suppress("unused_parameter")
     private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
         logger.warn("Processing a ${GetRecordsErrorEvent::class.java.name}")
-        // TODO based on exception determine component's next state i.e if transient exception or not -> DOWN or ERROR
+        // TODO CORE-7792 based on exception determine component's next state i.e if transient exception or not -> DOWN or ERROR
 //        when (event.exception) {
 //        }
         // For now just stopping it with errored false
