@@ -24,7 +24,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
             }
 
             ByteArray::class.java -> {
-                data as T
+                data as T?
             }
 
             else -> {
