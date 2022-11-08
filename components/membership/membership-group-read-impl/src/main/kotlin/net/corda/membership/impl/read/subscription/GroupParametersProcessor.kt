@@ -26,13 +26,11 @@ class GroupParametersProcessor(
         oldValue: GroupParametersAvro?,
         currentData: Map<String, GroupParametersAvro>
     ) {
-        newRecord.value?.let { newGroupParams ->
-            createGroupParameters(newGroupParams.groupParameters).apply {
-                groupParametersCache.put(
-                    newGroupParams.viewOwner.toCorda(),
-                    this
-                )
-            }
+        newRecord.value?.let {
+            groupParametersCache.put(
+                it.viewOwner.toCorda(),
+                createGroupParameters(it.groupParameters)
+            )
         }
     }
 

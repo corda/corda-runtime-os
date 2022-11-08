@@ -28,7 +28,7 @@ interface MemberDataCache<T> {
      */
     fun put(holdingIdentity: HoldingIdentity, data: T)
 
-    fun getAll(): Stream<Pair<HoldingIdentity, T>>
+    fun getAll(): Map<HoldingIdentity, T>
 
     /**
      * Clears all cached data.
@@ -53,7 +53,7 @@ interface MemberDataCache<T> {
             cache[holdingIdentity] = data
         }
 
-        override fun getAll(): Stream<Pair<HoldingIdentity, T>> = cache.map { Pair(it.key, it.value) }.stream()
+        override fun getAll(): Map<HoldingIdentity, T> = cache
 
         override fun clear() {
             logger.info("Clearing member data cache.")

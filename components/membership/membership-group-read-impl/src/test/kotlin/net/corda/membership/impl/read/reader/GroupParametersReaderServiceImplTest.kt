@@ -3,8 +3,8 @@ package net.corda.membership.impl.read.reader
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.data.membership.GroupParameters as GroupParametersAvro
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,10 +17,6 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
-import net.corda.membership.lib.impl.GroupParametersImpl
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.EPOCH_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MPV_KEY
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -86,26 +82,19 @@ class GroupParametersReaderServiceImplTest {
             createCompactedSubscription(any(), any<CompactedProcessor<String, GroupParametersAvro>>(), any())
         } doReturn groupParamsSubscription
     }
-    private val layeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(emptyList())
-
-    private val testEntries1 = mapOf(
-        EPOCH_KEY to "1",
-        MPV_KEY to "1",
-        MODIFIED_TIME_KEY to clock.instant().toString()
-    )
-    private val testEntries2 = mapOf(
-        EPOCH_KEY to "2",
-        MPV_KEY to "1",
-        MODIFIED_TIME_KEY to clock.instant().toString()
-    )
-    private val groupParams = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries1))
-    private val groupParams2 = GroupParametersImpl(layeredPropertyMapFactory.createMap(testEntries2))
-    private val allGroupParams: List<Pair<HoldingIdentity, GroupParameters>> = listOf(
-        Pair(alice, groupParams), Pair(bob, groupParams2)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+    private val groupParams: GroupParameters = mock {
+        on { epoch } doReturn 1
+    }
+    private val groupParams2: GroupParameters = mock {
+        on { epoch } doReturn 2
+    }
+    private val allGroupParams = HashMap<HoldingIdentity, GroupParameters>(
+        mapOf(alice to groupParams, bob to groupParams2)
     )
     private val groupParametersCache: MemberDataCache<GroupParameters> = mock {
         on { get(eq(alice)) } doReturn groupParams
-        on { getAll() } doReturn allGroupParams.stream()
+        on { getAll() } doReturn allGroupParams
     }
     private val groupParametersReaderService = GroupParametersReaderServiceImpl(
         lifecycleCoordinatorFactory,

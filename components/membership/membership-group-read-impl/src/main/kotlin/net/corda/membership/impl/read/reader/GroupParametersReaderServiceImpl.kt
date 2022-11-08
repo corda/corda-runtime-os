@@ -57,7 +57,7 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     private companion object {
         val logger = contextLogger()
-        const val SERVICE = "GroupParametersReaderService"
+        val serviceName: String = GroupParametersReaderService::class.java.simpleName
         const val CONSUMER_GROUP = "GROUP_PARAMETERS_READER"
     }
 
@@ -79,12 +79,12 @@ class GroupParametersReaderServiceImpl internal constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$SERVICE started.")
+        logger.info("$serviceName started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$SERVICE stopped.")
+        logger.info("$serviceName stopped.")
         coordinator.stop()
     }
 
@@ -101,24 +101,26 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     private object InactiveImpl : InnerGroupParametersReaderService {
         override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> =
-            throw IllegalStateException("$SERVICE is currently inactive.")
+            throw IllegalStateException("$serviceName is currently inactive.")
 
         override fun get(identity: HoldingIdentity): GroupParameters =
-            throw IllegalStateException("$SERVICE is currently inactive.")
+            throw IllegalStateException("$serviceName is currently inactive.")
 
         override fun close() = Unit
     }
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> =
-            groupParametersCache.getAll().map {
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
+            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
                 object : VersionedRecord<HoldingIdentity, GroupParameters> {
-                    override val version = it.second.epoch
+                    override val version = it.value.epoch
                     override val isDeleted = false
-                    override val key = it.first
-                    override val value = it.second
+                    override val key = it.key
+                    override val value = it.value
                 }
             }
+            return recordList.stream()
+        }
 
         override fun get(identity: HoldingIdentity): GroupParameters? = groupParametersCache.get(identity)
 
