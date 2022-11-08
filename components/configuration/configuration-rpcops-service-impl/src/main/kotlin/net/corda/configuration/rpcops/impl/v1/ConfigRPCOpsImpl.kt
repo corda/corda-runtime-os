@@ -7,9 +7,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.write.WrongConfigVersionException
-import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
-import net.corda.configuration.rpcops.impl.exception.WrongUpdateConfigVersionException
+import net.corda.configuration.write.ConfigVersionConflictException
+import net.corda.configuration.rpcops.impl.exception.ConfigException
+import net.corda.configuration.rpcops.impl.exception.UpdateConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -192,12 +192,12 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
 
             when(exception.errorType) {
-                WrongConfigVersionException::class.java.name -> throw WrongUpdateConfigVersionException(
+                ConfigVersionConflictException::class.java.name -> throw UpdateConfigVersionConflictException(
                     exception.errorType,
                     exception.errorMessage,
                     response.schemaVersion,
                     response.config)
-                else -> throw ConfigVersionException(
+                else -> throw ConfigException(
                     exception.errorType,
                     exception.errorMessage,
                     response.schemaVersion,

@@ -1,6 +1,6 @@
 package net.corda.configuration.write.impl.tests.writer
 
-import net.corda.configuration.write.WrongConfigVersionException
+import net.corda.configuration.write.ConfigVersionConflictException
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -74,7 +74,7 @@ class ConfigEntityWriterTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        val e = assertThrows<WrongConfigVersionException> {
+        val e = assertThrows<ConfigVersionConflictException> {
             configEntityWriter.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
@@ -101,7 +101,7 @@ class ConfigEntityWriterTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        assertThrows<WrongConfigVersionException> {
+        assertThrows<ConfigVersionConflictException> {
             configEntityWriter.writeEntities(badVersionConfigMgmtReq, clock)
         }
 

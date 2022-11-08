@@ -7,7 +7,7 @@ import net.corda.httprpc.exception.HttpApiException
 /**
  * Config version related exceptions.
  */
-class ConfigVersionException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
+class ConfigException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
         responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
         message = "$errorType: $errorMessage",
         details = mapOf(
@@ -19,7 +19,7 @@ class ConfigVersionException(errorType: String, errorMessage: String, schemaVers
 /**
  * Incorrect version for config update.
  */
-class WrongUpdateConfigVersionException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
+class UpdateConfigVersionConflictException(errorType: String, errorMessage: String, schemaVersion: ConfigurationSchemaVersion, config: String) : HttpApiException(
     responseCode = ResponseCode.CONFLICT,
     message = "$errorType: $errorMessage",
     details = mapOf(
