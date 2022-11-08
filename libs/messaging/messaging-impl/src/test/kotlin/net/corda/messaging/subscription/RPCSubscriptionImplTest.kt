@@ -21,6 +21,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
+import net.corda.test.util.waitWhile
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
@@ -40,6 +41,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
@@ -123,9 +125,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -151,9 +151,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -182,9 +180,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -242,9 +238,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -288,9 +282,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         assertThat(processor.incomingRecords.size).isEqualTo(0)
         verify(kafkaProducer, never()).sendRecordsToPartitions(any())
@@ -334,9 +326,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         assertThat(processor.incomingRecords.size).isEqualTo(0)
         verify(kafkaProducer, never()).sendRecordsToPartitions(any())
@@ -367,9 +357,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(2)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -410,10 +398,7 @@ class RPCSubscriptionImplTest {
         )
 
         subscription.start()
-        while (lock.withLock { subscriptionThread == null }) {
-            // We must wait for the callback above in order we know what thread to join below
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }

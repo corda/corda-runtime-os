@@ -20,7 +20,7 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.LifeCycleCoordinatorMockHelper
-import net.corda.messaging.subscription.waitWhile
+import net.corda.test.util.waitWhile
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -42,6 +42,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
@@ -102,7 +103,7 @@ class CordaRPCSenderImplTest {
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
         verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig))
 
@@ -210,7 +211,7 @@ class CordaRPCSenderImplTest {
                 )
             }.thenThrow(CordaRuntimeException("Stop"))
         cordaSenderImpl.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
         assertThat(future)
             .isNotNull
@@ -242,7 +243,7 @@ class CordaRPCSenderImplTest {
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { cordaSenderImpl.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
         assertFalse(firstCall)
         verify(cordaProducerBuilder, times(2)).createProducer(any(), any())
@@ -286,7 +287,7 @@ class CordaRPCSenderImplTest {
 
         cordaSenderImpl.start()
         // We must wait for the callback above in order we know what thread to join below
-        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }

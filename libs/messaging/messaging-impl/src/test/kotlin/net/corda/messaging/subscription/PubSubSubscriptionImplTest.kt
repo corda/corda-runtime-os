@@ -21,8 +21,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import net.corda.test.util.waitWhile
 import java.io.IOException
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -134,7 +136,7 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaPubSubSubscription.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { kafkaPubSubSubscription.isRunning }
 
         verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
@@ -180,7 +182,7 @@ class PubSubSubscriptionImplTest {
             )
 
         kafkaPubSubSubscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { kafkaPubSubSubscription.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { kafkaPubSubSubscription.isRunning }
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
         verify(cordaConsumerBuilder, times(2)).createConsumer<String, ByteBuffer>(
@@ -282,7 +284,7 @@ class PubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.start()
         // We must wait for the callback above in order we know what thread to join below
-        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }

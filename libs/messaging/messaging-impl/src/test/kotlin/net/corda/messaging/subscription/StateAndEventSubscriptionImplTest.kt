@@ -31,6 +31,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import net.corda.test.util.waitWhile
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -140,7 +141,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -187,7 +188,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -239,7 +240,7 @@ class StateAndEventSubscriptionImplTest {
 
         subscription.start()
         // We must wait for the callback above in order we know what thread to join below
-        waitWhile(TEST_TIMEOUT_SECONDS) { lock.withLock { subscriptionThread == null } }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
@@ -257,7 +258,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
 
@@ -310,7 +311,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning && !eventsPaused }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && !eventsPaused }
         subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -361,7 +362,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning && !eventsPaused }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && !eventsPaused }
         subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -418,7 +419,7 @@ class StateAndEventSubscriptionImplTest {
          * as we need to be sure the first poll has completed processing
          * before we go to the asserts
          */
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning && callCount <= 1 }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
         subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -479,7 +480,7 @@ class StateAndEventSubscriptionImplTest {
          * as we need to be sure the first poll has completed processing
          * before we go to the asserts
          */
-        waitWhile(TEST_TIMEOUT_SECONDS) { subscription.isRunning && callCount <= 1 }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
         subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
