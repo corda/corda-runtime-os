@@ -11,6 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-ledger-common"
+    implementation "net.corda:corda-crypto"
 
     implementation project(":libs:ledger:ledger-common-data")
     implementation project(":libs:platform-info")

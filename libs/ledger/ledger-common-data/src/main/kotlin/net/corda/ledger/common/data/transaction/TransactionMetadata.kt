@@ -6,7 +6,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
 @CordaSerializable
-class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
+class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -23,7 +23,7 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is TransactionMetaData) return false
+        if (other == null || other !is TransactionMetadata) return false
         if (this === other) return true
         return properties == other.properties
     }

@@ -13,6 +13,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import java.util.Objects
 
 class WireTransaction(
@@ -20,7 +21,7 @@ class WireTransaction(
     private val digestService: DigestService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>,
-    val metadata: TransactionMetaData
+    val metadata: TransactionMetadata
 ) {
     val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         rootMerkleTree.root
@@ -95,7 +96,7 @@ class WireTransaction(
             componentMerkleTreeEntropyAlgorithmName
         ).bytes
 
-    private fun getComponentGroupMerkleTreeDigestProvider(
+    fun getComponentGroupMerkleTreeDigestProvider(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ): MerkleTreeHashDigestProvider =
@@ -108,14 +109,17 @@ class WireTransaction(
             )
         )
 
-    private val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val componentGroupRoots = mutableListOf<ByteArray>()
-        componentGroupLists.forEachIndexed { index, leaves: List<ByteArray> ->
+    val componentMerkleTrees: Map<Int, MerkleTree> get() = _componentMerkleTrees
+    private val _componentMerkleTrees: MutableMap<Int, MerkleTree> = ConcurrentHashMap()
+
+    val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
             val componentMerkleTree = merkleTreeProvider.createTree(
-                leaves,
+                group,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
-            componentGroupRoots += componentMerkleTree.root.bytes
+            _componentMerkleTrees[index] = componentMerkleTree
+            componentMerkleTree.root.bytes
         }
 
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())

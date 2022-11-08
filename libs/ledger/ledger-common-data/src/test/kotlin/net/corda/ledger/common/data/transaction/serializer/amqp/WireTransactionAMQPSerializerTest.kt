@@ -1,4 +1,4 @@
-package net.corda.ledger.common.data.transaction.serializer.internal
+package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.v5.application.serialization.deserialize
