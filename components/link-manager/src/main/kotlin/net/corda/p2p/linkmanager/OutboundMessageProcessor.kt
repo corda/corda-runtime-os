@@ -106,9 +106,9 @@ internal class OutboundMessageProcessor(
 
     private fun checkSourceAndDestinationValid(
         messageID: String?, source: HoldingIdentity, destination: HoldingIdentity
-    ): Boolean {
+    ): Pair<Boolean, String> {
         if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
-            return true
+            return Pair(true, "")
         }
 
         val messageType:String = if(messageID.isNullOrEmpty()) {
@@ -118,21 +118,20 @@ internal class OutboundMessageProcessor(
         }
 
          return if (source.groupId != destination.groupId) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination"
-                .plus(" as their group IDs do not match."))
-            false
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination as their group IDs do not match.")
+            return Pair(false, "group IDs do not match")
         } else if (!linkManagerHostingMap.isHostedLocally(source)) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination"
-                .plus(" as the source ID is not locally hosted."))
-            false
-        } else false
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination as the source ID is not locally hosted.")
+            return Pair(false, "source ID is not locally hosted")
+        } else Pair(false, "")
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        if (!checkSourceAndDestinationValid(
-                messageID = "", message.header.source.toCorda(), message.header.destination.toCorda())) {
+        val resultAndReason: Pair<Boolean, String> = checkSourceAndDestinationValid(
+                messageID = "", message.header.source.toCorda(), message.header.destination.toCorda())
+        if (!resultAndReason.first) {
             return emptyList()
         }
 
@@ -175,10 +174,12 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if (!checkSourceAndDestinationValid(
-                messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(),
-                messageAndKey.message.header.destination.toCorda())) {
-            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination or source groups invalid."))
+        val resultAndReason: Pair<Boolean, String> = checkSourceAndDestinationValid(
+            messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(),
+            messageAndKey.message.header.destination.toCorda())
+
+        if (!resultAndReason.first) {
+            return listOf(recordForLMDiscardedMarker(messageAndKey, resultAndReason.second))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {

@@ -867,29 +867,21 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
-        val payload = "test"
-        val authenticatedMsg = AuthenticatedMessage(
+        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
+        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        val authenticatedMessage = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 null, "message-id", "trace-id", "system-1"
             ),
-            ByteBuffer.wrap(payload.toByteArray())
+            ByteBuffer.wrap("payload".toByteArray())
         )
-        val appMessage = AppMessage(authenticatedMsg)
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(authenticatedMessage, "key")
 
-        val records = processor.onNext(
-            listOf(
-                EventLogRecord(
-                    Schemas.P2P.P2P_OUT_TOPIC,
-                    "key",
-                    appMessage, 1, 0
-                )
-            )
-        )
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertThat(records).hasSize(1)
-
         val markers = records.filter { it.value is AppMessageMarker }
         assertSoftly {
             it.assertThat(markers.map { it.key }).allMatch {
