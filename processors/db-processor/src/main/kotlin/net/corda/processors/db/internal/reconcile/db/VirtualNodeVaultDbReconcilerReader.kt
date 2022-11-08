@@ -28,7 +28,7 @@ import java.util.stream.Stream
  * @param dbConnectionManager [DbConnectionManager] for connecting to the virtual node vault databases.
  * @param jpaEntitiesRegistry [JpaEntitiesRegistry] for retrieving the JpaEntitySet for the vault database
  * @param vaultReconciliationQuery A [VaultReconciliationQuery] which queries a single virtual node database and returns the versioned
- *  records. This is applied against all virtual node vault DB and the results are combined in to a single stream.
+ *  records. This is applied against all virtual node vault DB and the results are combined into a single stream.
  * @param keyClass Class of the record key. Used to create the service name.
  * @param valueClass Class of the record value. Used to create the service name.
  */
