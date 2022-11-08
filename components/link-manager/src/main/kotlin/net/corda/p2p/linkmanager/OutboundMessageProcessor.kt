@@ -106,7 +106,7 @@ internal class OutboundMessageProcessor(
 
     private fun checkSourceAndDestinationValid(
         messageID: String?, source: HoldingIdentity, destination: HoldingIdentity
-    ): Pair<Boolean, String> {
+    ): Pair<Boolean, String?> {
         if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
             return Pair(true, "")
         }
@@ -131,8 +131,8 @@ internal class OutboundMessageProcessor(
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        val resultAndReason: Pair<Boolean, String> = checkSourceAndDestinationValid(
-                messageID = "", message.header.source.toCorda(), message.header.destination.toCorda())
+        val resultAndReason = checkSourceAndDestinationValid(
+                messageID = null, message.header.source.toCorda(), message.header.destination.toCorda())
         if (!resultAndReason.first) {
             return emptyList()
         }
@@ -176,12 +176,12 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        val resultAndReason: Pair<Boolean, String> = checkSourceAndDestinationValid(
+        val resultAndReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(),
             messageAndKey.message.header.destination.toCorda())
 
         if (!resultAndReason.first) {
-            return listOf(recordForLMDiscardedMarker(messageAndKey, resultAndReason.second))
+            return listOf(recordForLMDiscardedMarker(messageAndKey, resultAndReason.second!!))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
