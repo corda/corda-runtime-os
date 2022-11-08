@@ -54,6 +54,7 @@ data class UtxoTransactionBuilderImpl(
     private val outputStates: List<Pair<ContractState, Int?>> = emptyList()
 ) : UtxoTransactionBuilder {
 
+    private var alreadySigned = false
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
         return copy(notary = notary)
     }
@@ -109,6 +110,7 @@ data class UtxoTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(signatories.toList().isNotEmpty()) {
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
@@ -123,13 +125,15 @@ data class UtxoTransactionBuilderImpl(
                 it
             )
         }
-        return UtxoSignedTransactionImpl(
+        val tx = UtxoSignedTransactionImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetadata
         )
+        alreadySigned = true
+        return tx
     }
 
     private fun verifyIfReady() {
