@@ -5,7 +5,7 @@ import net.corda.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 
 /**
- * How should the authentication protocol che   ck the certificates sent as a part of authentication protocol.
+ * How should the authentication protocol check the certificates sent as a part of authentication protocol.
  */
 sealed class CertificateCheckMode {
     /**
