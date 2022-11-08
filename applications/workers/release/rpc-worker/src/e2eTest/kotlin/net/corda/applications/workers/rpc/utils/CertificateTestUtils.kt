@@ -55,9 +55,9 @@ fun E2eCluster.uploadTlsCertificate(
 ) = with(testToolkit) {
     httpClientFor(CertificatesRpcOps::class.java).use { client ->
         client.start().proxy.importCertificateChain(
-            P2P_TENANT_ID,
-            TLS_CERT_ALIAS,
-            listOf(
+            usage = "p2p-tls",
+            alias = TLS_CERT_ALIAS,
+            certificates = listOf(
                 HttpFileUpload(
                     certificatePem.byteInputStream(),
                     "$TLS_CERT_ALIAS.pem"

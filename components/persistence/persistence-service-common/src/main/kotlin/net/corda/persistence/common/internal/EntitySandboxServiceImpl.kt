@@ -12,6 +12,7 @@ import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
+import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -19,6 +20,8 @@ import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
+import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
+import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -38,6 +41,7 @@ import org.osgi.service.component.annotations.Reference
  */
 @Suppress("LongParameterList")
 @RequireSandboxAMQP
+@RequireSandboxJSON
 @Component(service = [ EntitySandboxService::class ])
 class EntitySandboxServiceImpl @Activate constructor(
     @Reference
@@ -80,6 +84,9 @@ class EntitySandboxServiceImpl @Activate constructor(
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
 
+        val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
+        val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
+
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
@@ -95,6 +102,8 @@ class EntitySandboxServiceImpl @Activate constructor(
                 virtualNode.cpiIdentifier.name,
                 virtualNode.cpiIdentifier.version
             )
+            jsonSerializers.close()
+            jsonDeserializers.close()
             emfCloseable.close()
             customSerializers.close()
             customCrypto.close()
@@ -155,7 +164,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     private fun getVirtualNodeContext(virtualNode: VirtualNodeInfo, cpks: Collection<CpkMetadata>) =
         VirtualNodeContext(
             virtualNode.holdingIdentity,
-            cpks.mapTo(LinkedHashSet(), CpkMetadata::fileChecksum),
+            cpks.mapTo(linkedSetOf(), CpkMetadata::fileChecksum),
             SandboxGroupType.PERSISTENCE,
             null
         )
