@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
 class ConsensualSignedTransactionSerializer @Activate constructor(

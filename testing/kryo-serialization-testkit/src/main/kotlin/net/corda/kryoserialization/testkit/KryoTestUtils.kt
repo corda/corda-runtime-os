@@ -41,6 +41,7 @@ fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
         String::class.java,
         Class::class.java,
         Arrays.asList("")::class.java,
+        ArrayList::class.java,
         List::class.java,
         Collections.singletonList("")::class.java,
         ByteArray::class.java

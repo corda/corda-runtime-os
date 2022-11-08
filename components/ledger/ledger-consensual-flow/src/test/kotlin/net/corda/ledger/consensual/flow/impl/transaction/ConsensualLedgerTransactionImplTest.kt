@@ -11,7 +11,7 @@ import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
-import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
+import net.corda.ledger.consensual.testkit.consensualTransactionMetadataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -47,7 +47,7 @@ internal class ConsensualLedgerTransactionImplTest {
             mockSigningService(),
             mock(),
             testSerializationContext.currentSandboxGroup(),
-            consensualTransactionMetaDataExample
+            consensualTransactionMetadataExample
         )
             .withStates(consensualStateExample)
             .sign(publicKeyExample)
