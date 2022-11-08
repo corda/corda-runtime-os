@@ -37,20 +37,15 @@ fun getConfig(section: String): JsonNode {
 fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        val currentConfig = getConfig(section).body.toJson()
+        val currentSchemaVersion = currentConfig["schemaVersion"]
 
-        assertWithRetryIgnoringExceptions {
-            command {
-                val currentConfig = getConfig(section).body.toJson()
-                val currentSchemaVersion = currentConfig["schemaVersion"]
-
-                putConfig(
-                    config,
-                    section,
-                    currentConfig["version"].toString(),
-                    currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString())
-            }
-            condition { it.code == OK.statusCode }
+        putConfig(
+            config,
+            section,
+            currentConfig["version"].toString(),
+            currentSchemaVersion["major"].toString(),
+            currentSchemaVersion["minor"].toString())
         }
     }
 }
