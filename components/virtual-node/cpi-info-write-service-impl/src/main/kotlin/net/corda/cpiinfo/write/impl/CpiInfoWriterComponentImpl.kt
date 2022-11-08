@@ -55,8 +55,22 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
-    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata) =
+    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata) {
+        val startableFlows = cpiMetadata.cpksMetadata.flatMap {
+            it.cordappManifest.rpcStartableFlows
+        }
+        if(startableFlows.isEmpty()) {
+            val whoAsked = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).callerClass
+            log.warn("${whoAsked.name} requested publishing CPI info for (${cpiMetadata.cpiId.name} [${cpiMetadata.cpiId.version}], " +
+                    "containing ${cpiMetadata.cpksMetadata.joinToString(",") { "${it.cpkId.name}[${it.cpkId.version}]" }}, " +
+                    "does not have any startable flows")
+            log.info("CPKs in CPI: ${cpiMetadata.cpksMetadata.map { it.cpkId.name }}")
+            cpiMetadata.cpksMetadata.forEach {
+                log.info("Manifest for ${it.cpkId.name}[${it.cpkId.version}]: ${it.cordappManifest.attributes}")
+            }
+        }
         publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), cpiMetadata.toAvro())))
+    }
 
     override fun remove(cpiIdentifier: CpiIdentifier) =
         publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), null)))

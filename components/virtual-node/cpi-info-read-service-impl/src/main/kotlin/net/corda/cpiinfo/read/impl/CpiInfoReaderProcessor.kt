@@ -73,6 +73,11 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         snapshotReceived = true
 
         val currentSnapshot = cpiInfoMap.getAllAsCordaObjects()
+        log.info("CPI INFO SNAPSHOT: ${
+            currentSnapshot.values.map { 
+                "[${it.cpiId.name}: ${it.cpksMetadata.map { k -> "${k.cpkId.name} flows: ${k.cordappManifest.rpcStartableFlows}" }}]"
+            }
+        }")
         listeners.forEach { it.value.onUpdate(currentSnapshot.keys, currentSnapshot) }
 
         onStatusUpCallback()
@@ -86,6 +91,8 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         if (newRecord.value != null) {
             try {
                 cpiInfoMap.put(newRecord.key, newRecord.value!!)
+                log.info("CPI INFO UPDATE: ${newRecord.value}")
+
             } catch (exception: IllegalArgumentException) {
                 // We only expect this code path if someone has posted to Kafka,
                 // a CpiMetadata with a different CpiIdentifier to the key.
@@ -101,6 +108,11 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         }
 
         val currentSnapshot = cpiInfoMap.getAllAsCordaObjects()
+        log.info("CPI INFO SNAPSHOT AFTER UPDATE: ${
+            currentSnapshot.values.map {
+                "[${it.cpiId.name}: ${it.cpksMetadata.map { k -> "${k.cpkId.name} flows: ${k.cordappManifest.rpcStartableFlows}" }}]"
+            }
+        }")
         listeners.forEach { it.value.onUpdate(setOf(CpiIdentifier.fromAvro(newRecord.key)), currentSnapshot) }
     }
 
