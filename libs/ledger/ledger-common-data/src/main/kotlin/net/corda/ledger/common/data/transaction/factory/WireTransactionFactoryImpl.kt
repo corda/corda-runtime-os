@@ -2,7 +2,7 @@ package net.corda.ledger.common.data.transaction.factory
 
 import net.corda.ledger.common.data.transaction.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.sandbox.type.UsedByFlow
@@ -52,7 +52,7 @@ class WireTransactionFactoryImpl @Activate constructor(
 
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
-        metadata: TransactionMetaData
+        metadata: TransactionMetadata
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
         val parsedMetadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
@@ -70,15 +70,15 @@ class WireTransactionFactoryImpl @Activate constructor(
         check(componentGroupLists.isNotEmpty()) { "todo text" }
     }
 
-    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetaData {
+    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetadata {
         // TODO(update with CORE-6890)
-        val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+        val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadata::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
         }
-        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadata::class.java)
     }
 
     private fun generatePrivacySalt(): PrivacySalt {

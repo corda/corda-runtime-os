@@ -23,7 +23,8 @@ fun getWireTransactionExample(
         merkleTreeProvider,
         digestService,
         getPrivacySalt(),
-        groups
+        groups,
+        metadata
     )
 }
 

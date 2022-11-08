@@ -2,7 +2,7 @@ package net.corda.ledger.common.flow.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
@@ -23,15 +23,15 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
-    override fun create(ledgerSpecificMetadata: LinkedHashMap<String, String>): TransactionMetaData {
+    override fun create(ledgerSpecificMetadata: LinkedHashMap<String, String>): TransactionMetadata {
         val metadata = linkedMapOf(
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
-            TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-            TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries()
+            TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+            TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
+            TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries()
         )
         metadata.putAll(ledgerSpecificMetadata)
-        return TransactionMetaData(metadata)
+        return TransactionMetadata(metadata)
     }
 
     // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
