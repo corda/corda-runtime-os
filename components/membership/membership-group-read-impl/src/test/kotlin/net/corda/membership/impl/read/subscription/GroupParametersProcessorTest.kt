@@ -3,13 +3,12 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.membership.impl.read.cache.MemberDataCache
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.EPOCH_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MPV_KEY
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.v5.membership.GroupParameters
@@ -23,7 +22,6 @@ import java.time.Instant
 
 class GroupParametersProcessorTest {
     private companion object {
-        val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
         val groupParametersCache = MemberDataCache.Impl<GroupParameters>()
         lateinit var groupParametersProcessor: GroupParametersProcessor
         val clock = TestClock(Instant.ofEpochSecond(100))
@@ -37,22 +35,24 @@ class GroupParametersProcessorTest {
             MPV_KEY to "1",
             MODIFIED_TIME_KEY to time.toString()
         )
+        val testEntriesList = convertToKeyValuePairList(testEntries)
         val updatedTestEntries = mapOf(
             EPOCH_KEY to "2",
             MPV_KEY to "2",
             MODIFIED_TIME_KEY to clock.instant().toString()
         )
+        val updatedTestEntriesList = convertToKeyValuePairList(updatedTestEntries)
         val aliceAvroGroupParams: GroupParametersAvro = mock {
             on { viewOwner } doReturn alice
-            on { groupParameters } doReturn convertToKeyValuePairList(testEntries)
+            on { groupParameters } doReturn testEntriesList
         }
         val bobAvroGroupParams: GroupParametersAvro = mock {
             on { viewOwner } doReturn bob
-            on { groupParameters } doReturn convertToKeyValuePairList(testEntries)
+            on { groupParameters } doReturn testEntriesList
         }
         val updatedBobAvroGroupParams: GroupParametersAvro = mock {
             on { viewOwner } doReturn bob
-            on { groupParameters } doReturn convertToKeyValuePairList(updatedTestEntries)
+            on { groupParameters } doReturn updatedTestEntriesList
         }
 
         val groupParams: GroupParameters = mock {
@@ -60,6 +60,11 @@ class GroupParametersProcessorTest {
         }
         val updatedGroupParams: GroupParameters = mock {
             on { entries } doReturn updatedTestEntries.entries
+        }
+
+        val groupParametersFactory: GroupParametersFactory = mock {
+            on { create(testEntriesList) } doReturn groupParams
+            on { create(updatedTestEntriesList) } doReturn updatedGroupParams
         }
 
         private fun convertToKeyValuePairList(data: Map<String, String>) = KeyValuePairList(
@@ -71,7 +76,7 @@ class GroupParametersProcessorTest {
 
     @BeforeEach
     fun setUp() {
-        groupParametersProcessor = GroupParametersProcessor(groupParametersCache, layeredPropertyMapFactory)
+        groupParametersProcessor = GroupParametersProcessor(groupParametersCache, groupParametersFactory)
     }
 
     @Test
@@ -87,7 +92,7 @@ class GroupParametersProcessorTest {
     @Test
     fun `group params cache is successfully populated from group params topic on initial snapshot`() {
         groupParametersProcessor.onSnapshot(mapOf(alice.toCorda().shortHash.value to aliceAvroGroupParams))
-        assertThat(groupParametersCache.get(alice.toCorda())?.entries).isEqualTo(groupParams.entries)
+        assertThat(groupParametersCache.get(alice.toCorda())).isEqualTo(groupParams)
     }
 
     @Test
@@ -107,7 +112,6 @@ class GroupParametersProcessorTest {
         )
         with(groupParametersCache.getAll()) {
             assertThat(this.keys).containsExactlyInAnyOrder(alice.toCorda(), bob.toCorda())
-            assertThat(this.get(alice.toCorda())).isEqualTo(groupParams)
             assertThat(this.values).containsExactlyInAnyOrder(groupParams, groupParams)
         }
     }

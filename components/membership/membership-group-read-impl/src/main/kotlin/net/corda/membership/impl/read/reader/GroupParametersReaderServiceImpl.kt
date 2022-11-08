@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.reader
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.GroupParameters as GroupParametersAvro
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,6 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.subscription.GroupParametersProcessor
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -38,7 +38,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
     private val subscriptionFactory: SubscriptionFactory,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    private val groupParametersFactory: GroupParametersFactory,
     private val groupParametersCache: MemberDataCache<GroupParameters>,
 ) : GroupParametersReaderService {
 
@@ -49,10 +49,14 @@ class GroupParametersReaderServiceImpl internal constructor(
         configurationReadService: ConfigurationReadService,
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
-        @Reference(service = LayeredPropertyMapFactory::class)
-        layeredPropertyMapFactory: LayeredPropertyMapFactory,
+        @Reference(service = GroupParametersFactory::class)
+        groupParametersFactory: GroupParametersFactory,
     ) : this(
-        coordinatorFactory, configurationReadService, subscriptionFactory, layeredPropertyMapFactory, MemberDataCache.Impl()
+        coordinatorFactory,
+        configurationReadService,
+        subscriptionFactory,
+        groupParametersFactory,
+        MemberDataCache.Impl()
     )
 
     private companion object {
@@ -206,7 +210,7 @@ class GroupParametersReaderServiceImpl internal constructor(
                 CONSUMER_GROUP,
                 GROUP_PARAMETERS_TOPIC
             ),
-            GroupParametersProcessor(groupParametersCache, layeredPropertyMapFactory),
+            GroupParametersProcessor(groupParametersCache, groupParametersFactory),
             event.config.getConfig(MESSAGING_CONFIG)
         ).also {
             it.start()

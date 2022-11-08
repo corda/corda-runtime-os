@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.cache
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Stream
 
 /**
  * Interface for classes which are to be used as caches for group member data.

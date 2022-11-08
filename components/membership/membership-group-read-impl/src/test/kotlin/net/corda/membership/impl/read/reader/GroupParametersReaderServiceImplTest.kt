@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.reader
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,6 +16,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -82,7 +82,7 @@ class GroupParametersReaderServiceImplTest {
             createCompactedSubscription(any(), any<CompactedProcessor<String, GroupParametersAvro>>(), any())
         } doReturn groupParamsSubscription
     }
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+    private val groupParametersFactory: GroupParametersFactory = mock()
     private val groupParams: GroupParameters = mock {
         on { epoch } doReturn 1
     }
@@ -100,8 +100,8 @@ class GroupParametersReaderServiceImplTest {
         lifecycleCoordinatorFactory,
         configurationReadService,
         subscriptionFactory,
-        layeredPropertyMapFactory,
-        groupParametersCache
+        groupParametersFactory,
+        groupParametersCache,
     )
 
     @Nested

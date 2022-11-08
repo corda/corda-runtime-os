@@ -5,7 +5,6 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.util.ArrayList
 import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Stream
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
