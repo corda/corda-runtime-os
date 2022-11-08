@@ -61,7 +61,7 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     private companion object {
         val logger = contextLogger()
-        val serviceName: String = GroupParametersReaderService::class.java.simpleName
+        val serviceName = GroupParametersReaderService::class.java.simpleName
         const val CONSUMER_GROUP = "GROUP_PARAMETERS_READER"
     }
 
