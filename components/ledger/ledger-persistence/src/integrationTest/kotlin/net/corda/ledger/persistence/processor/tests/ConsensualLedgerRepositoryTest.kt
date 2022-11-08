@@ -4,6 +4,9 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository

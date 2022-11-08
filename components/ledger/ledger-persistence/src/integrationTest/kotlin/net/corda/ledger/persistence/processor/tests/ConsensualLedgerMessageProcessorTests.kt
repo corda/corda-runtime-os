@@ -17,7 +17,7 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
@@ -149,14 +149,14 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
-        val consensualTransactionMetaDataExample = TransactionMetaData(
+        val consensualTransactionMetadataExample = TransactionMetadata(
             linkedMapOf(
-                TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-                TransactionMetaData.CPI_METADATA_KEY to cpiPackgeSummaryExample,
-                TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
+                TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetadata.LEDGER_VERSION_KEY to "1.0",
+                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetadata.PLATFORM_VERSION_KEY to 123,
+                TransactionMetadata.CPI_METADATA_KEY to cpiPackgeSummaryExample,
+                TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample
             )
         )
         val wireTransaction = getWireTransactionExample(
