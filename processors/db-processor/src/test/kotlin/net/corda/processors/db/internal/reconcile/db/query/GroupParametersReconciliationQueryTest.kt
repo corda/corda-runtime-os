@@ -13,6 +13,7 @@ import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
@@ -21,7 +22,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
@@ -105,27 +106,27 @@ class GroupParametersReconciliationQueryTest {
             groupParametersReconciliationQuery.invoke(virtualNodeInfo, entityManager)
         }
 
-        Assertions.assertThat(result).hasSize(1)
+        assertThat(result).hasSize(1)
         val versionedRecord = result.first()
 
-        Assertions.assertThat(versionedRecord.version).isEqualTo(epochValue)
-        Assertions.assertThat(versionedRecord.isDeleted).isFalse
-        Assertions.assertThat(versionedRecord.key).isEqualTo(holdingIdentity)
-        Assertions.assertThat(versionedRecord.value).isEqualTo(groupParameters)
+        assertThat(versionedRecord.version).isEqualTo(epochValue)
+        assertThat(versionedRecord.isDeleted).isFalse
+        assertThat(versionedRecord.key).isEqualTo(holdingIdentity)
+        assertThat(versionedRecord.value).isEqualTo(groupParameters)
     }
 
     @Test
     fun `Query only requests one record from the database`() {
         groupParametersReconciliationQuery.invoke(virtualNodeInfo, entityManager)
 
-        Assertions.assertThat(maxResultsCaptor.firstValue).isEqualTo(1)
+        assertThat(maxResultsCaptor.firstValue).isEqualTo(1)
     }
 
     @Test
     fun `Full list of parameters are included when creating the group parameters object`() {
         groupParametersReconciliationQuery.invoke(virtualNodeInfo, entityManager)
 
-        Assertions.assertThat(groupParamsMapCaptor.firstValue.toMap())
+        assertThat(groupParamsMapCaptor.firstValue.toMap())
             .hasSize(1)
             .containsOnlyKeys(epochKey)
             .containsEntry(epochKey, epochValue.toString())

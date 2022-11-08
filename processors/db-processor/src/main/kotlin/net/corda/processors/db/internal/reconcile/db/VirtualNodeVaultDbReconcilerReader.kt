@@ -56,7 +56,7 @@ class VirtualNodeVaultDbReconcilerReader<K : Any, V : Any>(
     private val entitiesSet
         get() = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
             ?: throw CordaRuntimeException(
-                "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
+                "persistenceUnitName '${CordaDb.Vault.persistenceUnitName}' is not registered."
             )
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {

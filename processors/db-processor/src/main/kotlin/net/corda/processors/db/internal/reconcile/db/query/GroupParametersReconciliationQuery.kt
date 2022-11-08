@@ -25,10 +25,12 @@ class GroupParametersReconciliationQuery(
 
     private companion object {
         val logger = contextLogger()
+
+        const val FAILED_DESERIALIZATION = "Could not deserialize group parameters from the database entity."
     }
 
     private val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
-        { logger.warn("Could not deserialize group parameters from the database entity.") },
+        { logger.warn(FAILED_DESERIALIZATION) },
         KeyValuePairList::class.java
     )
 
@@ -52,7 +54,7 @@ class GroupParametersReconciliationQuery(
             .singleResult
 
         val deserializedParams = cordaAvroDeserializer.deserialize(entity.parameters)
-            ?: throw CordaRuntimeException("Could not deserialize group parameters from the database.")
+            ?: throw CordaRuntimeException(FAILED_DESERIALIZATION)
 
         return listOf(
             object : VersionedRecord<HoldingIdentity, GroupParameters> {
