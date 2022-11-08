@@ -15,12 +15,12 @@
       "doc": "Flag to show if the flow is an initiating flow type."
     },
     {
-      "name": "sessionIds",
+      "name": "sessions",
       "type": {
         "type": "array",
-        "items": "string"
+        "items": "net.corda.data.flow.state.checkpoint.FlowStackItemSession"
       },
-      "doc": "List of any session IDs associated with this flow."
+      "doc": "List of any session associated with this flow or subFlow."
     },
     {
       "name": "contextUserProperties",
