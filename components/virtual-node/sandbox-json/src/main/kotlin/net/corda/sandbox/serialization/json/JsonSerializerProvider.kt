@@ -39,14 +39,13 @@ class JsonSerializerProvider @Activate constructor(
     }
 
     override fun accept(context: MutableSandboxGroupContext) {
-        val customizers = context.getSandboxSingletonServices()
-            .filterIsInstance<SerializationCustomizer>()
+        val customizers = context.getSandboxSingletonServices<SerializationCustomizer>()
 
         registerJsonSerializers(customizers, context)
         registerJsonDeserializers(customizers, context)
     }
 
-    private fun registerJsonSerializers(customizers: List<SerializationCustomizer>, context: MutableSandboxGroupContext) {
+    private fun registerJsonSerializers(customizers: Set<SerializationCustomizer>, context: MutableSandboxGroupContext) {
         // Kotlin's Set.plus(Set) operator function preserves iteration order.
         // We add the platform's serializers first, and the users' second.
         val cordappJsonSerializers = context.getMetadataServices<JsonSerializer<*>>()
@@ -66,7 +65,7 @@ class JsonSerializerProvider @Activate constructor(
         }
     }
 
-    private fun registerJsonDeserializers(customizers: List<SerializationCustomizer>, context: MutableSandboxGroupContext) {
+    private fun registerJsonDeserializers(customizers: Set<SerializationCustomizer>, context: MutableSandboxGroupContext) {
         // Kotlin's Set.plus(Set) operator function preserves iteration order.
         // We add the platform's deserializers first, and the users' second.
         val cordappJsonDeserializers = context.getMetadataServices<JsonDeserializer<*>>()

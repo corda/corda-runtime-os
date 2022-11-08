@@ -18,15 +18,26 @@ fun <T : Any> SandboxGroupContext.getMetadataServices(type: Class<T>): Set<T> = 
 inline fun <reified T : Any> SandboxGroupContext.getMetadataServices(): Set<T> = getMetadataServices(T::class.java)
 
 /**
- * Fetch the set of singleton services created for use by this sandbox.
+ * Fetch the set of all singleton services created for use by this sandbox.
  */
-fun SandboxGroupContext.getSandboxSingletonServices(): Set<Any> = getObjectByKey(SANDBOX_SINGLETONS) ?: emptySet()
+fun SandboxGroupContext.getAllSandboxSingletonServices(): Set<Any> = getObjectByKey(SANDBOX_SINGLETONS) ?: emptySet()
 
 /**
- * Fetch the single service of the given type from the sandbox's set of singletons.
+ * Fetch the set of this sandbox's singleton services that are of type [T].
+ */
+fun <T : Any> SandboxGroupContext.getSandboxSingletonServices(type: Class<T>): Set<T> {
+    return getAllSandboxSingletonServices().filterIsInstanceTo(linkedSetOf(), type)
+}
+
+inline fun <reified T : Any> SandboxGroupContext.getSandboxSingletonServices(): Set<T> {
+    return getSandboxSingletonServices(T::class.java)
+}
+
+/**
+ * Fetch the single service of type [T] from the sandbox's set of singletons.
  */
 fun <T : Any> SandboxGroupContext.getSandboxSingletonService(type: Class<T>): T {
-    return getSandboxSingletonServices().filterIsInstance(type).singleOrNull()
+    return getSandboxSingletonServices(type).singleOrNull()
         ?: throw IllegalStateException("${type.name} service missing from sandbox")
 }
 
