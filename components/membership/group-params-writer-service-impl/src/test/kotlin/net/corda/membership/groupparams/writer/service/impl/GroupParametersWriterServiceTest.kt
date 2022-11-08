@@ -16,9 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.impl.GroupParametersImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -50,6 +47,12 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class GroupParametersWriterServiceTest {
+
+    private companion object {
+        const val EPOCH_KEY = "corda.epoch"
+        const val MPV_KEY = "corda.minimumPlatformVersion"
+        const val MODIFIED_TIME_KEY = "corda.modifiedTime"
+    }
     private val viewOwner = HoldingIdentity(MemberX500Name("R3", "London", "GB"), "groupId")
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val testConfig =
