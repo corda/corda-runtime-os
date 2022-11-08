@@ -96,6 +96,17 @@ class FlowRPCOpsImpl @Activate constructor(
 
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
+
+        if(startableFlows.isEmpty()) {
+            val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+            log.warn("CPI (${cpiMeta?.cpiId?.name} [${cpiMeta?.cpiId?.version}], " +
+                    "containing ${cpiMeta?.cpksMetadata?.joinToString(",") { "${it.cpkId.name}[${it.cpkId.version}]" }}, " +
+                    "does not have any startable flows")
+            cpiMeta?.cpksMetadata?.forEach {
+                log.info("Manifest for ${it.cpkId.name}[${it.cpkId.version}]: ${it.cordappManifest.attributes}")
+            }
+        }
+
         if (!startableFlows.contains(flowClassName)) {
             val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
             val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
@@ -103,6 +114,7 @@ class FlowRPCOpsImpl @Activate constructor(
                 "CPI-name" to cpiMeta?.cpiId?.name.toString(),
                 "CPI-version" to cpiMeta?.cpiId?.version.toString(),
                 "CPI-signer-summary-hash" to cpiMeta?.cpiId?.signerSummaryHash.toString(),
+                "CPKs" to cpiMeta?.cpksMetadata?.joinToString(",") { "${it.cpkId.name}[${it.cpkId.version}]" }.toString(),
                 "virtual-node" to vNode.holdingIdentity.x500Name,
                 "group-id" to vNode.holdingIdentity.groupId,
                 "startableFlows" to startableFlows.joinToString(",")
