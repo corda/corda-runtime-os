@@ -7,6 +7,7 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.data.certificates.CertificateUsage
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
@@ -42,8 +43,6 @@ class CpiValidatorImpl constructor(
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
-        // TODO Certificate type should be define somewhere else with CORE-6130
-        private const val CERTIFICATE_TYPE = "codesigner"
     }
 
     override fun validate(requestId: RequestId): SecureHash {
@@ -112,7 +111,7 @@ class CpiValidatorImpl constructor(
      * Retrieves trusted certificates for packaging verification
      */
     private fun getCerts(): Collection<X509Certificate> {
-        val certs = certificatesService.retrieveAllCertificates(CERTIFICATE_TYPE)
+        val certs = certificatesService.retrieveAllCertificates(CertificateUsage.CODE_SIGNER, null)
         if (certs.isEmpty()) {
             log.warn("No trusted certificates for package validation found")
             return emptyList()

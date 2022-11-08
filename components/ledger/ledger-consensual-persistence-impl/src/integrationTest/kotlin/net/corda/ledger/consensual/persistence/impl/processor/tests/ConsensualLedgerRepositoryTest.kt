@@ -46,6 +46,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
@@ -105,7 +106,8 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can read signed transaction`() {
         val account = "Account"
-        val createdTs = Instant.now()
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
@@ -136,7 +138,7 @@ class ConsensualLedgerRepositoryTest {
                     }
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(listOf(
-                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", Instant.now())
+                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", createdTs)
                 ))
                 transaction.field<MutableCollection<Any>>("signatures").addAll(
                     signedTransaction.signatures.mapIndexed { index, signature ->
@@ -237,7 +239,8 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can persist links between signed transaction and existing CPKs`() {
         val account = "Account"
-        val createdTs = Instant.now()
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -17,6 +18,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x500.X500Name
@@ -295,7 +297,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
             }
         }
         @Test
@@ -305,15 +307,44 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
+            certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
 
-            verify(certificatesClient).importCertificates("tenant", "alias", certificateText)
+            verify(certificatesClient).importCertificates(CertificateUsage.P2P_TLS, null, "alias", certificateText)
+        }
+
+        @Test
+        fun `holding id will be translate to short hash`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            certificatesOps.importCertificateChain("p2p-tls", "123123123123", "alias", listOf(certificate))
+
+            verify(certificatesClient).importCertificates(
+                CertificateUsage.P2P_TLS,
+                ShortHash.of("123123123123"),
+                "alias",
+                certificateText
+            )
+        }
+
+        @Test
+        fun `invalid usage will throw an exception`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("nop", "123123123123", "alias", listOf(certificate))
+            }
         }
 
         @Test
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "alias", emptyList())
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", emptyList())
             }
         }
 
@@ -325,7 +356,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             val details = assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "", listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "", listOf(certificate))
             }.details
             assertThat(details).containsKey("alias")
         }
@@ -340,10 +371,10 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate1, certificate2))
+            certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
-                "tenant", "alias", "$certificateText\n$certificateText\n$certificateText"
+                CertificateUsage.RPC_API_TLS, null, "alias", "$certificateText\n$certificateText\n$certificateText"
             )
         }
     }

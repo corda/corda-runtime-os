@@ -16,6 +16,7 @@ dependencies {
     implementation project(':components:membership:registration')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:membership:certificates-common')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:membership:certificates-service')
 
