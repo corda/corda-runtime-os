@@ -18,7 +18,7 @@ import java.util.stream.Stream
  * common lifecycle handling for reconciler components.
  *
  * This class accepts [vaultReconciliationQuery] as a parameter which allows custom queries/mappings to be implemented. The
- * [reconcilerQuery#invoke()] is called once per vnode and the results of each call are combine in to a single stream.
+ * [reconcilerQuery#invoke()] is called once per vnode and the results of each call are combined into a single stream.
  *
  * [K] the key type of the [VersionedRecord]s created by the reconciler.
  * [V] the value type of the [VersionedRecord]s created by the reconciler.
