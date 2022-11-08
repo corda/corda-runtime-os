@@ -2,7 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'net.corda.plugins.cordapp-cpk2'
 }
-
+//Snyk Delta test
 description 'Corda Non-Validating Notary Plugin API'
 
 cordapp {

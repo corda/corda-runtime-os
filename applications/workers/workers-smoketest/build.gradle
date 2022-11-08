@@ -2,6 +2,9 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
+
+//Snyk Delta test
+
 description 'Worker Smoketests'
 
 configurations {

@@ -3,6 +3,8 @@ plugins {
     id 'corda.common-library'
 }
 
+//Snyk Delta test
+
 description 'Worker Common'
 
 dependencies {

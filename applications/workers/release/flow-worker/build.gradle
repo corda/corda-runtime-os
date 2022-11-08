@@ -4,6 +4,8 @@ plugins {
     id 'corda.docker-app'
 }
 
+//Snyk Delta test
+
 description 'Flow Worker'
 
 osgiRun {
