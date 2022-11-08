@@ -13,7 +13,6 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(service = [InternalCustomSerializer::class, UsedByFlow::class], scope = PROTOTYPE)
