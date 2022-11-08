@@ -75,7 +75,6 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
@@ -89,7 +88,7 @@ import java.security.KeyStore
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 class P2PLayerEndToEndTest {

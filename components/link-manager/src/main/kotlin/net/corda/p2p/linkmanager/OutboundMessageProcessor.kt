@@ -27,9 +27,9 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
+import java.util.Optional
 
-@Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
@@ -105,29 +105,35 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    private fun checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
-        messageID: Optional<String>, source: HoldingIdentity, destination: HoldingIdentity
+    private fun checkSourceAndDestinationValid(
+        messageID: String?, source: HoldingIdentity, destination: HoldingIdentity
     ): Boolean {
-        var warning = "Dropping outbound message $messageID from $source to $destination"
-        return if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
-            true
-        } else if (source.groupId != destination.groupId) {
-            warning = warning.plus("as their group IDs do not match.")
-            logger.warn(warning)
+        if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
+            return true
+        }
+
+        val messageType:String = if(messageID.isNullOrEmpty()) {
+            "unauthenticated"
+        } else {
+            "authenticated"
+        }
+
+         return if (source.groupId != destination.groupId) {
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination"
+                .plus(" as their group IDs do not match."))
             false
         } else if (!linkManagerHostingMap.isHostedLocally(source)) {
-            warning = warning.plus("as the source ID is not locally hosted.")
-            logger.warn(warning)
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination"
+                .plus(" as the source ID is not locally hosted."))
             false
         } else false
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        val emptyMessageID: Optional<String> = Optional.empty()
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
-                emptyMessageID, message.header.source.toCorda(), message.header.destination.toCorda())) {
+        if (!checkSourceAndDestinationValid(
+                messageID = "", message.header.source.toCorda(), message.header.destination.toCorda())) {
             return emptyList()
         }
 
@@ -165,15 +171,14 @@ internal class OutboundMessageProcessor(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
-        val messageID: Optional<String> = Optional.of(messageAndKey.message.header.messageId)
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if (!checkSourceLocallyHostedAndDestinationSourceGroupsMatch(
-                messageID, messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda())) {
-            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        if (!checkSourceAndDestinationValid(
+                messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda())) {
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination or source groups invalid."))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
