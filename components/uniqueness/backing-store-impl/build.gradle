@@ -5,6 +5,26 @@ plugins {
 
 description 'Backing store component implementation'
 
+configurations {
+    performanceTestApi.extendsFrom integrationTestApi
+    performanceTestCompileOnly.extendsFrom integrationTestCompileOnly
+    performanceTestImplementation.extendsFrom integrationTestImplementation
+    performanceTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+}
+
+sourceSets {
+    performanceTest {
+        kotlin {
+            srcDirs = [ 'src/performanceTest/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/performanceTest/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -47,7 +67,31 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
+    performanceTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+}
+
+tasks.register('performanceTest', Test) {
+    description = "Runs performance tests."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["performanceTest"].output.classesDirs
+    classpath = project.sourceSets["performanceTest"].runtimeClasspath
+
+    systemProperty "perfTestNumIterations", project.getProperty("perfTestNumIterations")
+    systemProperty "perfTestNumOpsPerIteration", project.getProperty("perfTestNumOpsPerIteration")
+
+    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "postgresDb", project.getProperty("postgresDb")
+    systemProperty "postgresPort", project.getProperty("postgresPort")
+    systemProperty "postgresUser", project.getProperty("postgresUser")
+    systemProperty "postgresPassword", project.getProperty("postgresPassword")
+}
+
+performanceTest {
+    // Ensures tests are always re-run if executed from the console
+    outputs.upToDateWhen { false }
 }

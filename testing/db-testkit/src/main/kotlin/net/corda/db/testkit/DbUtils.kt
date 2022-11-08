@@ -44,15 +44,16 @@ object DbUtils {
         dbUser:String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
-        createSchema: Boolean = false
+        createSchema: Boolean = false,
+        showSql: Boolean = true
     ): EntityManagerConfiguration {
         val port = System.getProperty("postgresPort")
         return if (!port.isNullOrBlank()) {
             val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema)
-            DbEntityManagerConfiguration(ds, true, true, DdlManage.NONE)
+            DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
-            TestInMemoryEntityManagerConfiguration(inMemoryDbName).also {
+            TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
                 if(createSchema) {
                     it.dataSource.connection.createSchema(schemaName)
                 }
