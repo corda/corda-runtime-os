@@ -46,7 +46,7 @@ fun updateConfig(config: String, section: String) {
             currentConfig["version"].toString(),
             currentSchemaVersion["major"].toString(),
             currentSchemaVersion["minor"].toString())
-        }
+
     }
 }
 
