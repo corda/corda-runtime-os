@@ -8,7 +8,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.util.Objects
 
-// Is this still needed? TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 class ConsensualTransactionBuilderImpl(
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)

@@ -13,7 +13,7 @@ import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
 
-internal class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
+class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
