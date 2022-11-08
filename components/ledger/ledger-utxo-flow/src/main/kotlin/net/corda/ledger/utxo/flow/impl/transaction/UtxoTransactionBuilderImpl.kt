@@ -32,6 +32,7 @@ data class UtxoTransactionBuilderImpl(
     override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
+    private var alreadySigned = false
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
         return copy(notary = notary)
     }
@@ -91,7 +92,9 @@ data class UtxoTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         verifyIfReady()
-        return utxoSignedTransactionFactory.create(this, signatories)
+        val tx = utxoSignedTransactionFactory.create(this, signatories)
+        alreadySigned = true
+        return tx
     }
 
     @Suppress("ComplexMethod")
@@ -122,6 +125,8 @@ data class UtxoTransactionBuilderImpl(
     private fun verifyIfReady() {
         // TODO(CORE-7116 more verifications)
         // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
+
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
 
         // Notary is not null
         checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }

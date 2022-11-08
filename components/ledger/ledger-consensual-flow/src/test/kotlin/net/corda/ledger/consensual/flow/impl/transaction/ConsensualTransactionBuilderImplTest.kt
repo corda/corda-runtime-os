@@ -21,6 +21,17 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     }
 
     @Test
+    fun `can't sign twice`() {
+        assertThrows(IllegalStateException::class.java) {
+            val builder = consensualTransactionBuilder
+                .withStates(consensualStateExample)
+
+            builder.sign(publicKeyExample)
+            builder.sign(publicKeyExample)
+        }
+    }
+
+    @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             consensualTransactionBuilder.sign(publicKeyExample)

@@ -14,8 +14,10 @@ class ConsensualTransactionBuilderImpl(
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
+    private var alreadySigned = false
+
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = this.states + states)
+        copy(states = this.states + states)
 
     @Suspendable
     override fun sign(): ConsensualSignedTransaction {
@@ -32,7 +34,9 @@ class ConsensualTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         verifyIfReady()
-        return consensualSignedTransactionFactory.create(this, signatories)
+        val tx = consensualSignedTransactionFactory.create(this, signatories)
+        alreadySigned = true
+        return tx	
     }
 
     override fun equals(other: Any?): Boolean {
@@ -53,6 +57,7 @@ class ConsensualTransactionBuilderImpl(
     private fun verifyIfReady() {
         // TODO(CORE-5982 more verifications)
         // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(states.isNotEmpty()) { "At least one consensual state is required" }
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
     }

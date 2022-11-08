@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
@@ -68,5 +69,22 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
+    }
+
+    @Test
+    fun `can't sign twice`() {
+        assertThrows(IllegalStateException::class.java) {
+            val builder = utxoTransactionBuilder
+                .setNotary(utxoNotaryExample)
+                .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+                .addOutputState(utxoStateExample)
+                .addInputState(getUtxoInvalidStateAndRef())
+                .addReferenceInputState(getUtxoInvalidStateAndRef())
+                .addCommand(UtxoCommandExample())
+                .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+
+            builder.sign(publicKeyExample)
+            builder.sign(publicKeyExample)
+        }
     }
 }
