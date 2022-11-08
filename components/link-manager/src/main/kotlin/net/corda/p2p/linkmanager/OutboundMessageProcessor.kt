@@ -27,7 +27,6 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.Optional
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -177,7 +176,8 @@ internal class OutboundMessageProcessor(
         }
 
         if (!checkSourceAndDestinationValid(
-                messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda())) {
+                messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(),
+                messageAndKey.message.header.destination.toCorda())) {
             return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination or source groups invalid."))
         }
 
