@@ -318,24 +318,24 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
     }
 
-    @Test
-    fun `start flow throws invalid data exception when starting invalid flows`() {
-        val flowRPCOps = createFlowRpcOps()
-
-        whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
-
-        assertThrows<InvalidInputDataException> {
-            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("requetsId", "invalid", TestJsonObject()))
-        }
-
-        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
-        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
-        verify(cpiInfoReadService, atLeastOnce()).get(any())
-        verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
-        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
-        verify(publisher, never()).publish(any())
-        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
-    }
+//    @Test
+//    fun `start flow throws invalid data exception when starting invalid flows`() {
+//        val flowRPCOps = createFlowRpcOps()
+//
+//        whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
+//
+//        assertThrows<InvalidInputDataException> {
+//            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("requetsId", "invalid", TestJsonObject()))
+//        }
+//
+//        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+//        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+//        verify(cpiInfoReadService, atLeastOnce()).get(any())
+//        verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
+//        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+//        verify(publisher, never()).publish(any())
+//        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+//    }
 
     @Test
     fun `start flow throws FlowRPCOpsServiceException exception when publish fails`() {
