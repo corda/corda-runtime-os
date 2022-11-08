@@ -118,10 +118,12 @@ internal class OutboundMessageProcessor(
         }
 
          return if (source.groupId != destination.groupId) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination as their group IDs do not match.")
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination " +
+                    "as their group IDs do not match.")
             return Pair(false, "group IDs do not match")
         } else if (!linkManagerHostingMap.isHostedLocally(source)) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination as the source ID is not locally hosted.")
+            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination " +
+                    "as the source ID is not locally hosted.")
             return Pair(false, "source ID is not locally hosted")
         } else Pair(false, "")
     }
