@@ -100,6 +100,14 @@ class FlowTests {
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
+            val flowsBob = getFlowClasses(bobHoldingId)
+            val flowsCharlie = getFlowClasses(bobHoldingId)
+            val flowsDavid = getFlowClasses(bobHoldingId)
+
+            // Check all the flow classes are the same
+            println("Flow classes: ${flowsBob.joinToString()}")
+            assertThat(flowsBob).isEqualTo(flowsCharlie).isEqualTo(flowsDavid)
+
             registerMember(bobHoldingId)
             registerMember(charlieHoldingId)
         }
