@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -17,7 +17,7 @@ import java.util.Objects
 
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val signingService: SigningService,
+    private val transactionSignatureService: TransactionSignatureService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 
     val wireTransaction: WireTransaction,

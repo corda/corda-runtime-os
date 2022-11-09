@@ -1,13 +1,11 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -21,7 +19,7 @@ import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val signingService: SigningService,
+    private val transactionSigningService: TransactionSignatureService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
@@ -55,11 +53,11 @@ class ConsensualSignedTransactionImpl(
 
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
-        val newSignature = createTransactionSignature(signingService, serializationService, getCpiSummary(), id, publicKey)
+        val newSignature = transactionSigningService.sign(id, publicKey)
         return Pair(
             ConsensualSignedTransactionImpl(
                 serializationService,
-                signingService,
+                transactionSigningService,
                 digitalSignatureVerificationService,
                 wireTransaction,
             signatures + newSignature
@@ -69,7 +67,7 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService,
+        ConsensualSignedTransactionImpl(serializationService, transactionSigningService, digitalSignatureVerificationService,
             wireTransaction, signatures + signature)
 
     override fun getMissingSignatories(): Set<PublicKey> {
@@ -120,15 +118,4 @@ class ConsensualSignedTransactionImpl(
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
-
-    /**
-     * TODO [CORE-7126] Fake values until we can get CPI information properly
-     */
-    private fun getCpiSummary(): CordaPackageSummary =
-        CordaPackageSummary(
-            name = "CPI name",
-            version = "CPI version",
-            signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-            fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-        )
 }
