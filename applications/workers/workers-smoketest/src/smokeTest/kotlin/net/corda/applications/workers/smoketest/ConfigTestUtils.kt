@@ -41,14 +41,18 @@ fun updateConfig(config: String, section: String) {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
-        postConfig(
-            config,
-            section,
-            currentConfig["version"].toString(),
-            currentSchemaVersion["major"].toString(),
-            currentSchemaVersion["minor"].toString())
+        try {
+            postConfig(
+                config,
+                section,
+                currentConfig["version"].toString(),
+                currentSchemaVersion["major"].toString(),
+                currentSchemaVersion["minor"].toString())
+        }catch(ex: Exception) {
+            // use print as the logger isnt showing on jenkins
+            println("Failed to execute post config: ${ex.printStackTrace()}")
         }
-
+    }
 }
 
 /**
