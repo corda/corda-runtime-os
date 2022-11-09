@@ -8,7 +8,6 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.slf4j.Logger
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -35,8 +34,7 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-@Suppress("Unused")
-fun updateConfig(config: String, section: String, logger: Logger) {
+fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 

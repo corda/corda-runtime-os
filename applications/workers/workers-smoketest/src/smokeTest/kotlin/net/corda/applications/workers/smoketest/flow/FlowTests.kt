@@ -739,7 +739,7 @@ class FlowTests {
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
         // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
-        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG, logger)
+        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
 
         // Wait for the rpc-worker to reload the configuration and come back up
         waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
@@ -779,7 +779,7 @@ class FlowTests {
             }
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG, logger)
+            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
     }
