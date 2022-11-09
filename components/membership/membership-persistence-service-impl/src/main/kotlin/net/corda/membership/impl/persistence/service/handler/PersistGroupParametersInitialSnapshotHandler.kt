@@ -8,6 +8,9 @@ import net.corda.data.membership.db.request.command.PersistGroupParametersInitia
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.virtualnode.toCorda
 
 internal class PersistGroupParametersInitialSnapshotHandler(
