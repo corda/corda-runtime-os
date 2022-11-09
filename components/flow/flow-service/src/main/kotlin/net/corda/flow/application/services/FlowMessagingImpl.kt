@@ -2,6 +2,7 @@ package net.corda.flow.application.services
 
 import java.util.UUID
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -123,7 +124,7 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     private fun addSessionIdToFlowStackItem(sessionId: String) {
-        getCurrentFlowStackItem().sessionIds.add(sessionId)
+        getCurrentFlowStackItem().sessions.add(FlowStackItemSession(sessionId, false))
     }
 
     private fun getCurrentFlowStackItem(): FlowStackItem {

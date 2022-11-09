@@ -52,10 +52,9 @@ class FindTransactionFlow : RPCStartableFlow {
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId
 
-        val result =
-            ledgerService.findLedgerTransaction(SecureHash.parse(txId))
-                ?.let { FindTransactionResponse(it.toResult(), null) }
-                ?: FindTransactionResponse(null, "Failed to find transaction with id $txId.")
+        val result = ledgerService.findLedgerTransaction(SecureHash.parse(txId))
+            ?.let { FindTransactionResponse(it.toResult(), null) }
+            ?: FindTransactionResponse(null, "Failed to find transaction with id $txId.")
 
         return marshallingService.format(result)
     }

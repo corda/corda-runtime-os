@@ -1,6 +1,7 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
@@ -76,7 +77,7 @@ class FlowMessagingImplTest {
             FlowStackItem(FLOW_NAME, true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        assertEquals(1, flowStackItem.sessionIds.size)
+        assertEquals(1, flowStackItem.sessions.size)
     }
 
     @Test
@@ -84,13 +85,17 @@ class FlowMessagingImplTest {
         val flowStackItem = FlowStackItem(
             FLOW_NAME,
             true,
-            mutableListOf("1", "2", "3"),
+            mutableListOf(
+                FlowStackItemSession("1", false),
+                FlowStackItemSession("2", false),
+                FlowStackItemSession("3", false)
+            ),
             mutableKeyValuePairList(),
             mutableKeyValuePairList()
         )
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        assertEquals(4, flowStackItem.sessionIds.size)
+        assertEquals(4, flowStackItem.sessions.size)
     }
 
     @Test
