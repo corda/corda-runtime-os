@@ -1,8 +1,8 @@
 package net.corda.messaging.subscription.consumer.listener
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messaging.subscription.LifecycleStatusUpdater
 import net.corda.messaging.utils.FutureTracker
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -13,13 +13,13 @@ class RPCConsumerRebalanceListenerTest {
 
     @Test
     fun `Test up and down status changes are triggered correctly`() {
-        val lifecycleCoordinator: LifecycleCoordinator = mock()
-        val listener = RPCConsumerRebalanceListener<String>("test", "test", FutureTracker(), lifecycleCoordinator)
+        val lifecycleStatusUpdater: LifecycleStatusUpdater = mock()
+        val listener = RPCConsumerRebalanceListener<String>("test", "test", FutureTracker(), lifecycleStatusUpdater)
 
         listener.onPartitionsAssigned(mutableListOf(CordaTopicPartition("test", 0)))
-        verify(lifecycleCoordinator, times(1)).updateStatus(LifecycleStatus.UP)
+        verify(lifecycleStatusUpdater, times(1)).updateLifecycleStatus(LifecycleStatus.UP)
 
         listener.onPartitionsRevoked(mutableListOf(CordaTopicPartition("test", 0)))
-        verify(lifecycleCoordinator, times(1)).updateStatus(LifecycleStatus.DOWN)
+        verify(lifecycleStatusUpdater, times(1)).updateLifecycleStatus(LifecycleStatus.DOWN)
     }
 }

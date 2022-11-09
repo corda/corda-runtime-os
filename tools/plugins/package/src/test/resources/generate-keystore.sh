@@ -23,14 +23,14 @@ keytool -importcert -alias rootca-cert -file rootca.pem -noprompt -keystore sign
 
 # Import signing key 1 certificate signed by root CA
 keytool -certreq -alias "${SIGNING_KEY_1}" -keystore signingkeys.pfx -storepass "${STOREPASS}" \
-        | keytool -gencert -alias rootca -rfc -keystore signingkeys.pfx -storepass "${STOREPASS}" \
+        | keytool -gencert -alias rootca -rfc -keystore signingkeys.pfx -storepass "${STOREPASS}" -validity 4000 \
                   -ext BasicConstraints:critical -ext KeyUsage=cRLSign,digitalSignature,keyCertSign > key1.pem
 cat rootca.pem key1.pem > key1-chain.pem
 keytool -importcert -alias "${SIGNING_KEY_1}" -file key1-chain.pem -noprompt -keystore signingkeys.pfx -storepass "${STOREPASS}"
 
 # Import signing key 2 certificate signed by root CA
 keytool -certreq -alias "${SIGNING_KEY_2}" -keystore signingkeys.pfx -storepass "${STOREPASS}" \
-        | keytool -gencert -alias rootca -rfc -keystore signingkeys.pfx -storepass "${STOREPASS}" \
+        | keytool -gencert -alias rootca -rfc -keystore signingkeys.pfx -storepass "${STOREPASS}" -validity 4000 \
                   -ext BasicConstraints:critical -ext KeyUsage=cRLSign,digitalSignature,keyCertSign > key2.pem
 cat rootca.pem key2.pem > key2-chain.pem
 keytool -importcert -alias "${SIGNING_KEY_2}" -file key2-chain.pem -noprompt -keystore signingkeys.pfx -storepass "${STOREPASS}"

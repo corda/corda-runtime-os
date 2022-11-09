@@ -16,7 +16,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
@@ -90,7 +89,7 @@ class ConsensualFinalityFlow(
             val signatures = signaturesPayload.getOrThrow { failure ->
                 val message = "Failed to receive signature from ${session.counterparty} for signed transaction " +
                         "${signedTransaction.id} with message: ${failure.message}"
-                log.warn(message)
+                log.debug { message }
                 CordaRuntimeException(message)
             }
 
@@ -125,8 +124,8 @@ class ConsensualFinalityFlow(
 
                     throw e
                 }
-                signedByParticipantsTransaction = signedTransaction.addSignature(signature)
-                log.trace { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
+                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
+                log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }
 

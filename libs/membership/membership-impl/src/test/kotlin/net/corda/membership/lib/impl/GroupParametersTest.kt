@@ -1,9 +1,9 @@
 package net.corda.membership.lib.impl
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.EPOCH_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MPV_KEY
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import org.assertj.core.api.Assertions.assertThat

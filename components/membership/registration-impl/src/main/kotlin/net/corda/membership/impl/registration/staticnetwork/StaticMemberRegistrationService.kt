@@ -22,6 +22,7 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -38,7 +39,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -51,6 +54,7 @@ import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SU
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
@@ -80,8 +84,10 @@ class StaticMemberRegistrationService @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
     internal val publisherFactory: PublisherFactory,
+    @Reference(service = SubscriptionFactory::class)
+    internal val subscriptionFactory: SubscriptionFactory,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
+    internal val keyEncodingService: KeyEncodingService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = ConfigurationReadService::class)
@@ -101,7 +107,9 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = EndpointInfoFactory::class)
     private val endpointInfoFactory: EndpointInfoFactory,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider,
+    internal val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : MemberRegistrationService {
@@ -171,13 +179,21 @@ class StaticMemberRegistrationService @Activate constructor(
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
                 ?: throw CordaRuntimeException("Could not find group policy for member: [$member]")
+            val staticMemberList = with(groupPolicy.protocolParameters.staticNetworkMembers) {
+                requireNotNull(this) { "Could not find static member list in group policy file." }
+                map { StaticMember(it, endpointInfoFactory::create) }
+            }
             val (memberInfo, records) = parseMemberTemplate(
                 member,
                 groupPolicy,
                 keyScheme,
                 roles,
+                staticMemberList,
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
+
+            persistGroupParameters(memberInfo, staticMemberList)
+
             persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
@@ -192,6 +208,38 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun List<Record<*, *>>.publish() {
         lifecycleHandler.publisher.publish(this).forEach {
             it.get()
+        }
+    }
+
+    private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
+        val cache = lifecycleHandler.groupParametersCache
+        val groupParametersList = cache.getOrCreateGroupParameters(memberInfo.holdingIdentity).run {
+            memberInfo.notaryDetails?.let {
+                cache.addNotary(memberInfo)
+            } ?: this
+        }
+        val groupParameters = groupParametersFactory.create(groupParametersList)
+
+        // Persist group parameters for this member
+        persistenceClient.persistGroupParameters(
+            memberInfo.holdingIdentity,
+            groupParameters
+        )
+
+        // If this member is a notary, persist updated group parameters for other members who have a vnode set up
+        memberInfo.notaryDetails?.let {
+            val groupId = memberInfo.groupId
+            staticMemberList
+                .filterNot { it.name == memberInfo.name.toString() }
+                .forEach { staticMember ->
+                val name = MemberX500Name.parse(staticMember.name!!)
+                virtualNodeInfoReadService.get(HoldingIdentity(name, groupId))?.let {
+                    persistenceClient.persistGroupParameters(
+                        it.holdingIdentity,
+                        groupParameters
+                    )
+                }
+            }
         }
     }
 
@@ -224,12 +272,10 @@ class StaticMemberRegistrationService @Activate constructor(
         groupPolicy: GroupPolicy,
         keyScheme: String,
         roles: Collection<MemberRole>,
+        staticMemberList: List<StaticMember>,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         val groupId = groupPolicy.groupId
 
-        val staticMemberMaps = groupPolicy.protocolParameters.staticNetworkMembers
-            ?: throw IllegalArgumentException("Could not find static member list in group policy file.")
-        val staticMemberList = staticMemberMaps.map { StaticMember(it, endpointInfoFactory::create) }
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name

@@ -7,7 +7,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -18,13 +17,17 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
+import net.corda.test.util.waitWhile
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Captor
@@ -38,10 +41,16 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class RPCSubscriptionImplTest {
+    companion object {
+        private const val TEST_TIMEOUT_SECONDS = 20L
+    }
 
     private val config = createResolvedSubscriptionConfig(SubscriptionType.RPC_RESPONDER)
     private val dummyRequest = HoldingIdentity(
@@ -73,16 +82,11 @@ class RPCSubscriptionImplTest {
         whenever(it.serialize(any())).thenReturn(dummyRequest.toByteBuffer().array())
     }
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
     private lateinit var kafkaConsumer: CordaConsumer<String, RPCRequest>
     private lateinit var cordaConsumerBuilder: CordaConsumerBuilder
     private val kafkaProducer: CordaProducer = mock()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
-    private val thread = mock<Thread>()
-    private val block = argumentCaptor<() -> Unit>()
-    private val threadFactory = mock<(() -> Unit) -> Thread> {
-        on { invoke(block.capture()) } doReturn thread
-    }
 
     @Captor
     private val captor = argumentCaptor<List<Pair<Int, CordaProducerRecord<Int, RPCResponse>>>>()
@@ -103,7 +107,8 @@ class RPCSubscriptionImplTest {
             listOf(CordaTopicPartition(config.topic, 0))
         }.whenever(kafkaConsumer).getPartitions(any())
 
-        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
+            .createCoordinator(any(), any())
     }
 
     @Test
@@ -116,12 +121,11 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -143,12 +147,11 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -157,8 +160,10 @@ class RPCSubscriptionImplTest {
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.FAILED)
         assertEquals(
             ExceptionEnvelope.fromByteBuffer(capturedValue[0].second.value?.payload),
-            ExceptionEnvelope(CordaMessageAPIFatalException::class.java.name, "Abandon ship")
+            ExceptionEnvelope(CordaMessageAPIFatalException::class.java.name, "forced failure")
         )
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
@@ -171,12 +176,11 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -230,12 +234,11 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -275,12 +278,11 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         assertThat(processor.incomingRecords.size).isEqualTo(0)
         verify(kafkaProducer, never()).sendRecordsToPartitions(any())
@@ -320,17 +322,86 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory,
-            threadFactory,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
-        block.firstValue.invoke()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         assertThat(processor.incomingRecords.size).isEqualTo(0)
         verify(kafkaProducer, never()).sendRecordsToPartitions(any())
     }
 
+    @Test
+    fun `rpc subscription receives intermittent exception and correctly continues`() {
+        var firstTime = true
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        doAnswer {
+            if (firstTime) {
+                firstTime = false
+                throw CordaMessageAPIIntermittentException("")
+            } else {
+                requestRecord
+            }
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
+
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+
+        verify(kafkaConsumer, times(2)).subscribe(config.topic)
+        assertThat(processor.incomingRecords.size).isEqualTo(1)
+        assertFalse(firstTime)
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    fun `rpc subscription looper stops thrown Throwables reaching the thread default handler`() {
+        val lock = ReentrantLock()
+        var subscriptionThread: Thread? = null
+        var uncaughtExceptionInSubscriptionThread: Throwable? = null
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        doAnswer {
+            lock.withLock {
+                subscriptionThread = Thread.currentThread()
+            }
+            // Here's our chance to make sure there are no uncaught exceptions in this, the subscription thread
+            subscriptionThread!!.setUncaughtExceptionHandler { _, e ->
+                lock.withLock {
+                    uncaughtExceptionInSubscriptionThread = e
+                }
+            }
+            @Suppress("TooGenericExceptionThrown")
+            throw Throwable()
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
+
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
+        subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
+        assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
+    }
 
     private fun setupStandardMocks(): Pair<CordaConsumer<String, RPCRequest>, CordaConsumerBuilder> {
         val kafkaConsumer: CordaConsumer<String, RPCRequest> = mock()
@@ -367,7 +438,7 @@ class RPCSubscriptionImplTest {
                     }
 
                     ResponseStatus.FAILED -> {
-                        respFuture.completeExceptionally(CordaMessageAPIFatalException("Abandon ship"))
+                        respFuture.completeExceptionally(CordaMessageAPIFatalException("forced failure"))
                     }
 
                     else -> {

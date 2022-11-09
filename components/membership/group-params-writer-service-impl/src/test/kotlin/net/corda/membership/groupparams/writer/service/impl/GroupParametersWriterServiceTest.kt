@@ -16,10 +16,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.impl.GroupParametersImpl
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.EPOCH_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl.Companion.MPV_KEY
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
