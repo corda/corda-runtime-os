@@ -1,8 +1,8 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.KeyStoreWithPem
-import net.corda.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 
 /**
  * How should the authentication protocol check the certificates sent as a part of authentication protocol.

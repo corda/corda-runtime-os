@@ -1,8 +1,8 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.lifecycle.domino.logic.util.RPCSenderWithDominoLogic
-import net.corda.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test

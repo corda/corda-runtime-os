@@ -1,13 +1,13 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.RPCSenderWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.schema.Schemas
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger

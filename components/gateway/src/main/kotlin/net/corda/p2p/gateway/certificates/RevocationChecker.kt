@@ -2,6 +2,9 @@ package net.corda.p2p.gateway.certificates
 
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.convertToKeyStore
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
