@@ -39,6 +39,7 @@ object DbUtils {
      * Get a Postgres EntityManager configuration if system properties set as necessary. Otherwise, falls back on
      * in-memory implementation.
      */
+    @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
         inMemoryDbName: String,
         dbUser:String? = null,

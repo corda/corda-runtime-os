@@ -39,6 +39,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileOutputStream
+import java.io.PrintStream
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -47,6 +50,9 @@ import java.util.*
 import kotlin.math.roundToInt
 import kotlin.system.measureTimeMillis
 
+/**
+ * Tests the performance of the JPA backing store implementation against a real database
+ */
 @Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName::class)
@@ -56,7 +62,13 @@ class JPABackingStoreImplPerformanceTests {
         val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
+    // Controls how many times we invoke the backing store API. Increasing this should not impact
+    // the performance figures returned by the tests, but more iterations results in a longer
+    // running test which may reduce variability in results.
     private val numIterations = System.getProperty("perfTestNumIterations").toInt()
+    // Controls how many operations (states or transactions, depending on the test) are passed into
+    // a single call to the backing store. This number simulates processing a batch of requests as
+    // part of the same database operation.
     private val numOpsPerIter = System.getProperty("perfTestNumOpsPerIteration").toInt()
 
     private val clusterDbConfig =
@@ -123,6 +135,7 @@ class JPABackingStoreImplPerformanceTests {
     fun resultsSummary() {
         log.info("Tests complete. Summary: " +
                 "${resultsMap.map {"\"${it.key}\" : ${it.value} ops/sec"}}")
+        writeToCsv()
     }
 
     @Test
@@ -130,7 +143,13 @@ class JPABackingStoreImplPerformanceTests {
         executeTest {
             createUnconsumedStates().let { unconsumedStates ->
                 measure {
-                    backingStore.session(holdingIdentity) { session ->
+                    // We use transactionSession instead of session despite not performing write
+                    // operations because this more closely reflects the backing store usage by the
+                    // uniqueness checker, which performs all reads and writes in one session. Also,
+                    // Hibernate appears to try to automatically create and rollback transactions
+                    // if not executing statements in an existing transaction scope, which has a
+                    // significant performance penalty.
+                    backingStore.transactionSession(holdingIdentity) { session, _ ->
                         session.getStateDetails(unconsumedStates)
                     }
                 }
@@ -161,7 +180,9 @@ class JPABackingStoreImplPerformanceTests {
         executeTest {
             createTransactionRecords(true).let { txIds ->
                 measure {
-                    backingStore.session(holdingIdentity) { session ->
+                    // We use transactionSession instead of session for the same reasons as
+                    // mentioned earlier
+                    backingStore.transactionSession(holdingIdentity) { session, _ ->
                         session.getTransactionDetails(txIds)
                     }
                 }
@@ -174,7 +195,9 @@ class JPABackingStoreImplPerformanceTests {
         executeTest {
             createTransactionRecords(false).let { txIds ->
                 measure {
-                    backingStore.session(holdingIdentity) { session ->
+                    // We use transactionSession instead of session for the same reasons as
+                    // mentioned earlier
+                    backingStore.transactionSession(holdingIdentity) { session, _ ->
                         session.getTransactionDetails(txIds)
                     }
                 }
@@ -192,6 +215,10 @@ class JPABackingStoreImplPerformanceTests {
         executeTest { measure { createTransactionRecords(false) } }
     }
 
+    /**
+     * Creates unconsumed states, based on the configured number of operations, and returns the
+     * state objects.
+     */
     private fun createUnconsumedStates() : List<UniquenessCheckStateRef> {
         val states = List(numOpsPerIter) {
             UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0)
@@ -204,6 +231,13 @@ class JPABackingStoreImplPerformanceTests {
         return states
     }
 
+    /**
+     * Creates transaction records, based on the configured number of operations, and returns the
+     * transaction ids.
+     *
+     * @param successful Whether the transaction is a successful or rejected transactions. For
+     *                   rejected transactions, an additional error record will be constructed.
+     */
     private fun createTransactionRecords(successful: Boolean) : List<SecureHash> {
         val txIds = List(numOpsPerIter) { SecureHashUtils.randomSecureHash() }
 
@@ -238,6 +272,11 @@ class JPABackingStoreImplPerformanceTests {
         return txIds
     }
 
+    /**
+     * Helper to execute a test case based on the configured number of iterations, and to record
+     * performance figures. All code of a test case (including any setup) should be included within
+     * the block of this function.
+     */
     private fun executeTest(block: () -> Unit) {
         currentTestExecTimeMs = 0L
 
@@ -251,11 +290,57 @@ class JPABackingStoreImplPerformanceTests {
         resultsMap[Thread.currentThread().stackTrace[2].methodName] = averageRate
     }
 
+    /**
+     * Measures and records a specific iteration of a test case. This must be executed within an
+     * [executeTest] block, and should only wrap code that you wish to measure the performance of,
+     * i.e. excluding any test setup steps.
+     */
     private fun measure(block: () -> Unit) {
         currentTestExecTimeMs += measureTimeMillis(block)
     }
 
     private fun getAverageRate(execTimeMs: Long): Int {
         return ((numOpsPerIter * numIterations) / (execTimeMs.toDouble() / 1000)).roundToInt()
+    }
+
+    private fun writeToCsv() {
+        var file = File("${System.getProperty("java.io.tmpdir")}/test-results/performanceTest/" +
+                    "results.csv")
+        file.createNewFile()
+
+        val headerRow = "Time,DB Type,Num Iterations,Ops per iteration," +
+                resultsMap.keys.joinToString(",")
+
+        file.bufferedReader().use { reader ->
+            val existingHeaderRow = reader.readLine()
+
+            if (headerRow != existingHeaderRow) {
+                if (existingHeaderRow != null) {
+                    // Existing file with a mismatching header row. Raise a warning and use a new
+                    // file.
+                    file = File("${System.getProperty("java.io.tmpdir")}/test-results" +
+                            "/performanceTest/results-${Instant.now().toEpochMilli()}.csv")
+                    log.warn("Existing test results file found, but with different test cases. " +
+                            "Writing to ${file.name}")
+                    file.createNewFile()
+                }
+
+                // Write new header row
+                PrintStream(file).use { writer ->
+                    writer.println(headerRow)
+                    writer.flush()
+                }
+            }
+        }
+
+        // Now have a valid file with header, write new row with the results of this run
+        PrintStream(FileOutputStream(file, true), true).use { writer ->
+            writer.println("${Instant.now()}," +
+                    "${if (DbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
+                    "$numIterations,$numOpsPerIter," +
+                    "${resultsMap.values.joinToString(",")}")
+        }
+
+        log.info("Results written to ${file.canonicalPath}")
     }
 }
