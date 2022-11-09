@@ -91,7 +91,8 @@ interface MemberRegistrationRpcOps : RpcOps {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "SUBMITTED and "NOT_SUBMITTED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
+                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )
@@ -127,7 +128,8 @@ interface MemberRegistrationRpcOps : RpcOps {
                 value of null indicated that registration has not started yet
             registrationUpdated: the date and the when the registration has been last updated    
             registrationStatus: the status of the registration request; 
-                possible values are "SUBMITTED and "NOT_SUBMITTED"
+                possible values are "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", 
+                "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", or "APPROVED"
             memberInfoSubmitted: the properties submitted to MGM during the registration     
         """
     )

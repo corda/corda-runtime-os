@@ -3,11 +3,11 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetaData
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetadata
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -19,6 +19,7 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,7 +48,7 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : UtxoTransactionBuilderFactory, UsedByFlow {
+) : UtxoTransactionBuilderFactory, UsedByFlow, SingletonSerializeAsToken {
 
     override fun create(): UtxoTransactionBuilder =
         UtxoTransactionBuilderImpl(
@@ -83,16 +84,16 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
         }
 
     private fun calculateMetaData() =
-        TransactionMetaData(
+        TransactionMetadata(
             linkedMapOf(
-                TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetaData.LEDGER_VERSION_KEY to UtxoTransactionMetaData.LEDGER_VERSION,
-                TransactionMetaData.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetaData.TransactionSubtype.GENERAL,
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
-                TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries(),
-                TransactionMetaData.SCHEMA_VERSION_KEY to 1
+                TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetadata.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+                TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+                TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
+                TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries(),
+                TransactionMetadata.SCHEMA_VERSION_KEY to 1
             )
         )
 }

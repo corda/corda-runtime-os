@@ -1,14 +1,14 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 
-val transactionMetaDataExample = TransactionMetaData(linkedMapOf(
-    TransactionMetaData.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-    TransactionMetaData.LEDGER_VERSION_KEY to 1,
-    TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-    TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-    TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
-    TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample,
-    TransactionMetaData.SCHEMA_VERSION_KEY to 1
+val transactionMetadataExample = TransactionMetadata(linkedMapOf(
+    TransactionMetadata.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
+    TransactionMetadata.LEDGER_VERSION_KEY to 1,
+    TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+    TransactionMetadata.PLATFORM_VERSION_KEY to 123,
+    TransactionMetadata.CPI_METADATA_KEY to cpiPackageSummaryExample,
+    TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample,
+    TransactionMetadata.SCHEMA_VERSION_KEY to 1
 ))

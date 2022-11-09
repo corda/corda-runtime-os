@@ -386,13 +386,13 @@ class FlowCheckpointImplTest {
 
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
-        assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.sessions).isEmpty()
         assertThat(flowStackItem1.contextUserProperties.items).isEmpty()
         assertThat(flowStackItem1.contextPlatformProperties.items).isEmpty()
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
-        assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.sessions).isEmpty()
         assertThat(flowStackItem2.contextUserProperties.items).isEmpty()
         assertThat(flowStackItem2.contextPlatformProperties.items).isEmpty()
     }
@@ -413,13 +413,13 @@ class FlowCheckpointImplTest {
 
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
-        assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.sessions).isEmpty()
         assertThat(flowStackItem1.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
         assertThat(flowStackItem1.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key2", "value2"))
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
-        assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.sessions).isEmpty()
         assertThat(flowStackItem2.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key3", "value3"))
         assertThat(flowStackItem2.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key4", "value4"))
     }

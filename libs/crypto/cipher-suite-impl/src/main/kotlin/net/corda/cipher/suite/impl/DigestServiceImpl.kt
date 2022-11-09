@@ -18,6 +18,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -112,3 +113,13 @@ class DigestServiceImpl @Activate constructor(
         }
     }
 }
+
+/**
+ * A [DigestService] singleton for everyone not inside a sandbox to share.
+ */
+@Component
+@ServiceRanking(1)
+class SingletonDigestServiceImpl @Activate constructor(
+    @Reference(scope = PROTOTYPE_REQUIRED)
+    private val digestService: DigestService
+) : DigestService by digestService

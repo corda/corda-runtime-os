@@ -16,22 +16,19 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.signatureWithMetaDataExample
-import net.corda.ledger.common.testkit.transactionMetaDataExample
+import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -40,7 +37,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -143,18 +139,16 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): ConsensualSignedTransactionContainer {
-        val singletonServices = ctx.getSandboxSingletonServices().ifEmpty {
-            fail("Sandbox has no singleton services")
-        }
         val wireTransaction = getWireTransactionExample(
-            singletonServices.filterIsInstance<DigestService>().single(),
-            singletonServices.filterIsInstance<MerkleTreeProvider>().single(),
-            singletonServices.filterIsInstance<JsonMarshallingService>().single(),
-            transactionMetaDataExample
+            ctx.getSandboxSingletonService(),
+            ctx.getSandboxSingletonService(),
+            ctx.getSandboxSingletonService(),
+            ctx.getSandboxSingletonService(),
+            transactionMetadataExample
         )
         return ConsensualSignedTransactionContainer(
             wireTransaction,
-            listOf(signatureWithMetaDataExample)
+            listOf(signatureWithMetadataExample)
         )
     }
 

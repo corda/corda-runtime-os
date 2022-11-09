@@ -2,6 +2,7 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
@@ -13,6 +14,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -26,6 +28,8 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.Extension
@@ -131,7 +135,12 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
+    override fun importCertificateChain(
+        usage: String,
+        holdingIdentityId: String?,
+        alias: String,
+        certificates: List<HttpFileUpload>,
+    ) {
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
@@ -143,6 +152,16 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 details = mapOf("certificate" to "No certificates")
             )
         }
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
         val rawCertificates = certificates.map {
             it.content.reader().readText()
         }
@@ -163,9 +182,13 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
-
         try {
-            certificatesClient.importCertificates(tenantId, alias, rawCertificates.joinToString(separator = "\n"))
+            certificatesClient.importCertificates(
+                usageType,
+                holdingIdentityShortHash,
+                alias,
+                rawCertificates.joinToString(separator = "\n"),
+            )
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

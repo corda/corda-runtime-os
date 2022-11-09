@@ -5,7 +5,7 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
@@ -16,7 +16,7 @@ import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerR
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -48,6 +47,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
@@ -93,10 +93,7 @@ class ConsensualLedgerRepositoryTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            repository = ctx.getSandboxSingletonServices()
-                .filterIsInstance<ConsensualLedgerRepository>()
-                .singleOrNull()
-                ?: fail("No ConsensualLedgerRepository found for sandbox")
+            repository = ctx.getSandboxSingletonService()
         }
     }
 
@@ -109,7 +106,8 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can read signed transaction`() {
         val account = "Account"
-        val createdTs = Instant.now()
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
@@ -140,7 +138,7 @@ class ConsensualLedgerRepositoryTest {
                     }
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(listOf(
-                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", Instant.now())
+                    entityFactory.createConsensualTransactionStatusEntity(transaction, "V", createdTs)
                 ))
                 transaction.field<MutableCollection<Any>>("signatures").addAll(
                     signedTransaction.signatures.mapIndexed { index, signature ->
@@ -241,7 +239,8 @@ class ConsensualLedgerRepositoryTest {
     @Test
     fun `can persist links between signed transaction and existing CPKs`() {
         val account = "Account"
-        val createdTs = Instant.now()
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
         val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         val existingCpks = cpks.take(2)
@@ -322,18 +321,18 @@ class ConsensualLedgerRepositoryTest {
             CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
             CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
         )
-        val transactionMetaData = TransactionMetaData(linkedMapOf(
-            TransactionMetaData.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-            TransactionMetaData.LEDGER_VERSION_KEY to 1,
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-            TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetaData.CPK_METADATA_KEY to cpks,
-            TransactionMetaData.SCHEMA_VERSION_KEY to 1
+        val transactionMetadata = TransactionMetadata(linkedMapOf(
+            TransactionMetadata.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
+            TransactionMetadata.LEDGER_VERSION_KEY to 1,
+            TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetadata.PLATFORM_VERSION_KEY to 123,
+            TransactionMetadata.CPI_METADATA_KEY to cpiPackageSummaryExample,
+            TransactionMetadata.CPK_METADATA_KEY to cpks,
+            TransactionMetadata.SCHEMA_VERSION_KEY to 1
         ))
 
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetaData)).toByteArray()),
+            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )

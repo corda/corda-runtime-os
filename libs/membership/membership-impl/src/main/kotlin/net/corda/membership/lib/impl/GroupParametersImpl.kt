@@ -1,5 +1,8 @@
 package net.corda.membership.lib.impl
 
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.GroupParameters
 import java.time.Instant
@@ -7,12 +10,6 @@ import java.time.Instant
 class GroupParametersImpl(
     private val map: LayeredPropertyMap
 ) : LayeredPropertyMap by map, GroupParameters {
-    companion object {
-        const val EPOCH_KEY = "corda.epoch"
-        const val MPV_KEY = "corda.minimumPlatformVersion"
-        const val MODIFIED_TIME_KEY = "corda.modifiedTime"
-    }
-
     init {
         require(minimumPlatformVersion > 0) { "Platform version must be at least 1." }
         require(epoch > 0) { "Epoch must be at least 1." }

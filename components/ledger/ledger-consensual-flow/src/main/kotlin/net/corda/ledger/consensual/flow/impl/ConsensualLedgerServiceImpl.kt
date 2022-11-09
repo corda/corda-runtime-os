@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl
 
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
@@ -9,6 +10,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -26,7 +28,9 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Reference(service = ConsensualTransactionBuilderFactory::class)
     private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory,
     @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine
+    private val flowEngine: FlowEngine,
+    @Reference(service = ConsensualLedgerPersistenceService::class)
+    private val persistenceService: ConsensualLedgerPersistenceService
 ) : ConsensualLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -34,9 +38,17 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         return consensualTransactionBuilderFactory.create()
     }
 
-    override fun fetchTransaction(id: SecureHash): ConsensualSignedTransaction? {
-        TODO("Not yet implemented")
+    @Suspendable
+    override fun findSignedTransaction(id: SecureHash): ConsensualSignedTransaction? {
+        return persistenceService.find(id)
     }
+
+    @Suspendable
+    override fun findLedgerTransaction(id: SecureHash): ConsensualLedgerTransaction? {
+        // For consensual ledger, it is ok to just resolve here - all it does is lazy deserialization
+        return persistenceService.find(id)?.toLedgerTransaction()
+    }
+
 
     @Suspendable
     override fun finality(

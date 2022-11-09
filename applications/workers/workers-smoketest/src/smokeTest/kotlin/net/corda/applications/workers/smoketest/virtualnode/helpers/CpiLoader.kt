@@ -1,9 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
-import net.corda.applications.workers.smoketest.X500_ALICE
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.X500_CHARLIE
-import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions

@@ -15,6 +15,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 private const val SCHEMA_PATH = "/schema/transaction-metadata.json"
@@ -32,7 +33,7 @@ class WireTransaction(
         rootMerkleTree.root
     }
 
-    val metadata: TransactionMetaData
+    val metadata: TransactionMetadata
 
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
@@ -115,7 +116,7 @@ class WireTransaction(
             componentMerkleTreeEntropyAlgorithmName
         ).bytes
 
-    private fun getComponentGroupMerkleTreeDigestProvider(
+    fun getComponentGroupMerkleTreeDigestProvider(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
@@ -128,22 +129,25 @@ class WireTransaction(
             )
     )
 
-    private val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val componentGroupRoots = mutableListOf<ByteArray>()
-        componentGroupLists.forEachIndexed{ index, leaves: List<ByteArray> ->
+    val componentMerkleTrees: Map<Int, MerkleTree> get() = _componentMerkleTrees
+    private val _componentMerkleTrees: MutableMap<Int, MerkleTree> = ConcurrentHashMap()
+
+    val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
             val componentMerkleTree = merkleTreeProvider.createTree(
-                leaves,
+                group,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
-            componentGroupRoots += componentMerkleTree.root.bytes
+            _componentMerkleTrees[index] = componentMerkleTree
+            componentMerkleTree.root.bytes
         }
 
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
 
-    private fun parseMetadata(json: String): TransactionMetaData {
+    private fun parseMetadata(json: String): TransactionMetadata {
         jsonValidator.validate(json, getSchema(SCHEMA_PATH))
-        return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
+        return jsonMarshallingService.parse(json, TransactionMetadata::class.java)
     }
 
     private fun getSchema(path: String) =

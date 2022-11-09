@@ -17,6 +17,7 @@ import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,7 +34,8 @@ class SignatureVerificationServiceImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val hashingService: DigestService
-) : SignatureVerificationService, UsedByFlow, UsedByPersistence, UsedByVerification {
+) : SignatureVerificationService,
+    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     companion object {
         private val logger = contextLogger()
     }
