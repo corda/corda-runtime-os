@@ -53,23 +53,13 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    @InjectService(timeout = 1000)
-    lateinit var digestService: DigestService
-
-    @InjectService(timeout = 1000)
-    lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-
-    @InjectService(timeout = 1000)
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-
-    @InjectService(timeout = 1000)
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
-    @InjectService(timeout = 1000)
-    lateinit var transactionSignatureService: TransactionSignatureService
-
     private lateinit var emptySandboxGroup: SandboxGroup
-    private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
+    private lateinit var digestService: DigestService
+    private lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var transactionSignatureService: TransactionSignatureService
+    private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionSerializer: InternalCustomSerializer<ConsensualSignedTransaction>
 
@@ -87,10 +77,15 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         lifecycle.accept(sandboxSetup) { setup ->
             val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
             emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup {
-                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
-            }
-            publickeySerializer = setup.fetchService(
+            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+
+            digestService = setup.fetchService(1500)
+            cipherSchemeMetadata = setup.fetchService(1500)
+            merkleTreeProvider = setup.fetchService(1500)
+            jsonMarshallingService = setup.fetchService(1500)
+            transactionSignatureService = setup.fetchService(1500)
+
+            publicKeySerializer = setup.fetchService(
                 "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
                 1500
             )
@@ -98,7 +93,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
                 "(component.name=net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer)",
                 1500
             )
-
             consensualSignedTransactionSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp.ConsensualSignedTransactionSerializer)",
                 1500
@@ -109,7 +103,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also {
             registerCustomSerializers(it)
-            it.register(publickeySerializer, it)
+            it.register(publicKeySerializer, it)
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
         }

@@ -34,20 +34,11 @@ class WireTransactionKryoSerializationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
-    @InjectService(timeout = 1000)
-    lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
-
-    @InjectService(timeout = 1000)
-    lateinit var digestService: DigestService
-
-    @InjectService(timeout = 1000)
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-
-    @InjectService(timeout = 1000)
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
     private lateinit var emptySandboxGroup: SandboxGroup
-
+    private lateinit var digestService: DigestService
+    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
 
     @BeforeAll
@@ -63,9 +54,12 @@ class WireTransactionKryoSerializationTest {
         lifecycle.accept(sandboxSetup) { setup ->
             val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
             emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup {
-                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
-            }
+            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+
+            digestService = setup.fetchService(1500)
+            merkleTreeProvider = setup.fetchService(1500)
+            jsonMarshallingService = setup.fetchService(1500)
+            checkpointSerializerBuilderFactory = setup.fetchService(1500)
             wireTransactionKryoSerializer = setup.fetchService(1500)
         }
     }

@@ -35,27 +35,16 @@ import java.nio.file.Path
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class UtxoSignedTransactionKryoSerializationTest {
-
-    @InjectService(timeout = 1000)
-    lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
-
-    @InjectService(timeout = 1000)
-    lateinit var digestService: DigestService
-
-    @InjectService(timeout = 1000)
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-
-    @InjectService(timeout = 1000)
-    lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-
-    @InjectService(timeout = 1000)
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
-    @InjectService(timeout = 1000)
-    lateinit var transactionSignatureService: TransactionSignatureService
+    @RegisterExtension
+    private val lifecycle = AllTestsLifecycle()
 
     private lateinit var emptySandboxGroup: SandboxGroup
-
+    private lateinit var digestService: DigestService
+    private lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var transactionSignatureService: TransactionSignatureService
+    private lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
     private lateinit var utxoSignedTransactionSerializer: CheckpointInternalCustomSerializer<UtxoSignedTransaction>
 
@@ -72,9 +61,15 @@ class UtxoSignedTransactionKryoSerializationTest {
         Companion.lifecycle.accept(sandboxSetup) { setup ->
             val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
             emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup {
-                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
-            }
+            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+
+            digestService = setup.fetchService(1500)
+            cipherSchemeMetadata = setup.fetchService(1500)
+            merkleTreeProvider = setup.fetchService(1500)
+            jsonMarshallingService = setup.fetchService(1500)
+            transactionSignatureService = setup.fetchService(1500)
+            checkpointSerializerBuilderFactory = setup.fetchService(1500)
+
             wireTransactionKryoSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer)",
                 1500
