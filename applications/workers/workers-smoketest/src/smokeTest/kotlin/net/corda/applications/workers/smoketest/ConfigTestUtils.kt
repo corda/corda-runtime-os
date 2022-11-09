@@ -5,7 +5,6 @@ import java.io.IOException
 import java.time.Duration
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -49,7 +48,7 @@ fun updateConfig(config: String, section: String) {
             currentSchemaVersion["major"].toString(),
             currentSchemaVersion["minor"].toString())
         }
-    }
+
 }
 
 /**
