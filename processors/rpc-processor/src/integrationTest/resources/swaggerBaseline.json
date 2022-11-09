@@ -286,10 +286,10 @@
       }
     },
     "/config" : {
-      "put" : {
+      "post" : {
         "tags" : [ "Configuration API" ],
         "description" : "This method updates a section of the cluster configuration.",
-        "operationId" : "put_config",
+        "operationId" : "post_config",
         "parameters" : [ ],
         "requestBody" : {
           "description" : "requestBody",
@@ -308,7 +308,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/UpdateConfigResponse"
+                  "$ref" : "#/components/schemas/Object"
                 }
               }
             }
@@ -3358,6 +3358,10 @@
         },
         "description" : "The request sent during registration which contains the requested registration action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
       },
+      "Object" : {
+        "type" : "object",
+        "properties" : { }
+      },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],
         "type" : "object",
@@ -3721,31 +3725,6 @@
           }
         },
         "description" : "\n            Details of the updated configuration. Includes:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored."
-      },
-      "UpdateConfigResponse" : {
-        "required" : [ "config", "schemaVersion", "section", "version" ],
-        "type" : "object",
-        "properties" : {
-          "config" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "schemaVersion" : {
-            "$ref" : "#/components/schemas/ConfigSchemaVersion"
-          },
-          "section" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        }
       },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
