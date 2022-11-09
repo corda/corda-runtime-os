@@ -221,6 +221,7 @@ Worker environment variables
 - name: CONSOLE_LOG_FORMAT
   value: {{ .Values.logging.format | quote }}
 - name: CONSOLE_LOG_LEVEL
+<<<<<<< HEAD
   value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level | quote }}
 {{- end }}
 
@@ -317,11 +318,11 @@ Worker Kafka arguments
 {{- else }}
 - "-msecurity.protocol=SSL"
 {{- end }}
-{{- if .Values.kafka.tls.truststore.secretRef.name }}
+{{- if .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - "-mssl.truststore.location=/certs/ca.crt"
 - "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
-{{- if .Values.kafka.tls.truststore.password }}
-- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
+{{- if or .Values.kafka.tls.truststore.password.value .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name }}
+- "-mssl.truststore.password=$TRUSTSTOREPASSWORD"
 {{- end }}
 {{- end }}
 {{- else }}
@@ -357,7 +358,7 @@ resources:
 Volume mounts for corda workers
 */}}
 {{- define "corda.workerVolumeMounts" -}}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - mountPath: "/certs"
   name: "certs"
   readOnly: true
@@ -378,12 +379,12 @@ Volume mounts for corda workers
 Volumes for corda workers
 */}}
 {{- define "corda.workerVolumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - name: certs
   secret:
-    secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+    secretName: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name | quote }}
     items:
-      - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+      - key: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
         path: "ca.crt"
 {{- end -}}
 {{- if .Values.kafka.sasl.enabled  }}
@@ -448,17 +449,31 @@ Cluster DB password environment variable
       key: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.key | default "password"}}
 {{- end -}}
 
+{{- define "corda.kafkaTlsPassword" -}}
+{{- if and .Values.kafka.tls.truststore.enabled .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name -}}
+- name: TRUSTSTOREPASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name }}
+      key: {{ .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.key }}
+{{- end -}}
+{{- if and .Values.kafka.tls.truststore.enabled .Values.kafka.tls.truststore.password.value -}}
+- name: TRUSTSTOREPASSWORD
+  value: {{ .Values.kafka.tls.truststore.password.value }} 
+{{- end -}}
+{{- end -}}
+
 {{/*
 kafka sasl username environment variable 
 */}}
 {{- define "corda.kafkaSaslUsername" -}}
-{{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+{{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
 - name: SASLUSERNAME
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
       key: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.key }}
-{{- else }}
+{{- else if and .Values.kafka.sasl.enabled .Values.kafka.sasl.username.value -}}
 - name: SASLUSERNAME
   value: {{ .Values.kafka.sasl.username.value }} 
 {{- end -}}
@@ -469,13 +484,13 @@ kafka sasl username environment variable
 kafka sasl password environment variable 
 */}}
 {{- define "corda.kafkaSaslPassword" -}}
-{{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
+{{- if and .Values.kafka.sasl.enabled .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
 - name: SASLPASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
       key: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.key }}
-{{- else -}}
+{{- else if and .Values.kafka.sasl.enabled .Values.kafka.sasl.password.value -}}
 - name: SASLPASSWORD
   value: {{ .Values.kafka.sasl.password.value }} 
 {{- end -}}
