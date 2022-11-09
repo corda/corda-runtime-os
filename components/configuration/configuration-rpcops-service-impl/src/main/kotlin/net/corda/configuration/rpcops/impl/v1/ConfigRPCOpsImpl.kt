@@ -175,8 +175,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         return if (response.success) {
             ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
-                    response.schemaVersion.majorVersion,
-                    response.schemaVersion.minorVersion
+                    1,
+                    0
                 ), response.version
             ))
         } else {
