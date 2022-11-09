@@ -39,19 +39,15 @@ fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        assertWithRetryIgnoringExceptions {
-            command {
-                val currentConfig = getConfig(section).body.toJson()
-                val currentSchemaVersion = currentConfig["schemaVersion"]
+        val currentConfig = getConfig(section).body.toJson()
+        val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                postConfig(
-                    config,
-                    section,
-                    currentConfig["version"].toString(),
-                    currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString())
-            }
-            condition { it.code == ResponseCode.ACCEPTED.statusCode }
+        postConfig(
+            config,
+            section,
+            currentConfig["version"].toString(),
+            currentSchemaVersion["major"].toString(),
+            currentSchemaVersion["minor"].toString())
         }
     }
 }
