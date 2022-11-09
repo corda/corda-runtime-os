@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 
 class RevocationCheckerTest {
     private companion object {
-        val futureTimeOut: Duration = Duration.ofSeconds(60)
+        val futureTimeOut: Duration = Duration.ofSeconds(120)
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         val topicService = TopicServiceImpl()
         val rpcTopicService = RPCTopicServiceImpl()
