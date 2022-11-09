@@ -59,7 +59,7 @@ class CompactedSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
-    open class TestProcessor : CompactedProcessor<String, String> {
+    private open class TestProcessor : CompactedProcessor<String, String> {
         private val log = loggerFor<TestProcessor>()
 
         override val keyClass: Class<String>
