@@ -16,6 +16,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -23,7 +24,6 @@ import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.Lifecycle
@@ -153,7 +153,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: UpdateConfigParameters): UpdateConfigResponse {
+    override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<Any> {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -169,12 +169,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
-            UpdateConfigResponse(
-                response.section, response.config, ConfigSchemaVersion(
-                    response.schemaVersion.majorVersion,
-                    response.schemaVersion.minorVersion
-                ), response.version
-            )
+            ResponseEntity.accepted("")
         } else {
             val exception = response.exception
             if (exception == null) {

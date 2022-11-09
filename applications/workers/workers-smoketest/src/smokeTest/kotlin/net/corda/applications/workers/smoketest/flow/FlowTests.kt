@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
+import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
@@ -23,6 +24,8 @@ import net.corda.applications.workers.smoketest.updateConfig
 import net.corda.applications.workers.smoketest.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -32,8 +35,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import kotlin.text.Typography.quote
-import net.corda.v5.crypto.DigestAlgorithmName
 
 @Suppress("Unused", "FunctionName")
 @Order(20)
@@ -42,6 +43,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 class FlowTests {
 
     companion object {
+        private val logger = contextLogger()
         private val testRunUniqueId = UUID.randomUUID()
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
@@ -738,7 +740,7 @@ class FlowTests {
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
         // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
-        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
+        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG, logger)
 
         // Wait for the rpc-worker to reload the configuration and come back up
         waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
@@ -778,7 +780,7 @@ class FlowTests {
             }
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
+            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG, logger)
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
     }
