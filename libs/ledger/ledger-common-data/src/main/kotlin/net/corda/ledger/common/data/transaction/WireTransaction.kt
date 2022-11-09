@@ -109,13 +109,14 @@ class WireTransaction(
             )
         )
 
+    // These are prepended by the component group index to have at least 1 element in each.
     val componentMerkleTrees: Map<Int, MerkleTree> get() = _componentMerkleTrees
     private val _componentMerkleTrees: MutableMap<Int, MerkleTree> = ConcurrentHashMap()
 
     val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
             val componentMerkleTree = merkleTreeProvider.createTree(
-                    // We prepend the component groups with the their index to have something in the
+                    // We prepend the component groups with their index to have something in the
                     // Merkle trees for the otherwise empty component groups too.
                 listOf(index.toByteArray()) + group,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
