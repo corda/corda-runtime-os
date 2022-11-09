@@ -36,6 +36,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -235,6 +236,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
+        } catch (ex: CordaRPCAPIPartitionException) {
+            ConfigurationManagementResponse()
         } catch (e: Exception) {
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }
