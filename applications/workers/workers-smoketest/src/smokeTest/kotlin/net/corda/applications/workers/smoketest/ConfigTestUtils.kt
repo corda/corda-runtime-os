@@ -49,7 +49,7 @@ fun updateConfig(config: String, section: String, logger: Logger) {
                 currentSchemaVersion["major"].toString(),
                 currentSchemaVersion["minor"].toString())
         } catch (ex: Exception) {
-            logger.error("Failed to put config")
+            logger.error("Failed to put config", ex)
         }
 
     }
