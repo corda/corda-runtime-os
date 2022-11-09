@@ -12,8 +12,6 @@ import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSEN
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -35,10 +33,8 @@ import java.time.Instant
 class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
+    @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
@@ -65,7 +61,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
-            digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetaData
         )
@@ -78,7 +73,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
-            digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetaData
         )

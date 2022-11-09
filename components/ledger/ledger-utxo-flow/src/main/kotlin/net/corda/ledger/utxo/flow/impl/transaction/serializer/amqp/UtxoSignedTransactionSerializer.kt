@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
@@ -24,10 +25,8 @@ import org.osgi.service.component.annotations.ServiceScope
 )class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService
 ) : BaseProxySerializer<UtxoSignedTransaction, UtxoSignedTransactionProxy>(),
     UsedByFlow, UsedByVerification {
 
@@ -49,8 +48,7 @@ import org.osgi.service.component.annotations.ServiceScope
         if (proxy.version == UtxoSignedTransactionVersion.VERSION_1) {
             return UtxoSignedTransactionImpl(
                 serializationService,
-                signingService,
-                digitalSignatureVerificationService,
+                transactionSignatureService,
                 proxy.wireTransaction,
                 proxy.signatures
             )

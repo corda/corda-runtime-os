@@ -1,15 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -19,8 +16,7 @@ import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val transactionSigningService: TransactionSignatureService,
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val transactionSignatureService: TransactionSignatureService,
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
@@ -53,12 +49,11 @@ class ConsensualSignedTransactionImpl(
 
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
-        val newSignature = transactionSigningService.sign(id, publicKey)
+        val newSignature = transactionSignatureService.sign(id, publicKey)
         return Pair(
             ConsensualSignedTransactionImpl(
                 serializationService,
-                transactionSigningService,
-                digitalSignatureVerificationService,
+                transactionSignatureService,
                 wireTransaction,
             signatures + newSignature
             ),
@@ -67,20 +62,13 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(serializationService, transactionSigningService, digitalSignatureVerificationService,
+        ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
 
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{
             try {
-                // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, it.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = it.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = it.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
+                transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
                 false
@@ -95,14 +83,7 @@ class ConsensualSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {
-                // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, it.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = it.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = it.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
+                transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(id,

@@ -15,7 +15,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -37,8 +36,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
@@ -67,7 +64,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
-            digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetaData
         )
@@ -80,7 +76,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
-            digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetaData
         )

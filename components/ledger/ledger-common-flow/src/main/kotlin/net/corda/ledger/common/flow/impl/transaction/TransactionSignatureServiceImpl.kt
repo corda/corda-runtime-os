@@ -21,7 +21,13 @@ import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 import java.time.Instant
 
-@Component(service = [TransactionSignatureService::class, SingletonSerializeAsToken::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
+const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
+
+@Suppress("Unused")
+@Component(
+    service = [TransactionSignatureService::class, SingletonSerializeAsToken::class, UsedByFlow::class],
+    scope = ServiceScope.PROTOTYPE
+)
 class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
@@ -33,29 +39,47 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val signatureSpecService: SignatureSpecService
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
-    override fun sign(txId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
-        val signatureMetadata = getSignatureMetadata()
-        val signableData = SignableData(txId, signatureMetadata)
+    override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
+        val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
+        require(signatureSpec != null) { "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})" }
+        val signatureMetadata = getSignatureMetadata(signatureSpec)
+        val signableData = SignableData(transactionId, signatureMetadata)
         val signature = signingService.sign(
             serializationService.serialize(signableData).bytes,
             publicKey,
             SignatureSpec.ECDSA_SHA256
-        ) //Rework with CORE-6969
+        )
         return DigitalSignatureAndMetadata(signature, signatureMetadata)
     }
 
-    override fun verifySignature() {
-        TODO("Not yet implemented")
+    override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
+        val signatureSpecStr = signatureWithMetadata.metadata.properties[SIGNATURE_METADATA_SIGNATURE_SPEC_KEY]
+        require(signatureSpecStr != null) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
+        val signatureSpec = SignatureSpec(signatureSpecStr)
+
+        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
+        require(signatureSpec in compatibleSpecs) {
+            "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
+        }
+
+        val signedData = SignableData(transactionId, signatureWithMetadata.metadata)
+        digitalSignatureVerificationService.verify(
+            publicKey = signatureWithMetadata.by,
+            signatureSpec = signatureSpec,
+            signatureData = signatureWithMetadata.signature.bytes,
+            clearData = serializationService.serialize(signedData).bytes
+        )
     }
 
-    private fun getSignatureMetadata(): DigitalSignatureMetadata {
+    private fun getSignatureMetadata(signatureSpec: SignatureSpec): DigitalSignatureMetadata {
         val cpiSummary = getCpiSummary()
         return DigitalSignatureMetadata(
             Instant.now(),
             linkedMapOf(
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
-                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
+                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString(),
+                SIGNATURE_METADATA_SIGNATURE_SPEC_KEY to signatureSpec.signatureName
             )
         )
     }

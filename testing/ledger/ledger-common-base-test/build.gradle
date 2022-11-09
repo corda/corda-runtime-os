@@ -9,7 +9,7 @@ dependencies {
 
     api project(':testing:ledger:ledger-common-testkit')
     api project(':components:ledger:ledger-common-flow')
-    api project(':components:ledger:ledger-common-flow-api')
+    //api project(':components:ledger:ledger-common-flow-api')
     api project(':libs:ledger:ledger-common-data')
 
     api project(':libs:crypto:cipher-suite-impl')
