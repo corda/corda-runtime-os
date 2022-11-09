@@ -1,6 +1,10 @@
 package net.corda.messaging.integration.subscription
 
-import net.corda.utilities.concurrent.getOrThrow
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -13,6 +17,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,6 +33,7 @@ import net.corda.messaging.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCUnresponsiveResponderProcessor
 import net.corda.test.util.eventually
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
@@ -41,11 +47,6 @@ import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class RPCSubscriptionIntegrationTest {
@@ -336,7 +337,7 @@ class RPCSubscriptionIntegrationTest {
             }
         }
         eventually(10.seconds, 1.seconds) {
-            assertThrows<CordaRPCAPISenderException> {
+            assertThrows<CordaRPCAPIPartitionException> {
                 future.getOrThrow()
             }
         }
