@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -329,7 +330,7 @@ class FlowRPCOpsImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
-        verify(cpiInfoReadService, times(1)).get(any())
+        verify(cpiInfoReadService, atLeastOnce()).get(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())

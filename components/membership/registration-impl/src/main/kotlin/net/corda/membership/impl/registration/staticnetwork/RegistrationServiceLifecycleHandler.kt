@@ -3,40 +3,66 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.data.membership.staticgroup.StaticGroupDefinition
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.impl.registration.staticnetwork.cache.GroupParametersCache
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
 class RegistrationServiceLifecycleHandler(
     staticMemberRegistrationService: StaticMemberRegistrationService
 ) : LifecycleEventHandler {
+    companion object {
+        const val CONSUMER_GROUP = "STATIC_GROUP_DEFINITION"
+    }
+
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
     // for checking the components' health
     private var componentHandle: AutoCloseable? = null
+    private var subRegistrationHandle: RegistrationHandle? = null
 
     private val publisherFactory = staticMemberRegistrationService.publisherFactory
 
+    private val subscriptionFactory = staticMemberRegistrationService.subscriptionFactory
+
     private val configurationReadService = staticMemberRegistrationService.configurationReadService
 
+    private val platformInfoProvider = staticMemberRegistrationService.platformInfoProvider
+
+    private val keyEncodingService = staticMemberRegistrationService.keyEncodingService
+
+    private var _groupParametersCache: GroupParametersCache? = null
+
     private var _publisher: Publisher? = null
+
+    private var subscription: Subscription<String, StaticGroupDefinition>? = null
 
     /**
      * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
      */
     val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
+
+    val groupParametersCache: GroupParametersCache
+        get() = _groupParametersCache ?: throw IllegalArgumentException("GroupParametersCache is not initialized.")
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when(event) {
@@ -63,6 +89,10 @@ class RegistrationServiceLifecycleHandler(
         configHandle?.close()
         _publisher?.close()
         _publisher = null
+        subRegistrationHandle?.close()
+        subRegistrationHandle = null
+        subscription?.close()
+        subscription = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -71,15 +101,23 @@ class RegistrationServiceLifecycleHandler(
     ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
-                    coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                )
+                if (event.registration == subRegistrationHandle) {
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                } else {
+                    configHandle?.close()
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    )
+                }
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 configHandle?.close()
+                subRegistrationHandle?.close()
+                subRegistrationHandle = null
+                subscription?.close()
+                subscription = null
             }
         }
     }
@@ -92,8 +130,42 @@ class RegistrationServiceLifecycleHandler(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
+        _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+
+        subscription?.close()
+        subscription = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
+            Processor(groupParametersCache),
+            event.config.getConfig(MESSAGING_CONFIG)
+        ).also {
+            it.start()
+            subRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+        }
+
         if(coordinator.status != LifecycleStatus.UP) {
             coordinator.updateStatus(LifecycleStatus.UP)
+        }
+    }
+
+    internal inner class Processor(
+        private val groupParametersCache: GroupParametersCache
+    ) : CompactedProcessor<String, StaticGroupDefinition> {
+        override val keyClass = String::class.java
+        override val valueClass = StaticGroupDefinition::class.java
+        override fun onNext(
+            newRecord: Record<String, StaticGroupDefinition>,
+            oldValue: StaticGroupDefinition?,
+            currentData: Map<String, StaticGroupDefinition>
+        ) {
+            with(newRecord) {
+                value?.let { groupParametersCache.set(key, it.groupParameters) }
+            }
+        }
+
+        override fun onSnapshot(currentData: Map<String, StaticGroupDefinition>) {
+            currentData.entries.forEach {
+                groupParametersCache.set(it.key, it.value.groupParameters)
+            }
         }
     }
 }

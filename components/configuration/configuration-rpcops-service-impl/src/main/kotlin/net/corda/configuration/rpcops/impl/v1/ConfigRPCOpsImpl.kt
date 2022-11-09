@@ -7,8 +7,9 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
+import net.corda.configuration.rpcops.impl.exception.ConfigException
+import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
-import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -24,6 +25,7 @@ import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.Lifecycle
@@ -182,12 +184,20 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
-            throw ConfigVersionException(
-                exception.errorType,
-                exception.errorMessage,
-                response.schemaVersion,
-                response.config
-            )
+
+            when(exception.errorType) {
+                WrongConfigVersionException::class.java.name -> throw ConfigVersionConflictException(
+                    exception.errorType,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config)
+                else -> throw ConfigException(
+                    exception.errorType,
+                    exception.errorMessage,
+                    response.schemaVersion,
+                    response.config
+                )
+            }
         }
     }
 

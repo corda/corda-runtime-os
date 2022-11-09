@@ -152,9 +152,9 @@ class FlowFiberImpl(
         // We close the sessions here, which delegates to the subFlow finished request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFinished(sessions))
         }
         flowCompletion.complete(outcomeOfFlow)
     }
@@ -164,11 +164,15 @@ class FlowFiberImpl(
         // We close the sessions here, which delegates to the subFlow failed request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFailed(throwable, sessions))
         }
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
+    }
+
+    private fun getRemainingInitiatedSessions(): List<String> {
+        return getRemainingFlowStackItem().sessions.filter { it.initiated }.map { it.sessionId }.toList()
     }
 
     @Suppress("ThrowsCount")

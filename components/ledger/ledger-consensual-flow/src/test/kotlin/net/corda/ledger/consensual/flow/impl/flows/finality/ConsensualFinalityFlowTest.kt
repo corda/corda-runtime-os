@@ -57,6 +57,7 @@ class ConsensualFinalityFlowTest {
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
     private val signedTransaction = mock<ConsensualSignedTransaction>()
+    private val updatedSignedTransaction = mock<ConsensualSignedTransaction>()
 
     @BeforeEach
     fun beforeEach() {
@@ -73,7 +74,8 @@ class ConsensualFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
-        whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(signedTransaction)
+        whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
+        whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
@@ -92,13 +94,15 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice, times(2)).send(signedTransaction)
-        verify(sessionBob, times(2)).send(signedTransaction)
+        verify(sessionAlice).send(signedTransaction)
+        verify(sessionAlice).send(updatedSignedTransaction)
+        verify(sessionBob).send(signedTransaction)
+        verify(sessionBob).send(updatedSignedTransaction)
     }
 
     @Test
@@ -113,10 +117,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -131,10 +135,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -151,10 +155,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -173,13 +177,15 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice, times(2)).send(signedTransaction)
-        verify(sessionBob, times(2)).send(signedTransaction)
+        verify(sessionAlice).send(signedTransaction)
+        verify(sessionAlice).send(updatedSignedTransaction)
+        verify(sessionBob).send(signedTransaction)
+        verify(sessionBob).send(updatedSignedTransaction)
     }
 
     @Test
@@ -196,10 +202,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -216,10 +222,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -239,10 +245,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -259,10 +265,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -276,10 +282,10 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CryptoSignatureException::class.java)
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -298,10 +304,10 @@ class ConsensualFinalityFlowTest {
         verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     private fun callFinalityFlow(signedTransaction: ConsensualSignedTransaction, sessions: List<FlowSession>) {

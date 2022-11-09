@@ -14,7 +14,7 @@ import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerR
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -34,7 +34,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -90,10 +89,7 @@ class ConsensualLedgerRepositoryTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            repository = ctx.getSandboxSingletonServices()
-                .filterIsInstance<ConsensualLedgerRepository>()
-                .singleOrNull()
-                ?: fail("No ConsensualLedgerRepository found for sandbox")
+            repository = ctx.getSandboxSingletonService()
         }
     }
 

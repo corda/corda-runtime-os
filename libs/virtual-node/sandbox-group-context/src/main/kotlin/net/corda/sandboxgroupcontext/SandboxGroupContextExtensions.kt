@@ -13,9 +13,32 @@ inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = g
  * Fetch service instances previously created using [SandboxGroupContextComponent.registerMetadataServices].
  */
 @Suppress("KDocUnresolvedReference")
-inline fun <reified T : Any> SandboxGroupContext.getMetadataServices(): Set<T> = getObjectByKey(T::class.java.name) ?: emptySet()
+fun <T : Any> SandboxGroupContext.getMetadataServices(type: Class<T>): Set<T> = getObjectByKey(type.name) ?: emptySet()
+
+inline fun <reified T : Any> SandboxGroupContext.getMetadataServices(): Set<T> = getMetadataServices(T::class.java)
 
 /**
- * Fetch the set of singleton services created for use by this sandbox.
+ * Fetch the set of all singleton services created for use by this sandbox.
  */
-fun SandboxGroupContext.getSandboxSingletonServices(): Set<Any> = getObjectByKey(SANDBOX_SINGLETONS) ?: emptySet()
+fun SandboxGroupContext.getAllSandboxSingletonServices(): Set<Any> = getObjectByKey(SANDBOX_SINGLETONS) ?: emptySet()
+
+/**
+ * Fetch the set of this sandbox's singleton services that are of type [T].
+ */
+fun <T : Any> SandboxGroupContext.getSandboxSingletonServices(type: Class<T>): Set<T> {
+    return getAllSandboxSingletonServices().filterIsInstanceTo(linkedSetOf(), type)
+}
+
+inline fun <reified T : Any> SandboxGroupContext.getSandboxSingletonServices(): Set<T> {
+    return getSandboxSingletonServices(T::class.java)
+}
+
+/**
+ * Fetch the single service of type [T] from the sandbox's set of singletons.
+ */
+fun <T : Any> SandboxGroupContext.getSandboxSingletonService(type: Class<T>): T {
+    return getSandboxSingletonServices(type).singleOrNull()
+        ?: throw IllegalStateException("${type.name} service missing from sandbox")
+}
+
+inline fun <reified T : Any> SandboxGroupContext.getSandboxSingletonService(): T = getSandboxSingletonService(T::class.java)

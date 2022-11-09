@@ -27,15 +27,12 @@ import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMe
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -44,7 +41,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -155,13 +151,10 @@ class ConsensualLedgerMessageProcessorTests {
             TransactionMetadata.CPI_METADATA_KEY to cpiPackgeSummaryExample,
             TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample
         ))
-        val singletonServices = ctx.getSandboxSingletonServices().ifEmpty {
-            fail("Sandbox has no singleton services")
-        }
         val wireTransaction = getWireTransactionExample(
-            singletonServices.filterIsInstance<DigestService>().single(),
-            singletonServices.filterIsInstance<MerkleTreeProvider>().single(),
-            singletonServices.filterIsInstance<JsonMarshallingService>().single(),
+            ctx.getSandboxSingletonService(),
+            ctx.getSandboxSingletonService(),
+            ctx.getSandboxSingletonService(),
             consensualTransactionMetadataExample
         )
         return ConsensualSignedTransactionContainer(

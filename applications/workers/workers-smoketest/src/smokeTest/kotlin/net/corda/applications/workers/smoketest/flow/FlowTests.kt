@@ -74,8 +74,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
-            "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
+            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         @BeforeAll
