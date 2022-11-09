@@ -24,7 +24,7 @@ class RevocationCheckerClientTest {
 
     @AfterEach
     fun cleanUp() {
-        mockRPCSender.close()
+        mockRPCSenderConstruction.close()
     }
 
     @Test
