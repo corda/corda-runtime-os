@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
+import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -23,6 +24,7 @@ import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.fail
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val P2P_TENANT_ID = "p2p"
@@ -56,9 +58,18 @@ fun E2eCluster.uploadCpi(
                 fileName = "$uniqueName.cpb",
                 size = jar.size.toLong(),
             )
+            upload.hashCode()
             val id = cpi(upload).id
+
             eventually {
-                val status = status(id)
+                val status = try {
+                    // status() throws exceptions for certain Http errors rather than returning an error. This means we
+                    // must catch any errors expected due to asynchronicity here and fail them, so the eventually loop
+                    // can retry rather than stop the test with an unexpected exception at this point.
+                    status(id)
+                } catch(_: RequestErrorException) {
+                    fail()
+                }
                 assertThat(status.status).isEqualTo("OK")
                 status.cpiFileChecksum
             }
