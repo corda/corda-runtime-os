@@ -47,7 +47,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val signature = signingService.sign(
             serializationService.serialize(signableData).bytes,
             publicKey,
-            SignatureSpec.ECDSA_SHA256
+            signatureSpec
         )
         return DigitalSignatureAndMetadata(signature, signatureMetadata)
     }
