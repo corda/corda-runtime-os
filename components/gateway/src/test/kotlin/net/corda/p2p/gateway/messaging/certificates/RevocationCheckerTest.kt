@@ -1,13 +1,13 @@
 package net.corda.p2p.gateway.messaging.certificates
 
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.p2p.gateway.certificates.RevocationChecker
-import net.corda.p2p.gateway.certificates.RevocationMode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito

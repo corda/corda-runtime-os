@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.KeyStoreWithPem
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test

@@ -2,14 +2,12 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.crypto.utils.convertToKeyStore
-import net.corda.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.security.cert.CertificateFactory
-import java.util.logging.Logger
 
 class CertificateValidatorTest {
     private companion object {
