@@ -7,6 +7,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
@@ -53,7 +54,7 @@ class FlowRunnerImplTest {
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
-    private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }
+    private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
     private var rpcFlow = mock<RPCStartableFlow>()
     private var initiatedFlow = mock<ResponderFlow>()
 
@@ -182,7 +183,7 @@ class FlowRunnerImplTest {
 
         assertThat(result).isSameAs(fiberFuture)
 
-        assertThat(flowStackItem.sessionIds).containsOnly(SESSION_ID_1)
+        assertThat(flowStackItem.sessions).containsOnly(FlowStackItemSession(SESSION_ID_1, true))
         verify(sandboxDependencyInjector).injectServices(initiatedFlow)
     }
 
