@@ -63,17 +63,24 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
 
         var retry = 0
         var timeTried: Long
+
+        val timeout = args.timeout.toMillis()
         do {
             Thread.sleep(args.interval.toMillis())
+
             response = args.command!!.invoke()
-            if(null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
+
+            if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
                 fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
             }
+
             if (args.condition!!.invoke(response)) break
+
             retry++
             timeTried = args.interval.toMillis() * retry
-            println("Failed after $retry retry ($timeTried ms): $response")
-        } while (timeTried < args.timeout.toMillis())
+
+            println("Waiting for condition, retry $retry ($timeTried ms): $response")
+        } while (timeTried < timeout)
 
         assertThat(args.condition!!.invoke(response!!))
             .withFailMessage(
