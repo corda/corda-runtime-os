@@ -38,8 +38,10 @@ class ConsensualTransactionBuilderImpl(
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
+    private var alreadySigned = false
+
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = this.states + states)
+        copy(states = this.states + states)
 
     @Suspendable
     override fun sign(): ConsensualSignedTransaction {
@@ -52,6 +54,7 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(signatories.toList().isNotEmpty()){
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
@@ -65,13 +68,17 @@ class ConsensualTransactionBuilderImpl(
                 it
             )
         }
-        return ConsensualSignedTransactionImpl(
+
+        val tx = ConsensualSignedTransactionImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
             signaturesWithMetadata
         )
+
+        alreadySigned = true
+        return tx
     }
 
     private fun buildWireTransaction(): WireTransaction {
