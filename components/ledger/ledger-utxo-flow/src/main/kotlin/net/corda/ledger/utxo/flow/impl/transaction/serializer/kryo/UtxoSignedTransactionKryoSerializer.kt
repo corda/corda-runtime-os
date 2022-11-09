@@ -15,8 +15,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope
 
-@Component(service = [CheckpointInternalCustomSerializer::class, UsedByFlow::class])
+@Component(service = [CheckpointInternalCustomSerializer::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serialisationService: SerializationService,

@@ -3,7 +3,6 @@ package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
@@ -20,7 +19,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
     scope = PROTOTYPE
 )
 class ConsensualSignedTransactionSerializer @Activate constructor(
@@ -31,7 +30,7 @@ class ConsensualSignedTransactionSerializer @Activate constructor(
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService
 ) : BaseProxySerializer<ConsensualSignedTransaction, ConsensualSignedTransactionProxy>(),
-        UsedByFlow, UsedByPersistence, UsedByVerification {
+    UsedByFlow, UsedByVerification {
 
     override val type = ConsensualSignedTransaction::class.java
 
