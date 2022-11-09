@@ -866,7 +866,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
+    fun `processReplayedAuthenticatedMessage produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMessage = AuthenticatedMessage(

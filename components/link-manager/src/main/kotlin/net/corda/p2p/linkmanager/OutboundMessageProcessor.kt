@@ -105,35 +105,24 @@ internal class OutboundMessageProcessor(
     }
 
     private fun checkSourceAndDestinationValid(
-        messageID: String?, source: HoldingIdentity, destination: HoldingIdentity
+        source: HoldingIdentity, destination: HoldingIdentity
     ): Pair<Boolean, String?> {
-        if (source.groupId == destination.groupId && linkManagerHostingMap.isHostedLocally(source)) {
-            return Pair(true, "")
-        }
-
-        val messageType:String = if(messageID.isNullOrEmpty()) {
-            "unauthenticated"
-        } else {
-            "authenticated"
-        }
-
          return if (source.groupId != destination.groupId) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination " +
-                    "as their group IDs do not match.")
             return Pair(false, "group IDs do not match")
         } else if (!linkManagerHostingMap.isHostedLocally(source)) {
-            logger.warn("Dropping outbound $messageType message $messageID from $source to $destination " +
-                    "as the source ID is not locally hosted.")
             return Pair(false, "source ID is not locally hosted")
-        } else Pair(false, "")
+        } else Pair(true, null)
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        val resultAndReason = checkSourceAndDestinationValid(
-                messageID = null, message.header.source.toCorda(), message.header.destination.toCorda())
-        if (!resultAndReason.first) {
+        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
+            message.header.source.toCorda(), message.header.destination.toCorda()
+        )
+        if (!sourceAndDestinationValid) {
+            logger.warn("Dropping outbound unauthenticated message from ${message.header.source} to ${message.header.destination} as the " +
+                    discardReason)
             return emptyList()
         }
 
@@ -176,12 +165,14 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        val resultAndReason = checkSourceAndDestinationValid(
-            messageAndKey.message.header.messageId, messageAndKey.message.header.source.toCorda(),
-            messageAndKey.message.header.destination.toCorda())
+        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
+            messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda()
+        )
 
-        if (!resultAndReason.first) {
-            return listOf(recordForLMDiscardedMarker(messageAndKey, resultAndReason.second!!))
+        if (!sourceAndDestinationValid) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
+                    " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
+            return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason!!))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
