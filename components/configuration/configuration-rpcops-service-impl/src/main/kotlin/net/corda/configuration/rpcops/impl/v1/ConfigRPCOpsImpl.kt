@@ -7,8 +7,8 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigException
+import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -156,7 +156,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<Any> {
+    override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<String> {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal

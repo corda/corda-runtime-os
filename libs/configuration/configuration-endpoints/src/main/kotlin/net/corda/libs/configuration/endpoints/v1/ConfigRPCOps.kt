@@ -48,7 +48,7 @@ interface ConfigRPCOps : RpcOps {
                 match the version stored in the database for the corresponding section or -1 if this is a new section 
                 for which no configuration has yet been stored.""")
         request: UpdateConfigParameters
-    ): ResponseEntity<Any>
+    ): ResponseEntity<String>
 
     /**
      * Get the configuration data the cluster is set with for a specific [section].
