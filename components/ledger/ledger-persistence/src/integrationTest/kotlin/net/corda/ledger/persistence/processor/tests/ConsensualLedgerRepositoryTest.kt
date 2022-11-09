@@ -28,8 +28,11 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -123,7 +126,7 @@ class ConsensualLedgerRepositoryTest {
             }.onEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
-                signedTransaction.id.toHexString(),
+                signedTransaction.id.toString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
                 createdTs
@@ -136,7 +139,7 @@ class ConsensualLedgerRepositoryTest {
                                 groupIndex,
                                 leafIndex,
                                 component,
-                                MessageDigest.getInstance("SHA-256").digest(component).toHexString(),
+                                digest("SHA-256", component).toString(),
                                 createdTs
                             )
                         }
@@ -153,7 +156,7 @@ class ConsensualLedgerRepositoryTest {
                             transaction,
                             index,
                             serializationService.serialize(signature).bytes,
-                            MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString(),
+                            digest("SHA-256", signature.by.encoded).toString(),
                             createdTs
                         )
                     }
@@ -164,7 +167,7 @@ class ConsensualLedgerRepositoryTest {
         }
 
         val dbSignedTransaction = entityManagerFactory.createEntityManager().transaction { em ->
-            repository.findTransaction(em, signedTransaction.id.toHexString())
+            repository.findTransaction(em, signedTransaction.id.toString())
         }
 
         assertThat(dbSignedTransaction).isEqualTo(signedTransaction)
@@ -185,7 +188,7 @@ class ConsensualLedgerRepositoryTest {
 
         // Verify persisted data
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toHexString())
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toString())
 
             assertThat(dbTransaction).isNotNull
             val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
@@ -212,7 +215,7 @@ class ConsensualLedgerRepositoryTest {
                             assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
                             assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
                             assertThat(dbComponent.field<String>("hash")).isEqualTo(
-                                MessageDigest.getInstance("SHA-256").digest(component).toHexString()
+                                digest("SHA-256", component).toString()
                             )
                             assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
@@ -242,7 +245,7 @@ class ConsensualLedgerRepositoryTest {
                         ).bytes
                     )
                     assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        MessageDigest.getInstance("SHA-256").digest(signature.by.encoded).toHexString()
+                        digest("SHA-256", signature.by.encoded).toString()
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
@@ -271,7 +274,7 @@ class ConsensualLedgerRepositoryTest {
             }.forEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
-                signedTransaction.id.toHexString(),
+                signedTransaction.id.toString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
                 createdTs
@@ -286,7 +289,7 @@ class ConsensualLedgerRepositoryTest {
         // Verify persisted data
         assertThat(persistedCpkCount).isEqualTo(existingCpks.size)
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toHexString())
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toString())
 
             val txCpks = dbTransaction.field<Collection<Any>?>("cpks")
             assertThat(txCpks).isNotNull
@@ -318,7 +321,7 @@ class ConsensualLedgerRepositoryTest {
             }.onEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
-                signedTransaction.id.toHexString(),
+                signedTransaction.id.toString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
                 Instant.now()
@@ -393,4 +396,7 @@ class ConsensualLedgerRepositoryTest {
         )
         return SignedTransactionContainer(wireTransaction, signatures)
     }
+
+    private fun digest(algorithm: String, data: ByteArray) =
+        SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 }

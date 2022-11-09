@@ -27,8 +27,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
-import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

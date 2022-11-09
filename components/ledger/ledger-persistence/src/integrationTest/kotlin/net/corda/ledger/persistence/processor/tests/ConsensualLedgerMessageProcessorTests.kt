@@ -133,7 +133,7 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toHexString()))
+        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
         responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
@@ -205,6 +205,4 @@ class ConsensualLedgerMessageProcessorTests {
     /* Simple wrapper to deserialize */
     private inline fun <reified T : Any> SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializationService().deserialize<T>(bytes.array())
-
-    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 }
