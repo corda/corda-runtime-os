@@ -120,7 +120,9 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertEquals(successResponse, configRPCOps.updateConfig(req))
+        val response = configRPCOps.updateConfig(req)
+        assertEquals(successResponse.responseCode, response.responseCode)
+        assertEquals(successResponse.responseBody, response.responseBody)
     }
 
     @Test
