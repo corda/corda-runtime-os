@@ -59,7 +59,6 @@ fun E2eCluster.uploadCpi(
                 size = jar.size.toLong(),
             )
             val id = cpi(upload).id
-
             eventually {
                 val status = try {
                     // status() throws exceptions for certain Http errors rather than returning an error. This means we
