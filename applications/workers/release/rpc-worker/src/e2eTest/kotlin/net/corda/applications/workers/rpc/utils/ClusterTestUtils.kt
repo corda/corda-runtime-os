@@ -58,7 +58,6 @@ fun E2eCluster.uploadCpi(
                 fileName = "$uniqueName.cpb",
                 size = jar.size.toLong(),
             )
-            upload.hashCode()
             val id = cpi(upload).id
 
             eventually {
