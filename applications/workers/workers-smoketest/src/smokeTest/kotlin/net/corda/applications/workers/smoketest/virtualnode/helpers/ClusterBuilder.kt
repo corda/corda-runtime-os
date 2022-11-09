@@ -154,7 +154,7 @@ class ClusterBuilder {
     fun getConfig(section: String) = get("/api/v1/config/$section")
 
     /** Update the cluster configuration for the specified section and versions with unescaped Json */
-    fun putConfig(
+    fun postConfig(
         config: String,
         section: String,
         configVersion: String,
@@ -173,7 +173,7 @@ class ClusterBuilder {
             }
         """.trimIndent()
 
-        return put("/api/v1/config", payload)
+        return post("/api/v1/config", payload)
     }
 }
 

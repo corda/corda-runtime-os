@@ -43,7 +43,7 @@ fun updateConfig(config: String, section: String) {
                 val currentConfig = getConfig(section).body.toJson()
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                putConfig(
+                postConfig(
                     config,
                     section,
                     currentConfig["version"].toString(),
