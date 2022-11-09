@@ -63,11 +63,11 @@ class FilteredTransactionImpl(
 
         val transactionMetadataProof = filteredComponentGroups[0]!!.merkleProof
 
-        validate(transactionMetadataProof.treeSize == 1) {
-            "Component group 0's Merkle proof must have a tree size of 1 but has a size of ${transactionMetadataProof.treeSize}"
+        validate(transactionMetadataProof.treeSize == 2) {
+            "Component group 0's Merkle proof must have a tree size of 2 but has a size of ${transactionMetadataProof.treeSize}"
         }
-        validate(transactionMetadataProof.leaves.size == 1) {
-            "Component group 0's Merkle proof must have a single leaf but contains ${transactionMetadataProof.leaves.size}"
+        validate(transactionMetadataProof.leaves.size == 2) {
+            "Component group 0's Merkle proof must have two leaves but contains ${transactionMetadataProof.leaves.size}"
         }
 
         validate(topLevelMerkleProof.verify(id, createTopLevelAuditProofProvider())) {
@@ -96,7 +96,7 @@ class FilteredTransactionImpl(
                     componentGroupAuditProofProvider
                 }
                 MerkleProofType.SIZE -> {
-                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) {
+                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) { // todo???
                         componentGroupAuditProofProvider
                     } else {
                         componentGroupSizeProofProvider
@@ -112,12 +112,16 @@ class FilteredTransactionImpl(
 
     override val metadata: TransactionMetadata by lazy {
         val proof = checkNotNull(filteredComponentGroups[0]?.merkleProof) { "Component group 0's Merkle proof does not exist" }
-        check(proof.leaves.size == 1) { "Component group 0's Merkle proof must have a single leaf but contains ${proof.leaves.size}" }
-        jsonMarshallingService.parse(proof.leaves.single().leafData.decodeToString())
+        check(proof.leaves.size == 2) { "Component group 0's Merkle proof must have two leaves but contains ${proof.leaves.size}" }
+        jsonMarshallingService.parse(proof.leaves[1].leafData.decodeToString())
     }
 
     override fun getComponentGroupContent(componentGroupIndex: Int): List<Pair<Int, ByteArray>>? {
-        return filteredComponentGroups[componentGroupIndex]?.merkleProof?.leaves?.map { it.index to it.leafData }
+        return filteredComponentGroups[componentGroupIndex]
+            ?.merkleProof
+            ?.leaves
+            ?.filterIndexed{index, _ -> index > 0 }
+            ?.map { it.index to it.leafData }
     }
 
     private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {

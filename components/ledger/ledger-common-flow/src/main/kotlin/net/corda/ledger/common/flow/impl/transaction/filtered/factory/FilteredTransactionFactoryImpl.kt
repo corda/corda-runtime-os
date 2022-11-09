@@ -92,25 +92,17 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                     }
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
-                    if (filteredComponents.isEmpty()) {
-                        merkleTree.createAuditProof(listOf(0))
-                    } else {
-                        merkleTree.createAuditProof(filteredComponents.map { (index, _) -> index })
-                    }
+                    merkleTree.createAuditProof(listOf(0) + filteredComponents.map { (index, _) -> index + 1 })
                 }
             }
             is ComponentGroupFilterParameters.SizeProof -> {
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
-                    if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
-                        merkleTree.createAuditProof(listOf(0))
-                    } else {
-                        val componentGroupMerkleTreeSizeProofProvider =
-                            checkNotNull(componentGroupMerkleTreeDigestProvider as? MerkleTreeHashDigestProviderWithSizeProofSupport) {
-                                "Expected to have digest provider with size proof support"
-                            }
-                        componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
-                    }
+                    val componentGroupMerkleTreeSizeProofProvider =
+                        checkNotNull(componentGroupMerkleTreeDigestProvider as? MerkleTreeHashDigestProviderWithSizeProofSupport) {
+                            "Expected to have digest provider with size proof support"
+                        }
+                    componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                 }
             }
         }

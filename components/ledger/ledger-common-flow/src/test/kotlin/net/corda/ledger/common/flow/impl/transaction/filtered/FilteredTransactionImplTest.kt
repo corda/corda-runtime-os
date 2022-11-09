@@ -71,6 +71,7 @@ class FilteredTransactionImplTest {
     private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1Proof, MerkleProofType.SIZE)
     private val indexedMerkleLeaf0 = indexedMerkleLeaf(0, byteArrayOf(1))
     private val indexedMerkleLeaf1 = indexedMerkleLeaf(1, byteArrayOf(2))
+    private val indexedMerkleLeaf2 = indexedMerkleLeaf(2, byteArrayOf(3))
 
     private lateinit var filteredTransaction: FilteredTransaction
 
@@ -144,7 +145,7 @@ class FilteredTransactionImplTest {
     }
 
     @Test
-    fun `verification fails when filtered component group 0's tree size is 0`() {
+    fun `verification fails when filtered component group 0's tree size is 1`() {
         filteredTransaction = filteredTransaction(
             filteredComponentGroups = mapOf(
                 0 to filteredComponentGroup0,
@@ -154,15 +155,15 @@ class FilteredTransactionImplTest {
 
         whenever(componentGroupMerkleProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1)))
 
-        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(0)
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a tree size of 1 but has a size of 0")
+            .hasMessageContaining("Component group 0's Merkle proof must have a tree size of 2 but has a size of 1")
     }
 
     @Test
-    fun `verification fails when filtered component group 0's tree size is greater than 1`() {
+    fun `verification fails when filtered component group 0's tree size is greater than 2`() {
         filteredTransaction = filteredTransaction(
             filteredComponentGroups = mapOf(
                 0 to filteredComponentGroup0,
@@ -176,7 +177,7 @@ class FilteredTransactionImplTest {
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a tree size of 1 but has a size of 5")
+            .hasMessageContaining("Component group 0's Merkle proof must have a tree size of 2 but has a size of 5")
     }
 
     @Test
@@ -195,11 +196,11 @@ class FilteredTransactionImplTest {
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a single leaf but contains 0")
+            .hasMessageContaining("Component group 0's Merkle proof must have a tree size of 2 but has a size of 1")
     }
 
     @Test
-    fun `verification fails when filtered component group 0's number of leaves is greater than 1`() {
+    fun `verification fails when filtered component group 0's number of leaves is greater than 2`() {
         filteredTransaction = filteredTransaction(
             filteredComponentGroups = mapOf(
                 0 to filteredComponentGroup0,
@@ -209,12 +210,14 @@ class FilteredTransactionImplTest {
 
         whenever(componentGroupMerkleProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1)))
 
-        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1)))
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(2)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(
+            listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1), indexedMerkleLeaf(2))
+        )
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a single leaf but contains 2")
+            .hasMessageContaining("Component group 0's Merkle proof must have two leaves but contains 3")
     }
 
     @Test
@@ -231,8 +234,13 @@ class FilteredTransactionImplTest {
         whenever(componentGroupMerkleProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1)))
         whenever(componentGroupMerkleProof.verify(eq(transactionId), any())).thenReturn(false)
 
-        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataJson.encodeToByteArray())))
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(2)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(
+            listOf(
+                indexedMerkleLeaf(0),
+                indexedMerkleLeaf(1, metadataJson.encodeToByteArray())
+            )
+        )
 
         assertThatThrownBy { filteredTransaction.verify() }
             .isInstanceOf(FilteredTransactionVerificationException::class.java)
@@ -245,8 +253,13 @@ class FilteredTransactionImplTest {
 
         componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
 
-        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataJson.encodeToByteArray())))
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(2)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(
+            listOf(
+                indexedMerkleLeaf(0),
+                indexedMerkleLeaf(1, metadataJson.encodeToByteArray())
+            )
+        )
 
         assertDoesNotThrow { filteredTransaction.verify() }
     }
@@ -506,17 +519,17 @@ class FilteredTransactionImplTest {
     }
 
     @Test
-    fun `metadata cannot be retrieved if its component group has more than one leaf`() {
+    fun `metadata cannot be retrieved if its component group has more than two leaves`() {
         filteredTransaction = filteredTransaction(
             filteredComponentGroups = mapOf(
                 0 to filteredComponentGroup0,
                 1 to filteredComponentGroup1WithAuditProof
             )
         )
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf0, indexedMerkleLeaf1))
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf0, indexedMerkleLeaf1, indexedMerkleLeaf2))
         assertThatThrownBy { filteredTransaction.metadata }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a single leaf but contains 2")
+            .hasMessageContaining("Component group 0's Merkle proof must have two leaves but contains 3")
     }
 
     @Test
@@ -530,7 +543,7 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup0Proof.leaves).thenReturn(emptyList())
         assertThatThrownBy { filteredTransaction.metadata }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Component group 0's Merkle proof must have a single leaf but contains 0")
+            .hasMessageContaining("Component group 0's Merkle proof must have two leaves but contains 0")
     }
 
     @Test
@@ -541,7 +554,12 @@ class FilteredTransactionImplTest {
                 1 to filteredComponentGroup1WithAuditProof
             )
         )
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataJson.encodeToByteArray())))
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(
+            listOf(
+                indexedMerkleLeaf(1),
+                indexedMerkleLeaf(0, metadataJson.encodeToByteArray())
+            )
+        )
         assertEquals(metadata, filteredTransaction.metadata)
     }
 
@@ -601,8 +619,13 @@ class FilteredTransactionImplTest {
     }
 
     private fun filteredComponentGroup0ProofVerifies() {
-        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataJson.encodeToByteArray())))
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(2)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(
+            listOf(
+                indexedMerkleLeaf(0),
+                indexedMerkleLeaf(1, metadataJson.encodeToByteArray())
+            )
+        )
         whenever(
             filteredComponentGroup0Proof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf0.leafData)),
