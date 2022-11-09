@@ -33,7 +33,7 @@ import java.security.PublicKey
 
 @Suppress("LongParameterList")
 @Component(
-    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class, UsedByPersistence::class],
+    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
@@ -53,7 +53,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
 ) : UtxoSignedTransactionFactory,
     UsedByFlow,
-    UsedByPersistence,
     SingletonSerializeAsToken {
 
     @Suspendable
