@@ -5,7 +5,7 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Component
 
@@ -23,7 +23,7 @@ class UtxoRequestHandlerSelectorImpl : UtxoRequestHandlerSelector {
                     UtxoPersistenceServiceImpl(
                         sandbox,
                         UtxoRepositoryImpl(),
-                        sandbox.getService(),
+                        sandbox.getSandboxSingletonService(),
                         UTCClock()
                     ),
                     UtxoOutputRecordFactoryImpl()
@@ -33,15 +33,5 @@ class UtxoRequestHandlerSelectorImpl : UtxoRequestHandlerSelector {
                 throw IllegalStateException(" the UTXO request type '${request.request.javaClass}' is not supported.")
             }
         }
-    }
-
-    /*
-     val sandboxSingletons = sandbox.getSandboxSingletonServices()
-        val repository = sandboxSingletons.filterIsInstance<ConsensualLedgerRepository>().singleOrNull()
-            ?: throw IllegalStateException("ConsensualLedgerRepository service missing from sandbox")
-     */
-    inline fun <reified T> SandboxGroupContext.getService(): T {
-        return this.getSandboxSingletonServices().filterIsInstance<T>().singleOrNull()
-            ?: throw IllegalStateException("Could not find an instance of '${T::class.java}' in the sandbox")
     }
 }
