@@ -15,9 +15,7 @@ class CertificateValidatorTest {
     }
     private val certificateFactory = CertificateFactory.getInstance("X.509")
     private val aliceX500Name =  MemberX500Name.parse("CN=Alice, O=R3 Test, L=London, S=London, C=GB")
-    private val revokedBobX500Name =  MemberX500Name.parse("CN=Bob, O=R3 Test, L=London, S=London, C=GB")
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
-    private val revokedBobCert = Certificates.bobKeyStorePem.readText()
     private val trustStore = convertToKeyStore(
         certificateFactory, listOf(Certificates.truststoreCertificatePem.readText()), keyStoreAlias
     )?.let { KeyStoreWithPem(it, listOf(Certificates.truststoreCertificatePem.readText())) }
@@ -34,19 +32,19 @@ class CertificateValidatorTest {
     @Test
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore!!, { RevocationCheckStatus.REVOKED })
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(revokedBobCert), revokedBobX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(aliceCert), aliceX500Name) }
     }
 
     @Test
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val validator = CertificateValidator(RevocationCheckMode.SOFT_FAIL, trustStore!!, { RevocationCheckStatus.REVOKED })
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(revokedBobCert), revokedBobX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(aliceCert), aliceX500Name) }
     }
 
     @Test
     fun `revoked certificate passes validation with revocation OFF`() {
         val validator = CertificateValidator(RevocationCheckMode.OFF, trustStore!!, { RevocationCheckStatus.REVOKED })
-        validator.validate(listOf(revokedBobCert), revokedBobX500Name)
+        validator.validate(listOf(aliceCert), aliceX500Name)
     }
 
     @Test
