@@ -8,8 +8,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.configuration.rpcops.impl.exception.ConfigException
-import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
+import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -17,6 +17,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -38,6 +39,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -155,7 +157,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: UpdateConfigParameters): UpdateConfigResponse {
+    override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<UpdateConfigResponse> {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -171,12 +173,12 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
-            UpdateConfigResponse(
+            ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
                     response.schemaVersion.majorVersion,
                     response.schemaVersion.minorVersion
                 ), response.version
-            )
+            ))
         } else {
             val exception = response.exception
             if (exception == null) {
@@ -250,6 +252,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
+        } catch (ex: CordaRPCAPIPartitionException) {
+            ConfigurationManagementResponse()
         } catch (e: Exception) {
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }

@@ -7,6 +7,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
+import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
@@ -231,7 +232,7 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, 
             assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
             val responseStatusId = uploadResponse.toJson()["id"].textValue()
 
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(responseStatusId) }

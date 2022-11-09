@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -336,7 +337,7 @@ class RPCSubscriptionIntegrationTest {
             }
         }
         eventually(10.seconds, 1.seconds) {
-            assertThrows<CordaRPCAPISenderException> {
+            assertThrows<CordaRPCAPIPartitionException> {
                 future.getOrThrow()
             }
         }

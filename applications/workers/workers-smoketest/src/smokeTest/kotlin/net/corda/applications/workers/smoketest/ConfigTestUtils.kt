@@ -38,19 +38,19 @@ fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        assertWithRetryIgnoringExceptions {
-            command {
                 val currentConfig = getConfig(section).body.toJson()
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                putConfig(
+        try {
+                postConfig(
                     config,
                     section,
                     currentConfig["version"].toString(),
                     currentSchemaVersion["major"].toString(),
                     currentSchemaVersion["minor"].toString())
-            }
-            condition { it.code == OK.statusCode }
+        }catch(ex: Exception) {
+            // use print as the logger isnt showing on jenkins
+            println("Failed to execute post config: ${ex.printStackTrace()}")
         }
     }
 }

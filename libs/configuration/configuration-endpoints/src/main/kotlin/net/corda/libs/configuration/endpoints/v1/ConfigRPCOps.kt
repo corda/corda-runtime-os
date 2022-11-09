@@ -2,11 +2,12 @@ package net.corda.libs.configuration.endpoints.v1
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -26,7 +27,7 @@ interface ConfigRPCOps : RpcOps {
      * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
      * @throws HttpApiException If the request returns an exceptional response.
      */
-    @HttpRpcPUT(
+    @HttpRpcPOST(
         title = "Update cluster configuration",
         description = "This method updates a section of the cluster configuration.",
         responseDescription = """
@@ -48,7 +49,7 @@ interface ConfigRPCOps : RpcOps {
                 match the version stored in the database for the corresponding section or -1 if this is a new section 
                 for which no configuration has yet been stored.""")
         request: UpdateConfigParameters
-    ): UpdateConfigResponse
+    ): ResponseEntity<UpdateConfigResponse>
 
     /**
      * Get the configuration data the cluster is set with for a specific [section].
