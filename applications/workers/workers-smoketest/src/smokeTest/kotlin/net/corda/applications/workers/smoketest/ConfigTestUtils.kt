@@ -40,12 +40,16 @@ fun updateConfig(config: String, section: String) {
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
-        putConfig(
-            config,
-            section,
-            currentConfig["version"].toString(),
-            currentSchemaVersion["major"].toString(),
-            currentSchemaVersion["minor"].toString())
+        try {
+            putConfig(
+                config,
+                section,
+                currentConfig["version"].toString(),
+                currentSchemaVersion["major"].toString(),
+                currentSchemaVersion["minor"].toString())
+        } catch (ex: Exception) {
+
+        }
 
     }
 }
