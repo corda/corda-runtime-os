@@ -15,7 +15,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
