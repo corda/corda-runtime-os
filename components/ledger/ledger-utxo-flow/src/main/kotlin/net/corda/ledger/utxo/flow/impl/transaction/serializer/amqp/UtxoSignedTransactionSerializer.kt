@@ -8,8 +8,6 @@ import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException

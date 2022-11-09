@@ -8,8 +8,6 @@ import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
