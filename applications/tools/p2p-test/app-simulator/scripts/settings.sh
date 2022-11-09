@@ -6,7 +6,7 @@ NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
 CORDA_CHART_VERSION="^0.1.0-beta"
-DOCKER_IMAGE_VERSION=5.0.0.0-beta-1664448596384
+DOCKER_IMAGE_VERSION=preTest-5.0.0.0-alpha-1667915215864
 
 # K8s namespaces
 A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a

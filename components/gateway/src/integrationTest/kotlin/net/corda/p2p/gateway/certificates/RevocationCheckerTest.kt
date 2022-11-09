@@ -15,7 +15,9 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
@@ -31,22 +33,20 @@ class RevocationCheckerTest {
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val messagingConfig = SmartConfigImpl.empty()
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val revocationChecker = RevocationChecker(subscriptionFactory, messagingConfig, lifecycleCoordinatorFactory)
-        val sender = publisherFactory.createRPCSender(revocationChecker.subscriptionConfig, messagingConfig)
+    }
+    private val revocationChecker = RevocationChecker(subscriptionFactory, messagingConfig, lifecycleCoordinatorFactory)
+    private val sender = publisherFactory.createRPCSender(revocationChecker.subscriptionConfig, messagingConfig)
 
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            revocationChecker.start()
-            sender.start()
-        }
+    @BeforeEach
+    fun setup() {
+        revocationChecker.start()
+        sender.start()
+    }
 
-        @AfterAll
-        @JvmStatic
-        fun tearDown() {
-            revocationChecker.close()
-            sender.close()
-        }
+    @AfterEach
+    fun tearDown() {
+        revocationChecker.close()
+        sender.close()
     }
 
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
