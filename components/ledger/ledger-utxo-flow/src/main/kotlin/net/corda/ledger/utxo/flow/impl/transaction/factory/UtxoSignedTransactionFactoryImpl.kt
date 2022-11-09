@@ -15,7 +15,6 @@ import net.corda.ledger.utxo.data.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
