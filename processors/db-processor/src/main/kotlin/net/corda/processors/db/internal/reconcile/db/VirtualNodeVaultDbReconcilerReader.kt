@@ -31,6 +31,7 @@ import java.util.stream.Stream
  * @param keyClass Class of the record key. Used to create the service name.
  * @param valueClass Class of the record value. Used to create the service name.
  */
+@Suppress("LongParameterList")
 class VirtualNodeVaultDbReconcilerReader<K : Any, V : Any>(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val dbConnectionManager: DbConnectionManager,
