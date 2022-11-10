@@ -1,15 +1,15 @@
 package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.databind.JsonNode
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.httprpc.JsonObject
-import net.corda.httprpc.ResponseCode.OK
-import net.corda.test.util.eventually
-import org.apache.commons.text.StringEscapeUtils
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import java.io.IOException
 import java.time.Duration
+import kong.unirest.UnirestException
+import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
+import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.httprpc.ResponseCode.OK
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.fail
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -40,19 +40,29 @@ fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        assertWithRetryIgnoringExceptions {
-            command {
-                val currentConfig = getConfig(section).body.toJson()
-                val currentSchemaVersion = currentConfig["schemaVersion"]
+        val currentConfig = getConfig(section).body.toJson()
+        val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                putConfig(
-                    config,
-                    section,
-                    currentConfig["version"].toString(),
-                    currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString())
+        try {
+            val result = putConfig(
+                config,
+                section,
+                currentConfig["version"].toString(),
+                currentSchemaVersion["major"].toString(),
+                currentSchemaVersion["minor"].toString())
+
+            if (result.code != 202) {
+                fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
             }
-            condition { it.code == OK.statusCode }
+
+        } catch (ex: UnirestException) {
+            //When a config request is sent with the section set to "corda.messaging" nearly all components in the system will respond to
+            // this config change. This will cause the HttpGateway to go down bringing down the HttpServer. This will close all the
+            // connections open from clients such as the one used in this test resulting in a UniRestException thrown
+            // for the purposes of the test we will this exception and allow the test to proceed.
+            // One solution would be for the config endpoint to return a successful result as soon as it receives confirmation the config
+            // request is on kafka and to not bother to try return the updated config.
+            // https://r3-cev.atlassian.net/browse/CORE-7930
         }
     }
 }
