@@ -9,4 +9,3 @@ class UtxoTransactionMetadata {
         const val LEDGER_VERSION = 1
     }
 }
-

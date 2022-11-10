@@ -111,6 +111,11 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                     dbRecord.version > matchedKafkaRecord.version // reconcile db updates
                             || dbRecord.isDeleted // reconcile db deletes
                 }
+
+                if (toBeReconciled) {
+                    logger.debug { "DbRecord[k=${dbRecord.key},v=${dbRecord.version}] marked for reconciliation" }
+                }
+
                 toBeReconciled
             }
                 ?: throw ReconciliationException("Error occurred while retrieving db records")

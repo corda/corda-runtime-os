@@ -57,15 +57,11 @@ import kotlin.random.Random
 class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
-    @InjectService
-    lateinit var digestService: DigestService
-    @InjectService
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-    @InjectService
-    lateinit var jsonMarshallingService: JsonMarshallingService
-    @InjectService
-    lateinit var jsonValidator: JsonValidator
 
+    private lateinit var digestService: DigestService
+    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var jsonValidator: JsonValidator
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualLedgerRepository
@@ -91,6 +87,10 @@ class ConsensualLedgerRepositoryTest {
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+            digestService = ctx.getSandboxSingletonService()
+            merkleTreeProvider = ctx.getSandboxSingletonService()
+            jsonMarshallingService = ctx.getSandboxSingletonService()
+            jsonValidator = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
