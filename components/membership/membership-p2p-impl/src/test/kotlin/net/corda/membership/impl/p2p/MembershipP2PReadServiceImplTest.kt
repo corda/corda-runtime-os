@@ -132,19 +132,16 @@ class MembershipP2PReadServiceImplTest {
     }
 
     @Test
-    fun `stop event sets status to down but closes no handles or subscriptions if they don't exist yet`() {
+    fun `stop event closes no handles or subscriptions if they don't exist yet`() {
         postStopEvent()
 
         verify(registrationHandle, never()).close()
         verify(configHandle, never()).close()
         verify(subscription, never()).close()
-        verify(coordinator).updateStatus(
-            eq(LifecycleStatus.DOWN), any()
-        )
     }
 
     @Test
-    fun `stop event sets status to down and closes handles and subscription when they have been created`() {
+    fun `stop event closes handles and subscription when they have been created`() {
         postStartEvent()
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
@@ -166,9 +163,6 @@ class MembershipP2PReadServiceImplTest {
         verify(registrationHandle).close()
         verify(configHandle).close()
         verify(subscription, times(2)).close()
-        verify(coordinator).updateStatus(
-            eq(LifecycleStatus.DOWN), any()
-        )
     }
 
     @Test

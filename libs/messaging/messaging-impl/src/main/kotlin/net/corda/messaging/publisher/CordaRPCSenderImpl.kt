@@ -1,5 +1,9 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -26,19 +30,13 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
 import net.corda.schema.Schemas.Companion.getRPCResponseTopic
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
@@ -47,78 +45,44 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val threadFactory: (() -> Unit) -> Thread = {
-        thread(
-            start = true,
-            isDaemon = true,
-            contextClassLoader = null,
-            name = "rpc response subscription thread ${config.group}-${config.topic}",
-            priority = -1,
-            block = it,
-        )
-    }
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
         private val log: Logger = contextLogger()
     }
 
-    @Volatile
-    private var stopped = false
-    private val lock = ReentrantLock()
-    private var consumeLoopThread: Thread? = null
+    private var threadLooper =
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "rpc response subscription thread", ::runConsumeLoop)
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = lifecycleCoordinator.name
+        get() = threadLooper.lifecycleCoordinatorName
 
     private val futureTracker = FutureTracker<RESPONSE>()
     private var producer: CordaProducer? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private val partitionListener = RPCConsumerRebalanceListener(
         getRPCResponseTopic(config.topic),
         "RPC Response listener",
         futureTracker,
-        lifecycleCoordinator
+        threadLooper
     )
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
+    val isRunning: Boolean
+        get() = threadLooper.isRunning
+
     override fun start() {
         log.debug { "Starting subscription with config:\n$config" }
-        lock.withLock {
-            if (consumeLoopThread == null) {
-                stopped = false
-                lifecycleCoordinator.start()
-                consumeLoopThread = threadFactory.invoke(::runConsumeLoop)
-            }
-        }
+        threadLooper.start()
     }
 
-    override fun close() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-            lifecycleCoordinator.close()
-        }
-    }
-
-    private fun stopConsumeLoop() {
-        val thread = lock.withLock {
-            stopped = true
-            producer?.close()
-            producer = null
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
-        }
-        thread?.join(config.threadStopTimeout.toMillis())
-    }
+    override fun close() = threadLooper.close()
 
     private fun runConsumeLoop() {
         var attempts = 0
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
@@ -145,17 +109,18 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        this.close()
+                        threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                        threadLooper.stopLoop()
                     }
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        producer?.close()
+        producer = null
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCResponse>) {
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processRecords(consumerRecords)
@@ -215,11 +180,11 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     futureTracker.removeFuture(correlationKey, partition)
                 } else {
-                    log.info(
+                    log.debug {
                         "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
-                    )
+                                "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                                "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                    }
                 }
             }
     }
@@ -251,7 +216,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         if (partitions.isEmpty()) {
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
             future.completeExceptionally(CordaRPCAPISenderException(error))
-            log.error(error)
+            log.warn(error)
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(
@@ -269,7 +234,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.error("Failed to publish. Exception: ${ex.message}", ex)
+                log.warn("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 

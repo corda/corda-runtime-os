@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.client
 
+import net.corda.data.certificates.CertificateUsage
 import net.corda.lifecycle.Lifecycle
 import net.corda.virtualnode.ShortHash
 
@@ -11,13 +12,18 @@ interface CertificatesClient : Lifecycle {
     /**
      * Import certificate chain.
      *
-     * @param tenantId can either be a holding identity ID, the value 'p2p' for a cluster-level tenant
-     *      of the P2P services, or 'rpc-api' for a cluster-level tenant of the HTTP RPC API
+     * @param usage The certificate usage
+     * @param holdingIdentityId The holding Identity ID. null for a cluster-level certificate.
      * @param alias Unique alias of the certificate.
      * @param certificates The certificates in PEM format
      * @throws Exception in case of network or persistent error.
      */
-    fun importCertificates(tenantId: String, alias: String, certificates: String)
+    fun importCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+        certificates: String
+    )
 
     /**
      * Set up locally hosted identity.
@@ -25,16 +31,21 @@ interface CertificatesClient : Lifecycle {
      *
      * @param holdingIdentityShortHash ID of the holding identity to be published.
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
-     * @param p2pTlsTenantId The TLS tenant ID (either p2p or the holdingIdentityShortHash, defaults to [holdingIdentityShortHash]).
-     * @param sessionKeyTenantId The tenant ID under which the session initiation key is stored (defaults to [holdingIdentityShortHash]).
+     * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
+     *   the virtual node certificate and key.
+     * @param useClusterLevelSessionCertificateAndKey Should we use the P2P cluster level session certificate type and P2P key or
+     *   the virtual node certificate and key.
      * @param sessionKeyId The session key ID (will use the first one if null).
+     * @param sessionCertificateChainAlias The certificate chain alias of the Session Key. Should be null if no PKI is used for sessions.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
+    @Suppress("LongParameterList")
     fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
-        p2pTlsTenantId: String?,
-        sessionKeyTenantId: String?,
-        sessionKeyId: String?
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        useClusterLevelSessionCertificateAndKey: Boolean,
+        sessionKeyId: String?,
+        sessionCertificateChainAlias: String?,
     )
 }

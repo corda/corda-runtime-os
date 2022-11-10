@@ -17,6 +17,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
+
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -27,6 +29,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.schema.Schemas
@@ -87,6 +90,7 @@ class LinkManagerIntegrationTest {
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+            .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
             .withValue(
                 LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
                 ConfigFactory.empty().withValue(
@@ -94,6 +98,7 @@ class LinkManagerIntegrationTest {
                     innerConfig.root()
                 ).root()
             )
+            .withValue(LinkManagerConfiguration.REVOCATION_CHECK_KEY, ConfigValueFactory.fromAnyRef(RevocationCheckMode.OFF.toString()))
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())

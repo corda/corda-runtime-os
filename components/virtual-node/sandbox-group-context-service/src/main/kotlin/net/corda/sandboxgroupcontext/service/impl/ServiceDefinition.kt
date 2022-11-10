@@ -26,6 +26,7 @@ class ServiceDefinition(
     private val description: ComponentDescriptionDTO
 ) {
     private companion object {
+        private const val PROTOTYPE_REQUIRED = "prototype_required"
         private const val PROTOTYPE_SERVICE = "($SERVICE_SCOPE=$SCOPE_PROTOTYPE)"
         private const val NOT_IN_SANDBOX = "(&(!$PROTOTYPE_SERVICE)(!$CORDA_SANDBOX_FILTER))"
         private val activationFields = setOf(BundleContext::class.java, Map::class.java)
@@ -95,6 +96,9 @@ class ServiceDefinition(
             return serviceClass.constructors.firstOrNull { ctor ->
                 ctor.parameterCount == description.init && matchParameterTypes(ctor, parameterDTOs)
             }?.let { ctor ->
+                // Allow instantiation of classes which are non-public.
+                ctor.isAccessible = true
+
                 val properties = LinkedHashMap(description.properties ?: emptyMap()).let { props ->
                     props[COMPONENT_NAME] = description.name
                     unmodifiableMap(props)
@@ -178,9 +182,15 @@ class ServiceDefinition(
         }
 
         private fun findServiceReferences(reference: ReferenceDTO): Set<ServiceReference<*>> {
-            return bundleContext.getServiceReferences(reference.interfaceName, getServiceFilter(reference.target))
-                ?.toSortedSet(reverseOrder())
-                ?: emptySet()
+            return if (reference.scope == PROTOTYPE_REQUIRED) {
+                // Our service filter can only select non-prototype services,
+                // which this reference doesn't want to receive.
+                emptySet()
+            } else {
+                bundleContext.getServiceReferences(reference.interfaceName, getServiceFilter(reference.target))
+                    ?.toSortedSet(reverseOrder())
+                    ?: emptySet()
+            }
         }
 
         private fun getService(svcRef: ServiceReference<*>): Any? {

@@ -59,8 +59,8 @@ class ClusterBuilder {
         this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
-    fun importCertificate(resourceName: String, tenant: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/${tenant}", resourceName, alias)
+    fun importCertificate(resourceName: String, usage: String, alias: String) =
+        uploadCertificateResource("/api/v1/certificates/$usage/cluster", resourceName, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
@@ -81,6 +81,10 @@ class ClusterBuilder {
             staticMemberNames,
             cpiName
         )
+
+    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    fun syncVirtualNode(virtualNodeShortId: String) =
+        post("/api/v1/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
@@ -143,17 +147,20 @@ class ClusterBuilder {
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
-            |"$requestData" }""".trimMargin()
+            |"$requestData" }
+        """.trimMargin()
 
     /** Get cluster configuration for the specified section */
     fun getConfig(section: String) = get("/api/v1/config/$section")
 
     /** Update the cluster configuration for the specified section and versions with unescaped Json */
-    fun putConfig(config: String,
-                  section: String,
-                  configVersion: String,
-                  schemaMajorVersion: String,
-                  schemaMinorVersion: String) : SimpleResponse {
+    fun postConfig(
+        config: String,
+        section: String,
+        configVersion: String,
+        schemaMajorVersion: String,
+        schemaMinorVersion: String
+    ): SimpleResponse {
         val payload = """
             {
                 "config": $config,
@@ -164,10 +171,10 @@ class ClusterBuilder {
                 "section": "$section",
                 "version": "$configVersion"
             }
-            """.trimIndent()
+        """.trimIndent()
 
-        return put("/api/v1/config", payload)
+        return post("/api/v1/config", payload)
     }
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)

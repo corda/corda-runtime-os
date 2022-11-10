@@ -29,7 +29,7 @@ data class CreatePermissionType(
     val virtualNode: String?
 ) {
     init {
-        if (permissionString.isNullOrBlank()) {
+        if (permissionString.isBlank()) {
             throw InvalidInputDataException("Permission string must not be null or blank.")
         }
     }

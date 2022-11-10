@@ -10,7 +10,6 @@ import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,7 +43,6 @@ class SandboxGroupContextTest {
         holdingIdentity,
         cpksMetadata.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet(),
         SandboxGroupType.FLOW,
-        SingletonSerializeAsToken::class.java,
         null
     )
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl

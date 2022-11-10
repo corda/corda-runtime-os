@@ -1,6 +1,9 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -13,9 +16,9 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import java.security.PublicKey
 
 class ConsensualFinalityFlow(
     private val signedTransaction: ConsensualSignedTransaction,
@@ -33,6 +36,9 @@ class ConsensualFinalityFlow(
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
+    lateinit var persistenceService: ConsensualLedgerPersistenceService
+
+    @CordaInject
     lateinit var serializationService: SerializationService
 
     @Suspendable
@@ -42,27 +48,24 @@ class ConsensualFinalityFlow(
 
         // Check if the sessions' counterparties are all available and have keys.
         val sessionPublicKeys = sessions.map { session ->
-            session to (
-                memberLookup.lookup(session.counterparty)
-                    ?: throw CordaRuntimeException(
-                        "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
-                    )
-
+            val member = memberLookup.lookup(session.counterparty)
+                ?: throw CordaRuntimeException(
+                    "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
                 )
+            session to member
         }.associate { (session, memberInfo) ->
-            session to
-                memberInfo.ledgerKeys.ifEmpty {
-                    throw CordaRuntimeException(
-                        "A session with ${memberInfo.name} exists but the member does not have any active ledger keys"
-                    )
-                }
+            session to memberInfo.ledgerKeys.ifEmpty {
+                throw CordaRuntimeException(
+                    "A session with ${session.counterparty} exists but the member does not have any active ledger keys"
+                )
+            }
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSigningKeys = signedTransaction.getMissingSignatories()
+        val missingSignatories = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
-        require(sessionPublicKeys.values.flatten().containsAll(missingSigningKeys)) {
-            "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
+        require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
+            "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
         // TODO [CORE-7029] Record unfinalised transaction
@@ -71,30 +74,35 @@ class ConsensualFinalityFlow(
 
         var signedByParticipantsTransaction = signedTransaction
 
-        sessions.forEach{ session ->
+        sessions.forEach { session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
 
-            val signatures = try {
-                session.receive<List<DigitalSignatureAndMetadata>>()
+            val signaturesPayload = try {
+                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn(
-                    "Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}"
-                )
+                log.warn("Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}")
                 throw e
             }
-            log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
-            val receivedSigningKeys = signatures.map { it.by }
-            if (receivedSigningKeys.toSet() != sessionPublicKeys[session]!!.toSet()) {
-                throw CordaRuntimeException(
-                    "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                            "Expected: ${sessionPublicKeys[session]} But received: $receivedSigningKeys"
-                )
+            val signatures = signaturesPayload.getOrThrow { failure ->
+                val message = "Failed to receive signature from ${session.counterparty} for signed transaction " +
+                        "${signedTransaction.id} with message: ${failure.message}"
+                log.debug { message }
+                CordaRuntimeException(message)
             }
 
-            signatures.forEach {signature ->
+            log.debug { "Received signatures from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
+
+            requireCorrectReceivedSigningKeys(
+                signatures,
+                missingSignatories,
+                ledgerKeys = sessionPublicKeys[session]!!,
+                session
+            )
+
+            signatures.forEach { signature ->
                 try {
                     // TODO Do not hardcode signature spec
                     val signedData = SignableData(signedTransaction.id, signature.metadata)
@@ -116,15 +124,12 @@ class ConsensualFinalityFlow(
 
                     throw e
                 }
-                signedByParticipantsTransaction = signedTransaction.addSignature(signature)
-                log.trace {
-                    "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}"
-                }
+                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
+                log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }
 
-        // TODO [CORE-7055] Record the transaction
-
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing
@@ -136,9 +141,7 @@ class ConsensualFinalityFlow(
             // Returning a context map might be appropriate in case we want to do any sort of handling in the future
             // without having to worry about backwards compatibility.
             session.receive<Unit>()
-            log.debug {
-                "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}"
-            }
+            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
         }
 
         if (sessions.isNotEmpty()) {
@@ -146,5 +149,21 @@ class ConsensualFinalityFlow(
         }
 
         return signedByParticipantsTransaction
+    }
+
+    private fun requireCorrectReceivedSigningKeys(
+        signatures: List<DigitalSignatureAndMetadata>,
+        missingSignatories: Set<PublicKey>,
+        ledgerKeys: List<PublicKey>,
+        session: FlowSession
+    ) {
+        val receivedSigningKeys = signatures.map { it.by }
+        val expectedSigningKeys = missingSignatories.intersect(ledgerKeys.toSet())
+        if (receivedSigningKeys.toSet() != expectedSigningKeys) {
+            throw CordaRuntimeException(
+                "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
+                        "Expected: $expectedSigningKeys But received: $receivedSigningKeys"
+            )
+        }
     }
 }

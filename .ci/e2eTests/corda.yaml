@@ -5,9 +5,12 @@ bootstrap:
   initialAdminUser:
     password: "admin"
 
+db:
+  clientImage:
+    registry: docker-remotes.software.r3.com
+
 logging:
   format: "text"
-  level: "info"
 
 kafka:
   bootstrapServers: prereqs-kafka:9092

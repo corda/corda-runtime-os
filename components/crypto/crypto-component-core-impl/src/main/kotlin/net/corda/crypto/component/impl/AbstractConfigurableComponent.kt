@@ -221,7 +221,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             logger.trace { "Setting the status of $myName UP" }
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            if(coordinator.status != LifecycleStatus.ERROR) {
+            if (coordinator.status != LifecycleStatus.ERROR && coordinator.status != LifecycleStatus.DOWN) {
                 logger.trace { "Setting the status of $myName DOWN" }
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }

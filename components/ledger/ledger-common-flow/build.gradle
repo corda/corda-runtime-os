@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:layered-property-map")
+    implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-internal")
 
     testImplementation project(":libs:application:application-impl")
@@ -34,7 +35,10 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
 
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':components:flow:flow-service')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
 }

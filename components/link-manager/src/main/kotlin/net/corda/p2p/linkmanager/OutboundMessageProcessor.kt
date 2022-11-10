@@ -13,21 +13,22 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.markers.Component
 import net.corda.p2p.markers.LinkManagerDiscardedMarker
-import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
+import net.corda.p2p.markers.Component
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
@@ -103,12 +104,25 @@ internal class OutboundMessageProcessor(
         }
     }
 
+    private fun checkSourceAndDestinationValid(
+        source: HoldingIdentity, destination: HoldingIdentity
+    ): Pair<Boolean, String?> {
+         return if (source.groupId != destination.groupId) {
+            return Pair(false, "group IDs do not match")
+        } else if (!linkManagerHostingMap.isHostedLocally(source)) {
+            return Pair(false, "source ID is not locally hosted")
+        } else Pair(true, null)
+    }
+
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        if (message.header.source.groupId != message.header.destination.groupId) {
-            logger.warn("Dropping outbound unauthenticated message from ${message.header.source.toCorda()} " +
-                    "to ${message.header.destination.toCorda()} as their group IDs do not match.")
+        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
+            message.header.source.toCorda(), message.header.destination.toCorda()
+        )
+        if (!sourceAndDestinationValid) {
+            logger.warn("Dropping outbound unauthenticated message from ${message.header.source} to ${message.header.destination} as the " +
+                    discardReason)
             return emptyList()
         }
 
@@ -151,11 +165,14 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
-            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
-                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
-                    "as their group IDs do not match.")
-            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
+            messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda()
+        )
+
+        if (!sourceAndDestinationValid) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
+                    " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
+            return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason!!))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {

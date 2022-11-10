@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.utils.convertToKeyStore
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -11,18 +12,25 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
 
+@Suppress("LongParameterList")
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val groupPolicyProvider: GroupPolicyProvider,
                                              virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              cpiInfoReadService: CpiInfoReadService,
-                                             membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
+                                             membershipQueryClient: MembershipQueryClient,
+                                             private val certificateFactory: CertificateFactory
+                                                = CertificateFactory.getInstance("X.509"),
+): LinkManagerGroupPolicyProvider {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
+        val logger = contextLogger()
     }
-
 
     private val dependentChildren = setOf(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -51,12 +59,13 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
-            val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
-            groupPolicyListener.groupAdded(groupInfo)
+            toGroupInfo(holdingIdentity, groupPolicy)?.let { groupInfo ->
+                groupPolicyListener.groupAdded(groupInfo)
+            }
         }
     }
 
-    private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo {
+    private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo? {
         val networkType = when (groupPolicy.p2pParameters.tlsPki) {
             P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
             P2PParameters.TlsPkiMode.CORDA_4 -> NetworkType.CORDA_4
@@ -70,8 +79,32 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
+        val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
+        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let {
+            convertToKeyStore(certificateFactory, it, "session") ?: return null
+        }
+        validateTrustStoreUsingPkiMode(sessionTrustStore, sessionPkiMode, holdingIdentity)
+
+        return GroupPolicyListener.GroupInfo(
+            holdingIdentity,
+            networkType,
+            protocolModes,
+            trustedCertificates,
+            sessionPkiMode,
+            sessionTrustStore
+        )
+    }
+
+    private fun validateTrustStoreUsingPkiMode(
+        sessionTrustStore: KeyStore?,
+        sessionPkiMode: P2PParameters.SessionPkiMode,
+        holdingIdentity: HoldingIdentity
+    ) {
+        if (sessionTrustStore == null && sessionPkiMode != P2PParameters.SessionPkiMode.NO_PKI) {
+            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity. This can be caused by using " +
+                    "the wrong PKI mode.")
+        }
     }
 
 }

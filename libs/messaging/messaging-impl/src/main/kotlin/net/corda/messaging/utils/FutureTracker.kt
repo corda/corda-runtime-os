@@ -1,9 +1,10 @@
 package net.corda.messaging.utils
 
-import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 
 /**
  * Data structure to keep track of active partitions and futures for a given sender and partition listener pair
@@ -46,7 +47,7 @@ class FutureTracker<RESPONSE> {
             val futures = futuresInPartitionMap[partition.partition]
             for (key in futures!!.keys) {
                 futures[key]?.completeExceptionally(
-                    CordaRPCAPISenderException(
+                    CordaRPCAPIPartitionException(
                         "Repartition event!! Results for this future can no longer be returned"
                     )
                 )

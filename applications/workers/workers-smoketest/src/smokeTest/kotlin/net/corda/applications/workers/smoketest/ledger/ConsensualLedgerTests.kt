@@ -1,59 +1,129 @@
 package net.corda.applications.workers.smoketest.ledger
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.applications.workers.smoketest.GROUP_ID
+import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import java.util.UUID
 
-/**
- * This file uses the flow tests' CPI, Group Id and X500 names.
- */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-@Disabled
 class ConsensualLedgerTests {
 
-    private val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+    private companion object {
+        const val TEST_CPI_NAME = "ledger-consensual-demo-app"
+        const val TEST_CPB_LOCATION = "/META-INF/ledger-consensual-demo-app.cpb"
+
+        val objectMapper = ObjectMapper().apply {
+            registerModule(KotlinModule.Builder().build())
+        }
+    }
+
+    private val testRunUniqueId = UUID.randomUUID()
+    private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+
+    private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+    private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+    private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+
+    private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+    private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
+    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, GROUP_ID)
+
+    private val staticMemberList = listOf(
+        aliceX500,
+        bobX500,
+        charlieX500
+    )
 
     @BeforeAll
     fun beforeAll() {
-        // Upload test flows if not already uploaded
-        conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID, TEST_STATIC_MEMBER_LIST)
+        conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
 
-        // Make sure Virtual Nodes are created
-        val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
+        val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
+        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
 
-        // Just validate the function and actual vnode holding ID hash are in sync
-        // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+        assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
 
+        registerMember(aliceHoldingId)
         registerMember(bobHoldingId)
+        registerMember(charlieHoldingId)
     }
 
     @Test
-    fun `Consensual Ledger - Signed Transaction serialization and deserialization without exceptions`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(),
-                "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow"
+    fun `Consensual Ledger - create a transaction containing states and finalize it`() {
+        val input = "test input"
+        val consensualFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to input, "members" to listOf(bobX500, charlieX500)),
+            "net.cordapp.demo.consensual.ConsensualDemoFlow"
+        )
+        val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
+        assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(consensualFlowResult.flowError).isNull()
+
+        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
+            val findTransactionFlowRequestId = startRpcFlow(
+                aliceHoldingId,
+                mapOf("transactionId" to consensualFlowResult.flowResult!!),
+                "net.cordapp.demo.consensual.FindTransactionFlow"
             )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowError).isNull()
+            val transactionResult = awaitRpcFlowFinished(aliceHoldingId, findTransactionFlowRequestId)
+            assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(transactionResult.flowError).isNull()
+
+            val parsedResult = objectMapper
+                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
+
+            assertThat(parsedResult.transaction).isNotNull.withFailMessage {
+                "Member with holding identity $holdingId did not receive the transaction"
+            }
+            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(consensualFlowResult.flowResult)
+            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
+            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
+            assertThat(parsedResult.transaction.participants).hasSize(3)
+        }
     }
+
+    @Test
+    fun `Consensual Ledger - creating a transaction that fails custom verification causes finality to fail`() {
+        val consensualFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500)),
+            "net.cordapp.demo.consensual.ConsensualDemoFlow"
+        )
+        val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
+        assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+        assertThat(consensualFlowResult.flowError?.message).contains("Transaction verification failed for transaction")
+        assertThat(consensualFlowResult.flowError?.message).contains("when signature was requested")
+    }
+
+    data class TestConsensualStateResult(val testField: String, val participants: List<ByteArray>)
+
+    data class ConsensualTransactionResult(
+        val id: SecureHash,
+        val states: List<TestConsensualStateResult>,
+        val participants: List<ByteArray>
+    )
+
+    data class FindTransactionResponse(
+        val transaction: ConsensualTransactionResult?,
+        val errorMessage: String?
+    )
 }

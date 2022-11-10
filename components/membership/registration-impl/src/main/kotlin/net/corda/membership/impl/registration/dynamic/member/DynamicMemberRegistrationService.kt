@@ -38,6 +38,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -73,12 +76,14 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -110,6 +115,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = EphemeralKeyPairEncryptor::class)
     private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -133,7 +140,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
@@ -232,7 +238,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             } catch (ex: MembershipSchemaValidationException) {
                 return MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid. " + ex.getErrorSummary()
+                    "Registration failed. The registration context is invalid. " + ex.message
                 )
             }
             try {
@@ -289,12 +295,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                     mgmKey,
                     registrationRequestSerializer.serialize(message)!!
                 ) { ek, sk ->
-                    val aad = 1.toByteArray() + clock.instant().toEpochMilli().toByteArray() + keyEncodingService.encodeAsByteArray(ek)
+                    val aad = 1.toByteArray() +
+                            clock.instant().toEpochMilli().toByteArray() +
+                            keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
-                    EciesParams( salt, aad )
+                    EciesParams(salt, aad)
                 }
 
                 val messageHeader = UnauthenticatedMessageHeader(
@@ -350,21 +358,34 @@ class DynamicMemberRegistrationService @Activate constructor(
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
-            return (
-                context.filterNot {
-                    it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
-                } + generateSessionKeyData(context, member.shortHash.value) +
-                    generateLedgerKeyData(context, member.shortHash.value) +
-                    mapOf(
-                        REGISTRATION_ID to registrationId.toString(),
-                        PARTY_NAME to member.x500Name.toString(),
-                        GROUP_ID to member.groupId,
-                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                        // temporarily hardcoded
-                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                        SERIAL to SERIAL_CONST,
-                    ) + roles.toMemberInfo { notaryKeys }
-                )
+            val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
+                ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
+            val filteredContext = context.filterNot {
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+            }
+            val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
+            val ledgerKeyContext = generateLedgerKeyData(context, member.shortHash.value)
+            val additionalContext = mapOf(
+                REGISTRATION_ID to registrationId.toString(),
+                PARTY_NAME to member.x500Name.toString(),
+                GROUP_ID to member.groupId,
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+                SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+                MEMBER_CPI_NAME to cpi.name,
+                MEMBER_CPI_VERSION to cpi.version,
+                SERIAL to SERIAL_CONST,
+            )
+            val roleContext = roles.toMemberInfo { notaryKeys }
+            val optionalContext = cpi.signerSummaryHash?.let {
+                mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
+            } ?: emptyMap()
+            return filteredContext +
+                    sessionKeyContext +
+                    ledgerKeyContext +
+                    additionalContext +
+                    roleContext +
+                    optionalContext
+
         }
 
         private fun validateContext(context: Map<String, String>) {
@@ -399,11 +420,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                    "for ${key.schemeCodeName}."
+                        "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 
@@ -453,7 +474,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
                 SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,
-                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
+                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(
+                    sessionKey,
+                    context[SESSION_KEY_SIGNATURE_SPEC]
+                ).signatureName
             )
         }
 

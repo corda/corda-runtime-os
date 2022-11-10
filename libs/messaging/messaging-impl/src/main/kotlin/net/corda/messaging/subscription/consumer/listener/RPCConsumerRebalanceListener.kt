@@ -1,8 +1,8 @@
 package net.corda.messaging.subscription.consumer.listener
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messaging.subscription.LifecycleStatusUpdater
 import net.corda.messaging.utils.FutureTracker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -12,7 +12,7 @@ class RPCConsumerRebalanceListener<RESPONSE>(
     topic: String,
     groupName: String,
     private var tracker: FutureTracker<RESPONSE>,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleStatusUpdater: LifecycleStatusUpdater
 ) : LoggingConsumerRebalanceListener(topic, groupName) {
 
     override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
@@ -23,14 +23,14 @@ class RPCConsumerRebalanceListener<RESPONSE>(
         tracker.removePartitions(partitions.toList())
         this.partitions.removeAll(partitions)
         if (this.partitions.isEmpty()){
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleStatusUpdater.updateLifecycleStatus(LifecycleStatus.DOWN)
         }
         super.onPartitionsRevoked(partitions)
     }
 
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
         if (this.partitions.isEmpty()){
-            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+            lifecycleStatusUpdater.updateLifecycleStatus(LifecycleStatus.UP)
         }
         tracker.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)

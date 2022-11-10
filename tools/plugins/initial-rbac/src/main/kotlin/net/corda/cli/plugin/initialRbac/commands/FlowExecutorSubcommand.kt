@@ -1,13 +1,13 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.CLIENT_REQ_REGEX
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.FLOW_NAME_REGEX
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
 import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.rbac.schema.RbacKeys.CLIENT_REQ_REGEX
+import net.corda.rbac.schema.RbacKeys.FLOW_NAME_REGEX
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
+import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 

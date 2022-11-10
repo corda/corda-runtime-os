@@ -71,6 +71,7 @@ class TlsCertificatesPublisherTest {
         listOf("one", "two"),
         "id1",
         "id2",
+        mock(),
         mock()
     )
 

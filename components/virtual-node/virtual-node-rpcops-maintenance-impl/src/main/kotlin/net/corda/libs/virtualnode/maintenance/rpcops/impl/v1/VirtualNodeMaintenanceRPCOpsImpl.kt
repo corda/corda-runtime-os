@@ -4,7 +4,10 @@ import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.PropertyKeys
+import net.corda.data.virtualnode.VirtualNodeDBResetRequest
+import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -105,6 +108,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    // Make sender unavailable while we're updating.
+                    //See - https://github.com/corda/corda-runtime-os/pull/2376#pullrequestreview-1166775801
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }
@@ -124,6 +130,28 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
         )
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
+    }
+
+    override fun resyncVirtualNodeDb(virtualNodeShortId: String) {
+        logger.info(
+            "Resyncing back the virtual node vault database for the following virtual node: $virtualNodeShortId"
+        )
+
+        val instant = clock.instant()
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val request = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeDBResetRequest(
+                listOf(virtualNodeShortId),
+                actor
+            )
+        )
+        val resp: VirtualNodeManagementResponse = sendAndReceive(request)
+        when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeDBResetResponse -> Unit // We don't want to do anything with this
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     /**
@@ -146,6 +174,17 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")
 
         return sender.sendAndReceive(request)
+    }
+
+    private fun handleFailure(exception: ExceptionEnvelope?): Exception {
+        if (exception == null) {
+            logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+            return InternalServerException("Request was unsuccessful but no exception was provided.")
+        }
+        logger.warn(
+            "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
+        )
+        return InternalServerException(exception.errorMessage)
     }
 
     // Lookup and update the virtual node for the given virtual node short ID.
@@ -182,18 +221,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
                 }
             }
-            is VirtualNodeManagementResponseFailure -> {
-                val exception = resolvedResponse.exception
-                if (exception == null) {
-                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
-                }
-                logger.warn(
-                    "Remote request to update virtual node responded with exception of type " +
-                        "${exception.errorType}: ${exception.errorMessage}"
-                )
-                throw InternalServerException(exception.errorMessage)
-            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }
     }

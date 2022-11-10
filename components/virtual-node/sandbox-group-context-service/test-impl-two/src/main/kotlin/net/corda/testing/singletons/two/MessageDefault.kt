@@ -1,6 +1,6 @@
 package net.corda.testing.singletons.two
 
-import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.testing.MessageProvider
 import net.corda.v5.testing.uuid.UUIDProvider
 import org.osgi.service.component.annotations.Activate
@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @Component(
-    service = [ MessageProvider::class, SingletonSerializeAsToken::class ],
+    service = [ MessageProvider::class, UsedByFlow::class ],
     name = "message.default",
     scope = PROTOTYPE
 )
@@ -18,7 +18,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class MessageDefault @Activate constructor(
     @Reference
     uuidProvider: UUIDProvider
-) : MessageProvider, SingletonSerializeAsToken {
+) : MessageProvider, UsedByFlow {
     private val uuid = uuidProvider.uuid
 
     override fun getMessage(): String {

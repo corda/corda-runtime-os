@@ -27,11 +27,11 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
-    private val schemeMetadata: CipherSchemeMetadata
+    private val cipherSchemeMetadata: CipherSchemeMetadata
 ) : FlowFiberService, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer({}, schemeMetadata)
+        testFlowFiberServiceWithSerialization.configureSerializer({}, cipherSchemeMetadata)
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
 }
@@ -61,14 +61,14 @@ class ConsensualLedgerServiceImplTest {
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, mock())
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, mock())
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)

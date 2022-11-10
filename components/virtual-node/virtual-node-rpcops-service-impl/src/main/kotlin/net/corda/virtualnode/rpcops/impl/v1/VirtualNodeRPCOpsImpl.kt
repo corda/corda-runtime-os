@@ -110,6 +110,9 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    // Make sender unavailable while we're updating.
+                    //See - https://github.com/corda/corda-runtime-os/pull/2376#pullrequestreview-1166775801
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }

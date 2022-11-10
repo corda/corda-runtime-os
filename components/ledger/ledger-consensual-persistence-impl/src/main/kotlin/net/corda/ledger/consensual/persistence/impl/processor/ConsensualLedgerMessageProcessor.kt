@@ -6,7 +6,7 @@ import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -17,13 +17,12 @@ import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -36,10 +35,7 @@ import java.nio.ByteBuffer
 class ConsensualLedgerMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     externalEventResponseFactory: ExternalEventResponseFactory,
-    private val merkleTreeProvider: MerkleTreeProvider,
-    private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     private companion object {
         val log = contextLogger()
@@ -82,22 +78,33 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerRepository = ConsensualLedgerRepository(merkleTreeProvider, digestService, jsonMarshallingService)
+        val repository = sandbox.getSandboxSingletonService<ConsensualLedgerRepository>()
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {
-                is PersistTransaction -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    consensualLedgerRepository.persistTransaction(em, serializationService.deserialize(req), request.account())
-                )
+                is PersistTransaction -> {
+                    val transaction = serializationService.deserialize(req)
+                    repository.persistTransaction(em, transaction, req.status, request.account())
+                    val cpkMetadata = transaction.cpkMetadata()
+                    val missingCpks = if (repository.persistTransactionCpk(em, transaction) < cpkMetadata.size) {
+                        val persistedCpks = repository.findTransactionCpkChecksums(em, transaction)
+                        cpkMetadata.filterNot { persistedCpks.contains(it.fileChecksum) }
+                    } else {
+                        emptyList()
+                    }
+                    responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        EntityResponse(missingCpks.map { serializationService.serialized(it) })
+                    )
+                }
 
                 is FindTransaction -> responseFactory.successResponse(
                     request.flowExternalEventContext,
-                    createEntityResponse(
-                        consensualLedgerRepository.findTransaction(em, req.id),
-                        serializationService
-                    )
-                )
+                    EntityResponse(
+                        listOfNotNull(repository.findTransaction(em, req.id))
+                            .map { serializationService.serialized(it) }
+                    ))
+
                 else -> {
                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
                 }
@@ -109,12 +116,10 @@ class ConsensualLedgerMessageProcessor(
         flowExternalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
             ?: throw NullParameterException("Flow external event context property '$CORDA_ACCOUNT' not set")
 
-    private fun createEntityResponse(obj: Any?, serializationService: SerializationService) =
-        obj?.let {
-            val serializedObj = serializationService.serialize(obj)
-            EntityResponse(listOf(ByteBuffer.wrap(serializedObj.bytes)))
-        } ?: EntityResponse(emptyList())
+    private fun ConsensualSignedTransactionContainer.cpkMetadata() = wireTransaction.metadata.getCpkMetadata()
+
+    private fun SerializationService.serialized(obj: Any) = ByteBuffer.wrap(serialize(obj).bytes)
 
     private fun SerializationService.deserialize(persistTransaction: PersistTransaction) =
-        deserialize(persistTransaction.transaction.array(), WireTransaction::class.java)
+        deserialize<ConsensualSignedTransactionContainer>(persistTransaction.transaction.array())
 }

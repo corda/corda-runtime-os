@@ -2,8 +2,8 @@ package net.corda.applications.workers.smoketest
 
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test
 @Suppress("FunctionName")
 class ConfigTests {
 
+    private companion object {
+        private val logger = contextLogger()
+    }
     @Test
     fun `get config includes defaults`() {
         val defaultedConfigValues = getConfig(RECONCILIATION_CONFIG).configWithDefaultsNode()

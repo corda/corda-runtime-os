@@ -3,19 +3,21 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
-import net.corda.data.flow.state.checkpoint.FlowStackItem
-import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import org.slf4j.Logger
-import org.slf4j.MDC
 import java.io.Serializable
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
+import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
+import net.corda.utilities.clearMDC
+import net.corda.utilities.setMDC
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
+import org.slf4j.Logger
 
 class FlowFiberImpl(
     override val flowId: UUID,
@@ -67,12 +69,12 @@ class FlowFiberImpl(
             log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
             failTopLevelSubFlow(e.cause!!)
         } catch (t: Throwable) {
-            log.error("FlowFiber failed due to Throwable being thrown", t)
+            log.warn("FlowFiber failed due to Throwable being thrown", t)
             failTopLevelSubFlow(t)
         }
 
         if (!flowCompletion.isDone) {
-            log.error("runFlow failed to complete normally, forcing a failure")
+            log.warn("runFlow failed to complete normally, forcing a failure")
             failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
         }
     }
@@ -80,21 +82,21 @@ class FlowFiberImpl(
     @Suspendable
     private fun runFlow() {
         initialiseThreadContext()
-        setLoggingContext()
+        resetLoggingContext()
         suspend(FlowIORequest.InitialCheckpoint)
 
         val outcomeOfFlow = try {
-            log.info("Flow starting.")
+            log.trace { "Flow starting." }
             FlowIORequest.FlowFinished(flowLogic.invoke())
         } catch (e: FlowContinuationErrorException) {
             // This was an exception thrown during the processing of the flow pipeline due to something the user code
             // initiated. The user should see the details and point of origin of the 'cause' exception in the log.
-            log.error("Flow failed", e.cause)
+            log.warn("Flow failed", e.cause)
             FlowIORequest.FlowFailed(e.cause!!) // cause is not nullable in a FlowContinuationErrorException
         } catch (t: Throwable) {
             // Every other Throwable, including base CordaRuntimeException out of flow user code gets a callstack
             // logged, it is considered an error to allow these to propagate outside the flow.
-            log.error("Flow failed", t)
+            log.warn("Flow failed", t)
             FlowIORequest.FlowFailed(t)
         }
 
@@ -119,16 +121,14 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
-        log.info("Flow suspending.")
         parkAndSerialize(SerializableFiberWriter { _, _ ->
+            resetLoggingContext()
             log.info("Parking...")
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
-            log.info("Parked.")
         })
 
-        setLoggingContext()
-        log.info("Flow resuming.")
+        resetLoggingContext()
 
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
@@ -152,24 +152,27 @@ class FlowFiberImpl(
         // We close the sessions here, which delegates to the subFlow finished request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFinished(sessions))
         }
         flowCompletion.complete(outcomeOfFlow)
     }
 
     @Suspendable
     private fun failTopLevelSubFlow(throwable: Throwable) {
-        log.info("Flow [$flowId] completed with failure")
         // We close the sessions here, which delegates to the subFlow failed request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFailed(throwable, sessions))
         }
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
+    }
+
+    private fun getRemainingInitiatedSessions(): List<String> {
+        return getRemainingFlowStackItem().sessions.filter { it.initiated }.map { it.sessionId }.toList()
     }
 
     @Suppress("ThrowsCount")
@@ -177,27 +180,27 @@ class FlowFiberImpl(
         val flowStackService = flowFiberExecutionContext?.flowStackService
         return when {
             flowStackService == null -> {
-                log.info("Flow [$flowId] should have a single flow stack item when finishing but the stack was null")
+                log.debug { "Flow [$flowId] should have a single flow stack item when finishing but the stack was null" }
                 throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but the stack was null")
             }
             flowStackService.size > 1 -> {
-                log.info(
+                log.debug {
                     "Flow [$flowId] should have a single flow stack item when finishing but contained the following elements instead: " +
                             "${flowFiberExecutionContext?.flowStackService}"
-                )
+                }
                 throw CordaRuntimeException(
                     "Flow [$flowId] should have a single flow stack item when finishing but contained " +
                             "${flowFiberExecutionContext?.flowStackService?.size} elements"
                 )
             }
             flowStackService.size == 0 -> {
-                log.info("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                log.debug { "Flow [$flowId] should have a single flow stack item when finishing but was empty" }
                 throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
             }
             else -> {
                 when (val item = flowStackService.peek()) {
                     null -> {
-                        log.info("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                        log.debug { "Flow [$flowId] should have a single flow stack item when finishing but was empty" }
                         throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
                     }
                     else -> item
@@ -212,10 +215,12 @@ class FlowFiberImpl(
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
     }
 
-    private fun setLoggingContext() {
-        MDC.put("flow-id", flowId.toString())
-        MDC.put("fiber-id", id.toString())
-        MDC.put("thread-id", Thread.currentThread().id.toString())
+    private fun resetLoggingContext() {
+        //fully clear the fiber before setting the MDC
+        clearMDC()
+        flowFiberExecutionContext?.mdcLoggingData?.let {
+            setMDC(it)
+        }
     }
 
     override fun attemptInterrupt() {

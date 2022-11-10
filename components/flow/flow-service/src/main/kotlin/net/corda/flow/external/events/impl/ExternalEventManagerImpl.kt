@@ -1,8 +1,5 @@
 package net.corda.flow.external.events.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -22,6 +19,9 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @Component(service = [ExternalEventManager::class])
 class ExternalEventManagerImpl(
@@ -92,24 +92,24 @@ class ExternalEventManagerImpl(
                 val exception = error.exception
                 externalEventState.status = when (error.errorType) {
                     ExternalEventResponseErrorType.TRANSIENT -> {
-                        log.info(
+                        log.debug {
                             "Received a transient error in external event response: $exception. Updating external " +
                                     "event status to RETRY."
-                        )
+                        }
                         ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
                     }
                     ExternalEventResponseErrorType.PLATFORM -> {
-                        log.info(
+                        log.debug {
                             "Received a platform error in external event response: $exception. Updating external " +
                                     "event status to PLATFORM_ERROR."
-                        )
+                        }
                         ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
                     }
                     ExternalEventResponseErrorType.FATAL -> {
-                        log.info(
+                        log.debug {
                             "Received a fatal error in external event response: $exception. Updating external event " +
                                     "status to FATAL_ERROR."
-                        )
+                        }
                         ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
                     }
                     else -> throw FlowFatalException(

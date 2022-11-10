@@ -8,6 +8,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 
 class StartFlowExecutor(
     private val eventKey: String,
@@ -30,9 +31,7 @@ class StartFlowExecutor(
                 mutableListOf(Record(outputTopic, flowId, flowEvent))
             )
         } else {
-            //duplicate
-            log.warn("Duplicate StartRPCFlow event received. Key: $eventKey, " +
-                    "Event: $startRPCFlow ")
+            log.debug { "Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow " }
             FlowMapperResult(flowMapperState, mutableListOf())
         }
     }

@@ -4,5 +4,5 @@ package net.corda.sandboxgroupcontext.service
 //  OSGi integration tests.
 //  Once we have a good way of faking/stubbing the lifecycle coordinator, then I think we can remove this.
 interface CacheConfiguration {
-    fun initCache(cacheSize: Long)
+    fun initCache(capacity: Long)
 }

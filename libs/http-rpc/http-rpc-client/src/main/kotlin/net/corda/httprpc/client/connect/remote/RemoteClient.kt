@@ -1,10 +1,13 @@
 package net.corda.httprpc.client.connect.remote
 
+import java.lang.reflect.Type
+import javax.net.ssl.SSLContext
 import kong.unirest.GenericType
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
 import kong.unirest.HttpResponse
 import kong.unirest.HttpStatus
+import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.UnirestException
 import kong.unirest.apache.ApacheClient
@@ -14,9 +17,11 @@ import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
 import net.corda.httprpc.client.processing.WebRequest
 import net.corda.httprpc.client.processing.WebResponse
 import net.corda.httprpc.client.serialization.objectMapper
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -24,11 +29,6 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
-import java.lang.reflect.Type
-import javax.net.ssl.SSLContext
-import kong.unirest.MultipartBody
-import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -121,6 +121,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             )
                 .also { log.trace { """Do call "$verb $path" completed.""" } }
         } catch (e: UnirestException) {
+            log.error("Error from unirest: ${e.cause}")
             throw InternalErrorException(e.message ?: "No message provided")
         }
     }

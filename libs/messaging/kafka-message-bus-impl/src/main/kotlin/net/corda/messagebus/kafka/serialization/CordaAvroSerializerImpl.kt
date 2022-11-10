@@ -29,7 +29,7 @@ class CordaAvroSerializerImpl<T : Any>(
                     schemaRegistry.serialize(data).array()
                 } catch (ex: Throwable) {
                     log.error("Failed to serialize instance of class type ${data::class.java.name} containing " +
-                            "${data}", ex)
+                            "$data", ex)
                     throw ex
                 }
             }

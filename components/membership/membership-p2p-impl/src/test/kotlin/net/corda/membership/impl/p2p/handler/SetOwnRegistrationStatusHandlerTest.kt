@@ -7,6 +7,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -21,7 +22,7 @@ class SetOwnRegistrationStatusHandlerTest {
         "id",
         RegistrationStatus.DECLINED
     )
-    private val avroSchemaRegistry = mock {
+    private val avroSchemaRegistry: AvroSchemaRegistry = mock {
         on { deserialize<SetOwnRegistrationStatus>(payload) } doReturn status
     }
     private val identity = HoldingIdentity("O=Alice, L=London, C=GB", "GroupId")

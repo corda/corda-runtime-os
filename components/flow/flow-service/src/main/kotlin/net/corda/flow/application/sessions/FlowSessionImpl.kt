@@ -12,6 +12,8 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 
 @Suppress("LongParameterList")
 class FlowSessionImpl(
@@ -79,9 +81,9 @@ class FlowSessionImpl(
     override fun close() {
         if (isSessionConfirmed) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-            log.info("Closed session: $sourceSessionId")
+            log.trace { "Closed session: $sourceSessionId" }
         } else {
-            log.info("Ignoring close on uninitiated session: $sourceSessionId")
+            log.debug { "Ignoring close on uninitiated session: $sourceSessionId" }
         }
     }
 

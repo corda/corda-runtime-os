@@ -2,6 +2,11 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import java.io.File
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import net.corda.flow.rpcops.v1.FlowClassRpcOps
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.httprpc.PluggableRPCOps
@@ -27,17 +32,14 @@ import net.corda.processors.rpc.diff.diff
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.io.File
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 
 @ExtendWith(ServiceExtension::class)
+@Disabled
 class OpenApiCompatibilityTest {
 
     companion object {

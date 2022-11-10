@@ -1,16 +1,20 @@
 package net.corda.ledger.consensual.persistence.impl.repository
 
-import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.contextLogger
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
-import java.security.MessageDigest
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -18,39 +22,31 @@ import javax.persistence.Tuple
 
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
+ * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
+ * as "corda.marker.only" to force the sandbox to create it, despite it implementing
+ * only the [UsedByPersistence] marker interface.
  */
-class ConsensualLedgerRepository(
+@Component(
+    service = [ ConsensualLedgerRepository::class, UsedByPersistence::class ],
+    property = [ "corda.marker.only:Boolean=true" ],
+    scope = PROTOTYPE
+)
+class ConsensualLedgerRepository @Activate constructor(
+    @Reference
     private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference
     private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService
-) {
+    @Reference
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference
+    private val serializationService: SerializationService
+) : UsedByPersistence {
     companion object {
-        private val logger = contextLogger()
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
-    // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
-    fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction, account :String): EntityResponse {
-        val now = Instant.now()
-        persistTransaction(entityManager, now, transaction, account)
-        transaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
-            leaves.mapIndexed { leafIndex, bytes ->
-                persistComponentLeaf(entityManager, now, transaction, groupIndex, leafIndex, bytes)
-            }
-        }
-        persistTransactionStatus(entityManager, now, transaction, "Faked") // TODO where to get the status from
-        // TODO when and what do we write to the signatures table?
-        // TODO when and what do we write to the CPKs table?
-        persistCpk(entityManager, now, transaction)
-        persistTransactionCpk(entityManager, transaction)
-
-        // construct response
-        return EntityResponse(emptyList())
-    }
-
-    /** Reads [WireTransaction] with given [id] from database. */
-    fun findTransaction(entityManager: EntityManager, id: String): WireTransaction? {
-
+    /** Reads [ConsensualSignedTransactionContainer] with given [id] from database. */
+    fun findTransaction(entityManager: EntityManager, id: String): ConsensualSignedTransactionContainer? {
         val rows = entityManager.createNativeQuery(
             """
                 SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data, txc.hash
@@ -65,21 +61,75 @@ class ConsensualLedgerRepository(
 
         if (rows.isEmpty()) return null
 
-        val firstRowColumns = rows.first()
-        val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
-        val componentGroupLists = rows.mapTuples(componentGroupListsTuplesMapper)
-        return WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        val wireTransaction = WireTransaction(
+            merkleTreeProvider,
+            digestService,
+            jsonMarshallingService,
+            PrivacySaltImpl(rows.first()[1] as ByteArray),
+            rows.mapTuples(componentGroupListsTuplesMapper)
+        )
+
+        return ConsensualSignedTransactionContainer(
+            wireTransaction,
+            findSignatures(entityManager, id)
+        )
     }
 
-    /** Persists [tx] data to database. */
-    private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {
+    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
+    private fun findSignatures(
+        entityManager: EntityManager,
+        transactionId: String
+    ): List<DigitalSignatureAndMetadata> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT signature
+                FROM {h-schema}consensual_transaction_signature
+                WHERE transaction_id = :transactionId
+                ORDER BY signature_idx""",
+            Tuple::class.java)
+            .setParameter("transactionId", transactionId)
+            .resultListAsTuples()
+            .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
+    }
+
+    /** Persists [signedTransaction] data to database and link it to existing CPKs. */
+    fun persistTransaction(
+        entityManager: EntityManager,
+        signedTransaction: ConsensualSignedTransactionContainer,
+        status: String,
+        account :String
+    ) {
+        val transactionId = signedTransaction.id.toHexString()
+        val wireTransaction = signedTransaction.wireTransaction
+        val now = Instant.now()
+        persistTransaction(entityManager, now, wireTransaction, account)
+        // Persist component group lists
+        wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
+            leaves.mapIndexed { leafIndex, bytes ->
+                persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
+            }
+        }
+        persistTransactionStatus(entityManager, now, transactionId, status)
+        // Persist signatures
+        signedTransaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
+        }
+    }
+
+    /** Persists [wireTransaction] data to database. */
+    private fun persistTransaction(
+        entityManager: EntityManager,
+        timestamp: Instant,
+        wireTransaction: WireTransaction,
+        account: String
+    ) {
         entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
-                VALUES (:id, :privacySalt, :accountId, :createdAt)"""
+            INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
+            VALUES (:id, :privacySalt, :accountId, :createdAt)"""
         )
-            .setParameter("id", tx.id.toHexString())
-            .setParameter("privacySalt", tx.privacySalt.bytes)
+            .setParameter("id", wireTransaction.id.toHexString())
+            .setParameter("privacySalt", wireTransaction.privacySalt.bytes)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
@@ -90,24 +140,21 @@ class ConsensualLedgerRepository(
     private fun persistComponentLeaf(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction,
+        transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray
-    ) {
-        val dataDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        val hash = dataDigest.digest(data).toHexString()
-
-        entityManager.createNativeQuery(
+    ): Int {
+        return entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
-                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
+            INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
+            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
         )
-            .setParameter("transactionId", tx.id.toHexString())
+            .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
-            .setParameter("hash", hash)
+            .setParameter("hash", data.hashAsHexString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -116,62 +163,79 @@ class ConsensualLedgerRepository(
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction,
+        transactionId: String,
         status: String
-    ) {
-        entityManager.createNativeQuery(
+    ): Int {
+        return entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
-                VALUES (:txId, :status, :createdAt)"""
+            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
+            VALUES (:txId, :status, :createdAt)"""
         )
-            .setParameter("txId", tx.id.toHexString())
+            .setParameter("txId", transactionId)
             .setParameter("status", status)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
-    /** Persists CPK to database. */
-    private fun persistCpk(
+    /** Persists transaction's [signature] to database. */
+    private fun persistSignature(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction
-    ) {
-        val cpkIdentifiers = tx.metadata.getCpkMetadata()
-        logger.info("cpkIdentifiers = [$cpkIdentifiers]")
-        val fileHash = SecureHash.parse("SHA-256:1234567890123456")
-        val name = "cpk-name"
-        val signerHash = SecureHash.parse("SHA-256:0000000000000000")
-        val version = 1
-        val data = ByteArray(10000)
-
-        entityManager.createNativeQuery(
+        transactionId: String,
+        index: Int,
+        signature: DigitalSignatureAndMetadata
+    ): Int {
+        return entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_cpk(file_hash, name, signer_hash, version, data, created)
-                VALUES (:fileHash, :name, :signerHash, :version, :data, :createdAt) ON CONFLICT DO NOTHING""")
-            .setParameter("fileHash", fileHash.toHexString())
-            .setParameter("name", name)
-            .setParameter("signerHash", signerHash.toHexString())
-            .setParameter("version", version)
-            .setParameter("data", data)
+            INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("signatureIdx", index)
+            .setParameter("signature", serializationService.serialize(signature).bytes)
+            .setParameter("publicKeyHash", signature.by.encoded.hashAsHexString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
-    /** Persists link between [tx] and it's CPK data to database. */
-    private fun persistTransactionCpk(
+    /** Persists link between [signedTransaction] and it's CPK data to database. */
+    fun persistTransactionCpk(
         entityManager: EntityManager,
-        tx: WireTransaction
-    ) {
-        // TODO get values from transaction metadata
-        val fileHash = SecureHash.parse("SHA-256:1234567890123456")
-        entityManager.createNativeQuery(
+        signedTransaction: ConsensualSignedTransactionContainer
+    ): Int {
+        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        return entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_transaction_cpk(transaction_id, file_hash)
-                VALUES (:transactionId, :fileHash)""")
-            .setParameter("transactionId", tx.id.toHexString())
-            .setParameter("fileHash", fileHash.toHexString())
+            INSERT INTO {h-schema}consensual_transaction_cpk
+            SELECT :transactionId, file_checksum
+            FROM {h-schema}consensual_cpk
+            WHERE file_checksum in (:fileChecksums)"""
+        )
+            .setParameter("transactionId", signedTransaction.id.toHexString())
+            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
             .executeUpdate()
     }
+
+    /** Finds file checksums of CPKs linked to transaction. */
+    fun findTransactionCpkChecksums(
+        entityManager: EntityManager,
+        signedTransaction: ConsensualSignedTransactionContainer,
+    ): Set<String> {
+        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        return entityManager.createNativeQuery(
+            """
+            SELECT file_checksum
+            FROM {h-schema}consensual_transaction_cpk
+            WHERE file_checksum in (:fileChecksums)""",
+            Tuple::class.java
+        )
+            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
+            .resultListAsTuples()
+            .mapTo(HashSet()) { r -> r.get(0) as String }
+    }
+
+    private fun ByteArray.hashAsHexString() =
+        digestService.hash(this, DigestAlgorithmName.SHA2_256).toHexString()
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>

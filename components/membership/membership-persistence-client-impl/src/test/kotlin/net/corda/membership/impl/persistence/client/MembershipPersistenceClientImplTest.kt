@@ -216,10 +216,9 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `stop event sets status to down but closes no handlers since they haven't been created`() {
+    fun `stop event closes no handlers since they haven't been created`() {
         postStopEvent()
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
         verify(registrationHandle, never()).close()
         verify(configHandle, never()).close()
         verify(rpcSender, never()).close()
