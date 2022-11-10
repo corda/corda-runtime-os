@@ -93,8 +93,6 @@ class TestGroupReader @Activate constructor(
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val groupParameters: GroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-    override val cpiAllowList: CPIAllowList
-        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     private val name = MemberX500Name("Corda MGM", "London", "GB")
     private val group = "dummy_group"

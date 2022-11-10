@@ -73,6 +73,12 @@ class NotaryLookupImplTest {
     }
 
     @Test
+    fun `notaryServices returns empty list when group params are null`() {
+        whenever(groupReader.groupParameters).thenReturn(null)
+        assertThat(lookup.notaryServices).isEmpty()
+    }
+
+    @Test
     fun `isNotaryVirtualNode return true if the node is a virtual node`() {
         val member = createMemberInfo(
             MemberNotaryDetails(

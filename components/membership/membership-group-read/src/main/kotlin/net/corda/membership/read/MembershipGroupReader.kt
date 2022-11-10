@@ -1,6 +1,5 @@
 package net.corda.membership.read
 
-import net.corda.membership.lib.CPIAllowList
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.base.types.MemberX500Name
@@ -24,12 +23,7 @@ interface MembershipGroupReader {
     /**
      * The current group parameters for the group represented by [groupId].
      */
-    val groupParameters: GroupParameters
-
-    /**
-     * The CPI whitelist for the group represented by [groupId].
-     */
-    val cpiAllowList: CPIAllowList
+    val groupParameters: GroupParameters?
 
     /**
      * Returns a list of all visible [MemberInfo]s for the member represented by [owningMember]
