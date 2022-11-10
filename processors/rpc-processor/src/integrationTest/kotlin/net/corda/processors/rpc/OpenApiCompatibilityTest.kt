@@ -27,6 +27,7 @@ import net.corda.processors.rpc.diff.diff
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -38,6 +39,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 @ExtendWith(ServiceExtension::class)
+@Disabled
 class OpenApiCompatibilityTest {
 
     companion object {

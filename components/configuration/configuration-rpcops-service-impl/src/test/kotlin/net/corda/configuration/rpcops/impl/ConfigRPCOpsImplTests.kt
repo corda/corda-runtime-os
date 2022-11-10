@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl
 
-import net.corda.configuration.read.ConfigurationGetService
 import java.util.concurrent.CompletableFuture
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.data.ExceptionEnvelope
@@ -19,7 +19,6 @@ import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -65,12 +64,6 @@ class ConfigRPCOpsImplTests {
             ), req.version
         )
     }
-    private val successResponse = UpdateConfigResponse(
-        req.section, req.config.escapedJson, ConfigSchemaVersion(
-            req.schemaVersion.major,
-            req.schemaVersion.minor
-        ), req.version
-    )
 
     private val configSection = "section"
     private val config = Configuration("CONFIG+DEFAULT", "CONFIG", 1, ConfigurationSchemaVersion(2,3))
@@ -117,15 +110,7 @@ class ConfigRPCOpsImplTests {
         verify(rpcSender).sendRequest(rpcRequest)
     }
 
-    @Test
-    fun `updateConfig returns HTTPUpdateConfigResponse if response is success`() {
-        val (_, configRPCOps) = getConfigRPCOps()
 
-        configRPCOps.createAndStartRPCSender(mock())
-        configRPCOps.setTimeout(1000)
-
-        assertEquals(successResponse, configRPCOps.updateConfig(req))
-    }
 
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {

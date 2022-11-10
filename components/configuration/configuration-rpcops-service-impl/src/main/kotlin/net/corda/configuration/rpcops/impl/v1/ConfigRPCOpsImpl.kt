@@ -1,13 +1,14 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.configuration.rpcops.impl.exception.ConfigException
+import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -16,6 +17,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -38,20 +40,20 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 /** An implementation of [ConfigRPCOps]. */
 @Suppress("Unused")
@@ -161,7 +163,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: UpdateConfigParameters): UpdateConfigResponse {
+    override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<UpdateConfigResponse> {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -177,12 +179,12 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
-            UpdateConfigResponse(
+            ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
-                    response.schemaVersion.majorVersion,
-                    response.schemaVersion.minorVersion
+                    1,
+                    0
                 ), response.version
-            )
+            ))
         } else {
             val exception = response.exception
             if (exception == null) {
@@ -256,6 +258,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
+        } catch (ex: CordaRPCAPIPartitionException) {
+            ConfigurationManagementResponse()
         } catch (e: Exception) {
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }
