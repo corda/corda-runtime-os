@@ -50,7 +50,7 @@ fun updateConfig(config: String, section: String) {
                     currentSchemaVersion["major"].toString(),
                     currentSchemaVersion["minor"].toString())
             if (result.code != 202) {
-                Assertions.fail<String>("Config update did not return 202. returned ${result.code} instead")
+                Assertions.fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
             }
 
         } catch (ex: Exception) {
