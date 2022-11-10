@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,7 +31,7 @@ class RevocationCheckerClient(
         groupAndClientName,
         Schemas.P2P.GATEWAY_REVOCATION_CHECK_REQUEST,
         RevocationCheckRequest::class.java,
-        RevocationCheckStatus::class.java
+        RevocationCheckResponse::class.java
     )
     private val rpcSender = RPCSenderWithDominoLogic(
         publisherFactory, coordinatorFactory, publisherConfig, messagingConfiguration
@@ -38,7 +39,7 @@ class RevocationCheckerClient(
 
     fun checkRevocation(request: RevocationCheckRequest): RevocationCheckStatus {
         return try {
-            rpcSender.sendRequest(request).getOrThrow(timeout)
+            rpcSender.sendRequest(request).getOrThrow(timeout).status
         } catch (except: TimeoutException) {
             logger.warn("Revocation request sent to the gateway timed out.")
             return RevocationCheckStatus.REVOKED

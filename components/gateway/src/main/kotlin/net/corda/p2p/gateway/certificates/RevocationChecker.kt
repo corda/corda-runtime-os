@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.certificates
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.libs.configuration.SmartConfig
@@ -65,7 +66,7 @@ class RevocationChecker(
         groupAndClientName,
         GATEWAY_REVOCATION_CHECK_REQUEST,
         RevocationCheckRequest::class.java,
-        RevocationCheckStatus::class.java
+        RevocationCheckResponse::class.java
     )
 
     private val processor = RevocationCheckProcessor(certificateFactory, certPathValidator)
@@ -73,8 +74,8 @@ class RevocationChecker(
     private class RevocationCheckProcessor(
         private val certificateFactory: CertificateFactory,
         private val certPathValidator: CertPathValidator
-    ): RPCResponderProcessor<RevocationCheckRequest, RevocationCheckStatus> {
-        override fun onNext(request: RevocationCheckRequest, respFuture: CompletableFuture<RevocationCheckStatus>) {
+    ): RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse> {
+        override fun onNext(request: RevocationCheckRequest, respFuture: CompletableFuture<RevocationCheckResponse>) {
             val revocationMode = request.mode
             if (revocationMode == null) {
                 respFuture.completeExceptionally(
@@ -113,10 +114,10 @@ class RevocationChecker(
             try {
                 certPathValidator.validate(certificateChain, pkixRevocationChecker)
             } catch (exception: CertPathValidatorException) {
-                respFuture.complete(RevocationCheckStatus.REVOKED)
+                respFuture.complete(RevocationCheckResponse(RevocationCheckStatus.REVOKED))
                 return
             }
-            respFuture.complete(RevocationCheckStatus.ACTIVE)
+            respFuture.complete(RevocationCheckResponse(RevocationCheckStatus.ACTIVE))
         }
 
         private fun RevocationMode.toRevocationConfig(): RevocationConfig {

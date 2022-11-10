@@ -14,9 +14,7 @@ import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -59,7 +57,7 @@ class RevocationCheckerTest {
     fun `valid certificate passes validation`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result).isEqualTo(RevocationCheckStatus.ACTIVE)
+        assertThat(result.status).isEqualTo(RevocationCheckStatus.ACTIVE)
     }
 
     @Test
@@ -72,20 +70,20 @@ class RevocationCheckerTest {
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
     }
 
     @Test
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
     }
 
     @Test
     fun `if truststore is wrong validation fails`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
     }
 }
