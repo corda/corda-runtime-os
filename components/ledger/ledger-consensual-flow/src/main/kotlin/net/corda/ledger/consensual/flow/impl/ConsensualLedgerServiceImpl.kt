@@ -3,7 +3,8 @@ package net.corda.ledger.consensual.flow.impl
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -25,8 +26,8 @@ import java.security.PrivilegedExceptionAction
 
 @Component(service = [ConsensualLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(
-    @Reference(service = ConsensualTransactionBuilderFactory::class)
-    private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory,
+    @Reference(service = ConsensualSignedTransactionFactory::class)
+    private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine,
     @Reference(service = ConsensualLedgerPersistenceService::class)
@@ -34,9 +35,10 @@ class ConsensualLedgerServiceImpl @Activate constructor(
 ) : ConsensualLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder(): ConsensualTransactionBuilder {
-        return consensualTransactionBuilderFactory.create()
-    }
+    override fun getTransactionBuilder(): ConsensualTransactionBuilder =
+        ConsensualTransactionBuilderImpl(
+            consensualSignedTransactionFactory
+        )
 
     @Suspendable
     override fun findSignedTransaction(id: SecureHash): ConsensualSignedTransaction? {
