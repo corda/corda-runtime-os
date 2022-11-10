@@ -170,9 +170,14 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 version
             )
         }
+
+        logger.info("LORCAN - Sending update config message")
         val response = sendRequest(rpcRequest)
+        logger.info("LORCAN - received response back - $response")
 
         return if (response.success) {
+            logger.info("LORCAN - received response back - Success")
+
             ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
                     1,
