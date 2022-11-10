@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.certificates
 
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
@@ -21,8 +22,8 @@ import java.util.concurrent.CompletableFuture
 
 class RevocationCheckerTest {
 
-    private val subscription = mock<RPCSubscription<RevocationCheckRequest, RevocationCheckStatus>>()
-    private val processor = argumentCaptor<RPCResponderProcessor<RevocationCheckRequest, RevocationCheckStatus>>()
+    private val subscription = mock<RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>>()
+    private val processor = argumentCaptor<RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createRPCSubscription(
@@ -48,7 +49,7 @@ class RevocationCheckerTest {
         val revocationCheckRequest = mock<RevocationCheckRequest> {
             whenever(mock.mode).thenReturn(null)
         }
-        val mockFuture = mock<CompletableFuture<RevocationCheckStatus>>()
+        val mockFuture = mock<CompletableFuture<RevocationCheckResponse>>()
         processor.firstValue.onNext(revocationCheckRequest, mockFuture)
         verify(mockFuture).completeExceptionally(any())
     }
@@ -59,7 +60,7 @@ class RevocationCheckerTest {
             whenever(mock.mode).thenReturn(RevocationMode.HARD_FAIL)
             whenever(mock.trustedCertificates).thenReturn(null)
         }
-        val mockFuture = mock<CompletableFuture<RevocationCheckStatus>>()
+        val mockFuture = mock<CompletableFuture<RevocationCheckResponse>>()
         processor.firstValue.onNext(revocationCheckRequest, mockFuture)
         verify(mockFuture).completeExceptionally(any())
     }
