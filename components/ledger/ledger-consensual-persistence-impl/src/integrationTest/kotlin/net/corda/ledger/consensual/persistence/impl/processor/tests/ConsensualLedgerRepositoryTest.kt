@@ -54,8 +54,7 @@ class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    private lateinit var digestService: DigestService
-    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
@@ -82,8 +81,7 @@ class ConsensualLedgerRepositoryTest {
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
-            digestService = ctx.getSandboxSingletonService()
-            merkleTreeProvider = ctx.getSandboxSingletonService()
+            wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
