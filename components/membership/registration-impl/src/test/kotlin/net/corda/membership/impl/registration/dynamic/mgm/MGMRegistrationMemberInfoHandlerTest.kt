@@ -85,6 +85,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     )
     private val publicKey: PublicKey = mock {
         on { encoded } doReturn EMPTY_STRING.toByteArray()
+        on { algorithm } doReturn "EC"
     }
     private val mockMemberContext: MemberContext = mock()
     private val memberInfo: MemberInfo = mock {
@@ -384,5 +385,45 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(cordaAvroSerializer).serialize(any())
     }
 
+    @Test
+    fun `non EC algorithm ECDH key will cause an exception`() {
+        val encryptedPublicKey = byteArrayOf(1, 2, 4)
+        val ecdhPublicKey = mock<PublicKey>() {
+            on { encoded } doReturn EMPTY_STRING.toByteArray()
+            on { algorithm } doReturn "RSA"
+        }
+        whenever(
+            cryptoOpsClient.lookup(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    validTestContext[ECDH_KEY_ID]!!
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(encryptedPublicKey),
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+        whenever(keyEncodingService.decodePublicKey(encryptedPublicKey)).doReturn(ecdhPublicKey)
 
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersist(
+                registrationId,
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
 }

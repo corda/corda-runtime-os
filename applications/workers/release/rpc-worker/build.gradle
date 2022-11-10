@@ -92,8 +92,8 @@ tasks.named('e2eTest') {
     }
 
     ["A", "B", "C"].each {cluster ->
-        if(System.getenv("E2E_CLUSTER_{$cluster}_RPC_HOST") == null) {
-            environment "E2E_CLUSTER_{$cluster}_RPC_HOST",
+        if(System.getenv("E2E_CLUSTER_${cluster}_RPC_HOST") == null) {
+            environment "E2E_CLUSTER_${cluster}_RPC_HOST",
                     project.getProperties().getOrDefault("e2eCluster${cluster}RpcHost","localhost")
         }
         if(System.getenv("E2E_CLUSTER_${cluster}_RPC_PORT") == null) {
@@ -101,7 +101,7 @@ tasks.named('e2eTest') {
                     project.getProperties().getOrDefault("e2eCluster${cluster}RpcPort","8888")
         }
         if(System.getenv("E2E_CLUSTER_${cluster}_P2P_HOST") == null) {
-            environment "E2E_CLUSTER_{$cluster}_P2P_HOST",
+            environment "E2E_CLUSTER_${cluster}_P2P_HOST",
                     project.getProperties().getOrDefault("e2eCluster${cluster}P2pHost","localhost")
         }
         if(System.getenv("E2E_CLUSTER_${cluster}_P2P_PORT") == null) {

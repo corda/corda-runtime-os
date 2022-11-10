@@ -68,8 +68,8 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                         config.topic
                     )
                     it.assign(partitions)
-                    threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                     pollAndProcessSnapshot(it)
+                    threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0

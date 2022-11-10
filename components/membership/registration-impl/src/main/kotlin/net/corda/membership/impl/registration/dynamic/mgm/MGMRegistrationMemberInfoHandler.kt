@@ -113,6 +113,9 @@ internal class MGMRegistrationMemberInfoHandler(
             )
         val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, holdingIdentity.shortHash.value)
         val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, holdingIdentity.shortHash.value)
+        if (ecdhKey.algorithm != "EC") {
+            throw MGMRegistrationContextValidationException("ECDH key must be created with an EC schema.", null)
+        }
         val now = clock.instant().toString()
         val optionalContext = cpi.signerSummaryHash?.let {
             mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
