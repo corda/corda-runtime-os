@@ -173,7 +173,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 
         logger.info("LORCAN - Sending update config message")
         val response = sendRequest(rpcRequest)
-        logger.info("LORCAN - received response back - $response")
 
         return if (response.success) {
             logger.info("LORCAN - received response back - Success")
@@ -190,7 +189,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
-            logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+            //logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+            logger.warn("LORCAN - Remote request to update config responded with exception: ${exception.errorType}: ${exception
+                .errorMessage}")
 
             when(exception.errorType) {
                 WrongConfigVersionException::class.java.name -> throw ConfigVersionConflictException(
