@@ -56,7 +56,7 @@ fun updateConfig(config: String, section: String) {
 
         } catch (ex: Exception) {
             // use print as the logger isnt showing on jenkins
-            fail("Failed to send config update")
+            fail("Failed to send config update", ex)
         }
     }
 }
