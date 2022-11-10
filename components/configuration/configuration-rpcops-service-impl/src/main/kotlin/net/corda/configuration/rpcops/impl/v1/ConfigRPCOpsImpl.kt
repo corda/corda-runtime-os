@@ -176,9 +176,13 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 version
             )
         }
+
+        logger.info("LORCAN - Sending update config message")
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
+            logger.info("LORCAN - received response back - Success")
+
             ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
                     1,
@@ -191,7 +195,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
-            logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+            //logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+            logger.warn("LORCAN - Remote request to update config responded with exception: ${exception.errorType}: ${exception
+                .errorMessage}")
 
             when (exception.errorType) {
                 WrongConfigVersionException::class.java.name -> throw ConfigVersionConflictException(
@@ -259,8 +265,10 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (ex: CordaRPCAPIPartitionException) {
+            logger.warn("LORCAN - partition event when getting response from db worker for update config message", ex)
             ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version)
         } catch (e: Exception) {
+            logger.warn("LORCAN - failed to publish to db worker for update config message", e)
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }
     }
