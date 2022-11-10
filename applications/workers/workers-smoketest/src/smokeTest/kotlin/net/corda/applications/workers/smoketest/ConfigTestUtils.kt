@@ -39,17 +39,22 @@ fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-                val currentConfig = getConfig(section).body.toJson()
-                val currentSchemaVersion = currentConfig["schemaVersion"]
+        val currentConfig = getConfig(section).body.toJson()
+        val currentSchemaVersion = currentConfig["schemaVersion"]
 
         try {
-                postConfig(
-                    config,
-                    section,
-                    currentConfig["version"].toString(),
-                    currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString())
-        }catch(ex: Exception) {
+            val result = postConfig(
+                config,
+                section,
+                currentConfig["version"].toString(),
+                currentSchemaVersion["major"].toString(),
+                currentSchemaVersion["minor"].toString())
+
+            if (result.code != 202) {
+                fail<String>("Config update did not return 202. returned ${result.code} instead")
+            }
+
+        } catch (ex: Exception) {
             // use print as the logger isnt showing on jenkins
             fail("Failed to send config update")
         }
