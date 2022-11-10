@@ -7,6 +7,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThatThrownBy
 
 fun JsonNode.sourceConfigNode(): JsonNode =
@@ -42,15 +43,19 @@ fun updateConfig(config: String, section: String) {
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
         try {
-                postConfig(
+                val result = postConfig(
                     config,
                     section,
                     currentConfig["version"].toString(),
                     currentSchemaVersion["major"].toString(),
                     currentSchemaVersion["minor"].toString())
-        }catch(ex: Exception) {
+            if (result.code != 202) {
+                Assertions.fail<String>("Config update did not return 202. returned ${result.code} instead")
+            }
+
+        } catch (ex: Exception) {
             // use print as the logger isnt showing on jenkins
-            println("Failed to execute post config: ${ex.printStackTrace()}")
+            Assertions.fail("Failed to send config update", ex)
         }
     }
 }
