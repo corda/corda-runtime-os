@@ -68,7 +68,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = ConfigurationGetService::class)
-    private val configurationGetService: ConfigurationGetService
+    private val configurationGetService: ConfigurationGetService,
 ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
     private companion object {
         // The configuration used for the RPC sender.
@@ -193,7 +193,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             }
             logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
 
-            when(exception.errorType) {
+            when (exception.errorType) {
                 WrongConfigVersionException::class.java.name -> throw ConfigVersionConflictException(
                     exception.errorType,
                     exception.errorMessage,
@@ -259,7 +259,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (ex: CordaRPCAPIPartitionException) {
-            ConfigurationManagementResponse()
+            ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version)
         } catch (e: Exception) {
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }
