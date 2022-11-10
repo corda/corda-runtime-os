@@ -45,7 +45,7 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
-                FindTransactionParameters(id.toHexString())
+                FindTransactionParameters(id.toString())
             )
         }.firstOrNull()?.let {
             serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
