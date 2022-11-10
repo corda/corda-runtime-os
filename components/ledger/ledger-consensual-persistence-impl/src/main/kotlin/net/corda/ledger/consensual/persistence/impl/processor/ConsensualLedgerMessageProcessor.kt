@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.persistence.impl.processor
 
-import net.corda.common.json.validation.JsonValidator
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.data.ledger.consensual.PersistTransaction

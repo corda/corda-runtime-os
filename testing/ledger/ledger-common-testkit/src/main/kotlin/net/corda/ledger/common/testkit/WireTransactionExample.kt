@@ -7,6 +7,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
+@Suppress("LongParameterList")
 fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
