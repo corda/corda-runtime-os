@@ -259,8 +259,10 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (ex: CordaRPCAPIPartitionException) {
+            logger.warn("LORCAN - partition event when getting response from db worker for update config message", ex)
             ConfigurationManagementResponse()
         } catch (e: Exception) {
+            logger.warn("LORCAN - failed to publish to db worker for update config message", e)
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)
         }
     }
