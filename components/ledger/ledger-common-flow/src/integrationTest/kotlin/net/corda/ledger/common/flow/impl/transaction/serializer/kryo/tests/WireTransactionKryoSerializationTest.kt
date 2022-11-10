@@ -2,11 +2,13 @@ package net.corda.ledger.common.flow.impl.transaction.serializer.kryo.tests
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.VirtualNodeService
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -28,18 +30,22 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 
+const val TESTING_CPB = "/META-INF/calculator.cpb"
+
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class WireTransactionKryoSerializationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
-    private lateinit var emptySandboxGroup: SandboxGroup
+    private lateinit var sandboxGroup: SandboxGroup
     private lateinit var digestService: DigestService
     private lateinit var merkleTreeProvider: MerkleTreeProvider
     private lateinit var jsonMarshallingService: JsonMarshallingService
-    private lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
+
+    @InjectService(timeout = 1500)
+    lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 
     @BeforeAll
     fun setup(
@@ -52,15 +58,16 @@ class WireTransactionKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
-            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+            val virtualNode = setup.fetchService<VirtualNodeService>(1500)
+            val sandboxGroupContext = virtualNode.loadSandbox(TESTING_CPB, SandboxGroupType.FLOW)
+            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
 
-            digestService = setup.fetchService(1500)
-            merkleTreeProvider = setup.fetchService(1500)
-            jsonMarshallingService = setup.fetchService(1500)
-            checkpointSerializerBuilderFactory = setup.fetchService(1500)
-            wireTransactionKryoSerializer = setup.fetchService(1500)
+            sandboxGroup = sandboxGroupContext.sandboxGroup
+
+            digestService = sandboxGroupContext.getSandboxSingletonService()
+            merkleTreeProvider = sandboxGroupContext.getSandboxSingletonService()
+            jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
+            wireTransactionKryoSerializer = sandboxGroupContext.getSandboxSingletonService()
         }
     }
 
@@ -68,7 +75,7 @@ class WireTransactionKryoSerializationTest {
     @Suppress("FunctionName")
     fun `correct serialization of a wire Transaction`() {
         val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
