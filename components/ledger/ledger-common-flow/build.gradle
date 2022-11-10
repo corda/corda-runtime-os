@@ -27,9 +27,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:crypto:crypto-core')
-    implementation project(':libs:layered-property-map')
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:platform-info')
 
     // TODO CORE-7101 may simplify this. Most of these are for accessing current sandbox group from fiber.
@@ -52,11 +50,11 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+//    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    integrationTestImplementation project(":libs:sandbox-types")
+//    integrationTestImplementation project(":libs:sandbox-types")
     cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
 }
 
