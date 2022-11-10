@@ -31,8 +31,7 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         private val cache = ConcurrentHashMap<HoldingIdentity, ReplaceableList<MemberInfo>>()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity] ?: emptyList()
-        override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> =
-            cache.mapValues { it.value.toList() }.toMap()
+        override fun getAll(): Map<HoldingIdentity, List<MemberInfo>> = cache
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
             cache.compute(holdingIdentity) { _, value ->
