@@ -209,7 +209,7 @@ pipeline {
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
-            sh 'kubectl delete ns "${NAMESPACE}"'
+             sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
 }
