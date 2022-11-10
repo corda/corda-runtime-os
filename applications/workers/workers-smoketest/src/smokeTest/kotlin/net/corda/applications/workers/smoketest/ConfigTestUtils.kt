@@ -50,7 +50,7 @@ fun updateConfig(config: String, section: String) {
                     currentSchemaVersion["minor"].toString())
         }catch(ex: Exception) {
             // use print as the logger isnt showing on jenkins
-            println("Failed to execute post config: ${ex.printStackTrace()}")
+            throw ex
         }
     }
 }
