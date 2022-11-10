@@ -8,6 +8,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.fail
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -50,7 +51,7 @@ fun updateConfig(config: String, section: String) {
                     currentSchemaVersion["minor"].toString())
         }catch(ex: Exception) {
             // use print as the logger isnt showing on jenkins
-            throw ex
+            fail("Failed to send config update")
         }
     }
 }
