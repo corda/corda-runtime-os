@@ -6,6 +6,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
@@ -16,7 +17,8 @@ import net.corda.virtualnode.HoldingIdentity
 
 class MembershipGroupReaderImpl(
     private val holdingIdentity: HoldingIdentity,
-    private val membershipGroupReadCache: MembershipGroupReadCache
+    private val membershipGroupReadCache: MembershipGroupReadCache,
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : MembershipGroupReader {
     override val groupId: String = holdingIdentity.groupId
     override val owningMember: MemberX500Name = holdingIdentity.x500Name
@@ -28,7 +30,7 @@ class MembershipGroupReaderImpl(
             )
 
     override val groupParameters: GroupParameters
-        get() = TODO("Not yet implemented")
+        get() = groupParametersReaderService.get(holdingIdentity)
     override val cpiAllowList: CPIAllowList
         get() = TODO("Not yet implemented")
 

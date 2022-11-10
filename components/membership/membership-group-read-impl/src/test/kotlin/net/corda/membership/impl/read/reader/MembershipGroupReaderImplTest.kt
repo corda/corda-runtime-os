@@ -10,12 +10,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +37,9 @@ class MembershipGroupReaderImplTest {
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
+    }
+    private val groupParametersReaderService: GroupParametersReaderService = mock {
+        on { get(eq(aliceIdGroup1)) } doReturn mock()
     }
     private val mockLedgerKey: PublicKey = mock()
     private val mockLedgerKeyAsByteArray = "1234".toByteArray()
@@ -89,7 +94,8 @@ class MembershipGroupReaderImplTest {
     fun setUp() {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
             aliceIdGroup1,
-            membershipGroupCache
+            membershipGroupCache,
+            groupParametersReaderService
         )
     }
 
@@ -182,5 +188,10 @@ class MembershipGroupReaderImplTest {
             "Failed to find member list for ID='${aliceIdGroup1.shortHash}, Group ID='${aliceIdGroup1.groupId}'",
             error.message
         )
+    }
+
+    @Test
+    fun `group parameters are returned as expected`() {
+        assertThat(membershipGroupReaderImpl.groupParameters).isNotNull
     }
 }
