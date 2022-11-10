@@ -3,11 +3,11 @@ package net.corda.applications.workers.smoketest
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.IOException
 import java.time.Duration
+import kong.unirest.UnirestException
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
 
@@ -55,9 +55,8 @@ fun updateConfig(config: String, section: String) {
                 fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
             }
 
-        } catch (ex: Exception) {
-            // use print as the logger isnt showing on jenkins
-            fail("Failed to send config update", ex)
+        } catch (ex: UnirestException) {
+            //swallow UnirestException caused by the http server going down in response to config change while we wait for response
         }
     }
 }
