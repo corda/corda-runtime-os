@@ -24,6 +24,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -95,12 +96,12 @@ class GroupParametersReaderServiceImpl internal constructor(
     override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>? =
         impl.getAllVersionedRecords()
 
-    override fun get(identity: HoldingIdentity): GroupParameters? = impl.get(identity)
+    override fun get(identity: HoldingIdentity): GroupParameters = impl.get(identity)
 
     private interface InnerGroupParametersReaderService : AutoCloseable {
-        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>?
+        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>
 
-        fun get(identity: HoldingIdentity): GroupParameters?
+        fun get(identity: HoldingIdentity): GroupParameters
     }
 
     private object InactiveImpl : InnerGroupParametersReaderService {
@@ -126,7 +127,8 @@ class GroupParametersReaderServiceImpl internal constructor(
             return recordList.stream()
         }
 
-        override fun get(identity: HoldingIdentity): GroupParameters? = groupParametersCache.get(identity)
+        override fun get(identity: HoldingIdentity): GroupParameters = groupParametersCache.get(identity)
+            ?: throw CordaRuntimeException("Could not find group parameters for holding identity ${identity.toString()}.")
 
         override fun close() {
             groupParametersCache.clear()

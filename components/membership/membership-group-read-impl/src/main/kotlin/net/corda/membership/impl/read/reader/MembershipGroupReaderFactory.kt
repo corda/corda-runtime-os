@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
 
@@ -20,7 +21,8 @@ interface MembershipGroupReaderFactory {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadCache: MembershipGroupReadCache
+        private val membershipGroupReadCache: MembershipGroupReadCache,
+        private val groupParametersReaderService: GroupParametersReaderService,
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
@@ -32,7 +34,8 @@ interface MembershipGroupReaderFactory {
             holdingIdentity: HoldingIdentity
         ) = MembershipGroupReaderImpl(
             holdingIdentity,
-            membershipGroupReadCache
+            membershipGroupReadCache,
+            groupParametersReaderService
         ).apply {
             groupReaderCache.put(holdingIdentity, this)
         }

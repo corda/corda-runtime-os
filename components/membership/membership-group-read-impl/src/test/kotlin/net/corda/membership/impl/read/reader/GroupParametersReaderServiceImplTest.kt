@@ -23,7 +23,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -40,16 +40,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import java.time.Instant
 import java.util.stream.Collectors
 
 class GroupParametersReaderServiceImplTest {
     private companion object {
-        val clock = TestClock(Instant.ofEpochSecond(100))
-
         const val GROUP_ID = "groupId"
         val alice = HoldingIdentity(MemberX500Name.parse("O=Alice, L=London, C=GB"), GROUP_ID)
         val bob = HoldingIdentity(MemberX500Name.parse("O=Bob, L=London, C=GB"), GROUP_ID)
+        val charlie = HoldingIdentity(MemberX500Name.parse("O=Charlie, L=London, C=GB"), GROUP_ID)
     }
 
     private val subscriptionHandle: RegistrationHandle = mock()
@@ -244,6 +242,15 @@ class GroupParametersReaderServiceImplTest {
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
             with(groupParametersReaderService.get(alice)) {
                 assertThat(this).isEqualTo(groupParams)
+            }
+        }
+
+        @Test
+        fun `calling get throws excpetion when there are no group params for identity`() {
+            postConfigChangedEvent()
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
+            assertThrows<CordaRuntimeException> {
+                groupParametersReaderService.get(charlie)
             }
         }
 
