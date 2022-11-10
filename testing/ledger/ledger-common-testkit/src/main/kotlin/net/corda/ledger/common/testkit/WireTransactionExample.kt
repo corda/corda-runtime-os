@@ -3,9 +3,21 @@ package net.corda.ledger.common.testkit
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+
+fun WireTransactionFactory.createExample(
+    jsonMarshallingService: JsonMarshallingService,
+    metadata: TransactionMetadata = minimalTransactionMetadata,
+    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
+): WireTransaction {
+    val allGroupLists = listOf(
+        listOf(jsonMarshallingService.format(metadata).encodeToByteArray()) // TODO(update with CORE-6890)
+    ) + componentGroupLists
+    return create(allGroupLists, metadata)
+}
 
 fun getWireTransactionExample(
     digestService: DigestService,
