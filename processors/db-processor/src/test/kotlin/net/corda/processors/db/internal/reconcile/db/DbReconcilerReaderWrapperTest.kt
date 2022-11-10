@@ -9,16 +9,16 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReaderComponent.GetRecordsErrorEvent
+import net.corda.processors.db.internal.reconcile.db.DbReconcilerReaderWrapper.GetRecordsErrorEvent
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -27,14 +27,15 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.util.stream.Stream
 
-class DbReconcilerReaderComponentTest {
+class DbReconcilerReaderWrapperTest {
 
-    private val superClassAllVersionRecords: Stream<VersionedRecord<String, Int>> = mock()
-    private val superClassName: String = "super-class-name"
-    private val superClassDependency: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
-    private val superClassDependencies: Set<LifecycleCoordinatorName> = setOf(superClassDependency)
-    private val superClassOnStatusUp: () -> Unit = mock()
-    private val superClassOnStatusDown: () -> Unit = mock()
+    private val getAllVersionRecordsMock: Stream<VersionedRecord<String, Int>> = mock()
+    private val nameMock: String = "super-class-name"
+    private val lifecycleCoordinatorNameMock: LifecycleCoordinatorName = LifecycleCoordinatorName(nameMock)
+    private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
+    private val onStatusUpMock: () -> Unit = mock()
+    private val dependenciesMock: Set<LifecycleCoordinatorName> = setOf(dependencyMock)
+    private val onStatusDownMock: () -> Unit = mock()
 
     private val coordinatorNameCaptor = argumentCaptor<LifecycleCoordinatorName>()
     private val lifecycleEventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
@@ -45,7 +46,7 @@ class DbReconcilerReaderComponentTest {
 
     private val dependencyRegistrationHandle: RegistrationHandle = mock()
     private val coordinator: LifecycleCoordinator = mock {
-        on { followStatusChangesByName(eq(superClassDependencies)) } doReturn dependencyRegistrationHandle
+        on { followStatusChangesByName(eq(dependenciesMock)) } doReturn dependencyRegistrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on {
@@ -56,31 +57,27 @@ class DbReconcilerReaderComponentTest {
         } doReturn coordinator
     }
 
-    private val dbReconcilerReaderComponent =
-        object : DbReconcilerReaderComponent<String, Int>(coordinatorFactory) {
-            override fun getAllVersionedRecords() = superClassAllVersionRecords
-            override val name = superClassName
-            override val dependencies = superClassDependencies
-            override fun onStatusUp() = superClassOnStatusUp.invoke()
-            override fun onStatusDown() = superClassOnStatusDown.invoke()
-        }
-
-    @BeforeEach
-    fun setup() {
-        // call lazy initialized coordinator to capture the event handler
-        dbReconcilerReaderComponent.coordinator.status
+    private val dbReconcilerReader: DbReconcilerReader<String, Int> = mock {
+        on { getAllVersionedRecords() } doReturn getAllVersionRecordsMock
+        on { name } doReturn nameMock
+        on { dependencies } doReturn dependenciesMock
+        on { lifecycleCoordinatorName } doReturn lifecycleCoordinatorNameMock
+        on { onStatusUp() } doAnswer { onStatusUpMock.invoke() }
+        on { onStatusDown() } doAnswer { onStatusDownMock.invoke() }
     }
+
+    private val dbReconcilerReaderComponent = DbReconcilerReaderWrapper(
+        coordinatorFactory,
+        dbReconcilerReader
+    )
 
     @Nested
     inner class LifecycleCoordinatorTest {
         @Test
-        fun `Lifecycle coordinator is created using name from super class`() {
-            val lifecycleCoordinator = dbReconcilerReaderComponent.coordinator
-
+        fun `Lifecycle coordinator is created using lifecycle coordinator from reconciler class`() {
             verify(coordinatorFactory).createCoordinator(any(), any())
-            assertThat(lifecycleCoordinator).isEqualTo(coordinator)
             assertThat(coordinatorNameCaptor.allValues).hasSize(1)
-            assertThat(coordinatorNameCaptor.firstValue.componentName).isEqualTo(superClassName)
+            assertThat(coordinatorNameCaptor.firstValue.componentName).isEqualTo(nameMock)
         }
 
         @Test
@@ -105,7 +102,7 @@ class DbReconcilerReaderComponentTest {
         fun `start event follows dependencies`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
 
-            verify(coordinator).followStatusChangesByName(eq(superClassDependencies))
+            verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
             verify(dependencyRegistrationHandle, never()).close()
         }
 
@@ -114,7 +111,7 @@ class DbReconcilerReaderComponentTest {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
 
-            verify(coordinator, times(2)).followStatusChangesByName(eq(superClassDependencies))
+            verify(coordinator, times(2)).followStatusChangesByName(eq(dependenciesMock))
             verify(dependencyRegistrationHandle).close()
         }
     }
@@ -126,25 +123,25 @@ class DbReconcilerReaderComponentTest {
             dbReconcilerReaderComponent.stop()
 
             verify(coordinator).stop()
-            verify(superClassOnStatusDown).invoke()
+            verify(onStatusDownMock).invoke()
         }
 
         @Test
         fun `stop event calls super class onStatusDown function`() {
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
-            verify(superClassOnStatusDown).invoke()
+            verify(onStatusDownMock).invoke()
             verify(dependencyRegistrationHandle, never()).close()
         }
 
         @Test
         fun `stop event after start event calls super class onStatusDown function and closes registration handle`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
-            verify(coordinator).followStatusChangesByName(eq(superClassDependencies))
+            verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
 
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
-            verify(superClassOnStatusDown).invoke()
+            verify(onStatusDownMock).invoke()
             verify(dependencyRegistrationHandle).close()
         }
     }
@@ -171,7 +168,7 @@ class DbReconcilerReaderComponentTest {
                 coordinator
             )
 
-            verify(superClassOnStatusUp).invoke()
+            verify(onStatusUpMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
         }
 
@@ -185,7 +182,7 @@ class DbReconcilerReaderComponentTest {
                 coordinator
             )
 
-            verify(superClassOnStatusDown).invoke()
+            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(dependencyRegistrationHandle, never()).close()
         }
@@ -202,7 +199,7 @@ class DbReconcilerReaderComponentTest {
                 coordinator
             )
 
-            verify(superClassOnStatusDown).invoke()
+            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(dependencyRegistrationHandle).close()
         }

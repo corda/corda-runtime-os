@@ -7,6 +7,7 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.db.internal.reconcile.db.query.GroupParametersReconciliationQuery
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -28,7 +29,7 @@ class GroupParametersReconciler(
         val logger = contextLogger()
     }
 
-    private var dbReconciler: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    private var dbReconciler: DbReconcilerReaderWrapper<HoldingIdentity, GroupParameters>? = null
 
     override fun close() {
         dbReconciler?.stop()
@@ -36,24 +37,22 @@ class GroupParametersReconciler(
     }
 
     override fun updateInterval(intervalMillis: Long) {
-        logger.debug("Group parameters reconciliation interval set to $intervalMillis ms")
+        logger.debug { "Group parameters reconciliation interval set to $intervalMillis ms" }
 
-        if (dbReconciler == null) {
-            dbReconciler =
-                VirtualNodeVaultDbReconcilerReader(
-                    coordinatorFactory,
-                    virtualNodeInfoReadService,
-                    dbConnectionManager,
-                    jpaEntitiesRegistry,
-                    GroupParametersReconciliationQuery(
-                        cordaAvroSerializationFactory,
-                        groupParametersFactory
-                    ),
-                    HoldingIdentity::class.java,
-                    GroupParameters::class.java
-                ).also {
-                    it.start()
-                }
-        }
+        dbReconciler?.stop()
+        dbReconciler = DbReconcilerReaderWrapper(
+            coordinatorFactory,
+            VirtualNodeVaultDbReconcilerReader(
+                virtualNodeInfoReadService,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                GroupParametersReconciliationQuery(
+                    cordaAvroSerializationFactory,
+                    groupParametersFactory
+                ),
+                HoldingIdentity::class.java,
+                GroupParameters::class.java
+            )
+        ).also { it.start() }
     }
 }

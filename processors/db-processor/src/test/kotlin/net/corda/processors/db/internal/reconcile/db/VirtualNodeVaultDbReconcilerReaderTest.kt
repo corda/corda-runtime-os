@@ -3,12 +3,9 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReaderComponent.GetRecordsErrorEvent
 import net.corda.processors.db.internal.reconcile.db.query.VaultReconciliationQuery
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.types.MemberX500Name
@@ -49,11 +46,6 @@ class VirtualNodeVaultDbReconcilerReaderTest {
         uniquenessDmlConnectionId = uuid,
         timestamp = Instant.ofEpochSecond(1)
     )
-
-    private val coordinator: LifecycleCoordinator = mock()
-    private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
-    }
 
     private val virtualNode1 = buildVirtualNodeInfo(UUID(0, 1))
     private val virtualNode2 = buildVirtualNodeInfo(UUID(1, 2))
@@ -98,6 +90,8 @@ class VirtualNodeVaultDbReconcilerReaderTest {
     private val keyClass: Class<String> = String::class.java
     private val valueClass: Class<Int> = Int::class.java
 
+    private val mockExceptionHandler: (Exception) -> Unit = mock()
+
     data class VNodeMocks(
         val virtualNodeInfo: VirtualNodeInfo,
         val emf: EntityManagerFactory,
@@ -109,14 +103,13 @@ class VirtualNodeVaultDbReconcilerReaderTest {
     val vnode2Mocks = VNodeMocks(virtualNode2, vnode2Emf, vnode2Em, vnode2Transaction)
 
     private val virtualNodeVaultDbReconcilerReader = VirtualNodeVaultDbReconcilerReader(
-        coordinatorFactory,
         virtualNodeInfoReadService,
         dbConnectionManager,
         jpaEntitiesRegistry,
         vaultReconciliationQuery,
         keyClass,
         valueClass
-    )
+    ).also { it.registerExceptionHandler(mockExceptionHandler) }
 
     @Test
     fun `Service name is set as expected`() {
@@ -169,7 +162,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
             verify(vaultReconciliationQuery).invoke(eq(it.virtualNodeInfo), eq(it.em))
         }
 
-        verify(coordinator, never()).postEvent(any<GetRecordsErrorEvent>())
+        verify(mockExceptionHandler, never()).invoke(any())
     }
 
     @Test
@@ -190,7 +183,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
         assertThat(resultStream).isNull()
         verify(virtualNodeInfoReadService).getAll()
         verify(dbConnectionManager, never()).createEntityManagerFactory(any(), any())
-        verify(coordinator).postEvent(any<GetRecordsErrorEvent>())
+        verify(mockExceptionHandler).invoke(any())
     }
 
     @Test
@@ -203,7 +196,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(vnode1Emf, never()).createEntityManager()
         verify(vnode2Emf, never()).createEntityManager()
-        verify(coordinator).postEvent(any<GetRecordsErrorEvent>())
+        verify(mockExceptionHandler).invoke(any())
     }
 
     @Test
@@ -217,7 +210,7 @@ class VirtualNodeVaultDbReconcilerReaderTest {
         verify(vnode1Emf).createEntityManager()
         verify(vnode1Emf).close()
         verify(vnode1Em, never()).transaction
-        verify(coordinator).postEvent(any<GetRecordsErrorEvent>())
+        verify(mockExceptionHandler).invoke(any())
     }
 
     @Test
@@ -231,6 +224,6 @@ class VirtualNodeVaultDbReconcilerReaderTest {
         verify(vaultReconciliationQuery).invoke(eq(virtualNode1), eq(vnode1Em))
         verify(vnode1Emf).close()
         verify(vnode1Em).close()
-        verify(coordinator).postEvent(any<GetRecordsErrorEvent>())
+        verify(mockExceptionHandler).invoke(any())
     }
 }

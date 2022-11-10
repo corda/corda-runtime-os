@@ -1,8 +1,8 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -13,35 +13,22 @@ import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
 
 /**
- * A base class for all DB reconciler reader components which provides standard lifecycle handling.
- *
- * Implementations must override the [name], [dependencies], and [coordinatorFactory] properties.
- * Optionally, if custom startup / shutdown logic is required, [onStatusUp] and [onStatusDown] can be implemented with
- * that logic.
- *
+ * A wrapper class for all DB reconciler reader components which provides standard lifecycle handling.
  */
-abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
-    private val coordinatorFactory: LifecycleCoordinatorFactory
-) : DbReconcilerReader<K, V> {
+class DbReconcilerReaderWrapper<K : Any, V : Any>(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    dbReconcilerReader: DbReconcilerReader<K, V>
+) : DbReconcilerReader<K, V> by dbReconcilerReader, Lifecycle {
 
-    /**
-     * Name used for logging and the lifecycle coordinator.
-     */
-    internal abstract val name: String
+    private val logger = LoggerFactory.getLogger(name)
 
-    /**
-     * Set of dependencies that an implementation on this class must follow lifecycle status of.
-     */
-    internal abstract val dependencies: Set<LifecycleCoordinatorName>
-
-    internal val logger by lazy { LoggerFactory.getLogger(name) }
-    override val lifecycleCoordinatorName by lazy { LifecycleCoordinatorName(name) }
-
-    internal val coordinator by lazy {
-        coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::processEvent)
-    }
+    private val coordinator = coordinatorFactory.createCoordinator(
+        lifecycleCoordinatorName,
+        ::processEvent
+    )
 
     private var dependencyRegistration: RegistrationHandle? = null
+    private var exceptionHandlerHandle: AutoCloseable? = null
 
     @VisibleForTesting
     internal fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -68,6 +55,11 @@ abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
     ) {
         if (event.status == LifecycleStatus.UP) {
             onStatusUp()
+            exceptionHandlerHandle?.close()
+            exceptionHandlerHandle = registerExceptionHandler { e->
+                logger.warn("Error while retrieving records for reconciliation", e)
+                coordinator.postEvent(GetRecordsErrorEvent(e))
+            }
             logger.info("Switching to UP")
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
@@ -107,18 +99,10 @@ abstract class DbReconcilerReaderComponent<K : Any, V : Any>(
     private fun closeResources() {
         dependencyRegistration?.close()
         dependencyRegistration = null
+        exceptionHandlerHandle?.close()
+        exceptionHandlerHandle = null
         onStatusDown()
     }
-
-    /**
-     * Implementations can override this with custom logic that should run when a component's lifecycle status is UP.
-     */
-    internal abstract fun onStatusUp()
-
-    /**
-     * Implementations can override this with custom logic that should run when a component's lifecycle status is DOWN.
-     */
-    internal abstract fun onStatusDown()
 
     internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }

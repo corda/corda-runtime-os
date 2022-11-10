@@ -20,7 +20,7 @@ class ConfigReconciler(
         private val log = contextLogger()
     }
 
-    private var dbReconciler: DbReconcilerReader<String, Configuration>? = null
+    private var dbReconciler: DbReconcilerReaderWrapper<String, Configuration>? = null
     private var reconciler: Reconciler? = null
 
     override fun close() {
@@ -35,12 +35,14 @@ class ConfigReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                ClusterDbReconcilerReader(
+                DbReconcilerReaderWrapper(
                     coordinatorFactory,
-                    dbConnectionManager,
-                    String::class.java,
-                    Configuration::class.java,
-                    getAllConfigDBVersionedRecords
+                    ClusterDbReconcilerReader(
+                        dbConnectionManager,
+                        String::class.java,
+                        Configuration::class.java,
+                        getAllConfigDBVersionedRecords
+                    )
                 ).also {
                     it.start()
                 }

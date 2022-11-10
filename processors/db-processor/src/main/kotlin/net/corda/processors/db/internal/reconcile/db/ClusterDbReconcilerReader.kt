@@ -2,10 +2,7 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReaderComponent.GetRecordsErrorEvent
 import net.corda.reconciliation.VersionedRecord
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -14,26 +11,24 @@ import javax.persistence.EntityManagerFactory
 /**
  * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
  * has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
- * if an error occurs during the call the exception gets captured and its lifecycle state gets notified with a
- * [GetRecordsErrorEvent]. Then depending on if the exception is transient or not its state should be taken to
- * [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
+ * if an error occurs during the call the exception gets captured passed to an exception handler.
  */
 class ClusterDbReconcilerReader<K : Any, V : Any>(
-    coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager,
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val doGetAllVersionedRecords: (EntityManager) -> Stream<VersionedRecord<K, V>>
-) : DbReconcilerReaderComponent<K, V>(
-    coordinatorFactory
-) {
+) : DbReconcilerReader<K, V> {
 
     override val name = "${ClusterDbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
     override val dependencies = setOf(
         LifecycleCoordinatorName.forComponent<DbConnectionManager>()
     )
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName(name)
 
     private var entityManagerFactory: EntityManagerFactory? = null
+
+    private val exceptionHandlers: MutableList<(e: Exception) -> Unit> = mutableListOf()
 
     override fun onStatusUp() {
         entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
@@ -41,6 +36,7 @@ class ClusterDbReconcilerReader<K : Any, V : Any>(
 
     override fun onStatusDown() {
         entityManagerFactory = null
+        exceptionHandlers.clear()
     }
 
     /**
@@ -61,9 +57,13 @@ class ClusterDbReconcilerReader<K : Any, V : Any>(
                 em.close()
             }
         } catch (e: Exception) {
-            logger.warn("Error while retrieving records for reconciliation", e)
-            coordinator.postEvent(GetRecordsErrorEvent(e))
+            exceptionHandlers.forEach { it(e) }
             null
         }
+    }
+
+    override fun registerExceptionHandler(exceptionHandler: (e: Exception) -> Unit): AutoCloseable {
+        exceptionHandlers.add(exceptionHandler)
+        return AutoCloseable { exceptionHandlers.remove(exceptionHandler) }
     }
 }

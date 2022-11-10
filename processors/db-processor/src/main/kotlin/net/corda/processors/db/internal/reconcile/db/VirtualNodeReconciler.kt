@@ -21,7 +21,7 @@ class VirtualNodeReconciler(
         private val log = contextLogger()
     }
 
-    private var dbReconciler: DbReconcilerReader<HoldingIdentity, VirtualNodeInfo>? = null
+    private var dbReconciler: DbReconcilerReaderWrapper<HoldingIdentity, VirtualNodeInfo>? = null
     private var reconciler: Reconciler? = null
 
     override fun close() {
@@ -36,12 +36,14 @@ class VirtualNodeReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                ClusterDbReconcilerReader(
+                DbReconcilerReaderWrapper(
                     coordinatorFactory,
-                    dbConnectionManager,
-                    HoldingIdentity::class.java,
-                    VirtualNodeInfo::class.java,
-                    getAllVirtualNodesDBVersionedRecords
+                    ClusterDbReconcilerReader(
+                        dbConnectionManager,
+                        HoldingIdentity::class.java,
+                        VirtualNodeInfo::class.java,
+                        getAllVirtualNodesDBVersionedRecords
+                    )
                 ).also {
                     it.start()
                 }

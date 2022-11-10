@@ -21,7 +21,7 @@ class CpiReconciler(
         private val log = contextLogger()
     }
 
-    private var dbReconciler: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
+    private var dbReconciler: DbReconcilerReaderWrapper<CpiIdentifier, CpiMetadata>? = null
     private var reconciler: Reconciler? = null
 
     override fun close() {
@@ -36,12 +36,14 @@ class CpiReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                ClusterDbReconcilerReader(
+                DbReconcilerReaderWrapper(
                     coordinatorFactory,
-                    dbConnectionManager,
-                    CpiIdentifier::class.java,
-                    CpiMetadata::class.java,
-                    getAllCpiInfoDBVersionedRecords
+                    ClusterDbReconcilerReader(
+                        dbConnectionManager,
+                        CpiIdentifier::class.java,
+                        CpiMetadata::class.java,
+                        getAllCpiInfoDBVersionedRecords
+                    )
                 ).also {
                     it.start()
                 }
