@@ -7,9 +7,9 @@ description 'Corda ledger UTXO abstract test class with dependencies made availa
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api project(":testing:ledger:ledger-common-base-test")
-    api project(":testing:ledger:ledger-utxo-testkit")
+    api project(':testing:ledger:ledger-common-base-test')
+    api project(':testing:ledger:ledger-utxo-testkit')
 
-    implementation project(":components:ledger:ledger-utxo-flow")
+    implementation project(':components:ledger:ledger-utxo-flow')
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -5,13 +5,13 @@ plugins {
 description 'Corda ledger common test objects'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api "net.corda:corda-ledger-common"
-    implementation "net.corda:corda-cipher-suite"
+    api 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-cipher-suite'
 
-    implementation project(":libs:ledger:ledger-common-data")
-    api project(":libs:application:application-impl")
-    api project(":libs:platform-info")
+    implementation project(':libs:ledger:ledger-common-data')
+    api project(':libs:application:application-impl')
+    api project(':libs:platform-info')
 }

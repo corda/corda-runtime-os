@@ -6,10 +6,10 @@ plugins {
 description 'Corda ledger common - flow api'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-ledger-common"
-    implementation "net.corda:corda-crypto"
-    implementation project(":libs:ledger:ledger-common-data")
+    implementation 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-crypto'
+    implementation project(':libs:ledger:ledger-common-data')
 }

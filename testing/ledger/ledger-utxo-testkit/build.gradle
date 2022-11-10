@@ -5,14 +5,14 @@ plugins {
 description 'Corda ledger UTXO test objects'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-cipher-suite"
-    api "net.corda:corda-ledger-utxo"
+    implementation 'net.corda:corda-cipher-suite'
+    api 'net.corda:corda-ledger-utxo'
 
-    implementation project(":libs:ledger:ledger-common-data")
-    implementation project(":libs:ledger:ledger-utxo-data")
-    implementation project(":components:ledger:ledger-utxo-flow")
-    implementation project(":testing:ledger:ledger-common-testkit")
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':testing:ledger:ledger-common-testkit')
 }
