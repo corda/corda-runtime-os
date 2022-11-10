@@ -214,11 +214,14 @@
                         "host",
                         "type",
                         "port",
-                        "user",
+                        "username",
                         "database"                    
                     ],
                     "additionalProperties": false,
                     "properties": {
+                        {
+                            "$ref": "#/$defs/secret"
+                        },
                         "host": {
                             "type": "string",
                             "format": "hostname",
@@ -245,73 +248,7 @@
                                 5432
                             ]
                         },
-                        "user": {
-                            "type": "object",
-                            "default": {},
-                            "title": "the cluster database user",
-                            "required": [
-                                "value",
-                                "valueFrom"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "value": {
-                                    "type": "string",
-                                    "default": "user",
-                                    "title": "the cluster database user value",
-                                    "example": [{
-                                        "value": "user"
-                                    }]
-                                },
-                                "valueFrom": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the database user secret configuration; used in preference to value if name is set",
-                                    "required": [
-                                        "secretKeyRef"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "secretKeyRef": {
-                                            "type": "object",
-                                            "default": {},
-                                            "title": "the cluster database user secret key reference",
-                                            "required": [
-                                                "name",
-                                                "key"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "default": "",
-                                                    "title": "the cluster database user secret name",
-                                                    "examples": [
-                                                        ""
-                                                    ]
-                                                },
-                                                "key": {
-                                                    "type": "string",
-                                                    "default": "",
-                                                    "title": "the cluster database user secret key  ",
-                                                    "examples": [
-                                                        ""
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "examples": [{
-                                        "valueFrom:": {
-                                          "secretKeyRef": {
-                                              "name": "",
-                                              "key": ""
-                                          }
-                                        }
-                                    }]
-                                }
-                            }
-                        },
+                        "username": {},
                         "database": {
                             "type": "string",
                             "default": "cordacluster",
@@ -321,79 +258,13 @@
                             ],
                             "minLength": 1
                         },
-                        "password": {
-                            "type": "object",
-                            "default": {},
-                            "title": "the cluster database password configuration",
-                            "required": [
-                                "value",
-                                "valueFrom"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "value": {
-                                    "type": "string",
-                                    "default": "user",
-                                    "title": "the cluster database password",
-                                    "example": [{
-                                        "value": "password"
-                                    }]
-                                },
-                                "valueFrom": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the cluster database password secret configuration; used in preference to value if name is set",
-                                    "required": [
-                                        "secretKeyRef"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "secretKeyRef": {
-                                            "type": "object",
-                                            "default": {},
-                                            "title": "the cluster database password secret key reference",
-                                            "required": [
-                                                "name",
-                                                "key"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "default": "",
-                                                    "title": "the cluster database password secret name",
-                                                    "examples": [
-                                                        ""
-                                                    ]
-                                                },
-                                                "key": {
-                                                    "type": "string",
-                                                    "default": "",
-                                                    "title": "the cluster database password secret key",
-                                                    "examples": [
-                                                        ""
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "examples": [{
-                                        "valueFrom:": {
-                                          "secretKeyRef": {
-                                              "name": "",
-                                              "key": ""
-                                          }
-                                        }
-                                    }]
-                                }
-                            }
-                        }
+                        "password": {}
                     },
                     "examples": [{
                         "host": "postgresql.example.com",
                         "type": "postgresql",
                         "port": 5432,
-                        "user": {
+                        "username": {
                             "value": "user"
                         },
                         "password": {
@@ -1435,7 +1306,7 @@
                 "p2pGateway": {
                     "allOf": [
                         {
-                            "$ref": "#/$defs/worker"
+                            "$ref": "#/$/worker"
                         },
                         {
                             "required": [
@@ -1977,6 +1848,151 @@
                     }
                 }
             }]
+        },
+        "secret": {
+            "type": "object",
+            "default": {},
+            "title": "secret configuration",
+            "additionalProperties": false,
+            "properties": {
+                "username": {
+                    "type": "object",
+                    "default": {},
+                    "title": "The username configuration",
+                    "required": [
+                        "value",
+                        "valueFrom"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "value": {
+                                    "minLength": 1
+                                }
+                            },
+                            {
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": {
+                                            "minLength": 1
+                                        },
+                                        "name": {
+                                            "minLength": 1
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "value": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The username"
+                        },
+                        "valueFrom": {
+                            "type": "object",
+                            "default": {},
+                            "title": "The username secret configuration",
+                            "required": [
+                                "secretKeyRef"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "secretKeyRef": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "The username key reference",
+                                    "required": [
+                                        "name",
+                                        "key"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The username secret name"
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The username secret key"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "password": {
+                    "type": "object",
+                    "default": {},
+                    "title": "The password configuration",
+                    "required": [
+                        "value",
+                        "valueFrom"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "oneOf": [
+                            {
+                                "value": {
+                                    "minLength": 1
+                                }
+                            },
+                            {
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": {
+                                            "minLength": 1
+                                        },
+                                        "name": {
+                                            "minLength": 1
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "value": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The password"
+                        },
+                        "valueFrom": {
+                            "type": "object",
+                            "default": {},
+                            "title": "The password secret configuration",
+                            "required": [
+                                "secretKeyRef"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "secretKeyRef": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "The password key reference",
+                                    "required": [
+                                        "name",
+                                        "key"
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The password secret name"
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The password secret key"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }      
         }
     }
 }
