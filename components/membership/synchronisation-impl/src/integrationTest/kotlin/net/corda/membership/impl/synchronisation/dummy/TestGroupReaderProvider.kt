@@ -80,6 +80,7 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
     companion object {
         val logger = contextLogger()
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
+        private const val EPOCH = "5"
         private const val PLATFORM_VERSION = "5000"
     }
 
@@ -91,7 +92,7 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
         get() = groupParametersFactory.create(
             KeyValuePairList(
                 listOf(
-                    KeyValuePair(EPOCH_KEY, "5"),
+                    KeyValuePair(EPOCH_KEY, EPOCH),
                     KeyValuePair(MPV_KEY, PLATFORM_VERSION),
                     KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
                 )

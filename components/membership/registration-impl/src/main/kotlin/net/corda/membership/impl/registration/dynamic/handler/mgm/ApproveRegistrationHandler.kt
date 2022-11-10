@@ -72,27 +72,25 @@ internal class ApproveRegistrationHandler(
             val memberInfo = persistState.getOrThrow()
 
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
-            val newEpoch = memberInfo.notaryDetails
-                ?.let { membershipPersistenceClient.addNotaryToGroupParameters(mgm.holdingIdentity, memberInfo) }
-                ?.run {
-                    if (this is MembershipPersistenceResult.Failure) {
-                        throw MembershipPersistenceException("Failed to update group parameters with notary information of" +
-                                " '${memberInfo.name}', which has role set to 'notary'.")
-                    }
-                    getOrThrow()
+            // Otherwise, retrieve epoch of current group parameters from the group reader.
+            val epoch = if (memberInfo.notaryDetails != null) {
+                val result = membershipPersistenceClient.addNotaryToGroupParameters(mgm.holdingIdentity, memberInfo)
+                if (result is MembershipPersistenceResult.Failure) {
+                    throw MembershipPersistenceException(
+                        "Failed to update group parameters with notary information of" +
+                                " '${memberInfo.name}', which has role set to 'notary'."
+                    )
                 }
-
-            // If approved member is not a notary, retrieve epoch of current group parameters from the group reader.
-            val epochForDistribution = if (newEpoch != null) {
-                newEpoch
+                result.getOrThrow()
             } else {
                 val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
                 reader.groupParameters.epoch
             }
+
             val distributionCommand = Record(
                 REGISTRATION_COMMAND_TOPIC,
                 "$registrationId-${approvedBy.toCorda().shortHash}",
-                RegistrationCommand(DistributeMembershipPackage(epochForDistribution)),
+                RegistrationCommand(DistributeMembershipPackage(epoch)),
             )
 
             // Push member to member list kafka topic

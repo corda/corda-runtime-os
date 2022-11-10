@@ -73,13 +73,12 @@ class MembershipPackageFactory(
                 .setMgmSignature(mgmSignature)
                 .build()
         }
-        val wireGroupParameters = with(serializer.serialize(groupParameters.toAvro())) {
-            this ?: throw CordaRuntimeException("Failed to serialize group parameters.")
+        val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
             WireGroupParameters(
-                ByteBuffer.wrap(this),
-                mgmSigner.sign(this).toAvro()
+                ByteBuffer.wrap(it),
+                mgmSigner.sign(it).toAvro()
             )
-        }
+        } ?: throw CordaRuntimeException("Failed to serialize group parameters.")
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hashCheck.toAvro())

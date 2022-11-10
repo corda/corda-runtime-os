@@ -62,6 +62,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -162,13 +163,14 @@ class MgmSynchronisationServiceImplTest {
 
     private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
+    private val groupParameters: GroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
         on { lookup(eq(MemberX500Name.parse(mgmName))) } doReturn mgmInfo
         on { lookup(eq(MemberX500Name.parse(aliceName))) } doReturn aliceInfo
         on { lookup(eq(MemberX500Name.parse(bobName))) } doReturn bobInfo
         on { lookup(eq(MemberX500Name.parse(daisyName))) } doReturn daisyInfo
-        on { groupParameters } doReturn mock()
+        on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(eq(mgm.toCorda())) } doReturn groupReader
@@ -473,7 +475,7 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), any())
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
@@ -488,7 +490,7 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), any())
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
         verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)

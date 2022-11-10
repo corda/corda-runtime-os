@@ -29,6 +29,7 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
@@ -230,6 +231,21 @@ class DistributeMembershipPackageHandlerTest {
     @Test
     fun `invoke republishes the distribute command if expected group parameters are not available via the group reader`() {
         whenever(groupParameters.epoch).thenReturn(EPOCH - 1)
+
+        val reply = handler.invoke(state, key, command)
+
+        assertThat(reply.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? DistributeMembershipPackage)
+                assertThat(value).isNotNull
+            }
+    }
+
+    @Test
+    fun `invoke republishes the distribute command on exception`() {
+        whenever(groupReader.lookup()).thenThrow(CordaRuntimeException("test"))
 
         val reply = handler.invoke(state, key, command)
 

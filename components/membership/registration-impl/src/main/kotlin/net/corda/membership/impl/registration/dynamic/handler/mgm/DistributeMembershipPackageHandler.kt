@@ -2,8 +2,6 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
@@ -123,16 +121,9 @@ class DistributeMembershipPackageHandler(
 
             memberToAllMembers + allMembersToNewMember
         } catch (e: Exception) {
-            logger.warn("Could not approve registration request: '$registrationId'", e)
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand(
-                        DeclineRegistration(e.message)
-                    )
-                ),
-            )
+            logger.warn("Could not distribute membership packages after registration request: '$registrationId' was approved. " +
+                        "Distribution will be reattempted.", e)
+            listOf(Record(REGISTRATION_COMMAND_TOPIC, key, command))
         }
 
         return RegistrationHandlerResult(
