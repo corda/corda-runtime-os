@@ -56,7 +56,7 @@ import kotlin.system.measureTimeMillis
 @Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName::class)
-class JPABackingStoreImplPerformanceTests {
+class JPABackingStoreImplBenchmark {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -65,11 +65,11 @@ class JPABackingStoreImplPerformanceTests {
     // Controls how many times we invoke the backing store API. Increasing this should not impact
     // the performance figures returned by the tests, but more iterations results in a longer
     // running test which may reduce variability in results.
-    private val numIterations = System.getProperty("perfTestNumIterations").toInt()
+    private val numIterations = System.getProperty("bsBenchNumIterations").toInt()
     // Controls how many operations (states or transactions, depending on the test) are passed into
     // a single call to the backing store. This number simulates processing a batch of requests as
     // part of the same database operation.
-    private val numOpsPerIter = System.getProperty("perfTestNumOpsPerIteration").toInt()
+    private val numOpsPerIter = System.getProperty("bsBenchNumOpsPerIteration").toInt()
 
     private val clusterDbConfig =
         DbUtils.getEntityManagerConfiguration(inMemoryDbName = "clusterdb", showSql = false)
@@ -83,8 +83,8 @@ class JPABackingStoreImplPerformanceTests {
 
     @BeforeAll
     fun printArguments() {
-        log.info("Executing performance tests with $numIterations iterations, $numOpsPerIter " +
-                "operations per iteration.")
+        log.info("Executing benchmarks with $numIterations iterations, $numOpsPerIter operations " +
+                "per iteration.")
     }
 
     @BeforeEach
@@ -133,7 +133,7 @@ class JPABackingStoreImplPerformanceTests {
 
     @AfterAll
     fun resultsSummary() {
-        log.info("Tests complete. Summary: " +
+        log.info("Benchmarks complete. Summary: " +
                 "${resultsMap.map {"\"${it.key}\" : ${it.value} ops/sec"}}")
         writeToCsv()
     }
@@ -304,8 +304,8 @@ class JPABackingStoreImplPerformanceTests {
     }
 
     private fun writeToCsv() {
-        var file = File("${System.getProperty("java.io.tmpdir")}/test-results/performanceTest/" +
-                    "results.csv")
+        var file = File("${System.getProperty("java.io.tmpdir")}/test-results/" +
+                "backingStoreBenchmark/results.csv")
         file.createNewFile()
 
         val headerRow = "Time,DB Type,Num Iterations,Ops per iteration," +
@@ -319,7 +319,7 @@ class JPABackingStoreImplPerformanceTests {
                     // Existing file with a mismatching header row. Raise a warning and use a new
                     // file.
                     file = File("${System.getProperty("java.io.tmpdir")}/test-results" +
-                            "/performanceTest/results-${Instant.now().toEpochMilli()}.csv")
+                            "/backingStoreBenchmark/results-${Instant.now().toEpochMilli()}.csv")
                     log.warn("Existing test results file found, but with different test cases. " +
                             "Writing to ${file.name}")
                     file.createNewFile()
@@ -338,7 +338,7 @@ class JPABackingStoreImplPerformanceTests {
             writer.println("${Instant.now()}," +
                     "${if (DbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
                     "$numIterations,$numOpsPerIter," +
-                    "${resultsMap.values.joinToString(",")}")
+                    resultsMap.values.joinToString(","))
         }
 
         log.info("Results written to ${file.canonicalPath}")

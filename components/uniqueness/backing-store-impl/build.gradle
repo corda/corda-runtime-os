@@ -6,19 +6,19 @@ plugins {
 description 'Backing store component implementation'
 
 configurations {
-    performanceTestApi.extendsFrom integrationTestApi
-    performanceTestCompileOnly.extendsFrom integrationTestCompileOnly
-    performanceTestImplementation.extendsFrom integrationTestImplementation
-    performanceTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+    backingStoreBenchmarkApi.extendsFrom integrationTestApi
+    backingStoreBenchmarkCompileOnly.extendsFrom integrationTestCompileOnly
+    backingStoreBenchmarkImplementation.extendsFrom integrationTestImplementation
+    backingStoreBenchmarkRuntimeOnly.extendsFrom integrationTestRuntimeOnly
 }
 
 sourceSets {
-    performanceTest {
+    backingStoreBenchmark {
         kotlin {
-            srcDirs = [ 'src/performanceTest/kotlin' ]
+            srcDirs = [ 'src/backingStoreBenchmark/kotlin' ]
         }
         resources {
-            srcDirs = [ 'src/performanceTest/resources' ]
+            srcDirs = [ 'src/backingStoreBenchmark/resources' ]
         }
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
@@ -67,22 +67,22 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-    performanceTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 }
 
-tasks.register('performanceTest', Test) {
-    description = "Runs performance tests."
+tasks.register('backingStoreBenchmark', Test) {
+    description = "Runs uniqueness checker backing store benchmarks."
     group = "verification"
 
-    testClassesDirs = project.sourceSets["performanceTest"].output.classesDirs
-    classpath = project.sourceSets["performanceTest"].runtimeClasspath
+    testClassesDirs = project.sourceSets["backingStoreBenchmark"].output.classesDirs
+    classpath = project.sourceSets["backingStoreBenchmark"].runtimeClasspath
 
-    systemProperty "perfTestNumIterations", project.getProperty("perfTestNumIterations")
-    systemProperty "perfTestNumOpsPerIteration", project.getProperty("perfTestNumOpsPerIteration")
+    systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
+    systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
 
     systemProperty "postgresHost", project.getProperty("postgresHost")
     systemProperty "postgresDb", project.getProperty("postgresDb")
@@ -91,7 +91,7 @@ tasks.register('performanceTest', Test) {
     systemProperty "postgresPassword", project.getProperty("postgresPassword")
 }
 
-performanceTest {
-    // Ensures tests are always re-run if executed from the console
+backingStoreBenchmark {
+    // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }
 }
