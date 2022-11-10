@@ -4,7 +4,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -75,8 +74,6 @@ class TestGroupReader : MembershipGroupReader {
     override val owningMember: MemberX500Name
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val groupParameters: GroupParameters
-        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-    override val cpiAllowList: CPIAllowList
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)

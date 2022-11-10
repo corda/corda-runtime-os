@@ -10,5 +10,5 @@ import net.corda.virtualnode.HoldingIdentity
  * Reads records from the group parameters kafka topic.
  */
 interface GroupParametersReaderService : ReconcilerReader<HoldingIdentity, GroupParameters>, Lifecycle {
-    fun get(identity: HoldingIdentity): GroupParameters
+    fun get(identity: HoldingIdentity): GroupParameters?
 }

@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
@@ -29,10 +28,8 @@ class MembershipGroupReaderImpl(
                 "Failed to find member list for ID='${holdingIdentity.shortHash}, Group ID='${holdingIdentity.groupId}'"
             )
 
-    override val groupParameters: GroupParameters
+    override val groupParameters: GroupParameters?
         get() = groupParametersReaderService.get(holdingIdentity)
-    override val cpiAllowList: CPIAllowList
-        get() = TODO("Not yet implemented")
 
     override fun lookup(): Collection<MemberInfo> = memberList.filter { it.isActiveOrPending() }
 

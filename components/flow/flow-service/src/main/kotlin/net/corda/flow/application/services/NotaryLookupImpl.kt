@@ -21,7 +21,7 @@ class NotaryLookupImpl @Activate constructor(
 ) : NotaryLookup, UsedByFlow, SingletonSerializeAsToken {
     @Suspendable
     override val notaryServices: List<NotaryInfo>
-        get() = notaries
+        get() = notaries ?: emptyList()
 
     @Suspendable
     override fun isNotaryVirtualNode(virtualNodeName: MemberX500Name): Boolean =
@@ -42,5 +42,5 @@ class NotaryLookupImpl @Activate constructor(
 
     @Suspendable
     private val notaries
-        get() = groupReader.groupParameters.notaries
+        get() = groupReader.groupParameters?.notaries
 }

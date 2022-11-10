@@ -23,7 +23,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -246,11 +245,11 @@ class GroupParametersReaderServiceImplTest {
         }
 
         @Test
-        fun `calling get throws excpetion when there are no group params for identity`() {
+        fun `calling get returns null when there are no group params for identity`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
-            assertThrows<CordaRuntimeException> {
-                groupParametersReaderService.get(charlie)
+            with(groupParametersReaderService.get(charlie)) {
+                assertThat(this).isNull()
             }
         }
 
