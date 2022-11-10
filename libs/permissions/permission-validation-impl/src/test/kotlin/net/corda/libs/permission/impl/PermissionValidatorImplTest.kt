@@ -14,56 +14,50 @@ import java.util.concurrent.atomic.AtomicReference
 
 class PermissionValidatorImplTest {
 
-    private val permissionValidationCache: PermissionValidationCache = mock()
-    private val permissionValidator = PermissionValidatorImpl(AtomicReference(permissionValidationCache))
-    private val permissionString = "flow/start/com.myapp.MyFlow"
-    private val permissionUrlRequest = "POST:https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
+    private val cpiUploadRequest = "POST:/api/v1/cpi"
+    private val certsInstallRequest = "PUT:/api/v1/certificates/p2p-tls/cluster"
 
-    private val userPermissionSummary = UserPermissionSummary(
-        "userLoginName",
+    private val userName = "userLoginName"
+
+    private val userPermissionSummaries = UserPermissionSummary(
+        userName,
         true,
         listOf(
             PermissionSummary(
-                "id1", null, null, "POST:.*$permissionString",
+                "id1", null, null, cpiUploadRequest,
                 PermissionType.ALLOW
+            ),
+            PermissionSummary(
+                "id2", null, null, certsInstallRequest,
+                PermissionType.DENY
             )
         ),
         Instant.now()
     )
 
+    private val permissionValidationCache: PermissionValidationCache = mock<PermissionValidationCache>().apply {
+        whenever(getPermissionSummary(userName)).thenReturn(userPermissionSummaries)
+    }
+
+    private val permissionValidator = PermissionValidatorImpl(AtomicReference(permissionValidationCache))
+
     @Test
     fun `authorize user will return false when user summary cannot be found in cache`() {
-        whenever(permissionValidationCache.getPermissionSummary("userLoginName1")).thenReturn(null)
+        assertFalse(permissionValidator.authorizeUser("differentUser", cpiUploadRequest))
+    }
 
-        val result = permissionValidator.authorizeUser("userLoginName1", permissionUrlRequest)
-
-        assertFalse(result)
+    @Test
+    fun `will return false for missing permission`() {
+        assertFalse(permissionValidator.authorizeUser(userName, "GET:/api/v1/mgm/12345678/info"))
     }
 
     @Test
     fun `User with proper permission will be authorized`() {
-
-        whenever(permissionValidationCache.getPermissionSummary("userLoginName")).thenReturn(userPermissionSummary)
-
-        assertTrue(permissionValidator.authorizeUser("userLoginName", permissionUrlRequest))
+        assertTrue(permissionValidator.authorizeUser(userName, cpiUploadRequest))
     }
 
     @Test
     fun `User with proper permission set to DENY will not be authorized`() {
-
-        val userPermissionSummary = UserPermissionSummary(
-            "userLoginName",
-            true,
-            listOf(
-                PermissionSummary(
-                    "id2", null, null, "POST:.*$permissionString",
-                    PermissionType.DENY
-                )
-            ),
-            Instant.now()
-        )
-        whenever(permissionValidationCache.getPermissionSummary("userLoginName")).thenReturn(userPermissionSummary)
-
-        assertFalse(permissionValidator.authorizeUser("userLoginName", permissionUrlRequest))
+        assertFalse(permissionValidator.authorizeUser(userName, certsInstallRequest))
     }
 }
