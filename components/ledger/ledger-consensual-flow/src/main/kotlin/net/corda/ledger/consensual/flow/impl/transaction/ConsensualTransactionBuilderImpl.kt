@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
@@ -34,12 +34,14 @@ class ConsensualTransactionBuilderImpl(
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val transactionMetaData: TransactionMetaData,
+    private val transactionMetadata: TransactionMetadata,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
+    private var alreadySigned = false
+
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = this.states + states)
+        copy(states = this.states + states)
 
     @Suspendable
     override fun sign(): ConsensualSignedTransaction {
@@ -52,11 +54,12 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(signatories.toList().isNotEmpty()){
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         val wireTransaction = buildWireTransaction()
-        val signaturesWithMetaData = signatories.map {
+        val signaturesWithMetadata = signatories.map {
             createTransactionSignature(
                 signingService,
                 serializationService,
@@ -65,13 +68,17 @@ class ConsensualTransactionBuilderImpl(
                 it
             )
         }
-        return ConsensualSignedTransactionImpl(
+
+        val tx = ConsensualSignedTransactionImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
+
+        alreadySigned = true
+        return tx
     }
 
     private fun buildWireTransaction(): WireTransaction {
@@ -106,7 +113,7 @@ class ConsensualTransactionBuilderImpl(
             when (componentGroupIndex) {
                 ConsensualComponentGroup.METADATA ->
                     listOf(
-                        jsonMarshallingService.format(transactionMetaData)
+                        jsonMarshallingService.format(transactionMetadata)
                             .toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-6890)
                 ConsensualComponentGroup.TIMESTAMP ->
@@ -124,7 +131,7 @@ class ConsensualTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualTransactionBuilderImpl) return false
-        if (other.transactionMetaData != transactionMetaData) return false
+        if (other.transactionMetadata != transactionMetadata) return false
         if (other.states.size != states.size) return false
 
         return other.states.withIndex().all {
@@ -144,7 +151,7 @@ class ConsensualTransactionBuilderImpl(
             signingService,
             digitalSignatureVerificationService,
             currentSandboxGroup,
-            transactionMetaData,
+            transactionMetadata,
             states,
         )
     }

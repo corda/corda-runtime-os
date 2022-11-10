@@ -7,7 +7,7 @@ import java.security.PublicKey
 
 private class MockSigningService: SigningService{
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
-        return signatureWithMetaDataExample.signature
+        return signatureWithMetadataExample.signature
     }
 }
 

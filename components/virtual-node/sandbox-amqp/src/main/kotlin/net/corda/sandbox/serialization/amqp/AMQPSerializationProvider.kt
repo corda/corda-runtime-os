@@ -12,7 +12,7 @@ import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
-import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.util.loggerFor
@@ -41,7 +41,6 @@ class AMQPSerializationProvider @Activate constructor(
     private val serializationServiceProxy: SerializationServiceProxy?
 ) : UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
     private companion object {
-        private val CORDAPP_CUSTOM_SERIALIZER = SerializationCustomSerializer::class.java
         private val logger = loggerFor<AMQPSerializationProvider>()
     }
 
@@ -58,7 +57,7 @@ class AMQPSerializationProvider @Activate constructor(
 
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
-        context.getObjectByKey<Iterable<SerializationCustomSerializer<*, *>>>(CORDAPP_CUSTOM_SERIALIZER.name)?.forEach { customSerializer ->
+        context.getMetadataServices<SerializationCustomSerializer<*,*>>().forEach { customSerializer ->
             // Register CorDapp serializers
             logger.trace("Registering CorDapp serializer {}", customSerializer::class.java.name)
             factory.registerExternal(customSerializer, factory)

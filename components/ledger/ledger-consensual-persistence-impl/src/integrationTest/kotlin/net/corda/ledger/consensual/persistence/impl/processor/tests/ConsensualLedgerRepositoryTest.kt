@@ -4,7 +4,7 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
@@ -14,7 +14,7 @@ import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerR
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -34,7 +34,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -90,10 +89,7 @@ class ConsensualLedgerRepositoryTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            repository = ctx.getSandboxSingletonServices()
-                .filterIsInstance<ConsensualLedgerRepository>()
-                .singleOrNull()
-                ?: fail("No ConsensualLedgerRepository found for sandbox")
+            repository = ctx.getSandboxSingletonService()
         }
     }
 
@@ -321,14 +317,14 @@ class ConsensualLedgerRepositoryTest {
             CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
             CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
         )
-        val transactionMetaData = TransactionMetaData(
+        val transactionMetadata = TransactionMetadata(
             linkedMapOf<String, Any>().apply {
-                put(TransactionMetaData.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
-                put(TransactionMetaData.CPK_METADATA_KEY, cpks)
+                put(TransactionMetadata.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
+                put(TransactionMetadata.CPK_METADATA_KEY, cpks)
             }
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(transactionMetaData).toByteArray()),
+            listOf(jsonMarshallingService.format(transactionMetadata).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )

@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
@@ -57,7 +57,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             signingService,
             digitalSignatureVerificationService,
             flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup,
-            calculateMetaData(),
+            calculateMetadata(),
         )
 
     // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
@@ -79,15 +79,15 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             )
         }
 
-    private fun calculateMetaData() =
-        TransactionMetaData(
+    private fun calculateMetadata() =
+        TransactionMetadata(
             linkedMapOf(
-                TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
-                TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries()
+                TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+                TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
+                TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries()
             )
         )
 }

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 import kotlin.text.Typography.quote
+import net.corda.v5.crypto.DigestAlgorithmName
 
 @Suppress("Unused", "FunctionName")
 @Order(20)
@@ -79,8 +80,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
-            "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
+            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         @BeforeAll
@@ -559,6 +559,79 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
+    }
+
+    @Test
+    fun `Crypto - Get default signature spec`() {
+        // Call get default signature spec api with public key and digest algorithm name
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_default_signature_spec"
+        requestBody.data = mapOf(
+            "memberX500" to bobX500,
+            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        )
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult.result).isEqualTo("SHA256withECDSA")
+
+        // Call get default signature spec api with public key only
+        requestBody.data = mapOf(
+            "memberX500" to bobX500
+        )
+        val requestId1 = startRpcFlow(bobHoldingId, requestBody)
+        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
+        val flowResult1 = result1.getRpcFlowResult()
+        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result1.flowResult).isNotNull
+        assertThat(result1.flowError).isNull()
+        assertThat(flowResult1.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult1.result).isEqualTo("SHA256withECDSA")
+    }
+
+    @Test
+    fun `Crypto - Get compatible signature specs`() {
+        // Call get compatible signature specs api with public key only
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_compatible_signature_specs"
+        requestBody.data = mapOf("memberX500" to bobX500)
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs = requireNotNull(flowResult.result).split("; ")
+        assertThat(flowOutputs).containsAll(
+            listOf(
+                "SHA256withECDSA",
+                "SHA384withECDSA",
+                "SHA512withECDSA"
+            )
+        )
+
+        // Call get compatible signature specs api with public key and digest algorithm name
+        requestBody.data = mapOf(
+            "memberX500" to bobX500,
+            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        )
+
+        val requestId1 = startRpcFlow(bobHoldingId, requestBody)
+        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
+        val flowResult1 = result1.getRpcFlowResult()
+        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result1.flowResult).isNotNull
+        assertThat(result1.flowError).isNull()
+        assertThat(flowResult1.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs1 = requireNotNull(flowResult1.result).split("; ")
+        assertThat(flowOutputs1).containsAll(listOf("SHA256withECDSA"))
     }
 
     @Test

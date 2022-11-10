@@ -14,6 +14,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
@@ -28,7 +29,7 @@ class WireTransaction(
         rootMerkleTree.root
     }
 
-    val metadata: TransactionMetaData
+    val metadata: TransactionMetadata
 
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
@@ -36,7 +37,7 @@ class WireTransaction(
 
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
         // TODO(update with CORE-6890)
-        metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+        metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadata::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
@@ -112,7 +113,7 @@ class WireTransaction(
             componentMerkleTreeEntropyAlgorithmName
         ).bytes
 
-    private fun getComponentGroupMerkleTreeDigestProvider(
+    fun getComponentGroupMerkleTreeDigestProvider(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
@@ -125,18 +126,22 @@ class WireTransaction(
             )
     )
 
-    private val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val componentGroupRoots = mutableListOf<ByteArray>()
-        componentGroupLists.forEachIndexed{ index, leaves: List<ByteArray> ->
+    val componentMerkleTrees: Map<Int, MerkleTree> get() = _componentMerkleTrees
+    private val _componentMerkleTrees: MutableMap<Int, MerkleTree> = ConcurrentHashMap()
+
+    val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
             val componentMerkleTree = merkleTreeProvider.createTree(
-                leaves,
+                group,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
-            componentGroupRoots += componentMerkleTree.root.bytes
+            _componentMerkleTrees[index] = componentMerkleTree
+            componentMerkleTree.root.bytes
         }
 
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is WireTransaction) return false

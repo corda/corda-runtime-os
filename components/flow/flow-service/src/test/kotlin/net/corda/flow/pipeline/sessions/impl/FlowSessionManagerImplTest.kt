@@ -133,7 +133,7 @@ class FlowSessionManagerImplTest {
 
         whenever(flowStack.peek()).thenReturn(
             FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
-                .setSessionIds(emptyList()).setContextPlatformProperties(mutableKeyValuePairList())
+                .setSessions(emptyList()).setContextPlatformProperties(mutableKeyValuePairList())
                 .setContextUserProperties(
                     mutableKeyValuePairList()
                 ).build()
