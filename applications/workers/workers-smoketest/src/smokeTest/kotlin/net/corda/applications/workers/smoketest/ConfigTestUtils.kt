@@ -56,7 +56,13 @@ fun updateConfig(config: String, section: String) {
             }
 
         } catch (ex: UnirestException) {
-            //swallow UnirestException caused by the http server going down in response to config change while we wait for response
+            //When a config request is sent with the section set to "corda.messaging" nearly all components in the system will respond to
+            // this config change. This will cause the HttpGateway to go down bringing down the HttpServer. This will close all the
+            // connections open from clients such as the one used in this test resulting in a UniRestException thrown
+            // for the purposes of the test we will this exception and allow the test to proceed.
+            // One solution would be for the config endpoint to return a successful result as soon as it receives confirmation the config
+            // request is on kafka and to not bother to try return the updated config.
+            // https://r3-cev.atlassian.net/browse/CORE-7930
         }
     }
 }

@@ -68,7 +68,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = ConfigurationGetService::class)
-    private val configurationGetService: ConfigurationGetService,
+    private val configurationGetService: ConfigurationGetService
 ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
     private companion object {
         // The configuration used for the RPC sender.
@@ -185,8 +185,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 
             ResponseEntity.accepted(UpdateConfigResponse(
                 response.section, response.config, ConfigSchemaVersion(
-                    1,
-                    0
+                    response.schemaVersion.majorVersion,
+                    response.schemaVersion.minorVersion
                 ), response.version
             ))
         } else {
@@ -266,7 +266,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (ex: CordaRPCAPIPartitionException) {
             logger.warn("LORCAN - partition event when getting response from db worker for update config message", ex)
-            ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version)
+            //TODO - https://r3-cev.atlassian.net/browse/CORE-7930
+            ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version+1)
         } catch (e: Exception) {
             logger.warn("LORCAN - failed to publish to db worker for update config message", e)
             throw ConfigRPCOpsException("Could not publish updated configuration.", e)

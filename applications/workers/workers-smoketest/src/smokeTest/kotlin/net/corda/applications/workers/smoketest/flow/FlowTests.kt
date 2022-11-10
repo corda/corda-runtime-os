@@ -771,9 +771,9 @@ class FlowTests {
             )
 
             flowIds.forEach {
-                awaitRpcFlowFinished(bobHoldingId, it)
-              //  assertThat(flowResult.flowError).isNull()
-              //  assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+                val flowResult = awaitRpcFlowFinished(bobHoldingId, it)
+                assertThat(flowResult.flowError).isNull()
+                assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             }
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
