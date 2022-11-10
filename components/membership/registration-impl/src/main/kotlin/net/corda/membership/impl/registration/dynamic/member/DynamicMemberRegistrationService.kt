@@ -54,6 +54,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -418,15 +419,16 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {
+                key.validateSpecName(specFromContext)
                 return SignatureSpec(specFromContext)
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                        "for ${key.schemeCodeName}."
+                    "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 

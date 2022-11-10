@@ -125,6 +125,7 @@ class MGMRegistrationServiceTest {
     }
     private val ecdhKey: PublicKey = mock {
         on { encoded } doReturn ECDH_KEY_STRING.toByteArray()
+        on { algorithm } doReturn "EC"
     }
     private val ecdhCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY_STRING.toByteArray())
