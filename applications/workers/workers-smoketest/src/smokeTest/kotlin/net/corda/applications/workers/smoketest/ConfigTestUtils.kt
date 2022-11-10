@@ -7,6 +7,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
 
@@ -51,7 +52,7 @@ fun updateConfig(config: String, section: String) {
                 currentSchemaVersion["minor"].toString())
 
             if (result.code != 202) {
-                fail<String>("Config update did not return 202. returned ${result.code} instead")
+                fail<String>("Config update did not return 202. returned ${result.code} instead. Result ${result.body}")
             }
 
         } catch (ex: Exception) {
