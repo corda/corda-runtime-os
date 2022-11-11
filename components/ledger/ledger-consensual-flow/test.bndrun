@@ -7,6 +7,7 @@
 -runrequires: \
     bnd.identity;id='net.corda.ledger-consensual-flow',\
     bnd.identity;id='net.corda.ledger-common-flow',\
+    bnd.identity;id='net.corda.crypto-serialization-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
