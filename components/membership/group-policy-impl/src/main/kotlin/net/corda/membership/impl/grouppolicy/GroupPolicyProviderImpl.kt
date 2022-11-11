@@ -17,10 +17,15 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -318,13 +323,22 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         private fun gotData(member: PersistentMemberInfo) {
             try {
-                val holdingIdentity = member.viewOwningMember.toCorda()
-                val gp = parseGroupPolicy(holdingIdentity)
-                if (gp is MGMGroupPolicy) {
-                    groupPolicies[holdingIdentity] = gp
-                    callBack(holdingIdentity, gp)
-                } else {
-                    groupPolicies.remove(holdingIdentity)
+                val memberContext = member.memberContext.toMap()
+                val mgmContext = member.mgmContext.toMap()
+                // Only notify when an active MGM is added to itself
+                if (
+                    (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
+                    (mgmContext[IS_MGM] == "true") &&
+                    (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
+                ) {
+                    val holdingIdentity = member.viewOwningMember.toCorda()
+                    val gp = parseGroupPolicy(holdingIdentity)
+                    if (gp is MGMGroupPolicy) {
+                        groupPolicies[holdingIdentity] = gp
+                        callBack(holdingIdentity, gp)
+                    } else {
+                        groupPolicies.remove(holdingIdentity)
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Could not process events, caused by: $e")

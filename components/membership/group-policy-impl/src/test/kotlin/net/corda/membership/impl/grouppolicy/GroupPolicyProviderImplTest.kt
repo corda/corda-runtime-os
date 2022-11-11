@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
@@ -21,6 +23,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.grouppolicy.GroupPolicyProviderImpl.FinishedRegistrationsProcessor
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -124,6 +127,30 @@ class GroupPolicyProviderImplTest {
     private val cpiIdentifier3: CpiIdentifier = mock()
     private val cpiIdentifier4: CpiIdentifier = mock()
     private val cpiIdentifier5: CpiIdentifier = mock()
+
+    private val validPersistentMemberInfo = PersistentMemberInfo(
+        holdingIdentity5.toAvro(),
+        KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    MemberInfoExtension.PARTY_NAME,
+                    holdingIdentity5.x500Name.toString(),
+                ),
+            ),
+        ),
+        KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    MemberInfoExtension.IS_MGM,
+                    "true",
+                ),
+                KeyValuePair(
+                    MemberInfoExtension.STATUS,
+                    MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                ),
+            ),
+        ),
+    )
 
     private var virtualNodeListener: VirtualNodeInfoListener? = null
 
@@ -548,7 +575,7 @@ class GroupPolicyProviderImplTest {
 
         groupPolicyProvider.FinishedRegistrationsProcessor() {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap()
             )
@@ -567,7 +594,7 @@ class GroupPolicyProviderImplTest {
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -585,7 +612,7 @@ class GroupPolicyProviderImplTest {
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -599,7 +626,7 @@ class GroupPolicyProviderImplTest {
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -619,7 +646,7 @@ class GroupPolicyProviderImplTest {
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -627,7 +654,7 @@ class GroupPolicyProviderImplTest {
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -823,7 +850,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         processor.firstValue.onNext(
-            Record("", "", PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock())),
+            Record("", "", validPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -846,7 +873,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         processor.firstValue.onSnapshot(
-            mapOf("" to PersistentMemberInfo(holdingIdentity5.toAvro(), mock(), mock()))
+            mapOf("" to validPersistentMemberInfo)
         )
 
         assertThat(holdingIdentity).isEqualTo(holdingIdentity5)
@@ -854,7 +881,7 @@ class GroupPolicyProviderImplTest {
     }
 
     @Test
-    fun `registerListener will not call the call back for other events`() {
+    fun `registerListener will not call when the data was not persisted`() {
         val processor = argumentCaptor<FinishedRegistrationsProcessor>()
         whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
         var called = 0
@@ -870,8 +897,164 @@ class GroupPolicyProviderImplTest {
                 "",
                 PersistentMemberInfo(
                     holdingIdentity2.toAvro(),
-                    mock(),
-                    mock()
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity2.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not the viewwing member`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity2.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not an MGM`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity5.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "false",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not active`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity5.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_PENDING,
+                            ),
+                        ),
+                    ),
                 )
             ),
             null,
