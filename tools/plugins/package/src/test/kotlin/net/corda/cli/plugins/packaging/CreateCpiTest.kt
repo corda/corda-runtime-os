@@ -268,7 +268,8 @@ Creates a CPI from a CPB and GroupPolicy.json file.
         assertTrue(outText.contains("MembershipSchemaValidationException: Exception when validating membership schema"))
         assertTrue(
             outText.contains(
-                "Failed to validate against schema \"corda.group.policy\" due to the following error(s): [\$.groupId: does not match the regex pattern")
+                "Failed to validate against schema \"corda.group.policy\" due to the following error(s): " +
+                        "[\$.groupId: does not match the regex pattern")
         )
     }
 }
