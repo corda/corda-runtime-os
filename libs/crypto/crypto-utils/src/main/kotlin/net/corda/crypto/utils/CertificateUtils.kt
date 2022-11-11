@@ -147,8 +147,3 @@ object AllowAllRevocationChecker : PKIXRevocationChecker() {
         return LinkedList()
     }
 }
-
-data class KeyStoreWithPem(
-    val keyStore: KeyStore,
-    val pemKeyStore: List<PemCertificate>
-)

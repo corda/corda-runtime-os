@@ -1,7 +1,8 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.AllowAllRevocationChecker
-import net.corda.crypto.utils.KeyStoreWithPem
+import net.corda.crypto.utils.PemCertificate
+import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
@@ -20,7 +21,7 @@ import java.security.cert.X509Certificate
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
-    private val trustStore: KeyStoreWithPem,
+    private val pemTrustStore: List<PemCertificate>,
     private val checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse,
     private val certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
@@ -30,7 +31,6 @@ class CertificateValidator(
         const val certificateAlgorithm = "PKIX"
         const val certificateFactoryType = "X.509"
         const val digitalSignatureBit = 0
-        val logger = contextLogger()
     }
 
     fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name) {
@@ -48,7 +48,7 @@ class CertificateValidator(
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
         validateCertPath(certificateChain)
-        validateRevocation(certificateChain, pemCertificateChain, trustStore.pemKeyStore)
+        validateRevocation(certificateChain, pemCertificateChain, pemTrustStore)
     }
 
     private fun validateX500NameMatches(certificate: X509Certificate, expectedX500Name: MemberX500Name) {
@@ -88,7 +88,7 @@ class CertificateValidator(
         if (status is Revoked) {
             val x509CertChain = certificateChain.toX509()
             if (status.certificateIndex >= 0 && status.certificateIndex < x509CertChain.size) {
-                certificateChain.toX509()[status.certificateIndex]
+                x509CertChain[status.certificateIndex]
             } else {
                 null
             }?. let { specificCert ->
@@ -99,7 +99,9 @@ class CertificateValidator(
     }
 
     private fun validateCertPath(certificateChain: CertPath) {
-        val pkixParams = PKIXBuilderParameters(trustStore.keyStore, X509CertSelector())
+        val trustStore = convertToKeyStore(certificateFactory, pemTrustStore, "session")
+            ?: throw InvalidPeerCertificate("Could not validate certificate, the trust store could not be read from a pem file.")
+        val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
         pkixParams.addCertPathChecker(AllowAllRevocationChecker)
         try {
             certPathValidator.validate(certificateChain, pkixParams)
@@ -111,5 +113,4 @@ class CertificateValidator(
     private fun CertPath.toX509(): Array<X509Certificate?> {
         return this.certificates.map { it as? X509Certificate }.toTypedArray()
     }
-
 }

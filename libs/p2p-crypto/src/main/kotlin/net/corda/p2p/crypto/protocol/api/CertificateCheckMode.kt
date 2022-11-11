@@ -1,6 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.crypto.utils.KeyStoreWithPem
+import net.corda.crypto.utils.PemCertificate
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
@@ -19,8 +19,8 @@ sealed class CertificateCheckMode {
      * been revoked.
      */
     data class CheckCertificate(
-        val truststore: KeyStoreWithPem,
-        val ourCertificates: List<String>,
+        val truststore: List<PemCertificate>,
+        val ourCertificates: List<PemCertificate>,
         val revocationCheckMode: RevocationCheckMode,
         val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckResponse
     ): CertificateCheckMode()

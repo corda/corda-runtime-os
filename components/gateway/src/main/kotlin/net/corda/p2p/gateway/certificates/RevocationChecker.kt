@@ -47,7 +47,7 @@ class RevocationChecker(
             val revocationChecker = when (revocationConfig.mode) {
                 RevocationConfigMode.OFF -> AllowAllRevocationChecker
                 RevocationConfigMode.SOFT_FAIL, RevocationConfigMode.HARD_FAIL -> {
-                    val certPathBuilder = CertPathBuilder.getInstance("PKIX")
+                    val certPathBuilder = CertPathBuilder.getInstance(certificateAlgorithm)
                     val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker
                     // We only set SOFT_FAIL as a checker option if specified. Everything else is left as default, which means
                     // OCSP is used if possible, CRL as a fallback
