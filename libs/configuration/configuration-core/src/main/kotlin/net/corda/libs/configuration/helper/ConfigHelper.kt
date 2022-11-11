@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.helper
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.exception.CordaAPIConfigException
 
 /**
  * Utility for getting a  configuration from a given configuration map from the configuration read service.

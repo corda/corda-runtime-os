@@ -10,34 +10,34 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation "net.corda:corda-ledger-utxo"
-    implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:ledger:ledger-common-data")
-    implementation project(":libs:ledger:ledger-utxo-data")
-    implementation project(":components:ledger:ledger-common-flow")
-    implementation project(":components:flow:flow-service")
-    implementation project(":libs:platform-info")
-    implementation project(":libs:sandbox")
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-cipher-suite'
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':components:ledger:ledger-common-flow-api')
+    implementation project(':components:ledger:ledger-common-flow')
+    implementation project(':components:flow:flow-service')
+    implementation project(':libs:sandbox')
     implementation project(':libs:serialization:serialization-checkpoint-api')
-    implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:virtual-node:sandbox-group-context')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
-    testImplementation project(":libs:application:application-impl")
-    testImplementation project(":libs:crypto:cipher-suite-impl")
-    testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(':testing:test-serialization')
-    testImplementation project(":testing:kryo-serialization-testkit")
-    testImplementation project(":libs:serialization:serialization-internal")
-    testImplementation project(":libs:serialization:serialization-amqp")
-    testImplementation project(":testing:ledger:ledger-utxo-testkit")
+    testImplementation project(':testing:kryo-serialization-testkit')
+    testImplementation project(':libs:serialization:serialization-internal')
+    testImplementation project(':libs:serialization:serialization-amqp')
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(':testing:ledger:ledger-utxo-base-test')
+
+    integrationTestImplementation project(':testing:sandboxes')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly project(":testing:sandboxes")
-    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:flows:session-manager-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
 }
