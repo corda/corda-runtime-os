@@ -26,7 +26,8 @@ const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
 @Suppress("Unused")
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
-    scope = ServiceScope.PROTOTYPE
+    scope = ServiceScope.PROTOTYPE,
+    property = ["corda.system=true"]
 )
 class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
