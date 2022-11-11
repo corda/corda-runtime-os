@@ -1,27 +1,26 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
-import net.corda.sandbox.SandboxCreationService
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
+import net.corda.ledger.consensual.testkit.createExample
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -41,8 +40,10 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.NotSerializableException
 import java.nio.file.Path
-import java.security.PublicKey
 import java.util.concurrent.TimeUnit
+
+private const val TESTING_CPB = "/META-INF/consensual-state-app.cpb"
+private const val TIMEOUT_MILLIS = 10000L
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -51,17 +52,15 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
     @RegisterExtension
-    private val lifecycle = EachTestLifecycle()
+    private val lifecycle = AllTestsLifecycle()
 
-    private lateinit var emptySandboxGroup: SandboxGroup
-    private lateinit var digestService: DigestService
-    private lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var flowSandboxService: FlowSandboxService
     private lateinit var jsonMarshallingService: JsonMarshallingService
-    private lateinit var transactionSignatureService: TransactionSignatureService
-    private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
-    private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
-    private lateinit var consensualSignedTransactionSerializer: InternalCustomSerializer<ConsensualSignedTransaction>
+    private lateinit var wireTransactionFactory: WireTransactionFactory
+    private lateinit var consensualSignedTransactionFactory: ConsensualSignedTransactionFactory
+
+    private lateinit var sandboxGroup: SandboxGroup
+    private lateinit var internalCustomSerializers: Set<InternalCustomSerializer<out Any>>
 
     @BeforeAll
     fun setUp(
@@ -70,42 +69,33 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         @InjectBundleContext
         bundleContext: BundleContext,
         @TempDir
-        testDirectory: Path
+        baseDirectory: Path
 
     ) {
-        sandboxSetup.configure(bundleContext, testDirectory)
+        sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
-            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+            flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
 
-            digestService = setup.fetchService(1500)
-            cipherSchemeMetadata = setup.fetchService(1500)
-            merkleTreeProvider = setup.fetchService(1500)
-            jsonMarshallingService = setup.fetchService(1500)
-            transactionSignatureService = setup.fetchService(1500)
+            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
+            val sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
+            sandboxGroup = sandboxGroupContext.sandboxGroup
 
-            publicKeySerializer = setup.fetchService(
-                "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
-                1500
-            )
-            wireTransactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer)",
-                1500
-            )
-            consensualSignedTransactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp.ConsensualSignedTransactionSerializer)",
-                1500
-            )
+            jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
+            wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+            consensualSignedTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+
+            internalCustomSerializers = sandboxGroupContext.getSandboxSingletonServices()
         }
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also {
             registerCustomSerializers(it)
-            it.register(publicKeySerializer, it)
-            it.register(wireTransactionSerializer, it)
-            it.register(consensualSignedTransactionSerializer, it)
+            internalCustomSerializers.map{ customSerializer->
+                it.register(customSerializer, it)
+            }
         }
 
     @Throws(NotSerializableException::class)
@@ -117,29 +107,20 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a Consensual Signed Transaction`() {
-        // Create sandbox group
-
-        val serializationService = TestSerializationService.getTestSerializationService({
-            it.register(wireTransactionSerializer, it)
-            it.register(consensualSignedTransactionSerializer, it)
-        }, cipherSchemeMetadata)
 
         // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(emptySandboxGroup)
-        val factory2 = testDefaultFactory(emptySandboxGroup)
+        val factory1 = testDefaultFactory(sandboxGroup)
+        val factory2 = testDefaultFactory(sandboxGroup)
 
         // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
+        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-        val signedTransaction = getConsensualSignedTransactionExample(
-            digestService,
-            merkleTreeProvider,
-            serializationService,
+        val signedTransaction = consensualSignedTransactionFactory.createExample(
             jsonMarshallingService,
-            transactionSignatureService
+            wireTransactionFactory,
+            consensualSignedTransactionFactory
         )
         val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
-
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
