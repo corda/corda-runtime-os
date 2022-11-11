@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "DistributeMembershipPackage",
+  "namespace": "net.corda.data.membership.command.registration.mgm",
+  "doc": "Command issued once a member registration has been approved, and the updated membership package needs to be distributed to the members.",
+  "fields": [
+    {
+      "name": "groupParametersEpoch",
+      "type": "int",
+      "doc": "Epoch of the group parameters to be distributed."
+    }
+  ]
+}
