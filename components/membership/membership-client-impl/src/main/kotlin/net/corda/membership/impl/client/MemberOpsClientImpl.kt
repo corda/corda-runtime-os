@@ -71,7 +71,7 @@ class MemberOpsClientImpl @Activate constructor(
 
         private val clock = UTCClock()
 
-        private val TIMEOUT = 10.seconds
+        private val TIMEOUT = 20.seconds
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {

@@ -174,6 +174,8 @@ fun registerMember(holdingIdentityShortHash: String) {
         val registrationId = membershipJson["registrationId"].textValue()
 
         assertWithRetry {
+            timeout(Duration.ofSeconds(60))
+            interval(Duration.ofSeconds(15))
             command { getRegistrationStatus(holdingIdentityShortHash, registrationId) }
             condition { it.toJson()["registrationStatus"].textValue() == "APPROVED" }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
