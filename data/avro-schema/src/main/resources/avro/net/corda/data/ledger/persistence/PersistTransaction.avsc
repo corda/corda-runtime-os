@@ -1,8 +1,8 @@
 {
   "type": "record",
   "name": "PersistTransaction",
-  "doc": "Persist the specified consensual signed transaction. One of several types of ledger persistence request {@link ConsensualLedgerRequest}",
-  "namespace": "net.corda.data.ledger.consensual",
+  "doc": "Persist the specified signed transaction. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
   "fields": [
     {
       "name": "transaction",

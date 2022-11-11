@@ -1,0 +1,211 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="ledger-utxo-creation-v1.0">
+
+        <createTable tableName="utxo_transaction">
+            <column name="id" type="VARCHAR(160)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="privacy_salt" type="VARBINARY(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="utxo_transaction_signature">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_signature" references="utxo_transaction(id)"/>
+            </column>
+            <column name="signature_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signature" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pub_key_hash" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, signature_idx"
+                       constraintName="utxo_transaction_signature_pkey"
+                       tableName="utxo_transaction_signature"/>
+
+        <createTable tableName="utxo_transaction_component">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_component" references="utxo_transaction(id)"/>
+            </column>
+            <column name="group_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hash" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
+                       constraintName="utxo_transaction_component_pkey"
+                       tableName="utxo_transaction_component"/>
+
+        <createTable tableName="utxo_transaction_sources">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ref_transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ref_leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_ref_input" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
+                       constraintName="utxo_transaction_sources_pkey"
+                       tableName="utxo_transaction_sources"/>
+        <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
+                                 baseTableName="utxo_transaction_sources"
+                                 constraintName="fk_utxo_transaction_sources"
+                                 referencedColumnNames="transaction_id,group_idx,leaf_idx"
+                                 referencedTableName="utxo_transaction_component"/>
+
+        <createTable tableName="utxo_transaction_output">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_type" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_issuer_hash" type="VARCHAR(160)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_notary_x500_name" type="VARCHAR(1024)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_symbol" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_tag" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_owner_hash" type="VARCHAR(160)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="token_amount" type="NUMERIC">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
+                       constraintName="utxo_transaction_output_pkey"
+                       tableName="utxo_transaction_output"/>
+        <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
+                                 baseTableName="utxo_transaction_output"
+                                 constraintName="fk_utxo_transaction_output"
+                                 referencedColumnNames="transaction_id,group_idx,leaf_idx"
+                                 referencedTableName="utxo_transaction_component"/>
+
+        <createTable tableName="utxo_transaction_relevancy">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leaf_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_relevant" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
+                       constraintName="utxo_transaction_relevancy_pkey"
+                       tableName="utxo_transaction_relevancy"/>
+        <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
+                                 baseTableName="utxo_transaction_relevancy"
+                                 constraintName="fk_utxo_transaction_relevancy"
+                                 referencedColumnNames="transaction_id,group_idx,leaf_idx"
+                                 referencedTableName="utxo_transaction_component"/>
+
+        <createTable tableName="utxo_cpk">
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="BLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="utxo_transaction_cpk">
+            <column name="transaction_id" type="VARCHAR(160)">
+                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_cpk_id"
+                             references="utxo_transaction(id)"/>
+            </column>
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_cpk_checksum"
+                             references="utxo_cpk(file_checksum)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, file_checksum"
+                       constraintName="utxo_transaction_cpk_pkey"
+                       tableName="utxo_transaction_cpk"/>
+    </changeSet>
+</databaseChangeLog>

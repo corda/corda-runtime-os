@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "name": "LedgerPersistenceRequest",
+  "doc": "Make a persistence request on a ledger. The action is determined by the type of the {@link LedgerPersistenceRequest#request} payload.  See also: {@link EntityResponse}, {@link PersistTransaction}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ({@link java.time.Instant}) in milliseconds when the record was created."
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the user making the DB request."
+    },
+    {
+      "name": "ledgerType",
+      "type": {
+        "name": "LedgerTypes",
+        "type": "enum",
+        "symbols": ["UTXO","CONSENSUAL"]
+      },
+      "doc": "The type of ledger the request is for."
+    },
+    {
+      "name": "request",
+      "doc": "The 'request' that we wish to make to the ledger persistence API.",
+      "type": [
+        "net.corda.data.ledger.persistence.PersistTransaction",
+        "net.corda.data.ledger.persistence.FindTransaction"
+      ]
+    },
+    {
+      "name": "flowExternalEventContext",
+      "type": "net.corda.data.flow.event.external.ExternalEventContext",
+      "doc": "The context of the external event that this request was sent from."
+    }
+  ]
+}

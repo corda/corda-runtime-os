@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "FindTransaction",
+  "doc": "Retrieve the specified signed transaction, specified by id. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "the transaction ID, derived from the root hash of its Merkle tree"
+    }
+  ]
+}

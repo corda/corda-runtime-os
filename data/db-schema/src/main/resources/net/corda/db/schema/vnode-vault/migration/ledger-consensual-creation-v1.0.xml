@@ -6,7 +6,7 @@
     <changeSet author="R3.Corda" id="ledger-consensual-creation-v1.0">
 
         <createTable tableName="consensual_transaction">
-            <column name="id" type="VARCHAR(64)">
+            <column name="id" type="VARCHAR(160)">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="privacy_salt" type="VARBINARY(64)">
@@ -21,7 +21,7 @@
         </createTable>
 
         <createTable tableName="consensual_transaction_status">
-            <column name="transaction_id" type="VARCHAR(64)">
+            <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false" foreignKeyName="fk_transaction_status" references="consensual_transaction(id)"/>
             </column>
             <column name="status" type="VARCHAR(255)">
@@ -33,7 +33,7 @@
         </createTable>
 
         <createTable tableName="consensual_transaction_signature">
-            <column name="transaction_id" type="VARCHAR(64)">
+            <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false" foreignKeyName="fk_transaction_signature" references="consensual_transaction(id)"/>
             </column>
             <column name="signature_idx" type="INT">
@@ -42,7 +42,7 @@
             <column name="signature" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
-            <column name="pub_key_hash" type="VARCHAR(64)">
+            <column name="pub_key_hash" type="VARCHAR(160)">
                 <constraints nullable="false"/>
             </column>
             <column name="created" type="TIMESTAMP">
@@ -54,7 +54,7 @@
                        tableName="consensual_transaction_signature"/>
 
         <createTable tableName="consensual_transaction_component">
-            <column name="transaction_id" type="VARCHAR(64)">
+            <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false" foreignKeyName="fk_transaction_component" references="consensual_transaction(id)"/>
             </column>
             <column name="group_idx" type="INT">
@@ -66,7 +66,7 @@
             <column name="data" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
-            <column name="hash" type="VARCHAR(64)">
+            <column name="hash" type="VARCHAR(160)">
                 <constraints nullable="false"/>
             </column>
             <column name="created" type="TIMESTAMP">
@@ -99,10 +99,10 @@
         </createTable>
 
         <createTable tableName="consensual_transaction_cpk">
-            <column name="transaction_id" type="VARCHAR(64)">
+            <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false" foreignKeyName="fk_cpk_transaction" references="consensual_transaction(id)"/>
             </column>
-            <column name="file_checksum" type="VARCHAR(64)">
+            <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false" foreignKeyName="fk_cpk_checksum" references="consensual_cpk(file_checksum)"/>
             </column>
         </createTable>
