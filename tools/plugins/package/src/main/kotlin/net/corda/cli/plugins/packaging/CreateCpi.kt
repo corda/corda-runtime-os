@@ -20,6 +20,8 @@ import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificate
 import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorFactoryImpl
 import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
 import net.corda.v5.base.versioning.Version
@@ -209,9 +211,20 @@ class CreateCpi : Runnable {
             is GroupPolicySource.StdIn -> System.`in`.readAllBytes().toString(Charsets.UTF_8)
         }
 
+        val version: Int
+        try {
+            version = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
+        } catch (e: Exception) {
+            throw MembershipSchemaValidationException(
+                "Exception when validating membership schema.",
+                e,
+                GroupPolicySchema.Default,
+                listOf("Group policy file is invalid. Could not get file format version. ${e.message}"))
+        }
+
         membershipSchemaValidator.validateGroupPolicy(
             GroupPolicySchema.Default,
-            Version(1, 0),
+            Version(version, 0),
             groupPolicyString
         )
     }
