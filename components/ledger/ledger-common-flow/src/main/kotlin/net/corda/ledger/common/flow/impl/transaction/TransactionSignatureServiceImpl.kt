@@ -4,8 +4,6 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -27,7 +25,7 @@ const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
 
 @Suppress("Unused")
 @Component(
-    service = [TransactionSignatureService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
+    service = [TransactionSignatureService::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
@@ -39,7 +37,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = SignatureSpecService::class)
     private val signatureSpecService: SignatureSpecService
-) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow, UsedByVerification, UsedByPersistence {
+) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
     override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
         val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
