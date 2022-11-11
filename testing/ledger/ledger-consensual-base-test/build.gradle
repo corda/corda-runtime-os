@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger Consensual abstract test class with dependencies made available for unit tests'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(':testing:ledger:ledger-common-base-test')
+    api project(':testing:ledger:ledger-consensual-testkit')
+
+    implementation project(':components:ledger:ledger-consensual-flow')
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

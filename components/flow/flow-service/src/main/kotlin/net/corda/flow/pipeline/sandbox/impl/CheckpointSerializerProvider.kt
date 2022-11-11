@@ -47,8 +47,7 @@ class CheckpointSerializerProvider @Activate constructor(
 
         // Identify all the singleton services created for this sandbox (both injectable
         // and non-injectable ones) that should be passed to the checkpoint serializer.
-        val sandboxSingletons = context.getSandboxSingletonServices()
-            .filterIsInstanceTo(linkedSetOf<SingletonSerializeAsToken>())
+        val sandboxSingletons = context.getSandboxSingletonServices<SingletonSerializeAsToken>()
 
         // Create and configure the checkpoint serializer
         val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->

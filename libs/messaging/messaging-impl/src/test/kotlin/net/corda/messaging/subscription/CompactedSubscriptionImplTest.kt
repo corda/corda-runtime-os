@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -13,7 +14,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.v5.base.util.contextLogger
+import net.corda.test.util.waitWhile
+import net.corda.v5.base.util.loggerFor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -25,11 +27,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.waitWhile
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -45,7 +48,7 @@ class CompactedSubscriptionImplTest {
 
     private val mapFactory = object : MapFactory<String, String> {
         override fun createMap(): MutableMap<String, String> = ConcurrentHashMap<String, String>()
-        override fun destroyMap(map: MutableMap<String, String>) {}
+        override fun destroyMap(map: MutableMap<String, String>) = Unit
     }
 
     private val config = createResolvedSubscriptionConfig(SubscriptionType.COMPACTED)
@@ -56,8 +59,8 @@ class CompactedSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
-    private class TestProcessor : CompactedProcessor<String, String> {
-        val log = contextLogger()
+    private open class TestProcessor : CompactedProcessor<String, String> {
+        private val log = loggerFor<TestProcessor>()
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -111,6 +114,51 @@ class CompactedSubscriptionImplTest {
     fun setup() {
         doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
             .createCoordinator(any(), any())
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `subscription is set as UP after initial snapshot is processed`() {
+        val latch = CountDownLatch(2)
+        val processor = spy<TestProcessor>()
+        val (consumer, consumerBuilder) = setupStandardMocks(latch.count) {
+            val iteration = latch.count
+            when (iteration) {
+                0L -> throw CordaMessageAPIFatalException("Stop here")
+                else -> {
+                    listOf(
+                        CordaConsumerRecord(
+                            config.topic,
+                            0,
+                            iteration,
+                            iteration.toString(),
+                            iteration.toString(),
+                            0
+                        )
+                    )
+                }
+            }.also {
+                latch.countDown()
+            }
+        }
+
+        val subscription = CompactedSubscriptionImpl(
+            config,
+            mapFactory,
+            consumerBuilder,
+            processor,
+            lifecycleCoordinatorFactory
+        )
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+        verify(consumer, times(1)).assign(listOf(CordaTopicPartition(config.topic, 0)))
+        assertThat(processor.snapshotMap.size).isEqualTo(1)
+
+        val inOrder = inOrder(processor, lifeCycleCoordinatorMockHelper.lifecycleCoordinator)
+        inOrder.verify(processor).onSnapshot(any())
+        inOrder.verify(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
@@ -325,7 +373,9 @@ class CompactedSubscriptionImplTest {
         )
         subscription.start()
         // We must wait for the snapshot callback to set the thread so we can then join it
-        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { processor.lock.withLock { processor.subscriptionThread == null } }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) {
+            processor.lock.withLock { processor.subscriptionThread == null }
+        }
         processor.subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
         assertNull(processor.lock.withLock { processor.uncaughtExceptionInSubscriptionThread })
     }

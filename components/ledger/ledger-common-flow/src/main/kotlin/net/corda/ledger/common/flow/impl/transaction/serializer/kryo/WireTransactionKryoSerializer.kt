@@ -1,14 +1,12 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,9 +15,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ], scope = PROTOTYPE)
 class WireTransactionKryoSerializer @Activate constructor(
-    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
+    @Reference(service = WireTransactionFactory::class) private val wireTransactionFactory: WireTransactionFactory
 ) : CheckpointInternalCustomSerializer<WireTransaction>, UsedByFlow {
     override val type = WireTransaction::class.java
 
@@ -31,12 +27,9 @@ class WireTransactionKryoSerializer @Activate constructor(
     override fun read(input: CheckpointInput, type: Class<WireTransaction>): WireTransaction {
         val privacySalt = input.readClassAndObject() as PrivacySalt
         val componentGroupLists : List<List<ByteArray>> = uncheckedCast(input.readClassAndObject())
-        return WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
+        return wireTransactionFactory.create(
             componentGroupLists,
+            privacySalt,
         )
     }
 }
