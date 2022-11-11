@@ -90,6 +90,6 @@ class UtxoLedgerTransactionImpl(
     }
 
     override fun verify() {
-        TODO("Not yet implemented.")
+        UtxoLedgerTransactionVerifier(this).verify()
     }
 }
