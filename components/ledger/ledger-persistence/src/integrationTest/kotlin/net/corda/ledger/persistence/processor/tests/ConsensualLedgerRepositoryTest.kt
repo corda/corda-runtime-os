@@ -6,17 +6,11 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
 import net.corda.ledger.persistence.processor.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.processor.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
-import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.field
-import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -28,9 +22,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat

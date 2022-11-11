@@ -10,6 +10,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -24,8 +25,6 @@ import javax.persistence.Tuple
  * as "corda.marker.only" to force the sandbox to create it, despite it implementing
  * only the [UsedByPersistence] marker interface.
  */
-@Suppress("TooManyFunctions")
-class ConsensualLedgerRepository(
 @Component(
     service = [ ConsensualLedgerRepository::class, UsedByPersistence::class ],
     property = [ "corda.marker.only:Boolean=true" ],
@@ -47,11 +46,11 @@ class ConsensualLedgerRepository @Activate constructor(
     fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {
         val rows = entityManager.createNativeQuery(
             """
-               SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data, txc.hash
-               FROM {h-schema}consensual_transaction AS tx
-               JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
-               WHERE tx.id = :id
-               ORDER BY txc.group_idx, txc.leaf_idx
+                SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data, txc.hash
+                FROM {h-schema}consensual_transaction AS tx
+                JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
+                WHERE tx.id = :id
+                ORDER BY txc.group_idx, txc.leaf_idx
                 """,
             Tuple::class.java
         )
