@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
+import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
@@ -23,6 +24,7 @@ import net.corda.applications.workers.smoketest.updateConfig
 import net.corda.applications.workers.smoketest.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -32,8 +34,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import kotlin.text.Typography.quote
-import net.corda.v5.crypto.DigestAlgorithmName
 import org.junit.jupiter.api.Disabled
 
 @Suppress("Unused", "FunctionName")
