@@ -8,12 +8,12 @@ import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
 import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.CertPathValidatorException
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
@@ -34,11 +34,15 @@ class CertificateValidator(
     }
 
     fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name) {
-        val certificateChain = certificateFactory.generateCertPath(pemCertificateChain.map { pemCertificate ->
-            ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                certificateFactory.generateCertificate(it)
-            }
-        })
+        val certificateChain = try {
+            certificateFactory.generateCertPath(pemCertificateChain.map { pemCertificate ->
+                ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                    certificateFactory.generateCertificate(it)
+                }
+            })
+        } catch (except: CertificateException) {
+            throw InvalidPeerCertificate("Error passing the certificate from a pem file: \n" + except.message)
+        }
         //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
         //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
         //matches the x500Name of the peer's identity.

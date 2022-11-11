@@ -11,10 +11,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.security.KeyStore
 import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.Certificate
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509Certificate
@@ -24,7 +24,6 @@ class CertificateValidatorTest {
 
     private val aliceX500Name =  MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
     private val certX500Name =  MemberX500Name.parse("CN=cert, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
-    private val keyStore = mock<KeyStore>()
     private val certPathValidator = mock<CertPathValidator>()
     private val certificatePemString = "certificate"
     private val certificate = mock<X509Certificate> {
@@ -44,6 +43,15 @@ class CertificateValidatorTest {
     fun cleanUp() {
         mockInvalidPeerCertificate.close()
         mockPKIXBuilderParameters.close()
+    }
+    @Test
+    fun `certificate fails validation certificate cannot be read`() {
+        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it == 0 }) //Set key usage bit
+        whenever(certificateFactory.generateCertificate(any())).thenThrow(CertificateException("Invalid certificate."))
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+        )
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
     }
 
     @Test
@@ -82,6 +90,18 @@ class CertificateValidatorTest {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+        )
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+    }
+
+    @Test
+    fun `certificate fails validation if trust store can not be read`() {
+        val pemTruststore = listOf("Not a certificate.")
+        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it == 0 }) //Set key usage bit
+        whenever(certificateFactory.generateCertificate(any()))
+            .thenReturn(certificate).thenThrow(CertificateException("Invalid certificate."))
+        val validator = CertificateValidator(
+            RevocationCheckMode.HARD_FAIL, pemTruststore, { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
     }
