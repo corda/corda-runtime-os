@@ -27,7 +27,7 @@ import org.slf4j.Logger
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-// TODO Remove `open` qualifier when we have an actual logic
+// TODO CORE-7249 Remove `open` qualifier when we have an actual logic
 @InitiatedBy(protocol = "non-validating-notary")
 open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
 
@@ -120,7 +120,7 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    // TODO Remove `open` qualifier when we have an actual logic
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic
     internal open fun validateRequest(otherSideSession: FlowSession,
                                       requestPayload: NonValidatingNotarisationPayload
     ): NonValidatingNotaryTransactionDetails {
@@ -169,6 +169,6 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
         "ThrowsCount",
         "Unused_Parameter" // TODO CORE-7249 Remove once this function is actually utilised
     )
-    // TODO Remove `open` qualifier when we have an actual logic
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic
     internal open fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {}
 }

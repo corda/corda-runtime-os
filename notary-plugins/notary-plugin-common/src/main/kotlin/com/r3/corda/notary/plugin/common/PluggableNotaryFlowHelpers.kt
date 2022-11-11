@@ -21,8 +21,6 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
-class InternalNotaryException(msg: String) : RuntimeException(msg)
-
 // TODO CORE-7285 This should be in the crypto library. Is there an alternative?
 /** Return the Base58 representation of the serialised public key. */
 @Suspendable
