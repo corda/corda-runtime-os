@@ -1,20 +1,18 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
-import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
-import net.corda.sandbox.SandboxCreationService
-import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
-import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
+import net.corda.ledger.consensual.testkit.createExample
+import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -24,6 +22,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -32,21 +31,20 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 
+private const val TESTING_CPB = "/META-INF/consensual-state-app.cpb"
+private const val TIMEOUT_MILLIS = 10000L
+
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class ConsensualSignedTransactionKryoSerializationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
-    private lateinit var emptySandboxGroup: SandboxGroup
-    private lateinit var digestService: DigestService
-    private lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var flowSandboxService: FlowSandboxService
     private lateinit var jsonMarshallingService: JsonMarshallingService
-    private lateinit var transactionSignatureService: TransactionSignatureService
-    private lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
-    private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
-    private lateinit var consensualSignedTransactionSerializer: CheckpointInternalCustomSerializer<ConsensualSignedTransaction>
+    private lateinit var wireTransactionFactory: WireTransactionFactory
+    private lateinit var consensualSignedTransactionFactory: ConsensualSignedTransactionFactory
+    private lateinit var kryoSerializer: CheckpointSerializer
 
     @BeforeAll
     fun setup(
@@ -59,45 +57,29 @@ class ConsensualSignedTransactionKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
-            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup { sandboxCreationService.unloadSandboxGroup(emptySandboxGroup) }
+            flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
 
-            digestService = setup.fetchService(1500)
-            cipherSchemeMetadata = setup.fetchService(1500)
-            merkleTreeProvider = setup.fetchService(1500)
-            jsonMarshallingService = setup.fetchService(1500)
-            transactionSignatureService = setup.fetchService(1500)
-            checkpointSerializerBuilderFactory = setup.fetchService(1500)
+            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
+            val sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
 
-            wireTransactionKryoSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer)",
-                1500
-            )
-            consensualSignedTransactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.flow.impl.transaction.serializer.kryo.ConsensualSignedTransactionKryoSerializer)",
-                1500
-            )
+            jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
+            wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+            consensualSignedTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+            kryoSerializer = sandboxGroupContext.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
+                ?: fail("No CheckpointSerializer in sandbox context")
+
         }
     }
 
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a consensual Signed Transaction`() {
-        val serializationService = TestSerializationService.getTestSerializationService({ }, cipherSchemeMetadata)
-
-        val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
-        val kryoSerializer = builder
-            .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
-            .addSerializer(ConsensualSignedTransaction::class.java, consensualSignedTransactionSerializer)
-            .build()
-
-        val signedTransaction = getConsensualSignedTransactionExample(
-            digestService,
-            merkleTreeProvider,
-            serializationService,
+        val signedTransaction = consensualSignedTransactionFactory.createExample(
             jsonMarshallingService,
-            transactionSignatureService
+            wireTransactionFactory,
+            consensualSignedTransactionFactory
         )
 
         val bytes = kryoSerializer.serialize(signedTransaction)
