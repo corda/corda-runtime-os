@@ -1,6 +1,6 @@
 {
   "fileFormatVersion" : 1,
-  "groupId" : "83d48afa-ebb3-4ae3-91c7-3615e6f86f5f",
+  "groupId" : "1234",
   "registrationProtocol" : "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
   "synchronisationProtocol" : "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
   "protocolParameters" : {

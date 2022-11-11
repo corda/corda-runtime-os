@@ -86,6 +86,14 @@ class CreateCpi : Runnable {
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
+        // Allow piping group policy file into stdin
+        val groupPolicy = if (groupPolicyFileName == "-")
+            GroupPolicySource.StdIn
+        else
+            GroupPolicySource.File(requireFileExists(groupPolicyFileName))
+
+        validateGroupPolicy(groupPolicy)
+
         // Check input Cpb file is indeed a Cpb
         verifyIsValidCpbV1(cpbPath)
         // Create output filename if none specified
@@ -97,12 +105,6 @@ class CreateCpi : Runnable {
         }
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
-
-        // Allow piping group policy file into stdin
-        val groupPolicy = if (groupPolicyFileName == "-")
-            GroupPolicySource.StdIn
-        else
-            GroupPolicySource.File(requireFileExists(groupPolicyFileName))
 
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
     }
@@ -193,7 +195,6 @@ class CreateCpi : Runnable {
      */
     private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: GroupPolicySource) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
-        validateGroupPolicy(groupPolicy)
 
         when (groupPolicy) {
             is GroupPolicySource.File -> Files.copy(groupPolicy.path, cpiJar)
