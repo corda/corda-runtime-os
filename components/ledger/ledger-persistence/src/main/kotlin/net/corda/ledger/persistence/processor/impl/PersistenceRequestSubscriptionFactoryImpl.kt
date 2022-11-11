@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.processor.impl
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
+import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription

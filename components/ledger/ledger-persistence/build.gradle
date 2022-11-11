@@ -19,9 +19,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
-    implementation 'net.corda:corda-ledger-utxo'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:db:db-connection-manager')
@@ -46,6 +44,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-ledger-common'
     implementation 'net.corda:corda-ledger-consensual'
+    implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'

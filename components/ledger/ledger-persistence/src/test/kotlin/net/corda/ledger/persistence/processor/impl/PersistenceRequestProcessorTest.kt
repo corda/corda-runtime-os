@@ -9,6 +9,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
+import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext

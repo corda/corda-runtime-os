@@ -25,7 +25,7 @@ import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.impl.PersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext

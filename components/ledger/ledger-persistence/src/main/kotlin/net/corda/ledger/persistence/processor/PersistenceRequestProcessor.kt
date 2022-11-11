@@ -1,8 +1,7 @@
-package net.corda.ledger.persistence.processor.impl
+package net.corda.ledger.persistence.processor
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
