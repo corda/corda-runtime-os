@@ -20,6 +20,9 @@ import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificate
 import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
+import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorFactoryImpl
+import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
+import net.corda.v5.base.versioning.Version
 import picocli.CommandLine
 
 /**
@@ -188,10 +191,28 @@ class CreateCpi : Runnable {
      */
     private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: GroupPolicySource) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
+        validateGroupPolicy(groupPolicy)
+
         when (groupPolicy) {
             is GroupPolicySource.File -> Files.copy(groupPolicy.path, cpiJar)
             is GroupPolicySource.StdIn -> System.`in`.copyTo(cpiJar)
         }
         cpiJar.closeEntry()
+    }
+
+    private fun validateGroupPolicy(groupPolicy: GroupPolicySource)  {
+        val membershipSchemaValidatorFactoryImpl = MembershipSchemaValidatorFactoryImpl()
+        val membershipSchemaValidator = membershipSchemaValidatorFactoryImpl.createValidator()
+
+        val groupPolicyString = when (groupPolicy) {
+            is GroupPolicySource.File -> File(groupPolicy.path.toString()).readText(Charsets.UTF_8)
+            is GroupPolicySource.StdIn -> System.`in`.readAllBytes().toString(Charsets.UTF_8)
+        }
+
+        membershipSchemaValidator.validateGroupPolicy(
+            GroupPolicySchema.Default,
+            Version(1, 0),
+            groupPolicyString
+        )
     }
 }
