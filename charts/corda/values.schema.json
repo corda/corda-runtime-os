@@ -219,8 +219,12 @@
                     ],
                     "additionalProperties": false,
                     "properties": {
-                        "$ref": "#/$defs/secret"
-                        ,
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
                         "host": {
                             "type": "string",
                             "format": "hostname",
@@ -409,14 +413,12 @@
                                                 "name": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "The truststore secret name",
-                                                    "minLength": 1
+                                                    "title": "The truststore secret name"
                                                 },
                                                 "key": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "The truststore secret key",
-                                                    "minLength": 1
+                                                    "title": "The truststore secret key"
                                                 }
                                             }
                                         }
@@ -487,23 +489,12 @@
                 "sasl": {
                     "type": "object",
                     "default": {},
-                    "title": "sasl configuration for client connection to Kafka",
+                    "title": "SASL configuration for client connection to Kafka",
                     "required": [
                         "enabled"
                     ],
                     "additionalProperties": false,
                     "properties": {
-                        "$ref": "#/$defs/secret"
-                        ,
-                        "mechanism": {
-                            "type": "string",
-                            "default": "",
-                            "title": "sasl mechanism for client connection to Kafka",
-                            "examples": [
-                                "SCRAM-SHA-256"
-                            ],
-                            "minLength": 1
-                        },
                         "enabled": {
                             "type": "boolean",
                             "default": false,
@@ -512,46 +503,22 @@
                                 false,
                                 true
                             ]
+                        },
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "mechanism": {
+                            "type": "string",
+                            "default": "",
+                            "title": "SASL mechanism for client connection to Kafka",
+                            "examples": [
+                                "SCRAM-SHA-256"
+                            ],
+                            "minLength": 1
                         }
-                    },
-                    "if": {
-                        "properties": {
-                            "enabled": {
-                                "const": true
-                            }
-                        }
-                    },
-                    "then": {
-                        "oneOf": [
-                            {
-                            "properties": {
-                                "password": {
-                                    "value": {
-                                        "minLength": 1
-                                    } 
-                                }
-                            },
-                            "properties": {
-                                "password": {
-                                    "valueFrom": {
-                                        "secretKeyRef": {
-                                            "name": {
-                                                "minLength": 1
-                                            },
-                                            "key": {
-                                                "minLength": 1
-                                            }
-                                        }
-                                    }    
-                                }
-                            }
-                        } 
-                    ],
-                        "required": [
-                            "username",
-                            "password",
-                            "mechanism"
-                        ]
                     },
                     "examples": [{
                         "username": "user",
@@ -585,7 +552,12 @@
                     ],
                     "additionalProperties": false,
                     "properties": {
-                        "$ref": "#/$defs/secret"
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        }
                     }
                 },
                 "db": {
@@ -1280,7 +1252,7 @@
                 "p2pGateway": {
                     "allOf": [
                         {
-                            "$ref": "#/$/worker"
+                            "$ref": "#/$defs/worker"
                         },
                         {
                             "required": [
@@ -1823,144 +1795,46 @@
                 }
             }]
         },
-        "secret": {
-                "username": {
-                    "type": "object",
-                    "default": {},
-                    "title": "The username configuration",
-                    "required": [
-                        "value",
-                        "valueFrom"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "anyOf": [
-                            {
-                                "value": {
-                                    "minLength": 1
-                                }
-                            },
-                            {
-                                "valueFrom": {
-                                    "secretKeyRef": {
-                                        "key": {
-                                            "minLength": 1
-                                        },
-                                        "name": {
-                                            "minLength": 1
-                                        }
-                                    }
-                                }
-                            }
-                        ],
-                        "value": {
-                            "type": "string",
-                            "default": "",
-                            "title": "The username"
-                        },
-                        "valueFrom": {
-                            "type": "object",
-                            "default": {},
-                            "title": "The username secret configuration",
-                            "required": [
-                                "secretKeyRef"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "secretKeyRef": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "The username key reference",
-                                    "required": [
-                                        "name",
-                                        "key"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "name": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "The username secret name"
-                                        },
-                                        "key": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "The username secret key"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        "config": {
+            "type": "object",
+            "title": "configuration for which a value may be provided inline or via a secret",
+            "additionalProperties": false,
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "default": "",
+                    "title": "the value"
                 },
-                "password": {
+                "valueFrom": {
                     "type": "object",
                     "default": {},
-                    "title": "The password configuration",
-                    "required": [
-                        "value",
-                        "valueFrom"
-                    ],
+                    "title": "an alternative location for the value",
                     "additionalProperties": false,
                     "properties": {
-                        "oneOf": [
-                            {
-                                "value": {
-                                    "minLength": 1
-                                }
-                            },
-                            {
-                                "valueFrom": {
-                                    "secretKeyRef": {
-                                        "key": {
-                                            "minLength": 1
-                                        },
-                                        "name": {
-                                            "minLength": 1
-                                        }
-                                    }
-                                }
-                            }
-                        ],
-                        "value": {
-                            "type": "string",
-                            "default": "",
-                            "title": "The password"
-                        },
-                        "valueFrom": {
+                        "secretKeyRef": {
                             "type": "object",
-                            "default": {},
-                            "title": "The password secret configuration",
+                            "title": "a reference to a value in a secret",
                             "required": [
-                                "secretKeyRef"
+                                "name",
+                                "key"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                                "secretKeyRef": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "The password key reference",
-                                    "required": [
-                                        "name",
-                                        "key"
-                                    ],
-                                    "properties": {
-                                        "name": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "The password secret name"
-                                        },
-                                        "key": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "The password secret key"
-                                        }
-                                    }
+                                "name": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "the name of the secret"
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "the key in the secret corresponding to the required value"
                                 }
                             }
                         }
                     }
-                }      
+                }
+            }
         }
     }
 }

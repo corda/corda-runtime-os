@@ -51,7 +51,7 @@ nodeSelector: {}
 
 # Database configuration
 db:
-  # Cluster database 
+  # Cluster database configuration
   cluster:
     # -- the cluster database host (required)
     host: ""
@@ -82,7 +82,7 @@ db:
           # -- the cluster database password secret name
           name: ""
           # -- the cluster database password secret key
-          key: "password"
+          key: ""
     database: cordacluster
   clientImage:
     # -- registry for image containing a db client, used to set up the db
@@ -106,25 +106,25 @@ kafka:
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
       valueFrom:
-        # -- the trustore secret key reference
+        # -- the truststore secret key reference
         secretKeyRef:
-          # -- the trustore secret name
+          # -- the truststore secret name
           name: ""
-          # -- the trustore secret key
-          key: "ca.crt"
+          # -- the truststore secret key
+          key: ""
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: 
         # -- the truststore password
         value: ""
-        # -- the trustore password secret configuration; used in preference to value if name is set
+        # -- the truststore password secret configuration; used in preference to value if name is set
         valueFrom:
-          # -- the trustore password secret key reference
+          # -- the truststore password secret key reference
           secretKeyRef:
-            # -- the trustore password secret name
+            # -- the truststore password secret name
             name: ""
-            # -- the trustore password secret key 
+            # -- the truststore password secret key
             key: ""
 
 
@@ -137,7 +137,7 @@ kafka:
     # -- SASL username configuration for client connection to Kafka
     username: 
       # -- the SASL user
-      value: "user"
+      value: ""
       # -- the SASL user secret configuration; used in preference to value if name is set
       valueFrom:
         # -- the SASL user secret key reference
@@ -155,9 +155,9 @@ kafka:
         # -- the SASL password secret key reference
         secretKeyRef:
           # -- the SASL password secret name
-          name: "prereqs-kafka-jaas"
+          name: ""
           # -- the SASL password secret key 
-          key: "system-user-password"
+          key: ""
 
 
 
@@ -165,30 +165,30 @@ kafka:
 bootstrap:
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
-    # -- the intialAdminUser Username configuration
+    # -- the initial admin user username configuration
     username: 
-      # -- the intialAdminUser user
+      # -- the initial admin user username
       value: "admin"
-      # -- the intialAdminUser user secret configuration; used in preference to value if name is set
+      # -- the initial admin user username secret configuration; used in preference to value if name is set
       valueFrom:
-        # -- the intialAdminUser user secret key reference
+        # -- the initial admin user username secret key reference
         secretKeyRef:
-          # -- the intialAdminUser user secret name
+          # -- the initial admin user username secret name
           name: ""
-          # -- the intialAdminUser user secret key 
-          key: "username"
-    # -- the intialAdminUser password configuration
+          # -- the initial admin user username secret key
+          key: ""
+    # -- the initial admin user password configuration
     password: 
-      # -- the intialAdminUser password; generated if not specified
+      # -- the initial admin user password; generated if not specified
       value: ""
-      # -- the intialAdminUser password secret configuration
+      # -- the initial admin user password secret configuration
       valueFrom:
-        # -- the intialAdminUser password secret key reference
+        # -- the initial admin user password secret key reference
         secretKeyRef:
-          # -- the intialAdminUser password secret name
+          # -- the initial admin user password secret name
           name: ""
-          # -- the intialAdminUser passsword secret key 
-          key: "password"
+          # -- the initial admin user password secret key
+          key: ""
   # Configuration for database bootstrap
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation

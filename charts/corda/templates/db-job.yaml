@@ -46,8 +46,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-rbac-db-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -78,8 +77,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-crypto-db-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -110,8 +108,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-rpc-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -142,8 +139,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -161,8 +157,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-crypto-worker-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -193,8 +188,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbUseEnvr" . | nindent 12 }}
-          {{- include "corda.clusterDbPasswordEnv" . | nindent 12 }}
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
 
       volumes:
         - name: working-volume
