@@ -30,7 +30,7 @@ class UtxoRequestHandlerSelectorImpl : UtxoRequestHandlerSelector {
                 )
             }
             else -> {
-                throw IllegalStateException(" the UTXO request type '${request.request.javaClass}' is not supported.")
+                throw IllegalStateException("The UTXO request type '${request.request.javaClass}' is not supported.")
             }
         }
     }

@@ -20,7 +20,7 @@ class UtxoPersistTransactionRequestHandler(
     private val utxoOutputRecordFactory: UtxoOutputRecordFactory
 ) : RequestHandler {
 
-    companion object {
+    private companion object {
         val log = contextLogger()
     }
 

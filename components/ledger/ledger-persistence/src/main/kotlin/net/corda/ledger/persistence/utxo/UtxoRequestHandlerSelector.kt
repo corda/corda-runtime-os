@@ -7,4 +7,3 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 interface  UtxoRequestHandlerSelector {
     fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest) : RequestHandler
 }
-
