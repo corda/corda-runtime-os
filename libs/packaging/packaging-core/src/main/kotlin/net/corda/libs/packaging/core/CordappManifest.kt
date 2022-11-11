@@ -18,7 +18,8 @@ data class CordappManifest(
     val vendor: String,
     val versionId: Int,
     val licence: String,
-    val attributes: Map<String, String>) {
+    val attributes: Map<String, String>
+) {
 
     companion object {
         // The platform version at which CPKs were introduced.
@@ -53,16 +54,16 @@ data class CordappManifest(
         const val CORDAPP_NOTARIES = "Corda-NotaryService-Classes"
         const val CORDAPP_DIGEST_ALGORITHM_FACTORIES = "Corda-DigestAlgorithmFactory-Classes"
         const val CORDAPP_ENTITIES = "Corda-Entity-Classes"
+        const val CORDAPP_TOKEN_STATE_OBSERVERS = "Corda-Token-Observer-Classes"
 
         private operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)
 
         private val DEFAULT_ATTRIBUTES = setOf(
             MIN_PLATFORM_VERSION, TARGET_PLATFORM_VERSION, Constants.BUNDLE_SYMBOLICNAME,
-                Constants.BUNDLE_VERSION, CORDAPP_CONTRACT_NAME, CORDAPP_CONTRACT_VENDOR, CORDAPP_CONTRACT_VERSION,
-                CORDAPP_CONTRACT_LICENCE, CORDAPP_WORKFLOW_NAME, CORDAPP_WORKFLOW_VENDOR, CORDAPP_WORKFLOW_VERSION,
-                CORDAPP_WORKFLOW_LICENCE
+            Constants.BUNDLE_VERSION, CORDAPP_CONTRACT_NAME, CORDAPP_CONTRACT_VENDOR, CORDAPP_CONTRACT_VERSION,
+            CORDAPP_CONTRACT_LICENCE, CORDAPP_WORKFLOW_NAME, CORDAPP_WORKFLOW_VENDOR, CORDAPP_WORKFLOW_VERSION,
+            CORDAPP_WORKFLOW_LICENCE
         )
-
 
         fun fromAvro(other: CorDappManifestAvro): CordappManifest = CordappManifest(
             other.bundleSymbolicName,
@@ -91,9 +92,9 @@ data class CordappManifest(
             val bundleVersion = manifestAttributes.getMandatoryValue(Constants.BUNDLE_VERSION)
 
             val attributes = manifestAttributes
-                    .map { (key, value) -> key.toString() to value.toString() }
-                    .filterNot { (key, _) -> key in DEFAULT_ATTRIBUTES }
-                    .toMap()
+                .map { (key, value) -> key.toString() to value.toString() }
+                .filterNot { (key, _) -> key in DEFAULT_ATTRIBUTES }
+                .toMap()
 
             if (manifestAttributes.getValue(CORDAPP_CONTRACT_NAME) != null) {
                 return CordappManifest(
@@ -103,7 +104,7 @@ data class CordappManifest(
                     targetPlatformVersion = manifestAttributes.parseInt(TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
                     type = CordappType.CONTRACT,
                     shortName = manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_NAME),
-                    vendor =  manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_VENDOR),
+                    vendor = manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_VENDOR),
                     versionId = manifestAttributes.getMandatoryIntValue(CORDAPP_CONTRACT_VERSION),
                     licence = manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_LICENCE),
                     attributes = attributes
@@ -117,13 +118,15 @@ data class CordappManifest(
                     targetPlatformVersion = manifestAttributes.parseInt(TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
                     type = CordappType.WORKFLOW,
                     shortName = manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_NAME),
-                    vendor =  manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_VENDOR),
+                    vendor = manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_VENDOR),
                     versionId = manifestAttributes.getMandatoryIntValue(CORDAPP_WORKFLOW_VERSION),
                     licence = manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_LICENCE),
                     attributes = attributes
                 )
             }
-            throw CordappManifestException("One of attributes $CORDAPP_CONTRACT_NAME, $CORDAPP_WORKFLOW_NAME has to be set.")
+            throw CordappManifestException(
+                "One of attributes $CORDAPP_CONTRACT_NAME, $CORDAPP_WORKFLOW_NAME has to be set."
+            )
         }
 
         /**
@@ -161,9 +164,9 @@ data class CordappManifest(
      * Returns an empty set if the attribute is missing.
      */
     private fun parseSet(attributeName: String) = attributes[attributeName]
-            ?.split(',')
-            ?.toSet()
-            ?: emptySet()
+        ?.split(',')
+        ?.toSet()
+        ?: emptySet()
 
     val contracts: Set<String> get() = parseSet(CORDAPP_CONTRACTS)
     val flows: Set<String> get() = parseSet(CORDAPP_FLOWS)
@@ -180,6 +183,7 @@ data class CordappManifest(
     val notaryProtocols: Set<String> get() = parseSet(CORDAPP_NOTARIES)
     val digestAlgorithmFactories: Set<String> get() = parseSet(CORDAPP_DIGEST_ALGORITHM_FACTORIES)
     val entities: Set<String> get() = parseSet(CORDAPP_ENTITIES)
+    val tokenStateObservers: Set<String> get() = parseSet(CORDAPP_TOKEN_STATE_OBSERVERS)
 
     fun toAvro(): CorDappManifestAvro =
         CorDappManifestAvro(
