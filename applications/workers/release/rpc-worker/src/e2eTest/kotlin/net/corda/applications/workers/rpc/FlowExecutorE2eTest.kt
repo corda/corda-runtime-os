@@ -10,6 +10,6 @@ class FlowExecutorE2eTest {
     fun `check help page`() {
         val result = CliTask.execute(listOf("initial-rbac", "flow-executor"))
         assertThat(result.exitCode).isNotEqualTo(0)
-        assertThat(result.stdOut).isEqualTo("foo")
+        assertThat(result.stdErr).contains("Missing required options").contains("FlowExecutorRole")
     }
 }
