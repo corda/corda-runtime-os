@@ -1,6 +1,7 @@
 package net.corda.reconciliation.impl
 
 import net.corda.reconciliation.Reconciler
+import net.corda.reconciliation.ReconcilerReader
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -12,7 +13,7 @@ class ReconcilerImplTest {
     fun `reconciler name contains generic arguments`() {
         val reconciler =
             ReconcilerImpl(
-                mock(),
+                mock<ReconcilerReader<String, Int>>(),
                 mock(),
                 mock(),
                 String::class.java,
