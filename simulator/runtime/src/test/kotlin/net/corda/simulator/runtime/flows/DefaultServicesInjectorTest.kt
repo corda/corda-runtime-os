@@ -30,6 +30,7 @@ class DefaultServicesInjectorTest {
             assertNotNull(flow.memberLookup)
             assertNotNull(flow.signingService)
             assertNotNull(flow.signatureVerificationService)
+            assertNotNull(flow.signatureSpecService)
         }
     }
 }

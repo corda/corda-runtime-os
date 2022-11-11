@@ -5,8 +5,8 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.field
@@ -23,8 +23,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.toHexString
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -55,13 +53,9 @@ import kotlin.random.Random
 class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
-    @InjectService
-    lateinit var digestService: DigestService
-    @InjectService
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-    @InjectService
-    lateinit var jsonMarshallingService: JsonMarshallingService
 
+    private lateinit var wireTransactionFactory: WireTransactionFactory
+    private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualLedgerRepository
@@ -87,6 +81,8 @@ class ConsensualLedgerRepositoryTest {
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+            wireTransactionFactory = ctx.getSandboxSingletonService()
+            jsonMarshallingService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
@@ -329,12 +325,9 @@ class ConsensualLedgerRepositoryTest {
             listOf("group3_component1".toByteArray())
         )
         val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
-        val wireTransaction = WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
-            componentGroupLists
+        val wireTransaction = wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
         )
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }

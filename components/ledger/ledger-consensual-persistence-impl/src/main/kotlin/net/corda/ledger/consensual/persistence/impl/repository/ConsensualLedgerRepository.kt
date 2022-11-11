@@ -2,14 +2,13 @@ package net.corda.ledger.consensual.persistence.impl.repository
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,13 +32,11 @@ import javax.persistence.Tuple
 )
 class ConsensualLedgerRepository @Activate constructor(
     @Reference
-    private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference
     private val digestService: DigestService,
     @Reference
-    private val jsonMarshallingService: JsonMarshallingService,
+    private val serializationService: SerializationService,
     @Reference
-    private val serializationService: SerializationService
+    private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
     companion object {
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
@@ -61,12 +58,9 @@ class ConsensualLedgerRepository @Activate constructor(
 
         if (rows.isEmpty()) return null
 
-        val wireTransaction = WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            PrivacySaltImpl(rows.first()[1] as ByteArray),
-            rows.mapTuples(componentGroupListsTuplesMapper)
+        val wireTransaction = wireTransactionFactory.create(
+            rows.mapTuples(componentGroupListsTuplesMapper),
+            PrivacySaltImpl(rows.first()[1] as ByteArray)
         )
 
         return ConsensualSignedTransactionContainer(
