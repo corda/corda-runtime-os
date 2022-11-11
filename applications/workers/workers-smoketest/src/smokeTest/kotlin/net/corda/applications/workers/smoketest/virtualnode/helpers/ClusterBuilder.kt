@@ -108,8 +108,11 @@ class ClusterBuilder {
     /**
      * Register a member to the network
      */
-    fun registerMember(holdingId: String) =
-        post("/api/v1/membership/$holdingId", registerMemberBody())
+    fun registerMember(holdingIdShortHash: String) =
+        post("/api/v1/membership/$holdingIdShortHash", registerMemberBody())
+
+    fun getRegistrationStatus(holdingIdShortHash: String, requestId: String) =
+        get("/api/v1/membership/$holdingIdShortHash/$requestId")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")

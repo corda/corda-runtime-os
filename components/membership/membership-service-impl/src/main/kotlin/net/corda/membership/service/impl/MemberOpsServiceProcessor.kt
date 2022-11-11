@@ -133,6 +133,7 @@ class MemberOpsServiceProcessor(
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
+            logger.info("Handling registration request for $holdingIdentity")
             val registrationId = idFactory()
             val result = try {
                 registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
