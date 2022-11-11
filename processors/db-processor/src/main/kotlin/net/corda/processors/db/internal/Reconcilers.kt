@@ -5,16 +5,23 @@ import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.read.GroupParametersReaderService
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.db.internal.reconcile.db.ConfigReconciler
 import net.corda.processors.db.internal.reconcile.db.CpiReconciler
+import net.corda.processors.db.internal.reconcile.db.GroupParametersReconciler
 import net.corda.processors.db.internal.reconcile.db.VirtualNodeReconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_GROUP_PARAMS_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_VNODE_INFO_INTERVAL_MS
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
@@ -26,12 +33,17 @@ import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 class Reconcilers constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     dbConnectionManager: DbConnectionManager,
+    jpaEntitiesRegistry: JpaEntitiesRegistry,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    groupParametersFactory: GroupParametersFactory,
     virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cpiInfoReadService: CpiInfoReadService,
     cpiInfoWriteService: CpiInfoWriteService,
     configPublishService: ConfigPublishService,
     configBusReconcilerReader: ConfigReconcilerReader,
+    groupParametersReaderService: GroupParametersReaderService,
+    groupParametersWriterService: GroupParametersWriterService,
     reconcilerFactory: ReconcilerFactory,
 ) : AutoCloseable {
     private val cpiReconciler = CpiReconciler(
@@ -56,11 +68,23 @@ class Reconcilers constructor(
         configBusReconcilerReader,
         configPublishService,
     )
+    private val groupParametersReconciler = GroupParametersReconciler(
+        coordinatorFactory,
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
+        cordaAvroSerializationFactory,
+        groupParametersFactory,
+        reconcilerFactory,
+        groupParametersReaderService,
+        groupParametersWriterService,
+    )
 
     override fun close() {
         cpiReconciler.close()
         vnodeReconciler.close()
         configReconciler.close()
+        groupParametersReconciler.close()
     }
 
     /**
@@ -75,6 +99,10 @@ class Reconcilers constructor(
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CPI_INFO_INTERVAL_MS, cpiReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_VNODE_INFO_INTERVAL_MS, vnodeReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CONFIG_INTERVAL_MS, configReconciler::updateInterval)
+        smartConfig.updateIntervalWhenKeyIs(
+            RECONCILIATION_GROUP_PARAMS_INTERVAL_MS,
+            groupParametersReconciler::updateInterval
+        )
     }
 
     /** Convenience function to correctly set the interval when the key actually exists in the config */

@@ -11,6 +11,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
@@ -33,7 +34,10 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.membership.datamodel.MembershipEntities
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -97,6 +101,14 @@ class DBProcessorImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = VirtualNodeInfoWriteService::class)
     private val virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory,
+    @Reference(service = GroupParametersReaderService::class)
+    private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = MembershipPersistenceService::class)
     private val membershipPersistenceService: MembershipPersistenceService,
 ) : DBProcessor {
@@ -142,24 +154,34 @@ class DBProcessorImpl @Activate constructor(
         ::configPublishService,
         ::virtualNodeInfoReadService,
         ::virtualNodeInfoWriteService,
+        ::groupParametersReaderService,
+        ::groupParametersWriterService,
         ::membershipPersistenceService,
     )
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(
+        dependentComponents,
+        ::eventHandler
+    )
 
     private val reconcilers = Reconcilers(
         coordinatorFactory,
         dbConnectionManager,
+        entitiesRegistry,
+        cordaAvroSerializationFactory,
+        groupParametersFactory,
         virtualNodeInfoWriteService,
         virtualNodeInfoReadService,
         cpiInfoReadService,
         cpiInfoWriteService,
         configPublishService,
         configBusReconcilerReader,
+        groupParametersReaderService,
+        groupParametersWriterService,
         reconcilerFactory
     )
 
-    // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
-    //  into 2 parts.
+    // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be
+    // split into 2 parts.
     private var dbManagerRegistrationHandler: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
     private var bootstrapConfig: SmartConfig? = null
