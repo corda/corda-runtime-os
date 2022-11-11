@@ -1,5 +1,6 @@
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
@@ -11,6 +12,7 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryError
  * TODO This exception used to inherit from `FlowException` but that type doesn't exist anymore, will
  *  `CordaRuntimeException` work?
  */
+@CordaSerializable
 class NotaryException(
     /** Cause of notarisation failure. */
     private val error: NotaryError,

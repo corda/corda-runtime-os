@@ -48,5 +48,6 @@ interface NotaryErrorMalformedRequest : NotaryError {
 
 /** Error type used for scenarios that were unexpected, or couldn't be mapped. */
 interface NotaryErrorGeneral : NotaryError {
-    val errorText: String
+    val errorText: String?
+    val cause: Throwable?
 }

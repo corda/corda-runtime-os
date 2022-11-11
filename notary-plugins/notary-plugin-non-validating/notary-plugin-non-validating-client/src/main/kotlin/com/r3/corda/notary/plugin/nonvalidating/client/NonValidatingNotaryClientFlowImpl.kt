@@ -1,9 +1,10 @@
-package com.r3.corda.notary.plugin.nonvalidating
+package com.r3.corda.notary.plugin.nonvalidating.client
 
 import com.r3.corda.notary.plugin.common.NotaryException
 import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -28,16 +29,16 @@ class NonValidatingNotaryClientFlowImpl(
 ) : PluggableNotaryClientFlow {
 
     @CordaInject
-    private lateinit var flowMessaging: FlowMessaging
+    internal lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    private lateinit var memberLookupService: MemberLookup
+    internal lateinit var memberLookupService: MemberLookup
 
     @CordaInject
-    private lateinit var serializationService: SerializationService
+    internal lateinit var serializationService: SerializationService
 
     @CordaInject
-    private lateinit var signingService: SigningService
+    internal lateinit var signingService: SigningService
 
     /**
      * The main logic of the flow is defined in this function. The execution steps are:
@@ -59,7 +60,7 @@ class NonValidatingNotaryClientFlowImpl(
         )
 
         return notarisationResponse.error?.let {
-            throw NotaryException(it)
+            throw NotaryException(it, stx.id)
         } ?: notarisationResponse.signatures
     }
 
@@ -68,7 +69,7 @@ class NonValidatingNotaryClientFlowImpl(
      * Then attaches that signature to a [NonValidatingNotarisationPayload].
      */
     @Suspendable
-    private fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
+    internal fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
         val notarisationRequest = NotarisationRequest(
             stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
             stx.id
@@ -83,7 +84,7 @@ class NonValidatingNotaryClientFlowImpl(
 
         // TODO CORE-7249 Filtering needed
         return NonValidatingNotarisationPayload(
-            stx.toLedgerTransaction(),
+            stx,
             stx.toLedgerTransaction().outputStateAndRefs.size,
             requestSignature
         )

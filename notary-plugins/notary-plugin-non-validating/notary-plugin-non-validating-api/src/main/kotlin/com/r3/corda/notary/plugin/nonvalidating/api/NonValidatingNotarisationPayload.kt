@@ -1,4 +1,4 @@
-package com.r3.corda.notary.plugin.nonvalidating
+package com.r3.corda.notary.plugin.nonvalidating.api
 
 import com.r3.corda.notary.plugin.common.BaseNotarisationPayload
 import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
