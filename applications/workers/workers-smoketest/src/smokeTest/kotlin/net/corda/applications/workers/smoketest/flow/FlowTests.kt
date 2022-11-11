@@ -813,6 +813,50 @@ class FlowTests {
         assertThat(result.flowError?.message).contains("NotaryErrorReferenceStateConflict")
     }
 
+    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
+    //  empty list of input state and refs (no back-chain resolution)
+    @Test
+    @Disabled
+    fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
+        val requestID =
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(
+                    "inputStates" to arrayOf(
+                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                    )
+                ),
+                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            )
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
+        assertThat(result.flowError?.message).contains("NotaryErrorInputStateUnknown")
+    }
+
+    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
+    //  empty list of input state and refs (no back-chain resolution)
+    @Test
+    @Disabled
+    fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
+        val requestID =
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(
+                    "refStates" to arrayOf(
+                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                    )
+                ),
+                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            )
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
+        assertThat(result.flowError?.message).contains("NotaryErrorReferenceStateUnknown")
+    }
+
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
