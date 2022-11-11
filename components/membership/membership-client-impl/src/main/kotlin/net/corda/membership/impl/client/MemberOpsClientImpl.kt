@@ -26,12 +26,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -43,6 +43,7 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -67,6 +68,8 @@ class MemberOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
+
+        private val TIMEOUT = 10.seconds
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {
@@ -323,7 +326,7 @@ class MemberOpsClientImpl @Activate constructor(
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
                 logger.info("Sending request: $this")
-                val response = rpcSender.sendRequest(this).getOrThrow()
+                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."
                 }
