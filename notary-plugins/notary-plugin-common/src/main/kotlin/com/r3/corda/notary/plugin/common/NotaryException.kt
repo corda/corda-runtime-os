@@ -15,9 +15,9 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryError
 @CordaSerializable
 class NotaryException(
     /** Cause of notarisation failure. */
-    private val error: NotaryError,
+    val error: NotaryError,
     /** Id of the transaction to be notarised. Can be _null_ if an error occurred before the id could be resolved. */
-    private val txId: SecureHash?
+    val txId: SecureHash?
 ) : CordaRuntimeException("Unable to notarise transaction ${txId ?: "<Unknown>"} : $error") {
 
     constructor(error: NotaryError) : this(error, txId = null)
