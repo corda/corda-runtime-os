@@ -5,10 +5,10 @@ bootstrap:
   initialAdminUser:
     password:
       value: "admin"
+  db:
+    clientImage:
+      registry: docker-remotes.software.r3.com
 
-db:
-  clientImage:
-    registry: docker-remotes.software.r3.com
 
 logging:
   format: "text"

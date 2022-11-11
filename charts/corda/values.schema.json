@@ -201,8 +201,7 @@
             "default": {},
             "title": "cluster database configuration",
             "required": [
-                "cluster",
-                "clientImage"
+                "cluster"
             ],
             "additionalProperties": false,
             "properties": {
@@ -273,50 +272,6 @@
                         },
                         "database": "cordacluster"
                     }]
-                },
-                "clientImage": {
-                    "type": "object",
-                    "default": {},
-                    "title": "db client image",
-                    "required": [
-                        "registry",
-                        "repository",
-                        "tag"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "default": "",
-                            "title": "registry for image containing a db client, used to set up the db",
-                            "examples": [
-                                "docker.io"
-                            ]
-                        },
-                        "repository": {
-                            "type": "string",
-                            "default": "postgres",
-                            "title": "repository for image containing a db client, used to set up the db",
-                            "examples": [
-                                "postgres"
-                            ],
-                            "minLength": 1
-                        },
-                        "tag": {
-                            "type": "string",
-                            "default": "14.4",
-                            "title": "tag for image containing a db client, used to set up the db",
-                            "examples": [
-                                "14.4"
-                            ],
-                            "minLength": 1
-                        }
-                    },
-                    "examples": [{
-                        "registry": "docker.io",
-                        "repository": "postgres",
-                        "tag": "14.4"
-                    }]
                 }
             },
             "examples": [{
@@ -327,11 +282,6 @@
                     "user": "user",
                     "database": "cordacluster",
                     "existingSecret": "postgresql-secret"
-                },
-                "clientImage": {
-                    "registry": "docker.io",
-                    "repository": "postgres",
-                    "tag": "14.4"
                 }
             }]
         },
@@ -650,6 +600,50 @@
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
+                            }]
+                        },
+                        "clientImage": {
+                            "type": "object",
+                            "default": {},
+                            "title": "db client image",
+                            "required": [
+                                "registry",
+                                "repository",
+                                "tag"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "registry": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "registry for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "docker.io"
+                                    ]
+                                },
+                                "repository": {
+                                    "type": "string",
+                                    "default": "postgres",
+                                    "title": "repository for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "postgres"
+                                    ],
+                                    "minLength": 1
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "default": "14.4",
+                                    "title": "tag for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "14.4"
+                                    ],
+                                    "minLength": 1
+                                }
+                            },
+                            "examples": [{
+                                "registry": "docker.io",
+                                "repository": "postgres",
+                                "tag": "14.4"
                             }]
                         }
                     },

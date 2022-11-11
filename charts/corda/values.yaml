@@ -84,13 +84,6 @@ db:
           # -- the cluster database password secret key
           key: ""
     database: cordacluster
-  clientImage:
-    # -- registry for image containing a db client, used to set up the db
-    registry: ""
-    # -- repository for image containing a db client, used to set up the db
-    repository: postgres
-    # -- tag for image containing a db client, used to set up the db
-    tag: "14.4"
 
 # Kafka configuration
 kafka:
@@ -205,6 +198,14 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
+    # Image containing DB client, used to set up the DB
+    clientImage:
+      # -- registry for image containing a db client, used to set up the db
+      registry: ""
+      # -- repository for image containing a db client, used to set up the db
+      repository: postgres
+      # -- tag for image containing a db client, used to set up the db
+      tag: "14.4"
 
   # Configuration for RBAC roles bootstrap
   rbac:
