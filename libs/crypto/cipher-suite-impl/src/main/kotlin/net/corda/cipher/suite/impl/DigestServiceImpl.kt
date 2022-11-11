@@ -1,6 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -15,9 +14,6 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
-import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.InputStream
 import java.security.MessageDigest
@@ -25,19 +21,14 @@ import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(
-    service = [ DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
-    scope = PROTOTYPE
-)
+/**
+ * A [DigestService] singleton for everyone not inside a sandbox to share.
+ */
+@Component
+@ServiceRanking(1)
 class DigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(
-        service = DigestAlgorithmFactoryProvider::class,
-        scope = PROTOTYPE_REQUIRED,
-        cardinality = OPTIONAL
-    )
-    private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
+    private val schemeMetadata: CipherSchemeMetadata
 ) : DigestService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
         val factory = DoubleSHA256DigestFactory()
@@ -55,23 +46,16 @@ class DigestServiceImpl @Activate constructor(
         return SecureHash(digestAlgorithmName.name, hashBytes)
     }
 
+    // TODO: I think below return in lambda prevents from caching, TO TEST
     override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =
         lengths.getOrPut(digestAlgorithmName.name) {
             return digestFor(digestAlgorithmName).digestLength
         }
 
-    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm {
-        return try {
-            factories.getOrPut(digestAlgorithmName.name) {
-                SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
-            }.getInstance()
-        } catch (e: IllegalArgumentException) {
-            // Check any custom registered versions.
-            customFactoriesProvider?.get(digestAlgorithmName.name)
-                ?.getInstance()
-                ?: throw e
-        }
-    }
+    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
+        factories.getOrPut(digestAlgorithmName.name) {
+            SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
+        }.getInstance()
 
     private class SpiDigestAlgorithmFactory(
         schemeMetadata: CipherSchemeMetadata,
@@ -113,13 +97,3 @@ class DigestServiceImpl @Activate constructor(
         }
     }
 }
-
-/**
- * A [DigestService] singleton for everyone not inside a sandbox to share.
- */
-@Component
-@ServiceRanking(1)
-class SingletonDigestServiceImpl @Activate constructor(
-    @Reference(scope = PROTOTYPE_REQUIRED)
-    private val digestService: DigestService
-) : DigestService by digestService

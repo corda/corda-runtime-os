@@ -37,7 +37,7 @@ class DigestServiceTests {
         @BeforeAll
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
+            digestService = DigestServiceImpl(schemeMetadata)
         }
 
         @JvmStatic

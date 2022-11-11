@@ -90,7 +90,7 @@ class CipherSchemeMetadataTests {
                 keySize = null,
                 capabilities = setOf(KeySchemeCapability.SIGN)
             )
-            val digest = DigestServiceImpl(schemeMetadata, null)
+            val digest = DigestServiceImpl(schemeMetadata)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digest)
             signingTestParams = schemeMetadata.schemes.filter {
                 it.codeName != COMPOSITE_KEY_CODE_NAME && it.canDo(KeySchemeCapability.SIGN)
