@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.certificates
 
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -35,7 +34,7 @@ class RevocationCheckerTest {
     }
     private val mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckStatus>)()
+        (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
     }
     private val revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock())
 

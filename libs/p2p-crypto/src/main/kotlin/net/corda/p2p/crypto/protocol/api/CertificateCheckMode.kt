@@ -2,7 +2,7 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 /**
  * How should the authentication protocol check the certificates sent as a part of authentication protocol.
@@ -22,7 +22,7 @@ sealed class CertificateCheckMode {
         val truststore: KeyStoreWithPem,
         val ourCertificates: List<String>,
         val revocationCheckMode: RevocationCheckMode,
-        val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckStatus
+        val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckResponse
     ): CertificateCheckMode()
 }
 

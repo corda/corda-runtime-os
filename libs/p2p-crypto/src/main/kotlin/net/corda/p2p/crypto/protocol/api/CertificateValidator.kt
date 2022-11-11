@@ -3,8 +3,9 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.KeyStoreWithPem
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
+import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
@@ -20,7 +21,7 @@ import java.security.cert.X509Certificate
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
     private val trustStore: KeyStoreWithPem,
-    private val checkRevocation: (RevocationCheckRequest) -> RevocationCheckStatus,
+    private val checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse,
     private val certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
 ) {
@@ -83,8 +84,17 @@ class CertificateValidator(
             RevocationCheckMode.SOFT_FAIL -> RevocationMode.SOFT_FAIL
         }
         val revocationStatus = checkRevocation(RevocationCheckRequest(pemCertificates, trustStore, revocationMode))
-        if (revocationStatus == RevocationCheckStatus.REVOKED) {
-            throw InvalidPeerCertificate("The certificate failed validation: the certificate was revoked.", certificateChain.toX509())
+        val status = revocationStatus.status
+        if (status is Revoked) {
+            val x509CertChain = certificateChain.toX509()
+            if (status.certificateIndex >= 0 && status.certificateIndex < x509CertChain.size) {
+                certificateChain.toX509()[status.certificateIndex]
+            } else {
+                null
+            }?. let { specificCert ->
+                throw InvalidPeerCertificate("The certificate failed a revocation check (in the gateway): " + status.reason, specificCert)
+            }
+            throw InvalidPeerCertificate("The certificate failed a revocation check (in the gateway): " + status.reason, x509CertChain)
         }
     }
 

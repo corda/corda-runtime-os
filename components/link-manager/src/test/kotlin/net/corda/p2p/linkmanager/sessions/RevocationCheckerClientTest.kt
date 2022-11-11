@@ -1,8 +1,10 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.gateway.certificates.Active
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
+import net.corda.data.p2p.gateway.certificates.RevocationMode
+import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.lifecycle.domino.logic.util.RPCSenderWithDominoLogic
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -22,7 +24,7 @@ class RevocationCheckerClientTest {
     @Suppress("UNCHECKED_CAST")
     private val mockRPCSender = mockRPCSenderConstruction.constructed().first()
             as RPCSenderWithDominoLogic<RevocationCheckRequest, RevocationCheckResponse>
-
+    private val mockRequest = mock<RevocationCheckRequest>()
     @AfterEach
     fun cleanUp() {
         mockRPCSenderConstruction.close()
@@ -31,19 +33,30 @@ class RevocationCheckerClientTest {
     @Test
     fun `RevocationCheckerClient delegates to the rpc sender`() {
         whenever(mockRPCSender.sendRequest(any())).thenReturn(
-            CompletableFuture.completedFuture(RevocationCheckResponse(RevocationCheckStatus.ACTIVE)
+            CompletableFuture.completedFuture(RevocationCheckResponse(Active())
         ))
-        client.checkRevocation(mock())
+        client.checkRevocation(mockRequest)
         verify(mockRPCSender).sendRequest(any())
     }
 
     @Test
-    fun `if request times out the certificate is treated as revoked`() {
+    fun `if request times out the certificate is treated as active if SOFT_FAIL mode is used`() {
         val future = mock<CompletableFuture<RevocationCheckResponse>> {
             on {get(any(), any())}.thenThrow(TimeoutException("Future timed out!"))
         }
-        whenever(mockRPCSender.sendRequest(any())).thenReturn(future)
-        assertThat(client.checkRevocation(mock())).isEqualTo(RevocationCheckStatus.REVOKED)
+        whenever(mockRequest.mode).thenReturn(RevocationMode.SOFT_FAIL)
+        whenever(mockRPCSender.sendRequest(mockRequest)).thenReturn(future)
+        assertThat(client.checkRevocation(mockRequest).status).isEqualTo(Active())
+    }
+
+    @Test
+    fun `if request times out the certificate is treated as revoked if HARD_FAIL mode is used`() {
+        val future = mock<CompletableFuture<RevocationCheckResponse>> {
+            on {get(any(), any())}.thenThrow(TimeoutException("Future timed out!"))
+        }
+        whenever(mockRequest.mode).thenReturn(RevocationMode.HARD_FAIL)
+        whenever(mockRPCSender.sendRequest(mockRequest)).thenReturn(future)
+        assertThat(client.checkRevocation(mockRequest).status).isInstanceOf(Revoked::class.java)
     }
 
 }

@@ -1,8 +1,9 @@
 package net.corda.p2p.gateway.certificates
 
+import net.corda.data.p2p.gateway.certificates.Active
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.data.p2p.gateway.certificates.RevocationMode
+import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
@@ -57,7 +58,7 @@ class RevocationCheckerTest {
     fun `valid certificate passes validation`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isEqualTo(RevocationCheckStatus.ACTIVE)
+        assertThat(result.status).isEqualTo(Active())
     }
 
     @Test
@@ -70,20 +71,20 @@ class RevocationCheckerTest {
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isInstanceOf(Revoked::class.java)
     }
 
     @Test
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isInstanceOf(Revoked::class.java)
     }
 
     @Test
     fun `if truststore is wrong validation fails`() {
         val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL))
         val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isEqualTo(RevocationCheckStatus.REVOKED)
+        assertThat(result.status).isInstanceOf(Revoked::class.java)
     }
 }

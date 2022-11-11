@@ -2,10 +2,11 @@ package net.corda.p2p.gateway.certificates
 
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.convertToKeyStore
+import net.corda.data.p2p.gateway.certificates.Active
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
-import net.corda.data.p2p.gateway.certificates.RevocationCheckStatus
 import net.corda.data.p2p.gateway.certificates.RevocationMode
+import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -15,7 +16,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_REVOCATION_CHECK_REQUEST
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertPathBuilder
@@ -64,7 +65,7 @@ class RevocationChecker(
     internal val subscriptionConfig = RPCConfig(
         groupAndClientName,
         groupAndClientName,
-        GATEWAY_REVOCATION_CHECK_REQUEST,
+        GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC,
         RevocationCheckRequest::class.java,
         RevocationCheckResponse::class.java
     )
@@ -109,15 +110,15 @@ class RevocationChecker(
                 )
                 return
             }
-            val pkixRevocationChecker = getCertCheckingParameters(trustStore, revocationMode.toRevocationConfig())
+            val pkixParams = getCertCheckingParameters(trustStore, revocationMode.toRevocationConfig())
 
             try {
-                certPathValidator.validate(certificateChain, pkixRevocationChecker)
+                certPathValidator.validate(certificateChain, pkixParams)
             } catch (exception: CertPathValidatorException) {
-                respFuture.complete(RevocationCheckResponse(RevocationCheckStatus.REVOKED))
+                respFuture.complete(RevocationCheckResponse(Revoked(exception.message, exception.index)))
                 return
             }
-            respFuture.complete(RevocationCheckResponse(RevocationCheckStatus.ACTIVE))
+            respFuture.complete(RevocationCheckResponse(Active()))
         }
 
         private fun RevocationMode.toRevocationConfig(): RevocationConfig {
