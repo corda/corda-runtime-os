@@ -176,7 +176,7 @@ fun registerMember(holdingIdentityShortHash: String) {
             timeout(Duration.ofSeconds(60))
             interval(Duration.ofSeconds(15))
             command { getRegistrationStatus(holdingIdentityShortHash) }
-            condition { it.code == 200 }
+            condition { it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == "ACCEPTED" }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
