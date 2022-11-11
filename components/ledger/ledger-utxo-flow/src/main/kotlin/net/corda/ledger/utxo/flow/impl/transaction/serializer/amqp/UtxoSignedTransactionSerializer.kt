@@ -1,7 +1,7 @@
-package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
+package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
@@ -12,43 +12,42 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
-    scope = PROTOTYPE
-)
-class ConsensualSignedTransactionSerializer @Activate constructor(
+    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    scope = ServiceScope.PROTOTYPE
+)class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService
-) : BaseProxySerializer<ConsensualSignedTransaction, ConsensualSignedTransactionProxy>(),
+) : BaseProxySerializer<UtxoSignedTransaction, UtxoSignedTransactionProxy>(),
     UsedByFlow, UsedByVerification {
 
-    override val type = ConsensualSignedTransaction::class.java
+    override val type = UtxoSignedTransaction::class.java
 
-    override val proxyType = ConsensualSignedTransactionProxy::class.java
+    override val proxyType = UtxoSignedTransactionProxy::class.java
 
     override val withInheritance = true
 
-    override fun toProxy(obj: ConsensualSignedTransaction): ConsensualSignedTransactionProxy {
-        return ConsensualSignedTransactionProxy(
-            ConsensualSignedTransactionVersion.VERSION_1,
-            (obj as ConsensualSignedTransactionImpl).wireTransaction,
+    override fun toProxy(obj: UtxoSignedTransaction): UtxoSignedTransactionProxy {
+        return UtxoSignedTransactionProxy(
+            UtxoSignedTransactionVersion.VERSION_1,
+            (obj as UtxoSignedTransactionImpl).wireTransaction,
             obj.signatures
         )
     }
 
-    override fun fromProxy(proxy: ConsensualSignedTransactionProxy): ConsensualSignedTransaction {
-        if (proxy.version == ConsensualSignedTransactionVersion.VERSION_1) {
-            return ConsensualSignedTransactionImpl(
+    override fun fromProxy(proxy: UtxoSignedTransactionProxy): UtxoSignedTransaction {
+        if (proxy.version == UtxoSignedTransactionVersion.VERSION_1) {
+            return UtxoSignedTransactionImpl(
                 serializationService,
                 signingService,
                 digitalSignatureVerificationService,
@@ -56,30 +55,30 @@ class ConsensualSignedTransactionSerializer @Activate constructor(
                 proxy.signatures
             )
         }
-        throw CordaRuntimeException("Unable to create ConsensualSignedTransaction with Version='${proxy.version}'")
+        throw CordaRuntimeException("Unable to create UtxoSignedTransaction with Version='${proxy.version}'")
     }
 }
 
 /**
  * The class that actually gets serialized on the wire.
  */
-data class ConsensualSignedTransactionProxy(
+data class UtxoSignedTransactionProxy(
     /**
      * Version of container.
      */
-    val version: ConsensualSignedTransactionVersion,
+    val version: UtxoSignedTransactionVersion,
 
     /**
-     * Properties for Consensual Signed transactions' serialisation.
+     * Properties for Utxo Signed transactions' serialisation.
      */
     val wireTransaction: WireTransaction,
     val signatures: List<DigitalSignatureAndMetadata>
 )
 
 /**
- * Enumeration for ConsensualSignedTransaction version.
+ * Enumeration for UtxoSignedTransaction version.
  */
 @CordaSerializable
-enum class ConsensualSignedTransactionVersion {
+enum class UtxoSignedTransactionVersion {
     VERSION_1
 }
