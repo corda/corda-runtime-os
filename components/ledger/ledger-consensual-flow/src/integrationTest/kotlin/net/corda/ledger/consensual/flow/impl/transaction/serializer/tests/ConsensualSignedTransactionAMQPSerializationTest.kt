@@ -42,7 +42,7 @@ import java.io.NotSerializableException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
-private const val TESTING_CPB = "/META-INF/consensual-state-app.cpb"
+private const val TESTING_CPB = "/META-INF/ledger-consensual-state-app.cpb"
 private const val TIMEOUT_MILLIS = 10000L
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)

@@ -55,7 +55,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
 //    integrationTestImplementation project(":libs:sandbox-types")
-    cpis project(path: ':testing:ledger:ledger-consensual-testkit:consensual-state-app', configuration: 'cordaCPB')
+    cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
 }
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them

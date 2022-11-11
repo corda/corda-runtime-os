@@ -31,7 +31,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 
-private const val TESTING_CPB = "/META-INF/consensual-state-app.cpb"
+private const val TESTING_CPB = "/META-INF/ledger-common-empty-app.cpb"
 private const val TIMEOUT_MILLIS = 10000L
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
