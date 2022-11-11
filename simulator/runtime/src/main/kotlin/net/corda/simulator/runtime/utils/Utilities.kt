@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.utils
 
-import net.corda.simulator.exceptions.NonImplementedAPIException
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
@@ -43,11 +43,13 @@ fun checkAPIAvailability(flow: Flow){
 
         if(it.type.name.startsWith("net.corda.v5")) {
             if (!availableAPIs.contains(it.type)) {
-                throw NonImplementedAPIException(it.type.name)
+                throw NotImplementedError(
+                    "${it.type.name} is not implemented in Simulator for this release"
+                )
             }
         }
         else
-            throw NonImplementedAPIException("Support for Custom Services")
+            throw NotImplementedError("Support for Custom Services is not implemented in Simulator for this release")
     }
 }
 
@@ -58,5 +60,6 @@ private val availableAPIs = listOf(
     MemberLookup::class.java,
     SigningService::class.java,
     DigitalSignatureVerificationService::class.java,
-    PersistenceService::class.java
+    PersistenceService::class.java,
+    SignatureSpecService::class.java
 )

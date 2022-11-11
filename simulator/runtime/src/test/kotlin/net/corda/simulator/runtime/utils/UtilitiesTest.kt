@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.utils
 
-import net.corda.simulator.exceptions.NonImplementedAPIException
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -36,11 +35,11 @@ class UtilitiesTest {
     @Test
     fun `should throw error when non supported service is injected to a flow`(){
         val flow1 = NonImplementedServiceFlow()
-        assertThrows<NonImplementedAPIException>{
+        assertThrows<NotImplementedError>{
             checkAPIAvailability(flow1)
         }
         val flow2 = CustomServiceFlow()
-        assertThrows<NonImplementedAPIException>{
+        assertThrows<NotImplementedError>{
             checkAPIAvailability(flow2)
         }
 
