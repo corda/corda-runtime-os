@@ -55,11 +55,11 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
         val signatureSpecStr = signatureWithMetadata.metadata.properties[SIGNATURE_METADATA_SIGNATURE_SPEC_KEY]
-        require(signatureSpecStr != null) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
+        requireNotNull(signatureSpecStr ) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
         val signatureSpec = SignatureSpec(signatureSpecStr)
 
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
-        require(signatureSpec in compatibleSpecs) {
+        require(signatureSpec.signatureName in compatibleSpecs.map{it.signatureName}) { // TODO SignatureSpec's does not have equal.
             "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
         }
 
