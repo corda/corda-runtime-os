@@ -177,4 +177,11 @@ open class SignatureSpec(
      * Converts a [SignatureSpec] object to a string representation containing the [signatureName].
      */
     override fun toString(): String = signatureName
+
+    override fun equals(other: Any?): Boolean =
+        this === other ||
+        other is SignatureSpec &&
+        other.signatureName == signatureName
+
+    override fun hashCode(): Int = signatureName.hashCode()
 }
