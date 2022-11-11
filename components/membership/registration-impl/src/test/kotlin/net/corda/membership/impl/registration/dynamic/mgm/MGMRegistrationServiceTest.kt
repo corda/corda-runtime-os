@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
@@ -122,6 +124,7 @@ class MGMRegistrationServiceTest {
     }
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY_STRING.toByteArray())
+        on { category } doReturn SESSION_INIT
     }
     private val ecdhKey: PublicKey = mock {
         on { encoded } doReturn ECDH_KEY_STRING.toByteArray()
@@ -129,6 +132,7 @@ class MGMRegistrationServiceTest {
     }
     private val ecdhCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY_STRING.toByteArray())
+        on { category } doReturn PRE_AUTH
     }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
