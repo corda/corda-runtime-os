@@ -41,7 +41,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     @Suspendable
     override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
         val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
-        require(signatureSpec != null) { "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})" }
+        requireNotNull(signatureSpec) { "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})" }
         val signatureMetadata = getSignatureMetadata(signatureSpec)
         val signableData = SignableData(transactionId, signatureMetadata)
         val signature = signingService.sign(
