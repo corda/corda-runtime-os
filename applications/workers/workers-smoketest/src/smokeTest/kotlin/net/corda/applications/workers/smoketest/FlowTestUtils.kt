@@ -173,6 +173,9 @@ fun registerMember(holdingIdentityShortHash: String) {
         assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
         assertWithRetry {
+            // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the RPC worker, but for now this will have to suffice.
             timeout(Duration.ofSeconds(60))
             interval(Duration.ofSeconds(15))
             command { getRegistrationStatus(holdingIdentityShortHash) }

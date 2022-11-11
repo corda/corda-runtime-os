@@ -96,7 +96,7 @@ class MemberOpsServiceProcessor(
             val handler = getHandler(request)
             val response = handler.handle(request.requestContext, request.request)
             val result = MembershipRpcResponse(createResponseContext(request), response)
-            logger.info(
+            logger.debug(
                 "Handled {} for request ID {} with {}",
                 request.request::class.java.name,
                 request.requestContext.requestId,
@@ -133,7 +133,6 @@ class MemberOpsServiceProcessor(
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
-            logger.info("Handling registration request for $holdingIdentity")
             val registrationId = idFactory()
             val result = try {
                 registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())

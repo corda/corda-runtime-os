@@ -223,8 +223,12 @@ class MemberOpsClientImpl @Activate constructor(
 
                 return response.toDto()
             } catch (e: TimeoutException) {
-                // The request timed out, but we did manage to submit it. Assume that this succeeded, but the client
-                // needs to verify the current progress.
+                // The request timed out, but we did manage to submit it to Kafka. This might result in a state change
+                // in the system, but now we cannot tell whether the other side picked the request up. This is not
+                // idempotent (and is equally likely to hit the timeout again on retry anyway), so our best bet is to
+                // return success and get the client to check the registration status.
+                //
+                // This should probably be changed to not use the RPC pattern at all, and instead use an async pattern.
                 logger.debug { "Request $requestId timed out for ${memberRegistrationRequest.holdingIdentityShortHash}" }
                 return RegistrationRequestProgressDto(
                     requestId,

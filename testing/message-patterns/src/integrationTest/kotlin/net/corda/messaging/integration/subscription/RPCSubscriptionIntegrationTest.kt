@@ -338,6 +338,8 @@ class RPCSubscriptionIntegrationTest {
         }
         eventually(10.seconds, 1.seconds) {
             // This should fail, but whether it's due to repartition or something else is indeterminate in this case.
+            // As exactly what happens is timing dependent, we should not try and assert on either type - only that it
+            // does fail.
             assertThrows<CordaRuntimeException> {
                 future.getOrThrow()
             }
