@@ -2,8 +2,9 @@ package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.consensual.FindTransaction
-import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
@@ -21,7 +22,11 @@ class FindTransactionExternalEventFactoryTest {
     @Test
     fun `creates a record containing an ConsensualLedgerRequest with a FindTransaction payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val externalEventContext = ExternalEventContext(
+            "request id",
+            "flow id",
+            KeyValuePairList(emptyList())
+        )
         val transactionId = "1234567890123456"
         val testClock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
 
@@ -36,9 +41,10 @@ class FindTransactionExternalEventFactoryTest {
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
-            ConsensualLedgerRequest(
+            LedgerPersistenceRequest(
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
+                LedgerTypes.CONSENSUAL,
                 FindTransaction(transactionId),
                 externalEventContext
             ),
