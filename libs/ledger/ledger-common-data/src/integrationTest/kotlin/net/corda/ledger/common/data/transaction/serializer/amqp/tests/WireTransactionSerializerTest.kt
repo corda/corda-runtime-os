@@ -1,23 +1,24 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp.tests
 
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.sandbox.SandboxCreationService
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.createExample
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -38,6 +39,9 @@ import java.io.NotSerializableException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
+private const val TESTING_CPB = "/META-INF/ledger-common-empty-app.cpb"
+private const val TIMEOUT_MILLIS = 10000L
+
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -45,20 +49,14 @@ class WireTransactionSerializerTest {
     private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
     @RegisterExtension
-    private val lifecycle = EachTestLifecycle()
+    private val lifecycle = AllTestsLifecycle()
 
-    @InjectService(timeout = 1000)
-    lateinit var digestService: DigestService
+    private lateinit var flowSandboxService: FlowSandboxService
+    private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var wireTransactionFactory: WireTransactionFactory
 
-    @InjectService(timeout = 1000)
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-
-    @InjectService(timeout = 1000)
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
-    private lateinit var emptySandboxGroup: SandboxGroup
-
-    private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
+    private lateinit var sandboxGroup: SandboxGroup
+    private lateinit var internalCustomSerializers: Set<InternalCustomSerializer<out Any>>
 
     @BeforeAll
     fun setUp(
@@ -67,23 +65,31 @@ class WireTransactionSerializerTest {
         @InjectBundleContext
         bundleContext: BundleContext,
         @TempDir
-        testDirectory: Path
+        baseDirectory: Path
 
     ) {
-        sandboxSetup.configure(bundleContext, testDirectory)
+        sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
-            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-            setup.withCleanup {
-                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
-            }
-            wireTransactionSerializer = setup.fetchService(1500)
+            flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
+
+            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
+            val sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
+            sandboxGroup = sandboxGroupContext.sandboxGroup
+
+            jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
+            wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+
+            internalCustomSerializers = sandboxGroupContext.getSandboxSingletonServices()
         }
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also{
-            it.register(wireTransactionSerializer, it)
+            internalCustomSerializers.map{ customSerializer->
+                it.register(customSerializer, it)
+            }
         }
 
     @Throws(NotSerializableException::class)
@@ -97,13 +103,13 @@ class WireTransactionSerializerTest {
     fun `successfully serialize and deserialize a wireTransaction`() {
         // Create sandbox group
         // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(emptySandboxGroup)
-        val factory2 = testDefaultFactory(emptySandboxGroup)
+        val factory1 = testDefaultFactory(sandboxGroup)
+        val factory2 = testDefaultFactory(sandboxGroup)
 
         // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
+        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val wireTransaction = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
+        val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
 
         val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 
