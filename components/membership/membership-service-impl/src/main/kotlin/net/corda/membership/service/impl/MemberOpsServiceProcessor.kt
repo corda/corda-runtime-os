@@ -96,7 +96,7 @@ class MemberOpsServiceProcessor(
             val handler = getHandler(request)
             val response = handler.handle(request.requestContext, request.request)
             val result = MembershipRpcResponse(createResponseContext(request), response)
-            logger.debug(
+            logger.info(
                 "Handled {} for request ID {} with {}",
                 request.request::class.java.name,
                 request.requestContext.requestId,
