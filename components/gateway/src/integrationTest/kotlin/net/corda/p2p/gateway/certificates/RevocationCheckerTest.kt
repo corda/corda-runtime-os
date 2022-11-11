@@ -2,50 +2,51 @@ package net.corda.p2p.gateway.certificates
 
 import net.corda.data.p2p.gateway.certificates.Active
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.data.p2p.gateway.certificates.Revoked
-import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
+import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.Duration
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
 
 class RevocationCheckerTest {
-    private companion object {
-        val futureTimeOut: Duration = Duration.ofSeconds(120)
-        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
-        val topicService = TopicServiceImpl()
-        val rpcTopicService = RPCTopicServiceImpl()
-        val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val messagingConfig = SmartConfigImpl.empty()
-        val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-    }
-    private val revocationChecker = RevocationChecker(subscriptionFactory, messagingConfig, lifecycleCoordinatorFactory)
-    private val sender = publisherFactory.createRPCSender(revocationChecker.subscriptionConfig, messagingConfig)
 
-    @BeforeEach
-    fun setup() {
-        revocationChecker.start()
-        sender.start()
+    private val subscription = mock<RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>>()
+    private val processor = argumentCaptor<RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse>>()
+    private val subscriptionFactory = mock<SubscriptionFactory> {
+        on {
+            createRPCSubscription(
+                any(),
+                any(),
+                processor.capture(),
+            )
+        } doReturn subscription
+    }
+    private val mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
+    }
+    init {
+        RevocationChecker(subscriptionFactory, mock(), mock())
     }
 
     @AfterEach
     fun tearDown() {
-        revocationChecker.close()
-        sender.close()
+        mockDominoTile.close()
     }
 
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
@@ -56,35 +57,36 @@ class RevocationCheckerTest {
 
     @Test
     fun `valid certificate passes validation`() {
-        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL))
-        val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isEqualTo(Active())
+        val result = CompletableFuture<RevocationCheckResponse>()
+        processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL), result)
+        assertThat(result.getOrThrow().status).isEqualTo(Active())
     }
 
     @Test
     fun `corrupeted certificate causes the future to complete exceptionally`() {
-        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(corruptedAliceCert), trustStore, RevocationMode.HARD_FAIL))
-        assertThrows<ExecutionException> { resultFuture.get(5, TimeUnit.SECONDS) }
+        val result = CompletableFuture<RevocationCheckResponse>()
+        processor.firstValue.onNext(RevocationCheckRequest(listOf(corruptedAliceCert), trustStore, RevocationMode.HARD_FAIL), result)
+        assertThrows<ExecutionException> { result.get() }
     }
 
     @Test
     fun `revoked certificate fails validation with HARD FAIL mode`() {
-        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL))
-        val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isInstanceOf(Revoked::class.java)
+        val result = CompletableFuture<RevocationCheckResponse>()
+        processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.HARD_FAIL), result)
+        assertThat(result.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
     @Test
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
-        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL))
-        val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isInstanceOf(Revoked::class.java)
+        val resultFuture = CompletableFuture<RevocationCheckResponse>()
+        processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStore, RevocationMode.SOFT_FAIL), resultFuture)
+        assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
     @Test
     fun `if truststore is wrong validation fails`() {
-        val resultFuture = sender.sendRequest(RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL))
-        val result = resultFuture.getOrThrow(futureTimeOut)
-        assertThat(result.status).isInstanceOf(Revoked::class.java)
+        val resultFuture = CompletableFuture<RevocationCheckResponse>()
+        processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL), resultFuture)
+        assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 }

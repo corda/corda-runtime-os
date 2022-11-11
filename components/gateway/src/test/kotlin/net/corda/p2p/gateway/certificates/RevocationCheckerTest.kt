@@ -1,4 +1,4 @@
-package net.corda.p2p.gateway.messaging.certificates
+package net.corda.p2p.gateway.certificates
 
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
@@ -7,7 +7,6 @@ import net.corda.lifecycle.domino.logic.util.RPCSubscriptionDominoTile
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.certificates.RevocationChecker
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -36,7 +35,9 @@ class RevocationCheckerTest {
         @Suppress("UNCHECKED_CAST")
         (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
     }
-    private val revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock())
+    init {
+        RevocationChecker(subscriptionFactory, mock(), mock())
+    }
 
     @AfterEach
     fun tearDown() {
