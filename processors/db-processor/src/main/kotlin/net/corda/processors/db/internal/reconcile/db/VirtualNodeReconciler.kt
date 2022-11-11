@@ -2,6 +2,7 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -9,6 +10,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import javax.persistence.EntityManagerFactory
 
 class VirtualNodeReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -19,10 +21,29 @@ class VirtualNodeReconciler(
 ) : ReconcilerWrapper {
     companion object {
         private val log = contextLogger()
+        private val dependencies = setOf(
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     }
 
-    private var dbReconciler: DbReconcilerReaderWrapper<HoldingIdentity, VirtualNodeInfo>? = null
+    private var dbReconciler: DbReconcilerReader<HoldingIdentity, VirtualNodeInfo>? = null
     private var reconciler: Reconciler? = null
+
+    private val entityManagerFactory: EntityManagerFactory
+        get() = requireNotNull(_entityManagerFactory) {
+            "An attempt was made to try access an entity manager factory for config " +
+                    "reconciliation before it was initialized."
+        }
+    private var _entityManagerFactory: EntityManagerFactory? = null
+
+    private fun onStatusUp() {
+        _entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+    }
+
+    private fun onStatusDown() {
+        _entityManagerFactory?.close()
+        _entityManagerFactory = null
+    }
 
     override fun close() {
         dbReconciler?.stop()
@@ -36,14 +57,15 @@ class VirtualNodeReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                DbReconcilerReaderWrapper(
+                DbReconcilerReader(
                     coordinatorFactory,
-                    ClusterDbReconcilerReader(
-                        dbConnectionManager,
-                        HoldingIdentity::class.java,
-                        VirtualNodeInfo::class.java,
-                        getAllVirtualNodesDBVersionedRecords
-                    )
+                    HoldingIdentity::class.java,
+                    VirtualNodeInfo::class.java,
+                    dependencies,
+                    ::entityManagerFactory,
+                    getAllVirtualNodesDBVersionedRecords,
+                    ::onStatusUp,
+                    ::onStatusDown
                 ).also {
                     it.start()
                 }

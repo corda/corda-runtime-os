@@ -13,4 +13,14 @@ interface ReconcilerFactory {
         valueClass: Class<V>,
         reconciliationIntervalMs: Long
     ): Reconciler
+
+    @Suppress("LongParameterList")
+    fun <K : Any, V : Any> create(
+        dbReaders: Collection<ReconcilerReader<K, V>>,
+        kafkaReader: ReconcilerReader<K, V>,
+        writer: ReconcilerWriter<K, V>,
+        keyClass: Class<K>,
+        valueClass: Class<V>,
+        reconciliationIntervalMs: Long
+    ): Reconciler
 }

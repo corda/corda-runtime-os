@@ -1,35 +1,149 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
-import java.lang.Exception
+import net.corda.reconciliation.VersionedRecord
+import net.corda.utilities.VisibleForTesting
+import org.slf4j.LoggerFactory
+import java.util.stream.Stream
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 /**
- * Common interface for all [ReconcilerReader] implementations handling DB reads.
+ * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
+ * has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
+ * if an error occurs during the call the exception gets captured and its lifecycle state gets notified with a
+ * [GetRecordsErrorEvent]. Then depending on if the exception is a transient or not its state should be taken to
+ * [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
  */
-interface DbReconcilerReader<K : Any, V : Any> : ReconcilerReader<K, V> {
-    /**
-     * Name used for logging and the lifecycle coordinator.
-     */
-    val name: String
+@Suppress("LongParameterList")
+class DbReconcilerReader<K : Any, V : Any>(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    keyClass: Class<K>,
+    valueClass: Class<V>,
+    private val dependencies: Set<LifecycleCoordinatorName>,
+    private val entityManagerFactoryFactory: () -> EntityManagerFactory,
+    private val doGetAllVersionedRecords: (EntityManager) -> Stream<VersionedRecord<K, V>>,
+    private val onStatusUp: (() -> Unit)? = null,
+    private val onStatusDown: (() -> Unit)? = null,
+    private val onStreamClose: (() -> Unit)? = null
+) : ReconcilerReader<K, V>, Lifecycle {
+
+    private val name = "${DbReconcilerReader::class.java.simpleName}<${keyClass.simpleName}, ${valueClass.simpleName}>"
+
+    private val logger = LoggerFactory.getLogger(name)
+
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName(name)
+
+    private val coordinator = coordinatorFactory.createCoordinator(
+        lifecycleCoordinatorName,
+        ::processEvent
+    )
+
+    private var dependencyRegistration: RegistrationHandle? = null
+
+    @VisibleForTesting
+    internal fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> onStartEvent(coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is GetRecordsErrorEvent -> onGetRecordsErrorEvent(event, coordinator)
+            is StopEvent -> onStopEvent()
+        }
+    }
+
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        dependencyRegistration?.close()
+        dependencyRegistration = coordinator.followStatusChangesByName(dependencies)
+    }
+
+    private fun onStopEvent() {
+        closeResources()
+    }
+
+    private fun onRegistrationStatusChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        if (event.status == LifecycleStatus.UP) {
+            onStatusUp?.invoke()
+            logger.info("Switching to UP")
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } else {
+            logger.info(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
+                        "Switching to ${event.status}"
+            )
+            coordinator.updateStatus(event.status)
+            closeResources()
+        }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
+        logger.warn("Processing a ${GetRecordsErrorEvent::class.java.name}")
+        // TODO CORE-7792  based on exception determine component's next state
+        //  i.e if transient exception or not -> DOWN or ERROR
+//        when (event.exception) {
+//        }
+        // For now just stopping it with errored false
+        coordinator.postEvent(StopEvent())
+    }
 
     /**
-     * Set of dependencies that an implementation on this class must follow lifecycle status of.
+     * [getAllVersionedRecords] is public API for this service i.e. it can be called by other lifecycle services,
+     * therefore it must be guarded from thrown exceptions. No exceptions should escape from it, instead an
+     * event should be scheduled notifying the service about the error. Then the calling service which should
+     * be following this service will get notified of this service's stop event as well.
      */
-    val dependencies: Set<LifecycleCoordinatorName>
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
+        return try {
+            val em = entityManagerFactoryFactory.invoke().createEntityManager()
+            val currentTransaction = em.transaction
+            currentTransaction.begin()
+            doGetAllVersionedRecords(em).onClose {
+                // This class only have access to this em and transaction. This is a read only transaction,
+                // only used for making streaming DB data possible.
+                currentTransaction.rollback()
+                em.close()
+                onStreamClose?.invoke()
+            }
+        } catch (e: Exception) {
+            logger.warn("Error while retrieving records for reconciliation", e)
+            coordinator.postEvent(GetRecordsErrorEvent(e))
+            null
+        }
+    }
 
-    /**
-     * Logic that should run when the reader's lifecycle status is UP.
-     */
-    fun onStatusUp()
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
 
-    /**
-     * Logic that should run when the reader's lifecycle status is DOWN.
-     */
-    fun onStatusDown()
+    override fun start() {
+        logger.info("Starting")
+        coordinator.start()
+    }
 
-    /**
-     * Allows an exception handler to be attached and called in case exception occurs when retrieving versioned records.
-     */
-    fun registerExceptionHandler(exceptionHandler: (e: Exception) -> Unit): AutoCloseable
+    override fun stop() {
+        logger.info("Stopping")
+        coordinator.stop()
+        closeResources()
+    }
+
+    private fun closeResources() {
+        dependencyRegistration?.close()
+        dependencyRegistration = null
+        onStatusDown?.invoke()
+    }
+
+    internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }

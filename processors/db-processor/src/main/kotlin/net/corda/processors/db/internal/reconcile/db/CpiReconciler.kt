@@ -4,11 +4,13 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
+import javax.persistence.EntityManagerFactory
 
 class CpiReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -19,10 +21,30 @@ class CpiReconciler(
 ) : ReconcilerWrapper {
     companion object {
         private val log = contextLogger()
+        private val dependencies = setOf(
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     }
 
-    private var dbReconciler: DbReconcilerReaderWrapper<CpiIdentifier, CpiMetadata>? = null
+    private var dbReconciler: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
     private var reconciler: Reconciler? = null
+
+    private val entityManagerFactory: EntityManagerFactory
+        get() = requireNotNull(_entityManagerFactory) {
+            "An attempt was made to try access an entity manager factory for config " +
+                    "reconciliation before it was initialized."
+        }
+
+    private var _entityManagerFactory: EntityManagerFactory? = null
+
+    private fun onStatusUp() {
+        _entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+    }
+
+    private fun onStatusDown() {
+        _entityManagerFactory?.close()
+        _entityManagerFactory = null
+    }
 
     override fun close() {
         dbReconciler?.stop()
@@ -36,14 +58,15 @@ class CpiReconciler(
 
         if (dbReconciler == null) {
             dbReconciler =
-                DbReconcilerReaderWrapper(
+                DbReconcilerReader(
                     coordinatorFactory,
-                    ClusterDbReconcilerReader(
-                        dbConnectionManager,
-                        CpiIdentifier::class.java,
-                        CpiMetadata::class.java,
-                        getAllCpiInfoDBVersionedRecords
-                    )
+                    CpiIdentifier::class.java,
+                    CpiMetadata::class.java,
+                    dependencies,
+                    ::entityManagerFactory,
+                    getAllCpiInfoDBVersionedRecords,
+                    ::onStatusUp,
+                    ::onStatusDown
                 ).also {
                     it.start()
                 }
