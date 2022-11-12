@@ -1,39 +1,62 @@
 package net.corda.ledger.utxo.flow.impl.test
 
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberService
-import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.io.TempDir
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
+import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
+private const val TESTING_CPB = "/META-INF/ledger-utxo-state-app.cpb"
+private const val TIMEOUT_MILLIS = 10000L
 
-@Component(service = [FlowFiberService::class, SingletonSerializeAsToken::class])
-class TestFlowFiberServiceWithSerializationProxy @Activate constructor(
-    @Reference(service = CipherSchemeMetadata::class) private val schemeMetadata: CipherSchemeMetadata
-) : FlowFiberService, SingletonSerializeAsToken {
-    override fun getExecutingFiber(): FlowFiber {
-        val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer({ }, schemeMetadata)
-        return testFlowFiberServiceWithSerialization.getExecutingFiber()
-    }
-}
-
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 @Suppress("FunctionName")
 class UtxoLedgerServiceTest {
+    @RegisterExtension
+    private val lifecycle = AllTestsLifecycle()
 
-    @InjectService(timeout = 1000)
-    lateinit var utxoLedgerService: UtxoLedgerService
+    private lateinit var flowSandboxService: FlowSandboxService
+    private lateinit var utxoLedgerService: UtxoLedgerService
+
+    @BeforeAll
+    fun setup(
+        @InjectService(timeout = 1000)
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        baseDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, baseDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
+
+            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
+            val sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
+
+            utxoLedgerService = sandboxGroupContext.getSandboxSingletonService()
+        }
+    }
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
