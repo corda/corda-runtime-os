@@ -1,64 +1,13 @@
 package net.corda.ledger.consensual.flow.impl.test
 
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.sandboxgroupcontext.getSandboxSingletonService
-import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import net.corda.testing.sandboxes.testkit.VirtualNodeService
-import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.ledger.consensual.testkit.ConsensualLedgerIntegrationTest
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.io.TempDir
-import org.osgi.framework.BundleContext
-import org.osgi.test.common.annotation.InjectBundleContext
-import org.osgi.test.common.annotation.InjectService
-import org.osgi.test.junit5.context.BundleContextExtension
-import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.file.Path
 
-private const val TESTING_CPB = "/META-INF/ledger-consensual-state-app.cpb"
-private const val TIMEOUT_MILLIS = 10000L
-
-@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
-@TestInstance(PER_CLASS)
-@Suppress("FunctionName")
-class ConsensualLedgerServiceTest {
-    @RegisterExtension
-    private val lifecycle = AllTestsLifecycle()
-
-    private lateinit var flowSandboxService: FlowSandboxService
-    private lateinit var consensualLedgerService: ConsensualLedgerService
-
-    @BeforeAll
-    fun setup(
-        @InjectService(timeout = 1000)
-        sandboxSetup: SandboxSetup,
-        @InjectBundleContext
-        bundleContext: BundleContext,
-        @TempDir
-        baseDirectory: Path
-    ) {
-        sandboxSetup.configure(bundleContext, baseDirectory)
-        lifecycle.accept(sandboxSetup) { setup ->
-            flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
-
-            val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
-            val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
-            val sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
-            setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
-
-            consensualLedgerService = sandboxGroupContext.getSandboxSingletonService()
-        }
-    }
-
+class ConsensualLedgerServiceTest: ConsensualLedgerIntegrationTest() {
     @Test
+    @Suppress("FunctionName")
     fun `getTransactionBuilder should return a Transaction Builder`() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(ConsensualTransactionBuilder::class.java)

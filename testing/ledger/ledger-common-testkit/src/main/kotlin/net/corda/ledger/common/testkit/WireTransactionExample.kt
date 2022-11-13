@@ -10,8 +10,8 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    metadata: TransactionMetadata = minimalTransactionMetadata,
-    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
+    metadata: TransactionMetadata = minimalTransactionMetadata, // todo remove this?
+    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups // todo remove this?
 ): WireTransaction {
     val allGroupLists = listOf(
         listOf(jsonMarshallingService.format(metadata).encodeToByteArray()) // TODO(update with CORE-6890)
