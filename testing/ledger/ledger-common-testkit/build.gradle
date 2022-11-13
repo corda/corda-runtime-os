@@ -1,12 +1,12 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'Corda ledger common test objects'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-ledger-common'

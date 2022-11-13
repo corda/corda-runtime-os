@@ -1,6 +1,5 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'Corda ledger consensual test objects'
