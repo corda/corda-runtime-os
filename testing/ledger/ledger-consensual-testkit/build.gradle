@@ -1,6 +1,5 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'Corda ledger consensual test objects'
@@ -16,12 +15,4 @@ dependencies {
     implementation project(':libs:ledger:ledger-consensual-data')
     api project(':components:ledger:ledger-consensual-flow')
     implementation project(':testing:ledger:ledger-common-testkit')
-
-    api project(':testing:sandboxes')
-    api project(':testing:sandboxes-testkit')
-    implementation project(':components:flow:flow-service')
-    implementation project(':libs:serialization:serialization-checkpoint-api')
-    implementation project(':libs:serialization:serialization-internal')
-    implementation project(':libs:serialization:serialization-amqp')
-    implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 }
