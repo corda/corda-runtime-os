@@ -1,9 +1,9 @@
-pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
-    throw new StopExecutionException("Module '${project.path}' should only contain Java classes")
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
 }
 
-pluginManager.withPlugin('java') {
-    java {
-        withJavadocJar()
+tasks.matching { it.name ==~ 'compile.*Kotlin' }.configureEach {
+    doFirst {
+        throw new InvalidUserCodeException("Module '${project.path}' should only contain Java classes")
     }
 }

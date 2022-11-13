@@ -328,3 +328,29 @@ wrapper {
     gradleVersion = '7.5.1'
     distributionType = Wrapper.DistributionType.BIN
 }
+
+tasks.register('generateMultiModuleDocs', Zip) {
+    description = 'Create mutli module docs Site Jar'
+    group = 'documentation'
+
+    dependsOn dokkaHtmlMultiModule
+    archiveName "corda-api-docs-${project.version}.zip"-
+    from(dokkaHtmlMultiModule.outputDirectory)
+    destinationDir(file("$buildDir/corda-api-docs"))
+}
+
+if (project.hasProperty('publishMultiModulekDocs')) {
+    publishing {
+        publications {
+            dokkaDocs(MavenPublication) {
+                artifact generateMultiModuleDocs
+                artifactId "corda-api-docs"
+                groupId 'net.corda'
+            }
+        }
+    }
+
+    artifactoryPublish {
+        publications('dokkaDocs')
+    }
+}
