@@ -8,6 +8,8 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
 abstract class ConsensualLedgerIntegrationTest: CommonLedgerIntegrationTest() {
+    override val testingCpb = "/META-INF/ledger-consensual-state-app.cpb"
+
     lateinit var consensualSignedTransactionFactory: ConsensualSignedTransactionFactory
     lateinit var consensualLedgerService: ConsensualLedgerService
     lateinit var consensualSignedTransaction: ConsensualSignedTransaction

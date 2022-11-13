@@ -8,6 +8,7 @@ import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -35,14 +36,15 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.io.NotSerializableException
 import java.nio.file.Path
 
+const val TIMEOUT_MILLIS = 10000L
+
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class CommonLedgerIntegrationTest {
     @RegisterExtension
     val lifecycle = AllTestsLifecycle()
 
-    val TESTING_CPB = "/META-INF/ledger-consensual-state-app.cpb"
-    val TIMEOUT_MILLIS = 10000L
+    open val testingCpb = "/META-INF/ledger-common-empty-app.cpb"
 
     val testSerializationContext = AMQP_STORAGE_CONTEXT
 
@@ -50,6 +52,7 @@ abstract class CommonLedgerIntegrationTest {
     lateinit var sandboxGroupContext: SandboxGroupContext
     lateinit var jsonMarshallingService: JsonMarshallingService
     lateinit var wireTransactionFactory: WireTransactionFactory
+    lateinit var wireTransaction: WireTransaction
     lateinit var kryoSerializer: CheckpointSerializer
     lateinit var sandboxGroup: SandboxGroup
     lateinit var internalCustomSerializers: Set<InternalCustomSerializer<out Any>>
@@ -71,7 +74,7 @@ abstract class CommonLedgerIntegrationTest {
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
 
         val virtualNode = setup.fetchService<net.corda.testing.sandboxes.testkit.VirtualNodeService>(TIMEOUT_MILLIS)
-        val virtualNodeInfo = virtualNode.loadVirtualNode(TESTING_CPB)
+        val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
         sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
         setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
         sandboxGroup = sandboxGroupContext.sandboxGroup
@@ -83,6 +86,7 @@ abstract class CommonLedgerIntegrationTest {
 
         internalCustomSerializers = sandboxGroupContext.getSandboxSingletonServices()
 
+        wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
     }
 
     fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
