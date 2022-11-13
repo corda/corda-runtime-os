@@ -121,7 +121,7 @@ class FilteredTransactionImpl(
             ?.merkleProof
             ?.leaves
             ?.filterIndexed{index, _ -> index > 0 }
-            ?.map { it.index to it.leafData }
+            ?.map { it.index - 1 to it.leafData }
     }
 
     private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {

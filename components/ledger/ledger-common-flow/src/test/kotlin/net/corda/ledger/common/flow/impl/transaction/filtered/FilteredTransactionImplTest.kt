@@ -595,21 +595,22 @@ class FilteredTransactionImplTest {
         )
         val metadataBytes = metadataJson.encodeToByteArray()
         val indexedMerkleLeafs = listOf(
-            indexedMerkleLeaf(0, byteArrayOf(1)),
-            indexedMerkleLeaf(1, byteArrayOf(1, 2)),
-            indexedMerkleLeaf(2, byteArrayOf(3))
+            indexedMerkleLeaf(0),
+            indexedMerkleLeaf(1, byteArrayOf(1)),
+            indexedMerkleLeaf(2, byteArrayOf(1, 2)),
+            indexedMerkleLeaf(3, byteArrayOf(3))
         )
-        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataBytes)))
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0), indexedMerkleLeaf(1, metadataBytes)))
         whenever(filteredComponentGroup1Proof.leaves).thenReturn(indexedMerkleLeafs)
 
         assertArrayEquals(metadataBytes, filteredTransaction.getComponentGroupContent(0)!!.single().second)
         filteredTransaction.getComponentGroupContent(1)!!.let {
-            assertEquals(indexedMerkleLeafs[0].index, it[0].first)
-            assertEquals(indexedMerkleLeafs[1].index, it[1].first)
-            assertEquals(indexedMerkleLeafs[2].index, it[2].first)
-            assertArrayEquals(indexedMerkleLeafs[0].leafData, it[0].second)
-            assertArrayEquals(indexedMerkleLeafs[1].leafData, it[1].second)
-            assertArrayEquals(indexedMerkleLeafs[2].leafData, it[2].second)
+            assertEquals(indexedMerkleLeafs[1].index - 1, it[0].first)
+            assertEquals(indexedMerkleLeafs[2].index - 1, it[1].first)
+            assertEquals(indexedMerkleLeafs[3].index - 1, it[2].first)
+            assertArrayEquals(indexedMerkleLeafs[1].leafData, it[0].second)
+            assertArrayEquals(indexedMerkleLeafs[2].leafData, it[1].second)
+            assertArrayEquals(indexedMerkleLeafs[3].leafData, it[2].second)
         }
     }
 
