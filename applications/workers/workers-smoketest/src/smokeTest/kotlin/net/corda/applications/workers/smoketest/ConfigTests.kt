@@ -27,7 +27,7 @@ class ConfigTests {
 
     @Test
     fun `can update config`() {
-        var currentValue = getCurrentReconConfigValue(false)
+        var currentValue = getCurrentReconConfigValue(true)
         val newValue = (currentValue * 2)
         updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
 
