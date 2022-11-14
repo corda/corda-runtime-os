@@ -1,11 +1,5 @@
 package net.corda.messaging.integration.subscription
 
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -49,6 +43,12 @@ import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class RPCSubscriptionIntegrationTest {
