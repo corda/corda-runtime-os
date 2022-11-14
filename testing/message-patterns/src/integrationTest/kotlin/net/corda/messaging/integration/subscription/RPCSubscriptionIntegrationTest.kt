@@ -1,6 +1,7 @@
 package net.corda.messaging.integration.subscription
 
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -17,6 +18,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -36,6 +38,7 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -322,22 +325,34 @@ class RPCSubscriptionIntegrationTest {
 
         rpcSender.start()
         rpcSub.start()
+
+        //Ensure the sender has been started and is able to send, therefore proving it is assigned partitions
         var attempts = 5
         var messageSent = false
-        var future = CompletableFuture<String>()
+        var initialSetupFuture: CompletableFuture<String>
+        var initialSetupFutureResult: String? = null
         while (!messageSent && attempts > 0) {
             attempts--
             try {
-                future = rpcSender.sendRequest("REQUEST")
+                initialSetupFuture = rpcSender.sendRequest("PLEASE RESPOND")
+                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(5))
                 messageSent = true
-                rpcSender.close()
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: Exception) {
+                if (attempts == 0) {
+                    fail("Failed to get initial partition assignment")
+                }
                 Thread.sleep(2000)
             }
         }
+        assertThat(initialSetupFutureResult).isNotNull
+
+        //trigger new send and then trigger repartition
+        val sendRequest = rpcSender.sendRequest("DONT RESPOND")
+        rpcSender.close()
+
         eventually(10.seconds, 1.seconds) {
-            assertThrows<CordaRPCAPISenderException> {
-                future.getOrThrow()
+            assertThrows<CordaRPCAPIPartitionException> {
+                sendRequest.getOrThrow()
             }
         }
         rpcSub.close()

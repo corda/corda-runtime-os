@@ -9,6 +9,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
@@ -17,8 +18,6 @@ import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -67,10 +66,7 @@ class UtxoSignedTransactionAMQPSerializationTest {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @InjectService(timeout = 1000)
-    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
-
-    @InjectService(timeout = 1000)
-    lateinit var signingService: SigningService
+    lateinit var transactionSignatureService: TransactionSignatureService
 
     private lateinit var emptySandboxGroup: SandboxGroup
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
@@ -146,8 +142,7 @@ class UtxoSignedTransactionAMQPSerializationTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService,
-            digitalSignatureVerificationService
+            transactionSignatureService
         )
         val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
 
