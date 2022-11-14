@@ -27,7 +27,7 @@ class ConfigTests {
     @Test
     fun `can update config`() {
         var currentValue = getCurrentReconConfigValue()
-        val newValue = (currentValue * 1.5).toInt()
+        val newValue = (currentValue * 2)
         updateConfig(mapOf(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES to newValue).toJsonString(), MEMBERSHIP_CONFIG)
 
         try {
