@@ -3,8 +3,10 @@ package net.corda.membership.lib.impl
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
+import net.corda.membership.lib.NOTARIES_KEY
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.NotaryInfo
 import java.time.Instant
 
 class GroupParametersImpl(
@@ -23,6 +25,9 @@ class GroupParametersImpl(
 
     override val epoch: Int
         get() = map.parse(EPOCH_KEY, Int::class.java)
+
+    override val notaries: List<NotaryInfo>
+        get() = map.parseList(NOTARIES_KEY, NotaryInfo::class.java)
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is GroupParametersImpl) return false

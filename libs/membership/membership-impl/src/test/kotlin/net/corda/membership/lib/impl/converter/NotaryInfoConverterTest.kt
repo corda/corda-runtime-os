@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.converter
+package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.crypto.impl.converter.PublicKeyConverter
@@ -7,7 +7,7 @@ import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.ledger.common.NotaryInfo
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test

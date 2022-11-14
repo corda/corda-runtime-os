@@ -15,6 +15,7 @@ const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
 const val EPOCH_KEY = "corda.epoch"
 const val MPV_KEY = "corda.minimumPlatformVersion"
 const val MODIFIED_TIME_KEY = "corda.modifiedTime"
+const val NOTARIES_KEY = "corda.notary.service"
 
 private val clock = UTCClock()
 private val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()

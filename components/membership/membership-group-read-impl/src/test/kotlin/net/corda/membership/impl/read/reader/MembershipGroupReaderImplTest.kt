@@ -13,6 +13,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
@@ -38,8 +41,9 @@ class MembershipGroupReaderImplTest {
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
     }
+    private val groupParameters: GroupParameters = mock()
     private val groupParametersReaderService: GroupParametersReaderService = mock {
-        on { get(eq(aliceIdGroup1)) } doReturn mock()
+        on { get(eq(aliceIdGroup1)) } doReturn groupParameters
     }
     private val mockLedgerKey: PublicKey = mock()
     private val mockLedgerKeyAsByteArray = "1234".toByteArray()
@@ -192,6 +196,7 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `group parameters are returned as expected`() {
-        assertThat(membershipGroupReaderImpl.groupParameters).isNotNull
+        assertThat(membershipGroupReaderImpl.groupParameters).isEqualTo(groupParameters)
+        verify(groupParametersReaderService.get(eq(aliceIdGroup1)), times(1))
     }
 }
