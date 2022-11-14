@@ -15,4 +15,5 @@ dependencies {
     implementation project(':libs:ledger:ledger-consensual-data')
     api project(':components:ledger:ledger-consensual-flow')
     implementation project(':testing:ledger:ledger-common-testkit')
+    api project(':testing:ledger:ledger-common-base-integrationtest')
 }

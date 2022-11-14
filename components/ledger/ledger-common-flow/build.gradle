@@ -45,6 +45,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    integrationTestImplementation project(':testing:ledger:ledger-common-base-integrationtest')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

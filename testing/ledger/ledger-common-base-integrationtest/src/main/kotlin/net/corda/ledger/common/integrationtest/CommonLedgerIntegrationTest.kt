@@ -1,4 +1,4 @@
-package net.corda.ledger.common.testkit
+package net.corda.ledger.common.integrationtest
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
@@ -10,6 +10,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.createExample
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey

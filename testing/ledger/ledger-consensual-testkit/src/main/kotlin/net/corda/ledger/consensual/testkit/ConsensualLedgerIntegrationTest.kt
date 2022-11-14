@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.testkit
 
-import net.corda.ledger.common.testkit.CommonLedgerIntegrationTest
+import net.corda.ledger.common.integrationtest.CommonLedgerIntegrationTest
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
