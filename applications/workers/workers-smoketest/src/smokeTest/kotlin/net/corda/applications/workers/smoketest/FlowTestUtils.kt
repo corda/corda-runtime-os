@@ -171,6 +171,7 @@ fun registerMember(holdingIdentityShortHash: String) {
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
         assertThat(registrationStatus).isEqualTo("SUBMITTED")
+        val registrationId = membershipJson["registrationRequestId"].textValue()
 
         assertWithRetry {
             // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
@@ -178,7 +179,7 @@ fun registerMember(holdingIdentityShortHash: String) {
             // cache on the RPC worker, but for now this will have to suffice.
             timeout(Duration.ofSeconds(60))
             interval(Duration.ofSeconds(15))
-            command { getRegistrationStatus(holdingIdentityShortHash) }
+            command { getRegistrationStatus(holdingIdentityShortHash, registrationId) }
             condition {
                 it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == "APPROVED"
             }
