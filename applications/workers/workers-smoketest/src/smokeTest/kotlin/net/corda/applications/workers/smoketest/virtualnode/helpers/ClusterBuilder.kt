@@ -111,8 +111,8 @@ class ClusterBuilder {
     fun registerMember(holdingIdShortHash: String) =
         post("/api/v1/membership/$holdingIdShortHash", registerMemberBody())
 
-    fun getRegistrationStatus(holdingIdShortHash: String, requestId: String) =
-        get("/api/v1/membership/$holdingIdShortHash/$requestId")
+    fun getRegistrationStatus(holdingIdShortHash: String) =
+        get("/api/v1/membership/$holdingIdShortHash")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
