@@ -171,7 +171,7 @@ fun registerMember(holdingIdentityShortHash: String) {
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
         assertThat(registrationStatus).isEqualTo("SUBMITTED")
-        val registrationId = membershipJson["registrationRequestId"].textValue()
+        val registrationId = membershipJson["registrationId"].textValue()
 
         assertWithRetry {
             // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
