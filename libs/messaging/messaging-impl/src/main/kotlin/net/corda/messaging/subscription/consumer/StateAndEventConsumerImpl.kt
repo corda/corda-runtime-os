@@ -75,7 +75,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         for (state in states) {
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
-            partitionsSynced.addAll(getSyncedEventPartitions(partitionsToSync))
+            partitionsSynced.addAll(getSyncedEventPartitions(statePartitionsToSync))
         }
 
         if (syncPartitions && partitionsSynced.isNotEmpty()) {
