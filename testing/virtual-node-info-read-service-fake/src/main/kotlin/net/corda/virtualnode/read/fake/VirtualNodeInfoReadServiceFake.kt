@@ -52,12 +52,23 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         map += VirtualNodeInfoReadServiceFakeParser.loadFrom(file).associateBy { it.holdingIdentity }
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReadService> { ev, _ ->
+    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReadService> { ev, c ->
         when (ev) {
-            is StartEvent -> logger.info("StartEvent received.")
-            is StopEvent -> logger.info("StopEvent received.")
-            is ErrorEvent -> logger.info("ErrorEvent ${ev.cause.message}")
-            is RegistrationStatusChangeEvent -> updateCoordinatorStatus(ev.status)
+            is StartEvent -> {
+                logger.info("StartEvent received.")
+                c.updateStatus(LifecycleStatus.UP)
+            }
+            is StopEvent -> {
+                logger.info("StopEvent received.")
+                c.updateStatus(LifecycleStatus.DOWN)
+            }
+            is ErrorEvent -> {
+                logger.info("ErrorEvent ${ev.cause.message}")
+                c.updateStatus(LifecycleStatus.ERROR)
+            }
+            is RegistrationStatusChangeEvent -> {
+                updateCoordinatorStatus(ev.status)
+            }
             else -> logger.info("Other event received $ev")
         }
     }

@@ -1,47 +1,39 @@
-package net.corda.db.persistence.testkit.components.impl
+package net.corda.db.testkit
 
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.sql.DataSource
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
-import net.corda.db.persistence.testkit.components.DataSourceAdmin
 import net.corda.db.schema.CordaDb
-import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.base.util.loggerFor
-import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
-
-private data class NamedDataSource(val id: UUID, val name: String, val dataSource: CloseableDataSource)
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.sql.DataSource
+import kotlin.NoSuchElementException
 
 @Suppress("unused", "TooManyFunctions")
-@Component(service = [ DbConnectionManager::class, DataSourceAdmin::class ])
+@Component(service = [DbConnectionManager::class, TestDbConnectionManagerAdmin::class])
 @ServiceRanking(Int.MAX_VALUE)
-class DbConnectionManagerImpl @Activate constructor(
+class TestDbConnectionManager @Activate constructor(
     @Reference
     private val emff: EntityManagerFactoryFactory,
-    bundleContext: BundleContext
-) : DbConnectionManager, DataSourceAdmin {
-    private val logger = loggerFor<DbConnectionManagerImpl>()
+) : DbConnectionManager, TestDbConnectionManagerAdmin {
+    private val logger = loggerFor<TestDbConnectionManager>()
 
-    private val dataSources = ConcurrentHashMap<UUID, NamedDataSource>()
+    private val createdDataSources = mutableListOf<CloseableDataSource>()
+    private val connectionConfigurations = ConcurrentHashMap<UUID, NamedDataSourceConfiguration>()
     private var smartConfig: SmartConfig? = null
-    private val schemaName: String
-
-    init {
-        schemaName = bundleContext.getProperty("testkit.schema.name") ?: "DUMMY-SCHEMA"
-    }
+    private val schemaName: String = "DUMMY-SCHEMA"
 
     override val isRunning: Boolean
         get() = true
@@ -52,21 +44,24 @@ class DbConnectionManagerImpl @Activate constructor(
 
     @Deactivate
     override fun stop() {
-        dataSources.values.forEach { namedDataSource ->
-            namedDataSource.dataSource.close()
-        }
+        createdDataSources.map { it.connection }.filterNot { it.isClosed }.forEach { it.close() }
         logger.info("Stopped")
     }
 
     override fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
-        return dataSources.computeIfAbsent(id) { dbId ->
-            val configuration = DbUtils.getEntityManagerConfiguration(
-                "testkit-db-manager-db-$schemaName",
+        val connectionConfiguration = connectionConfigurations.computeIfAbsent(id) { dbId ->
+            NamedDataSourceConfiguration(
+                id = dbId,
+                name = name,
+                inMemoryDbName = "testkit-db-manager-db-$schemaName$name",
+                dbUser = "postgres", // Only used for local postgress (if selected)
+                dbPassword = "password", // Only used for local postgress (if selected)
                 schemaName = "$schemaName$name".replace("-", ""),
                 createSchema = true
             )
-            NamedDataSource(dbId, name, configuration.dataSource)
-        }.dataSource
+        }
+
+        return createDataSource(connectionConfiguration)
     }
 
     override fun initialise(config: SmartConfig) {
@@ -134,12 +129,14 @@ class DbConnectionManagerImpl @Activate constructor(
     }
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
-        val source = dataSources[connectionId]
-            ?: throw NoSuchElementException("No DataSource for connectionId=$connectionId")
+        val connectionConfig = checkNotNull(connectionConfigurations[connectionId]) {
+            "connection ID '$connectionId' not found"
+        }
+
         return emff.create(
-            source.name,
+            connectionConfig.name,
             entitiesSet.classes.toList(),
-            DbEntityManagerConfiguration(source.dataSource),
+            DbEntityManagerConfiguration(createDataSource(connectionConfig)),
         )
     }
 
@@ -153,4 +150,26 @@ class DbConnectionManagerImpl @Activate constructor(
     ): CloseableDataSource {
         TODO("Not yet implemented")
     }
+
+    private fun createDataSource(configuration: NamedDataSourceConfiguration): CloseableDataSource {
+        val newConnection = DbUtils.getEntityManagerConfiguration(
+            configuration.inMemoryDbName,
+            configuration.dbUser,
+            configuration.dbPassword,
+            configuration.schemaName,
+            configuration.createSchema
+        )
+
+        return newConnection.dataSource
+    }
+
+    private data class NamedDataSourceConfiguration(
+        val id: UUID,
+        val name: String,
+        val inMemoryDbName: String,
+        val dbUser: String? = null,
+        val dbPassword: String? = null,
+        val schemaName: String? = null,
+        val createSchema: Boolean = false
+    )
 }

@@ -1,0 +1,89 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Token Cache Sync Component"
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(":libs:ledger:ledger-utxo-data")
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:utilities")
+    implementation project(':libs:virtual-node:virtual-node-info')
+
+    runtimeOnly project(':libs:crypto:merkle-impl')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-ledger-utxo"
+    implementation project(":libs:packaging:packaging")
+    implementation "net.corda:corda-topic-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation project(':testing:db-testkit')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+
+    testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestImplementation "net.corda:corda-db-schema"
+
+    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
+    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+
+    integrationTestImplementation project(':components:db:db-connection-manager-impl')
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':libs:ledger:ledger-common-data')
+    integrationTestImplementation project(':libs:serialization:serialization-amqp')
+    integrationTestImplementation project(':libs:serialization:serialization-internal')
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
+    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:test-utilities')
+    integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
+
+    integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

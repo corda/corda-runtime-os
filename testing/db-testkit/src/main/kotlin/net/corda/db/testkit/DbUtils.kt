@@ -57,6 +57,7 @@ object DbUtils {
             TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
                 if(createSchema) {
                     it.dataSource.connection.createSchema(schemaName)
+                    it.dataSource.connection.schema = schemaName
                 }
             }
         }
