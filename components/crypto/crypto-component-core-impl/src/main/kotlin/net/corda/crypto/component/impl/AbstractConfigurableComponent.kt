@@ -34,7 +34,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     private val configKeys: Set<String>
 ) : Lifecycle {
 
-   interface AbstractImpl: AutoCloseable {
+    interface AbstractImpl: AutoCloseable {
         val downstream: DependenciesTracker
         override fun close() {
             downstream.clear()
@@ -83,18 +83,18 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.trace { "Starting..." }
+        logger.trace { "$myName starting..." }
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.trace { "Stopping..." }
+        logger.trace { "$myName stopping..." }
         lifecycleCoordinator.stop()
     }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.trace { "LifecycleEvent received: $event" }
+        logger.trace { "LifecycleEvent received $myName: $event" }
         when (event) {
             is StartEvent -> {
                 upstream.follow(coordinator)
@@ -200,14 +200,14 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             activationFailureCounter.set(0)
             logger.trace { "Activated $myName" }
         } catch (e: FatalActivationException) {
-            logger.error("Failed activate", e)
+            logger.error("$myName failed activate", e)
             coordinator.updateStatus(LifecycleStatus.ERROR)
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug("Failed activate..., will try again", e)
+                logger.debug("$myName failed activate..., will try again", e)
                 coordinator.postEvent(TryAgainCreateActiveImpl(event))
             } else {
-                logger.error("Failed activate, giving up", e)
+                logger.error("$myName failed activate, giving up", e)
                 coordinator.updateStatus(LifecycleStatus.ERROR)
             }
         }
