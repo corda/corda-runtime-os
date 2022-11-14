@@ -41,7 +41,7 @@ class CertificateValidator(
                 }
             })
         } catch (except: CertificateException) {
-            throw InvalidPeerCertificate("Error passing the certificate from a pem file: \n" + except.message)
+            throw InvalidPeerCertificate("Error parsing the certificate from a pem file: \n" + except.message)
         }
         //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
         //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
@@ -51,6 +51,7 @@ class CertificateValidator(
 
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
+        // Revocation checks are performed separately (see checkRevocation() function), here we just validate the certificate chain.
         validateCertPath(certificateChain)
         validateRevocation(certificateChain, pemCertificateChain, pemTrustStore)
     }
@@ -96,9 +97,9 @@ class CertificateValidator(
             } else {
                 null
             }?. let { specificCert ->
-                throw InvalidPeerCertificate("The certificate failed a revocation check (in the gateway): " + status.reason, specificCert)
+                throw InvalidPeerCertificate("The certificate failed a revocation check: " + status.reason, specificCert)
             }
-            throw InvalidPeerCertificate("The certificate failed a revocation check (in the gateway): " + status.reason, x509CertChain)
+            throw InvalidPeerCertificate("The certificate failed a revocation check: " + status.reason, x509CertChain)
         }
     }
 
