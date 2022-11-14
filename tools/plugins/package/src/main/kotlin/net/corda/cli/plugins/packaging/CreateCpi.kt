@@ -203,6 +203,9 @@ class CreateCpi : Runnable {
         cpiJar.closeEntry()
     }
 
+    /**
+     * Validates group policy against schema.
+     */
     private fun validateGroupPolicy(groupPolicy: GroupPolicySource)  {
         val membershipSchemaValidatorFactoryImpl = MembershipSchemaValidatorFactoryImpl()
         val membershipSchemaValidator = membershipSchemaValidatorFactoryImpl.createValidator()
@@ -217,7 +220,7 @@ class CreateCpi : Runnable {
             version = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
         } catch (e: Exception) {
             throw MembershipSchemaValidationException(
-                "Exception when validating membership schema.",
+                "Exception when validating group policy.",
                 e,
                 GroupPolicySchema.Default,
                 listOf("Group policy file is invalid. Could not get file format version. ${e.message}"))
