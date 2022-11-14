@@ -43,7 +43,6 @@ class ConfigTests {
     private fun getReconConfigValue(defaults: Boolean): Int {
         val currentConfig = getConfig(RECONCILIATION_CONFIG)
         val configJSON = if (defaults) { currentConfig.configWithDefaultsNode() } else { currentConfig.sourceConfigNode() }
-        println("configJSON (defaults: $defaults): ${configJSON.toPrettyString()}")
         return configJSON[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
     }
 }
