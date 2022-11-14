@@ -4,9 +4,9 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.membership.event.MembershipEvent
-import net.corda.data.membership.event.registration.MemberRegistrationApproved
-import net.corda.data.membership.event.registration.MgmOnboarded
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -23,6 +23,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.grouppolicy.GroupPolicyProviderImpl.FinishedRegistrationsProcessor
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -30,7 +31,7 @@ import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -52,7 +53,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Captor
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -70,27 +70,27 @@ import java.util.UUID
  * Unit tests for [GroupPolicyProviderImpl]
  */
 class GroupPolicyProviderImplTest {
-    lateinit var groupPolicyProvider: GroupPolicyProviderImpl
+    private lateinit var groupPolicyProvider: GroupPolicyProviderImpl
 
-    val groupIdKey = "groupId"
-    val registrationProtocolKey = "registrationProtocol"
+    private val groupIdKey = "groupId"
+    private val registrationProtocolKey = "registrationProtocol"
 
-    val groupId1 = "ABC123"
-    val groupId2 = "DEF456"
+    private val groupId1 = "ABC123"
+    private val groupId2 = "DEF456"
 
-    val regProtocol1 = "foo"
-    val regProtocol2 = "bar"
-    val regProtocol3 = "baz"
+    private val regProtocol1 = "foo"
+    private val regProtocol2 = "bar"
+    private val regProtocol3 = "baz"
 
-    val alice = MemberX500Name("Alice", "London", "GB")
-    val bob = MemberX500Name("Bob", "London", "GB")
-    val mgm = MemberX500Name("MGM", "London", "GB")
+    private val alice = MemberX500Name("Alice", "London", "GB")
+    private val bob = MemberX500Name("Bob", "London", "GB")
+    private val mgm = MemberX500Name("MGM", "London", "GB")
 
-    val groupPolicy1 = "{\"$registrationProtocolKey\": \"$regProtocol1\", \"$groupIdKey\": \"$groupId1\"}"
-    val groupPolicy2 = "{\"$registrationProtocolKey\": \"$regProtocol2\", \"$groupIdKey\": \"$groupId1\"}"
-    val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
-    val groupPolicy4: String? = null
-    val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
+    private val groupPolicy1 = "{\"$registrationProtocolKey\": \"$regProtocol1\", \"$groupIdKey\": \"$groupId1\"}"
+    private val groupPolicy2 = "{\"$registrationProtocolKey\": \"$regProtocol2\", \"$groupIdKey\": \"$groupId1\"}"
+    private val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
+    private val groupPolicy4: String? = null
+    private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
         on { groupId } doReturn groupId1
@@ -106,35 +106,59 @@ class GroupPolicyProviderImplTest {
     }
     private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
-    val holdingIdentity1 = HoldingIdentity(alice, groupId1)
-    val holdingIdentity2 = HoldingIdentity(bob, groupId1)
-    val holdingIdentity3 = HoldingIdentity(alice, groupId2)
-    val holdingIdentity4 = HoldingIdentity(bob, groupId2)
-    val holdingIdentity5 = HoldingIdentity(mgm, groupId2)
+    private val holdingIdentity1 = HoldingIdentity(alice, groupId1)
+    private val holdingIdentity2 = HoldingIdentity(bob, groupId1)
+    private val holdingIdentity3 = HoldingIdentity(alice, groupId2)
+    private val holdingIdentity4 = HoldingIdentity(bob, groupId2)
+    private val holdingIdentity5 = HoldingIdentity(mgm, groupId2)
 
-    fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
+    private fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
     }
 
-    val cpiMetadata1 = mockMetadata(groupPolicy1)
-    val cpiMetadata2 = mockMetadata(groupPolicy2)
-    val cpiMetadata3 = mockMetadata(groupPolicy3)
-    val cpiMetadata4 = mockMetadata(groupPolicy4)
-    val cpiMetadata5 = mockMetadata(groupPolicy5)
+    private val cpiMetadata1 = mockMetadata(groupPolicy1)
+    private val cpiMetadata2 = mockMetadata(groupPolicy2)
+    private val cpiMetadata3 = mockMetadata(groupPolicy3)
+    private val cpiMetadata4 = mockMetadata(groupPolicy4)
+    private val cpiMetadata5 = mockMetadata(groupPolicy5)
 
-    val cpiIdentifier1: CpiIdentifier = mock()
-    val cpiIdentifier2: CpiIdentifier = mock()
-    val cpiIdentifier3: CpiIdentifier = mock()
-    val cpiIdentifier4: CpiIdentifier = mock()
-    val cpiIdentifier5: CpiIdentifier = mock()
+    private val cpiIdentifier1: CpiIdentifier = mock()
+    private val cpiIdentifier2: CpiIdentifier = mock()
+    private val cpiIdentifier3: CpiIdentifier = mock()
+    private val cpiIdentifier4: CpiIdentifier = mock()
+    private val cpiIdentifier5: CpiIdentifier = mock()
 
-    var virtualNodeListener: VirtualNodeInfoListener? = null
+    private val validPersistentMemberInfo = PersistentMemberInfo(
+        holdingIdentity5.toAvro(),
+        KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    MemberInfoExtension.PARTY_NAME,
+                    holdingIdentity5.x500Name.toString(),
+                ),
+            ),
+        ),
+        KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    MemberInfoExtension.IS_MGM,
+                    "true",
+                ),
+                KeyValuePair(
+                    MemberInfoExtension.STATUS,
+                    MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                ),
+            ),
+        ),
+    )
 
-    fun createVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
+    private var virtualNodeListener: VirtualNodeInfoListener? = null
+
+    private fun createVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
         holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now()
     )
 
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(holdingIdentity1)) } doReturn createVirtualNodeInfo(holdingIdentity1, cpiIdentifier1)
         on { get(eq(holdingIdentity2)) } doReturn createVirtualNodeInfo(holdingIdentity2, cpiIdentifier2)
         on { get(eq(holdingIdentity3)) } doReturn createVirtualNodeInfo(holdingIdentity3, cpiIdentifier3)
@@ -146,7 +170,7 @@ class GroupPolicyProviderImplTest {
         }
     }
 
-    val cpiInfoReader: CpiInfoReadService = mock {
+    private val cpiInfoReader: CpiInfoReadService = mock {
         on { get(cpiIdentifier1) } doReturn cpiMetadata1
         on { get(cpiIdentifier2) } doReturn cpiMetadata2
         on { get(cpiIdentifier3) } doReturn cpiMetadata3
@@ -165,7 +189,7 @@ class GroupPolicyProviderImplTest {
     )
     private val dependencyServiceRegistration: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
-    private val subscription: Subscription<String, MembershipEvent> = mock()
+    private val subscription: CompactedSubscription<String, PersistentMemberInfo> = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on {
             followStatusChangesByName(
@@ -181,7 +205,7 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
     private val subscriptionFactory: SubscriptionFactory = mock {
-        on { createDurableSubscription(any(), any<FinishedRegistrationsProcessor>(), any(), eq(null)) } doReturn subscription
+        on { createCompactedSubscription(any(), any<FinishedRegistrationsProcessor>(), any()) } doReturn subscription
     }
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
     private val properties = layeredPropertyMapFactory.createMap(emptyMap())
@@ -550,7 +574,11 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         groupPolicyProvider.FinishedRegistrationsProcessor() {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap()
+            )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
@@ -565,7 +593,11 @@ class GroupPolicyProviderImplTest {
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
@@ -579,7 +611,11 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
         // returns from cache
@@ -589,7 +625,11 @@ class GroupPolicyProviderImplTest {
         // on new event we will fail parsing
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
 
         // previous value was rmeoved from cache, hence re-calculating
@@ -605,11 +645,19 @@ class GroupPolicyProviderImplTest {
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
         groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
-            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+            .onNext(
+                Record("", "", validPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
     }
 
@@ -791,7 +839,7 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `registerListener will call the call back when new MGM is created`() {
         val processor = argumentCaptor<FinishedRegistrationsProcessor>()
-        whenever(subscriptionFactory.createDurableSubscription(any(), processor.capture(), any(), anyOrNull())).doReturn(subscription)
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
         var holdingIdentity: HoldingIdentity? = null
         var groupPolicy: GroupPolicy? = null
         groupPolicyProvider.registerListener("test") { id, gp ->
@@ -801,16 +849,41 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        processor.firstValue.onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+        processor.firstValue.onNext(
+            Record("", "", validPersistentMemberInfo),
+            null,
+            emptyMap()
+        )
 
         assertThat(holdingIdentity).isEqualTo(holdingIdentity5)
         assertThat(groupPolicy).isEqualTo(parsedMgmGroupPolicy)
     }
 
     @Test
-    fun `registerListener will not call the call back for other events`() {
+    fun `registerListener will call the call back when a snapshot is received`() {
         val processor = argumentCaptor<FinishedRegistrationsProcessor>()
-        whenever(subscriptionFactory.createDurableSubscription(any(), processor.capture(), any(), anyOrNull())).doReturn(subscription)
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var holdingIdentity: HoldingIdentity? = null
+        var groupPolicy: GroupPolicy? = null
+        groupPolicyProvider.registerListener("test") { id, gp ->
+            holdingIdentity = id
+            groupPolicy = gp
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onSnapshot(
+            mapOf("" to validPersistentMemberInfo)
+        )
+
+        assertThat(holdingIdentity).isEqualTo(holdingIdentity5)
+        assertThat(groupPolicy).isEqualTo(parsedMgmGroupPolicy)
+    }
+
+    @Test
+    fun `registerListener will not call when the data was not persisted`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
         var called = 0
         groupPolicyProvider.registerListener("test") { _, _ ->
             called++
@@ -819,17 +892,173 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         processor.firstValue.onNext(
-            listOf(
-                Record(
-                    "",
-                    "",
-                    MembershipEvent(
-                        MemberRegistrationApproved(
-                            holdingIdentity2.toAvro()
-                        )
-                    )
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity2.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity2.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
                 )
-            )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not the viewwing member`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity2.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not an MGM`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity5.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "false",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will not call when the member is not active`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createCompactedSubscription(any(), processor.capture(), any())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            Record(
+                "",
+                "",
+                PersistentMemberInfo(
+                    holdingIdentity5.toAvro(),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.PARTY_NAME,
+                                holdingIdentity5.x500Name.toString(),
+                            ),
+                        ),
+                    ),
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                MemberInfoExtension.IS_MGM,
+                                "true",
+                            ),
+                            KeyValuePair(
+                                MemberInfoExtension.STATUS,
+                                MemberInfoExtension.MEMBER_STATUS_PENDING,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            null,
+            emptyMap()
         )
 
         assertThat(called).isZero

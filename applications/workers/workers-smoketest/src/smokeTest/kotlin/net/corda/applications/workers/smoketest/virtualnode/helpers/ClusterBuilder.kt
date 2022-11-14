@@ -60,7 +60,7 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/$usage/cluster", resourceName, alias)
+        uploadCertificateResource("/api/v1/certificates/cluster/$usage", resourceName, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
