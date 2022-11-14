@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALG
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
+import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
@@ -127,7 +128,7 @@ class FilteredTransactionImpl(
     private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {
         val digestSettings = metadata.getDigestSettings()
         return merkleTreeProvider.createHashDigestProvider(
-            merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME, // TODO should come from meta eventually
+            merkleTreeHashDigestProviderName = digestSettings[ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY] as String,
             DigestAlgorithmName(digestSettings[ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY] as String),
             options = mapOf(
                 HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to Base64.getDecoder()
