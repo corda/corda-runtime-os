@@ -17,6 +17,7 @@ import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
+import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
@@ -44,7 +45,7 @@ class ConsensualSignedTransactionImpl(
         }
     }
 
-    override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash
         get() = wireTransaction.id

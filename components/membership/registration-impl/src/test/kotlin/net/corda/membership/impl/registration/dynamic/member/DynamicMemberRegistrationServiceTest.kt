@@ -4,6 +4,10 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
@@ -146,6 +150,7 @@ class DynamicMemberRegistrationServiceTest {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY.toByteArray())
         on { id } doReturn "1"
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
+        on { category } doReturn SESSION_INIT
     }
     private val ledgerKey: PublicKey = mock {
         on { encoded } doReturn LEDGER_KEY.toByteArray()
@@ -154,6 +159,7 @@ class DynamicMemberRegistrationServiceTest {
         on { publicKey } doReturn ByteBuffer.wrap(LEDGER_KEY.toByteArray())
         on { id } doReturn "2"
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
+        on { category } doReturn LEDGER
     }
     private val notaryKey: PublicKey = mock {
         on { encoded } doReturn NOTARY_KEY.toByteArray()
@@ -162,6 +168,7 @@ class DynamicMemberRegistrationServiceTest {
         on { publicKey } doReturn ByteBuffer.wrap(NOTARY_KEY.toByteArray())
         on { id } doReturn NOTARY_KEY_ID
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
+        on { category } doReturn NOTARY
     }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
@@ -465,6 +472,28 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
+        fun `registration fails if ledger key has the wrong category`() {
+            whenever(ledgerCryptoSigningKey.category).doReturn(PRE_AUTH)
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, context)
+
+            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+        }
+
+        @Test
+        fun `registration fails if session key has the wrong category`() {
+            whenever(sessionCryptoSigningKey.category).doReturn(LEDGER)
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, context)
+
+            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+        }
+
+        @Test
         fun `registration fails if the registration context doesn't match the schema`() {
             postConfigChangedEvent()
             val err = "ERROR-MESSAGE"
@@ -584,6 +613,23 @@ class DynamicMemberRegistrationServiceTest {
             val result = registrationService.register(registrationResultId, member, testProperties)
 
             assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+        }
+
+        @Test
+        fun `registration fails when notary keys has the wrong category`() {
+            whenever(notaryCryptoSigningKey.category).doReturn(SESSION_INIT)
+            postConfigChangedEvent()
+            val testProperties =
+                context + mapOf(
+                    "corda.roles.0" to "notary",
+                    "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+                )
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, testProperties)
+
+            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
         }
 
         @Test

@@ -7,6 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -48,7 +49,7 @@ interface ConfigRPCOps : RpcOps {
                 match the version stored in the database for the corresponding section or -1 if this is a new section 
                 for which no configuration has yet been stored.""")
         request: UpdateConfigParameters
-    ): UpdateConfigResponse
+    ): ResponseEntity<UpdateConfigResponse>
 
     /**
      * Get the configuration data the cluster is set with for a specific [section].
