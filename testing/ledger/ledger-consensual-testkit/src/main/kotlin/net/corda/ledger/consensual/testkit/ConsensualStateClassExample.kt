@@ -11,11 +11,12 @@ class ConsensualStateClassExample(
 ) : ConsensualState {
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     override fun equals(other: Any?): Boolean =
-        this === other ||
-                other is ConsensualStateClassExample &&
-                other.testField == testField &&
-                other.participants.size == participants.size &&
+        (this === other) || (
+            (other is ConsensualStateClassExample) &&
+                (other.testField == testField) &&
+                (other.participants.size == participants.size) &&
                 other.participants.containsAll(participants)
+            )
 
     override fun hashCode(): Int = Objects.hash(testField, participants)
 }
