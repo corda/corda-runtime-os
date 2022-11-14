@@ -174,9 +174,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
                 .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
+                ?: return RegistrationStatusResponse(null)
             val response = membershipQueryClient.queryRegistrationRequestStatus(
                 viewOwningIdentity = holdingIdentity,
                 registrationId = request.requestId
