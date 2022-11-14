@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.testkit
 
-import net.corda.ledger.common.integrationtest.CommonLedgerIntegrationTest
+import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup

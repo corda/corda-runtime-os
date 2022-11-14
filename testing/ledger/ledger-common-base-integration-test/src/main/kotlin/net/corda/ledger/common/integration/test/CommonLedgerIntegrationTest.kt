@@ -1,4 +1,4 @@
-package net.corda.ledger.common.integrationtest
+package net.corda.ledger.common.integration.test
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl

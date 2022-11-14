@@ -1,7 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo.tests
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.integrationtest.CommonLedgerIntegrationTest
+import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -15,5 +15,5 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':testing:ledger:ledger-common-testkit')
-    api project(':testing:ledger:ledger-common-base-integrationtest')
+    api project(':testing:ledger:ledger-common-base-integration-test')
 }
