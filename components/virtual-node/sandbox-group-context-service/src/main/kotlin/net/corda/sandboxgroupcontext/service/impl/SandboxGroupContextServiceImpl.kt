@@ -13,7 +13,9 @@ import java.util.TreeMap
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
+import net.corda.sandbox.CORDA_SYSTEM
 import net.corda.sandbox.RequireSandboxHooks
+import net.corda.sandbox.RequireCordaSystem
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -45,6 +47,7 @@ import org.osgi.framework.ServicePermission
 import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServiceReference
 import org.osgi.framework.ServiceRegistration
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -67,6 +70,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
 @Component(service = [ SandboxGroupContextService::class ])
 @RequireSandboxCrypto
 @RequireSandboxHooks
+@RequireCordaSystem
 class SandboxGroupContextServiceImpl @Activate constructor(
     @Reference
     private val sandboxCreationService: SandboxCreationService,
@@ -203,6 +207,19 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     }
 
     /**
+     * Determine all bundles which the OSGi framework has wired to
+     * this bundle's "corda.system" requirement, which means they
+     * must all advertise a compatible "corda.system" capability.
+     */
+    private fun getCordaSystemBundles(sandboxGroupType: SandboxGroupType): Set<Bundle> {
+        return bundleContext.bundle.adapt(BundleWiring::class.java).getRequiredWires(CORDA_SYSTEM)
+            ?.filter { it.capability.attributes[CORDA_SYSTEM] == sandboxGroupType.toString() }
+            ?.mapTo(linkedSetOf()) { wire ->
+                wire.provider.bundle
+            } ?: emptySet()
+    }
+
+    /**
      * Locate suitable "prototype-scope" OSGi services to instantiate inside
      * the sandbox. We assume that the OSGi isolation hooks protect us from
      * finding any pre-existing services inside the sandbox itself.
@@ -217,8 +234,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         // Access control context for the sandbox's "main" bundles.
         // All "main" bundles are assumed to have equal access rights.
         val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
+
+        val sandboxGroupType = vnc.sandboxGroupType
+        val sandboxBundles = bundles + getCordaSystemBundles(sandboxGroupType)
+
+        val serviceMarkerType = sandboxGroupType.serviceMarkerType
         val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
-        val serviceMarkerType = vnc.sandboxGroupType.serviceMarkerType
         bundleContext.getServiceReferences(serviceMarkerType, serviceFilter).forEach { serviceRef ->
             try {
                 serviceRef.serviceClassNames
@@ -231,7 +252,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                             serviceRef.loadCommonService(serviceType)
                         } else if (accessControlContext.checkServicePermission(serviceType)) {
                             // Only accept those service types for which this sandbox also has a bundle wiring.
-                            bundles.loadCommonService(serviceType)
+                            sandboxBundles.loadCommonService(serviceType)
                         } else {
                             logger.debug("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
                             null

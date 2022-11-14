@@ -7,10 +7,12 @@ import net.corda.sandbox.type.UsedByVerification
 /**
  * Enumeration of various sandbox group types.
  */
-enum class SandboxGroupType(val serviceMarkerType: Class<*>) {
-    FLOW(UsedByFlow::class.java),
-    VERIFICATION(UsedByVerification::class.java),
-    PERSISTENCE(UsedByPersistence::class.java);
+enum class SandboxGroupType(private val typeName: String, val serviceMarkerType: Class<*>) {
+    FLOW("flow", UsedByFlow::class.java),
+    VERIFICATION("verification", UsedByVerification::class.java),
+    PERSISTENCE("persistence", UsedByPersistence::class.java);
+
+    override fun toString(): String = typeName
 
     init {
         require(serviceMarkerType.isInterface) {
