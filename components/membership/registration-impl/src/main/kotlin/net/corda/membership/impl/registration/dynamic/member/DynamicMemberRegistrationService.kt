@@ -3,6 +3,9 @@ package net.corda.membership.impl.registration.dynamic.member
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
@@ -404,16 +407,24 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         @Suppress("NestedBlockDepth")
-        private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
-            with(cryptoOpsClient) {
-                lookup(tenantId, keyIds).apply {
-                    map { it.id }.apply {
-                        keyIds.forEach { keyId ->
-                            if (!contains(keyId)) {
-                                throw IllegalArgumentException("No key found for tenant: $tenantId under $keyId.")
-                            }
-                        }
+        private fun getKeysFromIds(
+            keyIds: List<String>,
+            tenantId: String,
+            expectedCategory: String,
+        ): List<CryptoSigningKey> =
+            cryptoOpsClient.lookup(tenantId, keyIds).also { keys ->
+                val ids = keys.onEach { key ->
+                    if (key.category != expectedCategory) {
+                        throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")
                     }
+                }.map {
+                    it.id
+                }.toSet()
+                val missingKeys = keyIds.filterNot {
+                    ids.contains(it)
+                }
+                if (missingKeys.isNotEmpty()) {
+                    throw IllegalArgumentException("No keys found for tenant: $tenantId under $missingKeys.")
                 }
             }
 
@@ -456,7 +467,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     context.filter {
                         ledgerIdRegex.matches(it.key)
                     }.values.toList(),
-                    tenantId
+                    tenantId,
+                    LEDGER,
                 )
             return ledgerKeys.map {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
@@ -473,7 +485,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
-            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId).first()
+            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId, SESSION_INIT).first()
             val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
@@ -490,7 +502,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 notaryIdRegex.matches(it)
             }.values
                 .toList()
-            return getKeysFromIds(keyIds, tenantId).mapIndexed { index, key ->
+            return getKeysFromIds(keyIds, tenantId, NOTARY).mapIndexed { index, key ->
                 Key(
                     key,
                     context[String.format(NOTARY_KEY_SPEC, index)]

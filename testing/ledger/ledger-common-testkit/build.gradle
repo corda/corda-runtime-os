@@ -8,11 +8,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-ledger-common"
-    implementation "net.corda:corda-cipher-suite"
+    api 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-cipher-suite'
 
-    implementation project(":libs:ledger:ledger-common-data")
-    implementation project(":libs:application:application-impl")
-    implementation project(":libs:serialization:json-validator")
+    implementation project(':libs:ledger:ledger-common-data')
     implementation project(":libs:platform-info")
+    api project(":libs:serialization:json-validator")
+    api project(':libs:application:application-impl')
+    api project(':libs:platform-info')
 }

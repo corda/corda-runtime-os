@@ -5,12 +5,15 @@ import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.simulator.runtime.messaging.ConcurrentFlowMessaging
 import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationService
 import net.corda.simulator.runtime.signing.SimWithJsonSigningService
 import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
+import net.corda.simulator.runtime.utils.checkAPIAvailability
 import net.corda.simulator.runtime.utils.injectIfRequired
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
@@ -53,6 +56,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         keyStore: SimKeyStore
     ) {
         log.info("Injecting services into ${flow.javaClass} for \"$member\"")
+        checkAPIAvailability(flow)
         flow.injectIfRequired(JsonMarshallingService::class.java) { createJsonMarshallingService() }
         flow.injectIfRequired(FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
         flow.injectIfRequired(FlowMessaging::class.java) {
@@ -64,6 +68,12 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         }
         flow.injectIfRequired(DigitalSignatureVerificationService::class.java) { createVerificationService() }
         flow.injectIfRequired(PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
+        flow.injectIfRequired(SignatureSpecService::class.java) { createSpecService() }
+    }
+
+    private fun createSpecService() : SignatureSpecService {
+        log.info("Injecting ${SignatureSpecService::class.java.simpleName}")
+        return OnlyOneSignatureSpecService()
     }
 
     private fun createVerificationService(): DigitalSignatureVerificationService {

@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.testflows
 
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -17,6 +18,9 @@ import net.corda.v5.base.annotations.Suspendable
 
 @InitiatingFlow("hello")
 class HelloFlow : RPCStartableFlow {
+
+    @CordaInject
+    lateinit var signatureSpecService: SignatureSpecService
 
     @CordaInject
     lateinit var flowEngine: FlowEngine

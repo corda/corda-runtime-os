@@ -6,9 +6,9 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.field
@@ -25,8 +25,6 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.toHexString
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -58,8 +56,7 @@ class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    private lateinit var digestService: DigestService
-    private lateinit var merkleTreeProvider: MerkleTreeProvider
+    private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
     private lateinit var serializationService: SerializationService
@@ -87,8 +84,7 @@ class ConsensualLedgerRepositoryTest {
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
-            digestService = ctx.getSandboxSingletonService()
-            merkleTreeProvider = ctx.getSandboxSingletonService()
+            wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
             jsonValidator = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
@@ -337,13 +333,9 @@ class ConsensualLedgerRepositoryTest {
             listOf("group3_component1".toByteArray())
         )
         val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
-        val wireTransaction = WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            jsonValidator,
-            privacySalt,
-            componentGroupLists
+        val wireTransaction = wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
         )
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }

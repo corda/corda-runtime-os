@@ -26,10 +26,9 @@ fun getWireTransactionExample(
     return WireTransaction(
         merkleTreeProvider,
         digestService,
-        jsonMarshallingService,
-        jsonValidator,
         getPrivacySalt(),
-        groups
+        groups,
+        metadata
     )
 }
 
@@ -37,3 +36,4 @@ private val defaultComponentGroups: List<List<ByteArray>> = listOf(
     listOf(".".toByteArray()),
     listOf("abc d efg".toByteArray())
 )
+

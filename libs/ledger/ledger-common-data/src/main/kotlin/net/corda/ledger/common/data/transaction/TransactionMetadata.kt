@@ -9,6 +9,9 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
     operator fun get(key: String): Any? = properties[key]
 
     companion object {
+        const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
+        const val SCHEMA_PATH = "/schema/transaction-metadata.json"
+
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
         const val TRANSACTION_SUBTYPE_KEY = "transactionSubtype"

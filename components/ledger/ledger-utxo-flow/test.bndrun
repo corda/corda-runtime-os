@@ -6,6 +6,7 @@
 
 -runrequires: \
     bnd.identity;id='net.corda.ledger-utxo-flow',\
+    bnd.identity;id='net.corda.ledger-common-flow',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher'

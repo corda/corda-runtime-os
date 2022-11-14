@@ -1,82 +1,31 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.common.json.validation.impl.JsonValidatorImpl
-import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.flow.application.serialization.SerializationServiceImpl
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberService
-import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.ledger.common.testkit.mockPlatformInfoProvider
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoTransactionBuilderFactory
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoTransactionBuilderFactoryImpl
+import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-class TestFlowFiberServiceWithSerializationProxy constructor(
-    private val cipherSchemeMetadata: CipherSchemeMetadata
-) : FlowFiberService, SingletonSerializeAsToken {
-    override fun getExecutingFiber(): FlowFiber {
-        val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer({}, cipherSchemeMetadata)
-        return testFlowFiberServiceWithSerialization.getExecutingFiber()
-    }
-}
-
-class ConsensualLedgerServiceImplTest {
-    private val jsonMarshallingService = JsonMarshallingServiceImpl()
-    private val jsonValidator = JsonValidatorImpl()
-    private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
-    private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val flowFiberService = TestFlowFiberServiceWithSerializationProxy(cipherSchemeMetadata)
-    private val serializationService: SerializationService = SerializationServiceImpl(flowFiberService)
-
-    private val utxoTransactionBuilderFactory: UtxoTransactionBuilderFactory =
-        UtxoTransactionBuilderFactoryImpl(
-            cipherSchemeMetadata,
-            digestService,
-            jsonMarshallingService,
-            jsonValidator,
-            merkleTreeProvider,
-            serializationService,
-            mockSigningService(),
-            mock(),
-            mockPlatformInfoProvider(),
-            flowFiberService
-        )
-
-
+class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = UtxoLedgerServiceImpl(utxoTransactionBuilderFactory)
-        val transactionBuilder = service.getTransactionBuilder()
+        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
         assertIs<UtxoTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = UtxoLedgerServiceImpl(utxoTransactionBuilderFactory)
-        val transactionBuilder = service.getTransactionBuilder()
+        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
         val inputStateAndRef = getUtxoInvalidStateAndRef()
         val referenceStateAndRef = getUtxoInvalidStateAndRef()
