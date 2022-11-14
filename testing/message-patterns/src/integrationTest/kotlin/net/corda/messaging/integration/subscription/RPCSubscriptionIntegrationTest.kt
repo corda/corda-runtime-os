@@ -335,7 +335,7 @@ class RPCSubscriptionIntegrationTest {
             attempts--
             try {
                 initialSetupFuture = rpcSender.sendRequest("PLEASE RESPOND")
-                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(5))
+                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(10))
                 messageSent = true
             } catch (ex: Exception) {
                 if (attempts == 0) {
