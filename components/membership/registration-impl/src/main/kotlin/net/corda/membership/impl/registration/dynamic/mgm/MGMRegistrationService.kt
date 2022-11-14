@@ -1,9 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -41,7 +38,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])

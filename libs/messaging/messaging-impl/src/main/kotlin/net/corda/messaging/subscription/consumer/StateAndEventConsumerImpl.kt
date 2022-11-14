@@ -1,5 +1,9 @@
 package net.corda.messaging.subscription.consumer
 
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -11,10 +15,6 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
@@ -68,10 +68,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
         val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
+        val statePartitionsToSync = partitionsToSync.toMap()
+        if (statePartitionsToSync.isNotEmpty()) {
+            log.info("State consumer in group ${config.group} is syncing partitions: $statePartitionsToSync")
+        }
         for (state in states) {
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
-            partitionsSynced.addAll(getSyncedEventPartitions())
+            partitionsSynced.addAll(getSyncedEventPartitions(partitionsToSync))
         }
 
         if (syncPartitions && partitionsSynced.isNotEmpty()) {
@@ -85,12 +89,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         executor.shutdown()
     }
 
-    private fun getSyncedEventPartitions(): Set<CordaTopicPartition> {
+    private fun getSyncedEventPartitions(statePartitionsToSync: Map<Int, Long>): Set<CordaTopicPartition> {
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
-        val statePartitionsToSync = partitionsToSync.toMap()
-        if (statePartitionsToSync.isNotEmpty()) {
-            log.info("State consumer in group ${config.group} is syncing partitions: $statePartitionsToSync")
-        }
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
             val stateTopic = getStateAndEventStateTopic(config.topic)
