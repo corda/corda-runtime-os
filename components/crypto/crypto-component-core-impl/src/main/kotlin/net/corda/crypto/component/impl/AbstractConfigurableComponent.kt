@@ -204,7 +204,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             coordinator.updateStatus(LifecycleStatus.ERROR)
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug("$myName failed activate..., will try again", e)
+                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
                 coordinator.postEvent(TryAgainCreateActiveImpl(event))
             } else {
                 logger.error("$myName failed activate, giving up", e)

@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -79,7 +80,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                     }
                 }
             }
-            is TryAgainCreateActiveImpl -> {
+            is AbstractConfigurableComponent.TryAgainCreateActiveImpl -> {
                 if(_impl == null) {
                     doActivate(coordinator)
                 } else {
@@ -111,7 +112,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
             return
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug("$myName failed activate..., will try again", e)
+                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
                 coordinator.postEvent(TryAgainCreateActiveImpl())
             } else {
                 logger.error("$myName failed activate, giving up", e)
