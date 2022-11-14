@@ -5,6 +5,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 
 interface EntitySandboxService {
+
     /**
      * Get (or create) the entity (db) sandbox for the given holding identity
      *

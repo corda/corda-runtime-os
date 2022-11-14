@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.transaction
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -17,6 +17,7 @@ import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
+import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
@@ -26,7 +27,6 @@ class ConsensualSignedTransactionImpl(
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
 {
-
     init {
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
@@ -45,7 +45,7 @@ class ConsensualSignedTransactionImpl(
         }
     }
 
-    override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash
         get() = wireTransaction.id

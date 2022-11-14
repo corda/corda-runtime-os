@@ -1,8 +1,14 @@
 package net.corda.libs.platform.impl
 
-import net.corda.libs.platform.PlatformInfoProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.net.URL
+import java.util.Collections
+import java.util.jar.Attributes
 import java.util.jar.Manifest
 
 class PlatformInfoProviderImplTest {
@@ -37,23 +43,41 @@ class PlatformInfoProviderImplTest {
 
     @Test
     fun `local worker software version returns software version from bundle manifest`() {
-        val expectedValue = PlatformInfoProvider::class.java.classLoader
-            .getResource("META-INF/MANIFEST.MF")
-            ?.openStream()
-            ?.use {
-                Manifest(it)
-            }
-            ?.mainAttributes
-            ?.getValue("Bundle-Version")
-
-        assertThat(expectedValue)
-            .isNotNull
-            .withFailMessage("Failed to get expected software version from bundle for assertion.")
+        val urlOne = urlFromManifest(emptyMap())
+        val urlTwo = urlFromManifest(mapOf("Bundle-SymbolicName" to "non"))
+        val urlThree = urlFromManifest(mapOf("Bundle-Version" to "non"))
+        val urlFour = urlFromManifest(mapOf("Bundle-Version" to "version", "Bundle-SymbolicName" to "net.corda.platform-info"))
+        val classLoader = mock<ClassLoader> {
+            on { getResources("META-INF/MANIFEST.MF") } doReturn
+                Collections.enumeration(
+                    listOf(
+                        urlOne,
+                        urlTwo,
+                        urlThree,
+                        urlFour,
+                    )
+                )
+        }
+        val platformVersionService = PlatformInfoProviderImpl(classLoader)
 
         assertThat(
             platformVersionService.localWorkerSoftwareVersion
         ).isEqualTo(
-            expectedValue
+            "version"
         )
+    }
+
+    private fun urlFromManifest(manifest: Map<String, String>): URL {
+        val jarManifest = Manifest()
+        jarManifest.mainAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0")
+        manifest.entries.forEach { (key, value) ->
+            jarManifest.mainAttributes.putValue(key, value)
+        }
+        val output = ByteArrayOutputStream()
+        jarManifest.write(output)
+        val input = ByteArrayInputStream(output.toByteArray())
+        return mock {
+            on { openStream() } doReturn input
+        }
     }
 }

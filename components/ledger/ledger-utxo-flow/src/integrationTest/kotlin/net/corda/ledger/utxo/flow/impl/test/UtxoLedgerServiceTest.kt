@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.flow.impl.test
+package net.corda.ledger.utxo.flow.impl.test
 
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
@@ -30,14 +30,14 @@ class TestFlowFiberServiceWithSerializationProxy @Activate constructor(
 
 @TestInstance(PER_CLASS)
 @Suppress("FunctionName")
-class ConsensualLedgerServiceTest {
+class UtxoLedgerServiceTest {
 
     @InjectService(timeout = 1000)
-    lateinit var consensualLedgerService: UtxoLedgerService
+    lateinit var utxoLedgerService: UtxoLedgerService
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
+        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(UtxoTransactionBuilder::class.java)
     }
 }

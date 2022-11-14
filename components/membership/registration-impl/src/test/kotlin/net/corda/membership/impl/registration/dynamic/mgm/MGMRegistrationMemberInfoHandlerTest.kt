@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -85,6 +88,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     )
     private val publicKey: PublicKey = mock {
         on { encoded } doReturn EMPTY_STRING.toByteArray()
+        on { algorithm } doReturn "EC"
     }
     private val mockMemberContext: MemberContext = mock()
     private val memberInfo: MemberInfo = mock {
@@ -97,19 +101,45 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val mgmContext
         get() = assertDoesNotThrow { mgmContextCaptor.firstValue }
 
-
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerializer
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
-            lookup(eq(holdingIdentity.shortHash.value), any())
+            lookup(
+                eq(holdingIdentity.shortHash.value),
+                argThat {
+                    this.firstOrNull() == ecdhKeyId
+                }
+            )
         } doReturn listOf(
             CryptoSigningKey(
                 EMPTY_STRING,
                 EMPTY_STRING,
+                PRE_AUTH,
                 EMPTY_STRING,
+                EMPTY_STRING,
+                ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                EMPTY_STRING,
+                EMPTY_STRING,
+                0,
+                EMPTY_STRING,
+                Instant.ofEpochSecond(0)
+            )
+        )
+        on {
+            lookup(
+                eq(holdingIdentity.shortHash.value),
+                argThat {
+                    this.firstOrNull() == sessionKeyId
+                }
+            )
+        } doReturn listOf(
+            CryptoSigningKey(
+                EMPTY_STRING,
+                EMPTY_STRING,
+                SESSION_INIT,
                 EMPTY_STRING,
                 EMPTY_STRING,
                 ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
@@ -157,10 +187,13 @@ class MGMRegistrationMemberInfoHandlerTest {
         virtualNodeInfoReadService
     )
 
+    private val ecdhKeyId = "ECDH key"
+    private val sessionKeyId = "session key"
+
     private val validTestContext
         get() = mapOf(
-            SESSION_KEY_ID to "session key",
-            ECDH_KEY_ID to "ECDH key",
+            SESSION_KEY_ID to sessionKeyId,
+            ECDH_KEY_ID to ecdhKeyId,
             REGISTRATION_PROTOCOL to "registration protocol",
             SYNCHRONISATION_PROTOCOL to "synchronisation protocol",
             P2P_MODE to "P2P mode",
@@ -287,7 +320,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         whenever(
             cryptoOpsClient.lookup(
                 eq(holdingIdentity.shortHash.value),
-                eq(listOf(validTestContext[SESSION_KEY_ID]!!))
+                eq(listOf(sessionKeyId))
             )
         ).doReturn(emptyList())
 
@@ -301,7 +334,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
         verify(cryptoOpsClient).lookup(
             eq(holdingIdentity.shortHash.value),
-            eq(listOf(validTestContext[SESSION_KEY_ID]!!))
+            eq(listOf(sessionKeyId))
         )
         verify(keyEncodingService, never()).decodePublicKey(any<ByteArray>())
     }
@@ -384,5 +417,117 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(cordaAvroSerializer).serialize(any())
     }
 
+    @Test
+    fun `non EC algorithm ECDH key will cause an exception`() {
+        val encryptedPublicKey = byteArrayOf(1, 2, 4)
+        val ecdhPublicKey = mock<PublicKey>() {
+            on { encoded } doReturn EMPTY_STRING.toByteArray()
+            on { algorithm } doReturn "RSA"
+        }
+        whenever(
+            cryptoOpsClient.lookup(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    ecdhKeyId
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    PRE_AUTH,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(encryptedPublicKey),
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+        whenever(keyEncodingService.decodePublicKey(encryptedPublicKey)).doReturn(ecdhPublicKey)
 
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersist(
+                registrationId,
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
+
+    @Test
+    fun `session key with the wrong category will cause an exception`() {
+        whenever(
+            cryptoOpsClient.lookup(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    sessionKeyId
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    PRE_AUTH,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersist(
+                registrationId,
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
+
+    @Test
+    fun `ECDH key with the wrong category will cause an exception`() {
+        whenever(
+            cryptoOpsClient.lookup(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    ecdhKeyId
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    SESSION_INIT,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersist(
+                registrationId,
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
 }

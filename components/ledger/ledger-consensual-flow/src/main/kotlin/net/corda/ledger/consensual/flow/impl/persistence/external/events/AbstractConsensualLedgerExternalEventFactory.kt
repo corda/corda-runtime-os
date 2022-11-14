@@ -1,7 +1,8 @@
 package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
@@ -26,11 +27,12 @@ abstract class AbstractConsensualLedgerExternalEventFactory<PARAMETERS : Any>(
     ): ExternalEventRecord {
         return ExternalEventRecord(
             topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
-            payload = ConsensualLedgerRequest.newBuilder()
+            payload = LedgerPersistenceRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(createRequest(parameters))
                 .setFlowExternalEventContext(flowExternalEventContext)
+                .setLedgerType(LedgerTypes.CONSENSUAL)
                 .build()
         )
     }

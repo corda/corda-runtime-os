@@ -60,6 +60,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -326,11 +327,11 @@ class MemberRegistrationIntegrationTest {
                 .publicKeyId()
         return mapOf(
             "corda.session.key.id" to sessionKeyId,
-            "corda.session.key.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
+            "corda.session.key.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
+            "corda.ledger.keys.0.signature.spec" to SignatureSpec.ECDSA_SHA512.signatureName,
         )
     }
 

@@ -2,8 +2,8 @@ package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -44,7 +44,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     @BeforeEach
     fun setup() {
         consensualLedgerPersistenceService = ConsensualLedgerPersistenceServiceImpl(
-                externalEventExecutor, serializationService, signingService, digitalSignatureVerificationService
+            externalEventExecutor, serializationService, signingService, digitalSignatureVerificationService
         )
 
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
@@ -64,7 +64,12 @@ class ConsensualLedgerPersistenceServiceImplTest {
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
-        assertThat(consensualLedgerPersistenceService.persist(transaction, TransactionStatus.VERIFIED)).isEqualTo(listOf(expectedObj))
+        assertThat(
+            consensualLedgerPersistenceService.persist(
+                transaction,
+                TransactionStatus.VERIFIED
+            )
+        ).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
         verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
@@ -83,8 +88,8 @@ class ConsensualLedgerPersistenceServiceImplTest {
             signatures
         )
         val testId = SecureHash.parse("SHA256:1234567890123456")
-        whenever(serializationService.deserialize<ConsensualSignedTransactionContainer>(any<ByteArray>(), any()))
-            .thenReturn(ConsensualSignedTransactionContainer(wireTransaction, signatures))
+        whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
+            .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 
         assertThat(consensualLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 
