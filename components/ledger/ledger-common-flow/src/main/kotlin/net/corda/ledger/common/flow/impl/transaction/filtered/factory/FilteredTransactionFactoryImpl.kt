@@ -68,7 +68,11 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     ): FilteredComponentGroup {
 
         val componentGroupIndex = parameters.componentGroupIndex
-        val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
+
+        val componentGroup =
+            requireNotNull(wireTransaction.componentMerkleTrees[componentGroupIndex]?.leaves) {
+                "Component group at index $componentGroupIndex does not exist"
+            }
 
         val componentGroupMerkleTreeDigestProvider = wireTransaction.getComponentGroupMerkleTreeDigestProvider(
             wireTransaction.privacySalt,
@@ -82,8 +86,8 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
-                    .filter { (_, component) ->
-                        skipFiltering || filter.test(
+                    .filter { (index, component) ->
+                        skipFiltering || index == 0 || filter.test(
                             serializationService.deserialize(
                                 component,
                                 parameters.deserializedClass
@@ -92,7 +96,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                     }
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
-                    merkleTree.createAuditProof(listOf(0) + filteredComponents.map { (index, _) -> index + 1 })
+                    merkleTree.createAuditProof(filteredComponents.map { (index, _) -> index })
                 }
             }
             is ComponentGroupFilterParameters.SizeProof -> {

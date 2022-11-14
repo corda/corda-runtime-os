@@ -120,7 +120,7 @@ class FilteredTransactionImpl(
         return filteredComponentGroups[componentGroupIndex]
             ?.merkleProof
             ?.leaves
-            ?.filterIndexed{index, _ -> index > 0 }
+            ?.filter { it.index > 0 }
             ?.map { it.index - 1 to it.leafData }
     }
 
