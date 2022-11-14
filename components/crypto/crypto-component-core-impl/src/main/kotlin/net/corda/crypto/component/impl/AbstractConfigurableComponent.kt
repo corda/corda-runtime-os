@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
@@ -12,9 +13,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A base abstract class that can be used to provide basic functionality relating to lifecycle management for components
@@ -32,7 +34,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     private val configKeys: Set<String>
 ) : Lifecycle {
 
-   interface AbstractImpl: AutoCloseable {
+    interface AbstractImpl: AutoCloseable {
         val downstream: DependenciesTracker
         override fun close() {
             downstream.clear()
@@ -81,18 +83,18 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.info("Starting...")
+        logger.trace { "$myName starting..." }
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping...")
+        logger.trace { "$myName stopping..." }
         lifecycleCoordinator.stop()
     }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("LifecycleEvent received: $event")
+        logger.trace { "LifecycleEvent received $myName: $event" }
         when (event) {
             is StartEvent -> {
                 upstream.follow(coordinator)
@@ -112,7 +114,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             }
             is BootstrapConfigProvided -> {
                 if (bootConfig != null) {
-                    logger.info("New bootstrap configuration received: ${event.config}, Old configuration: $bootConfig")
+                    logger.debug { "New bootstrap configuration received: ${event.config}, Old configuration: $bootConfig" }
                     if (bootConfig != event.config) {
                         val errorString = "An attempt was made to set the bootstrap configuration twice with " +
                                 "different config. Current: $bootConfig, New: ${event.config}"
@@ -122,11 +124,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 } else {
                     bootConfig = event.config
                     if(unprocessedConfigChanges.isNotEmpty()) {
-                        logger.info(
-                            "Processing {} as the component is ready and already received the {}",
-                            event::class.java.simpleName,
-                            event::class.java.simpleName
-                        )
+                        logger.trace { "Processing ${event::class.java.simpleName} as the component is ready " +
+                                "and already received the ${event::class.java.simpleName}" }
                         unprocessedConfigChanges.forEach {
                             onConfigChange(it, coordinator)
                         }
@@ -152,15 +151,11 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.info(
-            "onUpstreamRegistrationStatusChange(upstream={}, downstream={}).",
-            upstream.isUp,
-            _impl?.downstream?.isUp
-        )
+        logger.trace { "onUpstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
         updateLifecycleStatus(coordinator)
         configHandle?.close()
         configHandle = if (upstream.isUp) {
-            logger.info("Registering for configuration updates.")
+            logger.trace { "Registering for configuration updates." }
             configurationReadService.registerComponentForUpdates(coordinator, configKeys)
         } else {
             null
@@ -169,11 +164,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.info(
-            "onDownstreamRegistrationStatusChange(upstream={}, downstream={}).",
-            upstream.isUp,
-            _impl?.downstream?.isUp
-        )
+        logger.trace { "onDownstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
         updateLifecycleStatus(coordinator)
         _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
     }
@@ -183,18 +174,16 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             doActivation(event, coordinator)
             updateLifecycleStatus(coordinator)
         } else {
-            logger.info("The {} will not be processed as the component is not ready yet", event::class.java.simpleName)
+            logger.trace { "The ${event::class.java.simpleName} will not be processed as the component is not ready yet" }
             unprocessedConfigChanges.add(event)
         }
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         if(_impl != null || !upstream.isUp) {
-            logger.info(
-                "onTryAgainCreateActiveImpl skipping as stale (upstream={}, _impl={}).",
-                upstream.isUp,
-                _impl
-            )
+            logger.debug {
+                "onTryAgainCreateActiveImpl skipping as stale (upstream=${upstream.isUp}, _impl=${_impl})."
+            }
             return
         }
         doActivation(event, coordinator)
@@ -202,42 +191,38 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Activating {}", myName)
+        logger.trace { "Activating $myName" }
         try {
             _impl?.downstream?.clear()
             _impl?.close()
             _impl = createActiveImpl(event)
             _impl?.downstream?.follow(coordinator)
             activationFailureCounter.set(0)
-            logger.debug("Activated {}", myName)
+            logger.trace { "Activated $myName" }
         } catch (e: FatalActivationException) {
-            logger.error("Failed activate", e)
+            logger.error("$myName failed activate", e)
             coordinator.updateStatus(LifecycleStatus.ERROR)
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.warn("Failed activate..., will try again", e)
+                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
                 coordinator.postEvent(TryAgainCreateActiveImpl(event))
             } else {
-                logger.error("Failed activate, giving up", e)
+                logger.error("$myName failed activate, giving up", e)
                 coordinator.updateStatus(LifecycleStatus.ERROR)
             }
         }
     }
 
     private fun updateLifecycleStatus(coordinator: LifecycleCoordinator) {
-        logger.debug(
-            "updateStatus(self={},upstream={}, downstream={}, _impl={}).",
-            coordinator.status,
-            upstream.isUp,
-            _impl?.downstream?.isUp,
-            _impl
-        )
+        logger.trace {
+            "updateStatus(self=${coordinator.status},upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp}, _impl=${_impl})."
+        }
         if (upstream.isUp && _impl?.downstream?.isUp == true && _impl != null) {
-            logger.info("Setting the status of {} UP", myName)
+            logger.trace { "Setting the status of $myName UP" }
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            if (coordinator.status != LifecycleStatus.ERROR && coordinator.status != LifecycleStatus.DOWN) {
-                logger.info("Setting the status of {} DOWN", myName)
+            if(coordinator.status != LifecycleStatus.ERROR) {
+                logger.trace { "Setting the status of $myName DOWN" }
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }

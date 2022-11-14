@@ -1,13 +1,14 @@
 package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.CustomEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.lifecycle.CustomEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.v5.base.util.contextLogger
 
 /**
  * A registration of a parent coordinator to a set of underlying child coordinators.
@@ -28,6 +29,9 @@ internal class Registration(
     private val registeringCoordinator: LifecycleCoordinatorInternal
 ) : RegistrationHandle {
 
+    private  companion object {
+        val logger = contextLogger()
+    }
 
     private val coordinatorStatusMap = ConcurrentHashMap(coordinators.associateWith { LifecycleStatus.DOWN })
 
@@ -65,6 +69,9 @@ internal class Registration(
             coordinatorStatusMap[coordinator] = status
             val newState = currentStatus
             if (!isClosed.get() && oldState != newState) {
+                val message = "Coordinator ${registeringCoordinator.name} received RegistrationStatusChangeEvent $newState due to " +
+                        "${coordinator.name} changing to state $status"
+                if (newState == LifecycleStatus.ERROR) { logger.warn(message) } else { logger.info(message) }
                 registeringCoordinator.postEvent(RegistrationStatusChangeEvent(this, newState))
             }
         }

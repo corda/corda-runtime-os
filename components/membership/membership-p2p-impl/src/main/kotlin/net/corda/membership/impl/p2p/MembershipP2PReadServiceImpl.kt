@@ -70,20 +70,16 @@ class MembershipP2PReadServiceImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
-                logger.info("Processing start event.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
@@ -111,12 +107,13 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                             setOf(MESSAGING_CONFIG, BOOT_CONFIG)
                         )
                     } else if (event.registration == subRegistrationHandle) {
-                        logger.info("Subscription is UP. Component started.")
                         coordinator.updateStatus(LifecycleStatus.UP, "Started subscription for incoming P2P messages.")
                     }
                 } else {
-                    logger.info("Setting deactive state due to receiving registration status ${event.status}")
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    coordinator.updateStatus(
+                        LifecycleStatus.DOWN,
+                        "Setting deactive state due to receiving registration status ${event.status}"
+                    )
                     stopSubscriptions()
                 }
             }
