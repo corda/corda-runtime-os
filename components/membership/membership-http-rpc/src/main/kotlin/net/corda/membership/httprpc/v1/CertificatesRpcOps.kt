@@ -45,7 +45,7 @@ interface CertificatesRpcOps : RpcOps {
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
     @HttpRpcPUT(
-        path = "{usage}/cluster",
+        path = "cluster/{usage}",
         description = "This method imports a certificate chain for a cluster."
     )
     fun importCertificateChain(
@@ -96,7 +96,7 @@ interface CertificatesRpcOps : RpcOps {
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
     @HttpRpcPUT(
-        path = "{usage}/{holdingIdentityId}",
+        path = "vnode/{holdingIdentityId}/{usage}",
         description = "This method imports a certificate chain for a virtual node."
     )
     fun importCertificateChain(
