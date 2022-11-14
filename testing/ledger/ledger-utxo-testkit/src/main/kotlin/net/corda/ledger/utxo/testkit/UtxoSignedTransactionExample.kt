@@ -15,11 +15,10 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    wireTransactionFactory: WireTransactionFactory,
-    utxoSignedTransactionFactory:UtxoSignedTransactionFactory
+    wireTransactionFactory: WireTransactionFactory
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
-    return utxoSignedTransactionFactory.create(wireTransaction, listOf(signatureWithMetadataExample))
+    return create(wireTransaction, listOf(signatureWithMetadataExample))
 }
 
 @Suppress("LongParameterList")

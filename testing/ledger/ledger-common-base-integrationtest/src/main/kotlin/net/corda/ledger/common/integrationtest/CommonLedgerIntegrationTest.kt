@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -83,7 +84,7 @@ abstract class CommonLedgerIntegrationTest {
         jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
         wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
         kryoSerializer = sandboxGroupContext.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
-            ?: org.junit.jupiter.api.fail("No CheckpointSerializer in sandbox context")
+            ?: fail("No CheckpointSerializer in sandbox context")
 
         internalCustomSerializers = sandboxGroupContext.getSandboxSingletonServices()
 

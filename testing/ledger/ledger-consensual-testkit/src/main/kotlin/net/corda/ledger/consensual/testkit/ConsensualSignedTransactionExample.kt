@@ -15,11 +15,10 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
 fun ConsensualSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    wireTransactionFactory: WireTransactionFactory,
-    consensualSignedTransactionFactory: ConsensualSignedTransactionFactory
+    wireTransactionFactory: WireTransactionFactory
 ): ConsensualSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
-    return consensualSignedTransactionFactory.create(wireTransaction, listOf(signatureWithMetadataExample))
+    return create(wireTransaction, listOf(signatureWithMetadataExample))
 }
 
 @Suppress("LongParameterList")

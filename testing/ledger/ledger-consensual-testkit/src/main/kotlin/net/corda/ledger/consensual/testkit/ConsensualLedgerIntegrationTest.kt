@@ -21,8 +21,7 @@ abstract class ConsensualLedgerIntegrationTest: CommonLedgerIntegrationTest() {
         consensualLedgerService = sandboxGroupContext.getSandboxSingletonService()
         consensualSignedTransaction = consensualSignedTransactionFactory.createExample(
             jsonMarshallingService,
-            wireTransactionFactory,
-            consensualSignedTransactionFactory
+            wireTransactionFactory
         )
     }
 }
