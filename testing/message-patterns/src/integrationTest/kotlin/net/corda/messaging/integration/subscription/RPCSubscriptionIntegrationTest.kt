@@ -335,12 +335,13 @@ class RPCSubscriptionIntegrationTest {
             attempts--
             try {
                 initialSetupFuture = rpcSender.sendRequest("PLEASE RESPOND")
-                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(10))
+                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(5))
                 messageSent = true
             } catch (ex: Exception) {
                 if (attempts == 0) {
                     fail("Failed to get initial partition assignment")
                 }
+                Thread.sleep(2000)
             }
         }
         assertThat(initialSetupFutureResult).isNotNull
