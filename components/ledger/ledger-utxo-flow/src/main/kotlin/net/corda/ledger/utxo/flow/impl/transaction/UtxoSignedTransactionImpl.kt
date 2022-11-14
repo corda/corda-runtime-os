@@ -16,9 +16,9 @@ data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
 
-    val wireTransaction: WireTransaction,
+    override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
-) : UtxoSignedTransaction {
+) : UtxoSignedTransactionInternal {
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }

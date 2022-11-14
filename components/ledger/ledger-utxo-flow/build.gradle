@@ -12,7 +12,9 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-cipher-suite'
+    implementation 'net.corda:corda-topic-schema'
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':components:ledger:ledger-common-flow-api')
