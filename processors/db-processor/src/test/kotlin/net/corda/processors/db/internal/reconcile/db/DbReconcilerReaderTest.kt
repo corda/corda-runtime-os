@@ -240,7 +240,7 @@ class DbReconcilerReaderTest {
             )
 
             verify(onStatusDownMock).invoke()
-            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+            verify(coordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
             verify(dependencyRegistrationHandle, never()).close()
         }
 
@@ -257,7 +257,7 @@ class DbReconcilerReaderTest {
             )
 
             verify(onStatusDownMock).invoke()
-            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+            verify(coordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
             verify(dependencyRegistrationHandle).close()
         }
     }
