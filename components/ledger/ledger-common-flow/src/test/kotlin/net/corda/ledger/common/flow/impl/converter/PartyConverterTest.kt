@@ -5,6 +5,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PAR
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.ledger.common.Party
@@ -71,4 +72,8 @@ class PartyConverterTest {
         )
         assertEquals(notaryServiceParty, converters[0].convert(conversionContext))
     }
+
+    private class LayeredContextImpl(
+        private val map: LayeredPropertyMap
+    ) : LayeredPropertyMap by map
 }

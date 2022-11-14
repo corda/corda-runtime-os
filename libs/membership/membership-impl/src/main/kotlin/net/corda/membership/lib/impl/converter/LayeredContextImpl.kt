@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.converter
+package net.corda.membership.lib.impl.converter
 
 import net.corda.v5.base.types.LayeredPropertyMap
 

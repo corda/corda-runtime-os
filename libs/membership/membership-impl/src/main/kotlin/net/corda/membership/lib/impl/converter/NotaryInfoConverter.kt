@@ -1,13 +1,12 @@
-package net.corda.ledger.common.flow.impl.converter
+package net.corda.membership.lib.impl.converter
 
 import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.ledger.notary.NotaryInfoImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.ledger.common.NotaryInfo
+import net.corda.v5.membership.NotaryInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,7 +33,7 @@ class NotaryInfoConverter @Activate constructor(
 
     override val type = NotaryInfo::class.java
 
-    override fun convert(context: ConversionContext): NotaryInfo? {
+    override fun convert(context: ConversionContext): NotaryInfo {
         val name = context.map.parse(NAME, MemberX500Name::class.java)
         val pluginName = context.value(PLUGIN) ?: throw ValueNotFoundException("'$PLUGIN' is null or missing.")
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
@@ -47,3 +46,9 @@ class NotaryInfoConverter @Activate constructor(
         )
     }
 }
+
+data class NotaryInfoImpl(
+    override val name: MemberX500Name,
+    override val pluginClass: String,
+    override val publicKey: PublicKey,
+) : NotaryInfo

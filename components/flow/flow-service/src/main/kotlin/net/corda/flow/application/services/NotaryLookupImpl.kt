@@ -5,9 +5,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.NotaryInfo
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.notaries
+import net.corda.v5.membership.NotaryInfo
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
