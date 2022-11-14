@@ -17,8 +17,8 @@ abstract class ConsensualLedgerIntegrationTest: CommonLedgerIntegrationTest() {
     override fun initialize(setup: SandboxSetup){
         super.initialize(setup)
 
-        consensualSignedTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
-        consensualLedgerService = sandboxGroupContext.getSandboxSingletonService()
+        consensualSignedTransactionFactory = sandboxGroupContext1.getSandboxSingletonService()
+        consensualLedgerService = sandboxGroupContext1.getSandboxSingletonService()
         consensualSignedTransaction = consensualSignedTransactionFactory.createExample(
             jsonMarshallingService,
             wireTransactionFactory

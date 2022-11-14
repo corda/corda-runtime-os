@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:serialization:serialization-internal')
     implementation project(":libs:utilities")
-    implementation project(':libs:sandbox-types')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

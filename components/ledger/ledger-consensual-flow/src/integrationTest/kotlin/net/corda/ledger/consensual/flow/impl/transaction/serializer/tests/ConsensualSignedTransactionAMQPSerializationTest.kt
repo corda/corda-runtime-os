@@ -1,41 +1,32 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.ledger.consensual.testkit.ConsensualLedgerIntegrationTest
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Test
 
-class ConsensualSignedTransactionAMQPSerializationTest: ConsensualLedgerIntegrationTest() {
+class ConsensualSignedTransactionAMQPSerializationSandboxTest: ConsensualLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
-    fun `successfully serialize and deserialize a Consensual Signed Transaction`() {
-
-        // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(sandboxGroup)
-        val factory2 = testDefaultFactory(sandboxGroup)
-
-        // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
-
-        val serialised = SerializationOutput(factory1).serialize(consensualSignedTransaction, testSerializationContext)
+    fun `successfully serialize and deserialize a Consensual Signed Transaction - via sandbox serializer`() {
+        val serialised = sandboxSerializationService1.serialize(consensualSignedTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
+            sandboxSerializationService2.deserialize(serialised)
 
-        assertThat(deserialized.obj.javaClass.name)
+        assertThat(deserialized.javaClass.name)
             .isEqualTo("net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl")
 
-        assertThat(deserialized.obj)
+        assertThat(deserialized)
             .isInstanceOf(ConsensualSignedTransaction::class.java)
             .isEqualTo(consensualSignedTransaction)
 
         assertDoesNotThrow {
-            deserialized.obj.id
+            deserialized.id
         }
-        assertThat(deserialized.obj.id).isEqualTo(consensualSignedTransaction.id)
+        assertThat(deserialized.id).isEqualTo(consensualSignedTransaction.id)
     }
 }

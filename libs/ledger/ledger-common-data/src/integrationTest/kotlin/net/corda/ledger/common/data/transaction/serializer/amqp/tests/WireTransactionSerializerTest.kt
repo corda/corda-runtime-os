@@ -1,8 +1,7 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp.tests
 
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
+import net.corda.v5.application.serialization.deserialize
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -11,28 +10,20 @@ class WireTransactionSerializerTest: CommonLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a wireTransaction`() {
-        // Create sandbox group
-        // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(sandboxGroup)
-        val factory2 = testDefaultFactory(sandboxGroup)
-
-        // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
-
-        val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
+        val serialised = sandboxSerializationService1.serialize(wireTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
+            sandboxSerializationService2.deserialize(serialised)
 
-        assertThat(deserialized.obj.javaClass.name).isEqualTo(
+        assertThat(deserialized.javaClass.name).isEqualTo(
             "net.corda.ledger.common.data.transaction.WireTransaction"
         )
 
-        assertThat(deserialized.obj).isEqualTo(wireTransaction)
+        assertThat(deserialized).isEqualTo(wireTransaction)
         Assertions.assertDoesNotThrow {
-            deserialized.obj.id
+            deserialized.id
         }
-        assertThat(deserialized.obj.id).isEqualTo(wireTransaction.id)
+        assertThat(deserialized.id).isEqualTo(wireTransaction.id)
     }
 }
