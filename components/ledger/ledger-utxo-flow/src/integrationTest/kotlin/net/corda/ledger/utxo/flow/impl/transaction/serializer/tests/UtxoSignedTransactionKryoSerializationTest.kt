@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.tests
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
@@ -10,8 +11,6 @@ import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFac
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -53,10 +52,7 @@ class UtxoSignedTransactionKryoSerializationTest {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @InjectService(timeout = 1000)
-    lateinit var signingService: SigningService
-
-    @InjectService(timeout = 1000)
-    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
+    lateinit var transactionSignatureService: TransactionSignatureService
 
     private lateinit var emptySandboxGroup: SandboxGroup
 
@@ -106,8 +102,7 @@ class UtxoSignedTransactionKryoSerializationTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService,
-            digitalSignatureVerificationService
+            transactionSignatureService
         )
 
         val bytes = kryoSerializer.serialize(signedTransaction)

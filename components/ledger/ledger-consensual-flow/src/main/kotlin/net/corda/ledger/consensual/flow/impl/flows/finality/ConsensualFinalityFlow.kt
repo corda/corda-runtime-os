@@ -1,11 +1,10 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
-import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -16,7 +15,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
@@ -30,7 +28,7 @@ class ConsensualFinalityFlow(
     }
 
     @CordaInject
-    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
+    lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
@@ -104,14 +102,7 @@ class ConsensualFinalityFlow(
 
             signatures.forEach { signature ->
                 try {
-                    // TODO Do not hardcode signature spec
-                    val signedData = SignableData(signedTransaction.id, signature.metadata)
-                    digitalSignatureVerificationService.verify(
-                        publicKey = signature.by,
-                        signatureSpec = SignatureSpec.ECDSA_SHA256,
-                        signatureData = signature.signature.bytes,
-                        clearData = serializationService.serialize(signedData).bytes
-                    )
+                    transactionSignatureService.verifySignature(signedTransaction.id, signature)
                     log.debug {
                         "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +
                                 "${signedTransaction.id}"
