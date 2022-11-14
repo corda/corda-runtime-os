@@ -423,22 +423,34 @@ Cluster DB name
 {{/*
 Cluster DB credentials environment variables
 */}}
+{{- define "corda.clusterDbDefaultSecretName" -}}
+{{ printf "%s-cluster-db" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+Cluster DB credentials environment variables
+*/}}
 {{- define "corda.clusterDbEnv" -}}
-{{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
 - name: PGUSER
   valueFrom:
     secretKeyRef:
+      {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-{{- else }}
-- name: PGUSER
-  value: {{ .Values.db.cluster.username.value }}
-{{- end }}
+      key: {{ required "Must specify .Values.db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- end }}
 - name: PGPASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) | quote }}
-      key: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.key | default "password" | quote }}
+      {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify .Values.db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
 {{- end -}}
 
 {{/*
