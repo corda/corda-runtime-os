@@ -10,6 +10,7 @@ import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.reconciliation.VersionedRecord
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -17,7 +18,7 @@ import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -56,10 +57,12 @@ class GroupParametersReconciler(
                 "persistenceUnitName '${CordaDb.Vault.persistenceUnitName}' is not registered."
             )
 
-    private var dbReconcilers =
+    @VisibleForTesting
+    internal val dbReconcilers =
         ConcurrentHashMap<HoldingIdentity, DbReconcilerReader<HoldingIdentity, GroupParameters>>()
 
-    private var emfBucket = ConcurrentHashMap<String, EntityManagerFactory>()
+    @VisibleForTesting
+    internal val emfBucket = ConcurrentHashMap<String, EntityManagerFactory>()
 
     override fun close() {
         dbReconcilers.forEach { (_, reader) ->

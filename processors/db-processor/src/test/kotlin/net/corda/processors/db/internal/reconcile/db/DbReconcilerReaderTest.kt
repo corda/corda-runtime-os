@@ -3,12 +3,14 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -17,22 +19,43 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
 
 class DbReconcilerReaderTest {
 
+    private val transaction: EntityTransaction = mock()
+    private val em: EntityManager = mock {
+        on { transaction } doReturn transaction
+    }
+    private val emf: EntityManagerFactory = mock {
+        on { createEntityManager() } doReturn em
+    }
+
+    private val streamOnCloseCaptor = argumentCaptor<Runnable>()
+    private val versionedRecordsStream: Stream<VersionedRecord<String, Int>> = mock {
+        on { onClose(streamOnCloseCaptor.capture()) } doReturn mock
+    }
+
     private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
     private val dependenciesMock: Set<LifecycleCoordinatorName> = setOf(dependencyMock)
-    private val entityManagerFactoryFactoryMock: () -> EntityManagerFactory = mock()
-    private val getAllVersionRecordsMock: (EntityManager) -> Stream<VersionedRecord<String, Int>> = mock()
+    private val entityManagerFactoryFactoryMock: () -> EntityManagerFactory = mock {
+        on { invoke() } doReturn emf
+    }
+    private val getAllVersionRecordsMock: (EntityManager) -> Stream<VersionedRecord<String, Int>> = mock {
+        on { invoke(eq(em)) } doReturn versionedRecordsStream
+    }
     private val onStatusUpMock: () -> Unit = mock()
     private val onStatusDownMock: () -> Unit = mock()
     private val onStreamCloseMock: () -> Unit = mock()
@@ -44,9 +67,11 @@ class DbReconcilerReaderTest {
             lifecycleEventHandlerCaptor.firstValue
         }
 
+    private val postEventCaptor = argumentCaptor<LifecycleEvent>()
     private val dependencyRegistrationHandle: RegistrationHandle = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependenciesMock)) } doReturn dependencyRegistrationHandle
+        on { postEvent(postEventCaptor.capture()) } doAnswer {}
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on {
@@ -117,11 +142,10 @@ class DbReconcilerReaderTest {
     @Nested
     inner class LifecycleStopTest {
         @Test
-        fun `stop stops the coordinator and calls the onStatusDown function`() {
+        fun `stop stops the coordinator`() {
             dbReconcilerReader.stop()
 
             verify(coordinator).stop()
-            verify(onStatusDownMock).invoke()
         }
 
         @Test
@@ -149,7 +173,7 @@ class DbReconcilerReaderTest {
         @Test
         fun `Error retrieving records stops the component`() {
             lifecycleEventHandler.processEvent(
-                DbReconcilerReader.GetRecordsErrorEvent(CordaRuntimeException("")),
+                GetRecordsErrorEvent(CordaRuntimeException("")),
                 coordinator
             )
 
@@ -203,6 +227,152 @@ class DbReconcilerReaderTest {
             verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(dependencyRegistrationHandle).close()
+        }
+
+        @Test
+        fun `lifecycle status ERROR calls onStatusDown function and sets coordinator status`() {
+            lifecycleEventHandler.processEvent(
+                RegistrationStatusChangeEvent(
+                    dependencyRegistrationHandle,
+                    LifecycleStatus.ERROR
+                ),
+                coordinator
+            )
+
+            verify(onStatusDownMock).invoke()
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+            verify(dependencyRegistrationHandle, never()).close()
+        }
+
+        @Test
+        @Suppress("MaxLineLength")
+        fun `lifecycle status ERROR after start event closes registration handle, calls onStatusDown function and sets coordinator status`() {
+            lifecycleEventHandler.processEvent(StartEvent(), coordinator)
+            lifecycleEventHandler.processEvent(
+                RegistrationStatusChangeEvent(
+                    dependencyRegistrationHandle,
+                    LifecycleStatus.ERROR
+                ),
+                coordinator
+            )
+
+            verify(onStatusDownMock).invoke()
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+            verify(dependencyRegistrationHandle).close()
+        }
+    }
+
+    @Nested
+    inner class GetAllVersionedRecordsTest {
+
+        @Test
+        fun `Expected services called when get versioned records executed successfully`() {
+            val output = dbReconcilerReader.getAllVersionedRecords()
+            assertThat(output).isEqualTo(versionedRecordsStream)
+
+            verify(entityManagerFactoryFactoryMock).invoke()
+            verify(emf).createEntityManager()
+            verify(em).transaction
+            verify(transaction).begin()
+            verify(getAllVersionRecordsMock).invoke(eq(em))
+            verify(versionedRecordsStream).onClose(any())
+        }
+
+        @Test
+        fun `onClose callback call expected services`() {
+            dbReconcilerReader.getAllVersionedRecords()
+            val onClose = streamOnCloseCaptor.firstValue
+
+            verify(transaction, never()).rollback()
+            verify(em, never()).close()
+            verify(onStreamCloseMock, never()).invoke()
+
+            onClose.run()
+
+            verify(transaction).rollback()
+            verify(em).close()
+            verify(onStreamCloseMock).invoke()
+        }
+    }
+
+    @Nested
+    inner class GetAllVersionedRecordsFailureTest {
+
+        private val errorMsg = "FOO-BAR"
+
+        @Test
+        fun `Failure to create entity manager factory posts error event`() {
+            whenever(entityManagerFactoryFactoryMock.invoke()) doThrow RuntimeException(errorMsg)
+
+            val output = assertDoesNotThrow {
+                dbReconcilerReader.getAllVersionedRecords()
+            }
+            val postedEvent = postEventCaptor.firstValue
+
+            verify(entityManagerFactoryFactoryMock).invoke()
+            assertThat(output).isNull()
+            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
+            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
+        }
+
+        @Test
+        fun `Failure to create entity manager posts error event`() {
+            whenever(emf.createEntityManager()) doThrow RuntimeException(errorMsg)
+
+            val output = assertDoesNotThrow {
+                dbReconcilerReader.getAllVersionedRecords()
+            }
+            val postedEvent = postEventCaptor.firstValue
+
+            verify(emf).createEntityManager()
+            assertThat(output).isNull()
+            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
+            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
+        }
+
+        @Test
+        fun `Failure to get entity transaction posts error event`() {
+            whenever(em.transaction) doThrow RuntimeException(errorMsg)
+
+            val output = assertDoesNotThrow {
+                dbReconcilerReader.getAllVersionedRecords()
+            }
+            val postedEvent = postEventCaptor.firstValue
+
+            verify(em).transaction
+            assertThat(output).isNull()
+            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
+            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
+        }
+
+        @Test
+        fun `Failure to start transaction posts error event`() {
+            whenever(transaction.begin()) doThrow RuntimeException(errorMsg)
+
+            val output = assertDoesNotThrow {
+                dbReconcilerReader.getAllVersionedRecords()
+            }
+            val postedEvent = postEventCaptor.firstValue
+
+            verify(transaction).begin()
+            assertThat(output).isNull()
+            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
+            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
+        }
+
+        @Test
+        fun `Failure to get all versioned records posts error event`() {
+            whenever(getAllVersionRecordsMock.invoke(eq(em))) doThrow RuntimeException(errorMsg)
+
+            val output = assertDoesNotThrow {
+                dbReconcilerReader.getAllVersionedRecords()
+            }
+            val postedEvent = postEventCaptor.firstValue
+
+            verify(getAllVersionRecordsMock).invoke(eq(em))
+            assertThat(output).isNull()
+            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
+            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
     }
 }

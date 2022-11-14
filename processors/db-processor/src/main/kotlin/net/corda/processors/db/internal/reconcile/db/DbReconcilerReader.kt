@@ -136,7 +136,6 @@ class DbReconcilerReader<K : Any, V : Any>(
     override fun stop() {
         logger.info("Stopping")
         coordinator.stop()
-        closeResources()
     }
 
     private fun closeResources() {
