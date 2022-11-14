@@ -197,6 +197,6 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `group parameters are returned as expected`() {
         assertThat(membershipGroupReaderImpl.groupParameters).isEqualTo(groupParameters)
-        verify(groupParametersReaderService.get(eq(aliceIdGroup1)), times(1))
+        verify(groupParametersReaderService, times(1)).get(eq(aliceIdGroup1))
     }
 }
