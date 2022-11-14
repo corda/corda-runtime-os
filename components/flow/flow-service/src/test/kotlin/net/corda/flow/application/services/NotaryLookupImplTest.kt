@@ -8,11 +8,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.NotaryInfo
-import net.corda.v5.ledger.common.notaries
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn

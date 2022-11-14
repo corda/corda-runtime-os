@@ -81,6 +81,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -1094,5 +1095,7 @@ class MembershipPersistenceTest {
             get() = 5000
         override val modifiedTime: Instant
             get() = clock.instant()
+        override val notaries: List<NotaryInfo>
+            get() = emptyList()
     }
 }
