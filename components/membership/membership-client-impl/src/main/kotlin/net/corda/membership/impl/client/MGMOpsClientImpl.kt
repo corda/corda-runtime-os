@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -33,12 +32,14 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -62,6 +63,8 @@ class MGMOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "mgm-ops-client"
 
         private val clock = UTCClock()
+
+        private val TIMEOUT = 10.seconds
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
@@ -202,7 +205,7 @@ class MGMOpsClientImpl @Activate constructor(
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
                 logger.debug { "Sending request: $this" }
-                val response = rpcSender.sendRequest(this).getOrThrow()
+                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."
                 }

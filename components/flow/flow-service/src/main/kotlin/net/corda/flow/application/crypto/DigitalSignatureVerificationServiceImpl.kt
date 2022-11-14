@@ -16,8 +16,7 @@ import java.security.PublicKey
 
 @Component(
     service = [ DigitalSignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
-    scope = PROTOTYPE,
-    property = ["corda.system=true"]
+    scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
