@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.persistence.impl.processor.tests
+package net.corda.ledger.persistence.processor.tests
 
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
