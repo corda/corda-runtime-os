@@ -2,8 +2,8 @@ package net.corda.applications.workers.smoketest
 
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -32,7 +32,9 @@ class ConfigTests {
         updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
 
         try {
-            val updatedValue = getConfig(RECONCILIATION_CONFIG).sourceConfigNode()[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
+            val currentConfig = getConfig(RECONCILIATION_CONFIG)
+            val currentConfigJSON = currentConfig.sourceConfigNode()
+            val updatedValue = currentConfigJSON[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
             assertThat(updatedValue).isEqualTo(newValue)
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
