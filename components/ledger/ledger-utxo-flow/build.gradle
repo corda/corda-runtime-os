@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
@@ -5,6 +7,13 @@ plugins {
 }
 
 description 'Corda UTXO ledger - flow implementation'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -34,10 +43,24 @@ dependencies {
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
 
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:sandboxes-testkit')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    cpis project(path: ':testing:ledger:ledger-utxo-state-app', configuration: 'cordaCPB')
+}
+
+//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

@@ -7,7 +7,12 @@ import org.osgi.service.component.annotations.Component
 import java.util.jar.Manifest
 
 @Component(service = [PlatformInfoProvider::class])
-class PlatformInfoProviderImpl @Activate constructor() : PlatformInfoProvider {
+class PlatformInfoProviderImpl internal constructor(
+    private val classLoader: ClassLoader
+) : PlatformInfoProvider {
+
+    @Activate
+    public constructor() : this(PlatformInfoProvider::class.java.classLoader)
 
     internal companion object {
         val logger = contextLogger()
@@ -31,11 +36,15 @@ class PlatformInfoProviderImpl @Activate constructor() : PlatformInfoProvider {
     }
 
     private val bundleManifest by lazy {
-        PlatformInfoProvider::class.java.classLoader
-            .getResource(MANIFEST_FILE_NAME)
-            ?.openStream()
-            ?.use {
-                Manifest(it)
-            }
+        classLoader
+            .getResources(MANIFEST_FILE_NAME)
+            .asSequence()
+            .map {
+                it.openStream().use { input ->
+                    Manifest(input)
+                }
+            }.filter {
+                it.mainAttributes.getValue("Bundle-SymbolicName") == "net.corda.platform-info"
+            }.firstOrNull()
     }
 }

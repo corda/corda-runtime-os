@@ -1,5 +1,8 @@
 package net.corda.membership.impl.synchronisation
 
+import java.util.Random
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
@@ -50,6 +53,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -60,9 +64,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Random
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Component(service = [SynchronisationService::class])
 @Suppress("LongParameterList")
@@ -177,12 +178,10 @@ class MemberSynchronisationServiceImpl internal constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$SERVICE started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$SERVICE stopped.")
         coordinator.stop()
     }
 
@@ -253,7 +252,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
-            logger.info("Member $viewOwningMember received membership updates from $mgm.")
+            logger.debug { "Member $viewOwningMember received membership updates from $mgm." }
 
             try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
@@ -370,7 +369,6 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -398,14 +396,13 @@ class MemberSynchronisationServiceImpl internal constructor(
             publisher.publish(listOf(syncRequest)).forEach {
                 it.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             }
-            logger.info("Member ${request.member} had asked the MGM for a sync package.")
+            logger.debug { "Member ${request.member} has asked the MGM for a sync package." }
         } catch (e: Exception) {
             logger.warn("Sync request for ${request.member} failed!", e)
         }
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -416,7 +413,6 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -430,7 +426,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator,
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
@@ -448,7 +443,6 @@ class MemberSynchronisationServiceImpl internal constructor(
 
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent) {
-        logger.info("Handling config changed event.")
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("member-synchronisation-service"),
