@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.data.membership.staticgroup.StaticGroupDefinition
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -36,9 +37,9 @@ class RegistrationServiceLifecycleHandler(
         // Keys for resources managed by this components lifecycle coordinator. Note that this class is reliant on a
         // coordinator created elsewhere. It is therefore important to ensure that these keys do not clash with any
         // resources created in any other place that uses the same coordinator.
-        private const val SUBSCRIPTION_RESOURCE = "SUBSCRIPTION_RESOURCE"
-        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private const val COMPONENT_HANDLE = "COMPONENT_HANDLE"
+        internal const val SUBSCRIPTION_RESOURCE = "SUBSCRIPTION_RESOURCE"
+        internal const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        internal const val COMPONENT_HANDLE = "COMPONENT_HANDLE"
     }
 
     private val publisherFactory = staticMemberRegistrationService.publisherFactory
@@ -65,7 +66,7 @@ class RegistrationServiceLifecycleHandler(
         get() = _groupParametersCache ?: throw IllegalArgumentException("GroupParametersCache is not initialized.")
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        when(event) {
+        when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
@@ -95,26 +96,43 @@ class RegistrationServiceLifecycleHandler(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
+        val subHandle = coordinator.getManagedResource<MembershipSubscriptionAndRegistration>(
+            SUBSCRIPTION_RESOURCE
+        )?.registrationHandle
+        if (event.registration == subHandle) {
+            handleSubscriptionRegistrationChange(event, coordinator)
+        } else {
+            handleDependencyRegistrationChange(event, coordinator)
+        }
+    }
+
+    private fun handleDependencyRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                val subHandle = coordinator.getManagedResource<MembershipSubscriptionAndRegistration>(
-                    SUBSCRIPTION_RESOURCE
-                )?.registrationHandle
-                if (event.registration == subHandle) {
-                    coordinator.updateStatus(LifecycleStatus.UP)
-                } else {
-                    coordinator.createManagedResource(CONFIG_HANDLE) {
-                        configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                        )
-                    }
+                coordinator.createManagedResource(CONFIG_HANDLE) {
+                    configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    )
                 }
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE))
             }
+        }
+    }
+
+    private fun handleSubscriptionRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        when (event.status) {
+            LifecycleStatus.UP -> coordinator.updateStatus(LifecycleStatus.UP)
+            else -> coordinator.updateStatus(LifecycleStatus.DOWN, "Subscription is DOWN")
         }
     }
 
@@ -128,19 +146,29 @@ class RegistrationServiceLifecycleHandler(
         _publisher?.start()
         _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
 
+        recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
+
+        if (coordinator.status != LifecycleStatus.UP) {
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+    }
+
+    /**
+     * Build the compacted subscription for the registration service.
+     *
+     * Note that if a subscription already exists, this function will close the old one by delegating to the underlying
+     * coordinator's managed resources.
+     */
+    private fun recreateSubscription(coordinator: LifecycleCoordinator, config: SmartConfig) {
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
             val subscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
                 Processor(groupParametersCache),
-                event.config.getConfig(MESSAGING_CONFIG)
+                config
             )
             subscription.start()
             val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
             MembershipSubscriptionAndRegistration(subscription, handle)
-        }
-
-        if(coordinator.status != LifecycleStatus.UP) {
-            coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 
@@ -171,6 +199,8 @@ class RegistrationServiceLifecycleHandler(
      *
      * This allows us to enforce the close order on these two resources, which prevents an accidental extra DOWN event
      * from propagating when we're recreating the subscription.
+     *
+     * By hanging on to the configuration used to build the subscription, it can be rebuilt in the event of an error.
      */
     private class MembershipSubscriptionAndRegistration(
         val subscription: Subscription<String, StaticGroupDefinition>,
