@@ -144,7 +144,7 @@ class ConsensualLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            transactionMetadataExample
+            transactionMetadataExample()
         )
         return ConsensualSignedTransactionContainer(
             wireTransaction,

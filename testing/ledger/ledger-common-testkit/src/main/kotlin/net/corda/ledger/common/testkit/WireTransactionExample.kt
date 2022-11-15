@@ -13,7 +13,7 @@ fun getWireTransactionExample(
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    metadata: TransactionMetadata = transactionMetadataExample,
+    metadata: TransactionMetadata = transactionMetadataExample(),
     componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metadata)

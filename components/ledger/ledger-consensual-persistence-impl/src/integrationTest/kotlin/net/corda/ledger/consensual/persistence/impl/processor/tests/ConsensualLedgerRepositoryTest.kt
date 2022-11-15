@@ -5,10 +5,8 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.field
@@ -317,16 +315,8 @@ class ConsensualLedgerRepositoryTest {
             CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
             CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
         )
-        val transactionMetadata = TransactionMetadata(linkedMapOf(
-            TransactionMetadata.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-            TransactionMetadata.LEDGER_VERSION_KEY to 1,
-            TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetadata.PLATFORM_VERSION_KEY to 123,
-            TransactionMetadata.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetadata.CPK_METADATA_KEY to cpks,
-            TransactionMetadata.SCHEMA_VERSION_KEY to 1
-        ))
 
+        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
