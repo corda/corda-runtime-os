@@ -73,6 +73,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         // TODO CORE-7939 Can be removed after ledger has been fixed
         const val DUMMY_TX_ID = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903"
+        const val DUMMY_TX_ID_2 = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
     }
 
     @Suspendable
@@ -80,10 +81,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
         val timeWindowLowerBoundOffsetMs = requestMessage["timeWindowLowerBoundOffsetMs"]?.toLong()
-            ?: run {
-                log.info("timeWindowLowerBoundOffsetMs not provided, defaulting to 0 ms")
-                0L
-            }
 
         val timeWindowUpperBoundOffsetMs = requestMessage["timeWindowUpperBoundOffsetMs"]?.toLong()
             ?: run {
@@ -93,29 +90,35 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val myInfo = memberLookup.myInfo()
 
-        // TODO For now `NotaryLookup` is still work in progress, once it is finished, we need to find the notary
-        //  instead of a random member
+        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we need to find the
+        //  notary instead of a random member
         val notary = memberLookup.lookup().first {
             it.name != myInfo.name
         }
 
         val notaryParty = Party(notary.name, notary.sessionInitiationKey)
 
-        val stx = utxoLedgerService.getTransactionBuilder()
+        val stxBuilder = utxoLedgerService.getTransactionBuilder()
             .setNotary(notaryParty)
             .addCommand(TestCommand())
-            .setTimeWindowBetween(
-                Instant.now().plusMillis(timeWindowLowerBoundOffsetMs),
-                Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
-            )
-             // TODO CORE-7939 Can be removed after empty component groups have been fixed
+            // TODO CORE-7939 Can be removed after empty component groups have been fixed
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             // TODO CORE-7939 For now we are spending non-existent states this needs rework after ledger
             //  work is finished
             .addInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
-            .addReferenceInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
+            .addReferenceInputState(generateStateAndRef(DUMMY_TX_ID_2, 0, notaryParty))
             .addOutputState(TestContract.TestState(emptyList()))
-            .sign(myInfo.sessionInitiationKey)
+
+        val stx = timeWindowLowerBoundOffsetMs?.let {
+            stxBuilder.setTimeWindowBetween(
+                Instant.now().plusMillis(it),
+                Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+            ).sign(myInfo.sessionInitiationKey)
+        } ?: run {
+            stxBuilder.setTimeWindowUntil(
+                Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+            ).sign(myInfo.sessionInitiationKey)
+        }
 
         val sigs = flowEngine.subFlow(
             NonValidatingNotaryClientFlowImpl(
@@ -124,9 +127,14 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             )
         )
 
-        return "Received ${sigs.size} signatures from the uniqueness checker, notary plugin ran successfully."
+        return "Received ${sigs.size} signatures from the notary, plugin ran successfully."
     }
 
+    /**
+     * The contract and command classes are needed to build a signed UTXO transaction. Unfortunately, we cannot reuse
+     * any internal contract/command as this flow belongs to an "external" CorDapp (CPB) so we can't introduce internal
+     * dependencies.
+     */
     class TestContract : Contract {
         class TestState(override val participants: List<PublicKey>) : ContractState
 

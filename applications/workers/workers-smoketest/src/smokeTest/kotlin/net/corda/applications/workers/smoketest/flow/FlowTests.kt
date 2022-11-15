@@ -753,7 +753,7 @@ class FlowTests {
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult)
-            .isEqualTo("Received 1 signatures from the uniqueness checker, notary plugin ran successfully.")
+            .isEqualTo("Received 1 signatures from the notary, plugin ran successfully.")
     }
 
     @Test
