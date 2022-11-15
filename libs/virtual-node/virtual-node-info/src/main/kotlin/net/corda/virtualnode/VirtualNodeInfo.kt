@@ -32,8 +32,14 @@ data class VirtualNodeInfo(
     val uniquenessDmlConnectionId: UUID,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
-    /** Current state of the virtual node instance */
-    val state: VirtualNodeState = DEFAULT_INITIAL_STATE,
+    /** Current flow p2p operational status of the virtual node instance */
+    val flowP2pOperationalStatus: String,
+    /** Current flow start operational status of the virtual node instance */
+    val flowStartOperationalStatus: String,
+    /** Current flow operational status of the virtual node instance */
+    val flowOperationalStatus: String,
+    /** Current vault db operational status of the virtual node instance */
+    val vaultDbOperationalStatus: String,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
@@ -59,7 +65,10 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() },
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() },
-            state.name,
+            flowP2pOperationalStatus,
+            flowStartOperationalStatus,
+            flowOperationalStatus,
+            vaultDbOperationalStatus,
             version,
             timestamp
         )
@@ -77,7 +86,10 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         uniquenessDdlConnectionId?.let { UUID.fromString(uniquenessDdlConnectionId) },
         UUID.fromString(uniquenessDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
-        VirtualNodeState.valueOf(virtualNodeState),
+        flowP2pOperationalStatus,
+        flowStartOperationalStatus,
+        flowOperationalStatus,
+        vaultDbOperationalStatus,
         version,
         timestamp
     )

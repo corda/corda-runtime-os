@@ -18,6 +18,8 @@ import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import net.corda.flow.pipeline.FlowKillContext
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -37,6 +39,7 @@ class FlowEventPipelineImpl(
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     context: FlowEventContext<Any>,
     private var output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
@@ -50,7 +53,23 @@ class FlowEventPipelineImpl(
             field = value
         }
 
+    override fun flowOperationalModeChecks(): FlowEventPipeline {
+        val vnode = virtualNodeInfoReadService.get(context.checkpoint.holdingIdentity)
+            ?: throw FlowFatalException(
+                "Virtual node pipeline could not be created, virtual node ${context.checkpoint.holdingIdentity.shortHash} was not found."
+            )
+        if(vnode.flowOperationalStatus != "ACTIVE") {
+            context.toBeKilled = FlowKillContext("Virtual Node's Flow Operational Status is ${vnode.flowOperationalStatus}.")
+        }
+        return this
+    }
+
     override fun eventPreProcessing(): FlowEventPipelineImpl {
+        if(context.toBeKilled != null) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping eventPreProcessing.")
+            return this
+        }
+
         log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
         /**
@@ -78,6 +97,11 @@ class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(timeoutMilliseconds: Long): FlowEventPipelineImpl {
+        if(context.toBeKilled != null) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping runOrContinue.")
+            return this
+        }
+
         val waitingFor = context.checkpoint.waitingFor?.value
             ?: throw FlowFatalException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
@@ -94,6 +118,10 @@ class FlowEventPipelineImpl(
     }
 
     override fun setCheckpointSuspendedOn(): FlowEventPipelineImpl {
+        if(context.toBeKilled != null) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping setCheckpointSuspendedOn.")
+            return this
+        }
         // If the flow fiber did not run or resume then there is no `suspendedOn` to change to.
         output?.let {
             context.checkpoint.suspendedOn = it::class.qualifiedName!!
@@ -102,6 +130,10 @@ class FlowEventPipelineImpl(
     }
 
     override fun setWaitingFor(): FlowEventPipelineImpl {
+        if(context.toBeKilled != null) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping setWaitingFor.")
+            return this
+        }
         output?.let {
             val waitingFor = getFlowRequestHandler(it).getUpdatedWaitingFor(context, it)
             context.checkpoint.waitingFor = waitingFor
@@ -110,6 +142,10 @@ class FlowEventPipelineImpl(
     }
 
     override fun requestPostProcessing(): FlowEventPipelineImpl {
+        if(context.toBeKilled != null) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping requestPostProcessing.")
+            return this
+        }
         output?.let {
             log.trace { "Postprocessing of $output" }
             context = getFlowRequestHandler(it).postProcess(context, it)

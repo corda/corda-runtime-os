@@ -13,6 +13,8 @@ interface FlowEventPipeline {
      */
     val context: FlowEventContext<Any>
 
+    fun flowOperationalModeChecks(): FlowEventPipeline
+
     /**
      * Performs flow event pre-processing on the pipeline.
      *

@@ -38,6 +38,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
         val now = Instant.now()
 
+        if (context.toBeKilled != null) {
+            return killFlowContext(context, now)
+        }
+
         postProcessPendingPlatformError(context)
 
         val outputRecords = getSessionEvents(context, now) +
@@ -47,6 +51,31 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
     }
+
+    private fun killFlowContext(context: FlowEventContext<Any>, now: Instant): FlowEventContext<Any> {
+        log.info("Flow ${context.checkpoint.flowId} is to be killed with reason: ${context.toBeKilled!!.reason}")
+        return context.copy(
+            outputRecords = getFlowMapperSessionKilledEvents(context, now) + getFlowKilledStatusRecords(context),
+            sendToDlq = false // killed flows do not go to DLQ
+        )
+    }
+
+    private fun getFlowMapperSessionKilledEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
+        val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
+        return context.checkpoint.sessions
+            .map {
+                it.hasScheduledCleanup = true
+                flowRecordFactory.createFlowMapperEventRecord(
+                    it.sessionId,
+                    ScheduleCleanup(expiryTime)
+                )
+            }
+    }
+
+    private fun getFlowKilledStatusRecords(context: FlowEventContext<Any>) =
+        flowRecordFactory.createFlowStatusRecord(
+            flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, context.toBeKilled!!.reason)
+        )
 
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
         val checkpoint = context.checkpoint

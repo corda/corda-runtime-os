@@ -33,13 +33,14 @@ class FlowCheckpointImpl(
     }
 
     private var deleted = false
+    private var killed = false
 
     private val flowInitialisedOnCreation = checkpoint.flowState != null
 
     // The checkpoint is live if it is not marked deleted and there is either some flow state, or a retry is currently
     // occurring (for example, if a transient failure has happened while processing a start event).
     private val checkpointLive: Boolean
-        get() = !deleted && (flowStateManager != null || inRetryState)
+        get() = !deleted && !killed && (flowStateManager != null || inRetryState)
 
     override val flowId: String
         get() = checkpoint.flowId
@@ -101,7 +102,10 @@ class FlowCheckpointImpl(
         }
 
     override val doesExist: Boolean
-        get() = flowStateManager != null && !deleted
+        get() = flowStateManager != null && !deleted && !killed
+
+    override val isKilled: Boolean
+        get() = killed
 
     override val currentRetryCount: Int
         get() = pipelineStateManager.retryCount
@@ -151,6 +155,7 @@ class FlowCheckpointImpl(
 
     override fun putSessionState(sessionState: SessionState) {
         checkFlowNotDeleted()
+        checkFlowNotKilled()
         val manager = flowStateManager
             ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
         manager.putSessionState(sessionState)
@@ -158,6 +163,7 @@ class FlowCheckpointImpl(
 
     override fun putSessionStates(sessionStates: List<SessionState>) {
         checkFlowNotDeleted()
+        checkFlowNotKilled()
         val manager = flowStateManager
             ?: throw IllegalStateException("Attempted to set session states before the flow has been initialised.")
         sessionStates.forEach {
@@ -167,6 +173,10 @@ class FlowCheckpointImpl(
 
     override fun markDeleted() {
         deleted = true
+    }
+
+    override fun markKilled() {
+        killed = true
     }
 
     override fun rollback() {
@@ -212,5 +222,9 @@ class FlowCheckpointImpl(
     private fun checkFlowNotDeleted() {
         // Does not prevent changes to the Avro objects, but will give us some protection from bugs moving forward.
         check(!deleted) { "Flow has been marked for deletion but is currently being modified" }
+    }
+
+    private fun checkFlowNotKilled() {
+        check(!killed) { "Flow has been marked for killing but is currently being modified" }
     }
 }

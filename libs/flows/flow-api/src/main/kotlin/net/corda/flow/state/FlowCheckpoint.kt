@@ -39,6 +39,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val doesExist: Boolean
 
+    val isKilled: Boolean
+
     val currentRetryCount: Int
 
     val inRetryState: Boolean
@@ -58,6 +60,8 @@ interface FlowCheckpoint : NonSerializable {
     fun putSessionStates(sessionStates: List<SessionState>)
 
     fun markDeleted()
+
+    fun markKilled()
 
     fun rollback()
 
