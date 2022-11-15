@@ -20,17 +20,8 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleProof
 import java.util.Base64
-import kotlin.collections.filter
-import kotlin.collections.isEmpty
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
-import kotlin.collections.single
-import kotlin.collections.toSet
-import kotlin.text.decodeToString
-import kotlin.to
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
