@@ -130,7 +130,7 @@ kafka:
     # -- SASL username configuration for client connection to Kafka
     username: 
       # -- the SASL user
-      value: ""
+      value: "user"
       # -- the SASL user secret configuration; used in preference to value if name is set
       valueFrom:
         # -- the SASL user secret key reference
