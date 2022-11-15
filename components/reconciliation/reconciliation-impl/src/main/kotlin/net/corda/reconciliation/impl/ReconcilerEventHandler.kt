@@ -15,7 +15,6 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CountDownLatch
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(

@@ -152,7 +152,9 @@ fun EntityManager.findAllCpiMetadata2(): Stream<CpiMetadataEntity> {
     // Joining the other tables to ensure all data is fetched eagerly
     return uncheckedCast<Any, Stream<CpiMetadataEntity>>(createNativeQuery(
         "SELECT * FROM CONFIG.cpi cpi_ ",// +
-//                "INNER JOIN CONFIG.cpi_cpk cpk_ on cpi_.name=cpk_.cpi_name and cpi_signer_summary_hash=cpk_.cpi_signer_summary_hash and cpi_.version=cpk_.cpi_version " +
+//                "INNER JOIN CONFIG.cpi_cpk cpk_ " +
+//                "on cpi_.name=cpk_.cpi_name " +
+//                "and cpi_signer_summary_hash=cpk_.cpi_signer_summary_hash and cpi_.version=cpk_.cpi_version " +
 //                "INNER JOIN CONFIG.cpk_metadata cpkmetadata_ on cpk_.cpk_name=cpkmetadata_.cpk_name \n" +
 //                "            and cpk_.cpk_signer_summary_hash=cpkmetadata_.cpk_signer_summary_hash \n" +
 //                "            and cpk_.cpk_version=cpkmetadata_.cpk_version",
