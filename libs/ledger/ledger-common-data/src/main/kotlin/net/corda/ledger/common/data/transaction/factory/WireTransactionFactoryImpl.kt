@@ -74,7 +74,7 @@ class WireTransactionFactoryImpl @Activate constructor(
     }
 
     private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
-        check(componentGroupLists.isNotEmpty()) { "todo text" }
+        check(componentGroupLists.isNotEmpty()) { "Wire transactions cannot be created without at least one component group!" }
     }
 
     private fun parseMetadata(metadataBytes: ByteArray): TransactionMetadata {
