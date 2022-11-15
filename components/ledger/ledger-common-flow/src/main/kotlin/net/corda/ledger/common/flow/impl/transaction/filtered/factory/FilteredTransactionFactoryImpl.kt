@@ -4,7 +4,6 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
@@ -76,7 +75,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             componentGroupIndex
         )
 
-        var proofType = parameters.merkleProofType
         val merkleProof = when (parameters) {
             is ComponentGroupFilterParameters.AuditProof -> {
 
@@ -105,7 +103,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
-                        proofType = MerkleProofType.AUDIT // TODO: It seems that tests do not pass if this is not here...
                         merkleTree.createAuditProof(listOf(0))
                     } else {
                         val componentGroupMerkleTreeSizeProofProvider =
@@ -118,6 +115,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
         }
 
-        return FilteredComponentGroup(componentGroupIndex, merkleProof, proofType)
+        return FilteredComponentGroup(componentGroupIndex, merkleProof, parameters.merkleProofType)
     }
 }
