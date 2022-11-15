@@ -83,10 +83,12 @@ data class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
+    @Deprecated("Temporary function until the argumentless version gets available")
     override fun toSignedTransaction(vararg signatories: PublicKey): UtxoSignedTransaction =
         sign(signatories.toList())
 
     @Suspendable
+    @Deprecated("Temporary function until the argumentless version gets available")
     override fun toSignedTransaction(signatories: Iterable<PublicKey>): UtxoSignedTransaction =
         sign(signatories)
 

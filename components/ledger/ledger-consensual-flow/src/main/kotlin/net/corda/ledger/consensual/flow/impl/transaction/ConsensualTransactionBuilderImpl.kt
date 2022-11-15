@@ -20,15 +20,18 @@ class ConsensualTransactionBuilderImpl(
         copy(states = this.states + states)
 
     @Suspendable
+
     override fun toSignedTransaction(): ConsensualSignedTransaction {
         TODO("Not yet implemented")
     }
 
     @Suspendable
+    @Deprecated("Temporary function until the argumentless version gets available")
     override fun toSignedTransaction(vararg signatories: PublicKey): ConsensualSignedTransaction =
         sign(signatories.toList())
 
     @Suspendable
+    @Deprecated("Temporary function until the argumentless version gets available")
     override fun toSignedTransaction(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
         sign(signatories)
 
