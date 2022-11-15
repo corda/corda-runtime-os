@@ -32,11 +32,11 @@ class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
             "alias",
             ECDSA_SECP256R1_CODE_NAME
         )
-        val eciesParamsProvider = params.get(ephemeralKey, otherPublicKey)
+        val hybridEncryptionParamsProvider = params.get(ephemeralKey, otherPublicKey)
         return EncryptedDataWithKey(
             ephemeralKey,
             plainText,
-            HybridEncryptionParams(eciesParamsProvider.salt, eciesParamsProvider.aad)
+            HybridEncryptionParams(hybridEncryptionParamsProvider.salt, hybridEncryptionParamsProvider.aad)
         )
     }
 }

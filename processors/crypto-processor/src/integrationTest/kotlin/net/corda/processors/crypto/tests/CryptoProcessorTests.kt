@@ -407,7 +407,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new key pair using alias then find it and use for ECIES`(
+    fun `Should generate a new key pair using alias then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val alias = UUID.randomUUID().toString()
@@ -430,7 +430,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new a new fresh key pair then find it and use for ECIES`(
+    fun `Should generate a new a new fresh key pair then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val category = CryptoConsts.Categories.SESSION_INIT

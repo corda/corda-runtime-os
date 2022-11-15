@@ -229,7 +229,7 @@ class MemberInfoExtension {
                 null
             }
 
-        /** Return the key used for ECIES encryption. Only MGMs should have a value set for ecdh key. */
+        /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */
         @JvmStatic
         val MemberInfo.ecdhKey: PublicKey?
             get() = memberProvidedContext.parseOrNull(ECDH_KEY)
