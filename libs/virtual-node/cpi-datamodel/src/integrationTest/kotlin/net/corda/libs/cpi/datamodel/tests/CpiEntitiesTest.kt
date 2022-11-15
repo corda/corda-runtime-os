@@ -379,7 +379,9 @@ class CpiEntitiesIntegrationTest {
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
         }
 
+        assertThat(cpisEagerlyLoaded.size).isEqualTo(2)
         cpisEagerlyLoaded.forEach {
+            assertThat(it.cpks.size).isEqualTo(2)
             it.cpks.forEach { cpkMetadataEntity ->
                 println("****       invoke metadata property ****")
                 assertThat(cpkMetadataEntity.metadata).isNotNull
@@ -393,14 +395,18 @@ class CpiEntitiesIntegrationTest {
             em.transaction {
                 val cpisLazyLoaded = em.findAllCpiMetadata()
 
+                var count = 0
                 cpisLazyLoaded.forEach {
+                    count += 1
                     println("****       cpi has ${it.cpks.size} cpks: ****")
                     it.cpks.forEach { cpkMetadataEntity ->
                         println("****       invoke metadata property ****")
                         assertThat(cpkMetadataEntity.metadata).isNotNull
                         println("****       ${cpkMetadataEntity.metadata.id}****")
                     }
+                    assertThat(it.cpks.size).isEqualTo(2)
                 }
+                assertThat(count).isEqualTo(2)
             }
         }
         println("**** [END] findAllCpiMetadata query as stream ****")

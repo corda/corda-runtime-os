@@ -21,109 +21,129 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Random
-import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.packaging.core.CordappType
+import net.corda.processors.db.internal.reconcile.db.VirtualNodeDbReconcilerReaderTest.Companion.groupId
+import java.util.UUID
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
 
     // TODO - we should maybe have a generator for this dummy data somewhere reusable?
-    private val dummyCpkMetadata = CpkMetadata(
-        CpkIdentifier(
-            "SomeName",
-            "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
-        ),
-        CpkManifest(CpkFormatVersion(2, 3)),
-        "mainBundle.jar",
-        listOf("library.jar"),
-        listOf(
+    private fun genDummyCpkMetadata(name: String): CpkMetadata {
+        return CpkMetadata(
             CpkIdentifier(
-                "SomeName 2",
+                name,
                 "1.0",
                 SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
-            )
-        ),
-        CordappManifest(
-            "net.cordapp.Bundle",
-            "1.2.3",
-            12,
-            34,
-            CordappType.WORKFLOW,
-            "someName",
-            "R3",
-            42,
-            "some license",
-            mapOf(
-                "Corda-Contract-Classes" to "contractClass1, contractClass2",
-                "Corda-Flow-Classes" to "flowClass1, flowClass2"
             ),
-        ),
-        CpkType.CORDA_API,
-        SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-        emptySet(),
-        Instant.now().truncatedTo(ChronoUnit.MILLIS)
-    )
+            CpkManifest(CpkFormatVersion(2, 3)),
+            "mainBundle.jar",
+            listOf("library.jar"),
+            listOf(
+                CpkIdentifier(
+                    "SomeName 2",
+                    "1.0",
+                    SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+                )
+            ),
+            CordappManifest(
+                "net.cordapp.Bundle",
+                "1.2.3",
+                12,
+                34,
+                CordappType.WORKFLOW,
+                name,
+                "R3",
+                42,
+                "some license",
+                mapOf(
+                    "Corda-Contract-Classes" to "contractClass1, contractClass2",
+                    "Corda-Flow-Classes" to "flowClass1, flowClass2"
+                ),
+            ),
+            CpkType.CORDA_API,
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+            emptySet(),
+            Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        )
+    }
 
-    private val dummyCpk =
+    // Make data look valid in format
+    fun genCpk(name: String) =
         CpkMetadataEntity(
-            CpkKey("test-cpk", "2.3.4", "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"),
+            CpkKey("test-cpk-${UUID.randomUUID()}", "2.3.4", "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"),
             "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
             "1.0",
-            dummyCpkMetadata.toJsonAvro(),
+            genDummyCpkMetadata(name).toJsonAvro(),
             isDeleted = false
         )
 
-    private val dummyCpiMetadataEntity =
-        mock<CpiMetadataEntity>() {
-            whenever(it.name).then { "test-cpi" }
-            whenever(it.version).then { "1.2.3" }
-            whenever(it.signerSummaryHash).then { "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA" }
-            whenever(it.fileName).then { "test-cpi.cpi" }
-            whenever(it.fileChecksum).then { "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90" }
-            whenever(it.groupPolicy).then { "{}" }
-            whenever(it.groupId).then { "group-id" }
-            whenever(it.fileUploadRequestId).then { "request-id" }
-            whenever(it.isDeleted).then { false }
-            whenever(it.cpks).then { listOf(dummyCpk).map { CpiCpkEntity(
-                CpiCpkKey(
-                    "test-cpi",
-                    "1.2.3",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-                    it.id.cpkName,
-                    it.id.cpkVersion,
-                    it.id.cpkSignerSummaryHash
-                ),
-                "${it.id.cpkName}.cpk",
-                it.cpkFileChecksum,
-                it
-            ) }.toSet() }
-        }
+    private val dummyCpiMetadataEntities = (1..5).map{
+        val name = "test-cpi-${UUID.randomUUID()}"
+        CpiMetadataEntity(
+            name,
+                version = "1.2.3",
+                signerSummaryHash = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
+                fileName = "test-cpi.cpi",
+                fileChecksum = "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
+                groupPolicy = "{}",
+                groupId = "group-id",
+                fileUploadRequestId = "request-id",
+                isDeleted = false,
+                cpks = (1..5).map {
+                    genCpk(name).run {
+                        CpiCpkEntity(
+                            CpiCpkKey(
+                                "test-cpi-$it",
+                                "1.2.3",
+                                "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
+                                id.cpkName,
+                                id.cpkVersion,
+                                id.cpkSignerSummaryHash
+                            ),
+                            "${id.cpkName}.cpk",
+                            cpkFileChecksum,
+                            this
+                        )
+                    }
+
+                }.toSet()
+        )
+    }
+
 
     @Test
     fun `doGetAllVersionedRecords converts db data to version records`() {
         val typeQuery = mock<TypedQuery<CpiMetadataEntity>>()
-        whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
+        whenever(typeQuery.resultStream).thenReturn(dummyCpiMetadataEntities.stream())
         val em = mock<EntityManager>()
         whenever(em.transaction).thenReturn(mock())
         whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
 
         val versionedRecords = getAllCpiInfoDBVersionedRecords(em).toList()
-        val record = versionedRecords.single()
+        assertThat(versionedRecords.size).isEqualTo(dummyCpiMetadataEntities.size)
 
-        val expectedId = CpiIdentifier(
-            dummyCpiMetadataEntity.name,
-            dummyCpiMetadataEntity.version,
-            SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
+        dummyCpiMetadataEntities.forEach {
+            val dummyCpiMetadataEntity = it
+            val record = versionedRecords.single {
+                it.key == CpiIdentifier(dummyCpiMetadataEntity.name, dummyCpiMetadataEntity.version, SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
+            }
 
-        assertThat(record.key).isEqualTo(expectedId)
-        assertThat(record.value.cpiId).isEqualTo(expectedId)
+            val expectedId = CpiIdentifier(
+                dummyCpiMetadataEntity.name,
+                dummyCpiMetadataEntity.version,
+                SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
 
-        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.parse(dummyCpiMetadataEntity.fileChecksum))
-        assertThat(record.value.groupPolicy).isEqualTo(dummyCpiMetadataEntity.groupPolicy)
-        assertThat(record.value.cpksMetadata).containsExactly(dummyCpkMetadata)
+            assertThat(record.key).isEqualTo(expectedId)
+            assertThat(record.value.cpiId).isEqualTo(expectedId)
+
+            assertThat(record.value.fileChecksum).isEqualTo(SecureHash.parse(dummyCpiMetadataEntity.fileChecksum))
+            assertThat(record.value.groupPolicy).isEqualTo(dummyCpiMetadataEntity.groupPolicy)
+            assertThat(it.cpks.map { cpk -> cpk.metadata.id.cpkName }).isEqualTo(record.value.cpksMetadata.map { cpk -> cpk.cpkId.name })
+        }
     }
 }
