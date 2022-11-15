@@ -20,9 +20,10 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.toList
 
@@ -326,13 +327,26 @@ class CpiEntitiesIntegrationTest {
         assertThat(cpkDataEntity).isEqualTo(insertedCpks[0])
     }
 
-    @Test
+    @RepeatedTest(10)
     fun `findAllCpiMetadata properly streams through DB data`() {
+        val testDbConf = DbUtils.getEntityManagerConfiguration("cpi_db_${UUID.randomUUID()}")
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
             CpiEntities.classes.toList(),
-            dbConfig
+            testDbConf
         )
+
+        testDbConf.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, ClassloaderChangeLog(
+                linkedSetOf(
+                    ClassloaderChangeLog.ChangeLogResourceFiles(
+                        DbSchema::class.java.packageName,
+                        listOf("net/corda/db/schema/config/db.changelog-master.xml"),
+                        DbSchema::class.java.classLoader
+                    )
+                )
+            ))
+        }
 
         val cpis = mutableListOf<CpiMetadataEntity>()
 
