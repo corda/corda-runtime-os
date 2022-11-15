@@ -16,13 +16,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 
 /**
  * Reconciler for handling reconciliation between each vnode vault database on the cluster
@@ -58,97 +54,54 @@ class GroupParametersReconciler(
             )
 
     @VisibleForTesting
-    internal val dbReconcilers =
-        ConcurrentHashMap<HoldingIdentity, DbReconcilerReader<HoldingIdentity, GroupParameters>>()
-
-    @VisibleForTesting
-    internal val emfBucket = ConcurrentHashMap<String, EntityManagerFactory>()
+    internal var dbReconciler: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
 
     override fun close() {
-        dbReconcilers.forEach { (_, reader) ->
-            reader.stop()
-        }
-        dbReconcilers.clear()
+        dbReconciler?.stop()
     }
-
-    var virtualNodeReadServiceCallback: AutoCloseable? = null
 
     override fun updateInterval(intervalMillis: Long) {
         logger.debug { "Group parameters reconciliation interval set to $intervalMillis ms" }
 
-        // Build database reconciler readers for all virtual nodes which do not yet have a reconciler reader.
-        virtualNodeInfoReadService.getAll().forEach(::buildVNodeReconcilerReader)
-
-        // Register a callback so we can react to new virtual nodes being created.
-        virtualNodeReadServiceCallback?.close()
-        virtualNodeReadServiceCallback = virtualNodeInfoReadService.registerCallback { changedKeys, currentSnapshot ->
-            changedKeys.forEach {
-                val vnodeInfo = currentSnapshot[it]
-
-                // If virtual node info was removed
-                if (vnodeInfo == null) {
-                    // Stop and remove any existing database reconcile reader
-                    dbReconcilers.computeIfPresent(it) { _, oldValue ->
-                        oldValue.stop()
-                        null
-                    }
-                } else {
-                    // build a database reconiler reader if one does not yet exist.
-                    buildVNodeReconcilerReader(vnodeInfo)
-                }
-            }
+        dbReconciler = DbReconcilerReader(
+            coordinatorFactory,
+            HoldingIdentity::class.java,
+            GroupParameters::class.java,
+            dependencies,
+            ::reconciliationInfoFactory,
+            ::getVersionRecords,
+            onStreamClose = ::onStreamClose
+        ).also {
+            it.start()
         }
+    }
+
+    private fun reconciliationInfoFactory() = virtualNodeInfoReadService.getAll().map {
+        ReconciliationInfo.VirtualNodeReconciliationInfo(
+            dbConnectionManager.createEntityManagerFactory(
+                it.vaultDmlConnectionId,
+                entitiesSet
+            ),
+            it.holdingIdentity
+        )
     }
 
     /**
-     * Build a DBReconcileReader for a virtual node.
-     * Only create if one does not already exist for the virtual node.
+     * Close the previously created EntityManagerFactory.
      */
-    private fun buildVNodeReconcilerReader(vnodeInfo: VirtualNodeInfo) {
-        dbReconcilers.computeIfAbsent(vnodeInfo.holdingIdentity) { holdingId ->
-            val uniqueId = "${holdingId.shortHash.value}-${UUID.randomUUID()}"
+    private fun onStreamClose(reconciliationInfo: ReconciliationInfo) = reconciliationInfo.emf.close()
 
-            /**
-             * Create EntityManagerFactory and store it under a unique ID to be closed after use.
-             */
-            fun emfFactory() = dbConnectionManager.createEntityManagerFactory(
-                vnodeInfo.vaultDmlConnectionId,
-                entitiesSet
-            ).also { emf ->
-                emfBucket[uniqueId] = emf
-            }
-
-            /**
-             * Close the previously created EntityManagerFactory.
-             */
-            fun emfTearDown() = emfBucket.remove(uniqueId)?.close()
-
-            /**
-             * Query for the group parameters entity, using the vnode information to build the key.
-             */
-            fun getVersionedRecords(em: EntityManager) = getVersionRecordsForHoldingIdentity(em, holdingId)
-
-            DbReconcilerReader(
-                coordinatorFactory,
-                HoldingIdentity::class.java,
-                GroupParameters::class.java,
-                dependencies,
-                ::emfFactory,
-                ::getVersionedRecords,
-                onStreamClose = ::emfTearDown
-            ).also {
-                it.start()
-            }
-        }
-    }
 
     /**
      * Retrieve the group parameters [VersionedRecord] for a specific virtual node.
      */
-    private fun getVersionRecordsForHoldingIdentity(
+    private fun getVersionRecords(
         em: EntityManager,
-        holdingId: HoldingIdentity
+        reconciliationInfo: ReconciliationInfo
     ): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
+        require(reconciliationInfo is ReconciliationInfo.VirtualNodeReconciliationInfo) {
+            "Reconciliation information must be virtual node level for group parameters reconciliation"
+        }
         val criteriaBuilder = em.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
 
@@ -167,7 +120,7 @@ class GroupParametersReconciler(
             object : VersionedRecord<HoldingIdentity, GroupParameters> {
                 override val version = entity.epoch
                 override val isDeleted = false
-                override val key = holdingId
+                override val key = reconciliationInfo.holdingIdentity
                 override val value = groupParametersFactory.create(deserializedParams)
             }
         )

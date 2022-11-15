@@ -61,7 +61,7 @@ class ConfigReconciler(
                     String::class.java,
                     Configuration::class.java,
                     dependencies,
-                    ::entityManagerFactory,
+                    { listOf(ReconciliationInfo.ClusterReconciliationInfo(entityManagerFactory)) },
                     getAllConfigDBVersionedRecords,
                     ::onStatusUp,
                     ::onStatusDown

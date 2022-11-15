@@ -1,5 +1,6 @@
 package net.corda.reconciliation.impl
 
+import kotlin.streams.asSequence
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -14,11 +15,10 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
-    private val dbReaders: Collection<ReconcilerReader<K, V>>,
+    private val dbReader: ReconcilerReader<K, V>,
     private val kafkaReader: ReconcilerReader<K, V>,
     private val writer: ReconcilerWriter<K, V>,
     keyClass: Class<K>,
@@ -49,18 +49,15 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         readersWritersRegistration?.close()
         readersWritersRegistration = coordinator.followStatusChangesByName(
-            dbReaders.map { it.lifecycleCoordinatorName }.toSet() +
-                    setOf(
-                        kafkaReader.lifecycleCoordinatorName,
-                        writer.lifecycleCoordinatorName
-                    )
+            setOf(
+                dbReader.lifecycleCoordinatorName,
+                kafkaReader.lifecycleCoordinatorName,
+                writer.lifecycleCoordinatorName
+            )
         )
     }
 
-    private fun onRegistrationStatusChangeEvent(
-        event: RegistrationStatusChangeEvent,
-        coordinator: LifecycleCoordinator
-    ) {
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             logger.info("Starting reconciliations")
             reconcileAndScheduleNext(coordinator)
@@ -95,40 +92,36 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     /**
      * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
-    @Suppress("ComplexMethod", "NestedBlockDepth")
+    @Suppress("ComplexMethod")
     fun reconcile() {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
 
         val toBeReconciledDbRecords =
-            dbReaders.map {
-                it.getAllVersionedRecords()?.filter { dbRecord ->
-                    val matchedKafkaRecord = kafkaRecords[dbRecord.key]
-                    val toBeReconciled = if (matchedKafkaRecord == null) {
-                        !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
-                    } else {
-                        dbRecord.version > matchedKafkaRecord.version // reconcile db updates
-                                || dbRecord.isDeleted // reconcile db deletes
-                    }
-
-                    if (toBeReconciled) {
-                        logger.debug { "DbRecord[k=${dbRecord.key},v=${dbRecord.version}] marked for reconciliation" }
-                    }
-
-                    toBeReconciled
+            dbReader.getAllVersionedRecords()?.filter { dbRecord ->
+                val matchedKafkaRecord = kafkaRecords[dbRecord.key]
+                val toBeReconciled = if (matchedKafkaRecord == null) {
+                    !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
+                } else {
+                    dbRecord.version > matchedKafkaRecord.version // reconcile db updates
+                            || dbRecord.isDeleted // reconcile db deletes
                 }
-                    ?: throw ReconciliationException("Error occurred while retrieving db records")
-            }
 
-        toBeReconciledDbRecords.forEach { stream ->
-            stream.use {
-                it.forEach { dbRecord ->
-                    if (dbRecord.isDeleted) {
-                        writer.remove(dbRecord.key)
-                    } else {
-                        writer.put(dbRecord.key, dbRecord.value)
-                    }
+                if (toBeReconciled) {
+                    logger.debug { "DbRecord[k=${dbRecord.key},v=${dbRecord.version}] marked for reconciliation" }
+                }
+
+                toBeReconciled
+            }
+                ?: throw ReconciliationException("Error occurred while retrieving db records")
+
+        toBeReconciledDbRecords.use {
+            it.forEach { dbRecord ->
+                if (dbRecord.isDeleted) {
+                    writer.remove(dbRecord.key)
+                } else {
+                    writer.put(dbRecord.key, dbRecord.value)
                 }
             }
         }
@@ -158,7 +151,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     internal data class ReconcileEvent(override val key: String) : TimerEvent
 
-    internal data class UpdateIntervalEvent(val intervalMs: Long) : LifecycleEvent
+    internal data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
 
     private class ReconciliationException(message: String) : CordaRuntimeException(message)
 }

@@ -62,7 +62,7 @@ class VirtualNodeReconciler(
                     HoldingIdentity::class.java,
                     VirtualNodeInfo::class.java,
                     dependencies,
-                    ::entityManagerFactory,
+                    { listOf(ReconciliationInfo.ClusterReconciliationInfo(entityManagerFactory)) },
                     getAllVirtualNodesDBVersionedRecords,
                     ::onStatusUp,
                     ::onStatusDown

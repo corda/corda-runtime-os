@@ -22,22 +22,5 @@ class ReconcilerFactoryImpl @Activate constructor(
         valueClass: Class<V>,
         reconciliationIntervalMs: Long
     ): Reconciler =
-        create(
-            listOf(dbReader),
-            kafkaReader,
-            writer,
-            keyClass,
-            valueClass,
-            reconciliationIntervalMs
-        )
-
-    override fun <K : Any, V : Any> create(
-        dbReaders: Collection<ReconcilerReader<K, V>>,
-        kafkaReader: ReconcilerReader<K, V>,
-        writer: ReconcilerWriter<K, V>,
-        keyClass: Class<K>,
-        valueClass: Class<V>,
-        reconciliationIntervalMs: Long
-    ): Reconciler =
-        ReconcilerImpl(dbReaders, kafkaReader, writer, keyClass, valueClass, coordinatorFactory, reconciliationIntervalMs)
+        ReconcilerImpl(dbReader, kafkaReader, writer, keyClass, valueClass, coordinatorFactory, reconciliationIntervalMs)
 }

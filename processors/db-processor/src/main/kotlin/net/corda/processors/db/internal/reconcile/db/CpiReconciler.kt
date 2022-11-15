@@ -63,7 +63,7 @@ class CpiReconciler(
                     CpiIdentifier::class.java,
                     CpiMetadata::class.java,
                     dependencies,
-                    ::entityManagerFactory,
+                    { listOf(ReconciliationInfo.ClusterReconciliationInfo(entityManagerFactory)) },
                     getAllCpiInfoDBVersionedRecords,
                     ::onStatusUp,
                     ::onStatusDown

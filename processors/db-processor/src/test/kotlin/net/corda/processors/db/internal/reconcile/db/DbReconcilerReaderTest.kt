@@ -50,15 +50,15 @@ class DbReconcilerReaderTest {
 
     private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
     private val dependenciesMock: Set<LifecycleCoordinatorName> = setOf(dependencyMock)
-    private val entityManagerFactoryFactoryMock: () -> EntityManagerFactory = mock {
-        on { invoke() } doReturn emf
+    private val reconciliationInfoFactory: () -> Collection<ReconciliationInfo> = mock {
+        on { invoke() } doReturn listOf(ReconciliationInfo.ClusterReconciliationInfo(emf))
     }
-    private val getAllVersionRecordsMock: (EntityManager) -> Stream<VersionedRecord<String, Int>> = mock {
-        on { invoke(eq(em)) } doReturn versionedRecordsStream
+    private val getAllVersionRecordsMock: (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<String, Int>> = mock {
+        on { invoke(eq(em), any()) } doReturn versionedRecordsStream
     }
     private val onStatusUpMock: () -> Unit = mock()
     private val onStatusDownMock: () -> Unit = mock()
-    private val onStreamCloseMock: () -> Unit = mock()
+    private val onStreamCloseMock: (ReconciliationInfo) -> Unit = mock()
 
     private val coordinatorNameCaptor = argumentCaptor<LifecycleCoordinatorName>()
     private val lifecycleEventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
@@ -87,7 +87,7 @@ class DbReconcilerReaderTest {
         String::class.java,
         Int::class.java,
         dependenciesMock,
-        entityManagerFactoryFactoryMock,
+        reconciliationInfoFactory,
         getAllVersionRecordsMock,
         onStatusUpMock,
         onStatusDownMock,
@@ -267,14 +267,13 @@ class DbReconcilerReaderTest {
 
         @Test
         fun `Expected services called when get versioned records executed successfully`() {
-            val output = dbReconcilerReader.getAllVersionedRecords()
-            assertThat(output).isEqualTo(versionedRecordsStream)
+            dbReconcilerReader.getAllVersionedRecords()
 
-            verify(entityManagerFactoryFactoryMock).invoke()
+            verify(reconciliationInfoFactory).invoke()
             verify(emf).createEntityManager()
             verify(em).transaction
             verify(transaction).begin()
-            verify(getAllVersionRecordsMock).invoke(eq(em))
+            verify(getAllVersionRecordsMock).invoke(eq(em), any())
             verify(versionedRecordsStream).onClose(any())
         }
 
@@ -285,13 +284,13 @@ class DbReconcilerReaderTest {
 
             verify(transaction, never()).rollback()
             verify(em, never()).close()
-            verify(onStreamCloseMock, never()).invoke()
+            verify(onStreamCloseMock, never()).invoke(any())
 
             onClose.run()
 
             verify(transaction).rollback()
             verify(em).close()
-            verify(onStreamCloseMock).invoke()
+            verify(onStreamCloseMock).invoke(any())
         }
     }
 
@@ -302,14 +301,14 @@ class DbReconcilerReaderTest {
 
         @Test
         fun `Failure to create entity manager factory posts error event`() {
-            whenever(entityManagerFactoryFactoryMock.invoke()) doThrow RuntimeException(errorMsg)
+            whenever(reconciliationInfoFactory.invoke()) doThrow RuntimeException(errorMsg)
 
             val output = assertDoesNotThrow {
                 dbReconcilerReader.getAllVersionedRecords()
             }
             val postedEvent = postEventCaptor.firstValue
 
-            verify(entityManagerFactoryFactoryMock).invoke()
+            verify(reconciliationInfoFactory).invoke()
             assertThat(output).isNull()
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
@@ -362,14 +361,14 @@ class DbReconcilerReaderTest {
 
         @Test
         fun `Failure to get all versioned records posts error event`() {
-            whenever(getAllVersionRecordsMock.invoke(eq(em))) doThrow RuntimeException(errorMsg)
+            whenever(getAllVersionRecordsMock.invoke(eq(em), any())) doThrow RuntimeException(errorMsg)
 
             val output = assertDoesNotThrow {
                 dbReconcilerReader.getAllVersionedRecords()
             }
             val postedEvent = postEventCaptor.firstValue
 
-            verify(getAllVersionRecordsMock).invoke(eq(em))
+            verify(getAllVersionRecordsMock).invoke(eq(em), any())
             assertThat(output).isNull()
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)

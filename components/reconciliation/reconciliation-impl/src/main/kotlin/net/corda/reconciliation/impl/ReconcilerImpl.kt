@@ -8,7 +8,7 @@ import net.corda.reconciliation.ReconcilerWriter
 
 @Suppress("LongParameterList")
 internal class ReconcilerImpl<K : Any, V : Any>(
-    dbReaders: Collection<ReconcilerReader<K, V>>,
+    dbReader: ReconcilerReader<K, V>,
     kafkaReader: ReconcilerReader<K, V>,
     writer: ReconcilerWriter<K, V>,
     keyClass: Class<K>,
@@ -23,7 +23,7 @@ internal class ReconcilerImpl<K : Any, V : Any>(
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName(name),
             ReconcilerEventHandler(
-                dbReaders,
+                dbReader,
                 kafkaReader,
                 writer,
                 keyClass,

@@ -12,7 +12,7 @@ class ReconcilerImplTest {
     fun `reconciler name contains generic arguments`() {
         val reconciler =
             ReconcilerImpl(
-                listOf(mock()),
+                mock(),
                 mock(),
                 mock(),
                 String::class.java,

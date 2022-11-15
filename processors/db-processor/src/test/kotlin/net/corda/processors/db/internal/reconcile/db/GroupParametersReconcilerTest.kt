@@ -16,12 +16,10 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -105,11 +103,8 @@ class GroupParametersReconcilerTest {
         on { createEntityManagerFactory(eq(vnode3.vaultDmlConnectionId), any()) } doReturn emf3
     }
 
-    private val vNodeListenerHandle: AutoCloseable = mock()
-    private val vnodeListenerCaptor = argumentCaptor<VirtualNodeInfoListener>()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getAll() } doReturn allVNodesOnStartup
-        on { registerCallback(vnodeListenerCaptor.capture()) } doReturn vNodeListenerHandle
     }
 
     private val entitiesSet: JpaEntitiesSet = mock()
@@ -133,13 +128,10 @@ class GroupParametersReconcilerTest {
     @Nested
     inner class BuildReadersPerExistingVNodeTest {
         @Test
-        fun `Successfully build readers for all existing vnodes`() {
+        fun `Successfully build reader`() {
             groupParametersReconciler.updateInterval(1000)
 
-            verify(vNodeListenerHandle, never()).close()
-            verify(virtualNodeInfoReadService).getAll()
-            assertThat(groupParametersReconciler.dbReconcilers)
-                .hasSize(2)
+            assertThat(groupParametersReconciler.dbReconciler).isNotNull
         }
     }
 
@@ -149,29 +141,34 @@ class GroupParametersReconcilerTest {
         fun `get versioned records query acts as expected`() {
             groupParametersReconciler.updateInterval(1000)
 
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            groupParametersReconciler.dbReconcilers.forEach { (holdingId, reader) ->
-                val output = reader.getAllVersionedRecords()
-                assertThat(output).isNotNull
+            assertThat(groupParametersReconciler.dbReconciler).isNotNull
 
-                val records = output?.collect(Collectors.toList())
-                assertThat(records).isNotNull.hasSize(1)
+            val output = groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
+            assertThat(output).isNotNull
 
-                val record = records!!.first()
-                assertThat(record.key).isEqualTo(holdingId)
-                assertThat(record.value).isEqualTo(groupParameters)
-                assertThat(record.isDeleted).isFalse
-                assertThat(record.version).isEqualTo(9)
-            }
+            val records = output?.collect(Collectors.toList())
+            assertThat(records).isNotNull.hasSize(2)
+
+            assertThat(records?.map { it.key }).isNotNull.containsExactlyInAnyOrder(
+                vnode1.holdingIdentity,
+                vnode2.holdingIdentity
+            )
+            assertThat(records?.map { it.value }).isNotNull.isEqualTo(
+                listOf(groupParameters, groupParameters)
+            )
+            assertThat(records?.map { it.isDeleted }).isNotNull.isEqualTo(
+                listOf(false, false)
+            )
+            assertThat(records?.map { it.version }).isNotNull.isEqualTo(
+                listOf(9, 9)
+            )
         }
 
         @Test
         fun `processing versioned records stream calls expected functions`() {
             groupParametersReconciler.updateInterval(1000)
 
-            groupParametersReconciler.dbReconcilers.forEach { (_, reader) ->
-                reader.getAllVersionedRecords()?.collect(Collectors.toList())
-            }
+            groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
 
             verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
             verify(em1).criteriaBuilder
@@ -184,12 +181,18 @@ class GroupParametersReconcilerTest {
         }
 
         @Test
-        fun `Closing the versioned records stream closes resources`() {
+        fun `Consuming the versioned records stream closes resources`() {
             groupParametersReconciler.updateInterval(1000)
 
-            groupParametersReconciler.dbReconcilers.forEach { (_, reader) ->
-                reader.getAllVersionedRecords()?.close()
-            }
+            val stream = groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
+            verify(emf1, never()).close()
+            verify(emf2, never()).close()
+            verify(em1, never()).close()
+            verify(em2, never()).close()
+            verify(tx1, never()).rollback()
+            verify(tx2, never()).rollback()
+
+            stream?.collect(Collectors.toList())
 
             verify(emf1).close()
             verify(emf2).close()
@@ -200,109 +203,15 @@ class GroupParametersReconcilerTest {
         }
 
         @Test
-        fun `Closing the versioned records stream removes held reference to EMF`() {
-            assertThat(groupParametersReconciler.emfBucket).isEmpty()
-            groupParametersReconciler.updateInterval(1000)
-
-            assertThat(groupParametersReconciler.emfBucket).isEmpty()
-            val streams = groupParametersReconciler.dbReconcilers.map { (_, reader) ->
-                reader.getAllVersionedRecords()
-            }
-            assertThat(groupParametersReconciler.emfBucket).hasSize(2)
-
-            streams.forEach { it?.close() }
-            assertThat(groupParametersReconciler.emfBucket).isEmpty()
-        }
-
-        @Test
         fun `get versioned records query only queries for a single value`() {
             groupParametersReconciler.updateInterval(1000)
 
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            groupParametersReconciler.dbReconcilers.forEach { (_, reader) ->
-                reader.getAllVersionedRecords()
+            assertThat(groupParametersReconciler.dbReconciler).isNotNull
+            groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
 
-                assertThat(maxResultsCaptor.firstValue).isEqualTo(1)
-            }
+            assertThat(maxResultsCaptor.firstValue).isEqualTo(1)
         }
     }
-
-    @Nested
-    inner class VNodeCallbackTest {
-        @Test
-        fun `callback is registered with the virtual node info service`() {
-            groupParametersReconciler.updateInterval(1000)
-
-            verify(vNodeListenerHandle, never()).close()
-            assertDoesNotThrow {
-                vnodeListenerCaptor.firstValue
-            }
-        }
-
-        @Test
-        fun `existing callback is closed before creating a new one`() {
-            groupParametersReconciler.updateInterval(1000)
-            groupParametersReconciler.updateInterval(1000)
-
-            verify(vNodeListenerHandle).close()
-            assertDoesNotThrow {
-                vnodeListenerCaptor.firstValue
-            }
-        }
-
-        @Test
-        fun `VNode callback creates reader for new vnodes`() {
-            groupParametersReconciler.updateInterval(1000)
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            val listener = vnodeListenerCaptor.firstValue
-
-            listener.onUpdate(
-                setOf(vnode3.holdingIdentity),
-                mapOf(
-                    vnode1.holdingIdentity to vnode1,
-                    vnode2.holdingIdentity to vnode2,
-                    vnode3.holdingIdentity to vnode3,
-                )
-            )
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(3)
-        }
-
-        @Test
-        fun `VNode callback closes for reader if vnode was removed`() {
-            groupParametersReconciler.updateInterval(1000)
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            val listener = vnodeListenerCaptor.firstValue
-
-            listener.onUpdate(
-                setOf(vnode2.holdingIdentity),
-                mapOf(
-                    vnode1.holdingIdentity to vnode1
-                )
-            )
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(1)
-        }
-
-        @Test
-        fun `VNode callback doesn't create new readers if vnode with existing reconciler changes`() {
-            groupParametersReconciler.updateInterval(1000)
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            val originalReader1 = groupParametersReconciler.dbReconcilers[vnode1.holdingIdentity]
-            val originalReader2 = groupParametersReconciler.dbReconcilers[vnode2.holdingIdentity]
-            val listener = vnodeListenerCaptor.firstValue
-
-            listener.onUpdate(
-                setOf(vnode2.holdingIdentity),
-                mapOf(
-                    vnode1.holdingIdentity to vnode1,
-                    vnode2.holdingIdentity to vnode2
-                )
-            )
-            assertThat(groupParametersReconciler.dbReconcilers).hasSize(2)
-            assertThat(originalReader1).isEqualTo(groupParametersReconciler.dbReconcilers[vnode1.holdingIdentity])
-            assertThat(originalReader2).isEqualTo(groupParametersReconciler.dbReconcilers[vnode2.holdingIdentity])
-        }
-    }
-
 
     private fun buildVnodeInfo(
         memberName: String,

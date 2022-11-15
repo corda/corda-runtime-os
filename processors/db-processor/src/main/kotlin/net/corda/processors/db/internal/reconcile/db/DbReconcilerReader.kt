@@ -17,7 +17,6 @@ import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 
 /**
  * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
@@ -32,11 +31,11 @@ class DbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
-    private val entityManagerFactoryFactory: () -> EntityManagerFactory,
-    private val doGetAllVersionedRecords: (EntityManager) -> Stream<VersionedRecord<K, V>>,
+    private val reconciliationInfoFactory: () -> Collection<ReconciliationInfo>,
+    private val doGetAllVersionedRecords: (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<K, V>>,
     private val onStatusUp: (() -> Unit)? = null,
     private val onStatusDown: (() -> Unit)? = null,
-    private val onStreamClose: (() -> Unit)? = null
+    private val onStreamClose: ((reconciliationInfo: ReconciliationInfo) -> Unit)? = null
 ) : ReconcilerReader<K, V>, Lifecycle {
 
     private val name = "${DbReconcilerReader::class.java.simpleName}<${keyClass.simpleName}, ${valueClass.simpleName}>"
@@ -101,18 +100,22 @@ class DbReconcilerReader<K : Any, V : Any>(
      * event should be scheduled notifying the service about the error. Then the calling service which should
      * be following this service will get notified of this service's stop event as well.
      */
+    @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
         return try {
-            val em = entityManagerFactoryFactory.invoke().createEntityManager()
-            val currentTransaction = em.transaction
-            currentTransaction.begin()
-            doGetAllVersionedRecords(em).onClose {
-                // This class only have access to this em and transaction. This is a read only transaction,
-                // only used for making streaming DB data possible.
-                currentTransaction.rollback()
-                em.close()
-                onStreamClose?.invoke()
+            val streams = reconciliationInfoFactory.invoke().map { reconciliationInfo ->
+                val em = reconciliationInfo.emf.createEntityManager()
+                val currentTransaction = em.transaction
+                currentTransaction.begin()
+                doGetAllVersionedRecords(em, reconciliationInfo).onClose {
+                    // This class only have access to this em and transaction. This is a read only transaction,
+                    // only used for making streaming DB data possible.
+                    currentTransaction.rollback()
+                    em.close()
+                    onStreamClose?.invoke(reconciliationInfo)
+                }
             }
+            Stream.of(*streams.toTypedArray()).flatMap { i -> i }
         } catch (e: Exception) {
             logger.warn("Error while retrieving records for reconciliation", e)
             coordinator.postEvent(GetRecordsErrorEvent(e))
