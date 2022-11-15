@@ -14,7 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     api "net.corda:corda-membership-schema"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
