@@ -196,7 +196,6 @@ class FilteredTransactionFactoryImplTest {
     }
 
     @Test
-    @Disabled("Empty component groups are not currently allowed. Enable this test when component groups can be empty.")
     fun `creates an audit proof containing a default value instead of a size proof when the component group contains no components`() {
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
