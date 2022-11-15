@@ -26,17 +26,16 @@ import javax.persistence.TypedQuery
 import kotlin.streams.toList
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.packaging.core.CordappType
-import net.corda.processors.db.internal.reconcile.db.VirtualNodeDbReconcilerReaderTest.Companion.groupId
 import java.util.UUID
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
 
     // TODO - we should maybe have a generator for this dummy data somewhere reusable?
-    private fun genDummyCpkMetadata(name: String): CpkMetadata {
+    private fun genDummyCpkMetadata(cpiName: String, cpkName: String): CpkMetadata {
         return CpkMetadata(
             CpkIdentifier(
-                name,
+                cpkName,
                 "1.0",
                 SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
             ),
@@ -56,7 +55,7 @@ class CpiInfoDbReconcilerReaderTest {
                 12,
                 34,
                 CordappType.WORKFLOW,
-                name,
+                cpiName,
                 "R3",
                 42,
                 "some license",
@@ -73,14 +72,16 @@ class CpiInfoDbReconcilerReaderTest {
     }
 
     // Make data look valid in format
-    fun genCpk(name: String) =
-        CpkMetadataEntity(
-            CpkKey("test-cpk-${UUID.randomUUID()}", "2.3.4", "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"),
+    fun genCpk(cpiName: String): CpkMetadataEntity {
+        val cpkName = "test-cpk-${UUID.randomUUID()}"
+        return CpkMetadataEntity(
+            CpkKey(cpkName, "2.3.4", "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"),
             "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
             "1.0",
-            genDummyCpkMetadata(name).toJsonAvro(),
+            genDummyCpkMetadata(cpiName, cpkName).toJsonAvro(),
             isDeleted = false
         )
+    }
 
     private val dummyCpiMetadataEntities = (1..5).map{
         val name = "test-cpi-${UUID.randomUUID()}"
@@ -129,8 +130,12 @@ class CpiInfoDbReconcilerReaderTest {
 
         dummyCpiMetadataEntities.forEach {
             val dummyCpiMetadataEntity = it
-            val record = versionedRecords.single {
-                it.key == CpiIdentifier(dummyCpiMetadataEntity.name, dummyCpiMetadataEntity.version, SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
+            val record = versionedRecords.single { vr ->
+                CpiIdentifier(
+                    dummyCpiMetadataEntity.name,
+                    dummyCpiMetadataEntity.version,
+                    SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash)
+                ) == vr.key
             }
 
             val expectedId = CpiIdentifier(
