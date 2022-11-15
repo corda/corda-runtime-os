@@ -22,7 +22,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.toList
 
@@ -334,29 +334,37 @@ class CpiEntitiesIntegrationTest {
             dbConfig
         )
 
+        val cpis = mutableListOf<CpiMetadataEntity>()
+
         // Create CPIs First
         for (i in 0..1) {
             val cpiId = UUID.randomUUID()
-            val cpkName = "test-cpk$i"
-            val cpkVersion = "$i.2.3"
-            val cpkSSH = TestObject.randomChecksumString()
-            val cpkMetadataEntity =
-                TestObject.createCpiCpkEntity(
-                    "test-cpi-$cpiId", "1.0", "test-cpi-hash",
-                    cpkName, cpkVersion, cpkSSH,
-                    "test-cpk.cpk$i", TestObject.randomChecksumString(),
+            val cpks = (1..2).associate {
+                val cpkName = "test-cpk$it"
+                val cpkVersion = "$i.2.3"
+                val cpkSSH = TestObject.randomChecksumString()
+                val cpkMetadataEntity =
+                    TestObject.createCpiCpkEntity(
+                        "test-cpi-$cpiId", "1.0", "test-cpi-hash",
+                        cpkName, cpkVersion, cpkSSH,
+                        "test-cpk.cpk$it", TestObject.randomChecksumString(),
+                    )
+                val cpkData = CpkFileEntity(
+                    CpkKey(cpkName, cpkVersion, cpkSSH),
+                    cpkMetadataEntity.cpkFileChecksum,
+                    ByteArray(2000),
                 )
-            val cpkData = CpkFileEntity(
-                CpkKey(cpkName, cpkVersion, cpkSSH),
-                cpkMetadataEntity.cpkFileChecksum,
-                ByteArray(2000),
-            )
-            val cpi = TestObject.createCpi(cpiId, setOf(cpkMetadataEntity))
+                cpkMetadataEntity to cpkData
+            }
+            val cpi = TestObject.createCpi(cpiId, cpks.keys)
+            cpis.add(cpi)
 
             emFactory.use { em ->
                 em.transaction {
                     it.persist(cpi)
-                    it.persist(cpkData)
+                    cpks.values.forEach { cpkData ->
+                        it.persist(cpkData)
+                    }
                     it.flush()
                 }
             }
@@ -386,9 +394,11 @@ class CpiEntitiesIntegrationTest {
                 val cpisLazyLoaded = em.findAllCpiMetadata()
 
                 cpisLazyLoaded.forEach {
+                    println("****       cpi has ${it.cpks.size} cpks: ****")
                     it.cpks.forEach { cpkMetadataEntity ->
                         println("****       invoke metadata property ****")
                         assertThat(cpkMetadataEntity.metadata).isNotNull
+                        println("****       ${cpkMetadataEntity.metadata.id}****")
                     }
                 }
             }

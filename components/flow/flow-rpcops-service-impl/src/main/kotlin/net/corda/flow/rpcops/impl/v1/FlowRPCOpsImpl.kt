@@ -1,7 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
@@ -42,6 +40,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
@@ -96,6 +96,15 @@ class FlowRPCOpsImpl @Activate constructor(
 
         val flowClassName = startFlow.flowClassName
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
+        if (startableFlows.isEmpty()) {
+            val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+            log.warn("CPI (${cpiMeta?.cpiId?.name} [${cpiMeta?.cpiId?.version}], " +
+                    "containing ${cpiMeta?.cpksMetadata?.joinToString(",") { "${it.cpkId.name}[${it.cpkId.version}]" }}, " +
+                    "does not have any startable flows")
+            cpiMeta?.cpksMetadata?.forEach {
+                log.info("Manifest for ${it.cpkId.name}[${it.cpkId.version}]: ${it.cordappManifest.attributes}")
+            }
+        }
         if (!startableFlows.contains(flowClassName)) {
             val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
             val msg = "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
