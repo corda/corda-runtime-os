@@ -1,6 +1,5 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.InternalNotaryException
 import com.r3.corda.notary.plugin.common.toNotarisationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
@@ -21,30 +20,44 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
+import java.lang.IllegalStateException
 
 /**
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-// TODO CORE-7249 Remove `open` qualifier when we have an actual logic
+// TODO CORE-7249 Currently we need to `spy` this flow because some of the logic is missing and we need to "mock" it.
+//  Mockito needs the class the be open to spy it. We need to remove `open` qualifier when we have an actual logic.
 @InitiatedBy(protocol = "non-validating-notary")
-open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
+open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
-    internal lateinit var clientService: LedgerUniquenessCheckerClientService
+    private lateinit var clientService: LedgerUniquenessCheckerClientService
 
     @CordaInject
-    internal lateinit var serializationService: SerializationService
+    private lateinit var serializationService: SerializationService
 
     @CordaInject
-    internal lateinit var signatureVerifier: DigitalSignatureVerificationService
+    private lateinit var signatureVerifier: DigitalSignatureVerificationService
 
     @CordaInject
-    internal lateinit var memberLookup: MemberLookup
+    private lateinit var memberLookup: MemberLookup
 
     private companion object {
         val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
+    }
+
+    internal constructor(
+        clientService: LedgerUniquenessCheckerClientService,
+        serializationService: SerializationService,
+        signatureVerifier: DigitalSignatureVerificationService,
+        memberLookup: MemberLookup
+    ) : this() {
+        this.clientService = clientService
+        this.serializationService = serializationService
+        this.signatureVerifier = signatureVerifier
+        this.memberLookup = memberLookup
     }
 
     /**
@@ -97,16 +110,11 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
             }
 
             session.send(uniquenessResponse.toNotarisationResponse())
-        } catch (e: InternalNotaryException) {
-            logger.error("Error while processing request from client.")
-            logger.debug { "Cause: $e" }
-            session.send(NotarisationResponse(emptyList(), NotaryErrorGeneralImpl(e.message)))
         } catch (e: Exception) {
-            logger.error("Unknown error while processing request from client.")
-            logger.debug { "Cause: $e" }
+            logger.warn("Error while processing request from client. Cause: $e")
             session.send(NotarisationResponse(
                 emptyList(),
-                NotaryErrorGeneralImpl("Unknown error while processing request from client.", e)
+                NotaryErrorGeneralImpl("Error while processing request from client. Reason: ${e.message}", e)
             ))
         }
     }
@@ -114,13 +122,14 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
     /**
      * This function will validate the request payload received from the notary client.
      *
-     * @throws InternalNotaryException if the request could not be validated.
+     * @throws IllegalStateException if the request could not be validated.
      *
      * TODO CORE-7249 This function doesn't do much now since we cannot pre-validate anymore, should we remove this?
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
+    //  order to be mockable (via spy).
     internal open fun validateRequest(otherSideSession: FlowSession,
                                       requestPayload: NonValidatingNotarisationPayload
     ): NonValidatingNotaryTransactionDetails {
@@ -157,7 +166,7 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
     /**
      * A non-validating plugin specific verification logic.
      *
-     * @throws InternalNotaryException if the transaction could not be verified.
+     * @throws IllegalStateException if the transaction could not be verified.
      *
      * TODO CORE-7249 This function is not doing anything for now, as FilteredTransaction doesn't exist
      *  and that's the only verification logic we need in the plugin server.
@@ -169,6 +178,7 @@ open class NonValidatingNotaryServerFlowImpl : ResponderFlow {
         "ThrowsCount",
         "Unused_Parameter" // TODO CORE-7249 Remove once this function is actually utilised
     )
-    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
+    //  order to be mockable (via spy).
     internal open fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {}
 }

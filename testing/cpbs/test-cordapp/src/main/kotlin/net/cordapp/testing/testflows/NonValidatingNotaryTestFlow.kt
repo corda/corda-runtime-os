@@ -13,6 +13,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -30,6 +31,27 @@ import java.time.Instant
  *  has been finished. Since `inputStateAndRefs` returns an empty list for now, the uniqueness check will always
  *  pass as each transaction will be considered an ISSUANCE transaction. After the ledger is in a better state
  *  we'll need to ISSUE states first before we can CONSUME them.
+ */
+/**
+ * This flow is used to call the `NonValidatingNotaryClientFlowImpl`. Since `NonValidatingNotaryClientFlowImpl` is not
+ * a HTTP RPC invokable flow, we need an extra layer to call that flow from tests and through HTTP RPC.
+ *
+ * This flow will generate a UTXO signed transaction using the provided HTTP parameters and pass that signed transaction
+ * to the non-validating notary plugin. This flow will automatically find a notary on the network and use that as the
+ * primary notary.
+ *
+ * This flow will take in the following parameters through HTTP:
+ * - `timeWindowLowerBoundOffsetMs`: The lower bound offset for the generated transaction's time window. This can either
+ * be positive or negative. As an example: If `-10000` is provided, the transaction's time window will start from current
+ * UTC time ([Instant.now]) - 10 seconds. If not provided, it will default to 0 milliseconds, which means that the time
+ * window's lower bound will be the current UTC time ([Instant.now]).
+ *
+ * - `timeWindowUpperBoundOffsetMs`: The upper bound offset for the generated transaction's time window. This can either
+ * be positive or negative. As an example: If `3600000` is provided, the transaction's time window will end at UTC time
+ * ([Instant.now]) + 1 hour. If not provided, it will default to 1 hour, which means that the time window's upper bound
+ * will be the current  UTC time ([Instant.now]) + 1 hour.
+ *
+ * TODO CORE-7939 Add extra state parameters once they are available.
  */
 @InitiatingFlow(protocol = "non-validating-test")
 class NonValidatingNotaryTestFlow : RPCStartableFlow {
@@ -70,9 +92,9 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             }
 
         val myInfo = memberLookup.myInfo()
-        val myKey = myInfo.sessionInitiationKey
 
-        // Find the other participant that'll act as a "notary"
+        // TODO For now `NotaryLookup` is still work in progress, once it is finished, we need to find the notary
+        //  instead of a random member
         val notary = memberLookup.lookup().first {
             it.name != myInfo.name
         }
@@ -81,7 +103,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val stx = utxoLedgerService.getTransactionBuilder()
             .setNotary(notaryParty)
-            .addOutputState(TestContract.TestState(emptyList()))
             .addCommand(TestCommand())
             .setTimeWindowBetween(
                 Instant.now().plusMillis(timeWindowLowerBoundOffsetMs),
@@ -93,12 +114,13 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             //  work is finished
             .addInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
             .addReferenceInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
-            .sign(myKey)
+            .addOutputState(TestContract.TestState(emptyList()))
+            .sign(myInfo.sessionInitiationKey)
 
         val sigs = flowEngine.subFlow(
             NonValidatingNotaryClientFlowImpl(
                 stx,
-                Party(notary.name, notary.sessionInitiationKey)
+                notaryParty
             )
         )
 

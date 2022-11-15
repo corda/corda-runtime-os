@@ -41,7 +41,7 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
     val digitalSignature = signature.digitalSignature
 
     if (requestingParty.owningKey != digitalSignature.by) {
-        throw InternalNotaryException(
+        throw IllegalStateException(
             "Expected a signature by ${requestingParty.owningKey.toBase58String()}, " +
                     "but received by ${digitalSignature.by.toBase58String()}}"
         )
@@ -61,7 +61,7 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
             expectedSignedBytes
         )
     } catch (e: Exception) {
-        throw InternalNotaryException(
+        throw IllegalStateException(
             "Error while verifying request signature. Cause: $e"
         )
     }

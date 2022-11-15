@@ -174,6 +174,21 @@ fun registerMember(holdingIdentityId: String) {
     }
 }
 
+fun registerNotary(holdingIdentityId: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val membershipJson = assertWithRetry {
+            command { registerNotary(holdingIdentityId) }
+            condition { it.code == 200 }
+            failMessage("Failed to register the notary to the network '$holdingIdentityId'")
+        }.toJson()
+
+        val registrationStatus = membershipJson["registrationStatus"].textValue()
+        assertThat(registrationStatus).isEqualTo("SUBMITTED")
+    }
+}
+
 fun addSoftHsmFor(holdingId: String, category: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)

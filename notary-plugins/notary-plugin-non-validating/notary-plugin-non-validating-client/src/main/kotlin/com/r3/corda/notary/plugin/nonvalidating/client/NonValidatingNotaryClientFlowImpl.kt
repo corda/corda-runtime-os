@@ -29,16 +29,30 @@ class NonValidatingNotaryClientFlowImpl(
 ) : PluggableNotaryClientFlow {
 
     @CordaInject
-    internal lateinit var flowMessaging: FlowMessaging
+    private lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    internal lateinit var memberLookupService: MemberLookup
+    private lateinit var memberLookupService: MemberLookup
 
     @CordaInject
-    internal lateinit var serializationService: SerializationService
+    private lateinit var serializationService: SerializationService
 
     @CordaInject
-    internal lateinit var signingService: SigningService
+    private lateinit var signingService: SigningService
+
+    internal constructor(
+        stx: UtxoSignedTransaction,
+        notary: Party,
+        flowMessaging: FlowMessaging,
+        memberLookupService: MemberLookup,
+        serializationService: SerializationService,
+        signingService: SigningService
+    ): this(stx, notary) {
+        this.flowMessaging = flowMessaging
+        this.serializationService = serializationService
+        this.memberLookupService = memberLookupService
+        this.signingService = signingService
+    }
 
     /**
      * The main logic of the flow is defined in this function. The execution steps are:

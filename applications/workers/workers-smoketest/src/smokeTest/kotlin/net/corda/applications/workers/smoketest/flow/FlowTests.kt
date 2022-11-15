@@ -18,6 +18,7 @@ import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
+import net.corda.applications.workers.smoketest.registerNotary
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.toJsonString
 import net.corda.applications.workers.smoketest.updateConfig
@@ -53,11 +54,14 @@ class FlowTests {
         private var davidHoldingId: String = getHoldingIdShortHash(davidX500, GROUP_ID)
         private val charlyX500 = "CN=Charley-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private var charlieHoldingId: String = getHoldingIdShortHash(charlyX500, GROUP_ID)
+        private val notaryX500 = "CN=Notary-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, GROUP_ID)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500,
             charlyX500,
-            davidX500
+            davidX500,
+            notaryX500
         )
 
         val invalidConstructorFlowNames = listOf(
@@ -95,15 +99,18 @@ class FlowTests {
             val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
             val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, cpiName)
             val davidActualHoldingId = getOrCreateVirtualNodeFor(davidX500, cpiName)
+            val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, cpiName)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
+            assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
             registerMember(bobHoldingId)
             registerMember(charlieHoldingId)
+            registerNotary(notaryHoldingId)
         }
     }
 
@@ -734,7 +741,7 @@ class FlowTests {
     }
 
     // TODO CORE-7939 For now this flow WILL succeed, however, this will require modifications once the ledger has been
-    //  finalised.
+    //  finalised. Specifically, create a state before trying to spend it.
     @Test
     fun `Notary - Non-validating plugin executes successfully and returns signatures`() {
         val requestID =
@@ -771,36 +778,15 @@ class FlowTests {
     //  empty list of input state and refs (no back-chain resolution)
     @Test
     @Disabled
-    fun `Notary - Non-validating plugin returns error when input double spend occurs`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(
-                    "inputStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0",
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-                    )
-                ),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
-        assertThat(result.flowError?.message).contains("NotaryErrorInputStateConflict")
-    }
-
-    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
-    //  empty list of input state and refs (no back-chain resolution)
-    @Test
-    @Disabled
-    fun `Notary - Non-validating plugin returns error when reference double spend occurs`() {
+    fun `Notary - Non-validating plugin returns error when double spend occurs`() {
         val requestID =
             startRpcFlow(
                 bobHoldingId,
                 mapOf(
                     "refStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0",
+                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                    ),
+                    "inputStates" to arrayOf(
                         "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
                     )
                 ),

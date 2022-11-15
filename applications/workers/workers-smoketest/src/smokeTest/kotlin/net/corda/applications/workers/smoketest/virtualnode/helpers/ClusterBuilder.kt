@@ -98,6 +98,18 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
+    // TODO CORE-7248 Review once plugin loading logic is added
+    private fun registerNotaryBody() =
+        """{ 
+            |  "action": "requestJoin",
+            |  "context": { 
+            |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
+            |    "corda.roles.0" : "notary",
+            |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
+            |    "corda.notary.service.plugin" : "net.corda.notary.MyNotaryService"
+            |   } 
+            | }""".trimMargin()
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -110,6 +122,9 @@ class ClusterBuilder {
      */
     fun registerMember(holdingId: String) =
         post("/api/v1/membership/$holdingId", registerMemberBody())
+
+    fun registerNotary(holdingId: String) =
+        post("/api/v1/membership/$holdingId", registerNotaryBody())
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
