@@ -29,7 +29,7 @@ import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
 
-class ECIESTests {
+class HybridEncryptionSchemeTests {
     companion object {
         private lateinit var tenantId: String
         private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl

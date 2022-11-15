@@ -37,7 +37,7 @@ dependencies {
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    runtimeOnly project(':components:crypto:crypto-ecies-impl')
+    runtimeOnly project(':components:crypto:crypto-hes-impl')
     runtimeOnly project(':components:membership:group-params-writer-service-impl')
     runtimeOnly project(":components:membership:group-policy-impl")
     runtimeOnly project(":components:membership:membership-persistence-client-impl")
