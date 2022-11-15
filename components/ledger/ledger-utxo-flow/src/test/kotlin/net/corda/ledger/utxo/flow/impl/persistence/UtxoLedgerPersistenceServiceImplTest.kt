@@ -1,15 +1,15 @@
-package net.corda.ledger.consensual.flow.impl.persistence
+package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
-import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
-import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
@@ -24,7 +24,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
-class ConsensualLedgerPersistenceServiceImplTest {
+class UtxoLedgerPersistenceServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
@@ -35,13 +35,13 @@ class ConsensualLedgerPersistenceServiceImplTest {
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
 
-    private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
+    private lateinit var UtxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
-    private val argumentCaptor = argumentCaptor<Class<out AbstractConsensualLedgerExternalEventFactory<Any>>>()
+    private val argumentCaptor = argumentCaptor<Class<out AbstractUtxoLedgerExternalEventFactory<Any>>>()
 
     @BeforeEach
     fun setup() {
-        consensualLedgerPersistenceService = ConsensualLedgerPersistenceServiceImpl(
+        UtxoLedgerPersistenceService = UtxoLedgerPersistenceServiceImpl(
                 externalEventExecutor, serializationService, transactionSignatureService
         )
 
@@ -58,12 +58,12 @@ class ConsensualLedgerPersistenceServiceImplTest {
     fun `persist executes successfully`() {
         val expectedObj = mock<CordaPackageSummary>()
         whenever(serializationService.deserialize<CordaPackageSummary>(any<ByteArray>(), any())).thenReturn(expectedObj)
-        val transaction = mock<ConsensualSignedTransactionInternal>()
+        val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
         assertThat(
-            consensualLedgerPersistenceService.persist(
+            UtxoLedgerPersistenceService.persist(
                 transaction,
                 TransactionStatus.VERIFIED
             )
@@ -78,7 +78,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     fun `find executes successfully`() {
         val wireTransaction = mock<WireTransaction>()
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
-        val expectedObj = ConsensualSignedTransactionImpl(
+        val expectedObj = UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
             wireTransaction,
@@ -88,9 +88,9 @@ class ConsensualLedgerPersistenceServiceImplTest {
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 
-        assertThat(consensualLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
+        assertThat(UtxoLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 
-        verify(serializationService).deserialize<ConsensualSignedTransactionInternal>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<UtxoSignedTransactionInternal>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)
     }
 }
