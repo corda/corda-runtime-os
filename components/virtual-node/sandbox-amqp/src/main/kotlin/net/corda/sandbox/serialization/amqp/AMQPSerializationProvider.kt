@@ -1,9 +1,11 @@
 package net.corda.sandbox.serialization.amqp
 
+import java.util.function.Supplier
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.sandbox.type.UsedByFlow
@@ -12,6 +14,8 @@ import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZER_FACTORY
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.InternalCustomSerializer
@@ -44,9 +48,8 @@ class AMQPSerializationProvider @Activate constructor(
         private val logger = loggerFor<AMQPSerializationProvider>()
     }
 
-    override fun accept(context: MutableSandboxGroupContext) {
-        val sandboxGroup = context.sandboxGroup
-        val factory = SerializerFactoryBuilder.build(sandboxGroup)
+    private fun createSerializerFactory(context: SandboxGroupContext): SerializerFactory {
+        val factory = SerializerFactoryBuilder.build(context.sandboxGroup)
 
         registerCustomSerializers(factory)
 
@@ -55,13 +58,17 @@ class AMQPSerializationProvider @Activate constructor(
             factory.register(internalSerializer, factory)
         }
 
-        // Build CorDapp serializers
-        // Current implementation has unique serializers per CPI
         context.getMetadataServices<SerializationCustomSerializer<*,*>>().forEach { customSerializer ->
             // Register CorDapp serializers
             logger.trace("Registering CorDapp serializer {}", customSerializer::class.java.name)
             factory.registerExternal(customSerializer, factory)
         }
+
+        return factory
+    }
+
+    override fun accept(context: MutableSandboxGroupContext) {
+        val factory = createSerializerFactory(context)
 
         val serializationOutput = SerializationOutput(factory)
         val deserializationInput = DeserializationInput(factory)
@@ -69,10 +76,13 @@ class AMQPSerializationProvider @Activate constructor(
         val serializationService = SerializationServiceImpl(
             serializationOutput,
             deserializationInput,
-            AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroup)
+            AMQP_P2P_CONTEXT.withSandboxGroup(context.sandboxGroup)
         )
 
         context.putObjectByKey(AMQP_SERIALIZATION_SERVICE, serializationService)
         serializationServiceProxy?.wrap(serializationService)
+
+        // Support creating other serializer factories for this sandbox (e.g. for testing)
+        context.putObjectByKey(AMQP_SERIALIZER_FACTORY, Supplier { createSerializerFactory(context) })
     }
 }
