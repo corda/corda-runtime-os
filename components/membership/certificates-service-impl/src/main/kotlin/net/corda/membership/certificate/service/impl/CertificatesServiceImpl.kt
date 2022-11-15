@@ -102,17 +102,14 @@ class CertificatesServiceImpl internal constructor(
     }
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
 
     @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> {
                 registrationHandle?.close()

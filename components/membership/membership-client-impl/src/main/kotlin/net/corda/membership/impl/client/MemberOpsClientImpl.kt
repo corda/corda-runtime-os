@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.RegistrationStatus
@@ -50,7 +51,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
@@ -101,12 +101,10 @@ class MemberOpsClientImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
@@ -355,7 +353,7 @@ class MemberOpsClientImpl @Activate constructor(
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
-                logger.info("Sending request: $this")
+                logger.debug { "Sending request: $this" }
                 val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."

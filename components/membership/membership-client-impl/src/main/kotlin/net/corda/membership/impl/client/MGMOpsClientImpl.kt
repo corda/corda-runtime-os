@@ -31,6 +31,7 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -86,12 +87,10 @@ class MGMOpsClientImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
@@ -205,7 +204,7 @@ class MGMOpsClientImpl @Activate constructor(
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
-                logger.info("Sending request: $this")
+                logger.debug { "Sending request: $this" }
                 val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."

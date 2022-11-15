@@ -5,7 +5,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
-import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class ReconcilerImpl<K : Any, V : Any>(
@@ -19,9 +18,6 @@ internal class ReconcilerImpl<K : Any, V : Any>(
 ) : Reconciler {
 
     val name = "${ReconcilerImpl::class.java.name}<${keyClass.name}, ${valueClass.name}>"
-
-    // Including the generic arguments to logger to differentiate between `ReconcilerImpl` parameterized classes
-    private val logger = LoggerFactory.getLogger(name)
 
     private val coordinator =
         coordinatorFactory.createCoordinator(
@@ -44,12 +40,10 @@ internal class ReconcilerImpl<K : Any, V : Any>(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("Starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping")
         coordinator.stop()
         coordinator.close()
     }
