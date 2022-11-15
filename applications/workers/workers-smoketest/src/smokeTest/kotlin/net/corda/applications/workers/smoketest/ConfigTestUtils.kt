@@ -71,15 +71,18 @@ fun updateConfig(config: String, section: String) {
  * Wait for the REST API on the rpc-worker to become unavailable and available again, asserting that the expected
  * configuration change took place.
  */
-fun waitForConfigurationChange(section: String, key: String, value: String, timeout: Duration = Duration.ofMinutes(1)) {
+fun waitForConfigurationChange(section: String, key: String, value: String, initiallyThrows: Boolean = true, timeout: Duration = Duration
+    .ofMinutes(1)) {
     cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        // Wait for the service to become unavailable
-        eventually(timeout) {
-            assertThatThrownBy {
-                getConfig(section)
-            }.hasCauseInstanceOf(IOException::class.java)
+        if (initiallyThrows) {
+            // Wait for the service to become unavailable
+            eventually(timeout) {
+                assertThatThrownBy {
+                    getConfig(section)
+                }.hasCauseInstanceOf(IOException::class.java)
+            }
         }
 
         // Wait for the service to become available again and have the expected configuration value
