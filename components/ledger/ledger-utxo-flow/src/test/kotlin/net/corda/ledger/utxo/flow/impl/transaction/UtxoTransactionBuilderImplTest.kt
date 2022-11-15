@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
+@Suppress("DEPRECATION")
 internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {

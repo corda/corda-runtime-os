@@ -67,6 +67,7 @@ class ConsensualDemoFlow : RPCStartableFlow {
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
+            @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
                 .toSignedTransaction(myInfo.ledgerKeys.first())

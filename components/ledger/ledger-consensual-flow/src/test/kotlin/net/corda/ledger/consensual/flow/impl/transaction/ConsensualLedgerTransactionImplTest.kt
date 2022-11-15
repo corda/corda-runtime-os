@@ -13,6 +13,7 @@ import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
 
+@Suppress("DEPRECATION")
 class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {

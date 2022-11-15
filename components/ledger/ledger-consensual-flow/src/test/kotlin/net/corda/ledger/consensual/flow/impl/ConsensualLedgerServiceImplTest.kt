@@ -17,6 +17,7 @@ class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
