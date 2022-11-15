@@ -21,7 +21,7 @@ class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
     }

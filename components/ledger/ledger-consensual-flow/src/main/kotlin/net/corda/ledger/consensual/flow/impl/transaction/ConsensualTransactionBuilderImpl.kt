@@ -20,16 +20,25 @@ class ConsensualTransactionBuilderImpl(
         copy(states = this.states + states)
 
     @Suspendable
-    override fun sign(): ConsensualSignedTransaction {
+    override fun toSignedTransaction(): ConsensualSignedTransaction {
         TODO("Not yet implemented")
     }
 
     @Suspendable
-    override fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction =
+    override fun toSignedTransaction(vararg signatories: PublicKey): ConsensualSignedTransaction =
         sign(signatories.toList())
 
     @Suspendable
-    override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
+    override fun toSignedTransaction(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
+        sign(signatories)
+
+    @Suspendable
+    fun sign(): ConsensualSignedTransaction {
+        TODO("Not yet implemented")
+    }
+
+    @Suspendable
+    fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
         require(signatories.toList().isNotEmpty()) {
             "At least one key needs to be provided in order to create a signed Transaction!"
         }

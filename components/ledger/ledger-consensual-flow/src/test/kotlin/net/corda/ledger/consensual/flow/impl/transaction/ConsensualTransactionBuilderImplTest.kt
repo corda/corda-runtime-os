@@ -16,7 +16,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
@@ -26,15 +26,15 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             val builder = consensualTransactionBuilder
                 .withStates(consensualStateExample)
 
-            builder.sign(publicKeyExample)
-            builder.sign(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
         }
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            consensualTransactionBuilder.sign(publicKeyExample)
+            consensualTransactionBuilder.toSignedTransaction(publicKeyExample)
         }
         assertEquals("At least one consensual state is required", exception.message)
     }
@@ -45,7 +45,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
-                .sign(publicKeyExample)
+                .toSignedTransaction(publicKeyExample)
         }
         assertEquals("All consensual states must have participants", exception.message)
     }
@@ -54,7 +54,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     fun `includes CPI and CPK information in metadata`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .sign(publicKeyExample) as ConsensualSignedTransactionImpl
+            .toSignedTransaction(publicKeyExample) as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())

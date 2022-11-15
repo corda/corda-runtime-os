@@ -40,7 +40,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addReferenceInputState(referenceStateAndRef)
             .addCommand(command)
             .addAttachment(attachment)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
 
         assertIs<UtxoSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)

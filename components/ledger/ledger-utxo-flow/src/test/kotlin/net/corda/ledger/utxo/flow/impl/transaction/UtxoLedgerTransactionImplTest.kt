@@ -33,7 +33,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .addReferenceInputState(referenceStateAndRef)
             .addCommand(command)
             .addAttachment(attachment)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
 
         assertIs<SecureHash>(ledgerTransaction.id)

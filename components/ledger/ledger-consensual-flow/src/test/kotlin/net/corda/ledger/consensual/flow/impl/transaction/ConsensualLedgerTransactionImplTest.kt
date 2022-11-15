@@ -20,7 +20,7 @@ class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
         val signedTransaction = ConsensualTransactionBuilderImpl(
             consensualSignedTransactionFactory)
             .withStates(consensualStateExample)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
         assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli() / 1000 - testTimestamp.toEpochMilli() / 1000) < 5)
         assertIs<List<ConsensualState>>(ledgerTransaction.states)

@@ -25,7 +25,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addReferenceInputState(getUtxoInvalidStateAndRef())
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
@@ -52,7 +52,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addReferenceInputState(getUtxoInvalidStateAndRef())
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            .sign(publicKeyExample) as UtxoSignedTransactionImpl
+            .toSignedTransaction(publicKeyExample) as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())
@@ -94,8 +94,8 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
 
-            builder.sign(publicKeyExample)
-            builder.sign(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
         }
     }
 }
