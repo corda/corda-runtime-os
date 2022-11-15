@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -51,7 +52,7 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
 
-    private val signedTransaction = mock<ConsensualSignedTransaction>()
+    private val signedTransaction = mock<ConsensualSignedTransactionImpl>()
 
     @BeforeEach
     fun beforeEach() {
@@ -65,8 +66,8 @@ class ConsensualReceiveFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
-        whenever(signedTransaction.addSignature(publicKey1)).thenReturn(signedTransaction to signature1)
-        whenever(signedTransaction.addSignature(publicKey2)).thenReturn(signedTransaction to signature2)
+        whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
+        whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
@@ -77,8 +78,8 @@ class ConsensualReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).addSignature(publicKey1)
-        verify(signedTransaction).addSignature(publicKey2)
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction).sign(publicKey2)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
         verify(session).send(Unit)
@@ -90,8 +91,8 @@ class ConsensualReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).addSignature(publicKey1)
-        verify(signedTransaction, never()).addSignature(publicKey2)
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction, never()).sign(publicKey2)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
         verify(session).send(Unit)
@@ -158,7 +159,7 @@ class ConsensualReceiveFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(signedTransaction, never()).addSignature(any<PublicKey>())
+        verify(signedTransaction, never()).sign(any<PublicKey>())
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }

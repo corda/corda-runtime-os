@@ -47,8 +47,15 @@ class ConsensualSignedTransactionImpl(
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
+    /**
+     * Sign the current [ConsensualSignedTransactionImpl] with the specified key.
+     *
+     * @param publicKey The private counterpart of the specified public key will be used for signing the
+     *      [ConsensualSignedTransaction].
+     * @return Returns the new [ConsensualSignedTransactionImpl] containing the applied signature and the signature itself.
+     */
     @Suspendable
-    override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
+    fun sign(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
         val newSignature = transactionSignatureService.sign(id, publicKey)
         return Pair(
             ConsensualSignedTransactionImpl(
@@ -61,9 +68,28 @@ class ConsensualSignedTransactionImpl(
         )
     }
 
-    override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
+    /**
+     * Adds a signature to the current [ConsensualSignedTransactionImpl].
+     *
+     * @param signature The signature to be added to the [ConsensualSignedTransactionImpl].
+     *
+     * @return Returns a new [ConsensualSignedTransactionImpl] containing the new signature.
+     */
+    fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionImpl =
         ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
+
+    /**
+     * Crosschecks the missing signatures with the available keys and signs the transaction with their intersection
+     * if there are any. (Disabled until crypto support becomes available.)
+     *
+     * @return Returns the new [ConsensualSignedTransaction] containing the applied signature and a
+     *          list of added signatures.
+     */
+    @Suspendable
+    fun addMissingSignatures(): Pair<ConsensualSignedTransaction, List<DigitalSignatureAndMetadata>>{
+        TODO("Not implemented yet")
+    }
 
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{

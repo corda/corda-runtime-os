@@ -4,6 +4,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -117,7 +118,8 @@ class ConsensualFinalityFlow(
 
                     throw e
                 }
-                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
+                signedByParticipantsTransaction =
+                    (signedByParticipantsTransaction as ConsensualSignedTransactionImpl).addSignature(signature)
                 log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }

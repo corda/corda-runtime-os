@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -63,7 +64,7 @@ class ConsensualReceiveFinalityFlow(
 
             // We sign the transaction with all of our keys which is required.
             val newSignatures = myExpectedSigningKeys.map {
-                signedTransaction.addSignature(it).second
+                (signedTransaction as ConsensualSignedTransactionImpl).sign(it).second
             }
 
             Payload.Success(newSignatures)
