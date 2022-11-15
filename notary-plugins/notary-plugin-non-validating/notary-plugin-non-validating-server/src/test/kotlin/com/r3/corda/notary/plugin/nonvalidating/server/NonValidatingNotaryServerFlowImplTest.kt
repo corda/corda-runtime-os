@@ -64,12 +64,6 @@ class NonValidatingNotaryServerFlowImplTest {
             on { name } doReturn aliceName
         }
 
-        val bobMemberInfo = mock<MemberInfo> {
-            on { platformVersion } doReturn DUMMY_PLATFORM_VERSION
-            on { sessionInitiationKey } doReturn mock()
-            on { name } doReturn bobName
-        }
-
         /* Uniqueness Client Service */
         val uniquenessCheckResponseSignature = DigitalSignatureAndMetadata(
             mock(),
@@ -118,9 +112,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         /* Services */
         val mockMemberLookupService = mock<MemberLookup> {
-            on { myInfo() } doReturn bobMemberInfo
             on { lookup(eq(aliceName)) } doReturn aliceMemberInfo
-            on { lookup(eq(bobName)) } doReturn bobMemberInfo
         }
 
         val mockSerializationService = mock<SerializationService> {

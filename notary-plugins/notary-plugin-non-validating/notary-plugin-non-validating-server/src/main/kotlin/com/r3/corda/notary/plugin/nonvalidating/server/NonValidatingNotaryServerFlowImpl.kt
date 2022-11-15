@@ -14,6 +14,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
@@ -48,6 +49,10 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
     }
 
+    /**
+     * Constructor used for testing to initialize the necessary services
+     */
+    @VisibleForTesting
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         serializationService: SerializationService,

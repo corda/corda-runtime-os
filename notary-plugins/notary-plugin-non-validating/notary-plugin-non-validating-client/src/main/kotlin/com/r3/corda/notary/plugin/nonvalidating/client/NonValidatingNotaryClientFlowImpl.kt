@@ -13,6 +13,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -40,6 +41,10 @@ class NonValidatingNotaryClientFlowImpl(
     @CordaInject
     private lateinit var signingService: SigningService
 
+    /**
+     * Constructor used for testing to initialize the necessary services
+     */
+    @VisibleForTesting
     internal constructor(
         stx: UtxoSignedTransaction,
         notary: Party,
