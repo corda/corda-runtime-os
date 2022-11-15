@@ -35,7 +35,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     private val doGetAllVersionedRecords: (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<K, V>>,
     private val onStatusUp: (() -> Unit)? = null,
     private val onStatusDown: (() -> Unit)? = null,
-    private val onStreamClose: ((reconciliationInfo: ReconciliationInfo) -> Unit)? = null
+    private val onStreamClose: ((ReconciliationInfo) -> Unit)? = null
 ) : ReconcilerReader<K, V>, Lifecycle {
 
     private val name = "${DbReconcilerReader::class.java.simpleName}<${keyClass.simpleName}, ${valueClass.simpleName}>"
