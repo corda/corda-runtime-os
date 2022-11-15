@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -74,11 +76,18 @@ internal class MGMRegistrationMemberInfoHandler(
         }
     }
 
-    private fun getKeyFromId(keyId: String, tenantId: String): PublicKey {
+    @Suppress("ThrowsCount")
+    private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
         return cryptoOpsClient.lookup(
             tenantId,
             listOf(keyId)
         ).firstOrNull()?.let {
+            if (it.category != expectedCategory) {
+                throw MGMRegistrationContextValidationException(
+                    "Wrong key category. Key ID: $keyId category is ${it.category}. please use key from the $expectedCategory category.",
+                    null
+                )
+            }
             try {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
             } catch (ex: RuntimeException) {
@@ -111,8 +120,8 @@ internal class MGMRegistrationMemberInfoHandler(
             ?: throw MGMRegistrationMemberInfoHandlingException(
                 "Could not find virtual node info for member ${holdingIdentity.shortHash}"
             )
-        val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, holdingIdentity.shortHash.value)
-        val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, holdingIdentity.shortHash.value)
+        val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, holdingIdentity.shortHash.value, SESSION_INIT)
+        val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, holdingIdentity.shortHash.value, PRE_AUTH)
         if (ecdhKey.algorithm != "EC") {
             throw MGMRegistrationContextValidationException("ECDH key must be created with an EC schema.", null)
         }

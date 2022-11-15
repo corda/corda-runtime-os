@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl
 
-import net.corda.configuration.read.ConfigurationGetService
 import java.util.concurrent.CompletableFuture
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.data.ExceptionEnvelope
@@ -12,6 +12,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
@@ -65,12 +66,12 @@ class ConfigRPCOpsImplTests {
             ), req.version
         )
     }
-    private val successResponse = UpdateConfigResponse(
+    private val successResponse = ResponseEntity.accepted(UpdateConfigResponse(
         req.section, req.config.escapedJson, ConfigSchemaVersion(
             req.schemaVersion.major,
             req.schemaVersion.minor
         ), req.version
-    )
+    ))
 
     private val configSection = "section"
     private val config = Configuration("CONFIG+DEFAULT", "CONFIG", 1, ConfigurationSchemaVersion(2,3))
@@ -124,7 +125,9 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertEquals(successResponse, configRPCOps.updateConfig(req))
+        val result = configRPCOps.updateConfig(req)
+        assertEquals(successResponse.responseCode, result.responseCode)
+        assertEquals(successResponse.responseBody, result.responseBody)
     }
 
     @Test

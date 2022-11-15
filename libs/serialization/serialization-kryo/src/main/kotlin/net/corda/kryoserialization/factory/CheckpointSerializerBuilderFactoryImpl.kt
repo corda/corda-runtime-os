@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(immediate = true, service = [CheckpointSerializerBuilderFactory::class])
+@Component(service = [CheckpointSerializerBuilderFactory::class])
 class CheckpointSerializerBuilderFactoryImpl @Activate constructor(
     @Reference
     private val keyEncodingService: KeyEncodingService

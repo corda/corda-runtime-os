@@ -1,8 +1,14 @@
 package net.corda.membership.impl.registration.dynamic.member
 
+import java.nio.ByteBuffer
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
@@ -87,9 +93,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -182,12 +185,10 @@ class DynamicMemberRegistrationService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("DynamicMemberRegistrationService started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("DynamicMemberRegistrationService stopped.")
         coordinator.stop()
     }
 
@@ -404,16 +405,24 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         @Suppress("NestedBlockDepth")
-        private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
-            with(cryptoOpsClient) {
-                lookup(tenantId, keyIds).apply {
-                    map { it.id }.apply {
-                        keyIds.forEach { keyId ->
-                            if (!contains(keyId)) {
-                                throw IllegalArgumentException("No key found for tenant: $tenantId under $keyId.")
-                            }
-                        }
+        private fun getKeysFromIds(
+            keyIds: List<String>,
+            tenantId: String,
+            expectedCategory: String,
+        ): List<CryptoSigningKey> =
+            cryptoOpsClient.lookup(tenantId, keyIds).also { keys ->
+                val ids = keys.onEach { key ->
+                    if (key.category != expectedCategory) {
+                        throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")
                     }
+                }.map {
+                    it.id
+                }.toSet()
+                val missingKeys = keyIds.filterNot {
+                    ids.contains(it)
+                }
+                if (missingKeys.isNotEmpty()) {
+                    throw IllegalArgumentException("No keys found for tenant: $tenantId under $missingKeys.")
                 }
             }
 
@@ -456,7 +465,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     context.filter {
                         ledgerIdRegex.matches(it.key)
                     }.values.toList(),
-                    tenantId
+                    tenantId,
+                    LEDGER,
                 )
             return ledgerKeys.map {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
@@ -473,7 +483,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
-            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId).first()
+            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId, SESSION_INIT).first()
             val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
@@ -490,7 +500,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 notaryIdRegex.matches(it)
             }.values
                 .toList()
-            return getKeysFromIds(keyIds, tenantId).mapIndexed { index, key ->
+            return getKeysFromIds(keyIds, tenantId, NOTARY).mapIndexed { index, key ->
                 Key(
                     key,
                     context[String.format(NOTARY_KEY_SPEC, index)]
@@ -517,7 +527,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -527,7 +536,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -539,7 +547,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -553,7 +560,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator,
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
@@ -571,7 +577,6 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Handling config changed event.")
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("dynamic-member-registration-service"),

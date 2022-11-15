@@ -1,23 +1,20 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
+import java.util.Objects
 
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val signingService: SigningService,
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val transactionSignatureService: TransactionSignatureService,
 
     val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
@@ -27,6 +24,19 @@ data class UtxoSignedTransactionImpl(
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
         // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UtxoSignedTransactionImpl) return false
+        if (other.wireTransaction != wireTransaction) return false
+        if (other.signatures.size != signatures.size) return false
+
+        return other.signatures.withIndex().all{
+            it.value == signatures[it.index]
+        }
+    }
+
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash get() = wireTransaction.id
 
@@ -41,14 +51,7 @@ data class UtxoSignedTransactionImpl(
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{
             try {
-                // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, it.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = it.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = it.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
+                transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
                 false

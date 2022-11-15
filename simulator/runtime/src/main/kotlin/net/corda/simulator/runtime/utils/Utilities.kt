@@ -1,7 +1,15 @@
 package net.corda.simulator.runtime.utils
 
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SignatureSpecService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -27,3 +35,31 @@ val MemberX500Name.sandboxName: Any
             .replace(" ", "_")
             .replace(",", "")
     }
+
+fun checkAPIAvailability(flow: Flow){
+    flow::class.java.declaredFields.forEach {
+        if(!it.isAnnotationPresent(CordaInject::class.java))
+            return
+
+        if(it.type.name.startsWith("net.corda.v5")) {
+            if (!availableAPIs.contains(it.type)) {
+                throw NotImplementedError(
+                    "${it.type.name} is not implemented in Simulator for this release"
+                )
+            }
+        }
+        else
+            throw NotImplementedError("Support for Custom Services is not implemented in Simulator for this release")
+    }
+}
+
+private val availableAPIs = listOf(
+    JsonMarshallingService::class.java,
+    FlowEngine::class.java,
+    FlowMessaging::class.java,
+    MemberLookup::class.java,
+    SigningService::class.java,
+    DigitalSignatureVerificationService::class.java,
+    PersistenceService::class.java,
+    SignatureSpecService::class.java
+)

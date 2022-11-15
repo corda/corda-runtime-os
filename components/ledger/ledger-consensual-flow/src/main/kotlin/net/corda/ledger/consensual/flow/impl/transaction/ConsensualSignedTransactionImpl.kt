@@ -1,27 +1,22 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
+import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
-    private val signingService: SigningService,
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val transactionSignatureService: TransactionSignatureService,
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
@@ -44,7 +39,7 @@ class ConsensualSignedTransactionImpl(
         }
     }
 
-    override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash
         get() = wireTransaction.id
@@ -54,12 +49,11 @@ class ConsensualSignedTransactionImpl(
 
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
-        val newSignature = createTransactionSignature(signingService, serializationService, getCpiSummary(), id, publicKey)
+        val newSignature = transactionSignatureService.sign(id, publicKey)
         return Pair(
             ConsensualSignedTransactionImpl(
                 serializationService,
-                signingService,
-                digitalSignatureVerificationService,
+                transactionSignatureService,
                 wireTransaction,
             signatures + newSignature
             ),
@@ -68,20 +62,13 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService,
+        ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
 
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{
             try {
-                // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, it.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = it.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = it.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
+                transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
                 false
@@ -96,14 +83,7 @@ class ConsensualSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {
-                // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, it.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = it.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = it.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
+                transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(id,
@@ -119,15 +99,4 @@ class ConsensualSignedTransactionImpl(
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
-
-    /**
-     * TODO [CORE-7126] Fake values until we can get CPI information properly
-     */
-    private fun getCpiSummary(): CordaPackageSummary =
-        CordaPackageSummary(
-            name = "CPI name",
-            version = "CPI version",
-            signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-            fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-        )
 }

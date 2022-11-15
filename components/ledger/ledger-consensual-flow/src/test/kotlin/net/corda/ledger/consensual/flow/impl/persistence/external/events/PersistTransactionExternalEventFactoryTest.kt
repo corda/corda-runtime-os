@@ -2,8 +2,9 @@ package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.consensual.PersistTransaction
-import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.schema.Schemas
@@ -23,7 +24,11 @@ class PersistTransactionExternalEventFactoryTest {
     @Test
     fun `creates a record containing an ConsensualLedgerRequest with a PersistTransaction payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val externalEventContext = ExternalEventContext(
+            "request id",
+            "flow id",
+            KeyValuePairList(emptyList())
+        )
         val testClock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
@@ -39,9 +44,10 @@ class PersistTransactionExternalEventFactoryTest {
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
-            ConsensualLedgerRequest(
+            LedgerPersistenceRequest(
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
+                LedgerTypes.CONSENSUAL,
                 PersistTransaction(transaction, transactionStatus),
                 externalEventContext
             ),

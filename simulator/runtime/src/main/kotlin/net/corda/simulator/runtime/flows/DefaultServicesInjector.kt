@@ -10,6 +10,7 @@ import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationService
 import net.corda.simulator.runtime.signing.SimWithJsonSigningService
 import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
+import net.corda.simulator.runtime.utils.checkAPIAvailability
 import net.corda.simulator.runtime.utils.injectIfRequired
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
@@ -55,6 +56,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         keyStore: SimKeyStore
     ) {
         log.info("Injecting services into ${flow.javaClass} for \"$member\"")
+        checkAPIAvailability(flow)
         flow.injectIfRequired(JsonMarshallingService::class.java) { createJsonMarshallingService() }
         flow.injectIfRequired(FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
         flow.injectIfRequired(FlowMessaging::class.java) {

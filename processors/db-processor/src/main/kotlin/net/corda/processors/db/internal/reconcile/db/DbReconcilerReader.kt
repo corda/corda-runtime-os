@@ -77,13 +77,8 @@ class DbReconcilerReader<K : Any, V : Any>(
     ) {
         if (event.status == LifecycleStatus.UP) {
             onStatusUp?.invoke()
-            logger.info("Switching to UP")
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            logger.info(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
-                        "Switching to ${event.status}"
-            )
             coordinator.updateStatus(event.status)
             closeResources()
         }
@@ -129,12 +124,10 @@ class DbReconcilerReader<K : Any, V : Any>(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("Starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping")
         coordinator.stop()
     }
 

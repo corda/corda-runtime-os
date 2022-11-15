@@ -69,7 +69,6 @@ internal class PermissionManagementServiceEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following dependencies.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
@@ -94,7 +93,6 @@ internal class PermissionManagementServiceEventHandler(
                         )
                     }
                     LifecycleStatus.DOWN -> {
-                        log.info("Transitioning DOWN.")
                         permissionManager?.stop()
                         permissionManager = null
                         basicAuthenticationService?.stop()
@@ -117,7 +115,6 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                log.info("Stop event received, stopping dependencies.")
                 permissionValidationService.stop()
                 permissionManagementCacheService.stop()
                 configSubscription?.close()

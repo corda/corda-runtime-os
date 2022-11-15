@@ -80,20 +80,20 @@ class ConsensualLedgerTests {
 
         for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
             val findTransactionFlowRequestId = startRpcFlow(
-                aliceHoldingId,
+                holdingId,
                 mapOf("transactionId" to consensualFlowResult.flowResult!!),
                 "net.cordapp.demo.consensual.FindTransactionFlow"
             )
-            val transactionResult = awaitRpcFlowFinished(aliceHoldingId, findTransactionFlowRequestId)
+            val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
             assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             assertThat(transactionResult.flowError).isNull()
 
             val parsedResult = objectMapper
                 .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
-            assertThat(parsedResult.transaction).isNotNull.withFailMessage {
+            assertThat(parsedResult.transaction).withFailMessage {
                 "Member with holding identity $holdingId did not receive the transaction"
-            }
+            }.isNotNull
             assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(consensualFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
