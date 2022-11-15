@@ -2,10 +2,15 @@
 
 package net.corda.internal.serialization.amqp.helper
 
+import java.util.function.Supplier
 import net.corda.internal.serialization.SerializationContextImpl
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZER_FACTORY
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.SerializationContext
 import org.osgi.framework.Bundle
 
@@ -33,3 +38,12 @@ val testSerializationContext = SerializationContextImpl(
     encoding = null,
     sandboxGroup = MockSandboxGroup()
 )
+
+/**
+ * Create a fresh [SerializerFactory] for this [SandboxGroupContext].
+ * This allows serialization / deserialization tests without sharing serializers.
+ */
+fun SandboxGroupContext.createSerializerFactory(): SerializerFactory {
+    return getObjectByKey<Supplier<SerializerFactory>>(AMQP_SERIALIZER_FACTORY)?.get()
+        ?: throw IllegalStateException("Could not create new AMQP SerializerFactory")
+}
