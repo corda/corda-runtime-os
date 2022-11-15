@@ -2,11 +2,10 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.flow.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -17,12 +16,9 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -39,10 +35,8 @@ import java.security.PublicKey
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService,
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
@@ -67,18 +61,11 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
         val signaturesWithMetadata = signatories.map {
-            createTransactionSignature(
-                signingService,
-                serializationService,
-                getCpiSummary(),
-                wireTransaction.id,
-                it
-            )
+            transactionSignatureService.sign(wireTransaction.id, it)
         }
         return UtxoSignedTransactionImpl(
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signaturesWithMetadata
         )
@@ -90,8 +77,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransaction {
         return UtxoSignedTransactionImpl(
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signaturesWithMetaData
         )
@@ -178,14 +164,3 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             }
     }
 }
-
-/**
- * TODO [CORE-7126] Fake values until we can get CPI information properly
- */
-private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummary(
-        name = "CPI name",
-        version = "CPI version",
-        signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-        fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-    )

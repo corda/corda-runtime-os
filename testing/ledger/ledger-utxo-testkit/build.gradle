@@ -11,9 +11,10 @@ dependencies {
     implementation 'net.corda:corda-cipher-suite'
     api 'net.corda:corda-ledger-utxo'
 
-    implementation project(':libs:serialization:json-validator')
+    implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
-    implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':libs:serialization:json-validator')
     implementation project(':testing:ledger:ledger-common-testkit')
+    api project(':testing:ledger:ledger-common-base-integration-test')
 }

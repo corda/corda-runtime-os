@@ -3,7 +3,8 @@ package net.corda.ledger.consensual.flow.impl.persistence.external.events
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
@@ -22,11 +23,12 @@ val TEST_CLOCK: Clock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
 val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
 
 class AbstractConsensualLedgerExternalEventFactoryTest {
-    private val abstractConsensualLedgerExternalEventFactory = object : AbstractConsensualLedgerExternalEventFactory<String>(TEST_CLOCK) {
-        override fun createRequest(parameters: String): Any {
-            return parameters
+    private val abstractConsensualLedgerExternalEventFactory =
+        object : AbstractConsensualLedgerExternalEventFactory<String>(TEST_CLOCK) {
+            override fun createRequest(parameters: String): Any {
+                return parameters
+            }
         }
-    }
 
     @Test
     fun responseType() {
@@ -37,7 +39,11 @@ class AbstractConsensualLedgerExternalEventFactoryTest {
     fun `creates an external event record containing an ConsensualLedgerRequest`() {
         val checkpoint = mock<FlowCheckpoint>()
         val payload = "payload"
-        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val externalEventContext = ExternalEventContext(
+            "request id",
+            "flow id",
+            KeyValuePairList(emptyList())
+        )
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
@@ -49,9 +55,10 @@ class AbstractConsensualLedgerExternalEventFactoryTest {
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
-            ConsensualLedgerRequest(
+            LedgerPersistenceRequest(
                 TEST_CLOCK.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
+                LedgerTypes.CONSENSUAL,
                 payload,
                 externalEventContext
             ),

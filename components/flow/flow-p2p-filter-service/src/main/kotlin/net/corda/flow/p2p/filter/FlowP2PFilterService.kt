@@ -12,7 +12,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -49,7 +48,6 @@ class FlowP2PFilterService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                logger.info("Starting flow p2p filter component.")
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -71,11 +69,7 @@ class FlowP2PFilterService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                logger.info("Flow p2p filter processor component configuration received")
                 restartFlowP2PFilterService(event)
-            }
-            is StopEvent -> {
-                logger.info("Stopping flow p2p filter component.")
             }
         }
     }

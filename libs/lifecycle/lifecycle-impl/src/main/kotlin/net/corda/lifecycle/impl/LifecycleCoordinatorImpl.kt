@@ -1,5 +1,9 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,10 +24,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -140,7 +140,7 @@ class LifecycleCoordinatorImpl(
      */
     override fun postEvent(event: LifecycleEvent) {
         if (isClosed) {
-            logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
+            logger.warn("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
         postInternalEvent(event)
