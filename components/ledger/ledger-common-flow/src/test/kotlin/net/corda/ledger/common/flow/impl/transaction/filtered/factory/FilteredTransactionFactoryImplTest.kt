@@ -16,7 +16,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -196,8 +195,7 @@ class FilteredTransactionFactoryImplTest {
     }
 
     @Test
-    @Disabled("Empty component groups are not currently allowed. Enable this test when component groups can be empty.")
-    fun `creates an audit proof containing a default value instead of a size proof when the component group contains no components`() {
+    fun `creates a size proof normally when the component group contains no components`() {
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -221,12 +219,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
-            wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
-                listOf(0)
-            )
-        )
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(1)
     }
 
