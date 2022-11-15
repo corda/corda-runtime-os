@@ -25,6 +25,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorImpl
 import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
 import net.corda.schema.membership.provider.MembershipSchemaProviderFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
 import picocli.CommandLine
 
@@ -64,21 +65,6 @@ class CreateCpi : Runnable {
     var signingOptions = SigningOptions()
 
     /**
-     * Represents option to read group policy from file or stdin
-     */
-    private sealed class GroupPolicySource {
-        /**
-         * Read group policy from stdin
-         */
-        object StdIn : GroupPolicySource()
-
-        /**
-         * Read group policy from file
-         */
-        class File(val path: Path) : GroupPolicySource()
-    }
-
-    /**
      * Check user supplied options, then start the process of building and signing the CPI
      */
     override fun run() {
@@ -88,15 +74,11 @@ class CreateCpi : Runnable {
         requireFileExists(signingOptions.keyStoreFileName)
 
         // Allow piping group policy file into stdin
-        val groupPolicySource = if (groupPolicyFileName == "-")
-            GroupPolicySource.StdIn
+        val groupPolicyString: String
+        if (groupPolicyFileName == "-")
+            groupPolicyString = System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
-            GroupPolicySource.File(requireFileExists(groupPolicyFileName))
-
-        val groupPolicyString = when (groupPolicySource) {
-            is GroupPolicySource.StdIn -> System.`in`.readAllBytes().toString(Charsets.UTF_8)
-            is GroupPolicySource.File -> File(groupPolicySource.path.toString()).readText(Charsets.UTF_8)
-        }
+            groupPolicyString = File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
 
         validateGroupPolicy(groupPolicyString)
 
@@ -213,20 +195,20 @@ class CreateCpi : Runnable {
     private fun validateGroupPolicy(groupPolicyString: String)  {
         val membershipSchemaValidator = MembershipSchemaValidatorImpl(MembershipSchemaProviderFactory.getSchemaProvider())
 
-        val version: Int
+        var fileFormatVersion: Int
         try {
-            version = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
-        } catch (e: Exception) {
+            fileFormatVersion = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
+        } catch (e: CordaRuntimeException) {
             throw MembershipSchemaValidationException(
-                "Exception when validating group policy.",
+                "Exception when validating group policy. Group policy file is invalid. Could not get file format version. ",
                 e,
                 GroupPolicySchema.Default,
-                listOf("Group policy file is invalid. Could not get file format version. ${e.message}"))
+                listOf("${e.message}"))
         }
 
         membershipSchemaValidator.validateGroupPolicy(
             GroupPolicySchema.Default,
-            Version(version, 0),
+            Version(fileFormatVersion, 0),
             groupPolicyString
         )
     }
