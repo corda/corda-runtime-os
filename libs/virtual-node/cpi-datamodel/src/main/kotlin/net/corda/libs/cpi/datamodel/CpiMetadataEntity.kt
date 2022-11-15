@@ -1,6 +1,7 @@
 package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
+import net.corda.v5.base.util.uncheckedCast
 import java.io.Serializable
 import java.time.Instant
 import java.util.stream.Stream
@@ -144,4 +145,17 @@ fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
                 "INNER JOIN FETCH cpk_.metadata cpk_meta_",
         CpiMetadataEntity::class.java
     ).resultStream
+}
+
+@Suppress("unused")
+fun EntityManager.findAllCpiMetadata2(): Stream<CpiMetadataEntity> {
+    // Joining the other tables to ensure all data is fetched eagerly
+    return uncheckedCast<Any, Stream<CpiMetadataEntity>>(createNativeQuery(
+        "SELECT * FROM CONFIG.cpi cpi_ ",// +
+//                "INNER JOIN CONFIG.cpi_cpk cpk_ on cpi_.name=cpk_.cpi_name and cpi_signer_summary_hash=cpk_.cpi_signer_summary_hash and cpi_.version=cpk_.cpi_version " +
+//                "INNER JOIN CONFIG.cpk_metadata cpkmetadata_ on cpk_.cpk_name=cpkmetadata_.cpk_name \n" +
+//                "            and cpk_.cpk_signer_summary_hash=cpkmetadata_.cpk_signer_summary_hash \n" +
+//                "            and cpk_.cpk_version=cpkmetadata_.cpk_version",
+        CpiMetadataEntity::class.java
+    ).resultStream)
 }
