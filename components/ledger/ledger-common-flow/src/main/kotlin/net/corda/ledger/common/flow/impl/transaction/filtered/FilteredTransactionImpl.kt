@@ -97,11 +97,7 @@ class FilteredTransactionImpl(
                     componentGroupAuditProofProvider
                 }
                 MerkleProofType.SIZE -> {
-                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) { // todo???
-                        componentGroupAuditProofProvider
-                    } else {
-                        componentGroupSizeProofProvider
-                    }
+                    componentGroupSizeProofProvider
                 }
             }
             validate(filteredComponentGroup.merkleProof.verify(componentLeafHash, providerToVerifyWith)) {
@@ -155,10 +151,6 @@ class FilteredTransactionImpl(
             merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
-    }
-
-    private fun MerkleProof.hasSingleEmptyLeaf(): Boolean {
-        return treeSize == 1 && leaves.single().leafData.isEmpty()
     }
 
     private inline fun validate(condition: Boolean, message: () -> String) {

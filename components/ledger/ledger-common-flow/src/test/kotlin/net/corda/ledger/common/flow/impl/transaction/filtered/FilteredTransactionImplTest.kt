@@ -309,7 +309,6 @@ class FilteredTransactionImplTest {
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
         assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
@@ -339,7 +338,6 @@ class FilteredTransactionImplTest {
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
         assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
@@ -369,9 +367,8 @@ class FilteredTransactionImplTest {
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
-        assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.secondValue)
+        assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
 
     @Test
@@ -431,7 +428,6 @@ class FilteredTransactionImplTest {
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
     }
 
     @Test
@@ -464,7 +460,6 @@ class FilteredTransactionImplTest {
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
     }
 
     @Test
@@ -497,7 +492,6 @@ class FilteredTransactionImplTest {
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
         verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
     }
 
     @Test
