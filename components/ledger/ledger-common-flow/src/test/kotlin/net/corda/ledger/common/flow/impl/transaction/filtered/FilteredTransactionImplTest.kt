@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITH
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
@@ -43,14 +44,7 @@ class FilteredTransactionImplTest {
         const val metadataJson = "{}"
         val metadata = TransactionMetadata(
             linkedMapOf(
-                TransactionMetadata.DIGEST_SETTINGS_KEY to linkedMapOf<String, Any>(
-                    ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to "algorithm",
-                    ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to Base64.getEncoder()
-                        .encodeToString("leaf prefix".toByteArray(Charsets.UTF_8)),
-                    ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to Base64.getEncoder()
-                        .encodeToString("node prefix".toByteArray(Charsets.UTF_8)),
-                    COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to digestAlgorithmName
-                ),
+                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
             )
         )
     }
