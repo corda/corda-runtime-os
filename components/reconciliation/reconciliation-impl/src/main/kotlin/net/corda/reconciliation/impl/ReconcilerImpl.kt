@@ -17,24 +17,6 @@ internal class ReconcilerImpl<K : Any, V : Any>(
     reconciliationIntervalMs: Long
 ) : Reconciler {
 
-    constructor(
-        dbReader: ReconcilerReader<K, V>,
-        kafkaReader: ReconcilerReader<K, V>,
-        writer: ReconcilerWriter<K, V>,
-        keyClass: Class<K>,
-        valueClass: Class<V>,
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        reconciliationIntervalMs: Long
-    ) : this(
-        listOf(dbReader),
-        kafkaReader,
-        writer,
-        keyClass,
-        valueClass,
-        coordinatorFactory,
-        reconciliationIntervalMs
-    )
-
     val name = "${ReconcilerImpl::class.java.name}<${keyClass.name}, ${valueClass.name}>"
 
     private val coordinator =

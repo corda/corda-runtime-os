@@ -106,7 +106,7 @@ class GroupParametersReconciler(
      */
     private fun buildVNodeReconcilerReader(vnodeInfo: VirtualNodeInfo) {
         dbReconcilers.computeIfAbsent(vnodeInfo.holdingIdentity) { holdingId ->
-            val uniqueId = "${vnodeInfo.holdingIdentity.shortHash.value}-${UUID.randomUUID()}"
+            val uniqueId = "${holdingId.shortHash.value}-${UUID.randomUUID()}"
 
             /**
              * Create EntityManagerFactory and store it under a unique ID to be closed after use.
@@ -121,10 +121,7 @@ class GroupParametersReconciler(
             /**
              * Close the previously created EntityManagerFactory.
              */
-            fun emfTearDown() = emfBucket.computeIfPresent(uniqueId) { _, oldValue ->
-                oldValue.close()
-                null
-            }
+            fun emfTearDown() = emfBucket.remove(uniqueId)?.close()
 
             /**
              * Query for the group parameters entity, using the vnode information to build the key.
