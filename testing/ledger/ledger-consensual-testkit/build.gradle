@@ -8,7 +8,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-cipher-suite'
     api 'net.corda:corda-ledger-consensual'
 
     implementation project(":libs:serialization:json-validator")

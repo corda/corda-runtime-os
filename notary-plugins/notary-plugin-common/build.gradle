@@ -28,4 +28,6 @@ dependencies {
     cordaProvided "net.corda:corda-cipher-suite"
     cordaProvided "net.corda:corda-notary-plugin"
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    cordaProvided project(':libs:crypto:cipher-suite')
 }
