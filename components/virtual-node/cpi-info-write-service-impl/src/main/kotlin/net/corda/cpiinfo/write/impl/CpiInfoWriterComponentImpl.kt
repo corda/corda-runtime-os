@@ -90,6 +90,17 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             return
         }
 
+        // For testing only
+        records.forEach { record ->
+            val k: CpiIdentifierAvro = record.key
+            val v: CpiMetadataAvro = record.value!!
+            log.info(
+                "Reconciling: Putting the following CPI<${k.name} ${k.version}, ${k.signerSummaryHash}> " +
+                    "with the following CPKs [${v.cpks?.joinToString(",")
+                    { cpk -> "${cpk.id.name} ${cpk.id.version} ${cpk.id.signerSummaryHash}" }}]"
+            )
+        }
+
         val futures = tryPublish(records)
         // Wait for the future (there should only be one) to complete.
         futures.forEach { it.get() }
