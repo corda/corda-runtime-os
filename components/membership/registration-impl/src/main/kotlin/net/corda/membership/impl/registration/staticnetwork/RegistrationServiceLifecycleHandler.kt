@@ -12,6 +12,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -31,13 +32,14 @@ class RegistrationServiceLifecycleHandler(
 ) : LifecycleEventHandler {
     companion object {
         const val CONSUMER_GROUP = "STATIC_GROUP_DEFINITION"
-    }
 
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-    // for checking the components' health
-    private var componentHandle: AutoCloseable? = null
-    private var subRegistrationHandle: RegistrationHandle? = null
+        // Keys for resources managed by this components lifecycle coordinator. Note that this class is reliant on a
+        // coordinator created elsewhere. It is therefore important to ensure that these keys do not clash with any
+        // resources created in any other place that uses the same coordinator.
+        private const val SUBSCRIPTION_RESOURCE = "SUBSCRIPTION_RESOURCE"
+        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val COMPONENT_HANDLE = "COMPONENT_HANDLE"
+    }
 
     private val publisherFactory = staticMemberRegistrationService.publisherFactory
 
@@ -53,8 +55,6 @@ class RegistrationServiceLifecycleHandler(
 
     private var _publisher: Publisher? = null
 
-    private var subscription: Subscription<String, StaticGroupDefinition>? = null
-
     /**
      * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
      */
@@ -67,32 +67,28 @@ class RegistrationServiceLifecycleHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when(event) {
             is StartEvent -> handleStartEvent(coordinator)
-            is StopEvent -> handleStopEvent()
+            is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
             is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        componentHandle?.close()
-        componentHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+        coordinator.createManagedResource(COMPONENT_HANDLE) {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+                )
             )
-        )
+        }
     }
 
-    private fun handleStopEvent() {
-        componentHandle?.close()
-        configHandle?.close()
+    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         _publisher?.close()
         _publisher = null
-        subRegistrationHandle?.close()
-        subRegistrationHandle = null
-        subscription?.close()
-        subscription = null
+        coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE, COMPONENT_HANDLE))
     }
 
     private fun handleRegistrationChangeEvent(
@@ -101,23 +97,23 @@ class RegistrationServiceLifecycleHandler(
     ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                if (event.registration == subRegistrationHandle) {
+                val subHandle = coordinator.getManagedResource<MembershipSubscriptionAndRegistration>(
+                    SUBSCRIPTION_RESOURCE
+                )?.registrationHandle
+                if (event.registration == subHandle) {
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                    )
+                    coordinator.createManagedResource(CONFIG_HANDLE) {
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
+                    }
                 }
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
-                configHandle?.close()
-                subRegistrationHandle?.close()
-                subRegistrationHandle = null
-                subscription?.close()
-                subscription = null
+                coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE))
             }
         }
     }
@@ -132,14 +128,15 @@ class RegistrationServiceLifecycleHandler(
         _publisher?.start()
         _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
 
-        subscription?.close()
-        subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
-            Processor(groupParametersCache),
-            event.config.getConfig(MESSAGING_CONFIG)
-        ).also {
-            it.start()
-            subRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+        coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
+            val subscription = subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
+                Processor(groupParametersCache),
+                event.config.getConfig(MESSAGING_CONFIG)
+            )
+            subscription.start()
+            val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
+            MembershipSubscriptionAndRegistration(subscription, handle)
         }
 
         if(coordinator.status != LifecycleStatus.UP) {
@@ -166,6 +163,24 @@ class RegistrationServiceLifecycleHandler(
             currentData.entries.forEach {
                 groupParametersCache.set(it.key, it.value.groupParameters)
             }
+        }
+    }
+
+    /**
+     * Pair up the subscription to the compacted topic and the registration handle to that subscription.
+     *
+     * This allows us to enforce the close order on these two resources, which prevents an accidental extra DOWN event
+     * from propagating when we're recreating the subscription.
+     */
+    private class MembershipSubscriptionAndRegistration(
+        val subscription: Subscription<String, StaticGroupDefinition>,
+        val registrationHandle: RegistrationHandle
+    ) : Resource {
+        override fun close() {
+            // The close order here is important - closing the subscription first can result in spurious lifecycle
+            // events being posted.
+            registrationHandle.close()
+            subscription.close()
         }
     }
 }
