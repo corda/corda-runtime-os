@@ -91,7 +91,7 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
             timeout(timeout)
             command { getConfig(section) }
             condition {
-                it?.code == OK.statusCode && it.body?.toJson()?.sourceConfigNode()?.get(key)?.asInt()?.toString() == value
+                it.code == OK.statusCode && it.body.toJson().sourceConfigNode()?.get(key)?.asInt()?.toString() == value
             }
         }
     }
