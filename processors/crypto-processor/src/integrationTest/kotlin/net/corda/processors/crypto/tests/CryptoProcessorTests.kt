@@ -6,9 +6,9 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -629,7 +629,7 @@ class CryptoProcessorTests {
             otherPublicKey = publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

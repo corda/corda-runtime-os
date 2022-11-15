@@ -3,9 +3,9 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
-import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
+import net.corda.crypto.hes.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
 import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.impl.decorators.supportsSharedSecretDerivation
@@ -342,7 +342,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
             otherPublicKey = key.publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

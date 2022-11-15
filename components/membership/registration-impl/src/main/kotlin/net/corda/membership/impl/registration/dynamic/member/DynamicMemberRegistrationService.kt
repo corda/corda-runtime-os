@@ -7,8 +7,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.toByteArray
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -308,7 +308,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
-                    EciesParams(salt, aad)
+                    HybridEncryptionParams(salt, aad)
                 }
 
                 val messageHeader = UnauthenticatedMessageHeader(
