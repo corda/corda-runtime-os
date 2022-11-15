@@ -199,8 +199,6 @@ class RegistrationServiceLifecycleHandler(
      *
      * This allows us to enforce the close order on these two resources, which prevents an accidental extra DOWN event
      * from propagating when we're recreating the subscription.
-     *
-     * By hanging on to the configuration used to build the subscription, it can be rebuilt in the event of an error.
      */
     private class MembershipSubscriptionAndRegistration(
         val subscription: Subscription<String, StaticGroupDefinition>,
