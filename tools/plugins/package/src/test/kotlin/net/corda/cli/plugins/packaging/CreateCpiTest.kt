@@ -21,6 +21,8 @@ import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
 import net.corda.utilities.exists
 import org.junit.jupiter.api.Assertions.assertFalse
 import picocli.CommandLine.Help
+import java.io.ByteArrayInputStream
+import java.io.File
 
 class CreateCpiTest {
 
@@ -134,6 +136,33 @@ class CreateCpiTest {
         assertEquals("", errText)
 
         val outputFile = Path.of(tempDir.toString(), "DefaultOutputFilename.cpi")
+        checkCpi(outputFile)
+    }
+
+    @Test
+    fun `cpi create tool test group policy argument`() {
+        val outputFile = tmpOutputFile()
+        val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
+
+        val systemIn = System.`in`
+        val testIn = ByteArrayInputStream(groupPolicyString.toByteArray())
+        System.setIn(testIn)
+
+        val errText = captureStdErr {
+            CommandLine(app).execute(
+                "--cpb=${testCpb}",
+                "--group-policy=-",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        System.setIn(systemIn)
+        // Expect output to be silent on success
+        assertEquals("", errText)
         checkCpi(outputFile)
     }
 

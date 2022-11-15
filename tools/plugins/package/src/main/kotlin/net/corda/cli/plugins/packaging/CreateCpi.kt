@@ -22,8 +22,9 @@ import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
-import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorFactoryImpl
+import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorImpl
 import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
+import net.corda.schema.membership.provider.MembershipSchemaProviderFactory
 import net.corda.v5.base.versioning.Version
 import picocli.CommandLine
 
@@ -87,12 +88,17 @@ class CreateCpi : Runnable {
         requireFileExists(signingOptions.keyStoreFileName)
 
         // Allow piping group policy file into stdin
-        val groupPolicy = if (groupPolicyFileName == "-")
+        val groupPolicySource = if (groupPolicyFileName == "-")
             GroupPolicySource.StdIn
         else
             GroupPolicySource.File(requireFileExists(groupPolicyFileName))
 
-        validateGroupPolicy(groupPolicy)
+        val groupPolicyString = when (groupPolicySource) {
+            is GroupPolicySource.StdIn -> System.`in`.readAllBytes().toString(Charsets.UTF_8)
+            is GroupPolicySource.File -> File(groupPolicySource.path.toString()).readText(Charsets.UTF_8)
+        }
+
+        validateGroupPolicy(groupPolicyString)
 
         // Check input Cpb file is indeed a Cpb
         verifyIsValidCpbV1(cpbPath)
@@ -106,7 +112,7 @@ class CreateCpi : Runnable {
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
-        buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
+        buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
     }
 
     /**
@@ -132,7 +138,7 @@ class CreateCpi : Runnable {
      *
      * Creates a temporary file, copies CPB entries into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
+    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: String) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
@@ -159,7 +165,7 @@ class CreateCpi : Runnable {
      *
      * Copies CPB entries into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
+    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: String) {
         JarInputStream(Files.newInputStream(cpbPath, READ)).use { cpbJar ->
             JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), cpbJar.manifest).use { cpiJar ->
 
@@ -193,27 +199,19 @@ class CreateCpi : Runnable {
      *
      * Reads group policy from stdin or file depending on user choice
      */
-    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: GroupPolicySource) {
+    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
 
-        when (groupPolicy) {
-            is GroupPolicySource.File -> Files.copy(groupPolicy.path, cpiJar)
-            is GroupPolicySource.StdIn -> System.`in`.copyTo(cpiJar)
-        }
+        groupPolicy.byteInputStream().copyTo(cpiJar)
+
         cpiJar.closeEntry()
     }
 
     /**
      * Validates group policy against schema.
      */
-    private fun validateGroupPolicy(groupPolicy: GroupPolicySource)  {
-        val membershipSchemaValidatorFactoryImpl = MembershipSchemaValidatorFactoryImpl()
-        val membershipSchemaValidator = membershipSchemaValidatorFactoryImpl.createValidator()
-
-        val groupPolicyString = when (groupPolicy) {
-            is GroupPolicySource.File -> File(groupPolicy.path.toString()).readText(Charsets.UTF_8)
-            is GroupPolicySource.StdIn -> System.`in`.readAllBytes().toString(Charsets.UTF_8)
-        }
+    private fun validateGroupPolicy(groupPolicyString: String)  {
+        val membershipSchemaValidator = MembershipSchemaValidatorImpl(MembershipSchemaProviderFactory.getSchemaProvider())
 
         val version: Int
         try {
