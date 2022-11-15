@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Crypto ECIES core implemntation'
+description 'Crypto Hybrid Encryption Scheme core implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

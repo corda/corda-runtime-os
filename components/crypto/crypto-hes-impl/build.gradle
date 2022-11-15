@@ -13,7 +13,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     api "net.corda:corda-cipher-suite"
-    api project(":components:crypto:crypto-ecies-core-impl")
+    api project(":components:crypto:crypto-hes-core-impl")
     api project(":components:crypto:crypto-hes")
 
     implementation project(":components:crypto:crypto-client")
