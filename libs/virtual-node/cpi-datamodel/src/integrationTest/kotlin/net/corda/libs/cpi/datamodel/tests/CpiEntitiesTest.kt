@@ -331,7 +331,7 @@ class CpiEntitiesIntegrationTest {
     fun `findAllCpiMetadata properly streams through DB data`() {
         val testDbConf = DbUtils.getEntityManagerConfiguration("cpi_db_${UUID.randomUUID()}")
         val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
+            "test_unit_${UUID.randomUUID()}",
             CpiEntities.classes.toList(),
             testDbConf
         )
