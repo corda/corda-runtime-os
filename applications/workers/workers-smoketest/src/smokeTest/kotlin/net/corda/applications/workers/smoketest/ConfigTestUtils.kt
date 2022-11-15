@@ -71,6 +71,7 @@ fun updateConfig(config: String, section: String) {
  * Wait for the REST API on the rpc-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
+@Suppress("UNNECESSARY_SAFE_CALL")
 fun waitForConfigurationChange(section: String, key: String, value: String, expectServiceToBeDown: Boolean = true, timeout: Duration = Duration
     .ofMinutes(1)) {
     cluster {
@@ -90,7 +91,7 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
             timeout(timeout)
             command { getConfig(section) }
             condition {
-                it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value
+                it?.code == OK.statusCode && it.body?.toJson()?.sourceConfigNode()?.get(key)?.asInt()?.toString() == value
             }
         }
     }
