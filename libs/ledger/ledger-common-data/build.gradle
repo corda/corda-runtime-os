@@ -30,7 +30,6 @@ dependencies {
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
-    testImplementation project(':libs:serialization:serialization-amqp')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
