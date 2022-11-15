@@ -105,7 +105,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
-                        proofType = MerkleProofType.AUDIT // TODO It seems that tests do not pass if this is not here...
+                        proofType = MerkleProofType.AUDIT // TODO: It seems that tests do not pass if this is not here...
                         merkleTree.createAuditProof(listOf(0))
                     } else {
                         val componentGroupMerkleTreeSizeProofProvider =
