@@ -8,6 +8,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
+import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -100,6 +101,25 @@ data class UtxoSignedTransactionImpl(
         }.toSet()
     }
 
+    override fun verifySignatures() {
+        val appliedSignatories = signatures.filter{
+            try {
+                transactionSignatureService.verifySignature(id, it)
+                true
+            } catch (e: Exception) {
+                throw TransactionVerificationException(id,
+                    "Failed to verify signature of ${it.signature}. " +
+                            "Message: ${e.message}", e
+                )
+            }
+        }.map { it.by }.toSet()
+        val requiredSignatories = this.toLedgerTransaction().signatories
+        if (requiredSignatories.any {
+                !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+            }){
+            throw TransactionVerificationException(id, "There are missing signatures", null)
+        }
+    }
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return UtxoLedgerTransactionImpl(wireTransaction, serializationService)
     }
