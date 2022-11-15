@@ -1,7 +1,6 @@
 package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
-import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED

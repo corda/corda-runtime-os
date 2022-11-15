@@ -36,7 +36,7 @@ interface Publisher : AutoCloseable {
      * If publisher is configured for transactions (instanceId is set on publisherConfig) publish is
      * executed synchronously and committed atomically.
      * Transactions will return a future of size 1 indicating success or failure of the transaction.
-     * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
+         * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>>
 }
