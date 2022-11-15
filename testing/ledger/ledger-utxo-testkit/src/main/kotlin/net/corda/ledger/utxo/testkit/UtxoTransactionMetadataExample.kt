@@ -15,7 +15,7 @@ val utxoTransactionMetadataExample = TransactionMetadata(linkedMapOf(
     TransactionMetadata.PLATFORM_VERSION_KEY to 123,
     TransactionMetadata.CPI_METADATA_KEY to cpiPackageSummaryExample,
     TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample,
-    TransactionMetadata.SCHEMA_VERSION_KEY to 1
+    TransactionMetadata.SCHEMA_VERSION_KEY to TransactionMetadata.SCHEMA_VERSION
 // TODO
 // List of component group types
 // Membership group parameters hash

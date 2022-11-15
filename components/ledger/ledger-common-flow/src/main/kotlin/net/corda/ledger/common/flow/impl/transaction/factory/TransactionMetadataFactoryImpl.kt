@@ -30,7 +30,7 @@ class TransactionMetadataFactoryImpl @Activate constructor(
             TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
             TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
             TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries(),
-            TransactionMetadata.SCHEMA_VERSION_KEY to 1
+            TransactionMetadata.SCHEMA_VERSION_KEY to TransactionMetadata.SCHEMA_VERSION
         )
         metadata.putAll(ledgerSpecificMetadata)
         return TransactionMetadata(metadata)

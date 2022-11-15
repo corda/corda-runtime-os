@@ -13,5 +13,5 @@ fun transactionMetadataExample(cpiMetadata: CordaPackageSummary = cpiPackageSumm
     TransactionMetadata.PLATFORM_VERSION_KEY to 123,
     TransactionMetadata.CPI_METADATA_KEY to cpiMetadata,
     TransactionMetadata.CPK_METADATA_KEY to cpkMetadata,
-    TransactionMetadata.SCHEMA_VERSION_KEY to 1
+    TransactionMetadata.SCHEMA_VERSION_KEY to TransactionMetadata.SCHEMA_VERSION
 ))

@@ -11,6 +11,7 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
     companion object {
         const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
         const val SCHEMA_PATH = "/schema/transaction-metadata.json"
+        const val SCHEMA_VERSION = 1
 
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
