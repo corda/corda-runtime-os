@@ -1,10 +1,11 @@
 package net.corda.v5.ledger.consensual.transaction
 
-import java.security.PublicKey
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import java.security.PublicKey
 
 /**
  * Defines a signed Consensual transaction.
