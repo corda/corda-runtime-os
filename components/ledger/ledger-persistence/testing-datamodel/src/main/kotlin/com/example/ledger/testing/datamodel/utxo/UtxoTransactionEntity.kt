@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel
+package com.example.ledger.testing.datamodel.utxo
 
 import java.time.Instant
 import javax.persistence.CascadeType
@@ -14,8 +14,8 @@ import net.corda.v5.base.annotations.CordaSerializable
 
 @CordaSerializable
 @Entity
-@Table(name = "consensual_transaction")
-data class ConsensualTransactionEntity(
+@Table(name = "utxo_transaction")
+data class UtxoTransactionEntity(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     val id: String,
@@ -30,26 +30,22 @@ data class ConsensualTransactionEntity(
     val created: Instant,
 ) {
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val components: MutableList<ConsensualTransactionComponentEntity> = mutableListOf()
+    val components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
 
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val statuses: MutableList<ConsensualTransactionStatusEntity> = mutableListOf()
-
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val signatures: MutableList<ConsensualTransactionSignatureEntity> = mutableListOf()
+    val signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
 
     @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
-    @JoinTable(name = "consensual_transaction_cpk",
+    @JoinTable(name = "utxo_transaction_cpk",
         joinColumns = [JoinColumn(name = "transaction_id")],
         inverseJoinColumns = [JoinColumn(name = "file_checksum")]
     )
-    val cpks: MutableSet<ConsensualCpkEntity> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ConsensualTransactionEntity
+        other as UtxoTransactionEntity
 
         if (id != other.id) return false
         if (!privacySalt.contentEquals(other.privacySalt)) return false
