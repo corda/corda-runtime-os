@@ -616,6 +616,18 @@ class LifecycleProcessorTest {
         verify(dependentComponents, never()).stopAll()
     }
 
+    @Test
+    fun `processClose will close all the timers`() {
+        val state = mock<LifecycleStateManager> {
+            on { nextBatch() } doReturn listOf(CloseCoordinator())
+        }
+        val processor = LifecycleProcessor(NAME, state, mock(), mock(), mock())
+
+        processor.processEvents(mock(), mock())
+
+        verify(state).cancelAllTimer()
+    }
+
     private object TestEvent1 : LifecycleEvent
     private object TestEvent2 : LifecycleEvent
     private object TestEvent3 : LifecycleEvent
