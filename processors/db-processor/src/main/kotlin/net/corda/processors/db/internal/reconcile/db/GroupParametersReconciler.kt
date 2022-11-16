@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.processors.db.internal.reconcile.db.ReconciliationContext.VirtualNodeReconciliationContext
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -63,33 +64,37 @@ class GroupParametersReconciler(
     override fun updateInterval(intervalMillis: Long) {
         logger.debug { "Group parameters reconciliation interval set to $intervalMillis ms" }
 
-        dbReconciler = DbReconcilerReader(
-            coordinatorFactory,
-            HoldingIdentity::class.java,
-            GroupParameters::class.java,
-            dependencies,
-            ::reconciliationInfoFactory,
-            ::getVersionRecords,
-            onStreamClose = ::onStreamClose
-        ).also {
-            it.start()
+        if (dbReconciler == null) {
+            dbReconciler = DbReconcilerReader(
+                coordinatorFactory,
+                HoldingIdentity::class.java,
+                GroupParameters::class.java,
+                dependencies,
+                reconciliationContextFactory,
+                ::getVersionRecords,
+                onStreamClose = ::onStreamClose
+            ).also {
+                it.start()
+            }
         }
     }
 
-    private fun reconciliationInfoFactory() = virtualNodeInfoReadService.getAll().map {
-        ReconciliationInfo.VirtualNodeReconciliationInfo(
-            dbConnectionManager.createEntityManagerFactory(
-                it.vaultDmlConnectionId,
-                entitiesSet
-            ),
-            it.holdingIdentity
-        )
+    private val reconciliationContextFactory = {
+        virtualNodeInfoReadService.getAll().map {
+            VirtualNodeReconciliationContext(
+                dbConnectionManager.createEntityManagerFactory(
+                    it.vaultDmlConnectionId,
+                    entitiesSet
+                ),
+                it.holdingIdentity
+            )
+        }
     }
 
     /**
      * Close the previously created EntityManagerFactory.
      */
-    private fun onStreamClose(reconciliationInfo: ReconciliationInfo) = reconciliationInfo.emf.close()
+    private fun onStreamClose(reconciliationContext: ReconciliationContext) = reconciliationContext.emf.close()
 
 
     /**
@@ -97,9 +102,9 @@ class GroupParametersReconciler(
      */
     private fun getVersionRecords(
         em: EntityManager,
-        reconciliationInfo: ReconciliationInfo
+        reconciliationContext: ReconciliationContext
     ): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
-        require(reconciliationInfo is ReconciliationInfo.VirtualNodeReconciliationInfo) {
+        require(reconciliationContext is VirtualNodeReconciliationContext) {
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
         val criteriaBuilder = em.criteriaBuilder
@@ -120,7 +125,7 @@ class GroupParametersReconciler(
             object : VersionedRecord<HoldingIdentity, GroupParameters> {
                 override val version = entity.epoch
                 override val isDeleted = false
-                override val key = reconciliationInfo.holdingIdentity
+                override val key = reconciliationContext.holdingIdentity
                 override val value = groupParametersFactory.create(deserializedParams)
             }
         )

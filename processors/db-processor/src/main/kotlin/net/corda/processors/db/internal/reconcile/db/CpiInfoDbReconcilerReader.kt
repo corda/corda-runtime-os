@@ -14,7 +14,7 @@ import javax.persistence.EntityManager
  * Converts the database entity classes [CpiMetadataEntity] to [CpiMetadata], and also the identifier
  */
 val getAllCpiInfoDBVersionedRecords
-        : (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em, _ ->
+        : (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em, _ ->
     em.findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,

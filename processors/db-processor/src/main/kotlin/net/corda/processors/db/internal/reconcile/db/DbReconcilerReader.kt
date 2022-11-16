@@ -13,7 +13,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
-import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -31,14 +30,14 @@ class DbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
-    private val reconciliationInfoFactory: () -> Collection<ReconciliationInfo>,
-    private val doGetAllVersionedRecords: (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<K, V>>,
+    private val reconciliationContextFactory: () -> Collection<ReconciliationContext>,
+    private val doGetAllVersionedRecords: (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<K, V>>,
     private val onStatusUp: (() -> Unit)? = null,
     private val onStatusDown: (() -> Unit)? = null,
-    private val onStreamClose: ((ReconciliationInfo) -> Unit)? = null
+    private val onStreamClose: ((ReconciliationContext) -> Unit)? = null
 ) : ReconcilerReader<K, V>, Lifecycle {
 
-    private val name = "${DbReconcilerReader::class.java.simpleName}<${keyClass.simpleName}, ${valueClass.simpleName}>"
+    internal val name = "${DbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
 
     private val logger = LoggerFactory.getLogger(name)
 
@@ -51,8 +50,7 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     private var dependencyRegistration: RegistrationHandle? = null
 
-    @VisibleForTesting
-    internal fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
@@ -103,16 +101,16 @@ class DbReconcilerReader<K : Any, V : Any>(
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
         return try {
-            val streams = reconciliationInfoFactory.invoke().map { reconciliationInfo ->
-                val em = reconciliationInfo.emf.createEntityManager()
+            val streams = reconciliationContextFactory.invoke().map { context ->
+                val em = context.emf.createEntityManager()
                 val currentTransaction = em.transaction
                 currentTransaction.begin()
-                doGetAllVersionedRecords(em, reconciliationInfo).onClose {
+                doGetAllVersionedRecords(em, context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,
                     // only used for making streaming DB data possible.
                     currentTransaction.rollback()
                     em.close()
-                    onStreamClose?.invoke(reconciliationInfo)
+                    onStreamClose?.invoke(context)
                 }
             }
             Stream.of(*streams.toTypedArray()).flatMap { i -> i }

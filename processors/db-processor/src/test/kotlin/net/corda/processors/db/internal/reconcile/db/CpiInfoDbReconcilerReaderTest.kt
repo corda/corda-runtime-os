@@ -27,6 +27,7 @@ import javax.persistence.TypedQuery
 import kotlin.streams.toList
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.packaging.core.CordappType
+import net.corda.processors.db.internal.reconcile.db.ReconciliationContext.ClusterReconciliationContext
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
@@ -111,8 +112,8 @@ class CpiInfoDbReconcilerReaderTest {
         whenever(em.transaction).thenReturn(mock())
         whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
 
-        val reconciliationInfo = ReconciliationInfo.ClusterReconciliationInfo(mock())
-        val versionedRecords = getAllCpiInfoDBVersionedRecords(em, reconciliationInfo).toList()
+        val context = ClusterReconciliationContext(mock())
+        val versionedRecords = getAllCpiInfoDBVersionedRecords(em, context).toList()
         val record = versionedRecords.single()
 
         val expectedId = CpiIdentifier(

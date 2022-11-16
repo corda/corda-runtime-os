@@ -3,6 +3,7 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.processors.db.internal.reconcile.db.ReconciliationContext.ClusterReconciliationContext
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -36,6 +37,10 @@ class VirtualNodeReconciler(
         }
     private var _entityManagerFactory: EntityManagerFactory? = null
 
+    private val reconciliationContextFactory = {
+        listOf(ClusterReconciliationContext(entityManagerFactory))
+    }
+
     private fun onStatusUp() {
         _entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
     }
@@ -62,7 +67,7 @@ class VirtualNodeReconciler(
                     HoldingIdentity::class.java,
                     VirtualNodeInfo::class.java,
                     dependencies,
-                    { listOf(ReconciliationInfo.ClusterReconciliationInfo(entityManagerFactory)) },
+                    reconciliationContextFactory,
                     getAllVirtualNodesDBVersionedRecords,
                     ::onStatusUp,
                     ::onStatusDown

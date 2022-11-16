@@ -133,6 +133,17 @@ class GroupParametersReconcilerTest {
 
             assertThat(groupParametersReconciler.dbReconciler).isNotNull
         }
+
+        @Test
+        fun `Reader is not rebuilt if it already exists`() {
+            groupParametersReconciler.updateInterval(1000)
+            val original = groupParametersReconciler.dbReconciler
+
+            groupParametersReconciler.updateInterval(1000)
+            val current = groupParametersReconciler.dbReconciler
+
+            assertThat(original).isEqualTo(current)
+        }
     }
 
     @Nested

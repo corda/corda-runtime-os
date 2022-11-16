@@ -11,6 +11,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
+import net.corda.processors.db.internal.reconcile.db.ReconciliationContext.ClusterReconciliationContext
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -50,15 +51,16 @@ class DbReconcilerReaderTest {
 
     private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
     private val dependenciesMock: Set<LifecycleCoordinatorName> = setOf(dependencyMock)
-    private val reconciliationInfoFactory: () -> Collection<ReconciliationInfo> = mock {
-        on { invoke() } doReturn listOf(ReconciliationInfo.ClusterReconciliationInfo(emf))
+    private val reconciliationContexts = listOf(ClusterReconciliationContext(emf), ClusterReconciliationContext(emf))
+    private val reconciliationContextFactory: () -> Collection<ReconciliationContext> = mock {
+        on { invoke() } doReturn reconciliationContexts
     }
-    private val getAllVersionRecordsMock: (EntityManager, ReconciliationInfo) -> Stream<VersionedRecord<String, Int>> = mock {
+    private val getAllVersionRecordsMock: (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<String, Int>> = mock {
         on { invoke(eq(em), any()) } doReturn versionedRecordsStream
     }
     private val onStatusUpMock: () -> Unit = mock()
     private val onStatusDownMock: () -> Unit = mock()
-    private val onStreamCloseMock: (ReconciliationInfo) -> Unit = mock()
+    private val onStreamCloseMock: (ReconciliationContext) -> Unit = mock()
 
     private val coordinatorNameCaptor = argumentCaptor<LifecycleCoordinatorName>()
     private val lifecycleEventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
@@ -87,7 +89,7 @@ class DbReconcilerReaderTest {
         String::class.java,
         Int::class.java,
         dependenciesMock,
-        reconciliationInfoFactory,
+        reconciliationContextFactory,
         getAllVersionRecordsMock,
         onStatusUpMock,
         onStatusDownMock,
@@ -108,7 +110,9 @@ class DbReconcilerReaderTest {
         fun `Lifecycle coordinator name is as expected`() {
             val name = coordinatorNameCaptor.firstValue
 
-            assertThat(name.componentName).isEqualTo("DbReconcilerReader<String, int>")
+            assertThat(name.componentName).isEqualTo(
+                "net.corda.processors.db.internal.reconcile.db.DbReconcilerReader<java.lang.String, int>"
+            )
         }
     }
 
@@ -269,12 +273,13 @@ class DbReconcilerReaderTest {
         fun `Expected services called when get versioned records executed successfully`() {
             dbReconcilerReader.getAllVersionedRecords()
 
-            verify(reconciliationInfoFactory).invoke()
-            verify(emf).createEntityManager()
-            verify(em).transaction
-            verify(transaction).begin()
-            verify(getAllVersionRecordsMock).invoke(eq(em), any())
-            verify(versionedRecordsStream).onClose(any())
+            val numContexts = reconciliationContexts.size
+            verify(reconciliationContextFactory).invoke()
+            verify(emf, times(numContexts)).createEntityManager()
+            verify(em, times(numContexts)).transaction
+            verify(transaction, times(numContexts)).begin()
+            verify(getAllVersionRecordsMock, times(numContexts)).invoke(eq(em), any())
+            verify(versionedRecordsStream, times(numContexts)).onClose(any())
         }
 
         @Test
@@ -301,14 +306,14 @@ class DbReconcilerReaderTest {
 
         @Test
         fun `Failure to create entity manager factory posts error event`() {
-            whenever(reconciliationInfoFactory.invoke()) doThrow RuntimeException(errorMsg)
+            whenever(reconciliationContextFactory.invoke()) doThrow RuntimeException(errorMsg)
 
             val output = assertDoesNotThrow {
                 dbReconcilerReader.getAllVersionedRecords()
             }
             val postedEvent = postEventCaptor.firstValue
 
-            verify(reconciliationInfoFactory).invoke()
+            verify(reconciliationContextFactory).invoke()
             assertThat(output).isNull()
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
