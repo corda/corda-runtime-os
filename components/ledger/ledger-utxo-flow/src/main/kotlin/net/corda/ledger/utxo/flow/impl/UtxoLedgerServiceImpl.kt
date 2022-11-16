@@ -12,7 +12,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransactionVerifier
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransactionChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -53,7 +53,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun receiveFinality(session: FlowSession, verifier: UtxoSignedTransactionVerifier): UtxoSignedTransaction {
+    override fun receiveFinality(
+        session: FlowSession,
+        checkTransactionAcceptable: UtxoSignedTransactionChecker
+    ): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 }
