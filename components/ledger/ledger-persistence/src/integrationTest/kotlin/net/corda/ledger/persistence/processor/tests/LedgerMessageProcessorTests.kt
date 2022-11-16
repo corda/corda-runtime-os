@@ -66,9 +66,9 @@ import java.util.UUID
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(PER_CLASS)
-class ConsensualLedgerMessageProcessorTests {
+class LedgerMessageProcessorTests {
     companion object {
-        const val TOPIC = "consensual-ledger-dummy-topic"
+        const val TOPIC = "ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
@@ -116,7 +116,11 @@ class ConsensualLedgerMessageProcessorTests {
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = "V"
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
-        val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
+        val persistRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            LedgerTypes.CONSENSUAL,
+            persistTransaction
+        )
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
@@ -126,14 +130,69 @@ class ConsensualLedgerMessageProcessorTests {
         )
 
         val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, request))
+        val records = listOf(Record(TOPIC, requestId, persistRequest))
 
         // Process the messages (this should persist transaction to the DB)
         var responses = assertSuccessResponses(processor.onNext(records))
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            LedgerTypes.CONSENSUAL,
+            FindTransaction(transaction.id.toString())
+        )
+        responses =
+            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+
+        assertThat(responses).hasSize(1)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNull()
+        val entityResponse = deserializer.deserialize(response.payload.array())!!
+        assertThat(entityResponse.results).hasSize(1)
+        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
+        assertThat(retrievedTransaction).isEqualTo(transaction)
+    }
+
+    @Test
+    fun `persistTransaction for UTXO ledger deserialises the transaction and persists`() {
+        val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
+        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+
+        val transaction = createTestTransaction(ctx)
+
+        // Serialise tx into bytebuffer and add to PersistTransaction payload
+        val serializedTransaction = ctx.serialize(transaction)
+        val transactionStatus = "V"
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val persistRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            LedgerTypes.UTXO,
+            persistTransaction
+        )
+
+        // Send request to message processor
+        val processor = PersistenceRequestProcessor(
+            virtualNode.entitySandboxService,
+            delegatedRequestHandlerSelector,
+            externalEventResponseFactory
+        )
+
+        val requestId = UUID.randomUUID().toString()
+        val records = listOf(Record(TOPIC, requestId, persistRequest))
+
+        // Process the messages (this should persist transaction to the DB)
+        var responses = assertSuccessResponses(processor.onNext(records))
+        assertThat(responses).hasSize(1)
+
+        // Check that we wrote the expected things to the DB
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            LedgerTypes.UTXO,
+            FindTransaction(transaction.id.toString())
+        )
         responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
@@ -173,6 +232,7 @@ class ConsensualLedgerMessageProcessorTests {
 
     private fun createRequest(
         holdingId: net.corda.virtualnode.HoldingIdentity,
+        ledgerType: LedgerTypes,
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
@@ -180,7 +240,7 @@ class ConsensualLedgerMessageProcessorTests {
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),
-            LedgerTypes.CONSENSUAL,
+            ledgerType,
             request,
             externalEventContext
         )
