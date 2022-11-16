@@ -34,7 +34,7 @@ import kotlin.concurrent.withLock
 
 class EventLogSubscriptionImplTest {
     private companion object {
-        private const val TEST_TIMEOUT_SECONDS = 3L
+        private const val TEST_TIMEOUT_SECONDS = 30L
     }
 
     private var mockRecordCount = 5L
