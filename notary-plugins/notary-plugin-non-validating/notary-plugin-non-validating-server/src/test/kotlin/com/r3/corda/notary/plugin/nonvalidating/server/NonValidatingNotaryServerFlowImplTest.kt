@@ -56,7 +56,6 @@ class NonValidatingNotaryServerFlowImplTest {
         val aliceKey = mock<PublicKey>()
 
         val aliceName = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
-        val bobName = MemberX500Name("Bob", "Bob Corp", "LDN", "GB")
 
         val aliceMemberInfo = mock<MemberInfo> {
             on { platformVersion } doReturn DUMMY_PLATFORM_VERSION

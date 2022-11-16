@@ -778,7 +778,7 @@ class FlowTests {
     //  empty list of input state and refs (no back-chain resolution)
     @Test
     @Disabled
-    fun `Notary - Non-validating plugin returns error when double spend occurs`() {
+    fun `Notary - Non-validating plugin returns error when using reference state that is spent in same tx`() {
         val requestID =
             startRpcFlow(
                 bobHoldingId,

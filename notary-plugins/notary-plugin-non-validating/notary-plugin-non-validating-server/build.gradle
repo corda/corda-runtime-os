@@ -38,6 +38,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":components:ledger:ledger-utxo-flow")
-    testImplementation project(":testing:crypto-testkit")
     testImplementation project(":libs:uniqueness:common")
+    testImplementation project(":testing:crypto-testkit")
 }

@@ -27,12 +27,6 @@ import java.security.PublicKey
 import java.time.Instant
 
 /**
- * TODO CORE-7939 This test flow should be modified once the Ledger (UtxoLedgerTransactionImpl and back-chain resolution)
- *  has been finished. Since `inputStateAndRefs` returns an empty list for now, the uniqueness check will always
- *  pass as each transaction will be considered an ISSUANCE transaction. After the ledger is in a better state
- *  we'll need to ISSUE states first before we can CONSUME them.
- */
-/**
  * This flow is used to call the `NonValidatingNotaryClientFlowImpl`. Since `NonValidatingNotaryClientFlowImpl` is not
  * a HTTP RPC invokable flow, we need an extra layer to call that flow from tests and through HTTP RPC.
  *
@@ -43,8 +37,7 @@ import java.time.Instant
  * This flow will take in the following parameters through HTTP:
  * - `timeWindowLowerBoundOffsetMs`: The lower bound offset for the generated transaction's time window. This can either
  * be positive or negative. As an example: If `-10000` is provided, the transaction's time window will start from current
- * UTC time ([Instant.now]) - 10 seconds. If not provided, it will default to 0 milliseconds, which means that the time
- * window's lower bound will be the current UTC time ([Instant.now]).
+ * UTC time ([Instant.now]) - 10 seconds. If not provided, no lower bound is assumed.
  *
  * - `timeWindowUpperBoundOffsetMs`: The upper bound offset for the generated transaction's time window. This can either
  * be positive or negative. As an example: If `3600000` is provided, the transaction's time window will end at UTC time
@@ -52,6 +45,10 @@ import java.time.Instant
  * will be the current  UTC time ([Instant.now]) + 1 hour.
  *
  * TODO CORE-7939 Add extra state parameters once they are available.
+ * TODO CORE-7939 This test flow should be modified once the Ledger (UtxoLedgerTransactionImpl and back-chain resolution)
+ *  has been finished. Since `inputStateAndRefs` returns an empty list for now, the uniqueness check will always
+ *  pass as each transaction will be considered an ISSUANCE transaction. After the ledger is in a better state
+ *  we'll need to ISSUE states first before we can CONSUME them.
  */
 @InitiatingFlow(protocol = "non-validating-test")
 class NonValidatingNotaryTestFlow : RPCStartableFlow {
@@ -98,7 +95,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val notaryParty = Party(notary.name, notary.sessionInitiationKey)
 
-        val stxBuilder = utxoLedgerService.getTransactionBuilder()
+        val stx = utxoLedgerService.getTransactionBuilder()
             .setNotary(notaryParty)
             .addCommand(TestCommand())
             // TODO CORE-7939 Can be removed after empty component groups have been fixed
@@ -108,17 +105,19 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             .addInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
             .addReferenceInputState(generateStateAndRef(DUMMY_TX_ID_2, 0, notaryParty))
             .addOutputState(TestContract.TestState(emptyList()))
-
-        val stx = timeWindowLowerBoundOffsetMs?.let {
-            stxBuilder.setTimeWindowBetween(
-                Instant.now().plusMillis(it),
-                Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
-            ).sign(myInfo.sessionInitiationKey)
-        } ?: run {
-            stxBuilder.setTimeWindowUntil(
-                Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
-            ).sign(myInfo.sessionInitiationKey)
-        }
+            .run {
+                if (timeWindowLowerBoundOffsetMs != null) {
+                    setTimeWindowBetween(
+                        Instant.now().plusMillis(timeWindowLowerBoundOffsetMs),
+                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                    )
+                } else {
+                    setTimeWindowUntil(
+                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                    )
+                }
+            }
+            .sign(myInfo.sessionInitiationKey)
 
         val sigs = flowEngine.subFlow(
             NonValidatingNotaryClientFlowImpl(

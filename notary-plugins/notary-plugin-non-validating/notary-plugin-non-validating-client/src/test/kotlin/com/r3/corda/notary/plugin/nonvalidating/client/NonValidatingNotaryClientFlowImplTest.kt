@@ -20,6 +20,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -28,6 +29,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.time.Instant
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NonValidatingNotaryClientFlowImplTest {
 
     private companion object {
