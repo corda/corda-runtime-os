@@ -65,8 +65,8 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
     fun getSchemaVersion(): Int {
         val version = this[SCHEMA_VERSION_KEY].toString()
 
-        try {
-            return Integer.parseInt(version)
+        return try {
+            version.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
                 "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
