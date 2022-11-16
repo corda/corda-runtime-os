@@ -3,15 +3,15 @@ package net.corda.applications.workers.smoketest
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.contains
-import java.security.MessageDigest
-import java.time.Duration
-import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions.assertThat
+import java.security.MessageDigest
+import java.time.Duration
+import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
@@ -159,18 +159,31 @@ fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     }
 }
 
-fun registerMember(holdingIdentityId: String) {
+fun registerMember(holdingIdentityShortHash: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
         val membershipJson = assertWithRetry {
-            command { registerMember(holdingIdentityId) }
+            command { registerMember(holdingIdentityShortHash) }
             condition { it.code == 200 }
-            failMessage("Failed to register the member to the network '$holdingIdentityId'")
+            failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
         }.toJson()
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
         assertThat(registrationStatus).isEqualTo("SUBMITTED")
+
+        assertWithRetry {
+            // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the RPC worker, but for now this will have to suffice.
+            timeout(Duration.ofSeconds(60))
+            interval(Duration.ofSeconds(15))
+            command { getRegistrationStatus(holdingIdentityShortHash) }
+            condition {
+                it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == "APPROVED"
+            }
+            failMessage("Registration was not completed for $holdingIdentityShortHash")
+        }
     }
 }
 

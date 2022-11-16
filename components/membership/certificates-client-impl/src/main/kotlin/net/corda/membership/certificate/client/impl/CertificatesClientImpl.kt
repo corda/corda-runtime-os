@@ -30,7 +30,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -57,7 +56,6 @@ class CertificatesClientImpl @Activate constructor(
     groupPolicyProvider: GroupPolicyProvider,
 ) : CertificatesClient {
     private companion object {
-        val logger = contextLogger()
         const val GROUP_NAME = "membership.db.certificates.client.group"
         const val CLIENT_NAME = "membership.db.certificates.client"
         const val PUBLISHER_NAME = "membership.certificates.publisher"
@@ -122,12 +120,10 @@ class CertificatesClientImpl @Activate constructor(
         get() = sender != null
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
     private inline fun <reified R> send(
@@ -209,7 +205,6 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent) {
-        logger.info("Handling config changed event.")
         senderRegistrationHandle?.close()
         sender?.close()
         senderRegistrationHandle = null
@@ -243,7 +238,6 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> {
                 handleStartEvent()

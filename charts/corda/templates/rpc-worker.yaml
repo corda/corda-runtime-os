@@ -103,6 +103,8 @@ spec:
           periodSeconds: 5
           failureThreshold: 20
         {{- end }}
+      initContainers:
+      {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}

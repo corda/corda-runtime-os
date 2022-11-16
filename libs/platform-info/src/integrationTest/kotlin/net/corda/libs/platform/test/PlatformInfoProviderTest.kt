@@ -38,13 +38,19 @@ class PlatformInfoProviderTest {
             platformInfoProvider.localWorkerSoftwareVersion
         }
         val expectedValue = PlatformInfoProvider::class.java.classLoader
-            .getResource("META-INF/MANIFEST.MF")
-            ?.openStream()
-            ?.use {
-                Manifest(it)
-            }
-            ?.mainAttributes
-            ?.getValue("Bundle-Version")
+            .getResources("META-INF/MANIFEST.MF")
+            .asSequence()
+            .map {
+                it.openStream().use { input ->
+                    Manifest(input)
+                }
+            }.mapNotNull {
+                it.mainAttributes
+            }.filter {
+                it.getValue("Bundle-SymbolicName") == "net.corda.platform-info"
+            }.mapNotNull {
+                it.getValue("Bundle-Version")
+            }.firstOrNull()
 
         assertThat(expectedValue)
             .isNotNull

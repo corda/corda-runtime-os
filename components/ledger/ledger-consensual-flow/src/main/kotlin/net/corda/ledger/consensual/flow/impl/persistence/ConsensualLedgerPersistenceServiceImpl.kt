@@ -2,7 +2,8 @@ package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -10,8 +11,6 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
@@ -34,10 +33,8 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService
 ) : ConsensualLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -45,15 +42,18 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
-                FindTransactionParameters(id.toHexString())
+                FindTransactionParameters(id.toString())
             )
         }.firstOrNull()?.let {
-            serializationService.deserialize<ConsensualSignedTransactionContainer>(it.array()).toSignedTransaction()
+            serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
         }
     }
 
     @Suspendable
-    override fun persist(transaction: ConsensualSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummary> {
+    override fun persist(
+        transaction: ConsensualSignedTransaction,
+        transactionStatus: TransactionStatus
+    ): List<CordaPackageSummary> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
@@ -62,18 +62,17 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         }.map { serializationService.deserialize(it.array()) }
     }
 
-    private fun ConsensualSignedTransactionContainer.toSignedTransaction() =
+    private fun SignedTransactionContainer.toSignedTransaction() =
         ConsensualSignedTransactionImpl(
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signatures
         )
 
     private fun ConsensualSignedTransaction.toContainer() =
         (this as ConsensualSignedTransactionInternal).run {
-            ConsensualSignedTransactionContainer(wireTransaction, signatures)
+            SignedTransactionContainer(wireTransaction, signatures)
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)

@@ -90,7 +90,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                 }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
-                logger.info("${this::javaClass.name} is now Up")
             }
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
@@ -111,7 +110,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
-                logger.info("${this::javaClass.name} is now ${event.status}")
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {

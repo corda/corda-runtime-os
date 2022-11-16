@@ -1,14 +1,13 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -25,10 +24,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class ConsensualSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService
 ) : BaseProxySerializer<ConsensualSignedTransaction, ConsensualSignedTransactionProxy>(),
     UsedByFlow, UsedByVerification {
 
@@ -50,8 +47,7 @@ class ConsensualSignedTransactionSerializer @Activate constructor(
         if (proxy.version == ConsensualSignedTransactionVersion.VERSION_1) {
             return ConsensualSignedTransactionImpl(
                 serializationService,
-                signingService,
-                digitalSignatureVerificationService,
+                transactionSignatureService,
                 proxy.wireTransaction,
                 proxy.signatures
             )
