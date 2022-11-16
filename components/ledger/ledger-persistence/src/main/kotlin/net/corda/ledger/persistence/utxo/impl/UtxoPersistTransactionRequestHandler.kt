@@ -1,12 +1,13 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.persistence.common.RequestHandler
-import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.ResponseFactory
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -17,7 +18,7 @@ class UtxoPersistTransactionRequestHandler(
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
-    private val utxoOutputRecordFactory: UtxoOutputRecordFactory
+    private val responseFactory: ResponseFactory
 ) : RequestHandler {
 
     private companion object {
@@ -32,9 +33,14 @@ class UtxoPersistTransactionRequestHandler(
         // persist the transaction
         persistenceService.persistTransaction(transaction)
 
+        val persistTransactionSuccessRecord = responseFactory.successResponse(
+            externalEventContext,
+            EntityResponse(emptyList())
+        )
+
         // return output records
-        return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(producedTokens, consumedTokens) +
-                utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
+        return UtxoOutputRecordFactoryImpl().getTokenCacheChangeEventRecords(producedTokens, consumedTokens) +
+                persistTransactionSuccessRecord
     }
 
     private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<UtxoToken> {

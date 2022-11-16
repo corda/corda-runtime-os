@@ -51,10 +51,12 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        TODO("Not yet implemented")
+        // TODO("Not yet implemented")
+        return emptyList()
     }
 
     override fun getConsumedStates(): List<StateAndRef<ContractState>> {
-        TODO("Not yet implemented")
+        // TODO("Not yet implemented")
+        return emptyList()
     }
 }
