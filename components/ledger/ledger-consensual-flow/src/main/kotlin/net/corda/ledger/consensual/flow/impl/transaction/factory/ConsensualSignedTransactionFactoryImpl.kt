@@ -48,6 +48,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val jsonValidator: JsonValidator,
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
+    /**
+     * Creates the signedTransaction initially
+     */
     @Suspendable
     override fun create(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
@@ -57,6 +60,12 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+
+        // Verify the states of the transaction.
+        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        consensualTransactionBuilder.states.map { it.verify(ledgerTransactionToCheck) }
+
+        // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
@@ -68,6 +77,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
+    /**
+     * Re-creates the signedTransaction from persistence/serialization.
+     */
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>

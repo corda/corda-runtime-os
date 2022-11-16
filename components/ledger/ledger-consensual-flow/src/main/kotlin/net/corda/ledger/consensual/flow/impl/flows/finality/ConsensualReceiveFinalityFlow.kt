@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
@@ -44,6 +45,11 @@ class ConsensualReceiveFinalityFlow(
         val transactionId = signedTransaction.id
 
         // TODO [CORE-5982] Verify Ledger Transaction
+
+        // Verify the states of the transaction.
+        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
+        ledgerTransactionToCheck.states.map { it.verify(ledgerTransactionToCheck) }
+
         // TODO [CORE-5982] Verify already added signatures.
         val signaturesPayload = if (verify(signedTransaction)) {
             // TODO [CORE-7029] Record unfinalised transaction

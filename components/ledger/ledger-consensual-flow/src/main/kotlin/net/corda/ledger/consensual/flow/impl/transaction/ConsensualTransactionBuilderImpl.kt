@@ -67,5 +67,7 @@ class ConsensualTransactionBuilderImpl(
         check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(states.isNotEmpty()) { "At least one consensual state is required" }
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
+        // The states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
+        // transaction is assembled there.
     }
 }
