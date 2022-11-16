@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
+    service = [HashingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = ServiceScope.PROTOTYPE
 )
 class HashingServiceImpl(
@@ -40,8 +40,7 @@ class HashingServiceImpl(
                 ?.digest(inputStream)
                 ?.let {
                     SecureHash(digestAlgorithmName.name, it)
-                }
-                ?: throw e
+                } ?: throw e
         }
 
     override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash =
@@ -52,8 +51,7 @@ class HashingServiceImpl(
                 ?.digest(bytes)
                 ?.let {
                     SecureHash(digestAlgorithmName.name, it)
-                }
-                ?: throw e
+                } ?: throw e
         }
 
     override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =

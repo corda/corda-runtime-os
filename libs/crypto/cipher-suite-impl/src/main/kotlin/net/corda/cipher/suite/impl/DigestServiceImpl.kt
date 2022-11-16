@@ -24,12 +24,11 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * A [DigestService] singleton for everyone not inside a sandbox to share.
  */
-@Component
-@ServiceRanking(1)
+@Component(service = [DigestService::class, SingletonSerializeAsToken::class])
 class DigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
-) : DigestService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
+) : DigestService, SingletonSerializeAsToken {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
         val factory = DoubleSHA256DigestFactory()
         it[factory.algorithm] = factory
