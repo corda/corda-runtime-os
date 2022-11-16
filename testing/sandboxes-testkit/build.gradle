@@ -1,0 +1,17 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Creates a sandbox group context component for testing'
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    api project(':components:virtual-node:sandbox-group-context-service')
+    api project(':libs:virtual-node:sandbox-group-context')
+    api project(':testing:sandboxes')
+    implementation project(':testing:test-utilities')
+}
