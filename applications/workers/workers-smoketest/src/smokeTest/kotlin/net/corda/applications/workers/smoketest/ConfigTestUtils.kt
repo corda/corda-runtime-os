@@ -93,7 +93,7 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
                 val bodyJSON = it.body.toJson()
                 it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
                         && bodyJSON["sourceConfig"][key] != null
-                        && bodyJSON.sourceConfigNode()[key].toString() == value
+                        && bodyJSON["sourceConfig"][key].toString() == value
             }
         }
     }
