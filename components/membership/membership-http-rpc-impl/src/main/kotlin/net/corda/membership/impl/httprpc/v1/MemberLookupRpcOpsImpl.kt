@@ -74,12 +74,10 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className starting..")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopping..")
         coordinator.stop()
     }
 

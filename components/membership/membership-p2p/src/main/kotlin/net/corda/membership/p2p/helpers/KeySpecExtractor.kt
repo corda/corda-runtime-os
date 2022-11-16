@@ -31,6 +31,36 @@ class KeySpecExtractor(
             SM2_CODE_NAME to SignatureSpec.SM2_SM3,
             SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
         )
+        private val validSpecsNames = mapOf(
+            ECDSA_SECP256K1_CODE_NAME to listOf(
+                SignatureSpec.ECDSA_SHA256,
+                SignatureSpec.ECDSA_SHA384,
+                SignatureSpec.ECDSA_SHA512,
+            )
+                .map { it.signatureName },
+            ECDSA_SECP256R1_CODE_NAME to listOf(
+                SignatureSpec.ECDSA_SHA256,
+                SignatureSpec.ECDSA_SHA384,
+                SignatureSpec.ECDSA_SHA512,
+            )
+                .map { it.signatureName },
+            EDDSA_ED25519_TEMPLATE to listOf(SignatureSpec.EDDSA_ED25519.signatureName),
+            GOST3410_GOST3411_TEMPLATE to listOf(SignatureSpec.GOST3410_GOST3411.signatureName),
+            RSA_CODE_NAME to listOf(SignatureSpec.RSA_SHA256, SignatureSpec.RSA_SHA384, SignatureSpec.RSA_SHA512)
+                .map { it.signatureName },
+            SM2_CODE_NAME to listOf(SignatureSpec.SM2_SM3.signatureName),
+            SPHINCS256_CODE_NAME to listOf(SignatureSpec.SPHINCS256_SHA512.signatureName),
+        )
+
+        fun CryptoSigningKey.validateSpecName(specName: String) {
+            val validSpecs = validSpecsNames[this.schemeCodeName]
+                ?: throw IllegalArgumentException("Could not identify spec for key scheme ${this.schemeCodeName}.")
+            if (!validSpecs.contains(specName)) {
+                throw IllegalArgumentException(
+                    "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
+                )
+            }
+        }
     }
 
     fun getSpec(publicKey: PublicKey): SignatureSpec {

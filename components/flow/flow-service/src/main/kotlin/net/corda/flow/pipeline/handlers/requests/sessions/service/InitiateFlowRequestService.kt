@@ -60,7 +60,8 @@ class InitiateFlowRequestService @Activate constructor(
             throw FlowFatalException("Flow stack is empty while trying to initiate a flow")
         }
 
-        val initiator = flowStack.nearestFirst { it.isInitiatingFlow }?.flowName
+        val initiatingFlowStackItem = flowStack.nearestFirst { it.isInitiatingFlow }
+        val initiator = initiatingFlowStackItem?.flowName
             ?: throw FlowPlatformException("Flow stack did not contain an initiating flow in the stack")
 
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
@@ -79,5 +80,10 @@ class InitiateFlowRequestService @Activate constructor(
                 )
             }
         )
+
+        val sessionsNotInitiatedIds = sessionsNotInitiated.map { it.sessionId }
+        initiatingFlowStackItem.sessions
+            .filter { it.sessionId in sessionsNotInitiatedIds }
+            .map { it.initiated = true }
     }
 }

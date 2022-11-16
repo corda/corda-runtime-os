@@ -24,7 +24,7 @@ class FlowEngineImplTest {
     private val flowStackItem = FlowStackItem.newBuilder()
         .setFlowName("flow-id")
         .setIsInitiatingFlow(true)
-        .setSessionIds(listOf())
+        .setSessions(listOf())
         .setContextPlatformProperties(mutableKeyValuePairList())
         .setContextUserProperties(mutableKeyValuePairList())
         .build()
@@ -65,7 +65,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessionIds)
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessions.map { it.sessionId })
             }
         }
     }
@@ -96,7 +96,7 @@ class FlowEngineImplTest {
                 verify(flowFiber).suspend(capture())
 
                 assertThat(firstValue.throwable).isEqualTo(error)
-                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessionIds)
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessions.map { it.sessionId })
             }
         }
     }

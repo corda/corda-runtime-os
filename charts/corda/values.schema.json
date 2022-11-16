@@ -201,8 +201,7 @@
             "default": {},
             "title": "cluster database configuration",
             "required": [
-                "cluster",
-                "clientImage"
+                "cluster"
             ],
             "additionalProperties": false,
             "properties": {
@@ -214,11 +213,17 @@
                         "host",
                         "type",
                         "port",
-                        "user",
+                        "username",
                         "database"                    
                     ],
                     "additionalProperties": false,
                     "properties": {
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
                         "host": {
                             "type": "string",
                             "format": "hostname",
@@ -245,15 +250,6 @@
                                 5432
                             ]
                         },
-                        "user": {
-                            "type": "string",
-                            "default": "user",
-                            "title": "the cluster database user",
-                            "examples": [
-                                "user"
-                            ],
-                            "minLength": 1
-                        },
                         "database": {
                             "type": "string",
                             "default": "cordacluster",
@@ -262,75 +258,19 @@
                                 "cordacluster"
                             ],
                             "minLength": 1
-                        },
-                        "password": {
-                            "type": "string",
-                            "default": "",
-                            "title": "the cluster database password (ignored if existingSecret is set, otherwise required)",
-                            "examples": [
-                                "password"
-                            ]
-                        },
-                        "existingSecret": {
-                            "type": "string",
-                            "default": "",
-                            "title": "the name of an existing secret containing the cluster database password with a key of 'password'",
-                            "examples": [
-                                "postgresql-secret"
-                            ]
                         }
                     },
                     "examples": [{
                         "host": "postgresql.example.com",
                         "type": "postgresql",
                         "port": 5432,
-                        "user": "user",
-                        "database": "cordacluster",
-                        "existingSecret": "postgresql-secret"
-                    }]
-                },
-                "clientImage": {
-                    "type": "object",
-                    "default": {},
-                    "title": "db client image",
-                    "required": [
-                        "registry",
-                        "repository",
-                        "tag"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "default": "",
-                            "title": "registry for image containing a db client, used to set up the db",
-                            "examples": [
-                                "docker.io"
-                            ]
+                        "username": {
+                            "value": "user"
                         },
-                        "repository": {
-                            "type": "string",
-                            "default": "postgres",
-                            "title": "repository for image containing a db client, used to set up the db",
-                            "examples": [
-                                "postgres"
-                            ],
-                            "minLength": 1
+                        "password": {
+                            "value": "password"
                         },
-                        "tag": {
-                            "type": "string",
-                            "default": "14.4",
-                            "title": "tag for image containing a db client, used to set up the db",
-                            "examples": [
-                                "14.4"
-                            ],
-                            "minLength": 1
-                        }
-                    },
-                    "examples": [{
-                        "registry": "docker.io",
-                        "repository": "postgres",
-                        "tag": "14.4"
+                        "database": "cordacluster"
                     }]
                 }
             },
@@ -342,11 +282,6 @@
                     "user": "user",
                     "database": "cordacluster",
                     "existingSecret": "postgresql-secret"
-                },
-                "clientImage": {
-                    "registry": "docker.io",
-                    "repository": "postgres",
-                    "tag": "14.4"
                 }
             }]
         },
@@ -402,42 +337,42 @@
                             "default": {},
                             "title": "if TLS is enabled, the truststore configuration for client connections to Kafka",
                             "required": [
-                                "secretRef",
+                                "valueFrom",
                                 "type"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                                "secretRef": {
+                                "valueFrom": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka",
+                                    "title": "The truststore secret configuration",
                                     "required": [
-                                        "name",
-                                        "key"
+                                        "secretKeyRef"
                                     ],
+                                    "additionalProperties": false,
                                     "properties": {
-                                        "name": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        },
-                                        "key": {
-                                            "type": "string",
-                                            "default": "ca.crt",
-                                            "title": "if TLS is enabled, the name of the key used in the Kubernetes secret containing the truststore for client connections to Kafka",
-                                            "examples": [
-                                                "ca.crt"
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "The truststore key reference",
+                                            "required": [
+                                                "name",
+                                                "key"
                                             ],
-                                            "minLength": 1
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "The truststore secret name"
+                                                },
+                                                "key": {
+                                                    "type": "string",
+                                                    "default": "",
+                                                    "title": "The truststore secret key"
+                                                }
+                                            }
                                         }
-                                    },
-                                    "examples": [{
-                                        "name": "",
-                                        "key": "ca.crt"
-                                    }]
+                                    }
                                 },
                                 "type": {
                                     "type": "string",
@@ -449,13 +384,54 @@
                                     "enum": ["PEM","JKS"]
                                 },
                                 "password": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "if TLS is enabled, the password for the truststore for client connections to Kafka, if any",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "The password configuration",
+                                    "required": [
+                                        "value",
+                                        "valueFrom"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "The password"
+                                        },
+                                        "valueFrom": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "The password secret configuration",
+                                            "required": [
+                                                "secretKeyRef"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "secretKeyRef": {
+                                                    "type": "object",
+                                                    "default": {},
+                                                    "title": "The password key reference",
+                                                    "required": [
+                                                        "name",
+                                                        "key"
+                                                    ],
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "default": "",
+                                                            "title": "The password secret name"
+                                                        },
+                                                        "key": {
+                                                            "type": "string",
+                                                            "default": "",
+                                                            "title": "The password secret key"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } 
                             }
                         }
                     }
@@ -463,38 +439,12 @@
                 "sasl": {
                     "type": "object",
                     "default": {},
-                    "title": "sasl configuration for client connection to Kafka",
+                    "title": "SASL configuration for client connection to Kafka",
                     "required": [
                         "enabled"
                     ],
                     "additionalProperties": false,
                     "properties": {
-                        "username": {
-                            "type": "string",
-                            "default": "user",
-                            "title": "sasl username for client connection to Kafka",
-                            "examples": [
-                                "user"
-                            ],
-                            "minLength": 1
-                        },
-                        "password": {
-                            "type": "string",
-                            "default": "",
-                            "title": "sasl password for client connection to Kafka",
-                            "examples": [
-                                ""
-                            ]
-                        },
-                        "mechanism": {
-                            "type": "string",
-                            "default": "",
-                            "title": "sasl mechanism for client connection to Kafka",
-                            "examples": [
-                                "SCRAM-SHA-256"
-                            ],
-                            "minLength": 1
-                        },
                         "enabled": {
                             "type": "boolean",
                             "default": false,
@@ -503,26 +453,22 @@
                                 false,
                                 true
                             ]
-                        }
-                    },
-                    "if": {
-                        "properties": {
-                            "enabled": {
-                                "const": true
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "password": {
-                                "minLength": 1
-                            }
                         },
-                        "required": [
-                            "username",
-                            "password",
-                            "mechanism"
-                        ]
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "mechanism": {
+                            "type": "string",
+                            "default": "",
+                            "title": "SASL mechanism for client connection to Kafka",
+                            "examples": [
+                                "SCRAM-SHA-256"
+                            ],
+                            "minLength": 1
+                        }
                     },
                     "examples": [{
                         "username": "user",
@@ -557,78 +503,12 @@
                     "additionalProperties": false,
                     "properties": {
                         "username": {
-                            "type": "string",
-                            "default": "admin",
-                            "title": "username for the initial admin user",
-                            "examples": [
-                                "admin"
-                            ],
-                            "minLength": 1
+                            "$ref": "#/$defs/config"
                         },
                         "password": {
-                            "type": "string",
-                            "default": "",
-                            "title": "password for the initial admin user; generated if not specified",
-                            "examples": [
-                                ""
-                            ]
-                        },
-                        "secretRef": {
-                            "type": "object",
-                            "default": {},
-                            "title": "reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password",
-                            "required": [
-                                "name",
-                                "usernameKey",
-                                "passwordKey"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "if specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password",
-                                    "examples": [
-                                        ""
-                                    ]
-                                },
-                                "usernameKey": {
-                                    "type": "string",
-                                    "default": "username",
-                                    "title": "the key name for the secret entry containing the initial admin user's username",
-                                    "examples": [
-                                        "username"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "passwordKey": {
-                                    "type": "string",
-                                    "default": "password",
-                                    "title": "the key name for the secret entry containing the initial admin user's password",
-                                    "examples": [
-                                        "password"
-                                    ],
-                                    "minLength": 1
-                                }
-                            },
-                            "examples": [{
-                                "name": "initial-admin-secret",
-                                "usernameKey": "username",
-                                "passwordKey": "password"
-                            }]
+                            "$ref": "#/$defs/config"
                         }
-                    },
-                    "examples": [{
-                        "username": "admin",
-                        "password": "password"
-                    },
-                    {
-                        "secretRef": {
-                            "name": "initial-admin-secret",
-                            "usernameKey": "username",
-                            "passwordKey": "password"
-                        }
-                    }]
+                    }
                 },
                 "db": {
                     "type": "object",
@@ -720,6 +600,50 @@
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
+                            }]
+                        },
+                        "clientImage": {
+                            "type": "object",
+                            "default": {},
+                            "title": "db client image",
+                            "required": [
+                                "registry",
+                                "repository",
+                                "tag"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "registry": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "registry for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "docker.io"
+                                    ]
+                                },
+                                "repository": {
+                                    "type": "string",
+                                    "default": "postgres",
+                                    "title": "repository for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "postgres"
+                                    ],
+                                    "minLength": 1
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "default": "14.4",
+                                    "title": "tag for image containing a db client, used to set up the db",
+                                    "examples": [
+                                        "14.4"
+                                    ],
+                                    "minLength": 1
+                                }
+                            },
+                            "examples": [{
+                                "registry": "docker.io",
+                                "repository": "postgres",
+                                "tag": "14.4"
                             }]
                         }
                     },
@@ -1864,6 +1788,47 @@
                     }
                 }
             }]
+        },
+        "config": {
+            "type": "object",
+            "title": "configuration for which a value may be provided inline or via a secret",
+            "additionalProperties": false,
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "default": "",
+                    "title": "the value"
+                },
+                "valueFrom": {
+                    "type": "object",
+                    "default": {},
+                    "title": "an alternative location for the value",
+                    "additionalProperties": false,
+                    "properties": {
+                        "secretKeyRef": {
+                            "type": "object",
+                            "title": "a reference to a value in a secret",
+                            "required": [
+                                "name",
+                                "key"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "the name of the secret"
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "the key in the secret corresponding to the required value"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

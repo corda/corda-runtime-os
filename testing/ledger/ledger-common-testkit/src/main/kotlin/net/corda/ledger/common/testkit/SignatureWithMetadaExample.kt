@@ -8,4 +8,4 @@ import java.time.Instant
 private val signature = DigitalSignature.WithKey(publicKeyExample, "0".toByteArray(), mapOf())
 private val digitalSignatureMetadata =
     DigitalSignatureMetadata(Instant.now(), mapOf())
-val signatureWithMetaDataExample = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
+val signatureWithMetadataExample = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)

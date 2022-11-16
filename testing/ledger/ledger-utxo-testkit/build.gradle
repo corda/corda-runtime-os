@@ -8,11 +8,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-ledger-utxo"
+    implementation 'net.corda:corda-cipher-suite'
+    api 'net.corda:corda-ledger-utxo'
 
-    implementation project(":libs:ledger:ledger-common-data")
-    implementation project(":libs:ledger:ledger-utxo-data")
-    implementation project(":components:ledger:ledger-utxo-flow")
-    api project(":testing:ledger:ledger-common-testkit")
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':testing:ledger:ledger-common-testkit')
+    api project(':testing:ledger:ledger-common-base-integration-test')
 }

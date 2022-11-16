@@ -1,15 +1,25 @@
 package net.corda.ledger.utxo.testkit
 
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.signatureWithMetaDataExample
+import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+
+fun UtxoSignedTransactionFactory.createExample(
+    jsonMarshallingService: JsonMarshallingService,
+    wireTransactionFactory: WireTransactionFactory
+):UtxoSignedTransaction {
+    val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
+    return create(wireTransaction, listOf(signatureWithMetadataExample))
+}
 
 @Suppress("LongParameterList")
 fun getUtxoSignedTransactionExample(
@@ -17,20 +27,18 @@ fun getUtxoSignedTransactionExample(
     merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
-    signingService: SigningService,
-    digitalSignatureVerificationService: DigitalSignatureVerificationService
+    transactionSignatureService: TransactionSignatureService
 ): UtxoSignedTransaction {
     val wireTransaction = getWireTransactionExample(
         digestService,
         merkleTreeProvider,
         jsonMarshallingService,
-        utxoTransactionMetaDataExample
+        utxoTransactionMetadataExample
     )
     return UtxoSignedTransactionImpl(
         serializationService,
-        signingService,
-        digitalSignatureVerificationService,
+        transactionSignatureService,
         wireTransaction,
-        listOf(signatureWithMetaDataExample)
+        listOf(signatureWithMetadataExample)
     )
 }

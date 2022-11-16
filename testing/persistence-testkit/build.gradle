@@ -17,7 +17,7 @@ dependencies {
     implementation project(':libs:db:db-orm-impl')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':testing:db-testkit')
-    implementation project(':testing:sandboxes')
+    implementation project(':testing:sandboxes-testkit')
     implementation project(':testing:test-utilities')
 
     implementation 'net.corda:corda-application'

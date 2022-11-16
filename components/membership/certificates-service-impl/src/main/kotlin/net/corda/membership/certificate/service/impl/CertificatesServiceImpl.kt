@@ -2,6 +2,7 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -23,6 +24,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,20 +32,38 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CertificatesService::class])
 @Suppress("LongParameterList")
-class CertificatesServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class CertificatesServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = DbConnectionManager::class)
-    dbConnectionManager: DbConnectionManager,
-    @Reference(service = JpaEntitiesRegistry::class)
-    jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val processor: CertificatesProcessor,
 ) : CertificatesService {
+
+    @Activate
+    constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
+        @Reference(service = JpaEntitiesRegistry::class)
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this(
+        coordinatorFactory,
+        subscriptionFactory,
+        configurationReadService,
+        CertificatesProcessor(
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService,
+        )
+    )
+
     private companion object {
         val logger = contextLogger()
         const val GROUP_NAME = "membership.certificates.service"
@@ -54,40 +74,42 @@ class CertificatesServiceImpl @Activate constructor(
     private var subscriptionRegistrationHandle: AutoCloseable? = null
     private var configHandle: Resource? = null
     private var rpcSubscription: Resource? = null
-    private val processor = CertificatesProcessor(
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        virtualNodeInfoReadService,
-    )
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
-    override fun importCertificates(tenantId: String, alias: String, certificates: String) =
-        processor.useCertificateProcessor(tenantId) { p -> p.saveCertificates(alias, certificates) }
+    override fun importCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+        certificates: String
+    ) =
+        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.saveCertificates(alias, certificates) }
 
-    override fun retrieveCertificates(tenantId: String, alias: String): String? {
-        var certificates: String? = null
-        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readCertificates(alias) }
-        return certificates
+    override fun retrieveCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+    ): String? {
+        return processor.useCertificateProcessor(holdingIdentityId, usage) { p ->
+            p.readCertificates(alias)
+        }
     }
 
-    override fun retrieveAllCertificates(tenantId: String): List<String> {
-        var certificates = emptyList<String>()
-        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readAllCertificates() }
-        return certificates
+    override fun retrieveAllCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+    ): List<String> {
+        return processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.readAllCertificates() }
     }
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
 
     @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> {
                 registrationHandle?.close()

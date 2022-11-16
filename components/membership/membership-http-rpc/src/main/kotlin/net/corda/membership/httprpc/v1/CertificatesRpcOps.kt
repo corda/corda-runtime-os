@@ -16,8 +16,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 @HttpRpcResource(
     name = "Certificates API",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
-            "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
-            " submitted to a certificate authority (CA).",
+        "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
+        " submitted to a certificate authority (CA).",
     path = "certificates"
 )
 interface CertificatesRpcOps : RpcOps {
@@ -26,32 +26,91 @@ interface CertificatesRpcOps : RpcOps {
     }
 
     /**
-     * The [importCertificateChain] method enables you to import a certificate chain for a tenant. A certificate chain
+     * The [importCertificateChain] method enables you to import a cluster level certificate chain. A certificate chain
      * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
      * method). This method does not return anything if the import is successful.
      *
      * Example usage:
      * ```
-     * certificatesOps.importCertificateChain(tenantId = "58B6030FABDD", alias = "cert58B6030FABDD",
-     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
-     *
-     * certificatesOps.importCertificateChain(tenantId = "rpc-api", alias = "cert58B6030FABDD",
+     * certificatesOps.importCertificateChain(usage = "p2p-tls", alias = "cert58B6030FABDD",
      * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
      * ```
      *
-     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique alias under which the certificate chain will be stored.
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
     @HttpRpcPUT(
-        path = "{tenantId}",
-        description = "This method imports a certificate chain for a specified tenant."
+        path = "cluster/{usage}",
+        description = "This method imports a certificate chain for a cluster."
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
-        tenantId: String,
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcRequestBodyParameter(
+            description = "The unique alias under which the certificate chain will be stored",
+            required = true,
+        )
+        alias: String,
+        @HttpRpcRequestBodyParameter(
+            description = "A valid certificate chain in PEM format obtained from a certificate authority",
+            required = true,
+            name = "certificate"
+        )
+        certificates: List<HttpFileUpload>,
+    ) = importCertificateChain(
+        usage = usage,
+        alias = alias,
+        holdingIdentityId = null,
+        certificates = certificates,
+    )
+
+    /**
+     * The [importCertificateChain] method enables you to import a certificate chain for a virtual node. A certificate chain
+     * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
+     * method). This method does not return anything if the import is successful.
+     *
+     * Example usage:
+     * ```
+     * certificatesOps.importCertificateChain(usage = "rpc-api-tls", alias = "cert58B6030FABDD",
+     * holdingIdentityId = "58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
+     * ```
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @param alias The unique alias under which the certificate chain will be stored.
+     * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
+     */
+    @HttpRpcPUT(
+        path = "vnode/{holdingIdentityId}/{usage}",
+        description = "This method imports a certificate chain for a virtual node."
+    )
+    fun importCertificateChain(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcPathParameter(
+            description = "The certificate holding identity ID",
+        )
+        holdingIdentityId: String?,
         @HttpRpcRequestBodyParameter(
             description = "The unique alias under which the certificate chain will be stored",
             required = true,
@@ -83,7 +142,6 @@ interface CertificatesRpcOps : RpcOps {
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param keyId Identifier of the public key that will be included in the certificate.
      * @param x500Name The X.500 name that will be the subject associated with the request.
-     * @param certificateRole Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
      * @param subjectAlternativeNames Optional. Used to specify additional subject names.
      * @param contextMap Optional. Used to add additional attributes to the CSR; for example, signature spec.
      *
@@ -95,8 +153,10 @@ interface CertificatesRpcOps : RpcOps {
         description = "This method enables you to generate a certificate signing request (CSR) for a tenant."
     )
     fun generateCsr(
-        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
+        @HttpRpcPathParameter(
+            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API"
+        )
         tenantId: String,
         @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,

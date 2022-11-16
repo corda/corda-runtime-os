@@ -88,10 +88,9 @@ import java.security.KeyStore
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-
 class P2PLayerEndToEndTest {
 
     companion object {
@@ -302,6 +301,7 @@ class P2PLayerEndToEndTest {
             }
         }
     }
+
 
     private class MarkerStorageProcessor(val markers: MutableCollection<Record<String, AppMessageMarker>>) :
         DurableProcessor<String, AppMessageMarker> {
@@ -528,7 +528,7 @@ class P2PLayerEndToEndTest {
 
             val hostingMapRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(
-                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1",
+                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-$i",
                     HostedIdentityEntry(
                         HoldingIdentity(identity.x500Name, identity.groupId),
                         TLS_KEY_TENANT_ID,
@@ -556,7 +556,7 @@ class P2PLayerEndToEndTest {
                 publisher.start()
                 publisher.publish(
                     memberInfoRecords + otherHostMemberInfoRecords +
-                        hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
+                            hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
                 ).forEach { it.get() }
             }
         }

@@ -1,0 +1,21 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common abstract test class with dependencies made available for unit tests'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(':testing:ledger:ledger-common-testkit')
+    api project(':components:ledger:ledger-common-flow')
+    api project(':libs:ledger:ledger-common-data')
+
+    api project(':libs:crypto:cipher-suite-impl')
+    api project(':libs:crypto:merkle-impl')
+    api project(':testing:test-serialization')
+    api project(':components:flow:flow-service')
+
+    implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:serialization:serialization-internal')
+}

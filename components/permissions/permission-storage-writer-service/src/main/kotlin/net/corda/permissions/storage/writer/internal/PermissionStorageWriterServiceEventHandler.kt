@@ -6,15 +6,14 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -53,11 +52,7 @@ class PermissionStorageWriterServiceEventHandler(
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> {
-                log.info("Start event received")
-            }
             is RegistrationStatusChangeEvent -> {
-                log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         crsSub = configurationReadService.registerComponentForUpdates(
@@ -79,7 +74,6 @@ class PermissionStorageWriterServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                log.info("Stop event received")
                 downTransition(coordinator)
             }
         }
@@ -87,7 +81,6 @@ class PermissionStorageWriterServiceEventHandler(
 
     @VisibleForTesting
     internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
-
         subscription?.close()
         subscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
