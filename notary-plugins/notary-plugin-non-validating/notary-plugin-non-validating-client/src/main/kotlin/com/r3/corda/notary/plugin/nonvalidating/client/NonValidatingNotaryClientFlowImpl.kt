@@ -45,6 +45,7 @@ class NonValidatingNotaryClientFlowImpl(
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
+    @Suppress("LongParameterList")
     internal constructor(
         stx: UtxoSignedTransaction,
         notary: Party,
