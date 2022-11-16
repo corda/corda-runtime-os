@@ -14,7 +14,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionChecker
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -189,7 +189,7 @@ class ConsensualReceiveFinalityFlowTest {
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
-    private fun callReceiveFinalityFlow(verifier: ConsensualSignedTransactionVerifier = ConsensualSignedTransactionVerifier { }) {
+    private fun callReceiveFinalityFlow(verifier: ConsensualSignedTransactionChecker = ConsensualSignedTransactionChecker { }) {
         val flow = ConsensualReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService

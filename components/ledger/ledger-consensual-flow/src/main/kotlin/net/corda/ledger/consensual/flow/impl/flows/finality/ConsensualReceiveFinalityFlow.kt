@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
@@ -18,12 +17,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionChecker
 
 @CordaSystemFlow
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
-    private val verifier: ConsensualSignedTransactionVerifier
+    private val checkTransactionAcceptable: ConsensualSignedTransactionChecker
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -105,7 +104,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
-            verifier.verify(signedTransaction)
+            checkTransactionAcceptable.verify(signedTransaction)
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
