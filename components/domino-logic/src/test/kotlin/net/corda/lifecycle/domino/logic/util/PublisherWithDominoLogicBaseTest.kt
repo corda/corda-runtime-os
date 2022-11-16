@@ -1,6 +1,5 @@
 package net.corda.lifecycle.domino.logic.util
 
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -8,20 +7,16 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
-class PublisherWithDominoLogicTest {
+class PublisherWithDominoLogicBaseTest {
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
@@ -41,41 +36,61 @@ class PublisherWithDominoLogicTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val messagingConfig = mock<SmartConfig>()
-    private val publisher = mock<Publisher>()
-    private val factory = mock<PublisherFactory> {
-        on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
+
+    private val autoCloseable = mock<AutoCloseable>()
+
+    private var factoryCalled = false
+    private fun factory(): AutoCloseable {
+        factoryCalled = true
+        return autoCloseable
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig(""), messagingConfig)
+    private val wrapper = PublisherWithDominoLogicBase(coordinatorFactory, ::factory)
 
     @Test
-    fun `publishToPartition will call the publisher`() {
+    fun `start will start the publisher`() {
         wrapper.start()
-        wrapper.publishToPartition(listOf(1 to mock()))
 
-        verify(publisher).publishToPartition(any())
+        assertThat(factoryCalled).isTrue
     }
 
     @Test
-    fun `publish will call the publisher`() {
+    fun `start will set the state to up`() {
         wrapper.start()
-        wrapper.publish(listOf(mock()))
 
-        verify(publisher).publish(any())
+        verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
-    fun `publishToPartition will throw an exception if not started`() {
-        assertThrows<IllegalStateException>() {
-            wrapper.publishToPartition(listOf(1 to mock()))
-        }
+    fun `stop will close the autoClosable`() {
+        wrapper.start()
+        wrapper.stop()
+
+        verify(autoCloseable).close()
     }
 
     @Test
-    fun `publish will throw an exception if not started`() {
-        assertThrows<IllegalStateException>() {
-            wrapper.publish(mock())
-        }
+    fun `close will remember to close the coordinator`() {
+        wrapper.start()
+        wrapper.close()
+
+        verify(coordinator).close()
+    }
+
+    @Test
+    fun `close will remember to close the autoClosable`() {
+        wrapper.start()
+        wrapper.close()
+
+        verify(autoCloseable).close()
+    }
+
+    @Test
+    fun `close will not close the autoClosable again if stopped`() {
+        wrapper.start()
+        wrapper.stop()
+        wrapper.close()
+
+        verify(autoCloseable).close()
     }
 }

@@ -5,7 +5,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.HoldingIdentity
-import java.security.KeyStore
 
 interface GroupPolicyListener {
     data class GroupInfo(
@@ -14,7 +13,8 @@ interface GroupPolicyListener {
         val protocolModes: Set<ProtocolMode>,
         val trustedCertificates: List<PemCertificate>,
         val sessionPkiMode: GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode,
-        val sessionTrustStore: KeyStore?
+        val sessionTrustStore: List<PemCertificate>?
     )
+
     fun groupAdded(groupInfo: GroupInfo)
 }
