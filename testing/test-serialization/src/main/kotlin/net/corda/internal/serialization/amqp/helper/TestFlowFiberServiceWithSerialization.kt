@@ -15,8 +15,8 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -38,7 +38,6 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
         val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         val bobX500Name = MemberX500Name.parse(bobX500)
         val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
-        val mockSandboxGroup = mock(SandboxGroup::class.java)
         Mockito.`when`(mockSandboxGroup.metadata).thenReturn(mockCpkMetadata())
         Mockito.`when`(mockSandboxGroup.getEvolvableTag(MockitoHelper.anyObject())).thenReturn("E;bundle;sandbox")
         Mockito.`when`(mockFlowSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
@@ -63,7 +62,7 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
 
     fun configureSerializer(registerMoreSerializers: (it: SerializerFactory) -> Unit, schemeMetadata: CipherSchemeMetadata) {
         val serializer = TestSerializationService.getTestSerializationService(registerMoreSerializers, schemeMetadata)
-        whenever(mockFlowSandboxGroupContext.amqpSerializer).thenReturn(serializer)
+        Mockito.`when`(mockFlowSandboxGroupContext.amqpSerializer).thenReturn(serializer)
     }
 
     private fun mockCpkMetadata() = mapOf(

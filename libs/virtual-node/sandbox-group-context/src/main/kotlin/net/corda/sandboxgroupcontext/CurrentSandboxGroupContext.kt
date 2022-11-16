@@ -5,9 +5,8 @@ package net.corda.sandboxgroupcontext
  *
  * [CurrentSandboxGroupContext] relies on a [ThreadLocal] to provide access to the current sandbox wherever this service is used.
  *
- * Generally, few callers should call [set] and [remove] and should be reserved for the setup and cleanup code that is run when setting up
- * a new sandbox (or retrieving from one a cache) and cleaning up resources when the thread using the sandbox has
- * completed processing.
+ * Generally, few callers should call [set] and [remove]. [set] should be called when a sandbox is created or retrieved from a cache.
+ * [remove] should be called when the code requiring the sandbox has executed and the sandbox needs cleaning up.
  */
 interface CurrentSandboxGroupContext {
 

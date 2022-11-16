@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.service.impl
 
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.util.contextLogger
@@ -7,8 +8,8 @@ import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [CurrentSandboxGroupContext::class, SingletonSerializeAsToken::class])
-class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSerializeAsToken {
+@Component(service = [CurrentSandboxGroupContext::class, UsedByFlow::class])
+class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow {
 
     private companion object {
         val log = contextLogger()
