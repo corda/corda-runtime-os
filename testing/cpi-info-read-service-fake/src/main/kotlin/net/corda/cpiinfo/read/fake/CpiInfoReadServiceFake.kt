@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
-import java.util.stream.Stream
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [CpiInfoReadService::class, CpiInfoReadServiceFake::class])
@@ -86,7 +85,7 @@ class CpiInfoReadServiceFake internal constructor(
         return cpiData[identifier]
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
+    override fun getAllVersionedRecords(): List<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
         TODO("Not yet implemented")
     }
 

@@ -1,15 +1,14 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.libs.packaging.core.CpiIdentifier
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -18,8 +17,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 @Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
@@ -92,7 +91,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return AutoCloseable {}
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+    override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
         TODO("Not yet implemented")
     }
 

@@ -10,7 +10,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
-import java.util.stream.Stream
 
 interface TestVirtualNodeInfoReadService : VirtualNodeInfoReadService {
     fun putTestVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo)
@@ -45,7 +44,7 @@ internal class TestVirtualNodeInfoReadServiceImpl @Activate constructor() : Test
     override val lifecycleCoordinatorName =
         LifecycleCoordinatorName.forComponent<TestVirtualNodeInfoReadServiceImpl>()
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? = null
+    override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? = null
     override fun stop() {}
     override fun start() {}
 

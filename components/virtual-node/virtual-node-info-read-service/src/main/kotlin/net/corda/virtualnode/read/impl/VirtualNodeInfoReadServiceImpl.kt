@@ -10,8 +10,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.stream.Stream
 
 /**
  * Virtual Node Info Service Component which implements [VirtualNodeInfoReadService]
@@ -97,9 +96,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
         virtualNodeInfoProcessor.registerCallback(listener)
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? =
+    override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? =
         getAll()
-            .stream()
             .map {
                 object : VersionedRecord<HoldingIdentity, VirtualNodeInfo> {
                     override val version = it.version

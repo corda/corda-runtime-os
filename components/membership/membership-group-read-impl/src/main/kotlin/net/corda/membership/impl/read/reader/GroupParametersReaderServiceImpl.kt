@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,7 +29,7 @@ import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.stream.Stream
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 
 @Component(service = [GroupParametersReaderService::class])
@@ -92,19 +91,19 @@ class GroupParametersReaderServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>? =
+    override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, GroupParameters>>? =
         impl.getAllVersionedRecords()
 
     override fun get(identity: HoldingIdentity): GroupParameters? = impl.get(identity)
 
     private interface InnerGroupParametersReaderService : AutoCloseable {
-        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>?
+        fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, GroupParameters>>?
 
         fun get(identity: HoldingIdentity): GroupParameters?
     }
 
     private object InactiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> =
+        override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, GroupParameters>> =
             throw IllegalStateException("$serviceName is currently inactive.")
 
         override fun get(identity: HoldingIdentity): GroupParameters =
@@ -114,7 +113,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     }
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
+        override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, GroupParameters>> {
             val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
                 object : VersionedRecord<HoldingIdentity, GroupParameters> {
                     override val version = it.value.epoch
@@ -123,7 +122,7 @@ class GroupParametersReaderServiceImpl internal constructor(
                     override val value = it.value
                 }
             }
-            return recordList.stream()
+            return recordList
         }
 
         override fun get(identity: HoldingIdentity): GroupParameters? = groupParametersCache.get(identity)

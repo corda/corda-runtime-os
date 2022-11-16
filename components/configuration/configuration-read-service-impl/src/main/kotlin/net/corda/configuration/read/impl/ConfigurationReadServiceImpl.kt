@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import java.util.stream.Stream
 
 /**
  * Configuration read service implementation.
@@ -64,7 +63,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         get() =
             eventHandler.configProcessor ?: throw IllegalStateException("Config read service configProcessor is null")
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<String, Configuration>> =
+    override fun getAllVersionedRecords(): List<VersionedRecord<String, Configuration>>? =
         configProcessor.getAllVersionedRecords()
 
 

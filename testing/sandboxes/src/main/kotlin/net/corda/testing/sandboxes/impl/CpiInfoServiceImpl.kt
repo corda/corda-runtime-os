@@ -10,7 +10,6 @@ import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.stream.Stream
 
 @Suppress("unused")
 @Component
@@ -22,8 +21,8 @@ class CpiInfoServiceImpl @Activate constructor(
 
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
-        getAll().stream().map {
+    override fun getAllVersionedRecords(): List<VersionedRecord<CpiIdentifier, CpiMetadata>>? =
+        getAll().map {
             object : VersionedRecord<CpiIdentifier, CpiMetadata> {
                 override val version = it.version
                 override val isDeleted = false

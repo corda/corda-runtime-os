@@ -1,6 +1,5 @@
 package net.corda.reconciliation.impl
 
-import kotlin.streams.asSequence
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -95,7 +94,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     @Suppress("ComplexMethod")
     fun reconcile() {
         val kafkaRecords =
-            kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
+            kafkaReader.getAllVersionedRecords()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
 
         val toBeReconciledDbRecords =
@@ -116,13 +115,11 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             }
                 ?: throw ReconciliationException("Error occurred while retrieving db records")
 
-        toBeReconciledDbRecords.use {
-            it.forEach { dbRecord ->
-                if (dbRecord.isDeleted) {
-                    writer.remove(dbRecord.key)
-                } else {
-                    writer.put(dbRecord.key, dbRecord.value)
-                }
+        toBeReconciledDbRecords.forEach { dbRecord ->
+            if (dbRecord.isDeleted) {
+                writer.remove(dbRecord.key)
+            } else {
+                writer.put(dbRecord.key, dbRecord.value)
             }
         }
     }
@@ -151,7 +148,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     internal data class ReconcileEvent(override val key: String) : TimerEvent
 
-    internal data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
+    internal data class UpdateIntervalEvent(val intervalMs: Long) : LifecycleEvent
 
     private class ReconciliationException(message: String) : CordaRuntimeException(message)
 }

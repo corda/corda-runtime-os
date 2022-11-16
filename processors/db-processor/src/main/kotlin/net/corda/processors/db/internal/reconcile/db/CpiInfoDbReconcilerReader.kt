@@ -1,19 +1,18 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import java.time.Instant
-import java.util.stream.Stream
-import javax.persistence.EntityManager
-import net.corda.reconciliation.VersionedRecord
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
+import javax.persistence.EntityManager
 
 /**
  * Converts the database entity classes [CpiMetadataEntity] to [CpiMetadata], and also the identifier
  */
-val getAllCpiInfoDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em ->
+val getAllCpiInfoDBVersionedRecords: (EntityManager) -> List<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em ->
     em.findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,

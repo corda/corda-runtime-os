@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.*
 import javax.persistence.EntityManagerFactory
-import kotlin.streams.toList
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {

@@ -1,10 +1,8 @@
 package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
-import net.corda.v5.base.util.uncheckedCast
 import java.io.Serializable
 import java.time.Instant
-import java.util.stream.Stream
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -137,25 +135,12 @@ data class CpiMetadataEntityKey(
     private val signerSummaryHash: String,
 ) : Serializable
 
-fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
+fun EntityManager.findAllCpiMetadata(): List<CpiMetadataEntity> {
     // Joining the other tables to ensure all data is fetched eagerly
     return createQuery(
         "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
                 "INNER JOIN FETCH cpi_.cpks cpk_ " +
                 "INNER JOIN FETCH cpk_.metadata cpk_meta_",
         CpiMetadataEntity::class.java
-    ).resultStream
-}
-
-@Suppress("unused")
-fun EntityManager.findAllCpiMetadata2(): Stream<CpiMetadataEntity> {
-    // Joining the other tables to ensure all data is fetched eagerly
-    return uncheckedCast<Any, Stream<CpiMetadataEntity>>(createNativeQuery(
-        "SELECT * FROM CONFIG.cpi cpi_ ",// +
-//                "INNER JOIN CONFIG.cpi_cpk cpk_ on cpi_.name=cpk_.cpi_name and cpi_signer_summary_hash=cpk_.cpi_signer_summary_hash and cpi_.version=cpk_.cpi_version " +
-//                "INNER JOIN CONFIG.cpk_metadata cpkmetadata_ on cpk_.cpk_name=cpkmetadata_.cpk_name \n" +
-//                "            and cpk_.cpk_signer_summary_hash=cpkmetadata_.cpk_signer_summary_hash \n" +
-//                "            and cpk_.cpk_version=cpkmetadata_.cpk_version",
-        CpiMetadataEntity::class.java
-    ).resultStream)
+    ).resultList
 }

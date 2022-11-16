@@ -6,8 +6,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -16,7 +16,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Stream
 
 interface TestVirtualNodeInfoReadService : VirtualNodeInfoReadService {
     fun putVNodeInfo(vnodeInfo: VirtualNodeInfo)
@@ -64,7 +63,7 @@ class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
         }
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+    override fun getAllVersionedRecords(): List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
