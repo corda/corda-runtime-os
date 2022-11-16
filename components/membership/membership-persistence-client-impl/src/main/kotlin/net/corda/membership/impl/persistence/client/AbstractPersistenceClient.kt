@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.client
 
+import java.time.Duration
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
@@ -25,12 +27,9 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.time.Clock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalArgumentException
-import java.time.Duration
-import java.util.*
 
 abstract class AbstractPersistenceClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -128,20 +127,16 @@ abstract class AbstractPersistenceClient(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> {
-                logger.info("Handling start event.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
@@ -150,7 +145,6 @@ abstract class AbstractPersistenceClient(
                 )
             }
             is StopEvent -> {
-                logger.info("Handling stop event.")
                 coordinator.updateStatus(
                     LifecycleStatus.DOWN,
                     "Component received stop event."
@@ -163,7 +157,6 @@ abstract class AbstractPersistenceClient(
                 rpcSender = null
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Handling registration changed event.")
                 when(event.status) {
                     LifecycleStatus.UP -> {
                         configHandle?.close()
@@ -181,7 +174,6 @@ abstract class AbstractPersistenceClient(
                 }
             }
             is ConfigChangedEvent -> {
-                logger.info("Handling config changed event.")
                 rpcSender?.close()
                 rpcSender = publisherFactory.createRPCSender(
                     rpcConfig = RPCConfig(

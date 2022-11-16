@@ -60,7 +60,7 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/$usage/cluster", resourceName, alias)
+        uploadCertificateResource("/api/v1/certificates/cluster/$usage", resourceName, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
@@ -120,8 +120,11 @@ class ClusterBuilder {
     /**
      * Register a member to the network
      */
-    fun registerMember(holdingId: String) =
-        post("/api/v1/membership/$holdingId", registerMemberBody())
+    fun registerMember(holdingIdShortHash: String) =
+        post("/api/v1/membership/$holdingIdShortHash", registerMemberBody())
+
+    fun getRegistrationStatus(holdingIdShortHash: String) =
+        get("/api/v1/membership/$holdingIdShortHash")
 
     fun registerNotary(holdingId: String) =
         post("/api/v1/membership/$holdingId", registerNotaryBody())

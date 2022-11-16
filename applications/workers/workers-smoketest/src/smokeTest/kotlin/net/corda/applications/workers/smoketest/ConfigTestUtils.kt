@@ -68,18 +68,21 @@ fun updateConfig(config: String, section: String) {
 }
 
 /**
- * Wait for the REST API on the rpc-worker to become unavailable and available again, asserting that the expected
- * configuration change took place.
+ * Wait for the REST API on the rpc-worker to respond with an updated config value.
+ * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
-fun waitForConfigurationChange(section: String, key: String, value: String, timeout: Duration = Duration.ofMinutes(1)) {
+fun waitForConfigurationChange(section: String, key: String, value: String, expectServiceToBeDown: Boolean = true, timeout: Duration = Duration
+    .ofMinutes(1)) {
     cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        // Wait for the service to become unavailable
-        eventually(timeout) {
-            assertThatThrownBy {
-                getConfig(section)
-            }.hasCauseInstanceOf(IOException::class.java)
+        if (expectServiceToBeDown) {
+            // Wait for the service to become unavailable
+            eventually(timeout) {
+                assertThatThrownBy {
+                    getConfig(section)
+                }.hasCauseInstanceOf(IOException::class.java)
+            }
         }
 
         // Wait for the service to become available again and have the expected configuration value
@@ -87,7 +90,10 @@ fun waitForConfigurationChange(section: String, key: String, value: String, time
             timeout(timeout)
             command { getConfig(section) }
             condition {
-                it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value
+                val bodyJSON = it.body.toJson()
+                it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
+                        && bodyJSON.sourceConfigNode()[key] != null
+                        && bodyJSON.sourceConfigNode()[key].toString() == value
             }
         }
     }

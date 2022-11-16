@@ -5,6 +5,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.exceptions.NotReadyException
@@ -23,6 +24,9 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -83,6 +87,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
+        putTokenStateObservers(ctx, cpks)
 
         val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
         val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
@@ -157,6 +162,39 @@ class EntitySandboxServiceImpl @Activate constructor(
         return AutoCloseable {
             logger.debug("Closing EntityManagerFactory for {}", entitiesSet.persistenceUnitName)
             entityManagerFactory.close()
+        }
+    }
+
+    private fun putTokenStateObservers(
+        ctx: MutableSandboxGroupContext,
+        cpks: Collection<CpkMetadata>
+    ) {
+        val tokenStateObserverMap = cpks
+            .flatMap { it.cordappManifest.tokenStateObservers }
+            .toSet()
+            .mapNotNull { getObserverFromClassName(it, ctx) }
+            .groupBy { it.stateType }
+
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
+    }
+
+    private fun getObserverFromClassName(
+        className: String,
+        ctx: MutableSandboxGroupContext
+    ): UtxoLedgerTokenStateObserver<ContractState>? {
+        val clazz = ctx.sandboxGroup.loadClassFromMainBundles(
+            className,
+            UtxoLedgerTokenStateObserver::class.java
+        )
+
+        return try {
+            uncheckedCast(clazz.getConstructor().newInstance())
+        } catch (e: Exception) {
+            logger.error(
+                "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",
+                e
+            )
+            null
         }
     }
 

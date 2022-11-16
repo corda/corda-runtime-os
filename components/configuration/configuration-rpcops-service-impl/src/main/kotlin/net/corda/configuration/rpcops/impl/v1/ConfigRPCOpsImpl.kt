@@ -7,8 +7,8 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.rpcops.impl.exception.ConfigException
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
+import net.corda.configuration.rpcops.impl.exception.ConfigException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -110,7 +110,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                         )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
-                    logger.info("${this.javaClass.name} is now Up")
                 }
                 is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
                 is RegistrationStatusChangeEvent -> {
@@ -131,7 +130,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                         else -> logger.debug { "Unexpected status: ${event.status}" }
                     }
                     coordinator.updateStatus(event.status)
-                    logger.info("${this::javaClass.name} is now ${event.status}")
                 }
                 is ConfigChangedEvent -> {
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)

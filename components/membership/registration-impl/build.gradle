@@ -44,6 +44,8 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')

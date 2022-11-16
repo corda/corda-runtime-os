@@ -9,15 +9,10 @@ interface CpiInfoReadService : ReconcilerReader<CpiIdentifier, CpiMetadata>, Lif
     /**
      * Returns a list of all CPI metadata, or empty list if no CPI metadata found.
      */
-    fun getAll(): List<CpiMetadata>
+    fun getAll(): Collection<CpiMetadata>
 
     /**
      * Returns a CPI metadata for a given identifier, or `null` if not found.
      */
     fun get(identifier: CpiIdentifier): CpiMetadata?
-
-    /**
-     * Register the [CpiInfoListener] callback to be notified on all [CpiMetadata] changes
-     */
-    fun registerCallback(listener: CpiInfoListener): AutoCloseable
 }

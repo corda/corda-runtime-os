@@ -14,6 +14,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
@@ -73,13 +74,8 @@ class DbReconcilerReader<K : Any, V : Any>(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
-            logger.info("Switching to UP")
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            logger.info(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
-                        "Switching to ${event.status}"
-            )
             coordinator.updateStatus(event.status)
             closeResources()
         }
@@ -123,12 +119,10 @@ class DbReconcilerReader<K : Any, V : Any>(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("Starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping")
         coordinator.stop()
         closeResources()
     }

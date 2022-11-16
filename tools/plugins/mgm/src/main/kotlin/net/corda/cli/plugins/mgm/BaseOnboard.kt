@@ -206,7 +206,7 @@ abstract class BaseOnboard : Runnable {
             }
         } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: ${generateCsrResponse.body}")
         ca.signCsr(csr).toPem().byteInputStream().use { certificate ->
-            Unirest.put("/certificates/p2p-tls/cluster")
+            Unirest.put("/certificates/cluster/p2p-tls")
                 .field("certificate", certificate, "certificate.pem")
                 .field("alias", P2P_TLS_CERTIFICATE_ALIAS)
                 .asJson()

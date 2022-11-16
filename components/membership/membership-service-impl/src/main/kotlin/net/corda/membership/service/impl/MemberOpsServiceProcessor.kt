@@ -105,7 +105,7 @@ class MemberOpsServiceProcessor(
             respFuture.complete(result)
         } catch (e: Throwable) {
             val message =
-                "${e.message}\nFailed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
+                "Failed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}: ${e.message}"
             logger.error(message, e)
             respFuture.completeExceptionally(MembershipRegistrationException(message, e))
         }
@@ -174,9 +174,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
                 .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
+                ?: return RegistrationStatusResponse(null)
             val response = membershipQueryClient.queryRegistrationRequestStatus(
                 viewOwningIdentity = holdingIdentity,
                 registrationId = request.requestId
