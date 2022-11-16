@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
@@ -51,6 +52,7 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
 
+    private val ledgerTransaction = mock<ConsensualLedgerTransactionImpl>()
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
 
     @BeforeEach
@@ -65,6 +67,7 @@ class ConsensualReceiveFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
         whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
 
