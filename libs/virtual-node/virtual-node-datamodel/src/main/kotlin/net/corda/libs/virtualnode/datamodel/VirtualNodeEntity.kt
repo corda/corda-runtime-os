@@ -4,7 +4,6 @@ import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import java.io.Serializable
 import java.time.Instant
-import java.util.stream.Stream
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -101,13 +100,13 @@ data class VirtualNodeEntityKey(
  * hibnernate in the "virtual node entity query test" in
  * [net.corda.libs.configuration.datamodel.tests.VirtualNodeEntitiesIntegrationTest]
  */
-fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
+fun EntityManager.findAllVirtualNodes(): List<VirtualNodeEntity> {
     val query = criteriaBuilder!!.createQuery(VirtualNodeEntity::class.java)!!
     val root = query.from(VirtualNodeEntity::class.java)
     root.fetch<Any, Any>("holdingIdentity")
     query.select(root)
 
-    return createQuery(query).resultStream
+    return createQuery(query).resultList
 }
 
 fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntity? {

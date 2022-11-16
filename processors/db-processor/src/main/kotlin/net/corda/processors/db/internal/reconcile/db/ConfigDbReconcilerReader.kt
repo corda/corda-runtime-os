@@ -1,13 +1,12 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import java.util.stream.Stream
-import javax.persistence.EntityManager
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.datamodel.findAllConfig
 import net.corda.reconciliation.VersionedRecord
+import javax.persistence.EntityManager
 
-val getAllConfigDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<String, Configuration>> = { em ->
+val getAllConfigDBVersionedRecords: (EntityManager) -> List<VersionedRecord<String, Configuration>> = { em ->
     em.findAllConfig().map { configEntity ->
         val config = Configuration(
             configEntity.config,

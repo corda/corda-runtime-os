@@ -16,11 +16,11 @@ import javax.persistence.EntityManager
 /**
  * Gets and converts the database entity classes to 'Corda' classes
  */
-val getAllVirtualNodesDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
+val getAllVirtualNodesDBVersionedRecords: (EntityManager) -> List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
     { em -> virtualNodeEntitiesToVersionedRecords(em.findAllVirtualNodes()) }
 
-fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity>)
-        : Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
+fun virtualNodeEntitiesToVersionedRecords(virtualNodes: List<VirtualNodeEntity>)
+        : List<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
     virtualNodes.map { entity ->
         val x500Name = entity.holdingIdentity.x500Name
         val groupId = entity.holdingIdentity.mgmGroupId
