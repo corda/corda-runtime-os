@@ -97,20 +97,22 @@ class DbReconcilerReader<K : Any, V : Any>(
      * be following this service will get notified of this service's stop event as well.
      */
     override fun getAllVersionedRecords(): List<VersionedRecord<K, V>>? {
-        val em = entityManagerFactory!!.createEntityManager()
-        val currentTransaction = em.transaction
         return try {
-            currentTransaction.begin()
-            doGetAllVersionedRecords(em)
+            val em = entityManagerFactory!!.createEntityManager()
+            val currentTransaction = em.transaction
+            return try {
+                currentTransaction.begin()
+                doGetAllVersionedRecords(em)
+            } finally {
+                // This class only have access to this em and transaction. This is a read only transaction,
+                // only used for making streaming DB data possible.
+                currentTransaction.rollback()
+                em.close()
+            }
         } catch (e: Exception) {
             logger.warn("Error while retrieving records for reconciliation", e)
             coordinator.postEvent(GetRecordsErrorEvent(e))
             null
-        } finally {
-            // This class only have access to this em and transaction. This is a read only transaction,
-            // only used for making streaming DB data possible.
-            currentTransaction.rollback()
-            em.close()
         }
     }
 

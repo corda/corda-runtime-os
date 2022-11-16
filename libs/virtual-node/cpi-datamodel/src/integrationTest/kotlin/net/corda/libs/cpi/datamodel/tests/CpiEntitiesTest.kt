@@ -393,11 +393,9 @@ class CpiEntitiesIntegrationTest {
                 val cpisLazyLoaded = em.findAllCpiMetadata()
 
                 cpisLazyLoaded.forEach {
-                    println("****       cpi has ${it.cpks.size} cpks: ****")
                     it.cpks.forEach { cpkMetadataEntity ->
                         println("****       invoke metadata property ****")
                         assertThat(cpkMetadataEntity.metadata).isNotNull
-                        println("****       ${cpkMetadataEntity.metadata.id}****")
                     }
                 }
             }
