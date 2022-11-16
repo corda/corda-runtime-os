@@ -8,6 +8,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.PrivacySalt
@@ -42,6 +43,9 @@ class UtxoTransactionReaderImpl(
 
     override val rawGroupLists: List<List<ByteArray>>
         get() = signedTransaction.wireTransaction.componentGroupLists
+
+    override val signatures: List<DigitalSignatureAndMetadata>
+        get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
         get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()

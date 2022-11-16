@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.observer.UtxoToken
@@ -17,6 +18,13 @@ class UtxoOutputRecordFactoryImpl : UtxoOutputRecordFactory {
         producedTokens: List<UtxoToken>,
         consumedTokens: List<UtxoToken>
     ): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getFindTransactionSuccessRecord(
+        transactionContainer: SignedTransactionContainer?,
+        externalEventContext: ExternalEventContext
+    ): Record<String, FlowEvent> {
         TODO("Not yet implemented")
     }
 

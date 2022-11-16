@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -16,6 +17,12 @@ class UtxoPersistenceServiceImpl constructor(
     private val sandboxDigestService: DigestService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
+
+    override fun findTransaction(id: String): SignedTransactionContainer? {
+        return sandbox.getEntityManagerFactory().createEntityManager().transaction { em ->
+            repository.findTransaction(em, id)
+        }
+    }
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {
 
@@ -49,13 +56,18 @@ class UtxoPersistenceServiceImpl constructor(
                 }
             }
 
-            // Insert the transactions current status
-            repository.persistTransactionStatus(
-                em,
-                transactionIdString,
-                transaction.status,
-                nowUtc
-            )
+            // Insert the Transactions signatures
+            transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+                repository.persistTransactionSignature(
+                    em,
+                    transactionIdString,
+                    index,
+                    digitalSignatureAndMetadata,
+                    nowUtc
+                )
+            }
+
+            // TODO Insert/update the transactions current status
 
             // Insert the CPK details liked to this transaction
             // TODOs: The CPK file meta does not exist yet, this will be implemented by
