@@ -14,7 +14,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
@@ -57,7 +56,7 @@ class ConsensualReceiveFinalityFlowTest {
     @BeforeEach
     fun beforeEach() {
         whenever(session.counterparty).thenReturn(MEMBER)
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).thenReturn(signedTransaction)
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).thenReturn(signedTransaction)
         whenever(session.receive(Unit::class.java)).thenReturn(Unit)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
@@ -146,7 +145,7 @@ class ConsensualReceiveFinalityFlowTest {
         // [ConsensualFinalityFlow] will return a session error to this flow if no keys are sent to it. Failing on this receive mimics the
         // real behaviour of the flows.
         var called = false
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).then {
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).then {
             if (!called) {
                 called = true
                 signedTransaction
@@ -167,10 +166,10 @@ class ConsensualReceiveFinalityFlowTest {
     @Test
     fun `receiving a different transaction to record compared to the one that was signed throws an exception`() {
         val wrongId = SecureHash("wrong", byteArrayOf(1, 2, 3))
-        val wrongSignedTransaction = mock<ConsensualSignedTransaction>()
+        val wrongSignedTransaction = mock<ConsensualSignedTransactionInternal>()
 
         whenever(wrongSignedTransaction.id).thenReturn(wrongId)
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).thenReturn(signedTransaction, wrongSignedTransaction)
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).thenReturn(signedTransaction, wrongSignedTransaction)
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalArgumentException::class.java)
