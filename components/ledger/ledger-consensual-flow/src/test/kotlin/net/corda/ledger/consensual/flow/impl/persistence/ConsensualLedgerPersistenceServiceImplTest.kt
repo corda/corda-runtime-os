@@ -4,6 +4,7 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -11,7 +12,6 @@ import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransac
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -34,7 +34,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private val signingService = mock<SigningService>()
+    private val transactionSignatureService = mock<TransactionSignatureService>()
     private val digitalSignatureVerificationService = mock<DigitalSignatureVerificationService>()
 
     private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
@@ -44,7 +44,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     @BeforeEach
     fun setup() {
         consensualLedgerPersistenceService = ConsensualLedgerPersistenceServiceImpl(
-            externalEventExecutor, serializationService, signingService, digitalSignatureVerificationService
+                externalEventExecutor, serializationService, transactionSignatureService
         )
 
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
@@ -82,8 +82,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
         val expectedObj = ConsensualSignedTransactionImpl(
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signatures
         )

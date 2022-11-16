@@ -189,6 +189,11 @@ class LifecycleTest<T : Lifecycle>(
     }
 
     /**
+     * Change the given dependency to the [LifecycleStatus.ERROR] state.
+     */
+    inline fun <reified D> setDependencyToError() = setDependencyToError(LifecycleCoordinatorName.forComponent<D>())
+
+    /**
      * Get the current coordinator by name
      */
     fun getCoordinatorFor(coordinatorName: LifecycleCoordinatorName): LifecycleCoordinator {

@@ -4,15 +4,15 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
-import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -44,7 +44,7 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     private val lock = ReentrantLock()
 
     /** Collection of callbacks to listeners of active changes to the [VirtualNodeInfo] collection. */
-    private val listeners = Collections.synchronizedMap(mutableMapOf<ListenerSubscription, VirtualNodeInfoListener>())
+    private val listeners = ConcurrentHashMap<ListenerSubscription, VirtualNodeInfoListener>()
 
     /** Clear out all [VirtualNodeInfo] objects that we hold, and notify any listeners */
     fun clear() {

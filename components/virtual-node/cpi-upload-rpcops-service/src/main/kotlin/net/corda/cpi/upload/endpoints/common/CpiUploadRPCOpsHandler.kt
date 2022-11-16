@@ -2,18 +2,16 @@ package net.corda.cpi.upload.endpoints.common
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 
 /**
  * Monitors the status of [CpiUploadRPCOpsService] so that it can know when [CpiUploadRPCOpsImpl.cpiUploadManager] is ready for use.
@@ -22,10 +20,6 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
 
     @VisibleForTesting
     internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
-
-    companion object {
-        val logger = contextLogger()
-    }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -48,7 +42,6 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        logger.info("Changing ${CpiUploadRPCOps::class.java.simpleName} state to: ${event.status}")
         if (event.status == LifecycleStatus.ERROR) {
             closeResources()
         }

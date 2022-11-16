@@ -36,8 +36,6 @@ class MGMRpcOpsImpl @Activate constructor(
         fun generateGroupPolicy(holdingIdentityShortHash: String): String
     }
 
-    private val className = this::class.java.simpleName
-
     override val protocolVersion = 1
 
     private var impl: InnerMGMRpcOps = InactiveImpl
@@ -60,12 +58,10 @@ class MGMRpcOpsImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 

@@ -1,14 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -21,10 +20,8 @@ import org.osgi.service.component.annotations.ServiceScope
 class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serialisationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService
 ) : CheckpointInternalCustomSerializer<UtxoSignedTransaction>, UsedByFlow {
     override val type: Class<UtxoSignedTransaction> get() = UtxoSignedTransaction::class.java
 
@@ -38,8 +35,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
         val signatures: List<DigitalSignatureAndMetadata> = uncheckedCast(input.readClassAndObject())
         return UtxoSignedTransactionImpl(
             serialisationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signatures
         )

@@ -63,10 +63,6 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             reconcileAndScheduleNext(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            logger.info(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
-                        " Switching to ${event.status}"
-            )
             // TODO Revise below actions in case of an error from sub services (DOWN vs ERROR)
             coordinator.updateStatus(event.status)
             coordinator.cancelTimer(timerKey)
