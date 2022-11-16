@@ -10,11 +10,10 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
-import javax.persistence.EntityManagerFactory
 
 class ConfigReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<String, Configuration>,
     private val reconcilerWriter: ReconcilerWriter<String, Configuration>
@@ -29,24 +28,10 @@ class ConfigReconciler(
     private var dbReconciler: DbReconcilerReader<String, Configuration>? = null
     private var reconciler: Reconciler? = null
 
-    private val entityManagerFactory: EntityManagerFactory
-        get() = requireNotNull(_entityManagerFactory) {
-            "An attempt was made to try access an entity manager factory for config " +
-                    "reconciliation before it was initialized."
-        }
-
-    private var _entityManagerFactory: EntityManagerFactory? = null
+    private val emfManager = ClusterEMFManager(dbConnectionManager)
 
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(entityManagerFactory))
-    }
-
-    private fun onStatusUp() {
-        _entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
-    }
-
-    private fun onStatusDown() {
-        _entityManagerFactory = null
+        listOf(ClusterReconciliationContext(emfManager.emf))
     }
 
     override fun close() {
@@ -68,8 +53,8 @@ class ConfigReconciler(
                     dependencies,
                     reconciliationContextFactory,
                     getAllConfigDBVersionedRecords,
-                    ::onStatusUp,
-                    ::onStatusDown
+                    onStatusUp = emfManager::start,
+                    onStatusDown = emfManager::stop
                 ).also {
                     it.start()
                 }

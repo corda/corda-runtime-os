@@ -11,11 +11,10 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import javax.persistence.EntityManagerFactory
 
 class VirtualNodeReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<HoldingIdentity, VirtualNodeInfo>,
     private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, VirtualNodeInfo>
@@ -27,27 +26,13 @@ class VirtualNodeReconciler(
         )
     }
 
+    private val emfManager = ClusterEMFManager(dbConnectionManager)
+
     private var dbReconciler: DbReconcilerReader<HoldingIdentity, VirtualNodeInfo>? = null
     private var reconciler: Reconciler? = null
 
-    private val entityManagerFactory: EntityManagerFactory
-        get() = requireNotNull(_entityManagerFactory) {
-            "An attempt was made to try access an entity manager factory for config " +
-                    "reconciliation before it was initialized."
-        }
-    private var _entityManagerFactory: EntityManagerFactory? = null
-
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(entityManagerFactory))
-    }
-
-    private fun onStatusUp() {
-        _entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
-    }
-
-    private fun onStatusDown() {
-        _entityManagerFactory?.close()
-        _entityManagerFactory = null
+        listOf(ClusterReconciliationContext(emfManager.emf))
     }
 
     override fun close() {
@@ -69,8 +54,8 @@ class VirtualNodeReconciler(
                     dependencies,
                     reconciliationContextFactory,
                     getAllVirtualNodesDBVersionedRecords,
-                    ::onStatusUp,
-                    ::onStatusDown
+                    onStatusUp = emfManager::start,
+                    onStatusDown = emfManager::stop
                 ).also {
                     it.start()
                 }
