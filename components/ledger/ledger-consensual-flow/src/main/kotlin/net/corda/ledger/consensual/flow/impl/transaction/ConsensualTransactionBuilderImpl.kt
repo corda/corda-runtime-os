@@ -27,13 +27,8 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     @Deprecated("Temporary function until the argumentless version gets available")
-    override fun toSignedTransaction(vararg signatories: PublicKey): ConsensualSignedTransaction =
-        sign(signatories.toList())
-
-    @Suspendable
-    @Deprecated("Temporary function until the argumentless version gets available")
-    override fun toSignedTransaction(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
-        sign(signatories)
+    override fun toSignedTransaction(signatory: PublicKey): ConsensualSignedTransaction =
+        sign(listOf(signatory))
 
     @Suspendable
     fun sign(): ConsensualSignedTransaction {
