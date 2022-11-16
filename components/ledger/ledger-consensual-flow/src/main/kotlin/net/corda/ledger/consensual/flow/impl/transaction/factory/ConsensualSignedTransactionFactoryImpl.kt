@@ -61,9 +61,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
 
-        // Verify the states of the transaction.
-        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
-        consensualTransactionBuilder.states.map { it.verify(ledgerTransactionToCheck) }
+        verifyStates(wireTransaction)
 
         // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
@@ -143,5 +141,10 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                         }
                 }
             }
+    }
+
+    private fun verifyStates(wireTransaction: WireTransaction){
+        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        ledgerTransactionToCheck.verify()
     }
 }

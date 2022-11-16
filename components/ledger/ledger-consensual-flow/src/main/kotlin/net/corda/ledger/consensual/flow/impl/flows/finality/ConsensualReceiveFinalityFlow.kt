@@ -44,11 +44,10 @@ class ConsensualReceiveFinalityFlow(
         val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
-        // TODO [CORE-5982] Verify Ledger Transaction
+        // TODO [CORE-5982] Verify Ledger Transaction (ConsensualLedgerTransactionImpl.verify() ?)
 
         // Verify the states of the transaction.
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        ledgerTransactionToCheck.states.map { it.verify(ledgerTransactionToCheck) }
+        verifyStates(signedTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
         val signaturesPayload = if (verify(signedTransaction)) {
@@ -118,5 +117,10 @@ class ConsensualReceiveFinalityFlow(
                 throw e
             }
         }
+    }
+
+    private fun verifyStates(signedTransaction: ConsensualSignedTransaction){
+        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
+        ledgerTransactionToCheck.states.map { it.verify(ledgerTransactionToCheck) }
     }
 }
