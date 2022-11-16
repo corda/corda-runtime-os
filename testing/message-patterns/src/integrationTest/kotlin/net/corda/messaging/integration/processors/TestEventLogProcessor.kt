@@ -21,7 +21,7 @@ class TestEventLogProcessor(
 
     override fun onNext(events: List<EventLogRecord<String, DemoRecord>>): List<Record<*, *>> {
         for (event in events) {
-            logger.info("TestEventLogProcessor for topic $outputTopic processing event $event")
+            println("TestEventLogProcessor for topic $outputTopic processing event $event")
             latch.countDown()
         }
 
