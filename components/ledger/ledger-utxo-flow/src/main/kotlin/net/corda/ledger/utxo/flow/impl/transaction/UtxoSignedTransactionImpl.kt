@@ -79,6 +79,7 @@ data class UtxoSignedTransactionImpl(
         }.toSet()
     }
 
+    @Suspendable
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {

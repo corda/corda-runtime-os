@@ -85,6 +85,7 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
     }
 
+    @Suspendable
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {
