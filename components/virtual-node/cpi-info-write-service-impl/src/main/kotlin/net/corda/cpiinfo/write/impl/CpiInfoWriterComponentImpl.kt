@@ -27,7 +27,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
@@ -65,12 +64,13 @@ class CpiInfoWriterComponentImpl @Activate constructor(
         publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), null)))
 
     // Build retry into publication
-    private fun tryPublish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+    private fun tryPublish(records: List<Record<*, *>>) {
         val countDownLatch = CountDownLatch(30)
 
-        return try {
-            publisher!!.publish(records)
-        } catch (e: CordaMessageAPIFatalException) {
+        try {
+            // Wait for the future (there should only be one) to complete.
+            publisher!!.publish(records).forEach { it.get() }
+        } catch (e: Exception) {
             if (countDownLatch.count > 0) {
                 log.warn("Attempt to publish failed at ${countDownLatch.count}, attempting to retry in 1 second")
                 countDownLatch.countDown()
@@ -101,9 +101,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             )
         }
 
-        val futures = tryPublish(records)
-        // Wait for the future (there should only be one) to complete.
-        futures.forEach { it.get() }
+        tryPublish(records)
     }
 
     override val isRunning: Boolean

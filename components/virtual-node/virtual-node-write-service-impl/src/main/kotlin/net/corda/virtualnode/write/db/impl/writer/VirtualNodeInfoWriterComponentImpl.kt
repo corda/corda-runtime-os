@@ -75,12 +75,13 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         publish(listOf(Record(Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC, recordKey.toAvro(), null)))
 
     // Build retry into publication
-    private fun tryPublish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+    private fun tryPublish(records: List<Record<*, *>>) {
         val countDownLatch = CountDownLatch(30)
 
-        return try {
-            publisher!!.publish(records)
-        } catch (e: CordaMessageAPIFatalException) {
+        try {
+            // Wait for the future (there should only be one) to complete.
+            publisher!!.publish(records).forEach { it.get() }
+        } catch (e: Exception) {
             if (countDownLatch.count > 0) {
                 log.warn("Attempt to publish failed at ${countDownLatch.count}, attempting to retry in 1 second")
                 countDownLatch.countDown()
@@ -101,11 +102,8 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
             return
         }
 
-        //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
-        val futures = tryPublish(records)
-
-        // Wait for the future (there should only be one) to complete.
-        futures.forEach { it.get() }
+        // TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
+        tryPublish(records)
     }
 
     override val isRunning: Boolean
