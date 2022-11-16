@@ -1,6 +1,7 @@
 package net.corda.ledger.common.data.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -35,6 +36,10 @@ class WireTransactionFactoryImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata
 ) : WireTransactionFactory, UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
+
+    private val metadataSchema: WrappedJsonSchema by lazy {
+        jsonValidator.parseSchema(getSchema(TransactionMetadata.SCHEMA_PATH))
+    }
 
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
@@ -74,7 +79,7 @@ class WireTransactionFactoryImpl @Activate constructor(
 
     private fun parseMetadata(metadataBytes: ByteArray): TransactionMetadata {
         val json = metadataBytes.decodeToString()
-        jsonValidator.validate(json, getSchema(TransactionMetadata.SCHEMA_PATH))
+        jsonValidator.validate(json, metadataSchema)
         val metadata = jsonMarshallingService.parse(json, TransactionMetadata::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {

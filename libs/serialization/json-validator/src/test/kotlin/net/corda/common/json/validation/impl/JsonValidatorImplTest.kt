@@ -11,11 +11,11 @@ class JsonValidatorImplTest {
        }
        """.trimIndent()
 
-    private val schemaStream = this::class.java.getResourceAsStream("/schema/simple.json")
+    private val validator = JsonValidatorImpl()
+    private val schema = validator.parseSchema(this::class.java.getResourceAsStream("/schema/simple.json"))
 
     @Test
     fun `canonicalize works on sample input`() {
-        val validator = JsonValidatorImpl()
         val canonical = validator.canonicalize(json)
 
         assertEquals("""{"age":257,"name":"Jimmy"}""", canonical)
@@ -23,22 +23,19 @@ class JsonValidatorImplTest {
 
     @Test
     fun `Valid, canonical JSON is accepted`() {
-        val validator = JsonValidatorImpl()
         val goodJson = validator.canonicalize(json)
-        assertDoesNotThrow {validator.validate(goodJson, schemaStream)}
+        assertDoesNotThrow {validator.validate(goodJson, schema)}
     }
 
     @Test
     fun `Valid, non-canonical JSON is rejected`() {
-        val validator = JsonValidatorImpl()
-        assertThrows<IllegalStateException> {validator.validate(json, schemaStream)}
+        assertThrows<IllegalStateException> {validator.validate(json, schema)}
     }
 
     @Test
     fun `Invalid, canonical JSON is rejected`() {
-        val validator = JsonValidatorImpl()
         assertThrows<IllegalStateException> {
-            validator.validate("""{"age":1,"name":1}""", schemaStream)
+            validator.validate("""{"age":1,"name":1}""", schema)
         }
     }
 }
