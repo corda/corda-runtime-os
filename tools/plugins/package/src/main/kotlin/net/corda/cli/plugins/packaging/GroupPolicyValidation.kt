@@ -7,28 +7,8 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.schema.membership.provider.MembershipSchemaProviderFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
 
-internal object GroupPolicyHelpers {
-    /**
-     * Filename of group policy within jar file
-     */
-    private val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
-
-    /**
-     * Adds group policy file to jar file
-     *
-     * Reads group policy from stdin or file depending on user choice
-     */
-    fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
-        cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
-
-        groupPolicy.byteInputStream().copyTo(cpiJar)
-
-        cpiJar.closeEntry()
-    }
-
+internal object GroupPolicyValidation {
     /**
      * Validates group policy against schema.
      */

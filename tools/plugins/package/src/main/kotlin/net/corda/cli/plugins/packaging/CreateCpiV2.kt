@@ -15,8 +15,7 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.GroupPolicyHelpers.addGroupPolicy
-import net.corda.cli.plugins.packaging.GroupPolicyHelpers.validateGroupPolicy
+import net.corda.cli.plugins.packaging.GroupPolicyValidation.validateGroupPolicy
 import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
@@ -24,6 +23,11 @@ import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import picocli.CommandLine
+
+/**
+ * Filename of group policy within jar file
+ */
+private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
 
 private const val CPI_EXTENSION = ".cpi"
 
@@ -178,5 +182,18 @@ class CreateCpiV2 : Runnable {
             // Add group policy
             addGroupPolicy(cpiJar, groupPolicy)
         }
+    }
+
+    /**
+     * Adds group policy file to jar file
+     *
+     * Reads group policy from stdin or file depending on user choice
+     */
+    fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
+        cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
+
+        groupPolicy.byteInputStream().copyTo(cpiJar)
+
+        cpiJar.closeEntry()
     }
 }
