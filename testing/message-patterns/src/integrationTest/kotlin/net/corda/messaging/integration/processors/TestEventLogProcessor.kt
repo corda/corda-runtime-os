@@ -5,7 +5,6 @@ import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 
 class TestEventLogProcessor(
     private val latch: CountDownLatch, private val outputTopic: String? = null
@@ -14,10 +13,6 @@ class TestEventLogProcessor(
         get() = String::class.java
     override val valueClass: Class<DemoRecord>
         get() = DemoRecord::class.java
-
-    private companion object {
-        val logger = contextLogger()
-    }
 
     override fun onNext(events: List<EventLogRecord<String, DemoRecord>>): List<Record<*, *>> {
         for (event in events) {
