@@ -7,7 +7,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.versioning.Version
-import org.osgi.framework.FrameworkUtil
 import java.io.InputStream
 
 internal class MembershipSchemaProviderImpl : MembershipSchemaProvider {
@@ -35,8 +34,7 @@ internal class MembershipSchemaProviderImpl : MembershipSchemaProvider {
 
     private fun getResourceInputStream(resource: String): InputStream {
         logger.trace { "Requested schema at $resource." }
-        val bundle = FrameworkUtil.getBundle(this::class.java)
-        val url = bundle?.getResource(resource) ?: this::class.java.classLoader.getResource(resource)
+        val url = this::class.java.classLoader.getResource(resource)
         if (url == null) {
             val msg = "Membership schema at $resource cannot be found."
             logger.error(msg)

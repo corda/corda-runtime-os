@@ -12,8 +12,6 @@ dependencies {
     implementation project(":base")
 
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:osgi.core"
 
-    testRuntimeOnly "org.osgi:osgi.core"
 }
 
