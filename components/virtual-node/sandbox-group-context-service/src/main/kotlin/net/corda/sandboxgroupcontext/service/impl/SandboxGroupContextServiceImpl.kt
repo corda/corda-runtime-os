@@ -575,12 +575,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     serviceObj,
                     serviceFactory.serviceReference.copyPropertiesForSandbox()
                 )
-                logger.info("Registered sandbox service {}[{}] for bundle [{}][{}]",
-                    serviceObj::class.java.simpleName,
-                    serviceClassNames.joinToString(),
-                    targetContext.bundle.symbolicName,
-                    targetContext.bundle.bundleId
-                )
+                if (logger.isDebugEnabled) {
+                    logger.debug("Registered sandbox service {}[{}] for bundle [{}][{}]",
+                        serviceObj::class.java.simpleName,
+                        serviceClassNames.joinToString(),
+                        targetContext.bundle.symbolicName,
+                        targetContext.bundle.bundleId
+                    )
+                }
                 serviceRegistry[serviceFactory.serviceReference] = serviceObj
                 InjectableServiceRegistration(serviceFactory, serviceObj, serviceRegistration)
             } catch (e: Exception) {
@@ -669,7 +671,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             } catch (e: Exception) {
                 throw SandboxException("Service $serviceRef is unavailable", e)
             }?.let { serviceObj ->
-                logger.info("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
+                logger.debug("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
                 serviceRegistry[serviceRef] = serviceObj
                 NonInjectableService(serviceFactory, serviceObj)
             }

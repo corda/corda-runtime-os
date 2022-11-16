@@ -124,7 +124,7 @@ class SetupCordaCluster : Runnable {
                 "bootstrap.kafka.replicas=$kafkaReplicas," +
                 "kafka.sasl.enabled=false," +
                 "db.cluster.host=prereqs-postgresql," +
-                "db.cluster.existingSecret=prereqs-postgresql",
+                "db.cluster.password.valueFrom.secretKeyRef.name=prereqs-postgresql",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
         if (!cordaE2eType) {
