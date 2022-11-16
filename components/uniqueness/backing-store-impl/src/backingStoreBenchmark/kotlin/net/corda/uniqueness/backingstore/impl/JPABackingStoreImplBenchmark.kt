@@ -287,7 +287,11 @@ class JPABackingStoreImplBenchmark {
         log.info("Completed $numIterations iterations of $numOpsPerIter operations in " +
                 "${currentTestExecTimeMs}ms. Average $averageRate ops/sec.")
 
-        resultsMap[Thread.currentThread().stackTrace[2].methodName] = averageRate
+        // We want to store the result against the test scenario name, but do not have the context
+        // in this function, so we retrieve the test name by looking at the caller on the stack
+        StackWalker.getInstance()
+           .walk { frames -> frames.skip(1).findFirst().map { it.methodName } }
+           .ifPresent { resultsMap[it] = averageRate  }
     }
 
     /**
@@ -326,20 +330,14 @@ class JPABackingStoreImplBenchmark {
                 }
 
                 // Write new header row
-                PrintStream(file).use { writer ->
-                    writer.println(headerRow)
-                    writer.flush()
-                }
+                file.writeText(headerRow + "\n")
             }
         }
 
         // Now have a valid file with header, write new row with the results of this run
-        PrintStream(FileOutputStream(file, true), true).use { writer ->
-            writer.println("${Instant.now()}," +
-                    "${if (DbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
-                    "$numIterations,$numOpsPerIter," +
-                    resultsMap.values.joinToString(","))
-        }
+        file.appendText("${Instant.now()}," +
+                "${if (DbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
+                "$numIterations,$numOpsPerIter,${resultsMap.values.joinToString(",")}\n")
 
         log.info("Results written to ${file.canonicalPath}")
     }

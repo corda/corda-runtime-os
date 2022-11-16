@@ -84,11 +84,11 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
     systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
 
-    systemProperty "postgresHost", project.getProperty("postgresHost")
     systemProperty "postgresDb", project.getProperty("postgresDb")
+    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "postgresPassword", project.getProperty("postgresPassword")
     systemProperty "postgresPort", project.getProperty("postgresPort")
     systemProperty "postgresUser", project.getProperty("postgresUser")
-    systemProperty "postgresPassword", project.getProperty("postgresPassword")
 }
 
 backingStoreBenchmark {
