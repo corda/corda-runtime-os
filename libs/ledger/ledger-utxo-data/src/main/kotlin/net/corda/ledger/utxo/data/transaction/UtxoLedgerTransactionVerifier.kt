@@ -22,7 +22,7 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
 
         contractClassMap.forEach { (contractClass, contractStates) ->
             try {
-                val contract = contractClass.kotlin.createInstance()
+                val contract = contractClass.getConstructor().newInstance()
                 contract.verify(transaction)
             } catch (ex: Exception) {
                 failureReasons.add(
