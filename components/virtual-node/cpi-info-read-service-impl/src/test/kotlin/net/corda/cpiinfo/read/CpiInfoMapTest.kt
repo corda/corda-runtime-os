@@ -86,7 +86,7 @@ class CpiInfoMapTest {
         var all = map.getAll()
         assertThat(all).isNotNull
         assertThat(all.size).isEqualTo(1)
-        assertThat(map.getAll()[0]).isEqualTo(metadata)
+        assertThat(map.getAll().values.first()).isEqualTo(metadata)
 
         val otherIdentifier = CpiIdentifier("abc", "def", secureHash)
         val otherMetadata = CpiMetadata(otherIdentifier, secureHash, emptyList(), "", -1, currentTimestamp)
@@ -95,8 +95,8 @@ class CpiInfoMapTest {
         all = map.getAll()
         assertThat(all).isNotNull
         assertThat(all.size).isEqualTo(2)
-        assertThat(map.getAll()).contains(metadata)
-        assertThat(map.getAll()).contains(otherMetadata)
+        assertThat(map.getAll().values).contains(metadata)
+        assertThat(map.getAll().values).contains(otherMetadata)
     }
 
     @Test
@@ -121,7 +121,7 @@ class CpiInfoMapTest {
         }
 
         // GET THE ENTIRE CONTENT OF THE MAP AS CORDA TYPES AND CHECK THAT TOO.
-        val allCpiInfos = map.getAllAsCordaObjects()
+        val allCpiInfos = map.getAll()
 
         allCpiInfos.forEach { (k: CpiIdentifier, v: CpiMetadata) ->
             assertThat(map.get(k)).isNotNull
