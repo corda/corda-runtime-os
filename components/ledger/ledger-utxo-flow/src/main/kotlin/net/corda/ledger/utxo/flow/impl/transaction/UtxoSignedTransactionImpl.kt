@@ -18,9 +18,9 @@ data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
 
-    val wireTransaction: WireTransaction,
+    override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
-) : UtxoSignedTransaction {
+) : UtxoSignedTransactionInternal {
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
@@ -42,15 +42,8 @@ data class UtxoSignedTransactionImpl(
 
     override val id: SecureHash get() = wireTransaction.id
 
-    /**
-     * Sign the current [UtxoSignedTransactionImpl] with the specified key.
-     *
-     * @param publicKey The private counterpart of the specified public key will be used for signing the
-     *      [ConsensualSignedTransaction].
-     * @return Returns the new [UtxoSignedTransactionImpl] containing the applied signature and the signature itself.
-     */
     @Suspendable
-    fun sign(publicKey: PublicKey): Pair<UtxoSignedTransaction, DigitalSignatureAndMetadata> {
+    override fun sign(publicKey: PublicKey): Pair<UtxoSignedTransactionInternal, DigitalSignatureAndMetadata> {
         val newSignature = transactionSignatureService.sign(id, publicKey)
         return Pair(
             UtxoSignedTransactionImpl(
@@ -63,26 +56,12 @@ data class UtxoSignedTransactionImpl(
         )
     }
 
-    /**
-     * Adds a signature to the current [UtxoSignedTransactionImpl].
-     *
-     * @param signature The signature to be added to the [UtxoSignedTransactionImpl].
-     *
-     * @return Returns a new [UtxoSignedTransactionImpl] containing the new signature.
-     */
-    fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionImpl =
+    override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
         UtxoSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
 
-    /**
-     * Crosschecks the missing signatures with the available keys and signs the transaction with their intersection
-     * if there are any. (Disabled until crypto support becomes available.)
-     *
-     * @return Returns the new [UtxoSignedTransaction] containing the applied signature and a
-     *          list of added signatures.
-     */
     @Suspendable
-    fun addMissingSignatures(): Pair<UtxoSignedTransaction, List<DigitalSignatureAndMetadata>>{
+    override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
         TODO("Not implemented yet")
     }
 
