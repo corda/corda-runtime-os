@@ -140,6 +140,8 @@ class Schemas {
             const val SESSION_OUT_PARTITIONS = "session.out.partitions"
             const val GATEWAY_TLS_TRUSTSTORES = "gateway.tls.truststores"
             const val GATEWAY_TLS_CERTIFICATES = "gateway.tls.certs"
+            const val GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC = "gateway.revocation.request"
+            val GATEWAY_REVOCATION_CHECK_RESPONSE_TOPIC = getRPCResponseTopic(GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC)
 
             /**
              * Topics for (temporary) stub components.

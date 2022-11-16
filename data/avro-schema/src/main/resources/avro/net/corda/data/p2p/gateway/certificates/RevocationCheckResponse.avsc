@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "RevocationCheckResponse",
+  "namespace": "net.corda.data.p2p.gateway.certificates",
+  "fields": [
+    {
+      "doc": "Status from the Gateway after checking the certificate for revocation.",
+      "name": "status",
+      "type": ["net.corda.data.p2p.gateway.certificates.Active", "net.corda.data.p2p.gateway.certificates.Revoked"]
+    }
+  ]
+}

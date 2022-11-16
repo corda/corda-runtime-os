@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "Revoked",
+  "namespace": "net.corda.data.p2p.gateway.certificates",
+  "fields": [
+    {
+      "doc": "The reason the revocation check failed.",
+      "name": "reason",
+      "type": "string"
+    },
+    {
+      "doc": "The index of the certificate in the chain which failed the revocation check.",
+      "name": "certificateIndex",
+      "type": "int"
+    }
+  ]
+}

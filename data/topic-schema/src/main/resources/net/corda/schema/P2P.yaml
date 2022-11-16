@@ -73,6 +73,16 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
+  GatewayRevocationRequestTopic:
+    name: gateway.revocation.request
+    consumers:
+    producers:
+    config:
+  GatewayRevocationRequestResponseTopic:
+    name: gateway.revocation.request.resp
+    consumers:
+    producers:
+    config:
   SessionOutPartitionsTopic:
     name: session.out.partitions
     consumers:

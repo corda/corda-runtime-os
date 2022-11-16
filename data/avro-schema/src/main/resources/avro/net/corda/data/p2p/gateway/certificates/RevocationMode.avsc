@@ -1,0 +1,7 @@
+{
+  "type": "enum",
+  "name": "RevocationMode",
+  "namespace": "net.corda.data.p2p.gateway.certificates",
+  "symbols": [ "HARD_FAIL", "SOFT_FAIL" ],
+  "doc": "How strictly to check for revocation. SOFT_FAIL The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details. Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."
+}

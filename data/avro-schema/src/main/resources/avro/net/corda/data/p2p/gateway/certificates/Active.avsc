@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "Active",
+  "namespace": "net.corda.data.p2p.gateway.certificates",
+  "fields": [],
+  "Doc": "The certificate was not revoked."
+}
