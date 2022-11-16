@@ -4,7 +4,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -22,7 +22,7 @@ import java.security.PublicKey
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
-    private val signedTransaction: ConsensualSignedTransaction,
+    private val signedTransaction: ConsensualSignedTransactionInternal,
     private val sessions: List<FlowSession>
 ) : SubFlow<ConsensualSignedTransaction> {
 
@@ -119,7 +119,7 @@ class ConsensualFinalityFlow(
                     throw e
                 }
                 signedByParticipantsTransaction =
-                    (signedByParticipantsTransaction as ConsensualSignedTransactionImpl).addSignature(signature)
+                    signedByParticipantsTransaction.addSignature(signature)
                 log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }

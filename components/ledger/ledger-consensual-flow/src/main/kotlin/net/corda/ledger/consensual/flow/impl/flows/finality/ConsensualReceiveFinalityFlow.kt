@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -40,7 +40,7 @@ class ConsensualReceiveFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
-        val signedTransaction = session.receive<ConsensualSignedTransaction>()
+        val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
         // TODO [CORE-5982] Verify Ledger Transaction
@@ -64,7 +64,7 @@ class ConsensualReceiveFinalityFlow(
 
             // We sign the transaction with all of our keys which is required.
             val newSignatures = myExpectedSigningKeys.map {
-                (signedTransaction as ConsensualSignedTransactionImpl).sign(it).second
+                signedTransaction.sign(it).second
             }
 
             Payload.Success(newSignatures)
@@ -78,7 +78,7 @@ class ConsensualReceiveFinalityFlow(
             throw CordaRuntimeException(signaturesPayload.message)
         }
 
-        val signedTransactionToFinalize = session.receive<ConsensualSignedTransaction>()
+        val signedTransactionToFinalize = session.receive<ConsensualSignedTransactionInternal>()
 
         // A [require] block isn't the correct option if we want to do something with the error on the peer side
         require(signedTransactionToFinalize.id == transactionId) {
@@ -103,7 +103,7 @@ class ConsensualReceiveFinalityFlow(
             verifier.verify(signedTransaction)
             true
         } catch (e: Exception) {
-            // Should we only catch a specific exception type? Otherwise some errors can be swallowed by this warning.
+            // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
             // Means contracts can't use [check] or [require] unless we provide our own functions for this.
             if (e is IllegalStateException || e is IllegalArgumentException || e is CordaRuntimeException) {
                 log.debug { "Transaction ${signedTransaction.id} failed verification. Message: ${e.message}" }

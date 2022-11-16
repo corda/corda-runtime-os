@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -52,7 +52,7 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
 
-    private val signedTransaction = mock<ConsensualSignedTransactionImpl>()
+    private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {

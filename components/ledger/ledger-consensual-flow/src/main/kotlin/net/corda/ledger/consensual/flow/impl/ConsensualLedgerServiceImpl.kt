@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
@@ -63,7 +64,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         */
         val consensualFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualFinalityFlow(signedTransaction, sessions)
+                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
