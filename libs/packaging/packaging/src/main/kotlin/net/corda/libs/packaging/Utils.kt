@@ -52,24 +52,22 @@ internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.D
     return SecureHash(algorithm.name, md.digest())
 }
 
-internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
-    var counter = 0
+internal fun Collection<SecureHash>.summaryHash() : SecureHash {
+
+    require(this.isNotEmpty()) { "Cannot create signer summary hash on empty list" }
+
     return hash {
-        this.onEach { ++counter }
-            .sortedWith(secureHashComparator)
-            .map(SecureHash::toString)
-            .map(String::toByteArray)
+        this.sortedWith(secureHashComparator)
+            .map { secureHash -> secureHash.toString().toByteArray() }
             .forEach(it::update)
-    }.takeIf { counter > 0 }
+    }
 }
 
-fun Sequence<Certificate>.signerSummaryHash(): SecureHash? =
+fun Collection<Certificate>.signerSummaryHash(): SecureHash =
     map {
         require(it is X509Certificate) {
             "Certificate should be of type ${X509Certificate::class.java.name}"
         }
-        it
-    }.map {
         MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash()
     }.summaryHash()
 

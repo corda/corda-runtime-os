@@ -83,7 +83,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
                     cpk.metadata.cpkId.name,
                     cpk.metadata.cpkId.version,
-                    cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
+                    cpk.metadata.cpkId.signerSummaryHash.toString()
                 )
                 val cpiCpkInDb = em.find(CpiCpkEntity::class.java, cpiCpkKey)
                 val cpkMetadataKey = cpk.metadata.cpkId.toCpkKey()

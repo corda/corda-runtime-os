@@ -85,7 +85,7 @@ internal object CpiLoaderV1 : CpiLoader {
             cpiId = CpiIdentifier(
                 name ?: throw PackagingException("CPI name missing from manifest"),
                 version ?: throw PackagingException("CPI version missing from manifest"),
-                signatureCollector.certificates.asSequence().signerSummaryHash()),
+                signatureCollector.certificates.signerSummaryHash()),
             fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
             cpksMetadata = cpkMetadata,
             groupPolicy = groupPolicy,

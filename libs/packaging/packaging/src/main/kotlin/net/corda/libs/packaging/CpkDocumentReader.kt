@@ -96,7 +96,7 @@ class CpkDocumentReader {
 
                 val signers = dependencySignersElements.item(0) as Element
 
-                val publicKeySummaryHash: SecureHash? =
+                val signerHashes =
                     ElementIterator(signers.getElementsByTagName(DEPENDENCY_SIGNER_TAG)).asSequence().map { signer ->
                         val algorithm = signer.getAttribute("algorithm").trim()
                         if (algorithm.isNullOrEmpty()) {
@@ -109,13 +109,13 @@ class CpkDocumentReader {
                         }
                         val hashData = Base64.getDecoder().decode(signer.textContent)
                         SecureHash(algorithm, hashData)
-                    }.summaryHash() ?:
-                    if (signers.getElementsByTagName(DEPENDENCY_SAME_SIGNER_TAG).length == 1) {
-                        // Use this until we can determine this CPK's own certificates.
-                        SAME_SIGNER_PLACEHOLDER
-                    } else {
-                        null
-                    }
+                    }.toList()
+                val publicKeySummaryHash: SecureHash = if (signerHashes.isEmpty()) {
+                    SAME_SIGNER_PLACEHOLDER
+                } else {
+                    signerHashes.summaryHash()
+                }
+
                 CpkIdentifier(
                     dependencyNameElements.item(0).textContent,
                     dependencyVersionElements.item(0).textContent,

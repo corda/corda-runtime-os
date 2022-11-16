@@ -254,7 +254,7 @@ class CPKTests {
     @Test
     fun `Verify cordapp signature`() {
         Assertions.assertEquals(
-            sequenceOf(cordaDevCertSummaryHash).summaryHash(),
+            listOf(cordaDevCertSummaryHash).summaryHash(),
             workflowCPK.metadata.cpkId.signerSummaryHash
         )
     }

@@ -28,12 +28,15 @@ import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
+
+val SIGNER_SUMMARY_HASH_FILEHASH = "verifyFileHash"
 
 class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
@@ -85,7 +88,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
-        val signerSummaryHash = cordappCertificates.asSequence().signerSummaryHash()
+        val signerSummaryHash = cordappCertificates.signerSummaryHash()
 
         // List all libraries
         val libNames = readLibNames(cpkEntries)
@@ -109,11 +112,20 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             cordappManifest = cordappManifest,
             cordappCertificates = cordappCertificates,
             libraries = Collections.unmodifiableList(libNames),
-            dependencies = cpkDependencies.dependencies.map { CpkIdentifier(
-                it.name,
-                it.version,
-                if (it.verifySameSignerAsMe) signerSummaryHash else null
-            ) }
+            dependencies = cpkDependencies.dependencies.map {
+                return@map CpkIdentifier(
+                    it.name,
+                    it.version,
+                    when {
+                        it.verifySameSignerAsMe -> signerSummaryHash
+                        it.verifyFileHash != null -> SecureHash(
+                            SIGNER_SUMMARY_HASH_FILEHASH,
+                            "${it.verifyFileHash.algorithm}:${it.verifyFileHash.fileHash}".toByteArray()
+                        )
+                        else -> throw CordappManifestException("CPK dependency $it is missing verifySameSignerAsMe or verifyFileHash")
+                    }
+                )
+            }
                 .toList(), // Add file hash option
             timestamp = clock.instant()
         )

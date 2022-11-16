@@ -21,7 +21,7 @@ class CpkDependencies(private val jarName: String, inputStream: InputStream, cpk
     /** Replace any "same as me" placeholders with CPK's actual summary hash */
     private fun replacePlaceholders(cpkCodeSigners: Array<CodeSigner>) {
         val certificates = cpkCodeSigners.map { it.signerCertPath.certificates.first() }.toSet()
-        val cpkSummaryHash = certificates.asSequence().signerSummaryHash()
+        val cpkSummaryHash = certificates.signerSummaryHash()
         dependencies = dependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === CpkDocumentReader.SAME_SIGNER_PLACEHOLDER) {
                 CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)

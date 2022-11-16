@@ -25,7 +25,7 @@ class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
     val id: CpkIdentifier
         get() {
             val certificates = codeSigners.map { it.signerCertPath.certificates.first() }.toSet()
-            val cpkSummaryHash = certificates.asSequence().signerSummaryHash()
+            val cpkSummaryHash = certificates.signerSummaryHash()
             with (mainBundle.manifest.mainAttributes) {
                 return CpkIdentifier(getValue(CPK_BUNDLE_NAME_ATTRIBUTE), getValue(CPK_BUNDLE_VERSION_ATTRIBUTE), cpkSummaryHash)
             }
