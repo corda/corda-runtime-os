@@ -48,4 +48,11 @@ interface UtxoRepository {
         signature: DigitalSignatureAndMetadata,
         timestamp: Instant
     )
+
+    fun persistTransactionStatus(
+        entityManager: EntityManager,
+        transactionId: String,
+        status: String,
+        timestamp: Instant
+    )
 }

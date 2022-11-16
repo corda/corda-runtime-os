@@ -149,6 +149,23 @@ class UtxoRepositoryImpl(
             .executeUpdate()
     }
 
+    override fun persistTransactionStatus(
+        entityManager: EntityManager,
+        transactionId: String,
+        status: String,
+        timestamp: Instant
+    ) {
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
+            VALUES (:transactionId, :status, :createdAt)"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("status", status)
+            .setParameter("createdAt", timestamp)
+            .executeUpdate()
+    }
+
     private fun ByteArray.hashAsString() =
         digestService.hash(this, DigestAlgorithmName.SHA2_256).toString()
 

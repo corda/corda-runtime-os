@@ -33,6 +33,9 @@ data class UtxoTransactionEntity(
     val components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
 
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
+
+    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     val signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
 
     @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])

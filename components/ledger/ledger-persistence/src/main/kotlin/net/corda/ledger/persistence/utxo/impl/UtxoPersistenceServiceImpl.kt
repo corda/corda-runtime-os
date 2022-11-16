@@ -67,7 +67,13 @@ class UtxoPersistenceServiceImpl constructor(
                 )
             }
 
-            // TODO Insert/update the transactions current status
+            // Insert the transactions current status
+            repository.persistTransactionStatus(
+                em,
+                transactionIdString,
+                transaction.status,
+                nowUtc
+            )
 
             // Insert the CPK details liked to this transaction
             // TODOs: The CPK file meta does not exist yet, this will be implemented by

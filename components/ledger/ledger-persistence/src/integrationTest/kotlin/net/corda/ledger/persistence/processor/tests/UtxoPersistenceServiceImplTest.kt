@@ -152,6 +152,11 @@ class UtxoPersistenceServiceImplTest {
                         )
                     }
                 )
+                transaction.field<MutableCollection<Any>>("statuses").addAll(
+                    listOf(
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, "V", createdTs)
+                    )
+                )
                 em.persist(transaction)
             }
         }
@@ -232,6 +237,14 @@ class UtxoPersistenceServiceImplTest {
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
+
+            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(txStatuses)
+                .isNotNull
+                .hasSize(1)
+            val dbStatus = txStatuses!!.first()
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
         }
     }
 
