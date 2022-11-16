@@ -15,7 +15,7 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.GroupPolicyValidation.validateGroupPolicy
+import net.corda.cli.plugins.packaging.GroupPolicyValidator.validateGroupPolicy
 import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
@@ -89,13 +89,12 @@ class CreateCpiV2 : Runnable {
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
-        val groupPolicyString: String
-        if (groupPolicyFileName == "-")
-            groupPolicyString = System.`in`.readAllBytes().toString(Charsets.UTF_8)
+        val groupPolicyString = if (groupPolicyFileName == "-")
+            System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
-            groupPolicyString = File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
+            File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
 
-        validateGroupPolicy(groupPolicyString)
+        GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         // Check input Cpb file is indeed a Cpb
         verifyIsValidCpbV2(cpbPath)
@@ -189,7 +188,7 @@ class CreateCpiV2 : Runnable {
      *
      * Reads group policy from stdin or file depending on user choice
      */
-    fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
+    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
 
         groupPolicy.byteInputStream().copyTo(cpiJar)
