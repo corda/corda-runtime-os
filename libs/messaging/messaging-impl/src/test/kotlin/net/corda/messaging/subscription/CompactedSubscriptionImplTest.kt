@@ -43,7 +43,7 @@ import kotlin.concurrent.withLock
 class CompactedSubscriptionImplTest {
 
     companion object {
-        private const val TEST_TIMEOUT_SECONDS = 2L
+        private const val TEST_TIMEOUT_SECONDS = 20L
     }
 
     private val mapFactory = object : MapFactory<String, String> {

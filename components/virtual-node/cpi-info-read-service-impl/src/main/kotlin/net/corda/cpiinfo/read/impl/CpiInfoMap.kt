@@ -7,7 +7,7 @@ import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
- * Map of [CpiIdentifierAvro] to [CpiMetadataAvro] AVRO data objects
+ * Map of [CpiIdentifier] to [CpiMetadata] AVRO data objects
  *
  * We use the [toCorda()] methods to convert the Avro objects to Corda ones.
  */
@@ -17,9 +17,9 @@ internal class CpiInfoMap {
     /** Clear all content */
     fun clear() = metadataById.clear()
 
-    /** Get the Avro objects as Corda objects */
-    fun getAllAsCordaObjects(): Map<CpiIdentifier, CpiMetadata> =
-        metadataById.toMap()
+    /** Get all CpiMetadata */
+    fun getAll(): Map<CpiIdentifier, CpiMetadata> =
+        metadataById
 
     /** Put (store/merge) the incoming map */
     fun putAll(incoming: Map<CpiIdentifierAvro, CpiMetadataAvro>) =
@@ -39,22 +39,17 @@ internal class CpiInfoMap {
     }
 
     /**
-     * Get all [CpiMetadataAvro]
-     */
-    fun getAll(): List<CpiMetadata> = metadataById.values.toList()
-
-    /**
-     * Get a [CpiMetadataAvro] by [CpiIdentifierAvro]
+     * Get a [CpiMetadata] by [CpiIdentifier]
      */
     fun get(id: CpiIdentifier): CpiMetadata? = metadataById[id]
 
     /**
-     * Remove the [CpiMetadataAvro] from this collection and return it.
+     * Remove the [CpiMetadata] from this collection and return it.
      */
     fun remove(key: CpiIdentifier): CpiMetadata? = metadataById.remove(key)
 
     /**
-     * Remove the [CpiMetadataAvro] from this collection and return it.
+     * Remove the [CpiMetadata] from this collection and return it.
      */
     fun remove(key: CpiIdentifierAvro): CpiMetadata? = metadataById.remove(CpiIdentifier.fromAvro(key))
 }
