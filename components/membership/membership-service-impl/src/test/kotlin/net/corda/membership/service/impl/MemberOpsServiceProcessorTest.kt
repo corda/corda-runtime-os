@@ -348,10 +348,10 @@ class MemberOpsServiceProcessorTest {
 
             processor.onNext(request, future)
 
-            assertThat(future).isCompletedExceptionally
+            val result = (future.get().response as? RegistrationStatusResponse)?.status
+            assertThat(result).isNull()
         }
     }
-
 
     @Nested
     inner class RegistrationStatusRpcRequestTest {

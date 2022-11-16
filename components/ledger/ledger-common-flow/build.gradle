@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
@@ -5,6 +7,13 @@ plugins {
 }
 
 description 'Corda ledger common - flow implementation'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -18,9 +27,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:crypto:crypto-core')
-    implementation project(':libs:layered-property-map')
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:platform-info')
 
     // TODO CORE-7101 may simplify this. Most of these are for accessing current sandbox group from fiber.
@@ -38,12 +45,24 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    integrationTestImplementation project(':testing:sandboxes')
-
+    integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+
+    cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
+}
+
+//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }
