@@ -37,9 +37,9 @@ class RegistrationServiceLifecycleHandler(
         // Keys for resources managed by this components lifecycle coordinator. Note that this class is reliant on a
         // coordinator created elsewhere. It is therefore important to ensure that these keys do not clash with any
         // resources created in any other place that uses the same coordinator.
-        internal const val SUBSCRIPTION_RESOURCE = "SUBSCRIPTION_RESOURCE"
-        internal const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        internal const val COMPONENT_HANDLE = "COMPONENT_HANDLE"
+        private const val SUBSCRIPTION_RESOURCE = "RegistrationServiceLifecycleHandler.SUBSCRIPTION_RESOURCE"
+        private const val CONFIG_HANDLE = "RegistrationServiceLifecycleHandler.CONFIG_HANDLE"
+        private const val COMPONENT_HANDLE = "RegistrationServiceLifecycleHandler.COMPONENT_HANDLE"
     }
 
     private val publisherFactory = staticMemberRegistrationService.publisherFactory
@@ -68,7 +68,7 @@ class RegistrationServiceLifecycleHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
-            is StopEvent -> handleStopEvent(coordinator)
+            is StopEvent -> handleStopEvent()
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
             is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
@@ -86,10 +86,9 @@ class RegistrationServiceLifecycleHandler(
         }
     }
 
-    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
+    private fun handleStopEvent() {
         _publisher?.close()
         _publisher = null
-        coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE, COMPONENT_HANDLE))
     }
 
     private fun handleRegistrationChangeEvent(

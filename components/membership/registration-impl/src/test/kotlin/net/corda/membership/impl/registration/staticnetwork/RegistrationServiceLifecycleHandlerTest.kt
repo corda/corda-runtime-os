@@ -10,13 +10,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.Resource
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.registration.staticnetwork.RegistrationServiceLifecycleHandler.Companion.COMPONENT_HANDLE
-import net.corda.membership.impl.registration.staticnetwork.RegistrationServiceLifecycleHandler.Companion.CONFIG_HANDLE
-import net.corda.membership.impl.registration.staticnetwork.RegistrationServiceLifecycleHandler.Companion.SUBSCRIPTION_RESOURCE
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -32,7 +28,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 
 class RegistrationServiceLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
@@ -249,12 +244,6 @@ class RegistrationServiceLifecycleHandlerTest {
             bringDependencyUp(subName)
             context.verifyIsUp<TestRegistrationComponent>()
         }
-    }
-
-    @Test
-    fun `stop event closes managed resources`() {
-        registrationServiceLifecycleHandler.processEvent(StopEvent(), coordinator)
-        verify(coordinator).closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE, COMPONENT_HANDLE))
     }
 
     private class TestRegistrationComponent(
