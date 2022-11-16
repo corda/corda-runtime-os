@@ -153,8 +153,8 @@ class EventLogSubscriptionIntegrationTest {
             ConfigValueFactory.fromAnyRef(2)
         )
 
-        val eventLogSub1 = createSub(TestEventLogProcessor(latch), TEST_CONFIG)
-        val eventLogSub2 = createSub(TestEventLogProcessor(latch), secondSubConfig)
+        val eventLogSub1 = createSub(TestEventLogProcessor(latch, null, "1"), TEST_CONFIG)
+        val eventLogSub2 = createSub(TestEventLogProcessor(latch, null, "2"), secondSubConfig)
 
         coordinator.followStatusChangesByName(setOf(eventLogSub1.subscriptionName, eventLogSub2.subscriptionName))
 
@@ -171,8 +171,8 @@ class EventLogSubscriptionIntegrationTest {
 
         publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 10, 2)).forEach { it.get() }
 
-        val eventLogSub1part2 = createSub(TestEventLogProcessor(latch, null, "1"), TEST_CONFIG)
-        val eventLogSub2part2 = createSub(TestEventLogProcessor(latch, null, "2"), secondSubConfig)
+        val eventLogSub1part2 = createSub(TestEventLogProcessor(latch, null, "3"), TEST_CONFIG)
+        val eventLogSub2part2 = createSub(TestEventLogProcessor(latch, null, "4"), secondSubConfig)
 
         eventLogSub1part2.start()
         eventLogSub2part2.start()
