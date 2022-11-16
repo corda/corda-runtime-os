@@ -45,10 +45,9 @@ class DigestServiceImpl @Activate constructor(
         return SecureHash(digestAlgorithmName.name, hashBytes)
     }
 
-    // TODO: I think below return in lambda prevents from caching, TO TEST
     override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =
         lengths.getOrPut(digestAlgorithmName.name) {
-            return digestFor(digestAlgorithmName).digestLength
+            digestFor(digestAlgorithmName).digestLength
         }
 
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
