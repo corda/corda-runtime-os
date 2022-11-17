@@ -21,6 +21,7 @@ abstract class UtxoLedgerIntegrationTest: CommonLedgerIntegrationTest() {
         utxoLedgerService = sandboxGroupContext1.getSandboxSingletonService()
         utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
+            jsonValidator,
             wireTransactionFactory
         )
     }

@@ -44,7 +44,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .sign(publicKeyExample) as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
-        assertEquals("0.001", metadata.getLedgerVersion())
+        assertEquals(1, metadata.getLedgerVersion())
 
         val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",
