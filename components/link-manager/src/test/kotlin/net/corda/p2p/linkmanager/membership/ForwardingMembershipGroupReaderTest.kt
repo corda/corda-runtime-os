@@ -4,6 +4,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -68,7 +69,12 @@ class ForwardingMembershipGroupReaderTest {
     private val mockMembershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(ALICE) } doReturn aliceGroupReader
     }
-    private val forwardingMembershipGroupReader = ForwardingMembershipGroupReader(mockMembershipGroupReaderProvider, mock())
+    private val mockGroupParametersReaderService = mock<GroupParametersReaderService>()
+    private val forwardingMembershipGroupReader = ForwardingMembershipGroupReader(
+        mockMembershipGroupReaderProvider,
+        mock(),
+        mockGroupParametersReaderService,
+    )
 
     @AfterEach
     fun cleanUp() {
@@ -77,13 +83,15 @@ class ForwardingMembershipGroupReaderTest {
 
     @Test
     fun `dependent and managed children are set properly`() {
-        assertThat(dependentChildren).hasSize(1)
+        assertThat(dependentChildren).hasSize(2)
         assertThat(dependentChildren).containsExactlyInAnyOrder(
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+            LifecycleCoordinatorName.forComponent<GroupParametersReaderService>(),
         )
-        assertThat(managedChildren).hasSize(1)
+        assertThat(managedChildren).hasSize(2)
         assertThat(managedChildren).containsExactlyInAnyOrder(
-            NamedLifecycle(mockMembershipGroupReaderProvider, LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>())
+            NamedLifecycle(mockMembershipGroupReaderProvider, LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
+            NamedLifecycle(mockGroupParametersReaderService, LifecycleCoordinatorName.forComponent<GroupParametersReaderService>()),
         )
     }
 
