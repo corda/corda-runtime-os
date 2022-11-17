@@ -327,7 +327,7 @@ class CpiEntitiesIntegrationTest {
 
         assertThat(cpkDataEntity).isEqualTo(insertedCpks[0])
     }
-    
+
     // @Disabled("Pending resolution to: CORE-7629")
     @Test
     fun `findAllCpiMetadata properly streams through DB data`() {
@@ -387,7 +387,8 @@ class CpiEntitiesIntegrationTest {
             }
     
             sa.assertThat(cpisEagerlyLoaded.filter {
-                cpiIds.contains(UUID.fromString(it.name.substringAfterLast("test-cpi-")))
+                it.name.contains("test-cpi-") &&
+                    cpiIds.contains(UUID.fromString(it.name.substringAfterLast("test-cpi-")))
             }.size).isEqualTo(2)
             cpisEagerlyLoaded.forEach {
                 sa.assertThat(it.cpks.size).isEqualTo(2)
