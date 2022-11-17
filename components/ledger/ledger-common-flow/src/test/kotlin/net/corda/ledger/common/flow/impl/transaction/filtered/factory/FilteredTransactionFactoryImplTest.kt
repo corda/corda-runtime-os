@@ -13,6 +13,7 @@ import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupF
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -142,7 +143,7 @@ class FilteredTransactionFactoryImplTest {
     }
 
     @Test
-    fun `creates an audit proof containing a default value when the component group contains no components after applying filtering`() {
+    fun `creates a size proof when the component group contains no components after applying filtering`() {
         wireTransaction = wireTransaction(
             listOf(
                 listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3),
@@ -150,6 +151,16 @@ class FilteredTransactionFactoryImplTest {
                 listOf(COMPONENT_1, COMPONENT_2)
             )
         )
+
+        val componentGroupMerkleTreeDigestProvider1 = wireTransaction.getComponentGroupMerkleTreeDigestProvider(
+            wireTransaction.privacySalt,
+            1
+        )
+        val componentGroupMerkleTreeSizeProofProvider1 =
+            checkNotNull(componentGroupMerkleTreeDigestProvider1 as? MerkleTreeHashDigestProviderWithSizeProofSupport) {
+                "Expected to have digest provider with size proof support"
+            }
+
 
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
@@ -164,11 +175,9 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
-            wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
-                listOf(0)
-            )
+                componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
         )
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(1)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
     }
 
     @Test

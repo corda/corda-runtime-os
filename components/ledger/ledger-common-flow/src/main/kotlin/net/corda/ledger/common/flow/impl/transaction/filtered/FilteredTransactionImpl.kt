@@ -81,12 +81,22 @@ class FilteredTransactionImpl(
             val componentGroupFromTopLevelProofLeafData =
                 topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
-            val componentLeafHash = SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
+            val componentLeafHash =
+                SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
             val providerToVerifyWith = when (filteredComponentGroup.merkleProofType) {
                 MerkleProofType.AUDIT -> {
-                    componentGroupAuditProofProvider
+                    // todo Size proof's leaves have no nonces. But is it OK to use this to distinguish audit and size proofs?
+                    // This whole section could use that simple if then.
+
+                    if (filteredComponentGroup.merkleProof.leaves.isNotEmpty() && // Size proofs have all leaves
+                        filteredComponentGroup.merkleProof.leaves.first().nonce == null) { // But their nonce is null
+                        componentGroupSizeProofProvider
+                    } else {
+                        componentGroupAuditProofProvider
+                    }
                 }
+
                 MerkleProofType.SIZE -> {
                     if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) {
                         componentGroupAuditProofProvider
