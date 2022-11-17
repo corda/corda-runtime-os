@@ -74,7 +74,8 @@ class LinkManager(
     }
 
     private val members: LinkManagerMembershipGroupReader = when(thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL -> ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
+        ThirdPartyComponentsMode.REAL ->
+            ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
         ThirdPartyComponentsMode.STUB -> StubMembershipGroupReader(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
     }
 
