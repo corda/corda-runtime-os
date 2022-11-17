@@ -58,8 +58,6 @@ class DbReconcilerReaderTest {
     private val getAllVersionRecordsMock: (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<String, Int>> = mock {
         on { invoke(eq(em), any()) } doReturn versionedRecordsStream
     }
-    private val onStatusUpMock: () -> Unit = mock()
-    private val onStatusDownMock: () -> Unit = mock()
     private val onStreamCloseMock: (ReconciliationContext) -> Unit = mock()
 
     private val coordinatorNameCaptor = argumentCaptor<LifecycleCoordinatorName>()
@@ -91,8 +89,6 @@ class DbReconcilerReaderTest {
         dependenciesMock,
         reconciliationContextFactory,
         getAllVersionRecordsMock,
-        onStatusUpMock,
-        onStatusDownMock,
         onStreamCloseMock
     )
 
@@ -153,21 +149,19 @@ class DbReconcilerReaderTest {
         }
 
         @Test
-        fun `stop event calls onStatusDown function`() {
+        fun `stop event does nothing if it hasn't started`() {
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
-            verify(onStatusDownMock).invoke()
             verify(dependencyRegistrationHandle, never()).close()
         }
 
         @Test
-        fun `stop event after start event calls onStatusDown function and closes registration handle`() {
+        fun `stop event after start event closes registration handle`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             verify(coordinator).followStatusChangesByName(eq(dependenciesMock))
 
             lifecycleEventHandler.processEvent(StopEvent(), coordinator)
 
-            verify(onStatusDownMock).invoke()
             verify(dependencyRegistrationHandle).close()
         }
     }
@@ -188,7 +182,7 @@ class DbReconcilerReaderTest {
     @Nested
     inner class RegistrationStatusChangeEventTest {
         @Test
-        fun `lifecycle status UP calls onStatusUp function and sets coordinator status`() {
+        fun `lifecycle status UP sets coordinator status`() {
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
                     dependencyRegistrationHandle,
@@ -197,12 +191,11 @@ class DbReconcilerReaderTest {
                 coordinator
             )
 
-            verify(onStatusUpMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
         }
 
         @Test
-        fun `lifecycle status DOWN calls onStatusDown function and sets coordinator status`() {
+        fun `lifecycle status DOWN sets coordinator status`() {
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
                     dependencyRegistrationHandle,
@@ -211,14 +204,13 @@ class DbReconcilerReaderTest {
                 coordinator
             )
 
-            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(dependencyRegistrationHandle, never()).close()
         }
 
         @Test
         @Suppress("MaxLineLength")
-        fun `lifecycle status DOWN after start event closes registration handle, calls onStatusDown function and sets coordinator status`() {
+        fun `lifecycle status DOWN after start event closes registration handle and sets coordinator status`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
@@ -228,13 +220,12 @@ class DbReconcilerReaderTest {
                 coordinator
             )
 
-            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(dependencyRegistrationHandle).close()
         }
 
         @Test
-        fun `lifecycle status ERROR calls onStatusDown function and sets coordinator status`() {
+        fun `lifecycle status ERROR sets coordinator status`() {
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
                     dependencyRegistrationHandle,
@@ -243,14 +234,12 @@ class DbReconcilerReaderTest {
                 coordinator
             )
 
-            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
             verify(dependencyRegistrationHandle, never()).close()
         }
 
         @Test
-        @Suppress("MaxLineLength")
-        fun `lifecycle status ERROR after start event closes registration handle, calls onStatusDown function and sets coordinator status`() {
+        fun `lifecycle status ERROR after start event closes registration handle, and sets coordinator status`() {
             lifecycleEventHandler.processEvent(StartEvent(), coordinator)
             lifecycleEventHandler.processEvent(
                 RegistrationStatusChangeEvent(
@@ -260,7 +249,6 @@ class DbReconcilerReaderTest {
                 coordinator
             )
 
-            verify(onStatusDownMock).invoke()
             verify(coordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
             verify(dependencyRegistrationHandle).close()
         }

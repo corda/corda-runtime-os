@@ -28,10 +28,12 @@ class ConfigReconciler(
     private var dbReconciler: DbReconcilerReader<String, Configuration>? = null
     private var reconciler: Reconciler? = null
 
-    private val emfManager = ClusterEMFManager(dbConnectionManager)
-
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(emfManager.emf))
+        listOf(
+            ClusterReconciliationContext(
+                dbConnectionManager.getClusterEntityManagerFactory()
+            )
+        )
     }
 
     override fun close() {
@@ -52,9 +54,7 @@ class ConfigReconciler(
                     Configuration::class.java,
                     dependencies,
                     reconciliationContextFactory,
-                    getAllConfigDBVersionedRecords,
-                    onStatusUp = emfManager::start,
-                    onStatusDown = emfManager::stop
+                    getAllConfigDBVersionedRecords
                 ).also {
                     it.start()
                 }

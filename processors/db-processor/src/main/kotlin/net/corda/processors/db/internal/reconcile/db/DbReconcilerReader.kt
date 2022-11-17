@@ -32,8 +32,6 @@ class DbReconcilerReader<K : Any, V : Any>(
     private val dependencies: Set<LifecycleCoordinatorName>,
     private val reconciliationContextFactory: () -> Collection<ReconciliationContext>,
     private val doGetAllVersionedRecords: (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<K, V>>,
-    private val onStatusUp: (() -> Unit)? = null,
-    private val onStatusDown: (() -> Unit)? = null,
     private val onStreamClose: ((ReconciliationContext) -> Unit)? = null
 ) : ReconcilerReader<K, V>, Lifecycle {
 
@@ -73,7 +71,6 @@ class DbReconcilerReader<K : Any, V : Any>(
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.UP) {
-            onStatusUp?.invoke()
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             coordinator.updateStatus(event.status)
@@ -135,7 +132,6 @@ class DbReconcilerReader<K : Any, V : Any>(
     private fun closeResources() {
         dependencyRegistration?.close()
         dependencyRegistration = null
-        onStatusDown?.invoke()
     }
 
     internal class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent

@@ -26,13 +26,15 @@ class VirtualNodeReconciler(
         )
     }
 
-    private val emfManager = ClusterEMFManager(dbConnectionManager)
-
     private var dbReconciler: DbReconcilerReader<HoldingIdentity, VirtualNodeInfo>? = null
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(emfManager.emf))
+        listOf(
+            ClusterReconciliationContext(
+                dbConnectionManager.getClusterEntityManagerFactory()
+            )
+        )
     }
 
     override fun close() {
@@ -53,9 +55,7 @@ class VirtualNodeReconciler(
                     VirtualNodeInfo::class.java,
                     dependencies,
                     reconciliationContextFactory,
-                    getAllVirtualNodesDBVersionedRecords,
-                    onStatusUp = emfManager::start,
-                    onStatusDown = emfManager::stop
+                    getAllVirtualNodesDBVersionedRecords
                 ).also {
                     it.start()
                 }

@@ -29,10 +29,12 @@ class CpiReconciler(
     private var dbReconciler: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
     private var reconciler: Reconciler? = null
 
-    private val emfManager = ClusterEMFManager(dbConnectionManager)
-
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(emfManager.emf))
+        listOf(
+            ClusterReconciliationContext(
+                dbConnectionManager.getClusterEntityManagerFactory()
+            )
+        )
     }
 
     override fun close() {
@@ -53,9 +55,7 @@ class CpiReconciler(
                     CpiMetadata::class.java,
                     dependencies,
                     reconciliationContextFactory,
-                    getAllCpiInfoDBVersionedRecords,
-                    onStatusUp = emfManager::start,
-                    onStatusDown = emfManager::stop
+                    getAllCpiInfoDBVersionedRecords
                 ).also {
                     it.start()
                 }
