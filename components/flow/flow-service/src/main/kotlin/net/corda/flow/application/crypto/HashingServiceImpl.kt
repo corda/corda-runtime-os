@@ -11,6 +11,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
@@ -21,7 +22,7 @@ import org.osgi.service.component.annotations.ServiceScope
     service = [HashingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = ServiceScope.PROTOTYPE
 )
-class HashingServiceImpl(
+class HashingServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(
