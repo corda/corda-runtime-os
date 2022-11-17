@@ -46,3 +46,5 @@ db:
         secretKeyRef:
           name: "prereqs-postgresql"
           key: "password"
+    username:
+      value: "user"
