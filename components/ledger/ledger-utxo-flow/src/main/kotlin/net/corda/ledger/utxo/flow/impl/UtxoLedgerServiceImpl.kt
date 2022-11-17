@@ -55,7 +55,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     override fun receiveFinality(
         session: FlowSession,
-        checkTransactionAcceptable: UtxoSignedTransactionChecker
+        checkTransaction: UtxoSignedTransactionChecker
     ): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
