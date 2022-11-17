@@ -86,7 +86,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadata.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
-        TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL
+        TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+        TransactionMetadata.COMPONENT_GROUPS_KEY to UtxoComponentGroup
+            .values()
+            .associate { group -> group.name to group.ordinal }
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

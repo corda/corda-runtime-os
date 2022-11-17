@@ -9,7 +9,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.ledger.consensual.data.transaction.ConsensualTransactionMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -82,7 +82,10 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
     private fun consensualMetadata() = linkedMapOf(
         TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+        TransactionMetadata.LEDGER_VERSION_KEY to ConsensualTransactionMetadata.LEDGER_VERSION,
+        TransactionMetadata.COMPONENT_GROUPS_KEY to ConsensualComponentGroup
+            .values()
+            .associate { group -> group.name to group.ordinal }
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

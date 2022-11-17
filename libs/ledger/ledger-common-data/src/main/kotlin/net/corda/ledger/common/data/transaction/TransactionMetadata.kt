@@ -21,6 +21,7 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
         const val SCHEMA_VERSION_KEY = "schemaVersion"
+        const val COMPONENT_GROUPS_KEY = "componentGroups"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -70,6 +71,17 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
                 "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
+        }
+    }
+
+    fun getComponentGroups(): Map<String, Int> {
+        val data = this[COMPONENT_GROUPS_KEY]
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            data as Map<String, Int>
+        } catch (e: Exception) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: component group mapping should be Map<String, Int> but found: $data")
         }
     }
 }
