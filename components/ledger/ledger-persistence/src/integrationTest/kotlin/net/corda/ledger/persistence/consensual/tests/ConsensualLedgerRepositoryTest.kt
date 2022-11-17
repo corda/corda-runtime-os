@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor.tests
+package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
@@ -7,32 +7,23 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.persistence.processor.tests.datamodel.field
+import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
+import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
+import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.processor.tests.datamodel.UtxoEntityFactory
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
-import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
-import net.corda.test.util.time.TestClock
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.PrivacySalt
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -59,21 +50,18 @@ import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-class UtxoPersistenceServiceImplTest {
+class ConsensualLedgerRepositoryTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    private lateinit var persistenceService: UtxoPersistenceService
-    private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var wireTransactionFactory: WireTransactionFactory
-    private lateinit var digestService: DigestService
+    private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
+    private lateinit var repository: ConsensualLedgerRepository
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
-        // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
-        private val TEST_CLOCK: Clock = TestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS))
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
@@ -95,16 +83,9 @@ class UtxoPersistenceServiceImplTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
-            digestService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            val repository = UtxoRepositoryImpl(serializationService, wireTransactionFactory, digestService)
-            persistenceService = UtxoPersistenceServiceImpl(
-                ctx,
-                repository,
-                digestService,
-                TEST_CLOCK
-            )
+            repository = ctx.getSandboxSingletonService()
         }
     }
 
@@ -117,11 +98,25 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `can read signed transaction`() {
         val account = "Account"
-        val createdTs = TEST_CLOCK.instant()
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val signedTransaction = createSignedTransaction(createdTs)
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
-            entityFactory.createUtxoTransactionEntity(
+            val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
+                entityFactory.createConsensualCpkEntity(
+                    cpk.fileChecksum,
+                    cpk.name,
+                    cpk.signerSummaryHash!!,
+                    cpk.version,
+                    "file$i".toByteArray(),
+                    createdTs
+                )
+            }.onEach(em::persist)
+
+            entityFactory.createConsensualTransactionEntity(
                 signedTransaction.id.toString(),
                 signedTransaction.wireTransaction.privacySalt.bytes,
                 account,
@@ -130,7 +125,7 @@ class UtxoPersistenceServiceImplTest {
                 transaction.field<MutableCollection<Any>>("components").addAll(
                     signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
                         componentGroup.mapIndexed { leafIndex: Int, component ->
-                            entityFactory.createUtxoTransactionComponentEntity(
+                            entityFactory.createConsensualTransactionComponentEntity(
                                 transaction,
                                 groupIndex,
                                 leafIndex,
@@ -141,9 +136,14 @@ class UtxoPersistenceServiceImplTest {
                         }
                     }
                 )
+                transaction.field<MutableCollection<Any>>("statuses").addAll(
+                    listOf(
+                        entityFactory.createConsensualTransactionStatusEntity(transaction, "V", createdTs)
+                    )
+                )
                 transaction.field<MutableCollection<Any>>("signatures").addAll(
                     signedTransaction.signatures.mapIndexed { index, signature ->
-                        entityFactory.createUtxoTransactionSignatureEntity(
+                        entityFactory.createConsensualTransactionSignatureEntity(
                             transaction,
                             index,
                             serializationService.serialize(signature).bytes,
@@ -152,16 +152,14 @@ class UtxoPersistenceServiceImplTest {
                         )
                     }
                 )
-                transaction.field<MutableCollection<Any>>("statuses").addAll(
-                    listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, "V", createdTs)
-                    )
-                )
+                transaction.field<MutableCollection<Any>>("cpks").addAll(dbExistingCpks)
                 em.persist(transaction)
             }
         }
 
-        val dbSignedTransaction = persistenceService.findTransaction(signedTransaction.id.toString())
+        val dbSignedTransaction = entityManagerFactory.createEntityManager().transaction { em ->
+            repository.findTransaction(em, signedTransaction.id.toString())
+        }
 
         assertThat(dbSignedTransaction).isEqualTo(signedTransaction)
     }
@@ -173,18 +171,15 @@ class UtxoPersistenceServiceImplTest {
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
-        val transactionReader = TestUtxoTransactionReader(
-            signedTransaction,
-            account,
-            transactionStatus
-        )
-        persistenceService.persistTransaction(transactionReader)
+        entityManagerFactory.createEntityManager().transaction { em ->
+            repository.persistTransaction(em, signedTransaction, transactionStatus, account)
+        }
 
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
 
         // Verify persisted data
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toString())
 
             assertThat(dbTransaction).isNotNull
             val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
@@ -217,6 +212,14 @@ class UtxoPersistenceServiceImplTest {
                         }
                 }
 
+            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(txStatuses)
+                .isNotNull
+                .hasSize(1)
+            val dbStatus = txStatuses!!.first()
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
+
             val signatures = signedTransaction.signatures
             val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
             assertThat(txSignatures)
@@ -237,15 +240,93 @@ class UtxoPersistenceServiceImplTest {
                     )
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
-
-            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
-            assertThat(txStatuses)
-                .isNotNull
-                .hasSize(1)
-            val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
-            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
         }
+    }
+
+    @Test
+    fun `can persist links between signed transaction and existing CPKs`() {
+        val account = "Account"
+        // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+        val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val signedTransaction = createSignedTransaction(createdTs)
+        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            existingCpks.mapIndexed { i, cpk ->
+                entityFactory.createConsensualCpkEntity(
+                    cpk.fileChecksum,
+                    cpk.name,
+                    cpk.signerSummaryHash!!,
+                    cpk.version,
+                    "file$i".toByteArray(),
+                    createdTs
+                )
+            }.forEach(em::persist)
+
+            entityFactory.createConsensualTransactionEntity(
+                signedTransaction.id.toString(),
+                signedTransaction.wireTransaction.privacySalt.bytes,
+                account,
+                createdTs
+            ).apply(em::persist)
+        }
+
+        // Persist transaction CPKs
+        val persistedCpkCount = entityManagerFactory.createEntityManager().transaction { em ->
+            repository.persistTransactionCpk(em, signedTransaction)
+        }
+
+        // Verify persisted data
+        assertThat(persistedCpkCount).isEqualTo(existingCpks.size)
+        entityManagerFactory.transaction { em ->
+            val dbTransaction = em.find(entityFactory.consensualTransaction, signedTransaction.id.toString())
+
+            val txCpks = dbTransaction.field<Collection<Any>?>("cpks")
+            assertThat(txCpks).isNotNull
+                .hasSameSizeAs(existingCpks)
+            txCpks!!
+                .sortedBy { it.field<String>("name") }
+                .zip(existingCpks)
+                .forEachIndexed { index, (dbCpk, cpk) ->
+                    assertThat(dbCpk.field<String>("fileChecksum")).isEqualTo(cpk.fileChecksum)
+                    assertThat(dbCpk.field<String>("name")).isEqualTo(cpk.name)
+                    assertThat(dbCpk.field<String>("signerSummaryHash")).isEqualTo(cpk.signerSummaryHash)
+                    assertThat(dbCpk.field<String>("version")).isEqualTo(cpk.version)
+                    assertThat(dbCpk.field<ByteArray>("data")).isEqualTo("file$index".toByteArray())
+                    assertThat(dbCpk.field<Instant>("created")).isEqualTo(createdTs)
+                }
+        }
+    }
+
+    @Test
+    fun `can find file checksums of CPKs linked to transaction`() {
+        val account = "Account"
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val cpks = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        val existingCpks = cpks.take(2)
+        val entityFactory = ConsensualEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
+                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), Instant.now())
+            }.onEach(em::persist)
+
+            entityFactory.createConsensualTransactionEntity(
+                signedTransaction.id.toString(),
+                signedTransaction.wireTransaction.privacySalt.bytes,
+                account,
+                Instant.now()
+            ).also { transaction ->
+                transaction.field<MutableCollection<Any>>("cpks").addAll(dbExistingCpks)
+                em.persist(transaction)
+            }
+        }
+
+        val cpkChecksums = entityManagerFactory.createEntityManager().transaction { em ->
+            repository.findTransactionCpkChecksums(em, signedTransaction)
+        }
+
+        assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::fileChecksum))
     }
 
     private fun createSignedTransaction(
@@ -305,29 +386,6 @@ class UtxoPersistenceServiceImplTest {
             )
         )
         return SignedTransactionContainer(wireTransaction, signatures)
-    }
-
-    private class TestUtxoTransactionReader(
-        val transactionContainer:  SignedTransactionContainer,
-        override val account: String,
-        override val status: String
-    ): UtxoTransactionReader {
-        override val id: SecureHash
-            get() = transactionContainer.id
-        override val privacySalt: PrivacySalt
-            get() = transactionContainer.wireTransaction.privacySalt
-        override val rawGroupLists: List<List<ByteArray>>
-            get() = transactionContainer.wireTransaction.componentGroupLists
-        override val signatures: List<DigitalSignatureAndMetadata>
-            get() = transactionContainer.signatures
-        override val cpkMetadata: List<CordaPackageSummary>
-            get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
-        override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            TODO("Not yet implemented")
-        }
-        override fun getConsumedStates(): List<StateAndRef<ContractState>> {
-            TODO("Not yet implemented")
-        }
     }
 
     private fun digest(algorithm: String, data: ByteArray) =

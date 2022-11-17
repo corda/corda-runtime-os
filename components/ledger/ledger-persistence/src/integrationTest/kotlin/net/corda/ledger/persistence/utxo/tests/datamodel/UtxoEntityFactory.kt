@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor.tests.datamodel
+package net.corda.ledger.persistence.utxo.tests.datamodel
 
 import java.time.Instant
 import javax.persistence.EntityManagerFactory

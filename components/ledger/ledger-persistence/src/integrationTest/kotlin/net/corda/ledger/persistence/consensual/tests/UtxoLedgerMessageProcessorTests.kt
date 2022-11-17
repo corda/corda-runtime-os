@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor.tests
+package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -23,7 +23,6 @@ import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
-import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -66,9 +65,9 @@ import java.util.UUID
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(PER_CLASS)
-class LedgerMessageProcessorTests {
+class UtxoLedgerMessageProcessorTests {
     companion object {
-        const val TOPIC = "ledger-dummy-topic"
+        const val TOPIC = "utxo-ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
@@ -106,7 +105,7 @@ class LedgerMessageProcessorTests {
     }
 
     @Test
-    fun `persistTransaction for consensual ledger deserialises the transaction and persists`() {
+    fun `persistTransaction for utxo ledger deserialises the transaction and persists`() {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
@@ -116,11 +115,7 @@ class LedgerMessageProcessorTests {
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = "V"
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
-        val persistRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            LedgerTypes.CONSENSUAL,
-            persistTransaction
-        )
+        val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
@@ -130,69 +125,14 @@ class LedgerMessageProcessorTests {
         )
 
         val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, persistRequest))
+        val records = listOf(Record(TOPIC, requestId, request))
 
         // Process the messages (this should persist transaction to the DB)
         var responses = assertSuccessResponses(processor.onNext(records))
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            LedgerTypes.CONSENSUAL,
-            FindTransaction(transaction.id.toString())
-        )
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
-
-        assertThat(responses).hasSize(1)
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNull()
-        val entityResponse = deserializer.deserialize(response.payload.array())!!
-        assertThat(entityResponse.results).hasSize(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
-        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
-        assertThat(retrievedTransaction).isEqualTo(transaction)
-    }
-
-    @Test
-    fun `persistTransaction for UTXO ledger deserialises the transaction and persists`() {
-        val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
-
-        val transaction = createTestTransaction(ctx)
-
-        // Serialise tx into bytebuffer and add to PersistTransaction payload
-        val serializedTransaction = ctx.serialize(transaction)
-        val transactionStatus = "V"
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
-        val persistRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            LedgerTypes.UTXO,
-            persistTransaction
-        )
-
-        // Send request to message processor
-        val processor = PersistenceRequestProcessor(
-            virtualNode.entitySandboxService,
-            delegatedRequestHandlerSelector,
-            externalEventResponseFactory
-        )
-
-        val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, persistRequest))
-
-        // Process the messages (this should persist transaction to the DB)
-        var responses = assertSuccessResponses(processor.onNext(records))
-        assertThat(responses).hasSize(1)
-
-        // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            LedgerTypes.UTXO,
-            FindTransaction(transaction.id.toString())
-        )
+        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
         responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
@@ -208,9 +148,9 @@ class LedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
-        val consensualTransactionMetadataExample = TransactionMetadata(
+        val utxoTransactionMetadataExample = TransactionMetadata(
             linkedMapOf(
-                TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetadata.LEDGER_MODEL_KEY to "UtxoLedgerTransactionImpl",
                 TransactionMetadata.LEDGER_VERSION_KEY to "1.0",
                 TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 TransactionMetadata.PLATFORM_VERSION_KEY to 123,
@@ -222,7 +162,7 @@ class LedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            consensualTransactionMetadataExample
+            utxoTransactionMetadataExample
         )
         return SignedTransactionContainer(
             wireTransaction,
@@ -232,15 +172,14 @@ class LedgerMessageProcessorTests {
 
     private fun createRequest(
         holdingId: net.corda.virtualnode.HoldingIdentity,
-        ledgerType: LedgerTypes,
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.info("UTXO ledger persistence request: {} {}", request.javaClass.simpleName, request)
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),
-            ledgerType,
+            LedgerTypes.UTXO,
             request,
             externalEventContext
         )
