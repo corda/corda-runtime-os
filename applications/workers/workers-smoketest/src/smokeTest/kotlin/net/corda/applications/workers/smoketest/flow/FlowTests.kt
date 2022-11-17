@@ -1,7 +1,5 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
-import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
@@ -31,11 +29,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.Disabled
+import java.util.*
+import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 //The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
@@ -846,7 +846,7 @@ class FlowTests {
         assertThat(result.flowError?.message).contains("NotaryErrorReferenceStateUnknown")
     }
 
-    @Test
+    @RepeatedTest(10)
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
