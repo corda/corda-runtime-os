@@ -227,16 +227,21 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 }
                 agreedMaxMessageSize = this
             }
-            validateCertificate(responderHandshakePayload, theirX500Name)
+            validateCertificate(responderHandshakePayload, theirX500Name, theirPublicKey)
         }
     }
 
-    private fun validateCertificate(responderHandshakePayload: ResponderHandshakePayload, theirX500Name: MemberX500Name) {
+    private fun validateCertificate(
+        responderHandshakePayload: ResponderHandshakePayload,
+        theirX500Name: MemberX500Name,
+        theirPublicKey: PublicKey,
+    ) {
         if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
             if (responderHandshakePayload.responderEncryptedExtensions.responderCertificate != null) {
                 certificateValidator!!.validate(
                     responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
-                    theirX500Name
+                    theirX500Name,
+                    theirPublicKey
                 )
             } else {
                 throw InvalidPeerCertificate("No peer certificate was sent in the responder handshake message.")
