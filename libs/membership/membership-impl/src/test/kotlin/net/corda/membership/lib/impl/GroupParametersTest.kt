@@ -7,7 +7,6 @@ import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.impl.converter.NotaryInfoConverter
-import net.corda.membership.lib.impl.converter.NotaryInfoImpl
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
@@ -44,8 +43,6 @@ class GroupParametersTest {
         on { create(eq(listOf(compositeKeyNodeAndWeight)), eq(null)) } doReturn compositeKey
     }
 
-    private val notaryInfo = NotaryInfoImpl(notaryName, PLUGIN, compositeKey)
-
     private fun createTestParams(
         mpv: Int = VALID_VALUE,
         epoch: Int = VALID_VALUE,
@@ -69,7 +66,11 @@ class GroupParametersTest {
             it.assertThat(params.minimumPlatformVersion).isEqualTo(VALID_VALUE)
             it.assertThat(params.epoch).isEqualTo(VALID_VALUE)
             it.assertThat(params.modifiedTime).isEqualTo(modifiedTime)
-            it.assertThat(params.notaries).isEqualTo(listOf(notaryInfo))
+            it.assertThat(params.notaries).hasSize(1)
+            val notary = params.notaries.single()
+            it.assertThat(notary.name).isEqualTo(notaryName)
+            it.assertThat(notary.pluginClass).isEqualTo(PLUGIN)
+            it.assertThat(notary.publicKey).isEqualTo(compositeKey)
         }
     }
 
