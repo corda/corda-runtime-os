@@ -31,8 +31,8 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":osgi-framework-api")
     implementation project(":notary-plugins:notary-plugin-common")
+    implementation project(":osgi-framework-api")
 
     runtimeOnly 'javax.persistence:javax.persistence-api'
     runtimeOnly "net.corda:corda-avro-schema"
