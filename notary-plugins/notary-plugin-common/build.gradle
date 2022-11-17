@@ -1,20 +1,26 @@
 plugins {
+    id 'net.corda.plugins.cordapp-cpk2'
+    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
-    id 'corda.common-library'
 }
 
 description 'Corda Notary Plugins Common Functionality'
-
 group 'com.r3.corda.notary.plugin.common'
 
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    workflow {
+        name "Corda Non-Validating Notary - Common"
+        versionId 1
+        vendor "R3"
+    }
+}
+
 dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-
-    compileOnly "net.corda:corda-application"
-    compileOnly "net.corda:corda-cipher-suite"
-    compileOnly "net.corda:corda-notary-plugin"
-    compileOnly 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
-    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'net.corda:corda-notary-plugin'
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
