@@ -37,8 +37,8 @@ class ConfigTests {
             assertThat(updatedValue).isEqualTo(newValue)
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to initialValue).toJsonString(), RECONCILIATION_CONFIG)
-            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, initialValue.toString(), false)
+            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to initialValue+1).toJsonString(), RECONCILIATION_CONFIG)
+            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, (initialValue+1).toString(), false)
         }
     }
 
