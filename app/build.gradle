@@ -107,6 +107,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('multiArchSupport')) {
         multiArch = multiArchSupport.toBoolean()
     }
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
     setEntry = true
 }
 
