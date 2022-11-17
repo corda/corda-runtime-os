@@ -19,8 +19,9 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
@@ -327,100 +328,146 @@ class CpiEntitiesIntegrationTest {
         assertThat(cpkDataEntity).isEqualTo(insertedCpks[0])
     }
 
-    @RepeatedTest(10)
-    fun `findAllCpiMetadata properly streams through DB data`() {
-        val testDbConf = DbUtils.getEntityManagerConfiguration("cpi_db_${UUID.randomUUID()}")
+    @Disabled("Pending resolution of: CORE-8145")
+    @Test
+    fun `what happens when it shares metadata`() {
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit_${UUID.randomUUID()}",
             CpiEntities.classes.toList(),
-            testDbConf
+            dbConfig
         )
-
-        testDbConf.dataSource.connection.use { connection ->
-            LiquibaseSchemaMigratorImpl().updateDb(connection, ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf("net/corda/db/schema/config/db.changelog-master.xml"),
-                        DbSchema::class.java.classLoader
-                    )
+        val cpiId = UUID.randomUUID()
+        val cpkName = "test-cpk-${UUID.randomUUID()}"
+        val cpkVersion = "1.2.3"
+        val cpkSSH = TestObject.randomChecksumString()
+        val cpks = (1..2).associate {
+            println(it)
+            val cpkMetadataEntity =
+                TestObject.createCpiCpkEntity(
+                    "test-cpi-$cpiId", "1.0", "test-cpi-hash",
+                    cpkName, cpkVersion, cpkSSH,
+                    "test-cpk.cpk$it", TestObject.randomChecksumString(),
                 )
-            ))
+            val cpkData = CpkFileEntity(
+                CpkKey(cpkName, cpkVersion, cpkSSH),
+                cpkMetadataEntity.cpkFileChecksum,
+                ByteArray(2000),
+            )
+            cpkMetadataEntity to cpkData
         }
-
-        val cpis = mutableListOf<CpiMetadataEntity>()
-
-        // Create CPIs First
-        for (i in 0..1) {
-            val cpiId = UUID.randomUUID()
-            val cpks = (1..2).associate {
-                val cpkName = "test-cpk$it"
-                val cpkVersion = "$i.2.3"
-                val cpkSSH = TestObject.randomChecksumString()
-                val cpkMetadataEntity =
-                    TestObject.createCpiCpkEntity(
-                        "test-cpi-$cpiId", "1.0", "test-cpi-hash",
-                        cpkName, cpkVersion, cpkSSH,
-                        "test-cpk.cpk$it", TestObject.randomChecksumString(),
-                    )
-                val cpkData = CpkFileEntity(
-                    CpkKey(cpkName, cpkVersion, cpkSSH),
-                    cpkMetadataEntity.cpkFileChecksum,
-                    ByteArray(2000),
-                )
-                cpkMetadataEntity to cpkData
-            }
-            val cpi = TestObject.createCpi(cpiId, cpks.keys)
-            cpis.add(cpi)
-
-            emFactory.use { em ->
-                em.transaction {
-                    it.persist(cpi)
-                    cpks.values.forEach { cpkData ->
-                        it.persist(cpkData)
-                    }
-                    it.flush()
+        val cpi = TestObject.createCpi(cpiId, cpks.keys)
+        emFactory.use { em ->
+            em.transaction {
+                it.persist(cpi)
+                cpks.values.forEach { cpkData ->
+                    it.persist(cpkData)
                 }
+                it.flush()
             }
         }
 
-        // Find all - fetches eagerly
-        println("**** [START] findAllCpiMetadata query as list ****")
         val cpisEagerlyLoaded = emFactory.use { em ->
             em.transaction {
                 em.findAllCpiMetadata().toList() // toList here materialises the stream.
             }
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
         }
+        val cpiForThisTest = cpisEagerlyLoaded.single{ it.name == "test-cpi-$cpiId" }
 
-        assertThat(cpisEagerlyLoaded.size).isEqualTo(2)
-        cpisEagerlyLoaded.forEach {
-            assertThat(it.cpks.size).isEqualTo(2)
-            it.cpks.forEach { cpkMetadataEntity ->
-                println("****       invoke metadata property ****")
-                assertThat(cpkMetadataEntity.metadata).isNotNull
-            }
-        }
-        println("**** [END] findAllCpiMetadata query as list ****")
+        assertThat(cpiForThisTest.cpks.size).isEqualTo(2)
+    }
 
-        // Repeat the above, but consume from stream
-        println("**** [START] findAllCpiMetadata query as stream ****")
-        emFactory.use { em ->
-            em.transaction {
-                val cpisLazyLoaded = em.findAllCpiMetadata()
+    @Disabled("Pending resolution to: CORE-7629")
+    @Test
+    fun `findAllCpiMetadata properly streams through DB data`() {
+        val emFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit_${UUID.randomUUID()}",
+            CpiEntities.classes.toList(),
+            dbConfig
+        )
 
-                var count = 0
-                cpisLazyLoaded.forEach {
-                    count += 1
-                    println("****       cpi has ${it.cpks.size} cpks: ****")
-                    it.cpks.forEach { cpkMetadataEntity ->
-                        println("****       invoke metadata property ****")
-                        assertThat(cpkMetadataEntity.metadata).isNotNull
-                        println("****       ${cpkMetadataEntity.metadata.id}****")
-                    }
-                    assertThat(it.cpks.size).isEqualTo(2)
+        val cpis = mutableListOf<CpiMetadataEntity>()
+
+        assertSoftly { sa ->
+            // Create CPIs First
+            val cpiIds = (0..1).map {i ->
+                val cpiId = UUID.randomUUID()
+                val cpks = (1..2).associate {
+                    println(it)
+                    val cpkName = "test-cpk$it-${UUID.randomUUID()}"
+                    val cpkVersion = "$i.2.3"
+                    val cpkSSH = TestObject.randomChecksumString()
+                    val cpkMetadataEntity =
+                        TestObject.createCpiCpkEntity(
+                            "test-cpi-$cpiId", "1.0", "test-cpi-hash",
+                            cpkName, cpkVersion, cpkSSH,
+                            "test-cpk.cpk$it", TestObject.randomChecksumString(),
+                        )
+                    val cpkData = CpkFileEntity(
+                        CpkKey(cpkName, cpkVersion, cpkSSH),
+                        cpkMetadataEntity.cpkFileChecksum,
+                        ByteArray(2000),
+                    )
+                    cpkMetadataEntity to cpkData
                 }
-                assertThat(count).isEqualTo(2)
+                sa.assertThat(cpks.size).isEqualTo(2)
+                val cpi = TestObject.createCpi(cpiId, cpks.keys)
+                cpis.add(cpi)
+    
+                emFactory.use { em ->
+                    em.transaction {
+                        it.persist(cpi)
+                        cpks.values.forEach { cpkData ->
+                            it.persist(cpkData)
+                        }
+                        it.flush()
+                    }
+                }
+                return@map cpiId
+            }
+    
+            // Find all - fetches eagerly
+            println("**** [START] findAllCpiMetadata query as list ****")
+            val cpisEagerlyLoaded = emFactory.use { em ->
+                em.transaction {
+                    em.findAllCpiMetadata().toList() // toList here materialises the stream.
+                }
+                // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
+            }
+    
+            sa.assertThat(cpisEagerlyLoaded.filter {
+                cpiIds.contains(UUID.fromString(it.name.substringAfterLast("test-cpi-")))
+            }.size).isEqualTo(2)
+            cpisEagerlyLoaded.forEach {
+                sa.assertThat(it.cpks.size).isEqualTo(2)
+                it.cpks.forEach { cpkMetadataEntity ->
+                    println("****       invoke metadata property ****")
+                    sa.assertThat(cpkMetadataEntity.metadata).isNotNull
+                }
+            }
+            println("**** [END] findAllCpiMetadata query as list ****")
+    
+            // Repeat the above, but consume from stream
+            println("**** [START] findAllCpiMetadata query as stream ****")
+            emFactory.use { em ->
+                em.transaction {
+                    val cpisLazyLoaded = em.findAllCpiMetadata()
+    
+                    var count = 0
+                    cpisLazyLoaded.forEach {
+                        if (cpiIds.contains(UUID.fromString(it.name.substringAfterLast("test-cpi-")))) {
+                            count += 1
+                            println("****       cpi has ${it.cpks.size} cpks: ****")
+                            it.cpks.forEach { cpkMetadataEntity ->
+                                println("****       invoke metadata property ****")
+                                sa.assertThat(cpkMetadataEntity.metadata).isNotNull
+                                println("****       ${cpkMetadataEntity.metadata.id}****")
+                            }
+                            sa.assertThat(it.cpks.size).isEqualTo(2)
+                        }
+                    }
+                    sa.assertThat(count).isEqualTo(2)
+                }
             }
         }
         println("**** [END] findAllCpiMetadata query as stream ****")
