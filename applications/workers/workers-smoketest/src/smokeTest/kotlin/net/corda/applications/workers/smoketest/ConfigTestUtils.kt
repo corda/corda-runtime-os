@@ -97,7 +97,11 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
                 if (it.body == null) {
                     fail<String>("body is null, response code: ${it.code}")
                 }
+                if (it.body == "") {
+                    fail<String>("body is empty, response code: ${it.code}")
+                }
                 val bodyJSON = it.body.toJson()
+                println("Response code: ${it.code}, Body is:$bodyJSON")
                 if (bodyJSON["sourceConfig"] == null) {
                     fail<String>("sourceConfig is null, Config is ${bodyJSON.textValue()}, response code: ${it.code}")
                 }
