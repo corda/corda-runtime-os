@@ -21,7 +21,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
+import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.v5.base.util.contextLogger
