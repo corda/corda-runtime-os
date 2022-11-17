@@ -2,10 +2,12 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
@@ -13,6 +15,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -24,6 +27,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -33,6 +37,8 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -45,6 +51,11 @@ class ApproveRegistrationHandlerTest {
     private val command = ApproveRegistration()
     private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
     private val key = "key"
+    private val mockGroupParametersList = KeyValuePairList(
+        listOf(
+            KeyValuePair(EPOCH_KEY, "6")
+        )
+    )
     private val memberInfo = mockMemberInfo(member)
     private val notaryInfo = mockMemberInfo(notary, isNotary = true)
     private val mgm = mockMemberInfo(
@@ -66,7 +77,7 @@ class ApproveRegistrationHandlerTest {
                 registrationId
             )
         } doReturn MembershipPersistenceResult.Success(notaryInfo)
-        on { addNotaryToGroupParameters(mgm.holdingIdentity, notaryInfo) } doReturn mock()
+        on { addNotaryToGroupParameters(mgm.holdingIdentity, notaryInfo) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
     }
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
@@ -86,8 +97,11 @@ class ApproveRegistrationHandlerTest {
         on { isMgm(member.toAvro()) } doReturn false
         on { getMgmMemberInfo(owner) } doReturn mgm
     }
+    private val mockGroupParameters: GroupParameters = mock {
+        on { epoch } doReturn 5
+    }
     private val groupReader: MembershipGroupReader = mock {
-        on { groupParameters } doReturn mock()
+        on { groupParameters } doReturn mockGroupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -168,12 +182,46 @@ class ApproveRegistrationHandlerTest {
     fun `invoke updates the MGM's view of group parameters with notary, if approved member has notary role set`() {
         val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
 
-        handler.invoke(state, key, command)
+        val results = handler.invoke(state, key, command)
 
-        verify(membershipPersistenceClient).addNotaryToGroupParameters(
+        verify(membershipPersistenceClient, times(1)).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
         )
+        verify(groupReaderProvider, never()).getGroupReader(any())
+        assertThat(results.outputStates)
+            .hasSize(3)
+            .anySatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DistributeMembershipPackage::class.java)
+                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(6)
+            }
+    }
+
+    @Test
+    fun `invoke does not update the MGM's view of group parameters, if approved member has no role set`() {
+        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+
+        val results = handler.invoke(state, key, command)
+
+        verify(membershipPersistenceClient, never()).addNotaryToGroupParameters(
+            viewOwningIdentity = mgm.holdingIdentity,
+            notary = memberInfo,
+        )
+        verify(groupReaderProvider, times(1)).getGroupReader(any())
+        assertThat(results.outputStates)
+            .hasSize(3)
+            .anySatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DistributeMembershipPackage::class.java)
+                assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(5)
+            }
     }
 
     @Test

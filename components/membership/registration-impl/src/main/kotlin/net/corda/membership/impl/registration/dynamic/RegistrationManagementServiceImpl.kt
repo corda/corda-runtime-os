@@ -17,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -63,6 +64,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val cipherSchemeMetadata: CipherSchemeMetadata,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
 ) : RegistrationManagementService {
 
     companion object {
@@ -165,6 +168,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         cipherSchemeMetadata,
                         merkleTreeProvider,
                         membershipConfig,
+                        groupParametersWriterService,
                     ),
                     messagingConfig
                 ).also {

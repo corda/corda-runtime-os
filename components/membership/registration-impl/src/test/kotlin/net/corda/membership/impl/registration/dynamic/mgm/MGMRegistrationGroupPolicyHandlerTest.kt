@@ -40,7 +40,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
         on {
             persistGroupParametersInitialSnapshot(eq(testHoldingIdentity))
-        } doReturn MembershipPersistenceResult.Success(Unit)
+        } doReturn MembershipPersistenceResult.Success(mock())
     }
 
     private val testContext: Map<String, String> = mapOf(
@@ -50,7 +50,9 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
     private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
         layeredPropertyMapFactory,
-        membershipPersistenceClient
+        membershipPersistenceClient,
+        mock(),
+        mock(),
     )
 
     @Test

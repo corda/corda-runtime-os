@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -9,7 +11,9 @@ import net.corda.virtualnode.HoldingIdentity
 
 internal class MGMRegistrationGroupPolicyHandler(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    private val membershipPersistenceClient: MembershipPersistenceClient
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val groupParametersWriterService: GroupParametersWriterService,
+    private val groupParametersFactory: GroupParametersFactory,
 ) {
 
     fun buildAndPersist(
@@ -40,6 +44,10 @@ internal class MGMRegistrationGroupPolicyHandler(
                 "Registration failed, persistence error. Reason: ${groupParametersPersistenceResult.errorMsg}"
             )
         }
+
+        // Publish group parameters to Kafka
+        val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+        groupParametersWriterService.put(holdingIdentity, groupParameters)
 
         return groupPolicy
     }

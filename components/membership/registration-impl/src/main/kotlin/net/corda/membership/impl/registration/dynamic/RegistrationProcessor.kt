@@ -13,6 +13,7 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -48,6 +49,7 @@ class RegistrationProcessor(
     cipherSchemeMetadata: CipherSchemeMetadata,
     merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
+    groupParametersWriterService: GroupParametersWriterService,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -85,6 +87,7 @@ class RegistrationProcessor(
             merkleTreeProvider,
             membershipConfig,
             membershipGroupReaderProvider,
+            groupParametersWriterService,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,

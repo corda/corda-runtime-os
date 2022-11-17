@@ -9,6 +9,7 @@ import net.corda.data.membership.command.registration.mgm.DistributeMembershipPa
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
@@ -35,6 +36,7 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -42,10 +44,12 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -149,6 +153,7 @@ class DistributeMembershipPackageHandlerTest {
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val writerService: GroupParametersWriterService = mock()
 
     private val handler = DistributeMembershipPackageHandler(
         membershipQueryClient,
@@ -159,6 +164,7 @@ class DistributeMembershipPackageHandlerTest {
         merkleTreeProvider,
         config,
         groupReaderProvider,
+        writerService,
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,
@@ -226,6 +232,21 @@ class DistributeMembershipPackageHandlerTest {
         val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).containsAll(membersRecord)
+    }
+
+    @Test
+    fun `invoke publishes group parameters to kafka for all members`() {
+        val groupParametersCaptor = argumentCaptor<GroupParameters>()
+        val holdingIdentityCaptor = argumentCaptor<HoldingIdentity>()
+
+        handler.invoke(state, key, command)
+
+        val receivingMembers = activeMembersWithoutMgm + memberInfo
+        verify(writerService, times(receivingMembers.size)).put(holdingIdentityCaptor.capture(), groupParametersCaptor.capture())
+        groupParametersCaptor.allValues.forEach {
+            assertThat(it).isEqualTo(groupParameters)
+        }
+        assertThat(holdingIdentityCaptor.allValues).isEqualTo(receivingMembers.map { it.holdingIdentity })
     }
 
     @Test

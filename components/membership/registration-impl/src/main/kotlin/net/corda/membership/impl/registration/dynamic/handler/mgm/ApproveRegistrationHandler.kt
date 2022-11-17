@@ -14,9 +14,11 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -81,7 +83,9 @@ internal class ApproveRegistrationHandler(
                                 " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
-                result.getOrThrow()
+                val parametersMap = result.getOrThrow().toMap()
+                parametersMap[EPOCH_KEY]?.toInt()
+                    ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
             } else {
                 val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
                 reader.groupParameters.epoch

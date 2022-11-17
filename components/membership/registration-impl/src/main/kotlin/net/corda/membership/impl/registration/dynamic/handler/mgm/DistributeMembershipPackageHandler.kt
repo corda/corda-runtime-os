@@ -7,6 +7,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -44,6 +45,7 @@ class DistributeMembershipPackageHandler(
     merkleTreeProvider: MerkleTreeProvider,
     private val membershipConfig: SmartConfig,
     private val groupReaderProvider: MembershipGroupReaderProvider,
+    private val groupParametersWriterService: GroupParametersWriterService,
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeProvider,
@@ -117,6 +119,11 @@ class DistributeMembershipPackageHandler(
                     content = memberPackage,
                     minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
                 )
+            }
+
+            // Publish group parameters to Kafka for the newly approved member and all other members
+            (members + approvedMemberInfo).forEach {
+                groupParametersWriterService.put(it.holdingIdentity, groupParameters)
             }
 
             memberToAllMembers + allMembersToNewMember
