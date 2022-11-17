@@ -18,12 +18,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionChecker
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionValidator
 
 @CordaSystemFlow
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
-    private val checker: ConsensualSignedTransactionChecker
+    private val checker: ConsensualSignedTransactionValidator
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {

@@ -14,7 +14,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionChecker
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionValidator
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -75,7 +75,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun receiveFinality(
         session: FlowSession,
-        checker: ConsensualSignedTransactionChecker
+        checker: ConsensualSignedTransactionValidator
     ): ConsensualSignedTransaction {
         val consensualReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
