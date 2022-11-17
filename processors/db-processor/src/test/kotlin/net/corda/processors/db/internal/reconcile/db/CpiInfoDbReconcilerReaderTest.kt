@@ -23,6 +23,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
@@ -105,7 +106,7 @@ class CpiInfoDbReconcilerReaderTest {
     @Test
     fun `doGetAllVersionedRecords converts db data to version records`() {
         val typeQuery = mock<TypedQuery<CpiMetadataEntity>>()
-        whenever(typeQuery.resultList).thenReturn(listOf(dummyCpiMetadataEntity))
+        whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
         val em = mock<EntityManager>()
         whenever(em.transaction).thenReturn(mock())
         whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
