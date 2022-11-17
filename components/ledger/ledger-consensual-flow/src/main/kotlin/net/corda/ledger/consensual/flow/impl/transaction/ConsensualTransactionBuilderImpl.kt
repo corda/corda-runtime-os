@@ -36,7 +36,7 @@ class ConsensualTransactionBuilderImpl(
         verifyIfReady()
         val tx = consensualSignedTransactionFactory.create(this, signatories)
         alreadySigned = true
-        return tx	
+        return tx
     }
 
     override fun equals(other: Any?): Boolean {

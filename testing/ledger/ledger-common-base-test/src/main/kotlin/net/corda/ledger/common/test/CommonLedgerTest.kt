@@ -3,6 +3,7 @@ package net.corda.ledger.common.test
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
@@ -19,8 +20,9 @@ abstract class CommonLedgerTest {
     val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val jsonMarshallingService = JsonMarshallingServiceImpl()
+    val jsonValidator = JsonValidatorImpl()
     val wireTransactionFactory = WireTransactionFactoryImpl(
-        merkleTreeProvider, digestService, jsonMarshallingService, cipherSchemeMetadata
+        merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator, cipherSchemeMetadata
     )
     val flowFiberService = TestFlowFiberServiceWithSerialization()
     val flowEngine = FlowEngineImpl(flowFiberService)
@@ -35,5 +37,5 @@ abstract class CommonLedgerTest {
         it.register(wireTransactionAMQPSerializer, it)
     }, cipherSchemeMetadata)
 
-    val wireTransactionExample = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
+    val wireTransactionExample = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
 }

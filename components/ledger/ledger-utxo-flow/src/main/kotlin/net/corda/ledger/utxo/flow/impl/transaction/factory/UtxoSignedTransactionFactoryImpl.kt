@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -10,7 +11,7 @@ import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.ledger.utxo.data.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
@@ -44,6 +45,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
 ) : UtxoSignedTransactionFactory,
     UsedByFlow,
     SingletonSerializeAsToken {
@@ -54,18 +57,17 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
         val metadata = transactionMetadataFactory.create(utxoMetadata())
-        val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray() // TODO(update with CORE-6890)
+        val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
-        val signaturesWithMetaData = signatories.map {
+        val signaturesWithMetadata = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
     }
 
@@ -83,8 +85,14 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
+        TransactionMetadata.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+        TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL
     )
+
+    private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =
+        jsonValidator
+            .canonicalize(jsonMarshallingService.format(metadata))
+            .toByteArray()
 
     @Suppress("ComplexMethod")
     private fun calculateComponentGroups(
@@ -127,9 +135,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             .map { componentGroupIndex ->
                 when (componentGroupIndex) {
                     UtxoComponentGroup.METADATA ->
-                        listOf(
-                            metadataBytes
-                        ) // TODO(update with CORE-6890)
+                        listOf(metadataBytes)
+
                     UtxoComponentGroup.NOTARY ->
                         notaryGroup.map { serializationService.serialize(it!!).bytes }
 

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.testkit
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.createExample
@@ -15,9 +16,10 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator,
     wireTransactionFactory: WireTransactionFactory
 ):UtxoSignedTransaction {
-    val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
+    val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)
     return create(wireTransaction, listOf(signatureWithMetadataExample))
 }
 
@@ -27,12 +29,14 @@ fun getUtxoSignedTransactionExample(
     merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator,
     transactionSignatureService: TransactionSignatureService
 ): UtxoSignedTransaction {
     val wireTransaction = getWireTransactionExample(
         digestService,
         merkleTreeProvider,
         jsonMarshallingService,
+        jsonValidator,
         utxoTransactionMetadataExample
     )
     return UtxoSignedTransactionImpl(
