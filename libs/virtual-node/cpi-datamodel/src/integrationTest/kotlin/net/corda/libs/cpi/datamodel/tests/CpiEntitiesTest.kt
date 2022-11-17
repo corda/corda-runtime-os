@@ -144,7 +144,7 @@ class CpiEntitiesIntegrationTest {
             CpiEntities.classes.toList(),
             dbConfig
         ).use { em ->
-            val  loadedCpiEntity = em.find(
+            val loadedCpiEntity = em.find(
                 CpiMetadataEntity::class.java,
                 CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
             )
@@ -334,6 +334,7 @@ class CpiEntitiesIntegrationTest {
             dbConfig
         )
 
+        val cpiNames = mutableListOf<String>()
         // Create CPIs First
         for (i in 0..1) {
             val cpiId = UUID.randomUUID()
@@ -355,6 +356,7 @@ class CpiEntitiesIntegrationTest {
                 cpkMetadataEntity to cpkData
             }
             val cpi = TestObject.createCpi(cpiId, cpks.keys)
+            cpiNames.add(cpi.name)
 
             emFactory.use { em ->
                 em.transaction {
@@ -376,7 +378,9 @@ class CpiEntitiesIntegrationTest {
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
         }
 
-        cpisEagerlyLoaded.forEach {
+        cpisEagerlyLoaded.filter {
+            it.name in cpiNames
+        }.forEach {
             assertThat(it.cpks.size).isEqualTo(2)
             it.cpks.forEach { cpkMetadataEntity ->
                 println("****       invoke metadata property ****")
@@ -391,7 +395,9 @@ class CpiEntitiesIntegrationTest {
             em.transaction {
                 val cpisLazyLoaded = em.findAllCpiMetadata()
 
-                cpisLazyLoaded.forEach {
+                cpisLazyLoaded.filter {
+                    it.name in cpiNames
+                }.forEach {
                     assertThat(it.cpks.size).isEqualTo(2)
                     it.cpks.forEach { cpkMetadataEntity ->
                         println("****       invoke metadata property ****")
