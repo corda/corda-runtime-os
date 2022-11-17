@@ -40,7 +40,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,
-                    responseFactory
+                    UtxoOutputRecordFactoryImpl(responseFactory)
                 )
             }
             is PersistTransaction -> {
@@ -49,7 +49,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,
                     persistenceService,
-                    responseFactory
+                    UtxoOutputRecordFactoryImpl(responseFactory)
                 )
             }
             else -> {
