@@ -18,7 +18,6 @@ import javax.persistence.OneToMany
 import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
-import kotlin.streams.asSequence
 
 /**
  * Cpi entity
@@ -146,9 +145,3 @@ fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
         CpiMetadataEntity::class.java
     ).resultList.stream()
 }
-
-/**
- * Extension to convert the stream to a list because Hibernate doesn't take all of the
- * cpks for some reason.  But this seems to work.`
- */
-fun Stream<CpiMetadataEntity>.toList(): List<CpiMetadataEntity> = asSequence().toList()
