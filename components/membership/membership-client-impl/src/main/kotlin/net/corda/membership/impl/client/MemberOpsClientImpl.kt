@@ -299,7 +299,9 @@ class MemberOpsClientImpl @Activate constructor(
 
                 val response: RegistrationStatusResponse = request.sendRequest()
                 val status = response.status
-                    ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
+                    ?: throw RegistrationProgressNotFoundException(
+                        "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
+                    )
                 return status.toDto()
             } catch (e: RegistrationProgressNotFoundException) {
                 throw e

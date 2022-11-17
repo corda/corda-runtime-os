@@ -27,16 +27,18 @@ class ConfigTests {
 
     @Test
     fun `can update config`() {
-        var currentValue = getReconConfigValue(defaults = true)
-        val newValue = (currentValue * 2)
+        val initialValue = getReconConfigValue(defaults = true)
+        val newValue = (initialValue * 2)
         updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
+        waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
 
         try {
-            currentValue = getReconConfigValue(defaults = false)
-            assertThat(currentValue).isEqualTo(newValue)
+            val updatedValue = getReconConfigValue(defaults = false)
+            assertThat(updatedValue).isEqualTo(newValue)
         } finally {
             // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to currentValue).toJsonString(), RECONCILIATION_CONFIG)
+            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to initialValue).toJsonString(), RECONCILIATION_CONFIG)
+            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, initialValue.toString(), false)
         }
     }
 

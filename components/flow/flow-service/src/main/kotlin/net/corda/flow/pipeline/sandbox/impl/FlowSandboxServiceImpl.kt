@@ -99,6 +99,8 @@ class FlowSandboxServiceImpl @Activate constructor(
         val nonInjectableSingletons = getNonInjectableSingletons(cleanupCordaSingletons)
         sandboxGroupContext.putObjectByKey(NON_INJECTABLE_SINGLETONS, nonInjectableSingletons)
 
+        // Build CorDapp serializers
+        // Current implementation has unique serializers per CPI
         val customSerializers = sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext)
 
         sandboxGroupContext.putObjectByKey(

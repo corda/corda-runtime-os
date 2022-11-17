@@ -76,7 +76,8 @@ abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode
         is CertificateCheckMode.NoCertificate -> null
         is CertificateCheckMode.CheckCertificate -> CertificateValidator(
             certificateCheckMode.revocationCheckMode,
-            certificateCheckMode.truststore
+            certificateCheckMode.truststore,
+            certificateCheckMode.revocationChecker
         )
     }
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())

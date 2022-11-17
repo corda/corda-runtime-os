@@ -224,7 +224,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if responder certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -273,7 +273,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if initiator certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -335,7 +335,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails for responder if initiator doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -381,7 +381,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails for initiator if responder doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,

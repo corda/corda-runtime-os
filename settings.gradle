@@ -16,12 +16,6 @@ pluginManagement {
             }
         } else {
             maven {
-                url "${artifactoryContextUrl}/corda-dev"
-                content {
-                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-                }
-            }
-            maven {
                 url "${artifactoryContextUrl}/corda-os-maven"
                 content {
                     includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
@@ -392,11 +386,15 @@ include 'testing:flow:external-events'
 include 'testing:flow:flow-utilities'
 include 'testing:layered-property-map-testkit'
 include 'testing:ledger:ledger-common-base-test'
+include 'testing:ledger:ledger-common-base-integration-test'
 include 'testing:ledger:ledger-common-testkit'
+include 'testing:ledger:ledger-common-empty-app'
 include 'testing:ledger:ledger-consensual-base-test'
 include 'testing:ledger:ledger-consensual-testkit'
+include 'testing:ledger:ledger-consensual-state-app'
 include 'testing:ledger:ledger-utxo-base-test'
 include 'testing:ledger:ledger-utxo-testkit'
+include 'testing:ledger:ledger-utxo-state-app'
 include 'testing:kryo-serialization-testkit'
 include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
@@ -405,6 +403,7 @@ include 'testing:packaging-test-utilities'
 include 'testing:persistence-testkit'
 include 'testing:sandboxes'
 include 'testing:sandboxes:test-api'
+include 'testing:sandboxes-testkit'
 include 'testing:security-manager-utilities'
 include 'testing:test-serialization'
 include 'testing:test-utilities'

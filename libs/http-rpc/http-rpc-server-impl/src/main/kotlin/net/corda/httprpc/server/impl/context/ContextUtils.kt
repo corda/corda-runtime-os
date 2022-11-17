@@ -113,7 +113,7 @@ internal object ContextUtils {
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
                     log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
-                    log.warn("Error invoking path '${this.fullPath}'.", e)
+                    log.info("Error invoking path '${this.fullPath}' - ${e.message}")
                     throw HttpExceptionMapper.mapToResponse(e)
                 } finally {
                     MDC.remove("http.method")
