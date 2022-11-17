@@ -2,6 +2,7 @@ package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -123,6 +124,125 @@ interface CertificatesRpcOps : RpcOps {
         )
         certificates: List<HttpFileUpload>,
     )
+
+    /**
+     * The [getCertificateAliases] method enables you to get the aliases of all the cluster level certificate chains.
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     */
+    @HttpRpcGET(
+        path = "cluster/{usage}",
+        description = "This method get the certificate chain aliases for a cluster."
+    )
+    fun getCertificateAliases(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+    ): List<String> = getCertificateAliases(
+        usage = usage,
+        holdingIdentityId = null,
+    )
+
+    /**
+     * The [getCertificateAliases] method enables you to get the virtual node certificate aliases..
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     */
+    @HttpRpcGET(
+        path = "vnode/{holdingIdentityId}/{usage}",
+        description = "This method get the certificate chain aliases for a virtual node."
+    )
+    fun getCertificateAliases(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcPathParameter(
+            description = "The certificate holding identity ID",
+        )
+        holdingIdentityId: String?,
+    ): List<String>
+
+    /**
+     * The [getCertificateChain] method enables you to get a specific certificate chain by alias in PEM format.
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param alias The unique certificate chain alias
+     */
+    @HttpRpcGET(
+        path = "cluster/{usage}/{alias}",
+        description = "This method get the certificate chain in PEM format for a cluster."
+    )
+    fun getCertificateChain(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcPathParameter(
+            description = "The certificate chain unique alias."
+        )
+        alias: String,
+    ): String? = getCertificateChain(
+        usage = usage,
+        alias = alias,
+        holdingIdentityId = null,
+    )
+
+    /**
+     * The [getCertificateAliases] method enables you to get the virtual node certificate chain in PEM format.
+     *
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param alias The unique certificate chain alias
+     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     */
+    @HttpRpcGET(
+        path = "vnode/{holdingIdentityId}/{usage}/{alias}",
+        description = "This method get the certificate chain aliases for a virtual node."
+    )
+    fun getCertificateChain(
+        @HttpRpcPathParameter(
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
+        )
+        usage: String,
+        @HttpRpcPathParameter(
+            description = "The certificate holding identity ID",
+        )
+        holdingIdentityId: String?,
+        @HttpRpcPathParameter(
+            description = "The certificate chain unique alias."
+        )
+        alias: String,
+    ): String
 
     /**
      * The [generateCsr] method enables you to generate a certificate signing request (CSR) for a tenant. The resulting

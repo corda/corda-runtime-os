@@ -7,7 +7,6 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.data.certificates.CertificateUsage
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
@@ -24,13 +23,11 @@ import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
-import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.jar.JarInputStream
 
-
 @Suppress("LongParameterList")
-class CpiValidatorImpl constructor(
+class CpiValidatorImpl(
     private val publisher: StatusPublisher,
     private val chunkPersistence: ChunkPersistence,
     private val cpiPersistence: CpiPersistence,
@@ -38,11 +35,15 @@ class CpiValidatorImpl constructor(
     private val membershipSchemaValidator: MembershipSchemaValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
-    private val certificatesService: CertificatesService,
-    private val clock: Clock
+    certificatesService: CertificatesService,
+    private val clock: Clock,
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
+    }
+
+    private val certificateExtractor by lazy {
+        CertificateExtractor(certificatesService)
     }
 
     override fun validate(requestId: RequestId): SecureHash {
@@ -54,7 +55,7 @@ class CpiValidatorImpl constructor(
         val fileInfo = assembleFileFromChunks(cpiCacheDir, chunkPersistence, requestId, ChunkReaderFactoryImpl)
 
         publisher.update(requestId, "Verifying CPI")
-        fileInfo.verifyCpi(getCerts(), requestId)
+        fileInfo.verifyCpi(certificateExtractor.getAllCertificates(), requestId)
 
         publisher.update(requestId, "Validating CPI")
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId)
@@ -108,19 +109,6 @@ class CpiValidatorImpl constructor(
     }
 
     /**
-     * Retrieves trusted certificates for packaging verification
-     */
-    private fun getCerts(): Collection<X509Certificate> {
-        val certs = certificatesService.retrieveAllCertificates(CertificateUsage.CODE_SIGNER, null)
-        if (certs.isEmpty()) {
-            log.warn("No trusted certificates for package validation found")
-            return emptyList()
-        }
-        val certificateFactory = CertificateFactory.getInstance("X.509")
-        return certs.map { certificateFactory.generateCertificate(it.byteInputStream()) as X509Certificate }
-    }
-
-    /**
      * Verifies CPI
      *
      * @throws ValidationException if CPI format > 1.0
@@ -142,7 +130,7 @@ class CpiValidatorImpl constructor(
             if (isCpiFormatV1()) {
                 log.warn("Error validating CPI. Ignoring error for format 1.0: ${ex.message}", ex)
             } else {
-                throw ValidationException("Error validating CPI.  ${ex.message}", requestId)
+                throw ValidationException("Error validating CPI.  ${ex.message}", requestId, ex)
             }
         }
     }
