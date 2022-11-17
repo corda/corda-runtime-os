@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp.tests
 
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -9,11 +10,11 @@ class WireTransactionSerializerTest: CommonLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a wireTransaction`() {
-        val serialised =  serializationOutput.serialize(wireTransaction, serializationContext)
+        val serialised =  serializationService.serialize(wireTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            deserializationInput.deserialize(serialised, serializationContext)
+            serializationService.deserialize(serialised, WireTransaction::class.java)
 
         assertThat(deserialized.javaClass.name).isEqualTo(
             "net.corda.ledger.common.data.transaction.WireTransaction"

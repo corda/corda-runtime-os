@@ -4,6 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.helper.createSerializerFactory
@@ -13,14 +14,13 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
-import net.corda.serialization.SerializationContext
-import net.corda.serialization.SerializationFactory
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.serialization.SerializationService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,13 +48,10 @@ abstract class CommonLedgerIntegrationTest {
     lateinit var sandboxGroupContext: SandboxGroupContext
     lateinit var jsonMarshallingService: JsonMarshallingService
     lateinit var jsonValidator: JsonValidator
-    lateinit var serializationFactory: SerializationFactory
-    lateinit var serializationOutput: SerializationOutput
-    lateinit var deserializationInput: DeserializationInput
     lateinit var wireTransactionFactory: WireTransactionFactory
     lateinit var wireTransaction: WireTransaction
     lateinit var kryoSerializer: CheckpointSerializer
-    lateinit var serializationContext: SerializationContext
+    lateinit var serializationService: SerializationService
 
     @BeforeAll
     fun setup(
@@ -82,9 +79,13 @@ abstract class CommonLedgerIntegrationTest {
         wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
         kryoSerializer = sandboxGroupContext.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
             ?: fail("No CheckpointSerializer in sandbox context")
-        serializationOutput = SerializationOutput(sandboxGroupContext.createSerializerFactory())
-        deserializationInput = DeserializationInput(sandboxGroupContext.createSerializerFactory())
-        serializationContext = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
+        serializationService = SerializationServiceImpl(
+            // Use different SerializerFactories for serializationOutput and deserializationInput to not let them share
+            // anything unintentionally
+            serializationOutput = SerializationOutput(sandboxGroupContext.createSerializerFactory()),
+            deserializationInput = DeserializationInput(sandboxGroupContext.createSerializerFactory()),
+            context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
+        )
 
         wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)
 

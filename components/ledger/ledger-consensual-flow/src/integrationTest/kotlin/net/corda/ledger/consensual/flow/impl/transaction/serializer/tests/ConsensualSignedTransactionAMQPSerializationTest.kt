@@ -10,10 +10,10 @@ class ConsensualSignedTransactionAMQPSerializationSandboxTest: ConsensualLedgerI
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a Consensual Signed Transaction - via sandbox serializer`() {
-        val serialised = serializationOutput.serialize(consensualSignedTransaction, serializationContext)
+        val serialised = serializationService.serialize(consensualSignedTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
-        val deserialized = deserializationInput.deserialize(serialised, serializationContext)
+        val deserialized = serializationService.deserialize(serialised, ConsensualSignedTransaction::class.java)
 
         assertThat(deserialized.javaClass.name)
             .isEqualTo("net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl")
