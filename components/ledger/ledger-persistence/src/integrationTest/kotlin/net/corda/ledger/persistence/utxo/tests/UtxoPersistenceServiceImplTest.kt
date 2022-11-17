@@ -1,18 +1,19 @@
-package net.corda.ledger.persistence.utxo.tests.datamodel
+package net.corda.ledger.persistence.utxo.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
+import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -64,6 +65,7 @@ class UtxoPersistenceServiceImplTest {
 
     private lateinit var persistenceService: UtxoPersistenceService
     private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var jsonValidator: JsonValidator
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var digestService: DigestService
     private lateinit var serializationService: SerializationService
@@ -94,6 +96,7 @@ class UtxoPersistenceServiceImplTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
+            jsonValidator = ctx.getSandboxSingletonService()
             digestService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
@@ -271,14 +274,9 @@ class UtxoPersistenceServiceImplTest {
                 "$seed-fileChecksum3"
             )
         )
-        val transactionMetadata = TransactionMetadata(
-            linkedMapOf<String, Any>().apply {
-                put(TransactionMetadata.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
-                put(TransactionMetadata.CPK_METADATA_KEY, cpks)
-            }
-        )
+        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(transactionMetadata).toByteArray()),
+            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )
