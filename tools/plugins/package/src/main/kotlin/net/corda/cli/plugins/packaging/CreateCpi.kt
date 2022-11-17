@@ -29,7 +29,7 @@ private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
 
 private const val CPI_EXTENSION = ".cpi"
 
-private const val STANDARD_INPUT_ARGUMENT = "-"
+private const val READ_FROM_STDIN = "-"
 
 /**
  * Creates a CPI from a CPB and GroupPolicy.json file.
@@ -68,7 +68,7 @@ class CreateCpi : Runnable {
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
-        val groupPolicyString = if (groupPolicyFileName == STANDARD_INPUT_ARGUMENT)
+        val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
