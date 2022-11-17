@@ -31,7 +31,7 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     // TODO CORE-7945 This should not be included as a CorDapp
-    cordapp project(":notary-plugins:notary-plugin-common")
+    implementation project(":notary-plugins:notary-plugin-common")
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

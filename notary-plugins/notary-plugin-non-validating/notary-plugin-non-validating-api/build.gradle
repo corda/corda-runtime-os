@@ -29,7 +29,7 @@ dependencies {
     cordaProvided 'org.slf4j:slf4j-api'
 
     // TODO CORE-7945 This should not be included as a CorDapp
-    cordapp project(":notary-plugins:notary-plugin-common")
+    implementation project(":notary-plugins:notary-plugin-common")
 
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 }
