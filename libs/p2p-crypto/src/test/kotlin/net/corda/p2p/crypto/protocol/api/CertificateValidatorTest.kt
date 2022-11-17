@@ -108,14 +108,4 @@ class CertificateValidatorTest {
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
-
-    @Test
-    fun `if public key in certificate does not match the expected public key validation fails`() {
-        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it == 0 }) //Set key usage bit
-        val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
-        )
-        val differentPublicKey = mock<PublicKey>()
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, differentPublicKey) }
-    }
 }

@@ -19,6 +19,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
+import java.util.*
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
@@ -59,8 +60,11 @@ class CertificateValidator(
     }
 
     private fun validatePublicKey(certificate: X509Certificate, expectedPublicKey: PublicKey) {
-        if (certificate.publicKey != expectedPublicKey) {
-            throw InvalidPeerCertificate("The certificate does not contain the expected public key: $expectedPublicKey.", certificate)
+        if (!certificate.publicKey.encoded.contentEquals(expectedPublicKey.encoded)) {
+            throw InvalidPeerCertificate(
+                "The certificate does not contain the expected public key: ${expectedPublicKey.encoded.toBase64()}",
+                certificate
+            )
         }
     }
 
@@ -125,5 +129,9 @@ class CertificateValidator(
 
     private fun CertPath.toX509(): Array<X509Certificate?> {
         return this.certificates.map { it as? X509Certificate }.toTypedArray()
+    }
+
+    private fun ByteArray.toBase64(): String {
+        return Base64.getEncoder().encodeToString(this)
     }
 }
