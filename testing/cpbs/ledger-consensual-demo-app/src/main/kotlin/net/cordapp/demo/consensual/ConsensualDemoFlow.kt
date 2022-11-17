@@ -73,7 +73,7 @@ class ConsensualDemoFlow : RPCStartableFlow {
                 .toSignedTransaction(myInfo.ledgerKeys.first())
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
-            val finalizedSignedTransaction = consensualLedgerService.finality(
+            val finalizedSignedTransaction = consensualLedgerService.finalize(
                 signedTransaction,
                 sessions
             )

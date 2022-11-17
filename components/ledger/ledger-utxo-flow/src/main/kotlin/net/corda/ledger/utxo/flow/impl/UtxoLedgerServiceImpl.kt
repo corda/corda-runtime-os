@@ -46,7 +46,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun finality(
+    override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
     ): UtxoSignedTransaction {

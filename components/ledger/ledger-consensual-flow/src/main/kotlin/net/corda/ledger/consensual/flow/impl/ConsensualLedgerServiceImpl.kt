@@ -54,7 +54,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
 
 
     @Suspendable
-    override fun finality(
+    override fun finalize(
         signedTransaction: ConsensualSignedTransaction,
         sessions: List<FlowSession>
     ): ConsensualSignedTransaction {
