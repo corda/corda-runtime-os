@@ -18,12 +18,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionValidator
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 
 @CordaSystemFlow
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
-    private val validator: ConsensualSignedTransactionValidator
+    private val validator: ConsensualTransactionValidator
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -105,7 +105,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
-            validator.checkTransaction(signedTransaction)
+            validator.checkTransaction(signedTransaction.toLedgerTransaction()) // TODO not suspendable...
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
