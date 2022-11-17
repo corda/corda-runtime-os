@@ -5,8 +5,6 @@ import net.corda.flow.application.crypto.external.events.CreateSignatureExternal
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.KeyEncodingService
