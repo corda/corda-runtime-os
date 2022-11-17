@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.reader
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -41,7 +40,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.time.Instant
-import java.util.stream.Collectors
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 class GroupParametersReaderServiceImplTest {
     private companion object {
@@ -251,7 +250,7 @@ class GroupParametersReaderServiceImplTest {
         fun `calling get all returns versioned records as expected`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
-            val versionedRecords = groupParametersReaderService.getAllVersionedRecords()?.collect(Collectors.toList())
+            val versionedRecords = groupParametersReaderService.getAllVersionedRecords()
             assertThat(versionedRecords?.size).isEqualTo(2)
 
             with(versionedRecords?.first { it.key == alice }) {

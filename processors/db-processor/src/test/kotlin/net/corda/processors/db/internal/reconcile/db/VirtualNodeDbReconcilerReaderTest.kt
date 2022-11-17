@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
-import kotlin.streams.toList
+import java.util.*
 
 class VirtualNodeDbReconcilerReaderTest {
     companion object {
@@ -61,7 +60,7 @@ class VirtualNodeDbReconcilerReaderTest {
     fun `can convert db vnode to corda vnode`() {
         val entities = listOf(mockVirtualNodeEntity())
 
-        val versionedRecords = virtualNodeEntitiesToVersionedRecords(entities.stream())
+        val versionedRecords = virtualNodeEntitiesToVersionedRecords(entities)
         val record = versionedRecords.toList().single()
 
         val expectedKey = createTestHoldingIdentity(x500name, groupId)
