@@ -15,13 +15,13 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 @Component(
-    service = [ DigitalSignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    service = [ DigitalSignatureVerificationService::class, UsedByFlow::class ],
     scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService
-) : DigitalSignatureVerificationService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
+) : DigitalSignatureVerificationService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun verify(
