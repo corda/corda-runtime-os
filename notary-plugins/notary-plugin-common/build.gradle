@@ -18,7 +18,6 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    compileOnly 'org.osgi:osgi.annotation'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-notary-plugin'
