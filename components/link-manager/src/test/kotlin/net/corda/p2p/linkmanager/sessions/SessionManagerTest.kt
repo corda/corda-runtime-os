@@ -40,12 +40,11 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.GroupPolicyListener
-import net.corda.p2p.linkmanager.HostingMapListener
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.PendingSessionMessageQueues
+import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.p2p.linkmanager.hosting.HostingMapListener
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
