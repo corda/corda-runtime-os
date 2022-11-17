@@ -71,6 +71,7 @@ fun updateConfig(config: String, section: String) {
  * Wait for the REST API on the rpc-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
+@Suppress("")
 fun waitForConfigurationChange(section: String, key: String, value: String, expectServiceToBeDown: Boolean = true, timeout: Duration = Duration
     .ofMinutes(1)) {
     cluster {
@@ -90,7 +91,19 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
             timeout(timeout)
             command { getConfig(section) }
             condition {
+                if (it == null) {
+                    fail<String>("Simple response is null")
+                }
+                if (it.body == null) {
+                    fail<String>("body is null, response code: ${it.code}")
+                }
                 val bodyJSON = it.body.toJson()
+                if (bodyJSON["sourceConfig"] == null) {
+                    fail<String>("sourceConfig is null, Config is ${bodyJSON.textValue()}, response code: ${it.code}")
+                }
+                if (bodyJSON.sourceConfigNode()[key] == null) {
+                    fail<String>("Config is ${bodyJSON.textValue()}, however no key present, response code: ${it.code}")
+                }
                 it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
                         && bodyJSON.sourceConfigNode()[key] != null
                         && bodyJSON.sourceConfigNode()[key].toString() == value
