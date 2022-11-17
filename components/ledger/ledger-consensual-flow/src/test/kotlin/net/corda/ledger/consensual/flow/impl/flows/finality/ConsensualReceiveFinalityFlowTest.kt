@@ -1,10 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -70,6 +72,9 @@ class ConsensualReceiveFinalityFlowTest {
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
         whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
+
+        whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
+        whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
