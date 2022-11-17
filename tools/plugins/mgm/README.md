@@ -101,7 +101,7 @@ Running `setupCluster` with the name of the clusters to create. For example:
 ```shell
 ./corda-cli.sh mgm setupCluster demo-cluster-one demo-cluster-two
 ```
-By default, it will use the latest released tag. Change it using the `--baseImage` option. It will delete any
+By default, it will use the latest released tag. Change it using the `--base-image` option. It will delete any
 existing cluster with that name. Use the `--help` to view all the other options.
 
 # Onboard a member to an existing Corda cluster

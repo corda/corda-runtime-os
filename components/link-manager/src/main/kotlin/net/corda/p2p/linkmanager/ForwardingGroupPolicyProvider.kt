@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.utils.convertToKeyStore
+import net.corda.crypto.utils.PemCertificate
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -15,7 +15,6 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.security.KeyStore
 import java.security.cert.CertificateFactory
 
 @Suppress("LongParameterList")
@@ -81,10 +80,8 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let {
-            convertToKeyStore(certificateFactory, it, "session") ?: return null
-        }
-        validateTrustStoreUsingPkiMode(sessionTrustStore, sessionPkiMode, holdingIdentity)
+        val sessionTrustStorePem = groupPolicy.p2pParameters.sessionTrustRoots?.toList()
+        validateTrustStoreUsingPkiMode(sessionTrustStorePem, sessionPkiMode, holdingIdentity)
 
         return GroupPolicyListener.GroupInfo(
             holdingIdentity,
@@ -92,12 +89,12 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
             protocolModes,
             trustedCertificates,
             sessionPkiMode,
-            sessionTrustStore
+            sessionTrustStorePem
         )
     }
 
     private fun validateTrustStoreUsingPkiMode(
-        sessionTrustStore: KeyStore?,
+        sessionTrustStore: List<PemCertificate>?,
         sessionPkiMode: P2PParameters.SessionPkiMode,
         holdingIdentity: HoldingIdentity
     ) {
