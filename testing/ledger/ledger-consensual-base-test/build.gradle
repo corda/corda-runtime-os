@@ -11,5 +11,6 @@ dependencies {
     api project(':testing:ledger:ledger-consensual-testkit')
 
     implementation project(':components:ledger:ledger-consensual-flow')
+    implementation project(":libs:serialization:json-validator")
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

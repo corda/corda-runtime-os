@@ -1,8 +1,11 @@
-package com.r3.corda.notary.plugin.nonvalidating
+package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.toNotarisationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
+import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
+import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -11,20 +14,24 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
+import java.lang.IllegalStateException
 
 /**
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
+// TODO CORE-7249 Currently we need to `spy` this flow because some of the logic is missing and we need to "mock" it.
+//  Mockito needs the class the be open to spy it. We need to remove `open` qualifier when we have an actual logic.
 @InitiatedBy(protocol = "non-validating-notary")
-class NonValidatingNotaryServerFlowImpl : ResponderFlow {
+open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
     private lateinit var clientService: LedgerUniquenessCheckerClientService
@@ -39,7 +46,23 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
     private lateinit var memberLookup: MemberLookup
 
     private companion object {
-        val logger: Logger = contextLogger()
+        val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
+    }
+
+    /**
+     * Constructor used for testing to initialize the necessary services
+     */
+    @VisibleForTesting
+    internal constructor(
+        clientService: LedgerUniquenessCheckerClientService,
+        serializationService: SerializationService,
+        signatureVerifier: DigitalSignatureVerificationService,
+        memberLookup: MemberLookup
+    ) : this() {
+        this.clientService = clientService
+        this.serializationService = serializationService
+        this.signatureVerifier = signatureVerifier
+        this.memberLookup = memberLookup
     }
 
     /**
@@ -56,54 +79,65 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
      */
     @Suspendable
     override fun call(session: FlowSession) {
-        val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
+        try {
+            val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
 
-        val txDetails = validateRequest(session, requestPayload)
-        val request = NotarisationRequest(txDetails.inputs, txDetails.id)
+            val txDetails = validateRequest(session, requestPayload)
+            val request = NotarisationRequest(txDetails.inputs, txDetails.id)
 
-        // TODO This shouldn't ever fail but should add an error handling
-        // TODO Discuss this with MGM team but should we able to look up members by X500 name?
-        val otherMemberInfo = memberLookup.lookup(session.counterparty)!!
-        val otherParty = Party(session.counterparty, otherMemberInfo.sessionInitiationKey)
+            // TODO This shouldn't ever fail but should add an error handling
+            // TODO Discuss this with MGM team but should we able to look up members by X500 name?
+            val otherMemberInfo = memberLookup.lookup(session.counterparty)!!
+            val otherParty = Party(session.counterparty, otherMemberInfo.sessionInitiationKey)
 
-        validateRequestSignature(
-            request,
-            otherParty,
-            serializationService,
-            signatureVerifier,
-            requestPayload.requestSignature
-        )
+            validateRequestSignature(
+                request,
+                otherParty,
+                serializationService,
+                signatureVerifier,
+                requestPayload.requestSignature
+            )
 
-        verifyTransaction(requestPayload)
+            verifyTransaction(requestPayload)
 
-        val uniquenessResponse = clientService.requestUniquenessCheck(
-            txDetails.id.toString(),
-            txDetails.inputs.map { it.toString() },
-            txDetails.references.map { it.toString() },
-            txDetails.numOutputs,
+            val uniquenessResponse = clientService.requestUniquenessCheck(
+                txDetails.id.toString(),
+                txDetails.inputs.map { it.toString() },
+                txDetails.references.map { it.toString() },
+                txDetails.numOutputs,
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
 
-            // TODO CORE-7251 LedgerTransaction has a non-nullable time window
-            //  but the lower bound should be nullable
-            txDetails.timeWindow.from,
-            txDetails.timeWindow.until
-        )
+            logger.debug {
+                "Uniqueness check completed for transaction with Tx [${txDetails.id}], " +
+                        "result is: ${uniquenessResponse.result}"
+            }
 
-        logger.debug {
-            "Uniqueness check completed for transaction with Tx [${txDetails.id}], " +
-                    "result is: ${uniquenessResponse.result}"
+            session.send(uniquenessResponse.toNotarisationResponse())
+        } catch (e: Exception) {
+            logger.warn("Error while processing request from client. Cause: $e")
+            session.send(NotarisationResponse(
+                emptyList(),
+                NotaryErrorGeneralImpl("Error while processing request from client. Reason: ${e.message}", e)
+            ))
         }
-
-        session.send(uniquenessResponse.toNotarisationResponse())
     }
 
     /**
      * This function will validate the request payload received from the notary client.
      *
+     * @throws IllegalStateException if the request could not be validated.
+     *
      * TODO CORE-7249 This function doesn't do much now since we cannot pre-validate anymore, should we remove this?
      */
+    @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    private fun validateRequest(otherSideSession: FlowSession,
-                                requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
+    //  order to be mockable (via spy).
+    internal open fun validateRequest(otherSideSession: FlowSession,
+                                      requestPayload: NonValidatingNotarisationPayload
+    ): NonValidatingNotaryTransactionDetails {
 
         val transactionParts = extractParts(requestPayload)
         logger.debug {
@@ -137,6 +171,8 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
     /**
      * A non-validating plugin specific verification logic.
      *
+     * @throws IllegalStateException if the transaction could not be verified.
+     *
      * TODO CORE-7249 This function is not doing anything for now, as FilteredTransaction doesn't exist
      *  and that's the only verification logic we need in the plugin server.
      */
@@ -147,5 +183,7 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
         "ThrowsCount",
         "Unused_Parameter" // TODO CORE-7249 Remove once this function is actually utilised
     )
-    private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {}
+    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
+    //  order to be mockable (via spy).
+    internal open fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {}
 }

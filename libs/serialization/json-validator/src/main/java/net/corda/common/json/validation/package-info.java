@@ -1,4 +1,4 @@
 @Export
-package com.r3.corda.notary.plugin.nonvalidating;
+package net.corda.common.json.validation;
 
 import org.osgi.annotation.bundle.Export;

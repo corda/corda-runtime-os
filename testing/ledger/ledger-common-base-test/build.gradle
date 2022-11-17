@@ -16,6 +16,7 @@ dependencies {
     api project(':testing:test-serialization')
     api project(':components:flow:flow-service')
 
+    implementation project(":libs:serialization:json-validator")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
 }

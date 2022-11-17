@@ -1,5 +1,6 @@
 package net.corda.ledger.common.integration.test
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
@@ -45,6 +46,7 @@ abstract class CommonLedgerIntegrationTest {
     lateinit var flowSandboxService: FlowSandboxService
     lateinit var sandboxGroupContext1: SandboxGroupContext
     lateinit var jsonMarshallingService: JsonMarshallingService
+    lateinit var jsonValidator: JsonValidator
     lateinit var sandboxSerializationService1: SerializationService
     lateinit var sandboxSerializationService2: SerializationService
     lateinit var wireTransactionFactory: WireTransactionFactory
@@ -78,6 +80,7 @@ abstract class CommonLedgerIntegrationTest {
         setup.withCleanup { virtualNode2.unloadSandbox(sandboxGroupContext2) }
 
         jsonMarshallingService = sandboxGroupContext1.getSandboxSingletonService()
+        jsonValidator = sandboxGroupContext1.getSandboxSingletonService()
         wireTransactionFactory = sandboxGroupContext1.getSandboxSingletonService()
         kryoSerializer = sandboxGroupContext1.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
             ?: fail("No CheckpointSerializer in sandbox context")
@@ -86,6 +89,6 @@ abstract class CommonLedgerIntegrationTest {
         sandboxSerializationService2 = sandboxGroupContext2.getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
             ?: fail("No Serializer in sandbox context")
 
-        wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService)
+        wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)
     }
 }

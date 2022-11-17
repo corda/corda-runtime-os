@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction.factory
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -43,6 +44,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -51,8 +54,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata = transactionMetadataFactory.create(consensualMetadata())
-        val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray() // TODO(update with CORE-6890)
+        val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
         val signaturesWithMetaData = signatories.map {
@@ -82,6 +84,11 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
     )
+
+    private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =
+        jsonValidator
+            .canonicalize(jsonMarshallingService.format(metadata))
+            .toByteArray()
 
     private fun calculateComponentGroups(
         consensualTransactionBuilder: ConsensualTransactionBuilder,

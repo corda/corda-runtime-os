@@ -48,6 +48,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-notary-plugin'
 
     runtimeOnly 'net.corda:corda-ledger-consensual'
 

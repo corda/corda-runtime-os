@@ -57,7 +57,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             .sign(publicKeyExample) as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
-        assertEquals("0.001", metadata.getLedgerVersion())
+        assertEquals(1, metadata.getLedgerVersion())
 
         val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",

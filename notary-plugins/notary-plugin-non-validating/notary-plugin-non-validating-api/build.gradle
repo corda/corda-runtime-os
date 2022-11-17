@@ -5,9 +5,10 @@ plugins {
 
 description 'Corda Non-Validating Notary Plugin API'
 
+group 'com.r3.corda.notary.plugin.nonvalidating'
+
 cordapp {
-    targetPlatformVersion 1000
-    minimumPlatformVersion 999
+    targetPlatformVersion platformVersion as Integer
     workflow {
         name "Corda Non-Validating Notary - API"
         versionId 1
@@ -16,13 +17,19 @@ cordapp {
 }
 
 dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-notary-plugin'
     cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    cordaProvided "org.osgi:osgi.core"
     cordaProvided 'org.slf4j:slf4j-api'
 
-    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    // TODO CORE-7945 This should not be included as a CorDapp
+    cordapp project(":notary-plugins:notary-plugin-common")
 
-    cordaProvided project(":notary-plugins:notary-plugin-common")
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 }
