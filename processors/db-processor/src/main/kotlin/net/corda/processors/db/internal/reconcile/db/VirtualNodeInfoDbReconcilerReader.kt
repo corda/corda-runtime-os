@@ -10,7 +10,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import java.time.Instant
-import java.util.stream.Stream
 import javax.persistence.EntityManager
 
 /**
