@@ -32,7 +32,7 @@ class ConsensualTransactionVerification {
 
         fun verifySignatoriesConsistent(tx: ConsensualLedgerTransaction) {
             val requiredSignatoriesFromStates = tx.states
-                .flatMap { it.participants }.distinct().toSet()
+                .flatMap { it.participants }.toSet()
             require(tx.requiredSignatories == requiredSignatoriesFromStates) {
                 "Deserialized required signatories from WireTx do not match with the ones derived from the states."
             }
