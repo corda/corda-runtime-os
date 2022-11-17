@@ -1,6 +1,0 @@
-{
-  "fileFormatVersion" : 1,
-  "groupId" : "CREATE_ID",
-  "registrationProtocol" :"net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-  "synchronisationProtocol": "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
-}

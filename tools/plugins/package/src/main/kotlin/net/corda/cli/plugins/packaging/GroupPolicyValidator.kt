@@ -11,10 +11,9 @@ internal object GroupPolicyValidator {
      * Validates group policy against schema.
      */
     fun validateGroupPolicy(groupPolicyString: String)  {
-        val membershipSchemaValidator = MembershipSchemaValidatorImpl(MembershipSchemaProviderFactory.getSchemaProvider())
-
         val fileFormatVersion = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
 
+        val membershipSchemaValidator = MembershipSchemaValidatorImpl(MembershipSchemaProviderFactory.getSchemaProvider())
         membershipSchemaValidator.validateGroupPolicy(
             MembershipSchema.GroupPolicySchema.Default,
             Version(fileFormatVersion, 0),

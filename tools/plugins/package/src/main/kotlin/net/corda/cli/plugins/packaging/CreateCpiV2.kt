@@ -42,6 +42,8 @@ internal val CPI_VERSION_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Version")
 
 internal val CPI_UPGRADE_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Upgrade")
 
+private const val STANDARD_INPUT_ARGUMENT = "-"
+
 /**
  * Creates a CPI v2 from a CPB and GroupPolicy.json file.
  */
@@ -88,7 +90,7 @@ class CreateCpiV2 : Runnable {
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
-        val groupPolicyString = if (groupPolicyFileName == "-")
+        val groupPolicyString = if (groupPolicyFileName == STANDARD_INPUT_ARGUMENT)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
@@ -189,9 +191,7 @@ class CreateCpiV2 : Runnable {
      */
     private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
-
-        groupPolicy.byteInputStream().copyTo(cpiJar)
-
+        cpiJar.write(groupPolicy.toByteArray())
         cpiJar.closeEntry()
     }
 }

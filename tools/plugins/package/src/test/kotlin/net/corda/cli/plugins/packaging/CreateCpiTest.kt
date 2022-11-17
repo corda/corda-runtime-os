@@ -43,8 +43,6 @@ class CreateCpiTest {
     private lateinit var app: CreateCpi
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
-    private val mgmGroupPolicy = Path.of(this::class.java.getResource("/MgmGroupPolicy.json")?.toURI()
-        ?: error("MgmGroupPolicy.json not found"))
     private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
         ?: error("InvalidTestGroupPolicy.json not found"))
     private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
@@ -142,29 +140,7 @@ class CreateCpiTest {
     }
 
     @Test
-    fun `cpi create tool handles MGM group policy correctly`() {
-        val outputFile = tmpOutputFile()
-
-        val errText = captureStdErr {
-            CommandLine(app).execute(
-                "--cpb=${testCpb}",
-                "--group-policy=${mgmGroupPolicy}",
-                "--file=$outputFile",
-                "--keystore=${testKeyStore}",
-                "--storepass=keystore password",
-                "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
-            )
-        }
-
-        // Expect output to be silent on success
-        assertEquals("", errText)
-
-        checkCpi(outputFile)
-    }
-
-    @Test
-    fun `cpi create tool test group policy argument`() {
+    fun `cpi create tool handles group policy passed through standard input`() {
         val outputFile = tmpOutputFile()
         val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
 

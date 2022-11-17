@@ -51,8 +51,6 @@ class CreateCpiV2Test {
 
         private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
             ?: error("TestGroupPolicy.json not found"))
-        private val mgmGroupPolicy = Path.of(this::class.java.getResource("/MgmGroupPolicy.json")?.toURI()
-            ?: error("MgmGroupPolicy.json not found"))
         private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
             ?: error("InvalidTestGroupPolicy.json not found"))
         private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
@@ -134,42 +132,7 @@ class CreateCpiV2Test {
     }
 
     @Test
-    fun `cpi create tool handles MGM group policy correctly`() {
-        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
-
-        val errText = TestUtils.captureStdErr {
-            CommandLine(CreateCpiV2()).execute(
-                "--cpb=${cpbPath}",
-                "--group-policy=${mgmGroupPolicy}",
-                "--cpi-name=testCpi",
-                "--cpi-version=5.0.0.0-SNAPSHOT",
-                "--file=$outputFile",
-                "--keystore=${testKeyStore}",
-                "--storepass=keystore password",
-                "--key=${SIGNING_KEY_1_ALIAS}",
-                "--sig-file=$CPI_SIGNER_NAME"
-            )
-        }
-
-        // Expect output to be silent on success
-        Assertions.assertEquals("", errText)
-
-        assertTrue(
-            jarEntriesExistInCpx(
-                outputFile,
-                listOf(
-                    "META-INF/MANIFEST.MF",
-                    "META-INF/$CPI_SIGNER_NAME.SF",
-                    "META-INF/$CPI_SIGNER_NAME.EC",
-                    "META-INF/GroupPolicy.json",
-                    cpbPath.fileName.toString()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun `cpi create tool test group policy argument`() {
+    fun `cpi create tool handles group policy passed through standard input`() {
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
         val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
 
