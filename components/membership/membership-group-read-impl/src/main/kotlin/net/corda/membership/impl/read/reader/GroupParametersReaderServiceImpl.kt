@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -11,6 +12,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.read.cache.MemberDataCache
@@ -18,6 +20,7 @@ import net.corda.membership.impl.read.subscription.GroupParametersProcessor
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
@@ -63,19 +66,16 @@ class GroupParametersReaderServiceImpl internal constructor(
         val logger = contextLogger()
         val serviceName = GroupParametersReaderService::class.java.simpleName
         const val CONSUMER_GROUP = "GROUP_PARAMETERS_READER"
+
+        private const val SUBSCRIPTION_RESOURCE = "GroupParametersReaderService.SUBSCRIPTION_RESOURCE"
+        private const val CONFIG_HANDLE = "GroupParametersReaderService.CONFIG_HANDLE"
+        private const val COMPONENT_HANDLE = "GroupParametersReaderService.COMPONENT_HANDLE"
     }
 
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<GroupParametersReaderService>()
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     private var impl: InnerGroupParametersReaderService = InactiveImpl
-
-    // for watching the dependencies
-    private var dependencyHandle: RegistrationHandle? = null
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-    // for watching the state of the subscription
-    private var subscriptionHandle: RegistrationHandle? = null
 
     private var groupParamsSubscription: CompactedSubscription<String, GroupParametersAvro>? = null
 
@@ -150,31 +150,24 @@ class GroupParametersReaderServiceImpl internal constructor(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> handleConfigChange(event)
+            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
         logger.info("Handling start event.")
-        dependencyHandle?.close()
-        dependencyHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        coordinator.createManagedResource(COMPONENT_HANDLE) {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                )
             )
-        )
+        }
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         logger.info("Handling stop event.")
         deactivate(coordinator, "Component received stop event.")
-        dependencyHandle?.close()
-        dependencyHandle = null
-        subscriptionHandle?.close()
-        subscriptionHandle = null
-        configHandle?.close()
-        configHandle = null
-        groupParamsSubscription?.close()
-        groupParamsSubscription = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -182,39 +175,78 @@ class GroupParametersReaderServiceImpl internal constructor(
         coordinator: LifecycleCoordinator,
     ) {
         logger.info("Handling registration changed event.")
+        val subHandle = coordinator.getManagedResource<MembershipSubscriptionAndRegistration>(
+            SUBSCRIPTION_RESOURCE
+        )?.registrationHandle
+        if (event.registration == subHandle) {
+            handleSubscriptionRegistrationChange(event, coordinator)
+        } else {
+            handleDependencyRegistrationChange(event, coordinator)
+        }
+    }
+
+    private fun handleDependencyRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                if (event.registration == dependencyHandle) {
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
+                coordinator.createManagedResource(CONFIG_HANDLE) {
+                    configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                } else if (event.registration == subscriptionHandle) {
-                    activate(coordinator)
                 }
             }
             else -> {
-                deactivate(coordinator, "Dependencies are down.")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE))
             }
         }
     }
 
-    private fun handleConfigChange(event: ConfigChangedEvent) {
+    private fun handleSubscriptionRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        when (event.status) {
+            LifecycleStatus.UP -> coordinator.updateStatus(LifecycleStatus.UP)
+            else -> coordinator.updateStatus(LifecycleStatus.DOWN, "Subscription is DOWN.")
+        }
+    }
+
+    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling config changed event.")
-        subscriptionHandle?.close()
-        subscriptionHandle = null
-        groupParamsSubscription?.close()
-        groupParamsSubscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(
-                CONSUMER_GROUP,
-                GROUP_PARAMETERS_TOPIC
-            ),
-            GroupParametersProcessor(groupParametersCache, groupParametersFactory),
-            event.config.getConfig(MESSAGING_CONFIG)
-        ).also {
-            it.start()
-            subscriptionHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+        recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
+
+        if (coordinator.status != LifecycleStatus.UP) {
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+    }
+
+    private fun recreateSubscription(coordinator: LifecycleCoordinator, config: SmartConfig) {
+        logger.info("Recreating subscription.")
+        coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
+            val subscription = subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, GROUP_PARAMETERS_TOPIC),
+                GroupParametersProcessor(groupParametersCache, groupParametersFactory),
+                config
+            )
+            subscription.start()
+            val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
+            MembershipSubscriptionAndRegistration(subscription, handle)
+        }
+    }
+
+    private class MembershipSubscriptionAndRegistration(
+        val subscription: Subscription<String, GroupParametersAvro>,
+        val registrationHandle: RegistrationHandle
+    ) : Resource {
+        override fun close() {
+            // The close order here is important - closing the subscription first can result in spurious lifecycle
+            // events being posted.
+            registrationHandle.close()
+            subscription.close()
         }
     }
 }

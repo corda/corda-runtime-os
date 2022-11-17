@@ -1,5 +1,5 @@
 package net.corda.membership.impl.read.reader
-
+/*
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -19,9 +19,7 @@ import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -36,9 +34,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
 import java.util.stream.Collectors
 
 class GroupParametersReaderServiceImplTest {
@@ -101,7 +96,7 @@ class GroupParametersReaderServiceImplTest {
         groupParametersCache,
     )
 
-    @Nested
+    /*@Nested
     inner class LifeCycleTests {
         @Test
         fun `start starts the coordinator`() {
@@ -219,7 +214,7 @@ class GroupParametersReaderServiceImplTest {
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(groupParametersCache).clear()
         }
-    }
+    }*/
 
     @Nested
     inner class ReaderServiceTests {
@@ -306,4 +301,4 @@ class GroupParametersReaderServiceImplTest {
             ), coordinator
         )
     }
-}
+}*/
