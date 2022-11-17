@@ -1,9 +1,6 @@
 package net.corda.cipher.suite.impl
 
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
-import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -14,7 +11,6 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
