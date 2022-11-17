@@ -23,7 +23,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVal
 @CordaSystemFlow
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
-    private val checker: ConsensualSignedTransactionValidator
+    private val validator: ConsensualSignedTransactionValidator
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -105,7 +105,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
-            checker.checkTransaction(signedTransaction)
+            validator.checkTransaction(signedTransaction)
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.

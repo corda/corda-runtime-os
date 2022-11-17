@@ -75,11 +75,11 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun receiveFinality(
         session: FlowSession,
-        checker: ConsensualSignedTransactionValidator
+        validator: ConsensualSignedTransactionValidator
     ): ConsensualSignedTransaction {
         val consensualReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualReceiveFinalityFlow(session, checker)
+                ConsensualReceiveFinalityFlow(session, validator)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
