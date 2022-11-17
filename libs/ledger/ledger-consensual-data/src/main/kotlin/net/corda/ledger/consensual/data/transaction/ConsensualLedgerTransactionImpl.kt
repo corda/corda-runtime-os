@@ -21,10 +21,10 @@ class ConsensualLedgerTransactionImpl(
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroup.TIMESTAMP.ordinal).first()
         serializationService.deserialize(timeStampBytes)
     }
-    override val requiredSignatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroup.REQUIRED_SIGNING_KEYS.ordinal)
-            .map { serializationService.deserialize(it, PublicKey::class.java) }
+            .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
@@ -42,9 +42,9 @@ class ConsensualLedgerTransactionImpl(
      */
     fun verify() {
         val requiredSignatoriesFromStates = states
-            .flatMap { it.participants }.distinct()
+            .flatMap { it.participants }
         require(requiredSignatories == requiredSignatoriesFromStates) {
-            "Deserialized required signatories from WireTx do not match with the ones derived from the states."
+            "Deserialized required signatories from WireTx do not match with the ones derived from the states!"
         }
         // Verify the transaction's states
         states.map { it.verify(this) }

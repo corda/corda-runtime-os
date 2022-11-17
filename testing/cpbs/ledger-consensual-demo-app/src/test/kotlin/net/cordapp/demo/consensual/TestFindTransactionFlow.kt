@@ -54,7 +54,7 @@ class TestFindTransactionFlow {
         val ledgerTx = mock<ConsensualLedgerTransaction>().apply {
             whenever(id).thenReturn(txIdGood)
             whenever(states).thenReturn(listOf(testState))
-            whenever(requiredSignatories).thenReturn(listOf(testState.participants.first()))
+            whenever(requiredSignatories).thenReturn(setOf(testState.participants.first()))
         }
 
         val ledgerService = mock<ConsensualLedgerService>()
