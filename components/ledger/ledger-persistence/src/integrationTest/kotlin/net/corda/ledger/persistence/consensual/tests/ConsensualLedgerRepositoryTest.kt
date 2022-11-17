@@ -1,16 +1,16 @@
 package net.corda.ledger.persistence.consensual.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -56,6 +56,7 @@ class ConsensualLedgerRepositoryTest {
 
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var jsonValidator: JsonValidator
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualLedgerRepository
@@ -83,6 +84,7 @@ class ConsensualLedgerRepositoryTest {
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
+            jsonValidator = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
@@ -353,14 +355,10 @@ class ConsensualLedgerRepositoryTest {
                 "$seed-fileChecksum3"
             )
         )
-        val transactionMetadata = TransactionMetadata(
-            linkedMapOf<String, Any>().apply {
-                put(TransactionMetadata.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
-                put(TransactionMetadata.CPK_METADATA_KEY, cpks)
-            }
-        )
+
+        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(transactionMetadata).toByteArray()),
+            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )

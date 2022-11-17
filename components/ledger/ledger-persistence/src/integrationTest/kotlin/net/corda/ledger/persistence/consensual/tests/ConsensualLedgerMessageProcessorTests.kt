@@ -16,14 +16,10 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.common.data.transaction.TransactionMetadata
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
-import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
-import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -149,21 +145,12 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
-        val consensualTransactionMetadataExample = TransactionMetadata(
-            linkedMapOf(
-                TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetadata.LEDGER_VERSION_KEY to "1.0",
-                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetadata.PLATFORM_VERSION_KEY to 123,
-                TransactionMetadata.CPI_METADATA_KEY to cpiPackgeSummaryExample,
-                TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample
-            )
-        )
         val wireTransaction = getWireTransactionExample(
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            consensualTransactionMetadataExample
+            ctx.getSandboxSingletonService(),
+            transactionMetadataExample()
         )
         return SignedTransactionContainer(
             wireTransaction,

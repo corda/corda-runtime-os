@@ -134,12 +134,17 @@ pipeline {
             }
         }
         stage('smoketests') {
-            options {
-                timeout(time: 15, unit: 'MINUTES')
-            }  
-            steps {
-               gradlew('smoketest -PisCombinedWorker=true')
-            }
+                options {
+                    timeout(time: 15, unit: 'MINUTES')
+                }
+                steps {
+                   gradlew('smoketest -PisCombinedWorker=true')
+                }
+                post {
+                    always {
+                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                    }
+                }
         } 	        
     }
     post {
@@ -159,8 +164,7 @@ pipeline {
                         
                     }
             }
-            
-            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }

@@ -56,8 +56,20 @@ assign_hsm_and_generate_tls_key_pair() {
     echo $MGM_TLS_KEY_ID
 }
 
+assign_hsm_and_generate_edch_key_pair() {
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/PRE_AUTH &> /dev/null
+    MGM_EDCH_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-auth/category/PRE_AUTH/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    echo $MGM_EDCH_KEY_ID
+}
+
+assign_hsm_and_generate_ledger_key_pair() {
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/LEDGER &> /dev/null
+    LEDGER_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-ledger/category/LEDGER/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    echo $LEDGER_KEY_ID
+}
+
 get_csr() {
-    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "certificateRole": "TLS", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > ./$5.csr
+    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > ./$5.csr
 }
 
 sign_certificate() {
@@ -65,7 +77,7 @@ sign_certificate() {
 }
 
 upload_certificate() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v1/certificates/cluster/p2p"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v1/certificates/cluster/p2p-tls"
 }
 
 register_node() {
@@ -73,8 +85,8 @@ register_node() {
 
     local REG_CONTEXT='{
       "corda.session.key.id": "'$3'",
-      "corda.ledger.keys.0.id": "'$3'",
-      "corda.ledger.keys.0.signature.spec": "CORDA.ECDSA.SECP256R1",
+      "corda.ledger.keys.0.id": "'$5'",
+      "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
       "corda.endpoints.0.connectionURL": "'$4'",
       "corda.endpoints.0.protocolVersion": "1"
     }'
@@ -87,7 +99,7 @@ register_mgm() {
 
     local REG_CONTEXT='{
       "corda.session.key.id": "'$3'",
-      "corda.ecdh.key.id": "'$3'",
+      "corda.ecdh.key.id": "'$5'",
       "corda.group.protocol.registration": "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
       "corda.group.protocol.synchronisation": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
       "corda.group.protocol.p2p.mode": "Authenticated_Encryption",
@@ -115,7 +127,7 @@ register() {
 }
 
 complete_network_setup() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "p2pTlsTenantId": "p2p", "sessionKeyId": "'$3'"}' "https://$1/api/v1/network/setup/$2"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "sessionKeyId": "'$3'"}' "https://$1/api/v1/network/setup/$2"
 }
 
 extract_group_policy() {
@@ -150,6 +162,9 @@ on_board_mgm() {
    MGM_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH)
    echo MGM Session Key Id: $MGM_SESSION_KEY_ID
 
+   ECDH_KEY_ID=$(assign_hsm_and_generate_edch_key_pair $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH)
+   echo ECDH Key Id: $ECDH_KEY_ID
+
    # Generate Key Pair for TLS for MGM
    MGM_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $MGM_RPC)
    echo MGM TLS Key Id: $MGM_TLS_KEY_ID
@@ -164,7 +179,7 @@ on_board_mgm() {
    upload_certificate $MGM_RPC ./ca/mgm_tls/certificate.pem
 
    # Prepare Registration Context
-   register_mgm $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH $MGM_SESSION_KEY_ID $MGM_GATEWAY_ENDPOINT 
+   register_mgm $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH $MGM_SESSION_KEY_ID $MGM_GATEWAY_ENDPOINT $ECDH_KEY_ID
 
    echo Complete Network Setup
    complete_network_setup $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH $MGM_SESSION_KEY_ID
@@ -194,6 +209,9 @@ on_board_node() {
    NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
    echo Node $2 Session Key Id: $NODE_SESSION_KEY_ID
 
+   NODE_LEDGER_KEY_ID=$(assign_hsm_and_generate_ledger_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
+   echo Node $2 Ledger Key Id: $NODE_LEDGER_KEY_ID
+
    # Generate Key Pair for TLS for MGM
    NODE_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $1)
    echo NODE $2 TLS Key Id: $NODE_TLS_KEY_ID
@@ -205,7 +223,7 @@ on_board_node() {
    upload_certificate $1 ./ca/$4/certificate.pem
 
    complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
-   register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5
+   register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
 }
 
 declare -a namespaces=($A_CLUSTER_NAMESPACE $B_CLUSTER_NAMESPACE $MGM_CLUSTER_NAMESPACE)
@@ -224,7 +242,7 @@ for namespace in ${namespaces[@]}; do
     --wait
 
  echo Installing corda into $namespace
- helm upgrade --install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/corda --set "imagePullSecrets={docker-registry-cred}"  --set image.tag=$DOCKER_IMAGE_VERSION --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
+ helm upgrade --install corda -n $namespace oci://corda-os-docker-unstable.software.r3.com/helm-charts/corda --set "imagePullSecrets={docker-registry-cred}"  --set image.tag=$DOCKER_IMAGE_VERSION --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
 done
 
 kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rpc-worker $A_RPC_PORT:8888 &
