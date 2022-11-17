@@ -26,7 +26,7 @@ class GroupParametersImpl(
     override val epoch: Int
         get() = map.parse(EPOCH_KEY, Int::class.java)
 
-    override val notaries: List<NotaryInfo>
+    override val notaries: Collection<NotaryInfo>
         get() = map.parseList(NOTARIES_KEY, NotaryInfo::class.java)
 
     override fun equals(other: Any?): Boolean {

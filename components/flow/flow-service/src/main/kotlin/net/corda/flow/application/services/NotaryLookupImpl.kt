@@ -19,7 +19,7 @@ class NotaryLookupImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
 ) : NotaryLookup, UsedByFlow, SingletonSerializeAsToken {
     @Suspendable
-    override val notaryServices: List<NotaryInfo>
+    override val notaryServices: Collection<NotaryInfo>
         get() = notaries ?: emptyList()
 
     @Suspendable

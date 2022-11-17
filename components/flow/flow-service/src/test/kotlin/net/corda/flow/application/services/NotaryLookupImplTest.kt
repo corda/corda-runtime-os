@@ -58,7 +58,7 @@ class NotaryLookupImplTest {
 
     @Test
     fun `notaryServices return all the notary services`() {
-        val notaries = lookup.notaryServices
+        val notaries = lookup.notaryServices.toList()
 
         assertThat(notaries).anySatisfy {
             assertThat(it.name).isEqualTo(alice)
