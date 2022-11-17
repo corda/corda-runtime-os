@@ -104,7 +104,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
-            checkTransactionAcceptable.verify(signedTransaction)
+            checkTransactionAcceptable.check(signedTransaction)
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
