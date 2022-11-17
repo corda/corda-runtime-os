@@ -103,10 +103,10 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
                 val bodyJSON = it.body.toJson()
                 println("Response code: ${it.code}, Body is:$bodyJSON")
                 if (bodyJSON["sourceConfig"] == null) {
-                    fail<String>("sourceConfig is null, Config is ${bodyJSON.textValue()}, response code: ${it.code}")
+                    fail<String>("sourceConfig is null, Config is ${bodyJSON},  ${bodyJSON.textValue()}, response code: ${it.code}")
                 }
                 if (bodyJSON.sourceConfigNode()[key] == null) {
-                    fail<String>("Config is ${bodyJSON.textValue()}, however no key present, response code: ${it.code}")
+                    fail<String>("Config is ${bodyJSON},  ${bodyJSON.textValue()}, however no key present, response code: ${it.code}")
                 }
                 it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
                         && bodyJSON.sourceConfigNode()[key] != null
