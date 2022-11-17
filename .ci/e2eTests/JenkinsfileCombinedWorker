@@ -134,16 +134,17 @@ pipeline {
             }
         }
         stage('smoketests') {
-            always {
                 options {
                     timeout(time: 15, unit: 'MINUTES')
                 }
                 steps {
                    gradlew('smoketest -PisCombinedWorker=true')
                 }
-
-                junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-            }
+                post {
+                    always {
+                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                    }
+                }
         } 	        
     }
     post {
