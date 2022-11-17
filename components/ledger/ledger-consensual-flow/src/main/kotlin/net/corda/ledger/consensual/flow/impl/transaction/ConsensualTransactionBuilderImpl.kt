@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
+import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -62,12 +63,9 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun verifyIfReady() {
-        // TODO(CORE-5982 more verifications)
-        // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         check(!alreadySigned) { "A transaction cannot be signed twice." }
-        require(states.isNotEmpty()) { "At least one consensual state is required" }
-        require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
-        // The states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
+        ConsensualTransactionVerification.verifyStatesStructure(states)
+        // The metadata, states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
         // transaction is assembled there.
     }
 }

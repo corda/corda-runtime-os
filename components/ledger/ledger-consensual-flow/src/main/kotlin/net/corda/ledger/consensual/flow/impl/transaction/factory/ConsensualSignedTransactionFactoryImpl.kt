@@ -9,6 +9,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
@@ -57,11 +58,12 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata = transactionMetadataFactory.create(consensualMetadata())
+        ConsensualTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
 
-        verifyStates(wireTransaction)
+        verifyTransaction(wireTransaction)
 
         // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
@@ -143,8 +145,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
             }
     }
 
-    private fun verifyStates(wireTransaction: WireTransaction){
+    private fun verifyTransaction(wireTransaction: WireTransaction){
         val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
-        ledgerTransactionToCheck.verify()
+        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }

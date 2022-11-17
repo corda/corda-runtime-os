@@ -37,19 +37,6 @@ class ConsensualLedgerTransactionImpl(
             .map { serializationService.deserialize(it) }
     }
 
-    /**
-     * WIP CORE-5982
-     */
-    fun verify() {
-        val requiredSignatoriesFromStates = states
-            .flatMap { it.participants }.distinct().toSet()
-        require(requiredSignatories == requiredSignatoriesFromStates) {
-            "Deserialized required signatories from WireTx do not match with the ones derived from the states."
-        }
-        // Verify the transaction's states
-        states.map { it.verify(this) }
-    }
-
     override fun equals(other: Any?): Boolean {
         return (other === this) || ((other is ConsensualLedgerTransactionImpl) && (other.wireTransaction == wireTransaction))
     }
