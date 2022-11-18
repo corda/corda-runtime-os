@@ -106,12 +106,12 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         flow.injectIfRequired(serviceClass, resolvedBuilder)
     }
 
-    private fun createSerializationService() : SerializationService {
+    private fun createSerializationService(): SerializationService {
         log.info("Injecting ${SerializationService::class.java.simpleName}")
         return BaseSerializationService()
     }
 
-    private fun createSpecService() : SignatureSpecService {
+    private fun createSpecService(): SignatureSpecService {
         log.info("Injecting ${SignatureSpecService::class.java.simpleName}")
         return OnlyOneSignatureSpecService()
     }

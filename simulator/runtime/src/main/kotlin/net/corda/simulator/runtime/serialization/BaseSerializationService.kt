@@ -41,8 +41,15 @@ class BaseSerializationService : SerializationService by createSerializationServ
         fun createSerializationService(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
             schemeMetadata: CipherSchemeMetadata
-        ) : SerializationService {
-            val context = createSerializationContext()
+        ): SerializationService {
+            val context = SerializationContextImpl(
+                preferredSerializationVersion = amqpMagic,
+                properties = mutableMapOf(),
+                objectReferencesEnabled = false,
+                useCase = SerializationContext.UseCase.Testing,
+                encoding = null,
+                sandboxGroup = SimSandboxGroup()
+            )
             val factory = buildDefaultFactoryNoEvolution(
                 registerMoreSerializers,
                 schemeMetadata,
@@ -72,14 +79,6 @@ class BaseSerializationService : SerializationService by createSerializationServ
             override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
         }
 
-        private fun createSerializationContext() = SerializationContextImpl(
-            preferredSerializationVersion = amqpMagic,
-            properties = mutableMapOf(),
-            objectReferencesEnabled = false,
-            useCase = SerializationContext.UseCase.Testing,
-            encoding = null,
-            sandboxGroup = SimSandboxGroup()
-        )
     }
 }
 
