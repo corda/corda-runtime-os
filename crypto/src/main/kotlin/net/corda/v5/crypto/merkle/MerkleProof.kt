@@ -11,6 +11,7 @@ import net.corda.v5.crypto.SecureHash
  * Construct a [MerkleProof] from its ([treeSize], [leaves], [hashes]) when you want to [verify] if the leaves
  * to be checked are part of a [MerkleTree] with the specific root.
  *
+ * @property proofType Type of the proof
  * @property treeSize The total number of leaves in the tree.
  * @property leaves The leaf items whose inclusion is proved by the proof.
  * @property hashes The helper hashes needed to reconstruct the whole tree.
@@ -18,6 +19,7 @@ import net.corda.v5.crypto.SecureHash
  */
 @CordaSerializable
 interface MerkleProof {
+    val proofType: MerkleProofType
     val treeSize: Int
     val leaves: List<IndexedMerkleLeaf>
     val hashes: List<SecureHash>
