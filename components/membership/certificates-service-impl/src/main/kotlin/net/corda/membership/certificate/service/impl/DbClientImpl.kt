@@ -87,10 +87,10 @@ internal class DbClientImpl(
             val processor = ClusterCertificateProcessor(usage)
             block.invoke(processor)
         } else {
-            useClusterCertificateProcessor(holdingIdentityId, usage, block)
+            useVirtualNodeCertificateProcessor(holdingIdentityId, usage, block)
         }
     }
-    private fun <T> useClusterCertificateProcessor(
+    private fun <T> useVirtualNodeCertificateProcessor(
         holdingIdentityId: ShortHash,
         usage: CertificateUsage,
         block: (CertificateProcessor<*>) -> T,

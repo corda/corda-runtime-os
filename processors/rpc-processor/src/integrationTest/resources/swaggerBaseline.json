@@ -370,7 +370,7 @@
     "/certificates/vnode/{holdingidentityid}/{usage}/{alias}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method get the certificate chain aliases for a virtual node.",
+        "description" : "This method get the certificate chain in PEM format for a virtual node",
         "operationId" : "get_certificates_vnode__holdingidentityid___usage___alias_",
         "parameters" : [ {
           "name" : "usage",

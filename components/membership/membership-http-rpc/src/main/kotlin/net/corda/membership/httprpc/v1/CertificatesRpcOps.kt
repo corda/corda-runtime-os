@@ -224,7 +224,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "vnode/{holdingIdentityId}/{usage}/{alias}",
-        description = "This method get the certificate chain aliases for a virtual node."
+        description = "This method get the certificate chain in PEM format for a virtual node"
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
