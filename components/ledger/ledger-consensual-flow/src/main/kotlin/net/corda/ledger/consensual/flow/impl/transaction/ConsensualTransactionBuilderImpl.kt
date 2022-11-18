@@ -21,7 +21,6 @@ class ConsensualTransactionBuilderImpl(
         copy(states = this.states + states)
 
     @Suspendable
-
     override fun toSignedTransaction(): ConsensualSignedTransaction {
         TODO("Not yet implemented")
     }

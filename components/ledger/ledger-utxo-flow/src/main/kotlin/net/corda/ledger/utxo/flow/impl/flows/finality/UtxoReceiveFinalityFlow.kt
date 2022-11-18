@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-// todo port tests and UtxoTransactionVerification.
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal

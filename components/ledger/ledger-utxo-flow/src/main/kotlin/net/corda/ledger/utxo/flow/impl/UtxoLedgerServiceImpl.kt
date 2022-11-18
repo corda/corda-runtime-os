@@ -1,5 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
+import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
