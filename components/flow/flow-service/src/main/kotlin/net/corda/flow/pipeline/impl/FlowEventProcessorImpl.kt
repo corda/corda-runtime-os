@@ -84,6 +84,7 @@ class FlowEventProcessorImpl(
         return try {
             flowEventContextConverter.convert(
                 pipeline
+                    .flowOperationalModeChecks()
                     .eventPreProcessing()
                     .runOrContinue(flowTimeout)
                     .setCheckpointSuspendedOn()

@@ -225,7 +225,13 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
                 resolvedResponse.run {
-                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
+                    ChangeVirtualNodeStateResponse(
+                        holdingIdentityShortHash,
+                        flowP2pOperationalStatus,
+                        flowStartOperationalStatus,
+                        flowOperationalStatus,
+                        vaultDbOperationalStatus
+                    )
                 }
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)

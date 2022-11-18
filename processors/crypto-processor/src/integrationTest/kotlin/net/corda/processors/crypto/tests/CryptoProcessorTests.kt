@@ -308,6 +308,10 @@ class CryptoProcessorTests {
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
                     uniquenessDmlConnectionId = UUID.randomUUID(),
+                    flowP2pOperationalStatus = "ACTIVE",
+                    flowStartOperationalStatus = "ACTIVE",
+                    flowOperationalStatus = "ACTIVE",
+                    vaultDbOperationalStatus = "ACTIVE",
                     vaultDmlConnectionId = UUID.randomUUID(),
                     timestamp = Instant.now()
                 )

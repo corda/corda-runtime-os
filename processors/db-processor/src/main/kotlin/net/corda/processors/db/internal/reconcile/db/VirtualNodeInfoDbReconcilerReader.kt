@@ -51,7 +51,10 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
                     uniquenessDdlConnectionId = entity.holdingIdentity.uniquenessDDLConnectionId,
                     version = entity.entityVersion,
                     timestamp = entity.insertTimestamp.getOrNow(),
-                    state = VirtualNodeState.valueOf(entity.virtualNodeState),
+                    flowP2pOperationalStatus = entity.flowP2pOperationalStatus.name,
+                    flowStartOperationalStatus = entity.flowStartOperationalStatus.name,
+                    flowOperationalStatus = entity.flowOperationalStatus.name,
+                    vaultDbOperationalStatus = entity.vaultDbOperationalStatus.name,
                 )
             }
         }

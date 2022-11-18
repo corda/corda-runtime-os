@@ -57,7 +57,10 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                 cryptoDmlConnectionId = UUID.randomUUID(),
                 uniquenessDmlConnectionId = UUID.randomUUID(),
                 timestamp = Instant.now(),
-                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                flowP2pOperationalStatus = "ACTIVE",
+                flowStartOperationalStatus = "ACTIVE",
+                flowOperationalStatus = "ACTIVE",
+                vaultDbOperationalStatus = "ACTIVE",
             ) }
         }
 

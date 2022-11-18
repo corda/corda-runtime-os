@@ -16,6 +16,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfig
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -32,6 +33,7 @@ class FlowEventPipelineFactoryImplTest {
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().also { factory ->
         whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
     private val flowEventHandler = mock<FlowEventHandler<Any>>().also { handler ->
@@ -52,6 +54,7 @@ class FlowEventPipelineFactoryImplTest {
         flowRunner,
         flowGlobalPostProcessor,
         flowCheckpointFactory,
+        virtualNodeInfoReadService,
         listOf(flowEventHandler),
         listOf(flowWaitingForHandler),
         listOf(flowRequestHandler)
@@ -65,6 +68,7 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
+            virtualNodeInfoReadService,
             buildFlowEventContext(flowCheckpoint, flowEvent.payload, config)
         )
         val result = factory.create(checkpoint, flowEvent, config, emptyMap())

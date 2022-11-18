@@ -55,8 +55,7 @@ internal class VirtualNodeInfoRecordPublisherImpl(
                 cryptoDmlConnectionId,
                 uniquenessDdlConnectionId,
                 uniquenessDmlConnectionId,
-                timestamp = completedInstant,
-                state = net.corda.virtualnode.VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                timestamp = completedInstant
             )
                 .toAvro()
         }

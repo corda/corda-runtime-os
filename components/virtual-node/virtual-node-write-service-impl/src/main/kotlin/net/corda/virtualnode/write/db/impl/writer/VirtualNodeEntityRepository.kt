@@ -16,9 +16,9 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.libs.virtualnode.datamodel.OperationalStatus
 
 class VirtualNodeNotFoundException(holdingIdentityShortHash: String) :
     Exception("Could not find a virtual node with Id of $holdingIdentityShortHash")
@@ -203,7 +203,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                     holdingIdentity.uniquenessDDLConnectionId,
                     holdingIdentity.uniquenessDMLConnectionId!!,
                     holdingIdentity.hsmConnectionId,
-                    VirtualNodeState.valueOf(virtualNodeState),
+                    flowP2pOperationalStatus.name,
+                    flowStartOperationalStatus.name,
+                    flowOperationalStatus.name,
+                    vaultDbOperationalStatus.name,
                     entityVersion,
                     insertTimestamp!!
                 )
@@ -238,7 +241,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         cpiName,
         cpiVersion,
         cpiSignerSummaryHash,
-        virtualNodeState
+        flowP2pOperationalStatus.name,
+        flowStartOperationalStatus.name,
+        flowOperationalStatus.name,
+        vaultDbOperationalStatus.name
     )
 
     data class VirtualNodeLite(
@@ -246,7 +252,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val cpiName: String,
         val cpiVersion: String,
         val cpiSignerSummaryHash: String,
-        val virtualNodeState: String,
+        val flowP2pOperationalStatus: String,
+        val flowStartOperationalStatus: String,
+        val flowOperationalStatus: String,
+        val vaultDbOperationalStatus: String,
     )
 
     internal fun updateVirtualNodeCpi(holdingId: HoldingIdentity, cpiId: CpiIdentifier): VirtualNodeLite {
@@ -283,8 +292,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                     hie,
                     cpiId.name,
                     cpiId.version,
-                    signerSummaryHash,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                    signerSummaryHash
                 )
             )
         } else {
@@ -297,11 +305,39 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             // Lookup virtual node and grab the latest one based on the cpi Version.
             val latestVirtualNodeInstance = it.findVirtualNode(holdingIdentityShortHash)
                 ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
-            val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
-                update(newState)
+
+            when(newState) {
+                "maintenance" -> latestVirtualNodeInstance.applyStrictMaintenanceMode()
+                "active" -> latestVirtualNodeInstance.attemptTransitionToActive()
+                else -> throw CordaRuntimeException("Virtual node state $newState not allowed.")
             }
-            return it.merge(updatedVirtualNodeInstance)
+
+            return it.merge(latestVirtualNodeInstance)
         }
+    }
+
+    private fun VirtualNodeEntity.attemptTransitionToActive() {
+        checkCanTransitionVaultDb()
+        vaultDbOperationalStatus = OperationalStatus.ACTIVE
+        flowP2pOperationalStatus = OperationalStatus.ACTIVE
+        flowStartOperationalStatus = OperationalStatus.ACTIVE
+        flowOperationalStatus = OperationalStatus.ACTIVE
+    }
+
+    private fun checkCanTransitionVaultDb() {
+        // Load the changelog file from the current CPI (cpk_db_change_log).
+        //Use liquibase getChangeSetStatuses() API to determine if the changelog file contains changesets that have not yet been run on this virtual node.
+        //Reports changesets that are missing from the current vnode_vault_{holdingId} databasechangelog table.
+        //Use liquibase listUnexpectedChangesets() API to determine if current schema has changesets applied that are ahead of the current CPI.
+        //Reports changesets that are in the vnode_vault_{holdingId} databasechangelog table but aren't in the changelog file.
+        //Only when these two API calls reveal that the current db vault schema is in line with the current CPI will we allow transition.
+    }
+
+    private fun VirtualNodeEntity.applyStrictMaintenanceMode() {
+        flowP2pOperationalStatus = OperationalStatus.INACTIVE
+        flowStartOperationalStatus = OperationalStatus.INACTIVE
+        flowOperationalStatus = OperationalStatus.INACTIVE
+        vaultDbOperationalStatus = OperationalStatus.INACTIVE
     }
 
     fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(

@@ -31,5 +31,8 @@ data class VirtualNodeInfo(
     val uniquenessDdlConnectionId: String? = null,
     val uniquenessDmlConnectionId: String,
     val hsmConnectionId: String? = null,
-    val state: String,
+    val flowP2pOperationalStatus: String,
+    val flowStartOperationalStatus: String,
+    val flowOperationalStatus: String,
+    val vaultDbOperationalStatus: String,
 )

@@ -10,6 +10,8 @@ import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.EntityManager
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
@@ -45,9 +47,21 @@ data class VirtualNodeEntity(
     @Id
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_p2p_operational_status", nullable = false)
+    var flowP2pOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @Column(name = "state", nullable = false)
-    var virtualNodeState: String,
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_start_operational_status", nullable = false)
+    var flowStartOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_operational_status", nullable = false)
+    var flowOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "vault_db_operational_status", nullable = false)
+    var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
@@ -80,10 +94,10 @@ data class VirtualNodeEntity(
         result = 31 * result + cpiSignerSummaryHash.hashCode()
         return result
     }
+}
 
-    fun update(newState: String) {
-        virtualNodeState = newState
-    }
+enum class OperationalStatus {
+    ACTIVE, INACTIVE
 }
 
 /** The composite primary key for a virtual node instance. */

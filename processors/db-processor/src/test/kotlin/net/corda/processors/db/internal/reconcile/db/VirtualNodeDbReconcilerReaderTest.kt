@@ -38,7 +38,10 @@ class VirtualNodeDbReconcilerReaderTest {
             whenever(it.holdingIdentity).then { mockHoldingIdentity }
             whenever(it.insertTimestamp).then { timestamp }
             whenever(it.entityVersion).then { entityVersion }
-            whenever(it.virtualNodeState).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE.name }
+            whenever(it.flowP2pOperationalStatus).then { "ACTIVE" }
+            whenever(it.flowStartOperationalStatus).then { "ACTIVE" }
+            whenever(it.flowOperationalStatus).then { "ACTIVE" }
+            whenever(it.vaultDbOperationalStatus).then { "ACTIVE" }
         }
     }
 

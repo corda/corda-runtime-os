@@ -205,7 +205,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                         uniquenessDdlConnectionId,
                         uniquenessDmlConnectionId,
                         hsmConnectionId,
-                        virtualNodeState
+                        flowP2pOperationalStatus,
+                        flowStartOperationalStatus,
+                        flowOperationalStatus,
+                        vaultDbOperationalStatus
                     )
                 }
             }
@@ -263,7 +266,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                         uniquenessDdlConnectionId,
                         uniquenessDmlConnectionId,
                         hsmConnectionId,
-                        virtualNodeState
+                        flowP2pOperationalStatus,
+                        flowStartOperationalStatus,
+                        flowOperationalStatus,
+                        vaultDbOperationalStatus
                     )
                 }
             }
@@ -286,7 +292,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             uniquenessDdlConnectionId?.toString(),
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId.toString(),
-            state.name
+            flowP2pOperationalStatus,
+            flowStartOperationalStatus,
+            flowOperationalStatus,
+            vaultDbOperationalStatus
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

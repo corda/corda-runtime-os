@@ -33,13 +33,13 @@ data class VirtualNodeInfo(
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current flow p2p operational status of the virtual node instance */
-    val flowP2pOperationalStatus: String,
+    val flowP2pOperationalStatus: String = "ACTIVE",
     /** Current flow start operational status of the virtual node instance */
-    val flowStartOperationalStatus: String,
+    val flowStartOperationalStatus: String = "ACTIVE",
     /** Current flow operational status of the virtual node instance */
-    val flowOperationalStatus: String,
+    val flowOperationalStatus: String = "ACTIVE",
     /** Current vault db operational status of the virtual node instance */
-    val vaultDbOperationalStatus: String,
+    val vaultDbOperationalStatus: String = "ACTIVE",
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */

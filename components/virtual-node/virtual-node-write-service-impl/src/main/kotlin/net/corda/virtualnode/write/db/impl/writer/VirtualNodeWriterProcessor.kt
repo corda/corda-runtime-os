@@ -349,7 +349,10 @@ internal class VirtualNodeWriterProcessor(
                     this.holdingIdentity.uniquenessDDLConnectionId,
                     this.holdingIdentity.uniquenessDMLConnectionId!!,
                     this.holdingIdentity.hsmConnectionId,
-                    VirtualNodeState.valueOf(this.virtualNodeState),
+                    this.flowP2pOperationalStatus.name,
+                    this.flowStartOperationalStatus.name,
+                    this.flowOperationalStatus.name,
+                    this.vaultDbOperationalStatus.name,
                     this.entityVersion,
                     this.insertTimestamp!!
                 )
@@ -377,7 +380,10 @@ internal class VirtualNodeWriterProcessor(
                 instant,
                 VirtualNodeStateChangeResponse(
                     stateChangeRequest.holdingIdentityShortHash,
-                    stateChangeRequest.newState
+                    virtualNodeInfo.flowP2pOperationalStatus,
+                    virtualNodeInfo.flowStartOperationalStatus,
+                    virtualNodeInfo.flowOperationalStatus,
+                    virtualNodeInfo.vaultDbOperationalStatus
                 )
             )
             respFuture.complete(response)
@@ -585,7 +591,10 @@ internal class VirtualNodeWriterProcessor(
                 uniquenessDdlConnectionId,
                 uniquenessDmlConnectionId,
                 timestamp = clock.instant(),
-                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                flowP2pOperationalStatus = "ACTIVE",
+                flowStartOperationalStatus = "ACTIVE",
+                flowOperationalStatus = "ACTIVE",
+                vaultDbOperationalStatus = "ACTIVE"
             )
                 .toAvro()
         }
@@ -669,7 +678,10 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.uniquenessDdlConnectionId?.toString(),
                 dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                "ACTIVE",
+                "ACTIVE",
+                "ACTIVE",
+                "ACTIVE"
             )
         )
         respFuture.complete(response)
