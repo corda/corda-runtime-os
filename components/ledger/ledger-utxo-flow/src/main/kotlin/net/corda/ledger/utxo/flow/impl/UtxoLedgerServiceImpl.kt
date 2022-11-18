@@ -1,8 +1,10 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -19,11 +21,16 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 @Component(service = [ UtxoLedgerService::class, UsedByFlow::class ], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoSignedTransactionFactory::class)
-    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine,
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -50,13 +57,29 @@ class UtxoLedgerServiceImpl @Activate constructor(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
     ): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
+        /*
+        Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
+        Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
+        */
+        val utxoFinalityFlow = try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                UtxoFinalityFlow(signedTransaction as UtxoSignedTransactionInternal, sessions)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
+        return flowEngine.subFlow(utxoFinalityFlow)    }
 
     override fun receiveFinality(
         session: FlowSession,
         validator: UtxoTransactionValidator
     ): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
+        val utxoReceiveFinalityFlow = try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                UtxoReceiveFinalityFlow(session, validator)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
+        return flowEngine.subFlow(utxoReceiveFinalityFlow)    }
 }
