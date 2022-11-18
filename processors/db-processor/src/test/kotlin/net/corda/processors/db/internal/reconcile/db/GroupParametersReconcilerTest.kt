@@ -238,7 +238,7 @@ class GroupParametersReconcilerTest {
     private fun setUpEntityManagerMocks(em: EntityManager) {
         val typedQuery: TypedQuery<GroupParametersEntity> = mock {
             on { setMaxResults(any()) } doReturn mock
-            on { singleResult } doReturn groupParametersEntity
+            on { resultList } doReturn listOf(groupParametersEntity)
         }
         val order: Order = mock()
         val path: Path<String> = mock()
