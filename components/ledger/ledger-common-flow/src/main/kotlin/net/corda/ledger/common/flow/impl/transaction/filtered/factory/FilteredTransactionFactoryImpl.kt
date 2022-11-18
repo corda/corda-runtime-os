@@ -61,6 +61,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun filterComponentGroup(
         wireTransaction: WireTransaction,
         parameters: ComponentGroupFilterParameters,
