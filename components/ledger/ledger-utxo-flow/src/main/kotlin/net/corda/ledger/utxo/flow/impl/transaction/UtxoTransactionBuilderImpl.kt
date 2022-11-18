@@ -78,16 +78,26 @@ data class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun sign(): UtxoSignedTransaction {
+    override fun toSignedTransaction(): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 
     @Suspendable
-    override fun sign(vararg signatories: PublicKey): UtxoSignedTransaction =
+    @Deprecated("Temporary function until the argumentless version gets available")
+    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction =
+        sign(listOf(signatory))
+
+    @Suspendable
+    fun sign(): UtxoSignedTransaction {
+        TODO("Not yet implemented")
+    }
+
+    @Suspendable
+    fun sign(vararg signatories: PublicKey): UtxoSignedTransaction =
         sign(signatories.toList())
 
     @Suspendable
-    override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
+    fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
         require(signatories.toList().isNotEmpty()) {
             "At least one key needs to be provided in order to create a signed Transaction!"
         }

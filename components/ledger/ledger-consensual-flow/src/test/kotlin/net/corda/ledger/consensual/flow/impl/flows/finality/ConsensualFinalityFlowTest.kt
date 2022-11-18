@@ -4,6 +4,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -14,7 +15,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -24,7 +24,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -56,8 +55,8 @@ class ConsensualFinalityFlowTest {
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
-    private val signedTransaction = mock<ConsensualSignedTransaction>()
-    private val updatedSignedTransaction = mock<ConsensualSignedTransaction>()
+    private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
+    private val updatedSignedTransaction = mock<ConsensualSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {
@@ -310,7 +309,7 @@ class ConsensualFinalityFlowTest {
         verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
     
-    private fun callFinalityFlow(signedTransaction: ConsensualSignedTransaction, sessions: List<FlowSession>) {
+    private fun callFinalityFlow(signedTransaction: ConsensualSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = ConsensualFinalityFlow(signedTransaction, sessions)
         flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup

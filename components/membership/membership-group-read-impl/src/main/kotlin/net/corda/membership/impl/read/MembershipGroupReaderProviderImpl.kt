@@ -15,6 +15,7 @@ import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscripti
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
@@ -44,7 +45,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory
+    val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = GroupParametersReaderService::class)
+    val groupParametersReaderService: GroupParametersReaderService,
 ) : MembershipGroupReaderProvider {
 
     companion object {
@@ -115,7 +118,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
         // Factory responsible for creating group readers or taking existing instances from the cache.
         private val membershipGroupReaderFactory =
-            MembershipGroupReaderFactory.Impl(membershipGroupReadCache)
+            MembershipGroupReaderFactory.Impl(membershipGroupReadCache, groupParametersReaderService)
 
         // Membership group topic subscriptions
         private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(

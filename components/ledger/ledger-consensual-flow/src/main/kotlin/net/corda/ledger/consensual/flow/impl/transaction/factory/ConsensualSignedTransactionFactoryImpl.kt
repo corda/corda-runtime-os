@@ -9,6 +9,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
@@ -48,15 +49,23 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val jsonValidator: JsonValidator,
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
+    /**
+     * Creates the signedTransaction initially
+     */
     @Suspendable
     override fun create(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata = transactionMetadataFactory.create(consensualMetadata())
+        ConsensualTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+
+        verifyTransaction(wireTransaction)
+
+        // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
@@ -68,6 +77,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
+    /**
+     * Re-creates the signedTransaction from persistence/serialization.
+     */
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
@@ -131,5 +143,10 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                         }
                 }
             }
+    }
+
+    private fun verifyTransaction(wireTransaction: WireTransaction){
+        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }

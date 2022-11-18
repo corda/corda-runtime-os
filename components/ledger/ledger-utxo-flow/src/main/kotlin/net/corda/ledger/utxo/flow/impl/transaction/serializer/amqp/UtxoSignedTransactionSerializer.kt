@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
@@ -11,7 +12,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,24 +25,24 @@ import org.osgi.service.component.annotations.ServiceScope
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService
-) : BaseProxySerializer<UtxoSignedTransaction, UtxoSignedTransactionProxy>(),
+) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(),
     UsedByFlow, UsedByVerification {
 
-    override val type = UtxoSignedTransaction::class.java
+    override val type = UtxoSignedTransactionInternal::class.java
 
     override val proxyType = UtxoSignedTransactionProxy::class.java
 
     override val withInheritance = true
 
-    override fun toProxy(obj: UtxoSignedTransaction): UtxoSignedTransactionProxy {
+    override fun toProxy(obj: UtxoSignedTransactionInternal): UtxoSignedTransactionProxy {
         return UtxoSignedTransactionProxy(
             UtxoSignedTransactionVersion.VERSION_1,
-            (obj as UtxoSignedTransactionImpl).wireTransaction,
+            obj.wireTransaction,
             obj.signatures
         )
     }
 
-    override fun fromProxy(proxy: UtxoSignedTransactionProxy): UtxoSignedTransaction {
+    override fun fromProxy(proxy: UtxoSignedTransactionProxy): UtxoSignedTransactionInternal {
         if (proxy.version == UtxoSignedTransactionVersion.VERSION_1) {
             return UtxoSignedTransactionImpl(
                 serializationService,

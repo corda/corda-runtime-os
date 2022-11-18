@@ -68,14 +68,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
         val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
-        val statePartitionsToSync = partitionsToSync.toMap()
-        if (statePartitionsToSync.isNotEmpty()) {
-            log.info("State consumer in group ${config.group} is syncing partitions: $statePartitionsToSync")
+        if (partitionsToSync.isNotEmpty()) {
+            log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
         }
         for (state in states) {
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
-            partitionsSynced.addAll(getSyncedEventPartitions(statePartitionsToSync))
+            partitionsSynced.addAll(getSyncedEventPartitions())
         }
 
         if (syncPartitions && partitionsSynced.isNotEmpty()) {
@@ -89,8 +88,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         executor.shutdown()
     }
 
-    private fun getSyncedEventPartitions(statePartitionsToSync: Map<Int, Long>): Set<CordaTopicPartition> {
+    private fun getSyncedEventPartitions(): Set<CordaTopicPartition> {
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
+        val statePartitionsToSync = partitionsToSync.toMap()
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
             val stateTopic = getStateAndEventStateTopic(config.topic)

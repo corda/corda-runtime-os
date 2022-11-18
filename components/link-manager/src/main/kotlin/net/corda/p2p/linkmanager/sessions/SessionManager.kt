@@ -7,9 +7,9 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.schema.Schemas
 import net.corda.virtualnode.HoldingIdentity
 
