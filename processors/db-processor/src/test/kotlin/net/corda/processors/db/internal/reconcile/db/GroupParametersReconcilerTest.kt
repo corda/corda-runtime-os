@@ -55,7 +55,6 @@ class GroupParametersReconcilerTest {
         9,
         serialisedGroupParameters
     )
-    private val maxResultsCaptor = argumentCaptor<Int>()
 
     private val tx1: EntityTransaction = mock()
     private val em1: EntityManager = mock<EntityManager> {
@@ -212,16 +211,6 @@ class GroupParametersReconcilerTest {
             verify(tx1).rollback()
             verify(tx2).rollback()
         }
-
-        @Test
-        fun `get versioned records query only queries for a single value`() {
-            groupParametersReconciler.updateInterval(1000)
-
-            assertThat(groupParametersReconciler.dbReconciler).isNotNull
-            groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
-
-            assertThat(maxResultsCaptor.firstValue).isEqualTo(1)
-        }
     }
 
     private fun buildVnodeInfo(
@@ -248,7 +237,7 @@ class GroupParametersReconcilerTest {
 
     private fun setUpEntityManagerMocks(em: EntityManager) {
         val typedQuery: TypedQuery<GroupParametersEntity> = mock {
-            on { setMaxResults(maxResultsCaptor.capture()) } doReturn mock
+            on { setMaxResults(any()) } doReturn mock
             on { singleResult } doReturn groupParametersEntity
         }
         val order: Order = mock()

@@ -8,14 +8,13 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 import java.util.stream.Stream
-import javax.persistence.EntityManager
 
 /**
  * Converts the database entity classes [CpiMetadataEntity] to [CpiMetadata], and also the identifier
  */
 val getAllCpiInfoDBVersionedRecords
-        : (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em, _ ->
-    em.findAllCpiMetadata().map { cpiMetadataEntity ->
+        : (ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { context ->
+    context.entityManager.findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,
             cpiMetadataEntity.version,

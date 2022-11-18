@@ -1,26 +1,48 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.virtualnode.HoldingIdentity
-import javax.persistence.EntityManagerFactory
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.orm.JpaEntitiesSet
+import net.corda.virtualnode.VirtualNodeInfo
+import javax.persistence.EntityManager
 
 /**
  * Additional context to be included during reconciliation.
+ *
+ * Context instances must be closed after use to close any created resources.
  */
-sealed class ReconciliationContext {
-    abstract val emf: EntityManagerFactory
+interface ReconciliationContext : AutoCloseable {
+    val entityManager: EntityManager
+}
 
-    /**
-     * Context required for reconciling cluster DBs
-     */
-    data class ClusterReconciliationContext(
-        override val emf: EntityManagerFactory
-    ) : ReconciliationContext()
+/**
+ * Context required for reconciling cluster DBs
+ */
+class ClusterReconciliationContext(
+    dbConnectionManager: DbConnectionManager
+) : ReconciliationContext {
+    private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+    override val entityManager: EntityManager = entityManagerFactory.createEntityManager()
 
-    /**
-     * Context required for reconciling virtual node DBs
-     */
-    data class VirtualNodeReconciliationContext(
-        override val emf: EntityManagerFactory,
-        val holdingIdentity: HoldingIdentity
-    ) : ReconciliationContext()
+    override fun close() = entityManager.close()
+}
+
+/**
+ * Context required for reconciling virtual node DBs
+ */
+class VirtualNodeReconciliationContext(
+    dbConnectionManager: DbConnectionManager,
+    jpaEntitiesSet: JpaEntitiesSet,
+    val virtualNodeInfo: VirtualNodeInfo
+) : ReconciliationContext {
+
+    private val entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
+        virtualNodeInfo.vaultDmlConnectionId,
+        jpaEntitiesSet
+    )
+    override val entityManager: EntityManager = entityManagerFactory.createEntityManager()
+
+    override fun close() {
+        entityManager.close()
+        entityManagerFactory.close()
+    }
 }

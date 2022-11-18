@@ -15,7 +15,6 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
-import javax.persistence.EntityManager
 
 /**
  * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
@@ -31,8 +30,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
     private val reconciliationContextFactory: () -> Collection<ReconciliationContext>,
-    private val doGetAllVersionedRecords: (EntityManager, ReconciliationContext) -> Stream<VersionedRecord<K, V>>,
-    private val onStreamClose: ((ReconciliationContext) -> Unit)? = null
+    private val doGetAllVersionedRecords: (ReconciliationContext) -> Stream<VersionedRecord<K, V>>
 ) : ReconcilerReader<K, V>, Lifecycle {
 
     internal val name = "${DbReconcilerReader::class.java.name}<${keyClass.name}, ${valueClass.name}>"
@@ -99,15 +97,13 @@ class DbReconcilerReader<K : Any, V : Any>(
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
         return try {
             val streams = reconciliationContextFactory.invoke().map { context ->
-                val em = context.emf.createEntityManager()
-                val currentTransaction = em.transaction
+                val currentTransaction = context.entityManager.transaction
                 currentTransaction.begin()
-                doGetAllVersionedRecords(em, context).onClose {
+                doGetAllVersionedRecords(context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,
                     // only used for making streaming DB data possible.
                     currentTransaction.rollback()
-                    em.close()
-                    onStreamClose?.invoke(context)
+                    context.close()
                 }
             }
             Stream.of(*streams.toTypedArray()).flatMap { i -> i }

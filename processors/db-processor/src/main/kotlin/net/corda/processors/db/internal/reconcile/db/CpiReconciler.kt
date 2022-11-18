@@ -5,7 +5,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.processors.db.internal.reconcile.db.ReconciliationContext.ClusterReconciliationContext
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -30,11 +29,7 @@ class CpiReconciler(
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
-        listOf(
-            ClusterReconciliationContext(
-                dbConnectionManager.getClusterEntityManagerFactory()
-            )
-        )
+        listOf(ClusterReconciliationContext(dbConnectionManager))
     }
 
     override fun close() {
