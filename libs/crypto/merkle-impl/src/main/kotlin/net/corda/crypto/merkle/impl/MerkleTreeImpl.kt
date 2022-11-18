@@ -4,6 +4,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTree
 
 /**
@@ -213,6 +214,7 @@ class MerkleTreeImpl(
         }
         require(level == depth) { "Sanity check calc" }
         return MerkleProofImpl(
+            MerkleProofType.AUDIT,
             leaves.size,
             leafIndices.sorted().map { IndexedMerkleLeaf(it, digest.leafNonce(it), leaves[it].copyOf()) },
             outputHashes

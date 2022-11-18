@@ -29,6 +29,17 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
         assertIs<SecureHash>(tx.id)
     }
 
+    @Test
+    fun `can build a simple Transaction with empty component groups`() {
+        val tx = utxoTransactionBuilder
+            .setNotary(utxoNotaryExample)
+            .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+            .addOutputState(utxoStateExample)
+            .addCommand(UtxoCommandExample())
+            .sign(publicKeyExample)
+        assertIs<SecureHash>(tx.id)
+    }
+
     // TODO Add tests for verification failures.
 
     @Test
