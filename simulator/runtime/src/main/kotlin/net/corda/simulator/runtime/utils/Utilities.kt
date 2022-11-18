@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.utils
 
+import net.corda.simulator.SimulatorConfiguration
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -18,9 +19,9 @@ import net.corda.v5.base.types.MemberX500Name
  * @param fieldClass The type of the field.
  * @param valueCreator A factory method to create the value to assign to the field.
  */
-fun <T> Flow.injectIfRequired(
-    fieldClass: Class<T>,
-    valueCreator: () -> T
+fun Flow.injectIfRequired(
+    fieldClass: Class<*>,
+    valueCreator: () -> Any
 ) = this.javaClass.declaredFields.firstOrNull {
     it.type.equals(fieldClass) && it.canAccess(this) && it.isAnnotationPresent(CordaInject::class.java)
 }?.set(this, valueCreator())
@@ -28,7 +29,7 @@ fun <T> Flow.injectIfRequired(
 /**
  * Converts this [MemberX500Name] to a unique name to use for the persistence sandbox for a member.
  */
-val MemberX500Name.sandboxName: Any
+val MemberX500Name.sandboxName: String
     get() {
         return this.toString()
             .replace("=", "_")
@@ -36,20 +37,23 @@ val MemberX500Name.sandboxName: Any
             .replace(",", "")
     }
 
-fun checkAPIAvailability(flow: Flow){
+/**
+ * Checks the availability of an API.
+ */
+fun checkAPIAvailability(flow: Flow, configuration: SimulatorConfiguration){
     flow::class.java.declaredFields.forEach {
         if(!it.isAnnotationPresent(CordaInject::class.java))
             return
 
         if(it.type.name.startsWith("net.corda.v5")) {
-            if (!availableAPIs.contains(it.type)) {
+            if (!availableAPIs.contains(it.type) && !configuration.serviceOverrides.containsKey(it.type)) {
                 throw NotImplementedError(
                     "${it.type.name} is not implemented in Simulator for this release"
                 )
             }
         }
         else
-            throw NotImplementedError("Support for Custom Services is not implemented in Simulator for this release")
+            throw NotImplementedError("Support for custom services is not implemented; service was ${it.type.name}")
     }
 }
 

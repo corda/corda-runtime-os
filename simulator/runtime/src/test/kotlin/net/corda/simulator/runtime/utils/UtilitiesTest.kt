@@ -1,7 +1,11 @@
 package net.corda.simulator.runtime.utils
 
+import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.testflows.HelloFlow
+import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -13,8 +17,25 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class UtilitiesTest {
+
+    companion object {
+        class OverrideServiceFlow : Flow {
+            @CordaInject lateinit var service: MerkleTreeFactory
+        }
+
+        class NonImplementedServiceFlow : ResponderFlow {
+            @CordaInject lateinit var service: SingletonSerializeAsToken
+            override fun call(session: FlowSession) = Unit
+        }
+        class CustomServiceFlow : ResponderFlow {
+            @CordaInject lateinit var service: MyService
+            override fun call(session: FlowSession) = Unit
+        }
+        class MyService
+    }
 
     @Test
     fun `should provide injector into flows`() {
@@ -34,28 +55,29 @@ class UtilitiesTest {
 
     @Test
     fun `should throw error when non supported service is injected to a flow`(){
+        val config = mock<SimulatorConfiguration>()
+        val overrideBuilder = ServiceOverrideBuilder<MerkleTreeFactory>{ _, _, _ -> mock()}
+        whenever(config.serviceOverrides).thenReturn(mapOf(Pair(MerkleTreeFactory::class.java, overrideBuilder)))
+
         val flow1 = NonImplementedServiceFlow()
         assertThrows<NotImplementedError>{
-            checkAPIAvailability(flow1)
+            checkAPIAvailability(flow1, config)
         }
+
         val flow2 = CustomServiceFlow()
         assertThrows<NotImplementedError>{
-            checkAPIAvailability(flow2)
+            checkAPIAvailability(flow2, config)
         }
 
-        val flow3 = HelloFlow()
+        val flow3 = OverrideServiceFlow()
         assertDoesNotThrow {
-            checkAPIAvailability(flow3)
+            checkAPIAvailability(flow3, config)
+        }
+
+        val flow4 = HelloFlow()
+        assertDoesNotThrow {
+            checkAPIAvailability(flow4, config)
         }
     }
 
-    class NonImplementedServiceFlow : ResponderFlow {
-        @CordaInject lateinit var service: SingletonSerializeAsToken
-        override fun call(session: FlowSession) = Unit
-    }
-    class CustomServiceFlow : ResponderFlow {
-        @CordaInject lateinit var service: MyService
-        override fun call(session: FlowSession) = Unit
-    }
-    class MyService
 }
