@@ -10,6 +10,7 @@ import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.v5.base.types.MemberX500Name
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
+import java.security.PublicKey
 import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.CertPathValidatorException
@@ -18,6 +19,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
+import java.util.*
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
@@ -33,7 +35,7 @@ class CertificateValidator(
         const val digitalSignatureBit = 0
     }
 
-    fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name) {
+    fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name, expectedPublicKey: PublicKey) {
         val certificateChain = try {
             certificateFactory.generateCertPath(pemCertificateChain.map { pemCertificate ->
                 ByteArrayInputStream(pemCertificate.toByteArray()).use {
@@ -51,9 +53,19 @@ class CertificateValidator(
 
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
+        validatePublicKey(x509LeafCert, expectedPublicKey)
         // Revocation checks are performed separately (see checkRevocation() function), here we just validate the certificate chain.
         validateCertPath(certificateChain)
         validateRevocation(certificateChain, pemCertificateChain, pemTrustStore)
+    }
+
+    private fun validatePublicKey(certificate: X509Certificate, expectedPublicKey: PublicKey) {
+        if (!certificate.publicKey.encoded.contentEquals(expectedPublicKey.encoded)) {
+            throw InvalidPeerCertificate(
+                "The certificate does not contain the expected public key: ${expectedPublicKey.encoded.toBase64()}",
+                certificate
+            )
+        }
     }
 
     private fun validateX500NameMatches(certificate: X509Certificate, expectedX500Name: MemberX500Name) {
@@ -117,5 +129,9 @@ class CertificateValidator(
 
     private fun CertPath.toX509(): Array<X509Certificate?> {
         return this.certificates.map { it as? X509Certificate }.toTypedArray()
+    }
+
+    private fun ByteArray.toBase64(): String {
+        return Base64.getEncoder().encodeToString(this)
     }
 }

@@ -11,6 +11,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.Certificate
@@ -26,8 +27,10 @@ class CertificateValidatorTest {
     private val certX500Name =  MemberX500Name.parse("CN=cert, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
     private val certPathValidator = mock<CertPathValidator>()
     private val certificatePemString = "certificate"
+    private val publicKey = mock<PublicKey>()
     private val certificate = mock<X509Certificate> {
         on {subjectX500Principal} doReturn certX500Name.x500Principal
+        on {publicKey} doReturn publicKey
     }
     private val certificateChain = mock<CertPath> {
         on { certificates } doReturn listOf(certificate)
@@ -51,7 +54,7 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
 
     @Test
@@ -59,7 +62,7 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), aliceX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), aliceX500Name, publicKey) }
     }
 
     @Test
@@ -69,7 +72,7 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
 
     @Test
@@ -82,7 +85,7 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
 
     @Test
@@ -91,7 +94,7 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
 
     @Test
@@ -103,6 +106,6 @@ class CertificateValidatorTest {
         val validator = CertificateValidator(
             RevocationCheckMode.HARD_FAIL, pemTruststore, { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
 }
