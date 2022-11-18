@@ -37,7 +37,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addCommand(UtxoCommandExample())
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
