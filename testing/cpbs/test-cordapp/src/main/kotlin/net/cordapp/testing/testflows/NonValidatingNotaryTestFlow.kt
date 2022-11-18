@@ -72,6 +72,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         const val DUMMY_TX_ID_2 = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
     }
 
+    @Suppress("DEPRECATION")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
@@ -116,7 +117,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                     )
                 }
             }
-            .sign(myInfo.sessionInitiationKey)
+            .toSignedTransaction(myInfo.sessionInitiationKey)
 
         val sigs = flowEngine.subFlow(
             NonValidatingNotaryClientFlowImpl(
@@ -173,3 +174,4 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         )
     }
 }
+
