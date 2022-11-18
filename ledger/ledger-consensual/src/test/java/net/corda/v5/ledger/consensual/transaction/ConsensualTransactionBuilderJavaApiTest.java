@@ -68,53 +68,26 @@ public class ConsensualTransactionBuilderJavaApiTest {
 
 
     @Test
-    public void signWithZeroKey() {
+    public void toSignedTransactionWithZeroKey() {
         final ConsensualSignedTransaction mockSignedTransaction = mock(ConsensualSignedTransaction.class);
-        when(consensualTransactionBuilder.sign()).thenReturn(mockSignedTransaction);
+        when(consensualTransactionBuilder.toSignedTransaction()).thenReturn(mockSignedTransaction);
 
-        final ConsensualSignedTransaction result = consensualTransactionBuilder.sign();
+        final ConsensualSignedTransaction result = consensualTransactionBuilder.toSignedTransaction();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(mockSignedTransaction);
-        verify(consensualTransactionBuilder, times(1)).sign();
+        verify(consensualTransactionBuilder, times(1)).toSignedTransaction();
     }
     @Test
-    public void signWithOneKey() {
+    public void toSignedTransaction() {
         final PublicKey publicKey = mock(PublicKey.class);
         final ConsensualSignedTransaction mockSignedTransaction = mock(ConsensualSignedTransaction.class);
-        when(consensualTransactionBuilder.sign(publicKey)).thenReturn(mockSignedTransaction);
+        when(consensualTransactionBuilder.toSignedTransaction(publicKey)).thenReturn(mockSignedTransaction);
 
-        final ConsensualSignedTransaction result = consensualTransactionBuilder.sign(publicKey);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(mockSignedTransaction);
-        verify(consensualTransactionBuilder, times(1)).sign(publicKey);
-    }
-    @Test
-    public void signWithTwoKeys() {
-        final PublicKey publicKey1 = mock(PublicKey.class);
-        final PublicKey publicKey2 = mock(PublicKey.class);
-        final ConsensualSignedTransaction mockSignedTransaction = mock(ConsensualSignedTransaction.class);
-        when(consensualTransactionBuilder.sign(publicKey1, publicKey2)).thenReturn(mockSignedTransaction);
-
-        final ConsensualSignedTransaction result = consensualTransactionBuilder.sign(publicKey1, publicKey2);
+        final ConsensualSignedTransaction result = consensualTransactionBuilder.toSignedTransaction(publicKey);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(mockSignedTransaction);
-        verify(consensualTransactionBuilder, times(1)).sign(publicKey1, publicKey2);
+        verify(consensualTransactionBuilder, times(1)).toSignedTransaction(publicKey);
     }
-    @Test
-    public void signWithListOfKeys() {
-        final List<PublicKey> publicKeyList = Arrays.asList(mock(PublicKey.class), mock(PublicKey.class));
-        final ConsensualSignedTransaction mockSignedTransaction = mock(ConsensualSignedTransaction.class);
-        when(consensualTransactionBuilder.sign(publicKeyList)).thenReturn(mockSignedTransaction);
-
-        final ConsensualSignedTransaction result = consensualTransactionBuilder.sign(publicKeyList);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(mockSignedTransaction);
-        verify(consensualTransactionBuilder, times(1)).sign(publicKeyList);
-    }
-
-
 }

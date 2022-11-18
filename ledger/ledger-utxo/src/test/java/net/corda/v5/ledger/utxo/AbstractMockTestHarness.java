@@ -14,9 +14,7 @@ import org.mockito.Mockito;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -167,9 +165,6 @@ public class AbstractMockTestHarness {
     private void initializeUtxoSignedTransaction() {
         Mockito.when(utxoSignedTransaction.getId()).thenReturn(hash);
         Mockito.when(utxoSignedTransaction.getSignatures()).thenReturn(signatures);
-        Mockito.when(utxoSignedTransaction.addSignatures(List.of(aliceSignature, bobSignature))).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoSignedTransaction.addSignatures(aliceSignature, bobSignature)).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoSignedTransaction.getMissingSignatories()).thenReturn(setOfKeys);
         Mockito.when(utxoSignedTransaction.toLedgerTransaction()).thenReturn(utxoLedgerTransaction);
     }
 
@@ -189,8 +184,7 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState, 0)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.sign()).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoTransactionBuilder.sign(keys)).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoTransactionBuilder.sign(aliceKey, bobKey)).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.toSignedTransaction()).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.toSignedTransaction(aliceKey)).thenReturn(utxoSignedTransaction);
     }
 }

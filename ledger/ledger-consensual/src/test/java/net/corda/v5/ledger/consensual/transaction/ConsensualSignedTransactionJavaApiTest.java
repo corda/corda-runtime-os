@@ -59,42 +59,4 @@ public class ConsensualSignedTransactionJavaApiTest {
         Assertions.assertThat(result).isEqualTo(consensualLedgerTransaction);
         verify(consensualSignedTransaction, times(1)).toLedgerTransaction();
     }
-
-    @Test
-    public void addSignaturePublicKey() {
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        final ConsensualSignedTransaction consensualSignedTransaction = mock(ConsensualSignedTransaction.class);
-        Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> expectedResult = new Pair(consensualSignedTransaction, signatureWithMetaData);
-        when(consensualSignedTransaction.addSignature(mockPublicKey)).thenReturn(expectedResult);
-
-        final Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> result = consensualSignedTransaction.addSignature(mockPublicKey);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(expectedResult);
-        verify(consensualSignedTransaction, times(1)).addSignature(mockPublicKey);
-    }
-
-    @Test
-    public void addSignatureSignature() {
-        final ConsensualSignedTransaction consensualSignedTransaction = mock(ConsensualSignedTransaction.class);
-        when(consensualSignedTransaction.addSignature(signatureWithMetaData)).thenReturn(consensualSignedTransaction);
-
-        final ConsensualSignedTransaction result = consensualSignedTransaction.addSignature(signatureWithMetaData);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(consensualSignedTransaction);
-        verify(consensualSignedTransaction, times(1)).addSignature(signatureWithMetaData);
-    }
-
-    @Test
-    public void getMissingSignatories() {
-        final Set<PublicKey> publicKeys = Set.of(mock(PublicKey.class));
-        when(consensualSignedTransaction.getMissingSignatories()).thenReturn(publicKeys);
-
-        final Set<PublicKey> result = consensualSignedTransaction.getMissingSignatories();
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(publicKeys);
-        verify(consensualSignedTransaction, times(1)).getMissingSignatories();
-    }
 }
