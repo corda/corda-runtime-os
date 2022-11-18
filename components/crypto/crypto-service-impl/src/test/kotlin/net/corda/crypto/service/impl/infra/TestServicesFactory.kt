@@ -125,7 +125,7 @@ class TestServicesFactory {
     val coordinatorFactory: TestLifecycleCoordinatorFactoryImpl = TestLifecycleCoordinatorFactoryImpl()
 
     val digest: DigestService by lazy {
-        DigestServiceImpl(schemeMetadata, null)
+        DigestServiceImpl(schemeMetadata)
     }
 
     val verifier: SignatureVerificationService by lazy {
