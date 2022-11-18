@@ -1,6 +1,5 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -49,8 +48,6 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         override val owningMember: MemberX500Name
             get() = TODO("Not yet implemented")
         override val groupParameters: GroupParameters
-            get() = TODO("Not yet implemented")
-        override val cpiAllowList: CPIAllowList
             get() = TODO("Not yet implemented")
 
         override fun lookup(): Collection<MemberInfo> {

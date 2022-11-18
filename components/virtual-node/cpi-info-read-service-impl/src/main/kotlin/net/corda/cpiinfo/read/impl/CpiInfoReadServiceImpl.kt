@@ -1,7 +1,6 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -77,10 +76,9 @@ class CpiInfoReadServiceImpl @Activate constructor(
     fun close() {
         log.debug { "Cpi Info Reader Service component closing" }
         coordinator.close()
-        cpiInfoProcessor.close()
     }
 
-    override fun getAll(): List<CpiMetadata> = cpiInfoProcessor.getAll()
+    override fun getAll(): Collection<CpiMetadata> = cpiInfoProcessor.getAll()
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
         getAll()
@@ -95,7 +93,4 @@ class CpiInfoReadServiceImpl @Activate constructor(
             }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
-
-    override fun registerCallback(listener: CpiInfoListener): AutoCloseable =
-        cpiInfoProcessor.registerCallback(listener)
 }

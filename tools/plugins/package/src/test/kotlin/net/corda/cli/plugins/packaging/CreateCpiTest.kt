@@ -21,6 +21,8 @@ import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
 import net.corda.utilities.exists
 import org.junit.jupiter.api.Assertions.assertFalse
 import picocli.CommandLine.Help
+import java.io.ByteArrayInputStream
+import java.io.File
 
 class CreateCpiTest {
 
@@ -41,6 +43,8 @@ class CreateCpiTest {
     private lateinit var app: CreateCpi
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
+    private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
+        ?: error("InvalidTestGroupPolicy.json not found"))
     private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
         ?: error("signingkeys.pfx not found"))
 
@@ -135,6 +139,32 @@ class CreateCpiTest {
         checkCpi(outputFile)
     }
 
+    @Test
+    fun `cpi create tool handles group policy passed through standard input`() {
+        val outputFile = tmpOutputFile()
+        val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
+
+        val systemIn = System.`in`
+        val testIn = ByteArrayInputStream(groupPolicyString.toByteArray())
+        System.setIn(testIn)
+
+        val errText = captureStdErr {
+            CommandLine(app).execute(
+                "--cpb=${testCpb}",
+                "--group-policy=-",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        System.setIn(systemIn)
+        // Expect output to be silent on success
+        assertEquals("", errText)
+        checkCpi(outputFile)
+    }
 
     private fun checkCpi(outputFile: Path) {
         // Check files are present
@@ -244,6 +274,31 @@ Creates a CPI from a CPB and GroupPolicy.json file.
                 "net.corda.libs.packaging.core.exception.CordappManifestException: " +
                         "Manifest is missing required attribute \"Corda-CPB-Name\""
             )
+        )
+    }
+
+    @Test
+    fun `cpi create tool aborts if its group policy is invalid`() {
+        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+
+        val outText = captureStdErr {
+            CommandLine(app).execute(
+                "--cpb=${testCpb}",
+                "--group-policy=${invalidTestGroupPolicy}",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        assertFalse(outputFile.exists())
+        assertTrue(outText.contains("MembershipSchemaValidationException: Exception when validating membership schema"))
+        assertTrue(
+            outText.contains(
+                "Failed to validate against schema \"corda.group.policy\" due to the following error(s): " +
+                        "[\$.groupId: does not match the regex pattern")
         )
     }
 }

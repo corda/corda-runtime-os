@@ -12,7 +12,7 @@ import java.time.Instant
  */
 data class TimeWindowUntilImpl(override val until: Instant) : TimeWindow {
 
-    override val from: Instant = Instant.MIN
+    override val from: Instant? = null
 
     /**
      * Determines whether the current [TimeWindow] contains the specified [Instant].

@@ -109,17 +109,18 @@ class WireTransaction(
             )
         )
 
-    val componentMerkleTrees: Map<Int, MerkleTree> get() = _componentMerkleTrees
-    private val _componentMerkleTrees: MutableMap<Int, MerkleTree> = ConcurrentHashMap()
-
-    val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val componentGroupRoots: List<ByteArray> = componentGroupLists.mapIndexed { index, group ->
-            val componentMerkleTree = merkleTreeProvider.createTree(
-                group,
+    val componentMerkleTrees: ConcurrentHashMap<Int, MerkleTree> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        ConcurrentHashMap(componentGroupLists.mapIndexed { index, group ->
+            index to merkleTreeProvider.createTree(
+                group.ifEmpty { listOf(ByteArray(0)) },
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
-            _componentMerkleTrees[index] = componentMerkleTree
-            componentMerkleTree.root.bytes
+        }.toMap())
+    }
+
+    val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val componentGroupRoots: List<ByteArray> = List(componentGroupLists.size) { index ->
+            componentMerkleTrees[index]!!.root.bytes
         }
 
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())

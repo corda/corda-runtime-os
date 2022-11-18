@@ -14,6 +14,6 @@ class InvalidMaxMessageSizeProposedError(msg: String): CordaRuntimeException(msg
  */
 class InvalidPeerCertificate private constructor(msg: String?, certChain: String): CordaRuntimeException((msg ?: "") + certChain) {
     constructor(msg: String?, certChain: Array<X509Certificate?>?): this(msg, "\nCertificate chain: \n" + certPathToString(certChain) )
-    constructor(msg: String, cert: X509Certificate): this(msg, "\nCertificate: \n" + arrayOf(cert))
+    constructor(msg: String, cert: X509Certificate): this(msg, "\nCertificate: \n" + certPathToString(arrayOf(cert)))
     constructor(msg: String): this(msg, "")
 }

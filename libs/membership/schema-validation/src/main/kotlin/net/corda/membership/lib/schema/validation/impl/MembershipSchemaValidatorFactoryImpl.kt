@@ -1,4 +1,4 @@
-package net.corda.membership.lib.schema.validation.impl;
+package net.corda.membership.lib.schema.validation.impl
 
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.membership.provider.MembershipSchemaProviderFactory

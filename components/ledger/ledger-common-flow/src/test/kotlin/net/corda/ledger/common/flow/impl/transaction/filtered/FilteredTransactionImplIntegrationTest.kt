@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -42,6 +43,7 @@ class FilteredTransactionImplIntegrationTest {
 
     private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val serializationService = mock<SerializationService>()
 
@@ -69,6 +71,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2),
@@ -110,6 +113,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2)
@@ -149,6 +153,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3)
@@ -188,6 +193,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3)
@@ -220,6 +226,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2)
@@ -255,6 +262,7 @@ class FilteredTransactionImplIntegrationTest {
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
+            jsonValidator,
             componentGroupLists = listOf(
                 listOf(COMPONENT_1),
                 listOf(COMPONENT_1, COMPONENT_2)

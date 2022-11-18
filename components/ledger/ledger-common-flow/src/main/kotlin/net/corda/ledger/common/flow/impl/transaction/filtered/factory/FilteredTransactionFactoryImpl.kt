@@ -61,6 +61,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun filterComponentGroup(
         wireTransaction: WireTransaction,
         parameters: ComponentGroupFilterParameters,
@@ -74,6 +75,10 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             wireTransaction.privacySalt,
             componentGroupIndex
         )
+        val componentGroupMerkleTreeSizeProofProvider =
+            checkNotNull(componentGroupMerkleTreeDigestProvider as? MerkleTreeHashDigestProviderWithSizeProofSupport) {
+                "Expected to have digest provider with size proof support"
+            }
 
         val merkleProof = when (parameters) {
             is ComponentGroupFilterParameters.AuditProof -> {
@@ -93,9 +98,14 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
-                        merkleTree.createAuditProof(listOf(0))
+                        // If the unfiltered component gropup is empty, we return the proof of the marker.
+                        if (componentGroup.isEmpty()) {
+                            merkleTree.createAuditProof(listOf(0))
+                        } else {    //If we filter out everything, we return a size proof.
+                            componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
+                        }
                     } else {
-                        merkleTree.createAuditProof(filteredComponents.map { (index, _) -> index })
+                        merkleTree.createAuditProof(filteredComponents.map { it.first })
                     }
                 }
             }
@@ -105,10 +115,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                     if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
                         merkleTree.createAuditProof(listOf(0))
                     } else {
-                        val componentGroupMerkleTreeSizeProofProvider =
-                            checkNotNull(componentGroupMerkleTreeDigestProvider as? MerkleTreeHashDigestProviderWithSizeProofSupport) {
-                                "Expected to have digest provider with size proof support"
-                            }
                         componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                     }
                 }

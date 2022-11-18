@@ -16,7 +16,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         transactionMetadataFactory,
         wireTransactionFactory,
         flowFiberService,
-        jsonMarshallingService
+        jsonMarshallingService,
+        jsonValidator
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
@@ -30,6 +31,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         merkleTreeProvider,
         serializationServiceWithWireTx,
         jsonMarshallingService,
+        jsonValidator,
         mockTransactionSignatureService()
     )
     
