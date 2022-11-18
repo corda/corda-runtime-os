@@ -84,11 +84,11 @@ class DistributeMembershipPackageHandler(
         // Verify that the group parameters from the reader are the ones persisted during registration approval.
         // If not, republish the distribute command to be processed later when the updated set of group parameters
         // is available.
-        val groupParameters = groupReader.groupParameters.apply {
+        val groupParameters = groupReader.groupParameters?.apply {
             if (epoch != command.groupParametersEpoch) {
-                return RegistrationHandlerResult(state, listOf(Record(REGISTRATION_COMMAND_TOPIC, key, command)))
+                return logAndReattemptDistribution(state, key, command)
             }
-        }
+        } ?: return logAndReattemptDistribution(state, key, command)
 
         val messages = try {
             val allMembers = groupReader.lookup()
@@ -137,6 +137,16 @@ class DistributeMembershipPackageHandler(
             RegistrationState(registrationId, approvedMember, approvedBy),
             messages
         )
+    }
+
+    private fun logAndReattemptDistribution(
+        state: RegistrationState?,
+        key: String,
+        command: DistributeMembershipPackage
+    ): RegistrationHandlerResult {
+        logger.info("Retrieved group parameters are outdated or null. Republishing the distribute command to be processed" +
+                " later when the updated set of group parameters is available.")
+        return RegistrationHandlerResult(state, listOf(Record(REGISTRATION_COMMAND_TOPIC, key, command)))
     }
 
     private fun createMembershipPackageFactory(

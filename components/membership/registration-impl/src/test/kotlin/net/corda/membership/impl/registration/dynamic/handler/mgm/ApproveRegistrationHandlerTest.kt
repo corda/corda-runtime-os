@@ -77,7 +77,12 @@ class ApproveRegistrationHandlerTest {
                 registrationId
             )
         } doReturn MembershipPersistenceResult.Success(notaryInfo)
-        on { addNotaryToGroupParameters(mgm.holdingIdentity, notaryInfo) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        on {
+            addNotaryToGroupParameters(
+                mgm.holdingIdentity,
+                notaryInfo
+            )
+        } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
     }
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()

@@ -85,11 +85,10 @@ internal class ApproveRegistrationHandler(
                 }
                 val parametersMap = result.getOrThrow().toMap()
                 parametersMap[EPOCH_KEY]?.toInt()
-                    ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
             } else {
                 val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-                reader.groupParameters.epoch
-            }
+                reader.groupParameters?.epoch
+            } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
 
             val distributionCommand = Record(
                 REGISTRATION_COMMAND_TOPIC,

@@ -216,6 +216,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
             val allMembers = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
             val groupParameters = groupReader.groupParameters
+                ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
