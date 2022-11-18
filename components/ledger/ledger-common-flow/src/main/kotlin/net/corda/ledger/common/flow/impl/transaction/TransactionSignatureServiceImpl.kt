@@ -60,7 +60,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val signatureSpec = SignatureSpec(signatureSpecStr)
 
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
-        require(signatureSpec.signatureName in compatibleSpecs.map{it.signatureName}) { // TODO SignatureSpec's does not have equal.
+        require(signatureSpec in compatibleSpecs) {
             "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
         }
 
