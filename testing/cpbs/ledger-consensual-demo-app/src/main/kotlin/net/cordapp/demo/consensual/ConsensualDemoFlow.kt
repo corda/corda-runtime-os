@@ -67,12 +67,13 @@ class ConsensualDemoFlow : RPCStartableFlow {
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
+            @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .sign(myInfo.ledgerKeys.first())
+                .toSignedTransaction(myInfo.ledgerKeys.first())
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
-            val finalizedSignedTransaction = consensualLedgerService.finality(
+            val finalizedSignedTransaction = consensualLedgerService.finalize(
                 signedTransaction,
                 sessions
             )
@@ -99,14 +100,13 @@ class ConsensualResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { signedTransaction ->
-            val ledgerTransaction = signedTransaction.toLedgerTransaction()
+        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { ledgerTransaction ->
             val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
             if (state.testField == "fail") {
-                log.info("Failed to verify the transaction - $signedTransaction")
+                log.info("Failed to verify the transaction - $ledgerTransaction")
                 throw IllegalStateException("Failed verification")
             }
-            log.info("Verified the transaction- $signedTransaction")
+            log.info("Verified the transaction- $ledgerTransaction")
         }
 
         log.info("Finished responder flow - $finalizedSignedTransaction")

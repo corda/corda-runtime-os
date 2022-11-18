@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
+@Suppress("DEPRECATION")
 internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
@@ -25,7 +26,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addReferenceInputState(getUtxoInvalidStateAndRef())
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
@@ -36,7 +37,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addCommand(UtxoCommandExample())
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
@@ -52,7 +53,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addReferenceInputState(getUtxoInvalidStateAndRef())
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            .sign(publicKeyExample) as UtxoSignedTransactionImpl
+            .toSignedTransaction(publicKeyExample) as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())
@@ -94,8 +95,8 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
 
-            builder.sign(publicKeyExample)
-            builder.sign(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
+            builder.toSignedTransaction(publicKeyExample)
         }
     }
 }

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
+@Suppress("DEPRECATION")
 class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
@@ -40,7 +41,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addReferenceInputState(referenceStateAndRef)
             .addCommand(command)
             .addAttachment(attachment)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
 
         assertIs<UtxoSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
