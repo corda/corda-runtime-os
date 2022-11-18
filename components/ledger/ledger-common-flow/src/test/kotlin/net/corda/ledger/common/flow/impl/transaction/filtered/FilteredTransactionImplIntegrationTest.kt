@@ -41,7 +41,7 @@ class FilteredTransactionImplIntegrationTest {
     private lateinit var wireTransaction: WireTransaction
     private lateinit var filteredTransaction: FilteredTransaction
 
-    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
+    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl())
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)

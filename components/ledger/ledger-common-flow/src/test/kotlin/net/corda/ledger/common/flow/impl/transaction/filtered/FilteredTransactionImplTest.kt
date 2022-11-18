@@ -45,7 +45,7 @@ class FilteredTransactionImplTest {
     }
 
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val digestService = DigestServiceImpl(cipherSchemeMetadata)
 
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = mock<JsonMarshallingService>()

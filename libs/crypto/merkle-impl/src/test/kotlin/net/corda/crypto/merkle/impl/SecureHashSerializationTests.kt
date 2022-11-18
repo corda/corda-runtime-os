@@ -21,7 +21,7 @@ class SecureHashSerializationTests {
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
+            digestService = DigestServiceImpl(schemeMetadata)
         }
     }
 

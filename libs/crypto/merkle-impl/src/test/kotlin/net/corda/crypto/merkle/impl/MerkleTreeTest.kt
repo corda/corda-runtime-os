@@ -40,7 +40,7 @@ class MerkleTreeTest {
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
+            digestService = DigestServiceImpl(schemeMetadata)
             secureRandom = schemeMetadata.secureRandom
 
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)

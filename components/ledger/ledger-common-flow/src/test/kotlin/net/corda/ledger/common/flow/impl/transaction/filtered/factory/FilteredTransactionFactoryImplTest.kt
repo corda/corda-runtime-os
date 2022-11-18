@@ -33,7 +33,7 @@ class FilteredTransactionFactoryImplTest {
         val COMPONENT_3 = "Component 3".toByteArray()
     }
 
-    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
+    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl())
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
