@@ -6,7 +6,7 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.io.Serializable
 
 /**
- * [UtxoTransactionValidator] verifies a [UtxoLedgerTransaction].
+ * [UtxoTransactionValidator] validates a [UtxoLedgerTransaction].
  *
  * Implement [UtxoTransactionValidator] and pass the implementation into [UtxoLedgerService.receiveFinality] to perform
  * custom validation on the [UtxoLedgerTransaction] received from the initiator of finality.

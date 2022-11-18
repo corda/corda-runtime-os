@@ -60,7 +60,7 @@ interface ConsensualLedgerService {
      * Verifies, signs and records a [ConsensualSignedTransaction].
      *
      * @param session The [FlowSession] to receive the [ConsensualSignedTransaction] from.
-     * @param validator Verifies the received [ConsensualSignedTransaction].
+     * @param validator Validates the received [ConsensualSignedTransaction].
      *
      * @return The fully signed [ConsensualSignedTransaction] that was received and recorded.
      */

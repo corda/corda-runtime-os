@@ -6,7 +6,7 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import java.io.Serializable
 
 /**
- * [ConsensualTransactionValidator] verifies a [ConsensualLedgerTransaction].
+ * [ConsensualTransactionValidator] validates a [ConsensualLedgerTransaction].
  *
  * Implement [ConsensualTransactionValidator] and pass the implementation into [ConsensualLedgerService.receiveFinality] to perform
  * custom validation on the [ConsensualLedgerTransaction] received from the initiator of finality.
