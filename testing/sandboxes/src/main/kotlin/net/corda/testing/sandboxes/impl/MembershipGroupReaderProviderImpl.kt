@@ -1,6 +1,5 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
@@ -40,8 +39,6 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
 
         override val groupParameters: GroupParameters
             get() = TODO("groupParameters: Not yet implemented")
-        override val cpiAllowList: CPIAllowList
-            get() = TODO("cpiAllowList: Not yet implemented")
 
         override fun lookup(): Collection<MemberInfo> {
             throw IllegalStateException("TEST MODULE: Membership not supported")

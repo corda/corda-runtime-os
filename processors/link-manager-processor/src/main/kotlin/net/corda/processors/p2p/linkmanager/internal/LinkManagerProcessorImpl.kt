@@ -17,6 +17,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -57,6 +58,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = GroupParametersReaderService::class)
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -111,6 +114,7 @@ class LinkManagerProcessorImpl @Activate constructor(
                     cryptoOpsClient,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
+                    groupParametersReaderService,
                     //This will be removed once integration with MGM/crypto has been completed.
                     thirdPartyComponentMode
                 )

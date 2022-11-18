@@ -6,6 +6,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
@@ -16,7 +17,8 @@ import net.corda.virtualnode.HoldingIdentity
 
 internal class ForwardingMembershipGroupReader(
     private val groupReaderProvider: MembershipGroupReaderProvider,
-    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    groupParametersReaderService: GroupParametersReaderService,
 ): LinkManagerMembershipGroupReader {
 
     companion object {
@@ -41,9 +43,13 @@ internal class ForwardingMembershipGroupReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
+        dependentChildren = setOf(
+            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+            LifecycleCoordinatorName.forComponent<GroupParametersReaderService>(),
+        ),
         managedChildren = setOf(
             NamedLifecycle(groupReaderProvider, LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
+            NamedLifecycle(groupParametersReaderService, LifecycleCoordinatorName.forComponent<GroupParametersReaderService>()),
         )
     )
 

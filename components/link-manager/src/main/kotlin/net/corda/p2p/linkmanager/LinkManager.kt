@@ -9,6 +9,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -45,6 +46,7 @@ class LinkManager(
     cryptoOpsClient: CryptoOpsClient,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
+    groupParametersReaderService: GroupParametersReaderService,
     thirdPartyComponentsMode: ThirdPartyComponentsMode,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
@@ -72,7 +74,8 @@ class LinkManager(
     }
 
     private val members: LinkManagerMembershipGroupReader = when(thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL -> ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory)
+        ThirdPartyComponentsMode.REAL ->
+            ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
         ThirdPartyComponentsMode.STUB -> StubMembershipGroupReader(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
     }
 
