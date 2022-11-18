@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.tests
 
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
@@ -14,7 +15,7 @@ class UtxoSignedTransactionAMQPSerializationTest: UtxoLedgerIntegrationTest() {
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            serializationService.deserialize(serialised, UtxoSignedTransaction::class.java)
+            serializationService.deserialize(serialised)
 
         assertThat(deserialized.javaClass.name)
             .isEqualTo("net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl")
