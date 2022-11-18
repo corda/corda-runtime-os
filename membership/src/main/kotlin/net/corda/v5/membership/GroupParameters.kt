@@ -19,6 +19,7 @@ import java.time.Instant
  * int minimumPlatformVersion = groupParameters.getMinimumPlatformVersion();
  * Instant modifiedTime = groupParameters.getModifiedTime();
  * int epoch = groupParameters.getEpoch();
+ * Collection<NotaryInfo> notaries = groupParameters.getNotaries();
  * ```
  *
  * ```kotlin
@@ -26,16 +27,19 @@ import java.time.Instant
  * val minimumPlatformVersion = groupParameters?.minimumPlatformVersion
  * val modifiedTime = groupParameters?.modifiedTime
  * val epoch = groupParameters?.epoch
+ * val notaries = groupParameters?.notaries
  * ```
  *
  * @property minimumPlatformVersion The minimum platform version required to be running on in order to transact within a group.
  * @property modifiedTime The [Instant] representing the last time the group parameters were modified.
  * @property epoch An [Int] representing the version of the group parameters. This is incremented on each modification to the
  * group parameters.
+ * @property notaries A collection of all available notary services in the group.
  */
 @CordaSerializable
 interface GroupParameters : LayeredPropertyMap {
     val minimumPlatformVersion: Int
     val modifiedTime: Instant
     val epoch: Int
+    val notaries: Collection<NotaryInfo>
 }

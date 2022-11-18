@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.common
+package net.corda.v5.membership
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
@@ -10,10 +10,10 @@ import java.security.PublicKey
 @CordaSerializable
 interface NotaryInfo {
     /**
-     * Identity of the notary (note that it can be an identity of the distributed node).
+     * Name of the notary (note that it can be an identity of the distributed node).
      *
      */
-    val party: MemberX500Name
+    val name: MemberX500Name
 
     /**
      * The type of notary plugin class used for this notary.
@@ -21,7 +21,7 @@ interface NotaryInfo {
     val pluginClass: String
 
     /**
-     * The public key of the notary service.
+     * The public key of the notary service, which will be a composite key of all notary virtual nodes keys.
      */
     val publicKey: PublicKey
 }

@@ -3,6 +3,7 @@ package net.corda.v5.ledger.common
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.NotaryInfo
 
 /**
  * [NotaryLookup] allows flows to retrieve the [NotaryInfo] in the network.
@@ -13,25 +14,12 @@ import net.corda.v5.base.types.MemberX500Name
 interface NotaryLookup {
 
     /**
-     * A list of notary services available on the network.
+     * Returns a collection of notary services available on the network.
      *
-     * Note that the services are sorted based on legal name, and the
-     * ordering might change once new notaries are introduced.
-     *
-     * In case of converting a returned list to a string representation
-     * use another delimiter rather than "," or wrap each entry with a
-     * postfix and a prefix:
-     * ```
-     * list.joinToString("|")
-     * list.map { "[$it]" }.toString()
-     * ```
-     * This allows to distinguish between each element of a map, as
-     * [MemberX500Name.toString] returns comma separated values of [MemberX500Name].
-     *
-     * @return A list of the network's Notary services.
+     * @return A collection of the network's Notary services.
      */
     @Suspendable
-    val notaryServices: List<NotaryInfo>
+    val notaryServices: Collection<NotaryInfo>
 
     /**
      * Looks up the notary information of a notary by legal name.

@@ -1,18 +1,21 @@
 package net.corda.v5.membership;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GroupParametersJavaApiTest {
 
     private final GroupParameters groupParameters = mock(GroupParameters.class);
+    private final NotaryInfo notary = mock(NotaryInfo.class);
 
     @Test
     public void get() {
@@ -22,8 +25,8 @@ public class GroupParametersJavaApiTest {
 
         final Object obj = groupParameters.get(key);
 
-        Assertions.assertThat(obj).isNotNull();
-        Assertions.assertThat(obj).isEqualTo(value);
+        assertThat(obj).isNotNull();
+        assertThat(obj).isEqualTo(value);
     }
 
     @Test
@@ -33,8 +36,8 @@ public class GroupParametersJavaApiTest {
 
         final Set<Map.Entry<String, String>> keysTest = groupParameters.getEntries();
 
-        Assertions.assertThat(keysTest).isNotNull();
-        Assertions.assertThat(keysTest).isEqualTo(values.entrySet());
+        assertThat(keysTest).isNotNull();
+        assertThat(keysTest).isEqualTo(values.entrySet());
     }
 
     @Test
@@ -42,8 +45,8 @@ public class GroupParametersJavaApiTest {
         when(groupParameters.getMinimumPlatformVersion()).thenReturn(5);
         final int platformVersion = groupParameters.getMinimumPlatformVersion();
 
-        Assertions.assertThat(platformVersion).isNotNull();
-        Assertions.assertThat(platformVersion).isEqualTo(5);
+        assertThat(platformVersion).isNotNull();
+        assertThat(platformVersion).isEqualTo(5);
     }
 
     @Test
@@ -53,8 +56,8 @@ public class GroupParametersJavaApiTest {
 
         final Instant instantTest = groupParameters.getModifiedTime();
 
-        Assertions.assertThat(instantTest).isNotNull();
-        Assertions.assertThat(instantTest).isEqualTo(instant);
+        assertThat(instantTest).isNotNull();
+        assertThat(instantTest).isEqualTo(instant);
     }
 
     @Test
@@ -63,7 +66,16 @@ public class GroupParametersJavaApiTest {
 
         final int epoch = groupParameters.getEpoch();
 
-        Assertions.assertThat(epoch).isNotNull();
-        Assertions.assertThat(epoch).isEqualTo(669);
+        assertThat(epoch).isNotNull();
+        assertThat(epoch).isEqualTo(669);
+    }
+
+    @Test
+    public void notaries() {
+        when(groupParameters.getNotaries()).thenReturn(List.of(notary));
+
+        final Collection<NotaryInfo> result = groupParameters.getNotaries();
+
+        assertThat(result).containsExactly(notary);
     }
 }
