@@ -9,7 +9,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
-import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -84,26 +84,9 @@ class FilteredTransactionImpl(
             val componentLeafHash =
                 SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
-            val providerToVerifyWith = when (filteredComponentGroup.merkleProofType) {
-                MerkleProofType.AUDIT -> {
-                    // todo Size proof's leaves have no nonces. But is it OK to use this to distinguish audit and size proofs?
-                    // This whole section could use that simple if then.
-
-                    if (filteredComponentGroup.merkleProof.leaves.isNotEmpty() && // Size proofs have all leaves
-                        filteredComponentGroup.merkleProof.leaves.first().nonce == null) { // But their nonce is null
-                        componentGroupSizeProofProvider
-                    } else {
-                        componentGroupAuditProofProvider
-                    }
-                }
-
-                MerkleProofType.SIZE -> {
-                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) {
-                        componentGroupAuditProofProvider
-                    } else {
-                        componentGroupSizeProofProvider
-                    }
-                }
+            val providerToVerifyWith = when (filteredComponentGroup.merkleProof.proofType) {
+                MerkleProofType.AUDIT -> componentGroupAuditProofProvider
+                MerkleProofType.SIZE -> componentGroupSizeProofProvider
             }
             validate(filteredComponentGroup.merkleProof.verify(componentLeafHash, providerToVerifyWith)) {
                 "Component group leaf [index = $componentGroupIndex] Merkle proof cannot be verified against the top level Merkle " +
@@ -152,10 +135,6 @@ class FilteredTransactionImpl(
             merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
-    }
-
-    private fun MerkleProof.hasSingleEmptyLeaf(): Boolean {
-        return treeSize == 1 && leaves.single().leafData.isEmpty()
     }
 
     private inline fun validate(condition: Boolean, message: () -> String) {

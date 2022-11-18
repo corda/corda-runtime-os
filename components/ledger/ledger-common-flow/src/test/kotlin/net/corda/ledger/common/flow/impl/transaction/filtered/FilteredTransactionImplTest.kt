@@ -9,7 +9,7 @@ import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
-import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -54,10 +54,11 @@ class FilteredTransactionImplTest {
 
     private val componentGroupMerkleProof = mock<MerkleProof>()
     private val filteredComponentGroup0Proof = mock<MerkleProof>()
-    private val filteredComponentGroup1Proof = mock<MerkleProof>()
+    private val filteredComponentGroup1AuditProof = mock<MerkleProof>()
+    private val filteredComponentGroup1SizeProof = mock<MerkleProof>()
     private val filteredComponentGroup0 = FilteredComponentGroup(0, filteredComponentGroup0Proof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1Proof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1Proof, MerkleProofType.SIZE)
+    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1AuditProof, MerkleProofType.AUDIT)
+    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1SizeProof, MerkleProofType.SIZE)
     private val indexedMerkleLeaf0 = indexedMerkleLeaf(0, byteArrayOf(1))
     private val indexedMerkleLeaf1 = indexedMerkleLeaf(1, byteArrayOf(2))
 
@@ -66,6 +67,10 @@ class FilteredTransactionImplTest {
     @BeforeEach
     fun beforeEach() {
         whenever(jsonMarshallingService.parse(metadataJson, TransactionMetadata::class.java)).thenReturn(metadata)
+        whenever(componentGroupMerkleProof.proofType).thenReturn(MerkleProofType.AUDIT)
+        whenever(filteredComponentGroup0Proof.proofType).thenReturn(MerkleProofType.AUDIT)
+        whenever(filteredComponentGroup1AuditProof.proofType).thenReturn(MerkleProofType.AUDIT)
+        whenever(filteredComponentGroup1SizeProof.proofType).thenReturn(MerkleProofType.SIZE)
     }
 
     @Test
@@ -254,7 +259,7 @@ class FilteredTransactionImplTest {
         filteredComponentGroup0ProofVerifies()
 
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1AuditProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -262,7 +267,7 @@ class FilteredTransactionImplTest {
 
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
+        verify(filteredComponentGroup1AuditProof).verify(any(), any())
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
@@ -280,9 +285,9 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(5)
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(5)
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -290,8 +295,7 @@ class FilteredTransactionImplTest {
 
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
         assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
@@ -309,10 +313,10 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -320,8 +324,7 @@ class FilteredTransactionImplTest {
 
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
         assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
@@ -339,10 +342,10 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -350,10 +353,9 @@ class FilteredTransactionImplTest {
 
         assertDoesNotThrow { filteredTransaction.verify() }
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
         assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.firstValue)
-        assertInstanceOf(NonceHashDigestProvider.Verify::class.java, merkleTreeHashDigestCaptor.secondValue)
+        assertInstanceOf(NonceHashDigestProvider.SizeOnlyVerify::class.java, merkleTreeHashDigestCaptor.secondValue)
     }
 
     @Test
@@ -370,7 +372,7 @@ class FilteredTransactionImplTest {
         filteredComponentGroup0ProofVerifies()
 
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1AuditProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -397,9 +399,9 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(5)
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(5)
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -412,8 +414,7 @@ class FilteredTransactionImplTest {
                         "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
     }
 
     @Test
@@ -429,10 +430,10 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf(1))))
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -445,8 +446,7 @@ class FilteredTransactionImplTest {
                         "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
     }
 
     @Test
@@ -462,10 +462,10 @@ class FilteredTransactionImplTest {
 
         filteredComponentGroup0ProofVerifies()
 
-        whenever(filteredComponentGroup1Proof.treeSize).thenReturn(1)
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
+        whenever(filteredComponentGroup1SizeProof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup1SizeProof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, byteArrayOf())))
         whenever(
-            filteredComponentGroup1Proof.verify(
+            filteredComponentGroup1SizeProof.verify(
                 eq(SecureHash(digestAlgorithmName, indexedMerkleLeaf1.leafData)),
                 merkleTreeHashDigestCaptor.capture()
             )
@@ -478,8 +478,7 @@ class FilteredTransactionImplTest {
                         "index"
             )
         verify(filteredComponentGroup0Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).verify(any(), any())
-        verify(filteredComponentGroup1Proof).treeSize
+        verify(filteredComponentGroup1SizeProof).verify(any(), any())
     }
 
     @Test
@@ -552,7 +551,7 @@ class FilteredTransactionImplTest {
                 1 to filteredComponentGroup1WithAuditProof
             )
         )
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(emptyList())
+        whenever(filteredComponentGroup1AuditProof.leaves).thenReturn(emptyList())
         assertThat(filteredTransaction.getComponentGroupContent(1)).isEmpty()
     }
 
@@ -571,7 +570,7 @@ class FilteredTransactionImplTest {
             indexedMerkleLeaf(2, byteArrayOf(3))
         )
         whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataBytes)))
-        whenever(filteredComponentGroup1Proof.leaves).thenReturn(indexedMerkleLeafs)
+        whenever(filteredComponentGroup1AuditProof.leaves).thenReturn(indexedMerkleLeafs)
 
         assertArrayEquals(metadataBytes, filteredTransaction.getComponentGroupContent(0)!!.single().second)
         filteredTransaction.getComponentGroupContent(1)!!.let {
