@@ -86,7 +86,7 @@ class SoftCryptoServiceOperationsTests {
             coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
             schemeMetadata = CipherSchemeMetadataImpl()
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
-            digestService = DigestServiceImpl(schemeMetadata, null)
+            digestService = DigestServiceImpl(schemeMetadata)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digestService)
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
