@@ -12,7 +12,9 @@ import java.security.PublicKey
 
 class BaseSerializationServiceTest {
 
-    private val serializationService = BaseSerializationService()
+    companion object {
+        private val serializationService = BaseSerializationService()
+    }
 
     // Note we bring in all of Corda's serializers, so there's no point testing all of them; this is just
     // a subset of the most interesting ones.
