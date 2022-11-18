@@ -59,7 +59,11 @@ class ConsensualDemoFlow : RPCStartableFlow {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
             val myInfo = memberLookup.myInfo()
-            val members = request.members.map { memberLookup.lookup(MemberX500Name.parse(it))!! }
+            val members = request.members.map { x500 ->
+                requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {
+                    "Member $x500 does not exist in the membership group"
+                }
+            }
 
             val testConsensualState = TestConsensualState(
                 request.input,
