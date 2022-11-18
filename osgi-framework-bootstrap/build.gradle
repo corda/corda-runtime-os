@@ -24,7 +24,7 @@ dependencies {
 
     // Jackson dependencies for JSON formatted logs
     runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

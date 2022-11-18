@@ -62,7 +62,7 @@ db:
     # the cluster database user configuration
     username:
       # -- the cluster database user
-      value: user
+      value: ""
       # the cluster database user secret configuration; used in preference to value if name is set
       valueFrom: 
         # the cluster database user secret key reference
