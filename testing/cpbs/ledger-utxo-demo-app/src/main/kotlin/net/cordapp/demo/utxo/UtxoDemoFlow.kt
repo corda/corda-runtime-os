@@ -15,22 +15,30 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 import java.time.Instant
 
 /**
- * Example utxo flow. Currently, does almost nothing other than verify that
- * we can inject the ledger service. Eventually it should do a two-party IOUState
- * agreement.
+ * Example utxo flow.
+ * Todo
  */
 
 @InitiatingFlow("utxo-flow-protocol")
 class UtxoDemoFlow : RPCStartableFlow {
-    data class InputMessage(val input: String, val members: List<String>)
+    data class InputMessage(val input: String, val members: List<String>, val notary: String)
 
+    class TestContract : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
+        }
+    }
+
+    @BelongsToContract(TestContract::class)
     class TestUtxoState(
         val testField: String,
         override val participants: List<PublicKey>
@@ -66,6 +74,10 @@ class UtxoDemoFlow : RPCStartableFlow {
                     "Member $x500 does not exist in the membership group"
                 }
             }
+            // TODO NotaryLookup instead of getting the notary from argument
+            val notaryX500 = MemberX500Name.parse(request.notary)
+            val notary = requireNotNull(memberLookup.lookup(
+                notaryX500)) { "Member $notaryX500 does not exist in the membership group" }
 
             val testUtxoState = TestUtxoState(
                 request.input,
@@ -75,7 +87,7 @@ class UtxoDemoFlow : RPCStartableFlow {
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(myInfo.name, myInfo.ledgerKeys.first())) // TODO fix notary
+                .setNotary(Party(notaryX500, notary.ledgerKeys.first())) // ???
                 .setTimeWindowBetween(Instant.MIN, Instant.MAX)
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())

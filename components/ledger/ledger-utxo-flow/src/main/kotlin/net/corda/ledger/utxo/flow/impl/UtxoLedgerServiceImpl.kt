@@ -50,15 +50,18 @@ class UtxoLedgerServiceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
+    @Suspendable
     override fun findSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
         return persistenceService.find(id)
     }
 
+    @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         // TODO resolve, etc
         return persistenceService.find(id)?.toLedgerTransaction()
     }
 
+    @Suspendable
     override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
@@ -74,8 +77,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoFinalityFlow)    }
+        return flowEngine.subFlow(utxoFinalityFlow)
+    }
 
+    @Suspendable
     override fun receiveFinality(
         session: FlowSession,
         validator: UtxoTransactionValidator
@@ -87,5 +92,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        return flowEngine.subFlow(utxoReceiveFinalityFlow)    }
+        return flowEngine.subFlow(utxoReceiveFinalityFlow)
+    }
 }
