@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -28,6 +27,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.publisher.waitOnPublisherFutures
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
@@ -137,12 +137,14 @@ class FlowRPCOpsImpl @Activate constructor(
             Record(FLOW_STATUS_TOPIC, status.key, status),
         )
 
-        try {
-            val recordFutures = publisher!!.publish(records)
-            CompletableFuture.allOf(*recordFutures.toTypedArray())
-                .get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        } catch (e: Exception) {
-            throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", e)
+        val recordFutures = publisher!!.publish(records)
+        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { exception, failureIsTerminal ->
+            if (failureIsTerminal) {
+                log.error("This worker will terminate, fatal error occurred", exception)
+                // TODO terminate process
+            } else {
+                throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", exception)
+            }
         }
 
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
