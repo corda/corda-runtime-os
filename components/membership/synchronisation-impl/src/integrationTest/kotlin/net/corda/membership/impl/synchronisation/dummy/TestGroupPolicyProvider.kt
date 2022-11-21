@@ -57,12 +57,12 @@ class TestGroupPolicyProviderImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("TestGroupPolicyProvider starting.")
+        logger.info("${this::class.java.simpleName} starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("TestGroupPolicyProvider stopping.")
+        logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
 
@@ -91,7 +91,7 @@ class MemberTestGroupPolicy : GroupPolicy {
 
 }
 
-class MgmTestGroupPolicy : GroupPolicy{
+class MgmTestGroupPolicy : GroupPolicy {
     companion object {
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
