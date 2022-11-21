@@ -37,4 +37,9 @@ object UniquenessConstants {
      * Character representation of rejected results, used in the backing store
      */
     const val RESULT_REJECTED_REPRESENTATION = 'R'
+
+    /**
+     * Specifies size for Hibernate batch processing.
+     */
+    const val HIBERNATE_JDBC_BATCH_SIZE = 50
 }

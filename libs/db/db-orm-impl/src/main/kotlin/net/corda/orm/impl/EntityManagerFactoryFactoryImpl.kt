@@ -79,6 +79,9 @@ class EntityManagerFactoryFactoryImpl(
             "hibernate.connection.isolation" to configuration.transactionIsolationLevel.jdbcValue.toString(),
             "hibernate.hbm2ddl.auto" to configuration.ddlManage.convert(),
             "hibernate.jdbc.time_zone" to configuration.jdbcTimezone,
+            "hibernate.jdbc.batch_versioned_data" to "true",
+            "hibernate.order_inserts" to "true",
+            "hibernate.order_updates" to "true",
             // should these also be configurable?
             //
             // TODO - statistics integration isn't working in OSGi.

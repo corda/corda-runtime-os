@@ -16,6 +16,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
     implementation "net.corda:corda-ledger-utxo"
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
