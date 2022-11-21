@@ -110,8 +110,10 @@ class CpiInfoDbReconcilerReaderTest {
         val em = mock<EntityManager>()
         whenever(em.transaction).thenReturn(mock())
         whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
+        val reconciliationContext = mock<ReconciliationContext>()
+        whenever(reconciliationContext.entityManager).thenReturn(em)
 
-        val versionedRecords = getAllCpiInfoDBVersionedRecords(em).toList()
+        val versionedRecords = getAllCpiInfoDBVersionedRecords(reconciliationContext).toList()
         val record = versionedRecords.single()
 
         val expectedId = CpiIdentifier(
