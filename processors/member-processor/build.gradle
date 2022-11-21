@@ -19,7 +19,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
 
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:crypto:crypto-ecies')
+    implementation project(':components:crypto:crypto-hes')
     implementation project(':components:membership:group-params-writer-service')
     implementation project(":components:membership:group-policy")
     implementation project(":components:membership:membership-group-read")
@@ -37,7 +37,7 @@ dependencies {
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    runtimeOnly project(':components:crypto:crypto-ecies-impl')
+    runtimeOnly project(':components:crypto:crypto-hes-impl')
     runtimeOnly project(':components:membership:group-params-writer-service-impl')
     runtimeOnly project(":components:membership:group-policy-impl")
     runtimeOnly project(":components:membership:membership-persistence-client-impl")

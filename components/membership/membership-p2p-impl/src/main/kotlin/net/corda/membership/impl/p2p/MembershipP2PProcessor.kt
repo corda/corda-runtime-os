@@ -1,6 +1,6 @@
 package net.corda.membership.impl.p2p
 
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
