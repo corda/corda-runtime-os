@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -40,7 +42,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     private val memberLookup = mock<MemberLookup>()
-    //private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val serializationService = mock<SerializationService>()
 
     private val session = mock<FlowSession>()
@@ -87,7 +89,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(signedTransaction).sign(publicKey1)
         verify(signedTransaction).sign(publicKey2)
-        //verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
         verify(session).send(Unit)
     }
@@ -100,7 +102,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(signedTransaction).sign(publicKey1)
         verify(signedTransaction, never()).sign(publicKey2)
-        //verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
         verify(session).send(Unit)
     }
@@ -112,7 +114,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessageContaining("Transaction verification failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -122,7 +124,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessageContaining("Transaction verification failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -132,7 +134,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessageContaining("Transaction verification failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -142,7 +144,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessage("message!")
 
         verify(session, never()).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -168,7 +170,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(signedTransaction, never()).sign(any<PublicKey>())
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -183,7 +185,7 @@ class UtxoReceiveFinalityFlowTest {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Expected to received transaction $ID from $MEMBER to finalise but received $wrongId instead")
 
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -194,13 +196,13 @@ class UtxoReceiveFinalityFlowTest {
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("There are missing signatures")
 
-        //verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
     private fun callReceiveFinalityFlow(verifier: UtxoTransactionValidator = UtxoTransactionValidator { }) {
         val flow = UtxoReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
-        //flow.persistenceService = persistenceService
+        flow.persistenceService = persistenceService
         flow.serializationService = serializationService
         flow.call()
     }

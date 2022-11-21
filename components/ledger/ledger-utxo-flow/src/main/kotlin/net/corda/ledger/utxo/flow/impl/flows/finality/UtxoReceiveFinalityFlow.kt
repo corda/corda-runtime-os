@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionVerification
+import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
@@ -30,6 +32,9 @@ class UtxoReceiveFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
@@ -88,7 +93,7 @@ class UtxoReceiveFinalityFlow(
 
         signedTransactionToFinalize.verifySignatures()
 
-        // todo persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
+        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction $transactionId" }
 
         session.send(Unit)

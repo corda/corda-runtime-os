@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -29,7 +31,6 @@ import java.security.PublicKey
 import java.time.Instant
 
 // Todo adjust these tests to UTXO logic
-// Todo restore persistence parts when that gets available
 
 class UtxoFinalityFlowTest {
 
@@ -40,7 +41,7 @@ class UtxoFinalityFlowTest {
 
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val memberLookup = mock<MemberLookup>()
-    //private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val serializationService = mock<SerializationService>()
 
     private val sessionAlice = mock<FlowSession>()
@@ -98,7 +99,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        //verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
         verify(sessionAlice).send(signedTransaction)
         verify(sessionAlice).send(updatedSignedTransaction)
@@ -121,7 +122,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -139,7 +140,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -159,7 +160,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -181,7 +182,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
         verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        //verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
         verify(sessionAlice).send(signedTransaction)
         verify(sessionAlice).send(updatedSignedTransaction)
@@ -206,7 +207,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -226,7 +227,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -249,7 +250,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -269,7 +270,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -286,7 +287,7 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        //verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -308,14 +309,14 @@ class UtxoFinalityFlowTest {
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
         verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        //verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
     
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = UtxoFinalityFlow(signedTransaction, sessions)
         flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
-        //flow.persistenceService = persistenceService
+        flow.persistenceService = persistenceService
         flow.serializationService = serializationService
         flow.call()
     }

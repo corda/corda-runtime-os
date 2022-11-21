@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl
 
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -33,6 +34,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine,
+    @Reference(service = UtxoLedgerPersistenceService::class)
+    private val persistenceService: UtxoLedgerPersistenceService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -48,11 +51,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     override fun findSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
-        TODO("Not yet implemented")
+        return persistenceService.find(id)
     }
 
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
-        TODO("Not yet implemented")
+        // TODO resolve, etc
+        return persistenceService.find(id)?.toLedgerTransaction()
     }
 
     override fun finalize(

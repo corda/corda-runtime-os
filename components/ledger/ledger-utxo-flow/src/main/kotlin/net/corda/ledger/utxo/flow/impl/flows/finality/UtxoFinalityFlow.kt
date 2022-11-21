@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -33,6 +35,9 @@ class UtxoFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
@@ -119,7 +124,7 @@ class UtxoFinalityFlow(
             }
         }
 
-        //todo persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing
