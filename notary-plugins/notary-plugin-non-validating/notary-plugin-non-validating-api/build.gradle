@@ -17,6 +17,10 @@ cordapp {
 }
 
 dependencies {
+    // TODO This SHOULD NOT be included, for now the `FilteredTransaction` is not part of the public API so we
+    //  need to pull this in.
+    cordaProvided project(":components:ledger:ledger-common-flow-api")
+
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     cordaProvided 'net.corda:corda-application'

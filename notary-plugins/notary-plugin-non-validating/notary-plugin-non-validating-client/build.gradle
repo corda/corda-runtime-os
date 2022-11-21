@@ -17,6 +17,14 @@ cordapp {
 }
 
 dependencies {
+    // TODO This SHOULD NOT be included, for now the `FilteredTransactionFactory` is not part of the public API so we
+    //  need to pull this in.
+    cordaProvided project(":components:ledger:ledger-common-flow-api")
+
+    // TODO Since the API of `UtxoSignedTransaction` has no public property to access its wire transaction we need to
+    //  pull this in. Once the API has been refined we can remove this.
+    cordaProvided project(":components:ledger:ledger-utxo-flow")
+
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     cordaProvided 'net.corda:corda-application'
@@ -31,7 +39,6 @@ dependencies {
     // TODO CORE-7945 This should not be included as a CorDapp
     cordapp project(":notary-plugins:notary-plugin-common")
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
-
 
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 

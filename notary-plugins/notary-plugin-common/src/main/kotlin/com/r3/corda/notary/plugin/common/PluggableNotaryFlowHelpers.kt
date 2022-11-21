@@ -29,7 +29,7 @@ fun PublicKey.toBase58String(): String = this.encoded.toBase58()
 /**
  * Verifies that the correct notarisation request was signed by the counterparty.
  *
- * @throws InternalNotaryException if the request signature could not be validated.
+ * @throws IllegalStateException if the request signature could not be validated.
  */
 @Suspendable
 fun validateRequestSignature(notarisationRequest: NotarisationRequest,
