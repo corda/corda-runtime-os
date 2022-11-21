@@ -7,8 +7,14 @@ import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.datamodel.getCurrentGroupParameters
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.reconciliation.Reconciler
+import net.corda.reconciliation.ReconcilerFactory
+import net.corda.reconciliation.ReconcilerReader
+import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -16,6 +22,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.stream.Stream
 
@@ -30,7 +37,10 @@ class GroupParametersReconciler(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    private val groupParametersFactory: GroupParametersFactory
+    private val groupParametersFactory: GroupParametersFactory,
+    private val reconcilerFactory: ReconcilerFactory,
+    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters>,
+    private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
         val logger = contextLogger()
@@ -54,9 +64,13 @@ class GroupParametersReconciler(
 
     @VisibleForTesting
     internal var dbReconciler: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    private var reconciler: Reconciler? = null
 
     override fun close() {
         dbReconciler?.stop()
+        dbReconciler = null
+        reconciler?.stop()
+        reconciler = null
     }
 
     override fun updateInterval(intervalMillis: Long) {
@@ -73,6 +87,20 @@ class GroupParametersReconciler(
             ).also {
                 it.start()
             }
+        }
+
+        if (reconciler == null) {
+            reconciler = reconcilerFactory.create(
+                dbReader = dbReconciler!!,
+                kafkaReader = reconcilerReader,
+                writer = reconcilerWriter,
+                keyClass = HoldingIdentity::class.java,
+                valueClass = GroupParameters::class.java,
+                reconciliationIntervalMs = intervalMillis
+            ).also { it.start() }
+        } else {
+            logger.info("Updating Group Parameters ${Reconciler::class.java.name}")
+            reconciler!!.updateInterval(intervalMillis)
         }
     }
 
