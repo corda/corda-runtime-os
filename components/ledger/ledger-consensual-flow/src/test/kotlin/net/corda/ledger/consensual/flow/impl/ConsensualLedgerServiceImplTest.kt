@@ -17,11 +17,12 @@ class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
     }

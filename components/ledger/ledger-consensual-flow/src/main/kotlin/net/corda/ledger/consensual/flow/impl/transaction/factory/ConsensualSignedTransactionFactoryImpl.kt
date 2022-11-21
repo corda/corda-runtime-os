@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction.factory
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -8,6 +9,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
@@ -43,18 +45,27 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
 ) : ConsensualSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
+    /**
+     * Creates the signedTransaction initially
+     */
     @Suspendable
     override fun create(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata = transactionMetadataFactory.create(consensualMetadata())
-        val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray() // TODO(update with CORE-6890)
+        ConsensualTransactionVerification.verifyMetadata(metadata)
+        val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+
+        verifyTransaction(wireTransaction)
+
+        // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
@@ -66,6 +77,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
+    /**
+     * Re-creates the signedTransaction from persistence/serialization.
+     */
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
@@ -82,6 +96,11 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
     )
+
+    private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =
+        jsonValidator
+            .canonicalize(jsonMarshallingService.format(metadata))
+            .toByteArray()
 
     private fun calculateComponentGroups(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
@@ -124,5 +143,10 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                         }
                 }
             }
+    }
+
+    private fun verifyTransaction(wireTransaction: WireTransaction){
+        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }

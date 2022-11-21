@@ -1,9 +1,9 @@
 import aQute.bnd.gradle.Bundle
 
 plugins {
+    id 'corda.common-library'
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
-    id 'corda.common-library'
 }
 
 description 'Corda ledger common data'
@@ -23,6 +23,7 @@ dependencies {
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:sandbox-types')
+    implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-internal')
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
@@ -31,6 +32,7 @@ dependencies {
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
 
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

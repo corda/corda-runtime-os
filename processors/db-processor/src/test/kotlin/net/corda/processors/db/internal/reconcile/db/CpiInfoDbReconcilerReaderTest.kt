@@ -3,8 +3,10 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -20,13 +22,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.Random
+import java.util.*
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
-import net.corda.libs.cpi.datamodel.CpkKey
-import net.corda.libs.packaging.core.CordappType
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)

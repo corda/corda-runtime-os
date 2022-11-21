@@ -12,6 +12,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.Resource
+import net.corda.p2p.gateway.certificates.RevocationChecker.Companion.getCertCheckingParameters
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
@@ -22,6 +23,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
+import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
 
@@ -238,7 +240,7 @@ class HttpClient(
         init {
             sslConfiguration.run {
                 val pkixParams = getCertCheckingParameters(destinationInfo.trustStore, revocationCheck)
-                trustManagerFactory.init(pkixParams)
+                trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
             }
         }
 

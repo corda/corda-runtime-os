@@ -104,7 +104,7 @@ pipeline {
         } 			
         stage('start combined worker') {       
             environment {
-                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-*.jar"
                 JDBC_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/drivers"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
@@ -134,12 +134,17 @@ pipeline {
             }
         }
         stage('smoketests') {
-            options {
-                timeout(time: 15, unit: 'MINUTES')
-            }  
-            steps {
-               gradlew('smoketest -PisCombinedWorker=true')
-            }
+                options {
+                    timeout(time: 15, unit: 'MINUTES')
+                }
+                steps {
+                   gradlew('smoketest -PisCombinedWorker=true')
+                }
+                post {
+                    always {
+                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                    }
+                }
         } 	        
     }
     post {
@@ -159,8 +164,7 @@ pipeline {
                         
                     }
             }
-            
-            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }

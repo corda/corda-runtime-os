@@ -16,12 +16,6 @@ pluginManagement {
             }
         } else {
             maven {
-                url "${artifactoryContextUrl}/corda-dev"
-                content {
-                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-                }
-            }
-            maven {
                 url "${artifactoryContextUrl}/corda-os-maven"
                 content {
                     includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
@@ -313,6 +307,7 @@ include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
 include 'libs:serialization:serialization-checkpoint-api'
 include 'libs:serialization:json-serializers'
+include 'libs:serialization:json-validator'
 include 'libs:serialization:kryo-serializers'
 include 'libs:serialization:serialization-amqp'
 include 'libs:serialization:serialization-amqp:cpk-swap-original'

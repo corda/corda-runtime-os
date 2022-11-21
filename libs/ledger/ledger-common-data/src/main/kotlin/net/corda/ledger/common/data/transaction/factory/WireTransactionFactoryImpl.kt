@@ -1,6 +1,7 @@
 package net.corda.ledger.common.data.transaction.factory
 
-import net.corda.ledger.common.data.transaction.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID
+import net.corda.common.json.validation.JsonValidator
+import net.corda.common.json.validation.WrappedJsonSchema
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -30,16 +31,22 @@ class WireTransactionFactoryImpl @Activate constructor(
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata
 ) : WireTransactionFactory, UsedByFlow, UsedByPersistence, SingletonSerializeAsToken {
+
+    private val metadataSchema: WrappedJsonSchema by lazy {
+        jsonValidator.parseSchema(getSchema(TransactionMetadata.SCHEMA_PATH))
+    }
 
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
-        val metadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val metadata = parseMetadata(componentGroupLists[TransactionMetadata.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         return WireTransaction(
             merkleTreeProvider,
@@ -55,7 +62,7 @@ class WireTransactionFactoryImpl @Activate constructor(
         metadata: TransactionMetadata
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
-        val parsedMetadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val parsedMetadata = parseMetadata(componentGroupLists[TransactionMetadata.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         return WireTransaction(
             merkleTreeProvider,
@@ -67,12 +74,13 @@ class WireTransactionFactoryImpl @Activate constructor(
     }
 
     private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
-        check(componentGroupLists.isNotEmpty()) { "todo text" }
+        check(componentGroupLists.isNotEmpty()) { "Wire transactions cannot be created without at least one component group." }
     }
 
     private fun parseMetadata(metadataBytes: ByteArray): TransactionMetadata {
-        // TODO(update with CORE-6890)
-        val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadata::class.java)
+        val json = metadataBytes.decodeToString()
+        jsonValidator.validate(json, metadataSchema)
+        val metadata = jsonMarshallingService.parse(json, TransactionMetadata::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
@@ -80,6 +88,9 @@ class WireTransactionFactoryImpl @Activate constructor(
         }
         return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadata::class.java)
     }
+
+    private fun getSchema(path: String) =
+        checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
 
     private fun generatePrivacySalt(): PrivacySalt {
         val entropy = ByteArray(32)

@@ -28,15 +28,6 @@ internal class CpiInfoReadServiceFakeTest {
     }
 
     @Test
-    fun `callback is called immediately when registered`() {
-        val listener = Mockito.mock(CpiInfoListener::class.java)
-        val service = createService(cpi1)
-
-        service.registerCallback(listener)
-        Mockito.verify(listener).onUpdate(changedKeys(cpi1), snapshot(cpi1))
-    }
-
-    @Test
     fun `add a cpi info`() {
         val listener = Mockito.mock(CpiInfoListener::class.java)
         val service = createService(cpi1, callbacks = listOf(listener))

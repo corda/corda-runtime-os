@@ -1,8 +1,12 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -13,8 +17,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -51,12 +54,13 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
 
-    private val signedTransaction = mock<ConsensualSignedTransaction>()
+    private val ledgerTransaction = mock<ConsensualLedgerTransactionImpl>()
+    private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {
         whenever(session.counterparty).thenReturn(MEMBER)
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).thenReturn(signedTransaction)
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).thenReturn(signedTransaction)
         whenever(session.receive(Unit::class.java)).thenReturn(Unit)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
@@ -65,8 +69,12 @@ class ConsensualReceiveFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
-        whenever(signedTransaction.addSignature(publicKey1)).thenReturn(signedTransaction to signature1)
-        whenever(signedTransaction.addSignature(publicKey2)).thenReturn(signedTransaction to signature2)
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
+        whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
+
+        whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
+        whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
@@ -77,8 +85,8 @@ class ConsensualReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).addSignature(publicKey1)
-        verify(signedTransaction).addSignature(publicKey2)
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction).sign(publicKey2)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
         verify(session).send(Unit)
@@ -90,8 +98,8 @@ class ConsensualReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).addSignature(publicKey1)
-        verify(signedTransaction, never()).addSignature(publicKey2)
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction, never()).sign(publicKey2)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
         verify(session).send(Unit)
@@ -145,7 +153,7 @@ class ConsensualReceiveFinalityFlowTest {
         // [ConsensualFinalityFlow] will return a session error to this flow if no keys are sent to it. Failing on this receive mimics the
         // real behaviour of the flows.
         var called = false
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).then {
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).then {
             if (!called) {
                 called = true
                 signedTransaction
@@ -158,7 +166,7 @@ class ConsensualReceiveFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(signedTransaction, never()).addSignature(any<PublicKey>())
+        verify(signedTransaction, never()).sign(any<PublicKey>())
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
@@ -166,10 +174,10 @@ class ConsensualReceiveFinalityFlowTest {
     @Test
     fun `receiving a different transaction to record compared to the one that was signed throws an exception`() {
         val wrongId = SecureHash("wrong", byteArrayOf(1, 2, 3))
-        val wrongSignedTransaction = mock<ConsensualSignedTransaction>()
+        val wrongSignedTransaction = mock<ConsensualSignedTransactionInternal>()
 
         whenever(wrongSignedTransaction.id).thenReturn(wrongId)
-        whenever(session.receive(ConsensualSignedTransaction::class.java)).thenReturn(signedTransaction, wrongSignedTransaction)
+        whenever(session.receive(ConsensualSignedTransactionInternal::class.java)).thenReturn(signedTransaction, wrongSignedTransaction)
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalArgumentException::class.java)
@@ -189,7 +197,7 @@ class ConsensualReceiveFinalityFlowTest {
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
-    private fun callReceiveFinalityFlow(verifier: ConsensualSignedTransactionVerifier = ConsensualSignedTransactionVerifier { }) {
+    private fun callReceiveFinalityFlow(verifier: ConsensualTransactionValidator = ConsensualTransactionValidator { }) {
         val flow = ConsensualReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService

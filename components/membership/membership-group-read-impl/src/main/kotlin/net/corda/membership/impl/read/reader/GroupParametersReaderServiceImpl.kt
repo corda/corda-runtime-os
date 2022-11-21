@@ -98,7 +98,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     override fun get(identity: HoldingIdentity): GroupParameters? = impl.get(identity)
 
     private interface InnerGroupParametersReaderService : AutoCloseable {
-        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>?
+        fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>>
 
         fun get(identity: HoldingIdentity): GroupParameters?
     }

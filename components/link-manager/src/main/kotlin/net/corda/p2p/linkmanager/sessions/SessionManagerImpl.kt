@@ -37,19 +37,18 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.GroupPolicyListener
-import net.corda.p2p.linkmanager.HostingMapListener
-import net.corda.p2p.linkmanager.InboundAssignmentListener
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.OutboundMessageProcessor
-import net.corda.p2p.linkmanager.PendingSessionMessageQueues
-import net.corda.p2p.linkmanager.PublicKeyReader.Companion.getSignatureSpec
-import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
+import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.p2p.linkmanager.hosting.HostingMapListener
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
+import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
+import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.messaging.MessageConverter
-import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
@@ -153,6 +152,7 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
+    private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
     private val executorService = executorServiceFactory()
 
     override val dominoTile = ComplexDominoTile(
@@ -165,9 +165,10 @@ internal class SessionManagerImpl(
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
+            revocationCheckerClient.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle()),
+            publisher.dominoTile.toNamedLifecycle(), revocationCheckerClient.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -394,7 +395,8 @@ internal class SessionManagerImpl(
                 CertificateCheckMode.CheckCertificate(
                     groupInfo.sessionTrustStore,
                     ourIdentityInfo.sessionCertificates,
-                    sessionManagerConfig.revocationConfigMode
+                    sessionManagerConfig.revocationConfigMode,
+                    revocationCheckerClient::checkRevocation
                 )
             }
             STANDARD_EV3, CORDA_4 -> {

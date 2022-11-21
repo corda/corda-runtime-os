@@ -224,7 +224,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if responder certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -238,7 +238,7 @@ class AuthenticationProtocolFailureTest {
             sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
         )
         val certificateValidatorResponder = certificateValidator.constructed()[1]!!
-        whenever(certificateValidatorResponder.validate(any(), any()))
+        whenever(certificateValidatorResponder.validate(any(), any(), any()))
             .thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
 
         // Step 1: initiator sending hello message to responder.
@@ -273,7 +273,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if initiator certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -287,7 +287,7 @@ class AuthenticationProtocolFailureTest {
             sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
         )
         val certificateValidatorInitiator = certificateValidator.constructed()[0]!!
-        whenever(certificateValidatorInitiator.validate(any(), any())).thenThrow(InvalidPeerCertificate(""))
+        whenever(certificateValidatorInitiator.validate(any(), any(), any())).thenThrow(InvalidPeerCertificate(""))
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -335,7 +335,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails for responder if initiator doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -381,7 +381,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails for initiator if responder doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,

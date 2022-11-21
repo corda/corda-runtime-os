@@ -1,33 +1,41 @@
 package net.corda.ledger.common.testkit
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 fun WireTransactionFactory.createExample(
-    jsonMarshallingService: JsonMarshallingService
+    jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator
 ): WireTransaction {
-    val metadata = minimalTransactionMetadata
+    val metadata = transactionMetadataExample()
+    val metadataJson = jsonMarshallingService.format(metadata)
+    val canonicalJson = jsonValidator.canonicalize(metadataJson)
+
     val allGroupLists = listOf(
-        listOf(jsonMarshallingService.format(metadata).encodeToByteArray()) // TODO(update with CORE-6890)
+        listOf(canonicalJson.toByteArray()),
     ) + defaultComponentGroups
     return create(allGroupLists, metadata)
 }
 
+@Suppress("LongParameterList")
 fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
-    metadata: TransactionMetadata = minimalTransactionMetadata,
+    jsonValidator: JsonValidator,
+    metadata: TransactionMetadata = transactionMetadataExample(),
     componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
+    val metadataJson = jsonMarshallingService.format(metadata)
+    val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val groups = listOf(
-        listOf(jsonMarshallingService.format(metadata).toByteArray()) // TODO(update with CORE-6890)
+        listOf(canonicalJson.toByteArray()),
     ) + componentGroupLists
 
     return WireTransaction(
@@ -38,12 +46,6 @@ fun getWireTransactionExample(
         metadata
     )
 }
-
-private val minimalTransactionMetadata = TransactionMetadata(
-    linkedMapOf(
-        TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-    )
-)
 
 private val defaultComponentGroups: List<List<ByteArray>> = listOf(
     listOf(".".toByteArray()),

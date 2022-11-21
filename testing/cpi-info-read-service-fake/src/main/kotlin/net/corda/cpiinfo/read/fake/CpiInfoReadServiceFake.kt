@@ -16,7 +16,6 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.stream.Stream
@@ -87,13 +86,6 @@ class CpiInfoReadServiceFake internal constructor(
         return cpiData[identifier]
     }
 
-    override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
-        throwIfNotRunning()
-        callbacks += listener
-        listener.onUpdate(cpiData.keys, cpiData)
-        return AutoCloseable { callbacks.remove(listener) }
-    }
-
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
         TODO("Not yet implemented")
     }
@@ -118,11 +110,6 @@ class CpiInfoReadServiceFake internal constructor(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    @Deactivate
-    fun close() {
-        coordinator.close()
     }
 
     private fun throwIfNotRunning() {

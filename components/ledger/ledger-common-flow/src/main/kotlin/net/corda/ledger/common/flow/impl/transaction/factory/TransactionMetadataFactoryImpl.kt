@@ -24,12 +24,13 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
-    override fun create(ledgerSpecificMetadata: LinkedHashMap<String, String>): TransactionMetadata {
+    override fun create(ledgerSpecificMetadata: Map<String, Any>): TransactionMetadata {
         val metadata = linkedMapOf(
             TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
             TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
-            TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries()
+            TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries(),
+            TransactionMetadata.SCHEMA_VERSION_KEY to TransactionMetadata.SCHEMA_VERSION
         )
         metadata.putAll(ledgerSpecificMetadata)
         return TransactionMetadata(metadata)

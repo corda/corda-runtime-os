@@ -26,7 +26,11 @@ import java.security.PublicKey
 @Suspendable
 fun PublicKey.toBase58String(): String = this.encoded.toBase58()
 
-/** Verifies that the correct notarisation request was signed by the counterparty. */
+/**
+ * Verifies that the correct notarisation request was signed by the counterparty.
+ *
+ * @throws InternalNotaryException if the request signature could not be validated.
+ */
 @Suspendable
 fun validateRequestSignature(notarisationRequest: NotarisationRequest,
                              requestingParty: Party,
@@ -35,9 +39,12 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
                              signature: NotarisationRequestSignature
 ) {
     val digitalSignature = signature.digitalSignature
-    require(requestingParty.owningKey == digitalSignature.by) {
-        "Expected a signature by ${requestingParty.owningKey.toBase58String()}, " +
-                "but received by ${digitalSignature.by.toBase58String()}}"
+
+    if (requestingParty.owningKey != digitalSignature.by) {
+        throw IllegalStateException(
+            "Expected a signature by ${requestingParty.owningKey.toBase58String()}, " +
+                    "but received by ${digitalSignature.by.toBase58String()}}"
+        )
     }
 
     // TODO CORE-3698: Review if this TODO is still valid
@@ -45,12 +52,19 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
     //  reserialize it in that version to get the exact same bytes. Modify the serialization logic once that's
     //  available.
     val expectedSignedBytes = serializationService.serialize(notarisationRequest).bytes
-    signatureVerifier.verify(
-        digitalSignature.by,
-        SignatureSpec.ECDSA_SHA256, // TODO This shouldn't be hardcoded?
-        digitalSignature.bytes,
-        expectedSignedBytes
-    )
+
+    try {
+        signatureVerifier.verify(
+            digitalSignature.by,
+            SignatureSpec.ECDSA_SHA256, // TODO This shouldn't be hardcoded?
+            digitalSignature.bytes,
+            expectedSignedBytes
+        )
+    } catch (e: Exception) {
+        throw IllegalStateException(
+            "Error while verifying request signature. Cause: $e"
+        )
+    }
 }
 
 /** Creates a signature over the notarisation request using the legal identity key. */

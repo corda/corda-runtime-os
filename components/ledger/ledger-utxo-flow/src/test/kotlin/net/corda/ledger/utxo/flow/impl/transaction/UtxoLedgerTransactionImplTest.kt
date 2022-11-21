@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
+@Suppress("DEPRECATION")
 internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
@@ -33,7 +34,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .addReferenceInputState(referenceStateAndRef)
             .addCommand(command)
             .addAttachment(attachment)
-            .sign(publicKeyExample)
+            .toSignedTransaction(publicKeyExample)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
 
         assertIs<SecureHash>(ledgerTransaction.id)

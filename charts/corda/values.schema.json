@@ -384,53 +384,7 @@
                                     "enum": ["PEM","JKS"]
                                 },
                                 "password": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "The password configuration",
-                                    "required": [
-                                        "value",
-                                        "valueFrom"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "value": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "The password"
-                                        },
-                                        "valueFrom": {
-                                            "type": "object",
-                                            "default": {},
-                                            "title": "The password secret configuration",
-                                            "required": [
-                                                "secretKeyRef"
-                                            ],
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "secretKeyRef": {
-                                                    "type": "object",
-                                                    "default": {},
-                                                    "title": "The password key reference",
-                                                    "required": [
-                                                        "name",
-                                                        "key"
-                                                    ],
-                                                    "properties": {
-                                                        "name": {
-                                                            "type": "string",
-                                                            "default": "",
-                                                            "title": "The password secret name"
-                                                        },
-                                                        "key": {
-                                                            "type": "string",
-                                                            "default": "",
-                                                            "title": "The password secret key"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    "$ref": "#/$defs/config"
                                 } 
                             }
                         }
