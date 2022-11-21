@@ -26,6 +26,7 @@ import net.corda.membership.impl.registration.dynamic.handler.mgm.DistributeMemb
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -50,6 +51,7 @@ class RegistrationProcessor(
     merkleTreeProvider: MerkleTreeProvider,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
+    groupParametersFactory: GroupParametersFactory,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -77,6 +79,8 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             memberTypeChecker,
             membershipGroupReaderProvider,
+            groupParametersWriterService,
+            groupParametersFactory,
         ),
         DistributeMembershipPackage::class.java to DistributeMembershipPackageHandler(
             membershipQueryClient,
@@ -87,7 +91,6 @@ class RegistrationProcessor(
             merkleTreeProvider,
             membershipConfig,
             membershipGroupReaderProvider,
-            groupParametersWriterService,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,

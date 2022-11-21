@@ -455,7 +455,7 @@ class MGMRegistrationServiceTest {
 
             registrationService.register(registrationRequest, mgm, properties)
 
-            verify(writerService, times(1)).put(eq(mgm), groupParametersCaptor.capture())
+            verify(writerService).put(eq(mgm), groupParametersCaptor.capture())
             assertThat(groupParametersCaptor.firstValue).isEqualTo(mockGroupParameters)
         }
 

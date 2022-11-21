@@ -38,7 +38,18 @@ import java.time.Instant
 
 class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
-    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val groupParameters: GroupParameters = mock()
+    private val groupParametersBytes = "test-group-parameters".toByteArray()
+    private val pubKey: PublicKey = mock {
+        on { encoded } doReturn "test-key".toByteArray()
+    }
+    private val signedGroupParameters: DigitalSignature.WithKey = mock {
+        on { bytes } doReturn "dummy-signature".toByteArray()
+        on { by } doReturn pubKey
+    }
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(eq(groupParameters.toAvro())) } doReturn groupParametersBytes
+    }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
@@ -49,7 +60,9 @@ class MembershipPackageFactoryTest {
         }
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator>()
-    private val mgmSigner = mock<Signer>()
+    private val mgmSigner = mock<Signer> {
+        on { sign(eq(groupParametersBytes)) } doReturn signedGroupParameters
+    }
     private val membersCount = 4
     private val members = (1..membersCount).map {
         mockMemberInfo("name-$it")
@@ -96,18 +109,6 @@ class MembershipPackageFactoryTest {
     private val checkHash = mock<SecureHash> {
         on { bytes } doReturn "all".toByteArray()
         on { algorithm } doReturn allAlg
-    }
-    private val groupParametersBytes = "test-group-parameters".toByteArray()
-    private val pubKey: PublicKey = mock {
-        on { encoded } doReturn "test-key".toByteArray()
-    }
-    private val signedGroupParameters: DigitalSignature.WithKey = mock {
-        on { bytes } doReturn "dummy-signature".toByteArray()
-        on { by } doReturn pubKey
-}
-    private val groupParameters: GroupParameters = mock {
-        on { serializer.serialize(mock.toAvro()) } doReturn groupParametersBytes
-        on { mgmSigner.sign(groupParametersBytes) } doReturn signedGroupParameters
     }
 
     private val factory = MembershipPackageFactory(

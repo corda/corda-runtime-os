@@ -11,11 +11,13 @@ import net.corda.data.membership.command.registration.mgm.DistributeMembershipPa
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHoldingIdentity
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
 import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -28,12 +30,14 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
 import net.corda.v5.membership.GroupParameters
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -53,7 +57,7 @@ class ApproveRegistrationHandlerTest {
     private val key = "key"
     private val mockGroupParametersList = KeyValuePairList(
         listOf(
-            KeyValuePair(EPOCH_KEY, "6")
+            KeyValuePair(EPOCH_KEY, "5")
         )
     )
     private val memberInfo = mockMemberInfo(member)
@@ -111,6 +115,13 @@ class ApproveRegistrationHandlerTest {
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val writerService: GroupParametersWriterService = mock()
+    private val persistedGroupParameters: GroupParameters = mock {
+        on { epoch } doReturn 6
+    }
+    private val groupParametersFactory: GroupParametersFactory = mock {
+        on { create(any()) } doReturn persistedGroupParameters
+    }
 
     private val handler = ApproveRegistrationHandler(
         membershipPersistenceClient,
@@ -118,6 +129,8 @@ class ApproveRegistrationHandlerTest {
         cordaAvroSerializationFactory,
         memberTypeChecker,
         groupReaderProvider,
+        writerService,
+        groupParametersFactory,
         p2pRecordsFactory,
     )
 
@@ -189,7 +202,7 @@ class ApproveRegistrationHandlerTest {
 
         val results = handler.invoke(state, key, command)
 
-        verify(membershipPersistenceClient, times(1)).addNotaryToGroupParameters(
+        verify(membershipPersistenceClient).addNotaryToGroupParameters(
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
         )
@@ -227,6 +240,19 @@ class ApproveRegistrationHandlerTest {
                     .isInstanceOf(DistributeMembershipPackage::class.java)
                 assertThat((value as? DistributeMembershipPackage)?.groupParametersEpoch).isEqualTo(5)
             }
+    }
+
+    @Test
+    fun `invoke publishes group parameters to kafka if approved member has notary role set `() {
+        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
+        val groupParametersCaptor = argumentCaptor<GroupParameters>()
+        val holdingIdentityCaptor = argumentCaptor<HoldingIdentity>()
+
+        handler.invoke(state, key, command)
+
+        verify(writerService).put(holdingIdentityCaptor.capture(), groupParametersCaptor.capture())
+        assertThat(groupParametersCaptor.firstValue).isEqualTo(persistedGroupParameters)
+        assertThat(holdingIdentityCaptor.firstValue).isEqualTo(mgm.holdingIdentity)
     }
 
     @Test

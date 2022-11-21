@@ -20,8 +20,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -169,8 +171,6 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
-            groupParametersWriterService,
-            groupParametersFactory,
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher { publisher }
 
@@ -192,6 +192,17 @@ class MGMRegistrationService @Activate constructor(
                     member,
                     context
                 )
+
+                // Persist group parameters snapshot
+                val groupParametersPersistenceResult =
+                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                    throw MembershipPersistenceException(groupParametersPersistenceResult.errorMsg)
+                }
+
+                // Publish group parameters to Kafka
+                val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+                groupParametersWriterService.put(member, groupParameters)
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
 

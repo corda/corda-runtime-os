@@ -10,15 +10,15 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -38,6 +38,8 @@ internal class ApproveRegistrationHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val memberTypeChecker: MemberTypeChecker,
     private val groupReaderProvider: MembershipGroupReaderProvider,
+    private val groupParametersWriterService: GroupParametersWriterService,
+    private val groupParametersFactory: GroupParametersFactory,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
@@ -76,15 +78,17 @@ internal class ApproveRegistrationHandler(
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
             val epoch = if (memberInfo.notaryDetails != null) {
-                val result = membershipPersistenceClient.addNotaryToGroupParameters(mgm.holdingIdentity, memberInfo)
+                val mgmHoldingIdentity = mgm.holdingIdentity
+                val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
                                 " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
-                val parametersMap = result.getOrThrow().toMap()
-                parametersMap[EPOCH_KEY]?.toInt()
+                val persistedGroupParameters = groupParametersFactory.create(result.getOrThrow())
+                groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
+                persistedGroupParameters.epoch
             } else {
                 val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
                 reader.groupParameters?.epoch
