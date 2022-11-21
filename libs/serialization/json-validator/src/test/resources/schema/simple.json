@@ -1,8 +1,8 @@
 {
 	"definitions": {},
 	"$schema": "https://json-schema.org/draft/2019-09/schema",
-	"$id": "https://example.com/object1666608991.json", 
-	"title": "Root", 
+	"$id": "https://example.com/object1666608991.json",
+	"title": "Root",
 	"type": "object",
 	"required": [
 		"name",
@@ -28,5 +28,6 @@
 			],
 			"default": 0
 		}
-	}
+	},
+	"additionalProperties": false
 }

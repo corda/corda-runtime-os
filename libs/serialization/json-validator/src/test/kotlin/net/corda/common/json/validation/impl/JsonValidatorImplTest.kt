@@ -38,4 +38,11 @@ class JsonValidatorImplTest {
             validator.validate("""{"age":1,"name":1}""", schema)
         }
     }
+
+    @Test
+    fun `JSON with an unexpected property is rejected`() {
+        assertThrows<IllegalStateException> {
+            validator.validate("""{"age":1,"name":"Ruttiger","phone":"0898505050"}""", schema)
+        }
+    }
 }

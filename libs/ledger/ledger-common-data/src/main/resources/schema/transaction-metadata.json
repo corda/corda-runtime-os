@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "$id": "https://corda.net/schema/transaction-metadata.json",
-  "unevaluatedProperties": false,
+  "additionalProperties": false,
   "title": "Root",
   "type": "object",
   "required": [
@@ -10,6 +10,7 @@
     "cpiMetadata",
     "cpkMetadata",
     "digestSettings",
+    "componentGroups",
     "schemaVersion"
   ],
   "properties": {
@@ -101,8 +102,7 @@
           ],
           "pattern": "^.*$"
         }
-      },
-      "unevaluatedProperties": false
+      }
     },
     "ledgerVersion": {
       "title": "Ledger version",
@@ -115,8 +115,7 @@
     "cpiMetadata": {
       "title": "CPI metadata",
       "$ref": "#/definitions/package_metadata"
-    }
-    ,
+    },
     "cpkMetadata": {
       "title": "CPK metadata",
       "type": "array",
@@ -126,6 +125,14 @@
         "$ref": "#/definitions/package_metadata"
       }
     },
+    "componentGroups": {
+      "title": "Component group structure",
+      "description": "The mapping of each component group to its 0-based index within the Merkle tree",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
     "schemaVersion": {
       "title": "Metadata schema version",
       "type": "integer",
@@ -133,7 +140,8 @@
       "examples": [
         1
       ]
-    }
+    },
+    "transactionSubtype": true
   },
   "allOf": [
     {
@@ -154,6 +162,15 @@
               "NOTARY_CHANGE",
               "GENERAL"
             ]
+          }
+        }
+      },
+      "else": {
+        "required": [ "transactionSubtype" ],
+        "properties": {
+          "transactionSubtype": {
+            "title": "Transaction subtype",
+            "type": "null"
           }
         }
       }
@@ -203,8 +220,7 @@
           ],
           "pattern": "^.*$"
         }
-      },
-      "additionalProperties": false
+      }
     }
   }
 }
