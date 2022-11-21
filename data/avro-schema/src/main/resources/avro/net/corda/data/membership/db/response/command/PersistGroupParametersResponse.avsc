@@ -5,9 +5,9 @@
   "doc": "Response to a persist group parameters request",
   "fields": [
     {
-      "name": "epoch",
-      "doc": "The version of the persisted set of group parameters.",
-      "type": "int"
+      "name": "groupParameters",
+      "doc": "The persisted set of group parameters.",
+      "type": "net.corda.data.KeyValuePairList"
     }
   ]
 }
