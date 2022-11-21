@@ -39,7 +39,7 @@ class UtxoReceiveFinalityFlow(
         val signedTransaction = session.receive<UtxoSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
-        // TODO [CORE-5982] Verify Ledger Transaction (UtxoLedgerTransactionImpl.verify() ?)
+        // TODO [CORE-5982] Verify Ledger Transaction
 
         // Verify the transaction.
         verifyTransaction(signedTransaction)

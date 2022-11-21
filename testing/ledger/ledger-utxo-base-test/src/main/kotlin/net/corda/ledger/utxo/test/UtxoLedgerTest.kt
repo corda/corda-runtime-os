@@ -19,7 +19,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         transactionMetadataFactory,
         wireTransactionFactory
     )
-    val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
+    val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory, flowEngine)
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
         mockTransactionSignatureService()

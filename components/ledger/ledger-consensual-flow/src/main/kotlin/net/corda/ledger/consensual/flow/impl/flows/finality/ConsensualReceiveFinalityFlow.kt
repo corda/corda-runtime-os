@@ -44,7 +44,7 @@ class ConsensualReceiveFinalityFlow(
         val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
-        // TODO [CORE-5982] Verify Ledger Transaction (ConsensualLedgerTransactionImpl.verify() ?)
+        // TODO [CORE-5982] Verify Ledger Transaction
 
         // Verify the transaction.
         verifyTransaction(signedTransaction)
