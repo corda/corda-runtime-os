@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.persistence.common.mapTuples
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -46,7 +47,7 @@ class ConsensualLedgerRepository @Activate constructor(
     fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {
         val rows = entityManager.createNativeQuery(
             """
-                SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data, txc.hash
+                SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data
                 FROM {h-schema}consensual_transaction AS tx
                 JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
                 WHERE tx.id = :id

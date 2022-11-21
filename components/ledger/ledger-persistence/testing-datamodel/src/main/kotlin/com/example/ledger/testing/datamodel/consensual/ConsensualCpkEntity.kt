@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel
+package com.example.ledger.testing.datamodel.consensual
 
 import java.time.Instant
 import javax.persistence.Column

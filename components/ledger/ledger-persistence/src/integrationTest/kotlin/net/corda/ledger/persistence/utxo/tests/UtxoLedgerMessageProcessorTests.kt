@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.processor.tests
+package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -16,10 +16,10 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -62,9 +62,9 @@ import java.util.UUID
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(PER_CLASS)
-class ConsensualLedgerMessageProcessorTests {
+class UtxoLedgerMessageProcessorTests {
     companion object {
-        const val TOPIC = "consensual-ledger-dummy-topic"
+        const val TOPIC = "utxo-ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
@@ -102,7 +102,7 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     @Test
-    fun `persistTransaction for consensual ledger deserialises the transaction and persists`() {
+    fun `persistTransaction for utxo ledger deserialises the transaction and persists`() {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
@@ -163,11 +163,11 @@ class ConsensualLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.info("UTXO ledger persistence request: {} {}", request.javaClass.simpleName, request)
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),
-            LedgerTypes.CONSENSUAL,
+            LedgerTypes.UTXO,
             request,
             externalEventContext
         )

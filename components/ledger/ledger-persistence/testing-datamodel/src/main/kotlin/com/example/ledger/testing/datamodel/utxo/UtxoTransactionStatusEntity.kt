@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel
+package com.example.ledger.testing.datamodel.utxo
 
 import java.io.Serializable
 import java.time.Instant
@@ -14,13 +14,13 @@ import net.corda.v5.base.annotations.CordaSerializable
 
 @CordaSerializable
 @Entity
-@Table(name = "consensual_transaction_status")
-@IdClass(ConsensualTransactionStatusEntityId::class)
-data class ConsensualTransactionStatusEntity(
+@Table(name = "utxo_transaction_status")
+@IdClass(UtxoTransactionStatusEntityId::class)
+data class UtxoTransactionStatusEntity(
     @Id
     @ManyToOne
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: ConsensualTransactionEntity,
+    val transaction: UtxoTransactionEntity,
 
     @Id
     @Column(name = "status", nullable = false)
@@ -31,7 +31,7 @@ data class ConsensualTransactionStatusEntity(
 )
 
 @Embeddable
-data class ConsensualTransactionStatusEntityId(
-    val transaction: ConsensualTransactionEntity,
+data class UtxoTransactionStatusEntityId(
+    val transaction: UtxoTransactionEntity,
     val status: String
 ) : Serializable

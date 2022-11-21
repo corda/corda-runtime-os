@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel
+package com.example.ledger.testing.datamodel.consensual
 
 import java.io.Serializable
 import java.time.Instant

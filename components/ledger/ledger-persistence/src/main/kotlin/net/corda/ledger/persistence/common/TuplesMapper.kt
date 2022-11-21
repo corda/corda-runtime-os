@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.consensual
+package net.corda.ledger.persistence.common
 
 import java.sql.SQLException
 import javax.persistence.Tuple
