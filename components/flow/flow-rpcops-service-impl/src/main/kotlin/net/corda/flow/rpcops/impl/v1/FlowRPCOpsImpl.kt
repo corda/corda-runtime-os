@@ -137,16 +137,20 @@ class FlowRPCOpsImpl @Activate constructor(
             Record(FLOW_STATUS_TOPIC, status.key, status),
         )
 
-        val recordFutures = publisher!!.publish(records)
+        val recordFutures = try {
+            publisher!!.publish(records)
+        } catch (ex: Exception) {
+            throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", ex)
+        }
         waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { exception, failureIsTerminal ->
             if (failureIsTerminal) {
                 log.error("This worker will terminate, fatal error occurred", exception)
                 // TODO terminate process
+                throw FlowRPCOpsServiceException("Failed to publish the Start Flow event, failure is terminal.", exception)
             } else {
                 throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", exception)
             }
         }
-
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
 

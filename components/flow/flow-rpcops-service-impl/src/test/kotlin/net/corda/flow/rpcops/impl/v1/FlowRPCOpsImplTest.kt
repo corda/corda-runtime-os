@@ -26,6 +26,7 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.permission.PermissionValidator
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.validation.PermissionValidationService
@@ -51,6 +52,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CompletableFuture
 
 class FlowRPCOpsImplTest {
 
@@ -81,6 +83,7 @@ class FlowRPCOpsImplTest {
             whenever(it.cpksMetadata).thenReturn(setOf(mockCPKMetadata))
         }
     }
+
     private fun getStubVirtualNode(): VirtualNodeInfo {
         return VirtualNodeInfo(
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
@@ -112,7 +115,7 @@ class FlowRPCOpsImplTest {
         permissionValidationService = mock()
         permissionValidator = mock()
 
-        val cpiMetadata= getMockCPIMeta()
+        val cpiMetadata = getMockCPIMeta()
         whenever(cpiInfoReadService.get(any())).thenReturn(cpiMetadata)
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(getStubVirtualNode())
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(null)
@@ -120,7 +123,7 @@ class FlowRPCOpsImplTest {
             key = FlowKey()
         })
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-        whenever(publisher.publish(any())).thenReturn(arrayListOf())
+        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply { complete(Unit) }))
 
         val rpcAuthContext = mock<RpcAuthContext>().apply {
             whenever(principal).thenReturn(loginName)
@@ -145,7 +148,7 @@ class FlowRPCOpsImplTest {
             messageFactory,
             cpiInfoReadService,
             permissionValidationService
-        ).apply { if(initialise) (initialise(SmartConfigImpl.empty())) }
+        ).apply { if (initialise) (initialise(SmartConfigImpl.empty())) }
     }
 
     @Test
@@ -338,10 +341,31 @@ class FlowRPCOpsImplTest {
     }
 
     @Test
-    fun `start flow throws FlowRPCOpsServiceException exception when publish fails`() {
+    fun `start flow throws FlowRPCOpsServiceException exception when publish fails synchronously`() {
         val flowRPCOps = createFlowRpcOps()
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
+        assertThrows<FlowRPCOpsServiceException> {
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(publisher, times(1)).publish(any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+    }
+
+    @Test
+    fun `start flow throws FlowRPCOpsServiceException exception when publish fails asynchronously`() {
+        val flowRPCOps = createFlowRpcOps()
+        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply {
+            completeExceptionally(
+                CordaMessageAPIIntermittentException("")
+            )
+        }))
+
         assertThrows<FlowRPCOpsServiceException> {
             flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
         }
