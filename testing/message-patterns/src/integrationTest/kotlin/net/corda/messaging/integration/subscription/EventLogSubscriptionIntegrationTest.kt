@@ -142,8 +142,7 @@ class EventLogSubscriptionIntegrationTest {
         //publish 20 records
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_LOG_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4))
-        assertThat(futures.size).isEqualTo(1)
+        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4)).forEach { it.get() }
 
         //Start 2 subscriptions
         val confirmProcessorLatch = CountDownLatch(20)
@@ -174,9 +173,7 @@ class EventLogSubscriptionIntegrationTest {
         val verifyOutputs = CountDownLatch(40)
         val verifySub = createSub(TestEventLogProcessor(verifyOutputs, null, "1"), EVENT_LOG_TOPIC2_OUTPUT)
         verifySub.start()
-        eventually(duration = 10.seconds, waitBetween = 100.millis, waitBefore = 0.millis) {
-            assertThat(verifyOutputs.count).isEqualTo(0)
-        }
+        verifyOutputs.await(10, TimeUnit.SECONDS)
 
         //close resources
         verifySub.close()
