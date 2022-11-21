@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
@@ -18,7 +18,7 @@ import java.util.UUID
 
 class SignatureSpecUtilsTests {
     companion object {
-        private lateinit var digestService: DigestService
+        private lateinit var digestService: PlatformDigestService
 
         @BeforeAll
         @JvmStatic
@@ -73,7 +73,7 @@ class SignatureSpecUtilsTests {
         assertArrayEquals(data, spec.getSigningData(digestService, data))
     }
 
-    class DigestServiceMock : DigestService {
+    class DigestServiceMock : PlatformDigestService {
         override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash =
             SecureHash(digestAlgorithmName.name, MessageDigest.getInstance(digestAlgorithmName.name).digest(bytes))
 

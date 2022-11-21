@@ -5,11 +5,11 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
@@ -25,6 +25,9 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 import javax.crypto.Cipher
 
+// TODO We also have `DigitalSignatureVerificationService` which is sandbox singleton and delegates to this one.
+//  Should this one be platform?
+//  _Seems we are calling `getSigningData` further below which makes use of `customDigestName` so maybe should stay sandbox.
 @Component(
     service = [ SignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE

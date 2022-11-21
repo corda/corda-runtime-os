@@ -2,7 +2,7 @@ package net.corda.crypto.merkle.impl
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
@@ -12,6 +12,8 @@ import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSiz
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.nio.charset.Charset
 import java.security.SecureRandom
+
+// TODO: Confirm if all DigestService references in this file should be indeed sandbox.
 
 private fun createNonce(random: SecureRandom): ByteArray {
     val nonce = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH)

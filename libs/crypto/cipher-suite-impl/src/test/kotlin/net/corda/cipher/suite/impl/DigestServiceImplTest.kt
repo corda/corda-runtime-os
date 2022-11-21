@@ -2,7 +2,7 @@ package net.corda.cipher.suite.impl
 
 import java.io.InputStream
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -15,17 +15,17 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-// HashingServiceImpl is basically a wrapper around DigestService so main hashing functionality is tested
-// in DigestServiceTests. Here we will only test it looks for custom digest algorithms if not found
+// DigestServiceImpl is basically a wrapper around `PlatformDigestService` so main hashing functionality is tested
+// in PlatformDigestServiceImplTests. Here we will only test it looks for custom digest algorithms if not found
 // in platform ones.
-class HashingServiceImplTest {
+class DigestServiceImplTest {
     private companion object {
         val DUMMY_DIGEST = "DUMMY_DIGEST_NAME"
         val DUMMY_DIGEST_LENGTH = 32
         val DUMMY_BYTES = byteArrayOf(0x01, 0x02, 0x03)
     }
 
-    private val digestService = mock<DigestService>().also {
+    private val digestService = mock<PlatformDigestService>().also {
         // DigestService throwing to impersonate digest algorithm not found in platform digest algorithms
         whenever(it.hash(any<InputStream>(), any())).thenThrow(IllegalArgumentException())
         whenever(it.hash(any<ByteArray>(), any())).thenThrow(IllegalArgumentException())
@@ -33,24 +33,24 @@ class HashingServiceImplTest {
     }
 
     private lateinit var customFactoriesProvider: DigestAlgorithmFactoryProvider
-    private lateinit var hashingServiceImpl: HashingServiceImpl
+    private lateinit var digestServiceImpl: DigestServiceImpl
 
     @BeforeEach
     fun setUp() {
         customFactoriesProvider = mock()
-        hashingServiceImpl = HashingServiceImpl(digestService, customFactoriesProvider)
+        digestServiceImpl = DigestServiceImpl(digestService, customFactoriesProvider)
     }
 
     @Test
     fun `throws IllegalArgumentException, if digest algorithm not found`() {
         assertThrows<IllegalArgumentException> {
-            hashingServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
+            digestServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
         }
         assertThrows<IllegalArgumentException> {
-            hashingServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
+            digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
         }
         assertThrows<IllegalArgumentException> {
-            hashingServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
+            digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
         }
     }
 
@@ -68,9 +68,9 @@ class HashingServiceImplTest {
         }
         whenever(customFactoriesProvider.get(DUMMY_DIGEST)).thenReturn(digestAlgorithmFactory)
 
-        val hash0 = hashingServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
-        val hash1 = hashingServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
-        val hashLength = hashingServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
+        val hash0 = digestServiceImpl.hash(DUMMY_BYTES, DigestAlgorithmName(DUMMY_DIGEST))
+        val hash1 = digestServiceImpl.hash(DUMMY_BYTES.inputStream(), DigestAlgorithmName(DUMMY_DIGEST))
+        val hashLength = digestServiceImpl.digestLength(DigestAlgorithmName(DUMMY_DIGEST))
 
         val expectedDummySecureHash = SecureHash(DUMMY_DIGEST, DUMMY_BYTES)
         assertEquals(expectedDummySecureHash, hash0)

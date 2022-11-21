@@ -4,7 +4,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -13,8 +13,8 @@ import org.osgi.service.component.annotations.Reference
 class AllAliasedKeysHSMProvider @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestService::class)
-    private val digestService: DigestService
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService
 ) : CryptoServiceProvider<AllAliasedKeysHSMConfiguration> {
     companion object {
         const val NAME = "AllAliasedKeysHSM"

@@ -9,7 +9,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,8 +32,10 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class ConsensualLedgerRepository @Activate constructor(
+    // TODO This is only used to hash with SHA-256 so not sure. Would we want to use custom digests in here?
+    //  Also this component seems not to be used from anywhere at the moment
     @Reference
-    private val digestService: DigestService,
+    private val digestService: PlatformDigestService,
     @Reference
     private val serializationService: SerializationService,
     @Reference

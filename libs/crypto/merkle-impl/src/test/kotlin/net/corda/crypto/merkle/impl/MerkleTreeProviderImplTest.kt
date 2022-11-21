@@ -1,10 +1,10 @@
 package net.corda.crypto.merkle.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import java.security.SecureRandom
+import net.corda.cipher.suite.impl.DigestServiceImpl
 
 class MerkleTreeProviderImplTest {
     companion object {
@@ -35,7 +36,7 @@ class MerkleTreeProviderImplTest {
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata)
+            digestService = DigestServiceImpl(PlatformDigestServiceImpl(schemeMetadata), null)
             secureRandom = schemeMetadata.secureRandom
 
             nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)

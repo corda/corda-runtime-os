@@ -8,7 +8,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
-import net.corda.v5.application.crypto.HashingService
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -27,8 +27,8 @@ import org.osgi.service.component.annotations.ServiceScope
 class WireTransactionFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = HashingService::class)
-    private val digestService: HashingService,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class)

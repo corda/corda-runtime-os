@@ -2,7 +2,7 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
-import net.corda.v5.application.crypto.HashingService
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -18,7 +18,7 @@ import java.util.Objects
 
 class WireTransaction(
     private val merkleTreeProvider: MerkleTreeProvider,
-    private val digestService: HashingService,
+    private val digestService: DigestService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>,
     val metadata: TransactionMetadata

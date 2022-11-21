@@ -4,7 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.v5.application.crypto.HashingService
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
@@ -24,7 +24,7 @@ fun WireTransactionFactory.createExample(
 
 @Suppress("LongParameterList")
 fun getWireTransactionExample(
-    digestService: HashingService,
+    digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,

@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.tests.legacy
 
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 // WARNING - "legacy" corda5 code *only* used to make tests pass.
-class DigestServiceImpl : DigestService {
+class DigestServiceImpl : PlatformDigestService {
     private val messageDigests: ConcurrentMap<String, DigestSupplier> = ConcurrentHashMap()
 
     override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash {

@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.infra
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
@@ -27,12 +28,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SharedSecretSpec
@@ -124,9 +125,10 @@ class TestServicesFactory {
 
     val coordinatorFactory: TestLifecycleCoordinatorFactoryImpl = TestLifecycleCoordinatorFactoryImpl()
 
-    val digest: DigestService by lazy {
-        DigestServiceImpl(schemeMetadata)
-    }
+    val platformDigest = PlatformDigestServiceImpl(schemeMetadata)
+
+    val digest: DigestService =
+        DigestServiceImpl(platformDigest, null)
 
     val verifier: SignatureVerificationService by lazy {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
@@ -207,7 +209,7 @@ class TestServicesFactory {
                 TransientSoftKeyMap(DefaultSoftPrivateKeyWrapping(wrappingKeyMap)),
                 wrappingKeyMap,
                 schemeMetadata,
-                digest
+                platformDigest
             ),
             recordedCryptoContexts
         )
