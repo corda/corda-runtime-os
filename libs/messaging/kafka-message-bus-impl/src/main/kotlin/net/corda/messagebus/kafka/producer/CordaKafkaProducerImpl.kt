@@ -11,7 +11,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentExceptionProducerRequiresReset
 import net.corda.v5.base.util.contextLogger
-import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -233,11 +232,9 @@ class CordaKafkaProducerImpl(
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
-            is IllegalStateException,
-            is CommitFailedException -> {
-                // It's not clear from these exceptions whether the producer is ok to abort and continue (observation
-                // suggests that is not true for CommitFailedException) so play it safe and let the client know to
-                // create a new one.
+            is IllegalStateException -> {
+                // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
+                // and let the client know to create a new one.
                 throw CordaMessageAPIIntermittentExceptionProducerRequiresReset("Error occurred $errorString", ex)
             }
 
