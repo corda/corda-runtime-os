@@ -1,4 +1,4 @@
-package net.corda.flow.application.crypto
+package net.corda.cipher.suite.impl
 
 import java.io.InputStream
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
