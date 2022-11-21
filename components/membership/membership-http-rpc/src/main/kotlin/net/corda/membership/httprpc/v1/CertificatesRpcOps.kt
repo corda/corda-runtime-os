@@ -133,10 +133,12 @@ interface CertificatesRpcOps : RpcOps {
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
+     * @return A list of the cluster level certificates aliases in the usage.
      */
     @HttpRpcGET(
         path = "cluster/{usage}",
-        description = "This method gets the certificate chain aliases for a cluster."
+        description = "This method gets the certificate chain aliases for a cluster.",
+        responseDescription = "The cluster level certificates aliases in the usage.",
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
@@ -160,10 +162,12 @@ interface CertificatesRpcOps : RpcOps {
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @return A list of the virtual node certificates aliases in the usage.
      */
     @HttpRpcGET(
         path = "vnode/{holdingIdentityId}/{usage}",
-        description = "This method gets the certificate chain aliases for a virtual node."
+        description = "This method gets the certificate chain aliases for a virtual node.",
+        responseDescription = "The virtual node certificates aliases in the usage.",
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
@@ -188,10 +192,12 @@ interface CertificatesRpcOps : RpcOps {
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique certificate chain alias
+     * @return The certificate in PEM format.
      */
     @HttpRpcGET(
         path = "cluster/{usage}/{alias}",
-        description = "This method gets the certificate chain in PEM format for a cluster."
+        description = "This method gets the certificate chain in PEM format for a cluster.",
+        responseDescription = "The certificate in PEM format.",
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
@@ -205,7 +211,7 @@ interface CertificatesRpcOps : RpcOps {
             description = "The certificate chain unique alias."
         )
         alias: String,
-    ): String? = getCertificateChain(
+    ): String = getCertificateChain(
         usage = usage,
         alias = alias,
         holdingIdentityId = null,
@@ -221,10 +227,12 @@ interface CertificatesRpcOps : RpcOps {
      *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique certificate chain alias
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @return The certificate in PEM format.
      */
     @HttpRpcGET(
         path = "vnode/{holdingIdentityId}/{usage}/{alias}",
-        description = "This method gets the certificate chain in PEM format for a virtual node."
+        description = "This method gets the certificate chain in PEM format for a virtual node.",
+        responseDescription = "The certificate in PEM format.",
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
@@ -270,7 +278,8 @@ interface CertificatesRpcOps : RpcOps {
     @Suppress("LongParameterList")
     @HttpRpcPOST(
         path = "{tenantId}/{keyId}",
-        description = "This method enables you to generate a certificate signing request (CSR) for a tenant."
+        description = "This method enables you to generate a certificate signing request (CSR) for a tenant.",
+        responseDescription = "The CSR in PEM format.",
     )
     fun generateCsr(
         @HttpRpcPathParameter(

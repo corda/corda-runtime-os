@@ -67,7 +67,7 @@
     "/certificates/cluster/{usage}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method get the certificate chain aliases for a cluster.",
+        "description" : "This method gets the certificate chain aliases for a cluster.",
         "operationId" : "get_certificates_cluster__usage_",
         "parameters" : [ {
           "name" : "usage",
@@ -83,7 +83,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The cluster level certificates aliases in the usage.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -168,7 +168,7 @@
     "/certificates/cluster/{usage}/{alias}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method get the certificate chain in PEM format for a cluster.",
+        "description" : "This method gets the certificate chain in PEM format for a cluster.",
         "operationId" : "get_certificates_cluster__usage___alias_",
         "parameters" : [ {
           "name" : "usage",
@@ -195,12 +195,12 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The certificate in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "type" : "string",
-                  "nullable" : true,
+                  "nullable" : false,
                   "example" : "string"
                 }
               }
@@ -247,7 +247,7 @@
     "/certificates/vnode/{holdingidentityid}/{usage}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method get the certificate chain aliases for a virtual node.",
+        "description" : "This method gets the certificate chain aliases for a virtual node.",
         "operationId" : "get_certificates_vnode__holdingidentityid___usage_",
         "parameters" : [ {
           "name" : "usage",
@@ -274,7 +274,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The virtual node certificates aliases in the usage.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -370,7 +370,7 @@
     "/certificates/vnode/{holdingidentityid}/{usage}/{alias}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method get the certificate chain in PEM format for a virtual node",
+        "description" : "This method gets the certificate chain in PEM format for a virtual node.",
         "operationId" : "get_certificates_vnode__holdingidentityid___usage___alias_",
         "parameters" : [ {
           "name" : "usage",
@@ -408,7 +408,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The certificate in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -469,7 +469,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The CSR in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
