@@ -136,7 +136,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "cluster/{usage}",
-        description = "This method get the certificate chain aliases for a cluster."
+        description = "This method gets the certificate chain aliases for a cluster."
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
@@ -163,7 +163,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "vnode/{holdingIdentityId}/{usage}",
-        description = "This method get the certificate chain aliases for a virtual node."
+        description = "This method gets the certificate chain aliases for a virtual node."
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
@@ -191,7 +191,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "cluster/{usage}/{alias}",
-        description = "This method get the certificate chain in PEM format for a cluster."
+        description = "This method gets the certificate chain in PEM format for a cluster."
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
@@ -224,7 +224,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "vnode/{holdingIdentityId}/{usage}/{alias}",
-        description = "This method get the certificate chain in PEM format for a virtual node"
+        description = "This method gets the certificate chain in PEM format for a virtual node."
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
