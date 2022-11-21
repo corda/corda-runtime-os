@@ -110,17 +110,18 @@ class PersistGroupParametersHandlerTest {
         val context = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
-        val request = mock<PersistGroupParameters> {
-            on { groupParameters } doReturn KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "5")
-                )
+        val mockGroupParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "5")
             )
+        )
+        val request = mock<PersistGroupParameters> {
+            on { groupParameters } doReturn mockGroupParameters
         }
 
         val result = handler.invoke(context, request)
 
-        assertThat(result).isEqualTo(PersistGroupParametersResponse(5))
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
     }
 
     @Test

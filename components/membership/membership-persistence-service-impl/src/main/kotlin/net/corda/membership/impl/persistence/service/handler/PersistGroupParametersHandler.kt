@@ -29,8 +29,9 @@ internal class PersistGroupParametersHandler(
         context: MembershipRequestContext,
         request: PersistGroupParameters
     ): PersistGroupParametersResponse {
-        val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val epochFromRequest = request.groupParameters.toMap()[EPOCH_KEY]?.toInt()
+        val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+            val groupParameters = request.groupParameters
+            val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
                 ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
@@ -49,13 +50,13 @@ internal class PersistGroupParametersHandler(
             
             val entity = GroupParametersEntity(
                 epoch = epochFromRequest,
-                parameters = serializeProperties(request.groupParameters),
+                parameters = serializeProperties(groupParameters),
             )
             em.persist(entity)
 
-            entity.epoch
+            groupParameters
         }
 
-        return PersistGroupParametersResponse(epoch)
+        return PersistGroupParametersResponse(persistedGroupParameters)
     }
 }

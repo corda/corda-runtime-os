@@ -31,7 +31,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         context: MembershipRequestContext,
         request: PersistGroupParametersInitialSnapshot
     ): PersistGroupParametersResponse {
-        val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+        val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             // Create initial snapshot of group parameters.
             val groupParameters = KeyValuePairList(
                 listOf(
@@ -46,9 +46,9 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             )
             em.persist(entity)
 
-            entity.epoch
+            groupParameters
         }
 
-        return PersistGroupParametersResponse(epoch)
+        return PersistGroupParametersResponse(persistedGroupParameters)
     }
 }
