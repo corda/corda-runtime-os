@@ -11,11 +11,11 @@ class UtxoSignedTransactionAMQPSerializationTest: UtxoLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a utxo Signed Transaction`() {
-        val serialised = sandboxSerializationService1.serialize(utxoSignedTransaction)
+        val serialised = serializationService.serialize(utxoSignedTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            sandboxSerializationService2.deserialize(serialised)
+            serializationService.deserialize(serialised)
 
         assertThat(deserialized.javaClass.name)
             .isEqualTo("net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl")

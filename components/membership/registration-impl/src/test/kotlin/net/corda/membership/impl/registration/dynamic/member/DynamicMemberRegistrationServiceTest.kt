@@ -8,8 +8,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.crypto.ecies.EncryptedDataWithKey
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.EncryptedDataWithKey
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
