@@ -20,7 +20,7 @@ the following properties:
    properties as used by other database based tests in this repo.
 - `bsBenchNumIterations`: This controls how many times each test case is run. This should not affect 
    the performance characteristics of the tests themselves, but a higher value is likely to provide
-   more consistent results between runs due to the tests running for longer. __Default:__ 1000, 
+   more consistent results between runs due to the tests running for longer. __Default:__ 100, 
    which has been selected as a good balance between consistency and execution time when testing
    with Postgres.
 - `bsBenchNumOpsPerIteration`: This controls how many operations are executed for each run of a test
@@ -29,7 +29,7 @@ the following properties:
   how many states or transactions are passed into a single call to the backing store API. This can
   be used to simulate batching behaviour, as a bigger batch of requests processed by the uniqueness
   checker would correspond to the number of states / transactions passed into each call to the
-  backing store API. __Default__: 10
+  backing store API. __Default__: 100
 
 For example, to run the tests with Postgres, 2500 iterations, and 20 operations per iteration:
 
