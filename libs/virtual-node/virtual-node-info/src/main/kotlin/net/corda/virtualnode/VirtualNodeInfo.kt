@@ -38,6 +38,8 @@ data class VirtualNodeInfo(
     val version: Int = -1,
     /** Creation timestamp */
     val timestamp: Instant,
+    /* Soft deleted */
+    val isDeleted: Boolean = false,
 ) {
     companion object {
         val DEFAULT_INITIAL_STATE = VirtualNodeState.ACTIVE
@@ -79,7 +81,8 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
         VirtualNodeState.valueOf(virtualNodeState),
         version,
-        timestamp
+        timestamp,
+        false
     )
 }
 

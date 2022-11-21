@@ -2,14 +2,17 @@ package net.corda.libs.virtualnode.datamodel
 
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import java.io.Serializable
 import java.time.Instant
-import java.util.stream.Stream
+import java.util.*
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
-import javax.persistence.EntityManager
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
@@ -29,7 +32,8 @@ import javax.persistence.Version
 @Entity
 @Table(name = VNODE_INSTANCE_DB_TABLE, schema = CONFIG)
 @IdClass(VirtualNodeEntityKey::class)
-data class VirtualNodeEntity(
+@Suppress("LongParameterList")
+internal class VirtualNodeEntity(
     @ManyToOne(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.PERSIST, CascadeType.MERGE]
@@ -65,68 +69,55 @@ data class VirtualNodeEntity(
 
         other as VirtualNodeEntity
 
-        if (holdingIdentity != other.holdingIdentity) return false
-        if (cpiName != other.cpiName) return false
-        if (cpiVersion != other.cpiVersion) return false
-        if (cpiSignerSummaryHash != other.cpiSignerSummaryHash) return false
-
-        return true
+        return Objects.equals(holdingIdentity, other.holdingIdentity)
+                && Objects.equals(cpiName, other.cpiName)
+                && Objects.equals(cpiVersion, other.cpiVersion)
+                && Objects.equals(cpiSignerSummaryHash, other.cpiSignerSummaryHash)
     }
 
     override fun hashCode(): Int {
-        var result = holdingIdentity.hashCode()
-        result = 31 * result + cpiName.hashCode()
-        result = 31 * result + cpiVersion.hashCode()
-        result = 31 * result + cpiSignerSummaryHash.hashCode()
-        return result
+        return Objects.hash(
+            holdingIdentity,
+            cpiName,
+            cpiVersion,
+            cpiSignerSummaryHash)
     }
 
     fun update(newState: String) {
         virtualNodeState = newState
+    }
+
+    fun toVirtualNodeInfo(): VirtualNodeInfo {
+        val cpiId = try {
+            CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash))
+        } catch (e: IllegalArgumentException) {
+            println("Failed to parse: $cpiSignerSummaryHash ")
+            throw e
+        }
+        return VirtualNodeInfo(
+                    holdingIdentity.toDTO(),
+                    cpiId,
+                    holdingIdentity.vaultDDLConnectionId,
+                    holdingIdentity.vaultDMLConnectionId!!,
+                    holdingIdentity.cryptoDDLConnectionId,
+                    holdingIdentity.cryptoDMLConnectionId!!,
+                    holdingIdentity.uniquenessDDLConnectionId,
+                    holdingIdentity.uniquenessDMLConnectionId!!,
+                    holdingIdentity.hsmConnectionId,
+                    VirtualNodeState.valueOf(virtualNodeState),
+                    entityVersion,
+                    insertTimestamp!!,
+                    isDeleted
+                )
     }
 }
 
 /** The composite primary key for a virtual node instance. */
 @Embeddable
 @Suppress("Unused")
-data class VirtualNodeEntityKey(
+internal class VirtualNodeEntityKey(
     private val holdingIdentity: HoldingIdentityEntity,
     private val cpiName: String,
     private val cpiVersion: String,
     private val cpiSignerSummaryHash: String
 ) : Serializable
-
-/**
- * If you change this function ensure that you check the generated SQL from
- * hibnernate in the "virtual node entity query test" in
- * [net.corda.libs.configuration.datamodel.tests.VirtualNodeEntitiesIntegrationTest]
- */
-fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
-    val query = criteriaBuilder!!.createQuery(VirtualNodeEntity::class.java)!!
-    val root = query.from(VirtualNodeEntity::class.java)
-    root.fetch<Any, Any>("holdingIdentity")
-    query.select(root)
-
-    return createQuery(query).resultStream
-}
-
-fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntity? {
-    val queryBuilder = with(criteriaBuilder!!) {
-        val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!
-        val root = queryBuilder.from(VirtualNodeEntity::class.java)
-        root.fetch<Any, Any>("holdingIdentity")
-        queryBuilder.where(
-            equal(
-                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityShortHash"),
-                parameter(String::class.java, "shortId")
-            )
-        ).orderBy(desc(root.get<String>("cpiVersion")))
-        queryBuilder
-    }
-
-    return createQuery(queryBuilder)
-        .setParameter("shortId", holdingIdentityShortHash.uppercase())
-        .setMaxResults(1)
-        .resultList
-        .singleOrNull()
-}
