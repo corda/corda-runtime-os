@@ -2,7 +2,7 @@
   "type": "record",
   "name": "UnauthenticatedRegistrationRequestHeader",
   "namespace": "net.corda.data.membership.p2p",
-  "doc": "Registration request header containing information required for ECIES encryption/decryption.",
+  "doc": "Registration request header containing information required for hybrid encryption/decryption.",
   "fields": [
     {
       "name": "salt",

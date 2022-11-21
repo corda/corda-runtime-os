@@ -11,7 +11,7 @@
     },
     {
       "name": "payload",
-      "doc": "The registration request encrypted using ECIES encryption.",
+      "doc": "The registration request encrypted using hybrid encryption.",
       "type": "bytes"
     }
   ]
