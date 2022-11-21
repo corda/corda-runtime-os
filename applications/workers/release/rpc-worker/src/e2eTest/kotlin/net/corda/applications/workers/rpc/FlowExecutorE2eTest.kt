@@ -5,6 +5,8 @@ import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.TestToolkitProperty.Companion.DEFAULT_HTTP_HOST
 import net.corda.applications.workers.rpc.http.TestToolkitProperty.Companion.DEFAULT_HTTP_PORT
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
@@ -29,7 +31,7 @@ class FlowExecutorE2eTest {
     fun `check FlowExecutor role creation`() {
         val randomVNodeHash = UUID.randomUUID().toString().replace("-", "").take(12)
 
-        val result = CliTask.execute(listOf("initial-rbac", "flow-executor", "-u", "admin", "-p", "admin",
+        val result = CliTask.execute(listOf("initial-rbac", "flow-executor", "-u", adminUser, "-p", adminPassword,
             "-t", "https://$DEFAULT_HTTP_HOST:$DEFAULT_HTTP_PORT", "-v", randomVNodeHash))
         assertThat(result.exitCode).withFailMessage(result.stdErr).isEqualTo(0)
         val roleName = "FlowExecutorRole-$randomVNodeHash"
