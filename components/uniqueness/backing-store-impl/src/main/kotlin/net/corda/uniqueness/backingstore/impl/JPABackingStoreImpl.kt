@@ -15,16 +15,15 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
-import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.*
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -37,6 +36,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -92,6 +92,8 @@ open class JPABackingStoreImpl @Activate constructor(
         )
 
         val entityManager = entityManagerFactory.createEntityManager()
+        // Enable Hibernate JDBC batch and set the batch size on a per-session basis.
+        entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
 
         @Suppress("TooGenericExceptionCaught")
         try {
@@ -190,26 +192,29 @@ open class JPABackingStoreImpl @Activate constructor(
             val results = HashMap<
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
+            val statePks = mutableListOf<UniquenessTxAlgoStateRefKey>()
+
             states.forEach { state ->
                 val txId = state.txHash
                 val stateIndex = state.stateIndex
-                val existing = entityManager.createNamedQuery(
-                    "UniquenessStateDetailEntity.select",
-                    UniquenessStateDetailEntity::class.java
-                )
-                    .setParameter("txAlgo", txId.algorithm)
-                    .setParameter("txId", txId.bytes)
-                    .setParameter("stateIndex", stateIndex)
-                    .resultList as List<UniquenessStateDetailEntity>
+                // Build a list of State composite primary keys from a collection of states.
+                val statePk = UniquenessTxAlgoStateRefKey(txId.algorithm, txId.bytes, stateIndex)
+                statePks.add(statePk)
+            }
+            // Use Hibernate Session to fetch multiple state entities by their primary keys.
+            val multiLoadAccess =
+                entityManager.unwrap(Session::class.java).byMultipleIds(UniquenessStateDetailEntity::class.java)
+            val existing = multiLoadAccess.multiLoad(statePks)
 
-                existing.firstOrNull()?.let { stateEntity ->
-                    val consumingTxId =
-                        if (stateEntity.consumingTxId != null) {
-                            SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
-                        } else null
-
-                    results[state] = UniquenessCheckStateDetailsImpl(state, consumingTxId)
-                }
+            existing.forEach { stateEntity ->
+                val consumingTxId =
+                    if (stateEntity.consumingTxId != null) {
+                        SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
+                    } else null
+                val returnedState = UniquenessCheckStateRefImpl(
+                    SecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
+                    stateEntity.issueTxOutputIndex)
+                results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
 
             return results
@@ -221,39 +226,39 @@ open class JPABackingStoreImpl @Activate constructor(
 
             val results = HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
+            val txPks = mutableListOf<UniquenessTxAlgoIdKey>()
             txIds.forEach { txId ->
-                val existing = entityManager.createNamedQuery(
-                    "UniquenessTransactionDetailEntity.select",
-                    UniquenessTransactionDetailEntity::class.java
-                )
-                    .setParameter("txAlgo", txId.algorithm)
-                    .setParameter("txId", txId.bytes)
-                    .resultList as List<UniquenessTransactionDetailEntity>
+                val txPk = UniquenessTxAlgoIdKey(txId.algorithm, txId.bytes)
+                txPks.add(txPk)
+            }
+            // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
+            val multiLoadAccess =
+                entityManager.unwrap(Session::class.java).byMultipleIds(UniquenessTransactionDetailEntity::class.java)
+            val existing = multiLoadAccess.multiLoad(txPks)
 
-                existing.firstOrNull()?.let { txEntity ->
-                    val result = when (txEntity.result) {
-                        RESULT_ACCEPTED_REPRESENTATION -> {
-                            UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
-                        }
-                        RESULT_REJECTED_REPRESENTATION -> {
-                            // If the transaction is rejected we need to make sure it is also
-                            // stored in the rejected tx table
-                            UniquenessCheckResultFailureImpl(
-                                txEntity.commitTimestamp,
-                                getTransactionError(txEntity) ?: throw IllegalStateException(
-                                    "Transaction with id $txId was rejected but no records were " +
+            existing.firstOrNull()?.let { txEntity ->
+                val result = when (txEntity.result) {
+                    RESULT_ACCEPTED_REPRESENTATION -> {
+                        UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
+                    }
+                    RESULT_REJECTED_REPRESENTATION -> {
+                        // If the transaction is rejected we need to make sure it is also
+                        // stored in the rejected tx table
+                        UniquenessCheckResultFailureImpl(
+                            txEntity.commitTimestamp,
+                            getTransactionError(txEntity) ?: throw IllegalStateException(
+                                "Transaction with id ${txEntity.txId} was rejected but no records were " +
                                         "found in the rejected transactions table"
-                                )
                             )
-                        }
-                        else -> throw IllegalStateException(
-                            "Transaction result can only be " +
-                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                         )
                     }
-
-                    results[txId] = UniquenessCheckTransactionDetailsInternal(txId, result)
+                    else -> throw IllegalStateException(
+                        "Transaction result can only be " +
+                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
+                    )
                 }
+                val txHash = SecureHash(txEntity.txIdAlgo, txEntity.txId)
+                results[txHash] = UniquenessCheckTransactionDetailsInternal(txHash, result)
             }
 
             return results

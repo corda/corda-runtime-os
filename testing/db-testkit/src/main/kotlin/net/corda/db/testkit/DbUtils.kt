@@ -79,7 +79,7 @@ object DbUtils {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
-        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb&reWriteBatchedInserts=true"
 
         val factory = PostgresDataSourceFactory()
 
