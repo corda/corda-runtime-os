@@ -204,8 +204,9 @@ internal class LifecycleProcessor(
     }
 
     private fun processClose(coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.debug  { "Closing coordinator ${coordinator.name}" }
+        logger.debug { "Closing coordinator ${coordinator.name}" }
         state.isRunning = false
+        state.cancelAllTimer()
         state.trackedRegistrations.forEach {
             logger.trace { "Closing $it on ${coordinator.name}." }
             it.close()
