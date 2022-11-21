@@ -167,7 +167,10 @@ class LifecycleCoordinatorImpl(
      */
     override fun cancelTimer(key: String) {
         logger.trace { "$name: Cancelling timer for key $key" }
-        postEvent(CancelTimer(key))
+        if (!isClosed) {
+            // No need to cancel any timer if the coordinator is closed
+            postEvent(CancelTimer(key))
+        }
     }
 
     /**
@@ -175,7 +178,9 @@ class LifecycleCoordinatorImpl(
      */
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
         logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
-        postEvent(StatusChange(newStatus, reason))
+        if (!isClosed) {
+            postEvent(StatusChange(newStatus, reason))
+        }
     }
 
     /**
