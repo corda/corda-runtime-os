@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
 
-// TODO
 @Component(
     service = [HashingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = ServiceScope.PROTOTYPE
