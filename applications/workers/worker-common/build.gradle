@@ -29,7 +29,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation ("io.micrometer:micrometer-core:0.1.0-SNAPSHOT") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'

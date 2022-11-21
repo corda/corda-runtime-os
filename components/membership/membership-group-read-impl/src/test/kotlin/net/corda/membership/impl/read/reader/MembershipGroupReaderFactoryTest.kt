@@ -5,6 +5,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,27 +21,29 @@ import org.mockito.kotlin.whenever
 
 class MembershipGroupReaderFactoryTest {
 
-    lateinit var membershipGroupReaderFactory: MembershipGroupReaderFactory
+    private lateinit var membershipGroupReaderFactory: MembershipGroupReaderFactory
 
-    val alice = aliceName
-    val bob = bobName
+    private val alice = aliceName
+    private val bob = bobName
 
-    val aliceIdGroup1 = HoldingIdentity(alice, GROUP_ID_1)
-    val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
+    private val aliceIdGroup1 = HoldingIdentity(alice, GROUP_ID_1)
+    private val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
 
-    val aliceReader: MembershipGroupReader = mock()
-    val groupReaderCache = mock<MemberDataCache<MembershipGroupReader>>().apply {
+    private val aliceReader: MembershipGroupReader = mock()
+    private val groupReaderCache = mock<MemberDataCache<MembershipGroupReader>>().apply {
         doReturn(aliceReader).whenever(this).get(eq(aliceIdGroup1))
         doReturn(null).whenever(this).get(eq(bobIdGroup1))
     }
 
-    val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
+    private val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReaderFactoryTest.groupReaderCache).whenever(this).groupReaderCache
     }
 
+    private val groupParametersReaderService: GroupParametersReaderService = mock()
+
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, groupParametersReaderService)
     }
 
     @Test

@@ -13,6 +13,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:utilities")
 

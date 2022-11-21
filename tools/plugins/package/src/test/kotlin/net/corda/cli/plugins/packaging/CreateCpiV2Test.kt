@@ -12,12 +12,15 @@ import net.corda.cli.plugins.packaging.TestUtils.jarEntriesExistInCpx
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.utilities.exists
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
+import java.io.ByteArrayInputStream
+import java.io.File
 
 class CreateCpiV2Test {
 
@@ -48,6 +51,8 @@ class CreateCpiV2Test {
 
         private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
             ?: error("TestGroupPolicy.json not found"))
+        private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
+            ?: error("InvalidTestGroupPolicy.json not found"))
         private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
             ?: error("signingkeys.pfx not found"))
 
@@ -127,6 +132,46 @@ class CreateCpiV2Test {
     }
 
     @Test
+    fun `cpi create tool handles group policy passed through standard input`() {
+        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+        val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)
+
+        val systemIn = System.`in`
+        val testIn = ByteArrayInputStream(groupPolicyString.toByteArray())
+        System.setIn(testIn)
+
+        val errText = TestUtils.captureStdErr {
+            CommandLine(CreateCpiV2()).execute(
+                "--cpb=${cpbPath}",
+                "--group-policy=-",
+                "--cpi-name=testCpi",
+                "--cpi-version=5.0.0.0-SNAPSHOT",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=${SIGNING_KEY_1_ALIAS}",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        System.setIn(systemIn)
+        // Expect output to be silent on success
+        Assertions.assertEquals("", errText)
+        assertTrue(
+            jarEntriesExistInCpx(
+                outputFile,
+                listOf(
+                    "META-INF/MANIFEST.MF",
+                    "META-INF/$CPI_SIGNER_NAME.SF",
+                    "META-INF/$CPI_SIGNER_NAME.EC",
+                    "META-INF/GroupPolicy.json",
+                    cpbPath.fileName.toString()
+                )
+            )
+        )
+    }
+
+    @Test
     fun `cpi create tool aborts if its not a cpb before packing it into a cpi`() {
         // Attempt to pack a Cpk into a Cpi - should fail since it's not a Cpb
         val cpkBuilder = TestCpkV2Builder()
@@ -162,6 +207,33 @@ class CreateCpiV2Test {
                 "net.corda.libs.packaging.core.exception.CordappManifestException: " +
                         "Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\""
             )
+        )
+    }
+
+    @Test
+    fun `cpi create tool aborts if its group policy is invalid`() {
+        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+
+        val errText = TestUtils.captureStdErr {
+            CommandLine(CreateCpiV2()).execute(
+                "--cpb=${cpbPath}",
+                "--group-policy=${invalidTestGroupPolicy}",
+                "--cpi-name=testCpi",
+                "--cpi-version=5.0.0.0-SNAPSHOT",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=${SIGNING_KEY_1_ALIAS}",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        assertFalse(outputFile.exists())
+        assertTrue(errText.contains("MembershipSchemaValidationException: Exception when validating membership schema"))
+        assertTrue(
+            errText.contains(
+                "Failed to validate against schema \"corda.group.policy\" due to the following error(s): " +
+                        "[\$.groupId: does not match the regex pattern")
         )
     }
 }

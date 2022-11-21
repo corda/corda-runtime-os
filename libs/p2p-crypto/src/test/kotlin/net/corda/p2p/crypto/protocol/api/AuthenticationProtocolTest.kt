@@ -73,8 +73,8 @@ class AuthenticationProtocolTest {
         )
         //One validator for AuthenticationProtocolInitiator and one for AuthenticationProtocolResponder
         assertThat(certificateValidator.constructed().size).isEqualTo(2)
-        verify(certificateValidator.constructed()[0]).validate(ourCertificate, aliceX500Name)
-        verify(certificateValidator.constructed()[1]).validate(ourCertificate, aliceX500Name)
+        verify(certificateValidator.constructed()[0]).validate(ourCertificate, aliceX500Name, partyBSessionKey.public)
+        verify(certificateValidator.constructed()[1]).validate(ourCertificate, aliceX500Name, partyASessionKey.public)
 
         certificateValidator.close()
     }
