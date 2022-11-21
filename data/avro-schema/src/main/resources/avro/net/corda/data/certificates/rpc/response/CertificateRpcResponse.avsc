@@ -9,6 +9,7 @@
       "doc": "The response payload.",
       "type": [
         "CertificateImportedRpcResponse",
+        "ListCertificateAliasRpcResponse",
         "CertificateRetrievalRpcResponse"
       ]
     }

@@ -19,6 +19,7 @@
       "doc": "The request type.",
       "type": [
         "ImportCertificateRpcRequest",
+        "ListCertificateAliasesRpcRequest",
         "RetrieveCertificateRpcRequest"
       ]
     }
