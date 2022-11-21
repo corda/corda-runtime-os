@@ -6,9 +6,9 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -407,7 +407,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new key pair using alias then find it and use for ECIES`(
+    fun `Should generate a new key pair using alias then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val alias = UUID.randomUUID().toString()
@@ -430,7 +430,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new a new fresh key pair then find it and use for ECIES`(
+    fun `Should generate a new a new fresh key pair then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val category = CryptoConsts.Categories.SESSION_INIT
@@ -629,7 +629,7 @@ class CryptoProcessorTests {
             otherPublicKey = publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

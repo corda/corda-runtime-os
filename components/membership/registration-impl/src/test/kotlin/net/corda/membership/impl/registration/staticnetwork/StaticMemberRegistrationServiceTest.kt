@@ -373,7 +373,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     status.capture()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(1))
+            ).doReturn(MembershipPersistenceResult.Success(mock()))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
@@ -643,7 +643,7 @@ class StaticMemberRegistrationServiceTest {
                     any(),
                     any()
                 )
-            ).doReturn(MembershipPersistenceResult.Success(1))
+            ).doReturn(MembershipPersistenceResult.Success(mock()))
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
             setUpPublisher()

@@ -11,7 +11,6 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -35,7 +34,6 @@ class ConsensualLedgerPersistenceServiceImplTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
-    private val digitalSignatureVerificationService = mock<DigitalSignatureVerificationService>()
 
     private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
 

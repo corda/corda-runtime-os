@@ -10,13 +10,13 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 import java.util.Objects
 
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
+
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
@@ -48,7 +48,7 @@ class ConsensualSignedTransactionImpl(
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
     @Suspendable
-    override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
+    override fun sign(publicKey: PublicKey): Pair<ConsensualSignedTransactionInternal, DigitalSignatureAndMetadata> {
         val newSignature = transactionSignatureService.sign(id, publicKey)
         return Pair(
             ConsensualSignedTransactionImpl(
@@ -61,9 +61,14 @@ class ConsensualSignedTransactionImpl(
         )
     }
 
-    override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
+    override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionInternal =
         ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
+
+    @Suspendable
+    override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
+        TODO("Not implemented yet")
+    }
 
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{
@@ -80,6 +85,7 @@ class ConsensualSignedTransactionImpl(
         }.toSet()
     }
 
+    @Suspendable
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {

@@ -84,6 +84,16 @@ tasks.register('e2eTest', Test) {
 }
 
 tasks.named('e2eTest') {
+
+    def pluginsProject = project.rootProject.project('tools').project('plugins')
+    // Needs to build CLI tool along with plugins to be usable from within E2E tests
+    dependsOn pluginsProject.tasks.named('copyCliFiles')
+
+    // Set CLI_BUILD_DIR to be accessible from E2E tests
+    if(System.getenv("CLI_BUILD_DIR") == null) {
+        environment "CLI_BUILD_DIR", pluginsProject.layout.buildDirectory.get().asFile.absolutePath
+    }
+
     if(System.getenv("JDK_HOSTS_FILE") != null) {
         jvmArgs "-Djdk.net.hosts.file=${System.getenv("JDK_HOSTS_FILE")}"
     }

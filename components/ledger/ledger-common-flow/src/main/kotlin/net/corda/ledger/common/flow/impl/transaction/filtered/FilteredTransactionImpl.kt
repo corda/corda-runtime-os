@@ -4,11 +4,12 @@ import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALG
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
+import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
-import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -19,17 +20,8 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleProof
 import java.util.Base64
-import kotlin.collections.filter
-import kotlin.collections.isEmpty
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
-import kotlin.collections.single
-import kotlin.collections.toSet
-import kotlin.text.decodeToString
-import kotlin.to
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
@@ -89,19 +81,12 @@ class FilteredTransactionImpl(
             val componentGroupFromTopLevelProofLeafData =
                 topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
-            val componentLeafHash = SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
+            val componentLeafHash =
+                SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
-            val providerToVerifyWith = when (filteredComponentGroup.merkleProofType) {
-                MerkleProofType.AUDIT -> {
-                    componentGroupAuditProofProvider
-                }
-                MerkleProofType.SIZE -> {
-                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) {
-                        componentGroupAuditProofProvider
-                    } else {
-                        componentGroupSizeProofProvider
-                    }
-                }
+            val providerToVerifyWith = when (filteredComponentGroup.merkleProof.proofType) {
+                MerkleProofType.AUDIT -> componentGroupAuditProofProvider
+                MerkleProofType.SIZE -> componentGroupSizeProofProvider
             }
             validate(filteredComponentGroup.merkleProof.verify(componentLeafHash, providerToVerifyWith)) {
                 "Component group leaf [index = $componentGroupIndex] Merkle proof cannot be verified against the top level Merkle " +
@@ -123,7 +108,7 @@ class FilteredTransactionImpl(
     private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {
         val digestSettings = metadata.getDigestSettings()
         return merkleTreeProvider.createHashDigestProvider(
-            merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME, // TODO should come from meta eventually
+            merkleTreeHashDigestProviderName = digestSettings[ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY] as String,
             DigestAlgorithmName(digestSettings[ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY] as String),
             options = mapOf(
                 HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to Base64.getDecoder()
@@ -150,10 +135,6 @@ class FilteredTransactionImpl(
             merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
-    }
-
-    private fun MerkleProof.hasSingleEmptyLeaf(): Boolean {
-        return treeSize == 1 && leaves.single().leafData.isEmpty()
     }
 
     private inline fun validate(condition: Boolean, message: () -> String) {

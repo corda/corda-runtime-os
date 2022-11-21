@@ -224,13 +224,14 @@ class GroupPolicyProviderImpl @Activate constructor(
                                     "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
                                     "Caught exception: ", e
                         )
-                        logger.warn(
-                            "Removing cached group policy due to problem when parsing update so it will be " +
-                                    "repopulated on next read."
-                        )
                         null
                     }
-                    if(groupPolicyToStore == null) {
+
+                    if (groupPolicyToStore == null) {
+                        logger.debug(
+                            "Something went wrong while parsing the group policy for virtual node with holding identity [$it]. " +
+                                    "The group policy will be removed from the cache, to be parsed and cached on the next read."
+                        )
                         groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
                         logger.debug { "Caching group policy for member." }
@@ -270,9 +271,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
         if (metadata == null) {
             logger.warn(
-                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
-                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
+                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
+                        "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
+            return null
         }
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
             membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
@@ -283,7 +285,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         return try {
             groupPolicyParser.parse(
                 holdingIdentity,
-                metadata?.groupPolicy,
+                metadata.groupPolicy,
                 ::persistedPropertyQuery
             )
         } catch (e: BadGroupPolicyException) {

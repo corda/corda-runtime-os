@@ -126,6 +126,30 @@ data class CpiMetadataEntity(
             fileChecksum = fileChecksum,
             cpks = cpks,
         )
+
+    /**
+     * We'll override to only use the primary key as the default equals causes issues when converting a stream to a list
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CpiMetadataEntity) return false
+
+        if (name != other.name) return false
+        if (version != other.version) return false
+        if (signerSummaryHash != other.signerSummaryHash) return false
+
+        return true
+    }
+
+    /**
+     * We'll override to only use the primary key as the default equals causes issues when converting a stream to a list
+     */
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + version.hashCode()
+        result = 31 * result + signerSummaryHash.hashCode()
+        return result
+    }
 }
 
 /** The composite primary key for a CpiEntity. */
@@ -141,7 +165,8 @@ fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
     return createQuery(
         "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
                 "INNER JOIN FETCH cpi_.cpks cpk_ " +
-                "INNER JOIN FETCH cpk_.metadata cpk_meta_",
+                "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
+                "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
         CpiMetadataEntity::class.java
     ).resultStream
 }

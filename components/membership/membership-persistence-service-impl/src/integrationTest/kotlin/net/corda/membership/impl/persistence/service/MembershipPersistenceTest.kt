@@ -81,6 +81,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -570,9 +571,21 @@ class MembershipPersistenceTest {
             )
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
-        val persisted2 = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        assertThat((persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload).isEqualTo(51)
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "51"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", keyEncodingService.encodeAsString(notaryKey)),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(6)
+            assertThat(containsAll(expectedGroupParameters))
+        }
 
         val persistedEntity = vnodeEmf.use {
             it.find(
@@ -582,14 +595,10 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
-            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(6)
-            assertThat(deserialized[EPOCH_KEY]).isEqualTo("51")
-            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
-            assertThat(deserialized["corda.notary.service.0.name"]).isEqualTo(notaryServiceName)
-            assertThat(deserialized["corda.notary.service.0.plugin"]).isEqualTo(notaryServicePlugin)
-            assertThat(deserialized["corda.notary.service.0.keys.0"]).isEqualTo(keyEncodingService.encodeAsString(notaryKey))
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 
@@ -646,10 +655,21 @@ class MembershipPersistenceTest {
                 )
             it.persist(entity)
         }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "101"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", notaryKeyAsString),
+        )
 
-        val persisted2 = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        assertThat((persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload!!).isEqualTo(101)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(6)
+            assertThat(containsAll(expectedGroupParameters))
+        }
 
         val persistedEntity = vnodeEmf.use {
             it.find(
@@ -659,14 +679,10 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
-            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(6)
-            assertThat(deserialized[EPOCH_KEY]).isEqualTo("101")
-            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
-            assertThat(deserialized["corda.notary.service.0.name"]).isEqualTo(notaryServiceName)
-            assertThat(deserialized["corda.notary.service.0.plugin"]).isEqualTo(notaryServicePlugin)
-            assertThat(deserialized["corda.notary.service.0.keys.0"]).isEqualTo(notaryKeyAsString)
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 
@@ -728,10 +744,22 @@ class MembershipPersistenceTest {
             )
             it.persist(entity)
         }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "151"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey),
+            KeyValuePair("corda.notary.service.0.keys.1", notaryKeyAsString),
+        )
 
-        val persisted2 = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
-        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        assertThat((persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload!!).isEqualTo(151)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(7)
+            assertThat(containsAll(expectedGroupParameters))
+        }
 
         val persistedEntity = vnodeEmf.use {
             it.find(
@@ -741,15 +769,10 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         with(persistedEntity.parameters) {
-            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
-            assertThat(deserialized.size).isEqualTo(7)
-            assertThat(deserialized[EPOCH_KEY]).isEqualTo("151")
-            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
-            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
-            assertThat(deserialized["corda.notary.service.0.name"]).isEqualTo(notaryServiceName)
-            assertThat(deserialized["corda.notary.service.0.plugin"]).isEqualTo(notaryServicePlugin)
-            assertThat(deserialized["corda.notary.service.0.keys.0"]).isEqualTo(oldNotaryKey)
-            assertThat(deserialized["corda.notary.service.0.keys.1"]).isEqualTo(notaryKeyAsString)
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(7)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 
@@ -1094,5 +1117,7 @@ class MembershipPersistenceTest {
             get() = 5000
         override val modifiedTime: Instant
             get() = clock.instant()
+        override val notaries: List<NotaryInfo>
+            get() = emptyList()
     }
 }

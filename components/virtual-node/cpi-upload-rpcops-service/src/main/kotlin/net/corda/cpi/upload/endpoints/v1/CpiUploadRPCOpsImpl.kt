@@ -19,6 +19,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -97,7 +98,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun getAllCpis(): GetCPIsResponse {
-        logger.info("Get all CPIs request")
+        logger.trace { "Get all CPIs request" }
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
         return GetCPIsResponse(cpis)

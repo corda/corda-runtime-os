@@ -2,7 +2,6 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -17,6 +16,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -24,7 +24,6 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -36,7 +35,7 @@ class CertificatesServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val configurationReadService: ConfigurationReadService,
-    private val processor: CertificatesProcessor,
+    override val client: DbCertificateClient,
 ) : CertificatesService {
 
     @Activate
@@ -57,7 +56,7 @@ class CertificatesServiceImpl internal constructor(
         coordinatorFactory,
         subscriptionFactory,
         configurationReadService,
-        CertificatesProcessor(
+        DbClientImpl(
             dbConnectionManager,
             jpaEntitiesRegistry,
             virtualNodeInfoReadService,
@@ -75,31 +74,6 @@ class CertificatesServiceImpl internal constructor(
     private var configHandle: Resource? = null
     private var rpcSubscription: Resource? = null
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
-
-    override fun importCertificates(
-        usage: CertificateUsage,
-        holdingIdentityId: ShortHash?,
-        alias: String,
-        certificates: String
-    ) =
-        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.saveCertificates(alias, certificates) }
-
-    override fun retrieveCertificates(
-        usage: CertificateUsage,
-        holdingIdentityId: ShortHash?,
-        alias: String,
-    ): String? {
-        return processor.useCertificateProcessor(holdingIdentityId, usage) { p ->
-            p.readCertificates(alias)
-        }
-    }
-
-    override fun retrieveAllCertificates(
-        usage: CertificateUsage,
-        holdingIdentityId: ShortHash?,
-    ): List<String> {
-        return processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.readAllCertificates() }
-    }
 
     override fun start() {
         coordinator.start()
@@ -174,7 +148,7 @@ class CertificatesServiceImpl internal constructor(
                         requestType = CertificateRpcRequest::class.java,
                         responseType = CertificateRpcResponse::class.java
                     ),
-                    responderProcessor = processor,
+                    responderProcessor = CertificatesProcessor(client),
                     messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 ).also {
                     subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
