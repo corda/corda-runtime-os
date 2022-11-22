@@ -14,6 +14,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
@@ -26,7 +27,7 @@ import java.time.Instant
 
 /**
  * Example utxo flow.
- * Todo
+ * TODO expand description
  */
 
 @InitiatingFlow("utxo-flow-protocol")
@@ -62,6 +63,9 @@ class UtxoDemoFlow : RPCStartableFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Utxo flow demo starting...")
@@ -74,20 +78,22 @@ class UtxoDemoFlow : RPCStartableFlow {
                     "Member $x500 does not exist in the membership group"
                 }
             }
-            // TODO NotaryLookup instead of getting the notary from argument
-            val notaryX500 = MemberX500Name.parse(request.notary)
-            val notary = requireNotNull(memberLookup.lookup(
-                notaryX500)) { "Member $notaryX500 does not exist in the membership group" }
-
             val testUtxoState = TestUtxoState(
                 request.input,
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
+            /* TODO CORE-8271 NotaryLookup does not seem to return the registered Notary
+            val notary = notaryLookup.notaryServices.first()
+             */
+            val notaryX500 = MemberX500Name.parse(request.notary)
+            val notary = requireNotNull(memberLookup.lookup(
+                notaryX500)) { "Member $notaryX500 does not exist in the membership group" }
+
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(notaryX500, notary.ledgerKeys.first())) // ???
+                .setNotary(Party(notary.name, notary.ledgerKeys.first())) // CORE-8271
                 .setTimeWindowBetween(Instant.MIN, Instant.MAX)
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())

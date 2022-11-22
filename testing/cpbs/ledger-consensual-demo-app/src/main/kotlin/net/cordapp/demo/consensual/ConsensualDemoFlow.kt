@@ -20,9 +20,8 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 
 /**
- * Example consensual flow. Currently, does almost nothing other than verify that
- * we can inject the ledger service. Eventually it should do a two-party IOUState
- * agreement.
+ * Example consensual flow.
+ * TODO expand description
  */
 
 @InitiatingFlow("consensual-flow-protocol")
