@@ -19,6 +19,7 @@ spec:
     spec:
       {{- include "corda.workerPodSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
