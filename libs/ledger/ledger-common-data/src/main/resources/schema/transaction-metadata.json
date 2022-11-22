@@ -127,7 +127,7 @@
     },
     "componentGroups": {
       "title": "Component group structure",
-      "description": "The mapping of each component group to its 0-based index within the Merkle tree",
+      "description": "The mapping of each component group to its 0-based index within the top-level Merkle tree",
       "type": "object",
       "additionalProperties": {
         "type": "integer"
