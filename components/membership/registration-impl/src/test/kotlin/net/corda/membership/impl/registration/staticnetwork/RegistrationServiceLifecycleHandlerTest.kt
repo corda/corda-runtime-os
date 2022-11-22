@@ -94,7 +94,8 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         platformInfoProvider,
         mock(),
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        mock(),
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -288,7 +289,8 @@ class RegistrationServiceLifecycleHandlerTest {
                 mock(),
                 platformInfoProvider,
                 mock(),
-                virtualNodeInfoReadService
+                virtualNodeInfoReadService,
+                mock(),
             )
 
             val handle = RegistrationServiceLifecycleHandler(staticMemberRegistrationService)
