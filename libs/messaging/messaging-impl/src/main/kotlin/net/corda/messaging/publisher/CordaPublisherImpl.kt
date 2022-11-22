@@ -72,6 +72,7 @@ internal class CordaPublisherImpl(
 
         return futures
     }
+
     /**
      * Publish list of [records] asynchronously with results stored in [futures]
      */
@@ -90,7 +91,8 @@ internal class CordaPublisherImpl(
      */
     private fun publishRecordsToPartitionsAsync(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>,
-        futures: MutableList<CompletableFuture<Unit>>) {
+        futures: MutableList<CompletableFuture<Unit>>
+    ) {
         recordsWithPartitions.forEach { (partition, record) ->
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
@@ -158,12 +160,14 @@ internal class CordaPublisherImpl(
                     )
                     resetProducer()
                 }
+
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
                         "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, false
                     )
                 }
+
                 else -> {
                     logErrorAndSetFuture(
                         "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
@@ -190,14 +194,17 @@ internal class CordaPublisherImpl(
                     log.debug { "Asynchronous send completed completed successfully." }
                 }
             }
+
             exception is CordaMessageAPIFatalException -> {
                 log.warn("$message. Fatal Kafka producer error occurred.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             }
-            exception is CordaMessageAPIIntermittentException -> {
+
+            exception is CordaMessageAPIIntermittentException || exception is CordaMessageAPIIntermittentExceptionProducerRequiresReset -> {
                 log.warn(message, exception)
                 future.completeExceptionally(CordaMessageAPIIntermittentException(message, exception))
             }
+
             else -> {
                 log.warn("$message. Unknown error occurred.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))

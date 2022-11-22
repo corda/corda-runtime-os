@@ -18,10 +18,9 @@ open class CordaMessageAPIIntermittentException(message: String?, exception: Exc
     CordaRuntimeException(message, exception)
 
 /**
- * Sub error of [CordaMessageAPIIntermittentException], only useful to differentiate if this exception is thrown from a
- * producer. In this case the error is not fatal in the way [CordaMessageAPIFatalException] is, but the producer must
- * be closed and re-instantiated. Re-using the producer when this is thrown is not an option and results in undefined
- * behaviour.
+ * Only thrown from a producer. In this case the error is not fatal in the way [CordaMessageAPIFatalException] is, but
+ * the producer must be closed and re-instantiated. Re-using the producer when this is thrown is not an option and
+ * results in undefined behaviour.
  */
 class CordaMessageAPIIntermittentExceptionProducerRequiresReset(message: String?, exception: Exception? = null) :
-    CordaMessageAPIIntermittentException(message, exception)
+    CordaRuntimeException(message, exception)
