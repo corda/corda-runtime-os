@@ -70,7 +70,6 @@ class NonValidatingNotaryClientFlowImplTest {
 
         assertAll({
             assertThat(payload).isNotNull
-            assertThat(payload.numOutputs).isEqualTo(0)
             assertThat(payload.transaction).isEqualTo(mockUtxoTx)
             assertThat(payload.requestSignature.digitalSignature).isEqualTo(mockRequestSignature)
             assertThat(payload.requestSignature.platformVersion).isEqualTo(DUMMY_PLATFORM_VERSION)

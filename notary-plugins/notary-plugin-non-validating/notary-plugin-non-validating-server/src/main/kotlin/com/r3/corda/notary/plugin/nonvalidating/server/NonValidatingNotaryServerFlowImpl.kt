@@ -34,10 +34,8 @@ import java.lang.IllegalStateException
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-// TODO CORE-7249 Currently we need to `spy` this flow because some of the logic is missing and we need to "mock" it.
-//  Mockito needs the class the be open to spy it. We need to remove `open` qualifier when we have an actual logic.
 @InitiatedBy(protocol = "non-validating-notary")
-open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
+class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
     private lateinit var clientService: LedgerUniquenessCheckerClientService
@@ -196,14 +194,10 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
-    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
-    //  order to be mockable (via spy).
     private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {
         val transaction = requestPayload.transaction
         try {
             transaction.verify()
-            // TODO checkAllComponentsVisible is not available anymore, do we need that or those are implicitly
-            //  included in verify
         } catch (e: Exception) {
             logger.warn("Error while validating the transaction, reason: ${e.message}")
             throw IllegalStateException("Error while validating the transaction, reason: ${e.message}")
