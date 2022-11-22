@@ -30,15 +30,6 @@ class FutureUtilsTest {
     private val completableFutures = List(5) { _ -> CompletableFuture<Unit>() }
 
     @Test
-    fun `null list triggers error callback with non fatal error`() {
-        waitOnPublisherFutures(null, TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS, callback)
-        verify(callback).invoke(exceptionCaptor.capture(), fatalCaptor.capture())
-
-        assertTrue(exceptionCaptor.firstValue is IllegalArgumentException)
-        assertFalse(fatalCaptor.firstValue)
-    }
-
-    @Test
     fun `empty list triggers error callback with non fatal error`() {
         waitOnPublisherFutures(listOf(), TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS, callback)
         verify(callback).invoke(exceptionCaptor.capture(), fatalCaptor.capture())
