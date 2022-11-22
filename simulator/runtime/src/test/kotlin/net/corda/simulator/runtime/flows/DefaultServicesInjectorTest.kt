@@ -5,6 +5,7 @@ import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.SimFiberBase
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.v5.application.crypto.MerkleTreeFactory
+import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -104,6 +105,9 @@ class DefaultServicesInjectorTest {
         // And the services we do support should have been passed in
         assertNotNull(capturedJsonMarshallingService)
         assertNull(capturedFactory)
+
+        // And we should still have got the one service that we didn't override
+        assertNotNull(flow.specService)
     }
 
     class FlowForOverrides : Flow {
@@ -112,6 +116,9 @@ class DefaultServicesInjectorTest {
 
         @CordaInject
         lateinit var merkleTreeFactory: MerkleTreeFactory
+
+        @CordaInject
+        lateinit var specService: SignatureSpecService
     }
 
     class FlowWithNonCordaService : Flow {
