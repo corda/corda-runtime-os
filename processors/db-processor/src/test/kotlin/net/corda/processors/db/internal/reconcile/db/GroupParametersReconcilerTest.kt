@@ -12,6 +12,10 @@ import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.reconciliation.Reconciler
+import net.corda.reconciliation.ReconcilerFactory
+import net.corda.reconciliation.ReconcilerReader
+import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -115,33 +119,56 @@ class GroupParametersReconcilerTest {
         on { create(eq(avroGroupParameters)) } doReturn groupParameters
     }
 
+    /*private val reconciler: Reconciler = mock()
+    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters> = mock()
+    private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters> = mock()
+    private val reconcilerFactory: ReconcilerFactory = mock {
+        on {
+            create(
+                any(),
+                eq(reconcilerReader),
+                eq(reconcilerWriter),
+                eq(HoldingIdentity::class.java),
+                eq(GroupParameters::class.java),
+                any()
+            )
+        } doReturn reconciler
+    }*/
+
     private val groupParametersReconciler = GroupParametersReconciler(
         cordaAvroSerializationFactory,
         coordinatorFactory,
         dbConnectionManager,
         virtualNodeInfoReadService,
         jpaEntitiesRegistry,
-        groupParametersFactory
+        groupParametersFactory,
+        /*reconcilerFactory,
+        reconcilerWriter,
+        reconcilerReader,*/
     )
 
     @Nested
     inner class BuildReadersPerExistingVNodeTest {
         @Test
-        fun `Successfully build reader`() {
+        fun `Successfully build reader and reconciler`() {
             groupParametersReconciler.updateInterval(1000)
 
             assertThat(groupParametersReconciler.dbReconciler).isNotNull
+            //assertThat(groupParametersReconciler.reconciler).isNotNull
         }
 
         @Test
-        fun `Reader is not rebuilt if it already exists`() {
+        fun `Reader and reconciler is not rebuilt if it already exists`() {
             groupParametersReconciler.updateInterval(1000)
-            val original = groupParametersReconciler.dbReconciler
+            val originalDbReconciler = groupParametersReconciler.dbReconciler
+            //verify(reconciler, times(1)).start()
 
             groupParametersReconciler.updateInterval(1000)
-            val current = groupParametersReconciler.dbReconciler
+            val currentDbReconciler = groupParametersReconciler.dbReconciler
 
-            assertThat(original).isEqualTo(current)
+            assertThat(originalDbReconciler).isEqualTo(currentDbReconciler)
+            //verify(reconciler, times(1)).start()
+            //verify(reconciler, times(1)).updateInterval(any())
         }
     }
 
