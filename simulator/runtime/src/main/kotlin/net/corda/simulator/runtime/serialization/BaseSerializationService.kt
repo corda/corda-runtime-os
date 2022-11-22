@@ -75,8 +75,8 @@ class BaseSerializationService : SerializationService by createSerializationServ
             override fun loadClassFromPublicBundles(className: String): Class<*> =
                 Class.forName(className, false, classLoader)
 
-            override fun getStaticTag(klass: Class<*>) = "S;bundle;sandbox"
-            override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
+            override fun getStaticTag(klass: Class<*>) = "S;simulator-not-using-osgi-bundle;not-in-a-sandbox"
+            override fun getEvolvableTag(klass: Class<*>) = "E;simulator-not-using-osgi-bundle;not-in-a-sandbox"
         }
 
     }
