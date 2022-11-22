@@ -214,7 +214,6 @@ internal class CordaPublisherImpl(
 
     /**
      * Log the [message] and [exception]. Set the [exception] to the [future].
-     * If [fatal] is set to true then the producer is reset safely.
      */
     private fun logErrorAndSetFuture(
         message: String,
