@@ -165,6 +165,15 @@ pipeline {
             }
         }
         stage('Forward port and run tests') {
+            environment {
+                E2E_CLUSTER_A_RPC_PASSWORD = "${getInitialAdminPassword('alice')}"
+                E2E_CLUSTER_B_RPC_PASSWORD = "${getInitialAdminPassword('bob')}"
+                E2E_CLUSTER_C_RPC_PASSWORD = "${getInitialAdminPassword('caroline')}"
+
+                // Bob's cluster is used as a primary access point by Smoke and E2E tests
+                INITIAL_ADMIN_USER_PASSWORD = "${E2E_CLUSTER_B_RPC_PASSWORD}"
+            }
+
             steps {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
@@ -244,4 +253,9 @@ def deployCorda(def name, def namespace, def base_image){
 
 def getBaseImage(def buildRev, def architectureTag) {
     return buildRev ? "preTest-${architectureTag}${buildRev}" : "${architectureTag}unstable"
+}
+
+def getInitialAdminPassword(def name) {
+    def cmd = "kubectl get secret corda-${name}-initial-admin-user -n ${NAMESPACE} -o go-template='{{ .data.password | base64decode }}'"
+    return sh(script: cmd, returnStdout: true)
 }
