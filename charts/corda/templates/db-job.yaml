@@ -14,11 +14,13 @@ spec:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       containers:
         - name: fin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           command:
             - /bin/sh
             - -e
@@ -32,6 +34,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [ 'database', 'spec', '-c', '-l', '/tmp/working_dir' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -82,6 +85,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [ 'initial-config', 'create-db-config', '-u', 'crypto_user', '-p', 'crypto_password', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -113,6 +117,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [ 'initial-config', 'create-user-config', '-u', '$(INITIAL_ADMIN_USER_USERNAME)', '-p', '$(INITIAL_ADMIN_USER_PASSWORD)', '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -162,6 +167,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [ 'initial-config', 'create-crypto-config', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir

@@ -14,11 +14,13 @@ spec:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       containers:
         - name: create-topics
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [
             'topic',
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
@@ -49,6 +51,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           env:
           {{- include "corda.kafkaSaslPassword" . | nindent 12 }}
           {{- include "corda.kafkaSaslUsername" . | nindent 12 }}
