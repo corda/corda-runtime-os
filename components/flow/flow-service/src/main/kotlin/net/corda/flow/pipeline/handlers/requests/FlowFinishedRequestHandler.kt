@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.handlers.requests
 
 import java.time.Instant
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
@@ -40,7 +41,7 @@ class FlowFinishedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         log.trace { "Flow [${checkpoint.flowId}] completed successfully" }
-        recordFlowRuntimeMetric(checkpoint, "FlowFinished")
+        recordFlowRuntimeMetric(checkpoint, FlowStates.COMPLETED.toString())
 
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
 

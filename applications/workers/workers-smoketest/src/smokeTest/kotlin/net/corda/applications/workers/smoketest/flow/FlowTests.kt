@@ -9,10 +9,6 @@ import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.X500_CHARLIE
-import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.configWithDefaultsNode

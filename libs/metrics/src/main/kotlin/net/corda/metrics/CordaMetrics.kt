@@ -32,7 +32,7 @@ object CordaMetrics {
         object SandboxCreateTime : Metric<Timer>("sandbox.create.time", Metrics::timer)
 
         /**
-         * Time it took to create the sandbox
+         * Time it took for a flow to complete sucessfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
     }
@@ -69,7 +69,7 @@ object CordaMetrics {
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
          */
-        OperationStatus("OperationStatus"),
+        OperationStatus("operationStatus"),
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry

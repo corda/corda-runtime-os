@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.handlers.requests
 
 import java.time.Instant
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
@@ -30,7 +31,7 @@ class FlowFailedRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        recordFlowRuntimeMetric(checkpoint, "FlowFailed")
+        recordFlowRuntimeMetric(checkpoint, FlowStates.FAILED.toString())
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(
             checkpoint,
