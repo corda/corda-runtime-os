@@ -370,6 +370,7 @@ Volume mounts for corda workers
 {{- if .Values.dumpHostPath }}
 - mountPath: /dumps
   name: dumps
+  subPathExpr: $(K8S_POD_NAME)
 {{- end }}
 {{ include "corda.log4jVolumeMount" . }}
 {{- end }}
@@ -393,7 +394,7 @@ Volumes for corda workers
 {{- if .Values.dumpHostPath }}
 - name: dumps
   hostPath:
-    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/
     type: DirectoryOrCreate
 {{- end }}
 {{ include "corda.log4jVolume" . }}

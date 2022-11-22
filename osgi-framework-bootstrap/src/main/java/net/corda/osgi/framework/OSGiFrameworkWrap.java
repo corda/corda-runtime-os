@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -28,7 +27,9 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
@@ -111,7 +112,6 @@ class OSGiFrameworkWrap implements AutoCloseable {
      *
      * The {@link FrameworkFactory} must be in the classpath.
      *
-     * @param frameworkFactoryFQN Full Qualified Name of the {@link FrameworkFactory} making the {@link Framework} to return.
      * @param frameworkStorageDir Path to the directory the {@link Framework} uses as bundles' cache.
      * @param systemPackagesExtra Packages specified in this property are added to
      * the {@code org.osgi.framework.system.packages} property.
@@ -128,18 +128,14 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @throws SecurityException If a {@link SecurityManager} is installed and the caller hasn't {@link RuntimePermission}.
      */
     static Framework getFrameworkFrom(
-        String frameworkFactoryFQN,
         Path frameworkStorageDir,
         String systemPackagesExtra
-    ) throws ClassNotFoundException, IOException, NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException, SecurityException {
-        logger.debug("OSGi framework factory = {}", frameworkFactoryFQN);
-        @SuppressWarnings("unchecked")
-        final Class<? extends FrameworkFactory> factoryClass = (Class<? extends FrameworkFactory>) Class.forName(
-            frameworkFactoryFQN,
-            true,
-            OSGiFrameworkWrap.class.getClassLoader()
-        );
-        final FrameworkFactory frameworkFactory = factoryClass.getDeclaredConstructor().newInstance();
+    ) throws ClassNotFoundException, IOException, SecurityException {
+        Optional<FrameworkFactory> optFactory = ServiceLoader.load(FrameworkFactory.class, OSGiFrameworkWrap.class.getClassLoader()).findFirst();
+        if (optFactory.isEmpty()) {
+            throw new ClassNotFoundException("No OSGi FrameworkFactory found.");
+        }
+        final FrameworkFactory frameworkFactory = optFactory.get();
         final Map<String, String> configurationMap = new LinkedHashMap<>();
         configurationMap.put(Constants.FRAMEWORK_STORAGE, frameworkStorageDir.toString());
         configurationMap.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
@@ -155,7 +151,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
     /**
      * @param resource in the classpath containing a properties file.
      * @return a {@link Properties} object.
-     * @throws IOException
+     * @throws IOException Failed to read OSGi properties.
      */
     private static Properties loadOSGiProperties(String resource) throws IOException {
         final Properties properties = new Properties();
