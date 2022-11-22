@@ -14,8 +14,8 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
-import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -253,11 +253,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                 (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
         }
 
-        private fun persistGroupParameters(
-            viewOwningMember: HoldingIdentity,
-            parametersFromPackage: WireGroupParameters
+        private fun parseGroupParameters(
+            membershipPackage: MembershipPackage
         ): GroupParameters {
-            val groupParameters = with(parametersFromPackage) {
+            return with(membershipPackage.groupParameters) {
                 val groupParametersBytes = groupParameters.array()
                 val parametersList = deserializer.deserialize(groupParametersBytes)
                     ?: throw CordaRuntimeException("Failed to deserialize group parameters from received membership package.")
@@ -267,8 +266,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 )
                 groupParametersFactory.create(parametersList)
             }
-            membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
-            return groupParameters
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -347,9 +344,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                     }
                 }
 
-                val persistedGroupParameters = persistGroupParameters(viewOwningMember, updates.membershipPackage.groupParameters)
-
-                groupParametersWriterService.put(viewOwningMember, persistedGroupParameters)
+                val groupParameters = parseGroupParameters(updates.membershipPackage)
+                membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
+                groupParametersWriterService.put(viewOwningMember, groupParameters)
 
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

@@ -222,12 +222,12 @@ class StaticMemberRegistrationService @Activate constructor(
         }
         val groupParameters = groupParametersFactory.create(groupParametersList)
 
-        // Persist group parameters for this member, and publish to Kafka for DB reconciliation.
+        // Persist group parameters for this member, and publish to Kafka.
         persistenceClient.persistGroupParameters(holdingIdentity, groupParameters)
         groupParametersWriterService.put(holdingIdentity, groupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
-        // Also publish to Kafka for DB reconciliation.
+        // Also publish to Kafka.
         memberInfo.notaryDetails?.let {
             val groupId = memberInfo.groupId
             staticMemberList
