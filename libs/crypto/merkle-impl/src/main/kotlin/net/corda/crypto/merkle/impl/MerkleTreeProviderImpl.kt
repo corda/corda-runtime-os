@@ -27,7 +27,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class MerkleTreeProviderImpl @Activate constructor(
-    // TODO Confirm the following needs to be indeed sandbox digest service
     @Reference(service = DigestService::class)
     private val digestService: DigestService
 ) : MerkleTreeProvider, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
