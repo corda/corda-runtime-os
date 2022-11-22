@@ -1,8 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -45,11 +42,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    @Volatile
-    private var stopped = false
-    private val lock = ReentrantLock()
-    private var consumeLoopThread: Thread? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
+    private var threadLooper =
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "pubsub processing thread", ::runConsumeLoop)
 
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
             "topic ${config.topic}."
@@ -59,59 +53,18 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
-    /**
-     * Is the subscription running.
-     */
     override val isRunning: Boolean
-        get() {
-            return !stopped
-        }
+        get() = threadLooper.isRunning
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = lifecycleCoordinator.name
+        get() = threadLooper.lifecycleCoordinatorName
 
-    /**
-     * Begin consuming events from the configured topic and process them
-     * with the given [processor].
-     * @throws CordaMessageAPIFatalException if unrecoverable error occurs
-     */
     override fun start() {
         log.debug { "Starting subscription with config:\n$config" }
-        lock.withLock {
-            if (consumeLoopThread == null) {
-                stopped = false
-                lifecycleCoordinator.start()
-                consumeLoopThread = thread(
-                    true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "pubsub processing thread ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
-                )
-            }
-        }
+        threadLooper.start()
     }
 
-    /**
-     * Close the subscription.
-     */
-    override fun close() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.close()
-        }
-    }
-
-    private fun stopConsumeLoop() {
-        val thread = lock.withLock {
-            stopped = true
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
-        }
-        thread?.join(config.threadStopTimeout.toMillis())
-    }
+    override fun close() = threadLooper.close()
 
     /**
      * Create a Consumer for the given [subscriptionConfig] and [config] and subscribe to the topic.
@@ -124,7 +77,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
      */
     private fun runConsumeLoop() {
         var attempts = 0
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             attempts++
             try {
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.PUBSUB)
@@ -140,7 +93,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                     )
                     it.setDefaultRebalanceListener(listener)
                     it.subscribe(config.topic)
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                    threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -152,17 +105,16 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 log.error(
                     "$errorMsg Fatal error occurred. Closing subscription.", ex
                 )
-                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                close()
+                threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                threadLooper.stopLoop()
             } catch (ex: Exception) {
                 log.error(
                     "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.", ex
                 )
-                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                close()
+                threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                threadLooper.stopLoop()
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**
@@ -174,7 +126,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
      */
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {
         var attempts = 0
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             try {
                 val consumerRecords = consumer.poll(config.pollTimeout)
                 processPubSubRecords(consumerRecords)

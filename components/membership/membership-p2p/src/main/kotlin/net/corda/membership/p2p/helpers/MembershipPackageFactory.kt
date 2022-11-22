@@ -11,6 +11,7 @@ import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
@@ -19,6 +20,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
@@ -57,6 +59,7 @@ class MembershipPackageFactory(
         membersSignatures: Map<HoldingIdentity, CryptoSignatureWithKey>,
         membersToSend: Collection<MemberInfo>,
         hashCheck: SecureHash,
+        groupParameters: GroupParameters,
     ): MembershipPackage {
         val signedMembers = membersToSend.map {
             val memberTree = merkleTreeGenerator.generateTree(listOf(it))
@@ -70,6 +73,12 @@ class MembershipPackageFactory(
                 .setMgmSignature(mgmSignature)
                 .build()
         }
+        val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
+            WireGroupParameters(
+                ByteBuffer.wrap(it),
+                mgmSigner.sign(it).toAvro()
+            )
+        } ?: throw CordaRuntimeException("Failed to serialize group parameters.")
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hashCheck.toAvro())
@@ -79,7 +88,7 @@ class MembershipPackageFactory(
             .setCurrentPage(0)
             .setPageCount(1)
             .setCpiAllowList(null)
-            .setGroupParameters(null)
+            .setGroupParameters(wireGroupParameters)
             .setMemberships(
                 membership
             )

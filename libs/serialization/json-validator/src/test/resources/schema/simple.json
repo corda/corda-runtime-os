@@ -1,0 +1,32 @@
+{
+	"definitions": {},
+	"$schema": "https://json-schema.org/draft/2019-09/schema",
+	"$id": "https://example.com/object1666608991.json", 
+	"title": "Root", 
+	"type": "object",
+	"required": [
+		"name",
+		"age"
+	],
+	"properties": {
+		"name": {
+			"$id": "#root/name", 
+			"title": "Name", 
+			"type": "string",
+			"default": "",
+			"examples": [
+				"Jimmy"
+			],
+			"pattern": "^.*$"
+		},
+		"age": {
+			"$id": "#root/age", 
+			"title": "Age", 
+			"type": "integer",
+			"examples": [
+				257
+			],
+			"default": 0
+		}
+	}
+}

@@ -3,6 +3,7 @@ package net.corda.flow.application.services
 import java.security.PublicKey
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -15,14 +16,11 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("Unused")
-@Component(
-    service = [ MemberLookup::class, SingletonSerializeAsToken::class ],
-    scope = PROTOTYPE
-)
+@Component(service = [ MemberLookup::class, UsedByFlow::class ], scope = PROTOTYPE)
 class MemberLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-) : MemberLookup, SingletonSerializeAsToken {
+) : MemberLookup, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun lookup(): List<MemberInfo> {

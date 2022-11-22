@@ -10,9 +10,10 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.linkmanager.GroupPolicyListener
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
+import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
@@ -102,7 +103,8 @@ class InMemorySessionReplayerTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
-            GROUP_ID
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate,
         ).generateInitiatorHello()
 
         setRunning()
@@ -148,7 +150,8 @@ class InMemorySessionReplayerTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
-            GROUP_ID
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate,
         ).generateInitiatorHello()
 
         setRunning()
@@ -190,7 +193,8 @@ class InMemorySessionReplayerTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
-            GROUP_ID
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
 
         setRunning()
@@ -219,7 +223,8 @@ class InMemorySessionReplayerTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
-            GROUP_ID
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
 
         setRunning()
@@ -238,7 +243,8 @@ class InMemorySessionReplayerTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
-            GROUP_ID
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(),
             groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)

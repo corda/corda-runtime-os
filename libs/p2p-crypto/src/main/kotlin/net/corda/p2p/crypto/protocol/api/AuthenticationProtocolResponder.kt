@@ -23,6 +23,7 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -52,7 +53,9 @@ import kotlin.math.min
  */
 class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int): AuthenticationProtocol() {
+                                      private val ourMaxMessageSize: Int,
+                                      private val certificateCheckMode: CertificateCheckMode
+): AuthenticationProtocol(certificateCheckMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -132,6 +135,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
+        initiatorX500Name: MemberX500Name,
         initiatorPublicKey: PublicKey,
         initiatorSignatureSpec: SignatureSpec,
     ): HandshakeIdentityData {
@@ -190,11 +194,30 @@ class AuthenticationProtocolResponder(val sessionId: String,
 
                 agreedMaxMessageSize = min(ourMaxMessageSize, this)
             }
+            validateCertificate(initiatorHandshakePayload, initiatorX500Name, initiatorPublicKey)
 
             handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                 initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
                 initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
             handshakeIdentityData!!
+        }
+    }
+
+    private fun validateCertificate(
+        initiatorHandshakePayload: InitiatorHandshakePayload,
+        initiatorX500Name: MemberX500Name,
+        initiatorPublicKey: PublicKey
+    ) {
+        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
+            if (initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate != null) {
+                certificateValidator!!.validate(
+                    initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
+                    initiatorX500Name,
+                    initiatorPublicKey
+                )
+            } else {
+                throw InvalidPeerCertificate("No peer certificate was sent in the initiator handshake message.")
+            }
         }
     }
 
@@ -211,9 +234,12 @@ class AuthenticationProtocolResponder(val sessionId: String,
             val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
-
+            val ourCertificates = when(certificateCheckMode) {
+                is CertificateCheckMode.NoCertificate -> null
+                is CertificateCheckMode.CheckCertificate -> certificateCheckMode.ourCertificates
+            }
             val responderHandshakePayload = ResponderHandshakePayload(
-                ResponderEncryptedExtensions(agreedMaxMessageSize),
+                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),
                 ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)

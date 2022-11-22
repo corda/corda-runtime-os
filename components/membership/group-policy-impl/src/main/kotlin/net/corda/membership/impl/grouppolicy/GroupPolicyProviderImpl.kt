@@ -1,10 +1,10 @@
 package net.corda.membership.impl.grouppolicy
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.membership.event.MembershipEvent
-import net.corda.data.membership.event.registration.MgmOnboarded
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,23 +18,28 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -42,7 +47,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 @Component(service = [GroupPolicyProvider::class])
@@ -62,8 +66,6 @@ class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
 ) : GroupPolicyProvider {
-
-
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
@@ -110,10 +112,8 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Group policy provider received event $event.")
         when (event) {
             is StartEvent -> {
-                logger.info("Processing start event.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = coordinator.followStatusChangesByName(
                     setOf(
@@ -125,7 +125,6 @@ class GroupPolicyProviderImpl @Activate constructor(
                 )
             }
             is StopEvent -> {
-                logger.info("Processing stop event.")
                 deactivate("Stopping component.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = null
@@ -136,9 +135,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 configHandle = null
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Dependency services are UP. Registering to receive configuration.")
                     configHandle?.close()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
@@ -164,13 +161,11 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     private fun activate(reason: String) {
-        logger.debug(reason)
         coordinator.updateStatus(LifecycleStatus.UP, reason)
         swapImpl(ActiveImpl())
     }
 
     private fun deactivate(reason: String) {
-        logger.debug(reason)
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         swapImpl(InactiveImpl)
     }
@@ -196,10 +191,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         ) = try {
             groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
         } catch (e: BadGroupPolicyException) {
-            logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
+            logger.warn("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
         } catch (e: Throwable) {
-            logger.error("Unexpected exception occurred when retrieving group policy file for " +
+            logger.warn("Unexpected exception occurred when retrieving group policy file for " +
                     "holding identity [$holdingIdentity].", e)
             null
         }
@@ -224,26 +219,27 @@ class GroupPolicyProviderImpl @Activate constructor(
                     val groupPolicyToStore = try {
                         parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                     } catch (e: Exception) {
-                        logger.error(
+                        logger.warn(
                             "Failure to parse group policy after change in virtual node info. " +
                                     "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
                                     "Caught exception: ", e
                         )
-                        logger.warn(
-                            "Removing cached group policy due to problem when parsing update so it will be " +
-                                    "repopulated on next read."
-                        )
                         null
                     }
-                    if(groupPolicyToStore == null) {
+
+                    if (groupPolicyToStore == null) {
+                        logger.debug(
+                            "Something went wrong while parsing the group policy for virtual node with holding identity [$it]. " +
+                                    "The group policy will be removed from the cache, to be parsed and cached on the next read."
+                        )
                         groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
-                        logger.info("Caching group policy for member.")
+                        logger.debug { "Caching group policy for member." }
                         groupPolicies[it] = groupPolicyToStore
                         listeners.values.forEach { listener ->
                             listener.callBack(it, groupPolicies[it]!!)
                         }
-                        logger.info("Returning new group policy after change in virtual node information.")
+                        logger.debug { "Returning new group policy after change in virtual node information." }
                     }
                 }
             }
@@ -275,9 +271,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
         if (metadata == null) {
             logger.warn(
-                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
-                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
+                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
+                        "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
+            return null
         }
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
             membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
@@ -288,7 +285,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         return try {
             groupPolicyParser.parse(
                 holdingIdentity,
-                metadata?.groupPolicy,
+                metadata.groupPolicy,
                 ::persistedPropertyQuery
             )
         } catch (e: BadGroupPolicyException) {
@@ -303,59 +300,62 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     internal inner class FinishedRegistrationsProcessor(
         private val callBack: (HoldingIdentity, GroupPolicy) -> Unit
-    )
-        : DurableProcessor<String, MembershipEvent> {
-        @Suppress("NestedBlockDepth")
-        override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
-            logger.info("Received event after mgm registration.")
-            events.forEach {record ->
-                try {
-                    record.value
-                        ?: throw CordaRuntimeException("MembershipEvent with record key: ${record.key} was null.")
-                    when(record.value!!.event) {
-                        is MgmOnboarded -> {
-                            logger.info("Processing mgm onboarded event.")
-                            val event = record.value!!.event as MgmOnboarded
-                            val holdingIdentity = event.onboardedMgm.toCorda()
-                            val gp = parseGroupPolicy(holdingIdentity)
-                            if(gp == null || gp !is MGMGroupPolicy) {
-                                groupPolicies.remove(holdingIdentity)
-                                throw CordaRuntimeException(
-                                    "Unable to get group policy for ${holdingIdentity.shortHash} or " +
-                                            "we didn't receive an MGM group policy."
-                                )
-                            }
-                            logger.info("Caching group policy for MGM.")
-                            groupPolicies[holdingIdentity] = gp
-                            callBack(holdingIdentity, gp)
-                        }
-                        else -> { logger.warn("Unhandled MembershipEvent was received.") }
-                    }
-                } catch(e: Exception) {
-                    logger.warn("Could not process events, caused by: $e")
-                }
+    ) : CompactedProcessor<String, PersistentMemberInfo> {
+        override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
+            currentData.values.forEach {
+                gotData(it)
             }
+        }
 
-            // no need to publish new records after processing in our scenario
-            return emptyList()
+        override fun onNext(
+            newRecord: Record<String, PersistentMemberInfo>,
+            oldValue: PersistentMemberInfo?,
+            currentData: Map<String, PersistentMemberInfo>
+        ) {
+            newRecord.value?.let {
+                gotData(it)
+            }
+        }
+
+        private fun gotData(member: PersistentMemberInfo) {
+            try {
+                val memberContext = member.memberContext.toMap()
+                val mgmContext = member.mgmContext.toMap()
+                // Only notify when an active MGM is added to itself
+                if (
+                    (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
+                    (mgmContext[IS_MGM] == "true") &&
+                    (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
+                ) {
+                    val holdingIdentity = member.viewOwningMember.toCorda()
+                    val gp = parseGroupPolicy(holdingIdentity)
+                    if (gp is MGMGroupPolicy) {
+                        groupPolicies[holdingIdentity] = gp
+                        callBack(holdingIdentity, gp)
+                    } else {
+                        groupPolicies.remove(holdingIdentity)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Could not process events, caused by: $e")
+            }
         }
 
         override val keyClass = String::class.java
-        override val valueClass = MembershipEvent::class.java
+        override val valueClass = PersistentMemberInfo::class.java
     }
     private inner class Listener(
         private val name: String,
         val callBack: (HoldingIdentity, GroupPolicy) -> Unit,
     ) {
-        private var subscription: Subscription<String, MembershipEvent>? = null
+        private var subscription: CompactedSubscription<String, PersistentMemberInfo>? = null
 
         fun start(messagingConfig: SmartConfig) {
             subscription?.close()
-            subscription = subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("$CONSUMER_GROUP-$name", EVENT_TOPIC),
+            subscription = subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig("$CONSUMER_GROUP-$name", MEMBER_LIST_TOPIC),
                 FinishedRegistrationsProcessor(callBack),
                 messagingConfig,
-                null
             ).also {
                 it.start()
             }

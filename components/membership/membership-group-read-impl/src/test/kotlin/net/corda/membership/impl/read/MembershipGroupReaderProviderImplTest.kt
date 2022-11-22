@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -34,8 +35,8 @@ class MembershipGroupReaderProviderImplTest {
 
     private val memberName = aliceName
 
-    var coordinatorIsRunning = false
-    var lifecycleStatus = LifecycleStatus.DOWN
+    private var coordinatorIsRunning = false
+    private var lifecycleStatus = LifecycleStatus.DOWN
     private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
         doAnswer { coordinatorIsRunning }.whenever(this).isRunning
         doAnswer { lifecycleStatus }.whenever(this).status
@@ -56,6 +57,7 @@ class MembershipGroupReaderProviderImplTest {
         doReturn(coordinator).whenever(this).createCoordinator(any(), any())
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
+    private val groupParametersReaderService: GroupParametersReaderService = mock()
 
     @BeforeEach
     fun setUp() {
@@ -63,7 +65,8 @@ class MembershipGroupReaderProviderImplTest {
             configurationReadService,
             subscriptionFactory,
             lifecycleCoordinatorFactory,
-            memberInfoFactory
+            memberInfoFactory,
+            groupParametersReaderService
         )
     }
 

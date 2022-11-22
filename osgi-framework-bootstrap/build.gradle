@@ -15,21 +15,22 @@ configurations {
 }
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    implementation project(":osgi-framework-api")
+    implementation project(':osgi-framework-api')
     implementation 'org.slf4j:slf4j-api'
     implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     // Jackson dependencies for JSON formatted logs
     runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 
     testBundles project(':testing:apps:test-app')

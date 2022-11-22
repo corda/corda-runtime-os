@@ -1,13 +1,14 @@
 package net.corda.p2p.linkmanager.utilities
 
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.GroupPolicyListener
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.mockito.kotlin.mock
@@ -62,7 +63,9 @@ fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroup
                     holdingIdentity,
                     NetworkType.CORDA_5,
                     setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-                    emptyList()
+                    emptyList(),
+                    GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
+                    null
                 )
             } else {
                 null

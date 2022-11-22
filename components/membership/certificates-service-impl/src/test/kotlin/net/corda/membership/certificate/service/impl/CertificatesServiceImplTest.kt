@@ -15,13 +15,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -44,22 +43,20 @@ class CertificatesServiceImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createRPCSubscription(
-                any< RPCConfig<CertificateRpcRequest, CertificateRpcResponse>>(), any(), any()
+                any<RPCConfig<CertificateRpcRequest, CertificateRpcResponse>>(),
+                any(),
+                any()
             )
         } doReturn subscription
     }
-    private val dbConnectionManager = mock<DbConnectionManager>()
-    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
     private val configurationReadService = mock<ConfigurationReadService>()
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+    private val client = mock<DbCertificateClient>()
 
     private val service = CertificatesServiceImpl(
         coordinatorFactory,
         subscriptionFactory,
-        dbConnectionManager,
-        jpaEntitiesRegistry,
         configurationReadService,
-        virtualNodeInfoReadService
+        client,
     )
 
     @Test

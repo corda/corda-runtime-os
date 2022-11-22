@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -16,9 +17,13 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -37,7 +42,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -65,7 +69,11 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -107,12 +115,10 @@ class MGMRegistrationService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("MGMRegistrationService started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("MGMRegistrationService stopped.")
         coordinator.stop()
     }
 
@@ -164,7 +170,7 @@ class MGMRegistrationService @Activate constructor(
         )
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
-            membershipPersistenceClient
+            membershipPersistenceClient,
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher { publisher }
 
@@ -187,6 +193,17 @@ class MGMRegistrationService @Activate constructor(
                     context
                 )
 
+                // Persist group parameters snapshot
+                val groupParametersPersistenceResult =
+                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                    throw MembershipPersistenceException(groupParametersPersistenceResult.errorMsg)
+                }
+
+                // Publish group parameters to Kafka
+                val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+                groupParametersWriterService.put(member, groupParameters)
+
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
 
                 MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
@@ -196,7 +213,7 @@ class MGMRegistrationService @Activate constructor(
                 buildNotSubmittedResponse(ex.reason)
             } catch (ex: MGMRegistrationGroupPolicyHandlingException) {
                 buildNotSubmittedResponse(ex.reason)
-            } catch(ex: MGMRegistrationOutputPublisherException){
+            } catch (ex: MGMRegistrationOutputPublisherException){
                 buildNotSubmittedResponse(ex.reason)
             } catch (e: Exception) {
                 buildNotSubmittedResponse("Registration failed. Reason: ${e.message}")
@@ -216,7 +233,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -226,7 +242,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -237,7 +252,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -251,7 +265,6 @@ class MGMRegistrationService @Activate constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()

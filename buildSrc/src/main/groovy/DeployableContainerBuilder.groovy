@@ -160,7 +160,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<Boolean> multiArch =
-            getObjects().property(Boolean).convention(true)           
+            getObjects().property(Boolean).convention(true)
+
+    @Input
+    @Optional
+    // Force Target Platform, using format "operatingSystem/architecture"
+    final Property<String> targetPlatform =
+            getObjects().property(String).convention('')
 
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
@@ -259,7 +265,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
         builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
-        if (System.getenv().containsKey("JENKINS_URL") && multiArch.get()) {
+        if (!targetPlatform.get().empty) {
+            logger.quiet("Forcing Jib to use ${targetPlatform.get()} platform")
+            String[] osArch = targetPlatform.get().split("/")
+            builder.setPlatforms(Set.of(new Platform(osArch[1], osArch[0])))
+        } else if (System.getenv().containsKey("JENKINS_URL") && multiArch.get()) {
             logger.quiet("${multiArch.get() ? 'Running on CI server - producing arm64 and amd64 images' : 'Running on CI server but multiArch flag set to false - producing amd64 images'}")
             builder.addPlatform("arm64","linux")
         } else if (System.properties['os.arch'] == "aarch64") { 

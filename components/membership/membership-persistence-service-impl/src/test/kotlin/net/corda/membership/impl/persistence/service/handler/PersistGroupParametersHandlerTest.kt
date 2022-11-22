@@ -12,6 +12,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
@@ -109,17 +110,18 @@ class PersistGroupParametersHandlerTest {
         val context = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
-        val request = mock<PersistGroupParameters> {
-            on { groupParameters } doReturn KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "5")
-                )
+        val mockGroupParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "5")
             )
+        )
+        val request = mock<PersistGroupParameters> {
+            on { groupParameters } doReturn mockGroupParameters
         }
 
         val result = handler.invoke(context, request)
 
-        assertThat(result).isEqualTo(PersistGroupParametersResponse(5))
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
     }
 
     @Test

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -82,8 +83,8 @@ class NetworkRpcOpsImplTest {
                 "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
-                    "tls",
-                    "session-tenant",
+                    true,
+                    true,
                     "session"
                 )
             )
@@ -91,9 +92,10 @@ class NetworkRpcOpsImplTest {
             verify(certificatesClient).setupLocallyHostedIdentity(
                 ShortHash.of("1234567890ab"),
                 "alias",
-                "tls",
-                "session-tenant",
+                true,
+                true,
                 "session",
+                null
             )
         }
         @Test
@@ -105,6 +107,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(CertificatesResourceNotFoundException("Nop"))
 
@@ -113,8 +116,8 @@ class NetworkRpcOpsImplTest {
                     "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        false,
+                        true,
                         "session"
                     )
                 )
@@ -128,8 +131,8 @@ class NetworkRpcOpsImplTest {
                     "id",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        false,
+                        true,
                         "session"
                     )
                 )
@@ -145,6 +148,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(RuntimeException("Nop"))
 
@@ -153,8 +157,8 @@ class NetworkRpcOpsImplTest {
                     "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        true,
+                        true,
                         "session"
                     )
                 )

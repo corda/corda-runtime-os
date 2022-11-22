@@ -22,17 +22,20 @@ spec:
           args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
+          volumeMounts:
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+                  name: {{ include "corda.initialAdminUserUsernameSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . | quote }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+                  name: {{ include "corda.initialAdminUserPasswordSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . | quote }}
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: create-rbac-role-vnode-creator
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -40,17 +43,20 @@ spec:
           args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
+          volumeMounts:
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+                  name: {{ include "corda.initialAdminUserUsernameSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . | quote }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+                  name: {{ include "corda.initialAdminUserPasswordSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . | quote }}
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: create-rbac-role-corda-dev
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -58,18 +64,23 @@ spec:
           args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
+          volumeMounts:
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+                  name: {{ include "corda.initialAdminUserUsernameSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . | quote }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+                  name: {{ include "corda.initialAdminUserPasswordSecretName" . | quote }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . | quote }}
+            {{ include "corda.cliEnv" . | nindent 12 }}
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+      volumes:
+        {{ include "corda.log4jVolume" . | nindent 8 }}
       restartPolicy: Never
   backoffLimit: 0
 {{- end }}

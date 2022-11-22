@@ -1,8 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -34,11 +31,8 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
-    @Volatile
-    private var stopped = false
-    private val lock = ReentrantLock()
-    private var consumeLoopThread: Thread? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
+    private var threadLooper =
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "compacted subscription thread", ::runConsumeLoop)
 
     private var latestValues: MutableMap<K, V>? = null
 
@@ -54,54 +48,24 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.OperationName, "onSnapshot")
         .build()
 
-    override fun close() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.close()
-        }
-    }
-
-    private fun stopConsumeLoop() {
-        val thread = lock.withLock {
-            stopped = true
-            latestValues?.apply { mapFactory.destroyMap(this) }
-            latestValues = null
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
-        }
-        thread?.join(config.threadStopTimeout.toMillis())
-    }
+    override fun close() = threadLooper.close()
 
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
-        lock.withLock {
-            if (consumeLoopThread == null) {
-                stopped = false
-                lifecycleCoordinator.start()
-                consumeLoopThread = thread(
-                    start = true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "compacted subscription thread ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
-                )
-            }
-        }
+        threadLooper.start()
     }
 
     override val isRunning: Boolean
-        get() = !stopped
+        get() = threadLooper.isRunning
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = lifecycleCoordinator.name
+        get() = threadLooper.lifecycleCoordinatorName
 
     override fun getValue(key: K): V? = latestValues?.get(key)
 
     private fun runConsumeLoop() {
         var attempts = 0
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
@@ -117,8 +81,8 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                         config.topic
                     )
                     it.assign(partitions)
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessSnapshot(it)
+                    threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -127,15 +91,17 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     is CordaMessageAPIIntermittentException -> {
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
                     }
+
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        close()
+                        threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                        threadLooper.stopLoop()
                     }
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        latestValues?.apply { mapFactory.destroyMap(this) }
+        latestValues = null
     }
 
     private fun onError(bytes: ByteArray) {
@@ -184,7 +150,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processCompactedRecords(consumerRecords)
@@ -194,6 +160,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     is CordaMessageAPIIntermittentException -> {
                         throw ex
                     }
+
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic ${config.topic}, group ${config.group}.", ex

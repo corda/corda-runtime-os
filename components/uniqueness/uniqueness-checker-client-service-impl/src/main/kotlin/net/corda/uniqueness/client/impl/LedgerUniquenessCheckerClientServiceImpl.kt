@@ -1,6 +1,7 @@
 package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -22,17 +23,15 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Instant
-import java.util.*
 
 /**
  * Implementation of the Uniqueness Checker Client Service which will invoke the batched uniqueness checker
  * through the message bus. This communication uses the external events API. Once the uniqueness checker has
  * finished the validation of the given batch it will return the response to the client service.
  */
-@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ],
-    scope = ServiceScope.PROTOTYPE)
+@Component(service = [ LedgerUniquenessCheckerClientService::class, UsedByFlow::class ], scope = PROTOTYPE)
 class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
@@ -43,8 +42,8 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     @Reference(service = MerkleTreeFactory::class)
     private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = MemberLookup::class)
-    private val memberLookup: MemberLookup,
-): LedgerUniquenessCheckerClientService, SingletonSerializeAsToken {
+    private val memberLookup: MemberLookup
+): LedgerUniquenessCheckerClientService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         val log = contextLogger()

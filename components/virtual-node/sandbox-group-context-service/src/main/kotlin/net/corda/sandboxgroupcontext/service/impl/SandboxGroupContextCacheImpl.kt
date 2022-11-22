@@ -7,14 +7,15 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
 
-internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): SandboxGroupContextCache {
+internal class SandboxGroupContextCacheImpl(override val capacity: Long): SandboxGroupContextCache {
     private companion object {
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
+
     private val contexts: Cache<VirtualNodeContext, CloseableSandboxGroupContext> = CacheFactoryImpl().build(
         "Sandbox-Cache",
         Caffeine.newBuilder()
-            .maximumSize(cacheSize)
+            .maximumSize(capacity)
             .removalListener { key, value, cause ->
                 logger.info("Evicting {} sandbox for: {} [{}]", key!!.sandboxGroupType, key.holdingIdentity.x500Name, cause.name)
                 value?.close()

@@ -27,17 +27,19 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.UTCClock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
+import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -61,6 +63,8 @@ class MGMOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "mgm-ops-client"
 
         private val clock = UTCClock()
+
+        private val TIMEOUT = 10.seconds
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
@@ -83,12 +87,10 @@ class MGMOpsClientImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
@@ -202,8 +204,8 @@ class MGMOpsClientImpl @Activate constructor(
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
-                logger.info("Sending request: $this")
-                val response = rpcSender.sendRequest(this).getOrThrow()
+                logger.debug { "Sending request: $this" }
+                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."
                 }

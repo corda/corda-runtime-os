@@ -3,11 +3,12 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import java.security.PublicKey
 import java.time.Instant
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
@@ -16,7 +17,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -26,7 +26,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -37,7 +36,7 @@ class ConsensualFinalityFlowTest {
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
 
-    private val digitalSignatureVerificationService = mock<DigitalSignatureVerificationService>()
+    private val transactionSignatureService = mock<TransactionSignatureService>()
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<ConsensualLedgerPersistenceService>()
     private val serializationService = mock<SerializationService>()
@@ -56,7 +55,8 @@ class ConsensualFinalityFlowTest {
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
-    private val signedTransaction = mock<ConsensualSignedTransaction>()
+    private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
+    private val updatedSignedTransaction = mock<ConsensualSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {
@@ -73,7 +73,8 @@ class ConsensualFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
-        whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(signedTransaction)
+        whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
+        whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
@@ -87,18 +88,20 @@ class ConsensualFinalityFlowTest {
 
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice, times(2)).send(signedTransaction)
-        verify(sessionBob, times(2)).send(signedTransaction)
+        verify(sessionAlice).send(signedTransaction)
+        verify(sessionAlice).send(updatedSignedTransaction)
+        verify(sessionBob).send(signedTransaction)
+        verify(sessionBob).send(updatedSignedTransaction)
     }
 
     @Test
@@ -108,15 +111,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("A session with $BOB exists but the member no longer exists in the membership group")
 
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -126,15 +129,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("A session with $BOB exists but the member does not have any active ledger keys")
 
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -146,15 +149,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Required signatures $missingSignatories but ledger keys for the passed in sessions are")
 
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -168,18 +171,20 @@ class ConsensualFinalityFlowTest {
 
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction, never()).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice, times(2)).send(signedTransaction)
-        verify(sessionBob, times(2)).send(signedTransaction)
+        verify(sessionAlice).send(signedTransaction)
+        verify(sessionAlice).send(updatedSignedTransaction)
+        verify(sessionBob).send(signedTransaction)
+        verify(sessionBob).send(updatedSignedTransaction)
     }
 
     @Test
@@ -191,15 +196,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -211,15 +216,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("Failed to receive signature from $BOB for signed transaction ${signedTransaction.id} with message: message!")
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -234,15 +239,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("A session with $BOB did not return the signatures with the expected keys")
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -254,15 +259,15 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("A session with $BOB did not return the signatures with the expected keys")
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService, never()).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -270,16 +275,16 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(digitalSignatureVerificationService.verify(eq(publicKeyBob), any(), any(), any())).thenThrow(CryptoSignatureException(""))
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob))).thenThrow(CryptoSignatureException(""))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CryptoSignatureException::class.java)
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction, never()).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
-        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
     @Test
@@ -293,20 +298,20 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice1), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyAlice2), any(), any(), any())
-        verify(digitalSignatureVerificationService).verify(eq(publicKeyBob), any(), any(), any())
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
 
         verify(signedTransaction).addSignature(signatureAlice1)
-        verify(signedTransaction).addSignature(signatureAlice2)
-        verify(signedTransaction).addSignature(signatureBob)
+        verify(updatedSignedTransaction).addSignature(signatureAlice2)
+        verify(updatedSignedTransaction).addSignature(signatureBob)
 
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
-
-    private fun callFinalityFlow(signedTransaction: ConsensualSignedTransaction, sessions: List<FlowSession>) {
+    
+    private fun callFinalityFlow(signedTransaction: ConsensualSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = ConsensualFinalityFlow(signedTransaction, sessions)
-        flow.digitalSignatureVerificationService = digitalSignatureVerificationService
+        flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.serializationService = serializationService

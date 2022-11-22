@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.RegistrationStatus
@@ -26,12 +27,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -43,12 +44,14 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
 class MemberOpsClientImpl @Activate constructor(
@@ -67,6 +70,8 @@ class MemberOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
+
+        private val TIMEOUT = 20.seconds
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {
@@ -96,12 +101,10 @@ class MemberOpsClientImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
@@ -128,11 +131,13 @@ class MemberOpsClientImpl @Activate constructor(
                     )
                 )
             }
+
             is StopEvent -> {
                 componentHandle?.close()
                 configHandle?.close()
                 deactivate("Handling the stop event for component.")
             }
+
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
@@ -142,12 +147,14 @@ class MemberOpsClientImpl @Activate constructor(
                             setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
                         )
                     }
+
                     else -> {
                         configHandle?.close()
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
                 }
             }
+
             is ConfigChangedEvent -> {
                 impl.close()
                 impl = ActiveImpl(
@@ -213,9 +220,29 @@ class MemberOpsClientImpl @Activate constructor(
                 val response: RegistrationRpcResponse = request.sendRequest()
 
                 return response.toDto()
+            } catch (e: TimeoutException) {
+                // The request timed out, but we did manage to submit it to Kafka. This might result in a state change
+                // in the system, but now we cannot tell whether the other side picked the request up. This is not
+                // idempotent (and is equally likely to hit the timeout again on retry anyway), so our best bet is to
+                // return success and get the client to check the registration status.
+                //
+                // This should probably be changed to not use the RPC pattern at all, and instead use an async pattern.
+                logger.debug { "Request $requestId timed out for ${memberRegistrationRequest.holdingIdentityShortHash}" }
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    null,
+                    RegistrationRpcStatus.SUBMITTED.toString(),
+                    "Submitting registration request was successful.",
+                    MemberInfoSubmittedDto(
+                        mapOf()
+                    )
+                )
+
             } catch (e: Exception) {
-                logger.warn("Could not submit registration request for holding identity ID" +
-                        " [${memberRegistrationRequest.holdingIdentityShortHash}].", e)
+                logger.warn(
+                    "Could not submit registration request for holding identity ID" +
+                            " [${memberRegistrationRequest.holdingIdentityShortHash}].", e
+                )
                 return RegistrationRequestProgressDto(
                     requestId,
                     null,
@@ -237,7 +264,7 @@ class MemberOpsClientImpl @Activate constructor(
                 )
 
                 val result = registrationsResponse(request.sendRequest())
-                if(result.isEmpty()) {
+                if (result.isEmpty()) {
                     throw RegistrationProgressNotFoundException(
                         "There are no requests for '$holdingIdentityShortHash' holding identity."
                     )
@@ -246,8 +273,10 @@ class MemberOpsClientImpl @Activate constructor(
             } catch (e: RegistrationProgressNotFoundException) {
                 throw e
             } catch (e: Exception) {
-                logger.warn("Could not check statuses of registration requests made by holding identity ID" +
-                        " [${holdingIdentityShortHash}].", e)
+                logger.warn(
+                    "Could not check statuses of registration requests made by holding identity ID" +
+                            " [${holdingIdentityShortHash}].", e
+                )
                 emptyList()
             }
         }
@@ -270,13 +299,17 @@ class MemberOpsClientImpl @Activate constructor(
 
                 val response: RegistrationStatusResponse = request.sendRequest()
                 val status = response.status
-                    ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
+                    ?: throw RegistrationProgressNotFoundException(
+                        "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
+                    )
                 return status.toDto()
             } catch (e: RegistrationProgressNotFoundException) {
                 throw e
             } catch (e: Exception) {
-                logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
-                        " [${holdingIdentityShortHash}].", e)
+                logger.warn(
+                    "Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
+                            " [${holdingIdentityShortHash}].", e
+                )
                 return null
             }
         }
@@ -322,8 +355,8 @@ class MemberOpsClientImpl @Activate constructor(
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
-                logger.info("Sending request: $this")
-                val response = rpcSender.sendRequest(this).getOrThrow()
+                logger.debug { "Sending request: $this" }
+                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."
                 }
@@ -338,6 +371,10 @@ class MemberOpsClientImpl @Activate constructor(
                 }
 
                 return response.response as RESPONSE
+            } catch (e: TimeoutException) {
+                // If we get a timeout, the other side may well have got the request and may be processing it. Throw a
+                // different exception to allow the calling function to decide what it wants to do in this case.
+                throw e
             } catch (e: Exception) {
                 throw CordaRuntimeException(
                     "Failed to send request and receive response for membership RPC operation. " + e.message, e
@@ -345,8 +382,9 @@ class MemberOpsClientImpl @Activate constructor(
             }
         }
     }
+
     private fun RegistrationStatus.toDto(): RegistrationStatusDto {
-        return when(this) {
+        return when (this) {
             RegistrationStatus.NEW -> RegistrationStatusDto.NEW
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW

@@ -1,12 +1,16 @@
 package net.corda.libs.permissions.manager.impl.converter
 
+import net.corda.data.permissions.management.permission.BulkCreatePermissionsResponse
+import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.libs.permissions.manager.common.PermissionTypeDto
+import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
+import net.corda.libs.permissions.manager.response.PermissionsResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -78,6 +82,14 @@ private fun AvroPermissionType.toResponseDtoType(): PermissionTypeDto {
     }
 }
 
+fun CreatePermissionRequestDto.convertToAvro(): CreatePermissionRequest {
+    return CreatePermissionRequest(
+        permissionType.toAvroType(),
+        permissionString,
+        groupVisibility
+    )
+}
+
 fun PermissionTypeDto.toAvroType(): AvroPermissionType {
     return when(this) {
         PermissionTypeDto.ALLOW -> AvroPermissionType.ALLOW
@@ -105,4 +117,8 @@ fun AvroPermissionSummary.convertToResponseDto(): PermissionSummaryResponseDto {
         permissionType.toResponseDtoType(),
         permissionString
     )
+}
+
+fun BulkCreatePermissionsResponse.convertToResponseDto(): PermissionsResponseDto {
+    return PermissionsResponseDto(permissionIds.toSet(), roleIds.toSet())
 }

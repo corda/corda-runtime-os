@@ -3,6 +3,7 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.data.config.Configuration
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -11,17 +12,24 @@ import net.corda.v5.base.util.contextLogger
 
 class ConfigReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<String, Configuration>,
     private val reconcilerWriter: ReconcilerWriter<String, Configuration>
 ) : ReconcilerWrapper {
     companion object {
         private val log = contextLogger()
+        private val dependencies = setOf(
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     }
 
     private var dbReconciler: DbReconcilerReader<String, Configuration>? = null
     private var reconciler: Reconciler? = null
+
+    private val reconciliationContextFactory = {
+        listOf(ClusterReconciliationContext(dbConnectionManager))
+    }
 
     override fun close() {
         dbReconciler?.stop()
@@ -37,9 +45,10 @@ class ConfigReconciler(
             dbReconciler =
                 DbReconcilerReader(
                     coordinatorFactory,
-                    dbConnectionManager,
                     String::class.java,
                     Configuration::class.java,
+                    dependencies,
+                    reconciliationContextFactory,
                     getAllConfigDBVersionedRecords
                 ).also {
                     it.start()

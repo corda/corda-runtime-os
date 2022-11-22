@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -440,6 +440,7 @@ class SynchronisationIntegrationTest {
                     assertThat(member.groupId).isEqualTo(groupId)
                     assertThat(member.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 }
+            it.assertThat(membershipPackage.groupParameters).isNotNull
         }
     }
 

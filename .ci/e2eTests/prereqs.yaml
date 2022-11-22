@@ -18,6 +18,8 @@ kafka:
       cpu: 1000m
   zookeeper:
     replicaCount: 3
+  offsetsTopicReplicationFactor: 3
+  transactionStateLogReplicationFactor: 3
 
 postgresql:
   primary:

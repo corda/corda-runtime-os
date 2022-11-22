@@ -5,9 +5,9 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
-import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
+import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -614,7 +614,7 @@ class CryptoOperationsTests {
             otherPublicKey = stableKeyPair.publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

@@ -4,9 +4,14 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 /**
  * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
@@ -16,7 +21,7 @@ class PermissionSummaryE2eTest {
 
     companion object {
         private val testToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
+        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, adminUser, adminPassword)
         private val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
     }
 
@@ -166,6 +171,62 @@ class PermissionSummaryE2eTest {
             assertEquals(permissionId2, this.permissions[2].id)
             assertEquals(permissionString2, this.permissions[2].permissionString)
             assertEquals(PermissionType.ALLOW, this.permissions[2].permissionType)
+        }
+    }
+
+    @Test
+    fun `check permission summary when multiple users are assigned multiple roles with multiple permissions using bulk operation`() {
+        val newUserPassword: String = testToolkit.uniqueName
+        val users = (1..2).map { testToolkit.uniqueName }
+        users.map { adminTestHelper.createUser(it, newUserPassword, passwordExpiry) }
+
+        users.map {
+            with(adminTestHelper.getPermissionSummary(it)) {
+                assertEquals(0, this.permissions.size, "New user ($it) should have permission summary with empty list")
+            }
+        }
+
+        val roleIds: List<String> = (1..4).map { adminTestHelper.createRole(testToolkit.uniqueName + "_role") }
+
+        // Add roles to users
+        users.forEach { user ->
+            roleIds.forEach { roleId ->
+                adminTestHelper.addRoleToUser(user, roleId)
+            }
+        }
+
+        val permissionsToCreate = setOf(
+            PermissionType.DENY to "permissionString1",
+            PermissionType.ALLOW to "permissionString2",
+            PermissionType.DENY to "permissionString3"
+        )
+
+        // Perform bulk operation
+        val permIds = adminTestHelper.createPermissionsAndAssignToRoles(permissionsToCreate, roleIds.toSet())
+
+        // Check the result, eventually since it takes time to propagate
+        eventually(Duration.ofSeconds(60)) {
+            // Check permissions summary
+            users.forEach { user ->
+                with(adminTestHelper.getPermissionSummary(user)) {
+                    assertThat(permissionsToCreate).withFailMessage("User: $user")
+                        .isEqualTo(
+                            this.permissions.map { it.permissionType to it.permissionString }.toSet()
+                        )
+
+                    assertThat(permIds).withFailMessage("User: $user")
+                        .isEqualTo(this.permissions.map { it.id }.toSet())
+
+                }
+            }
+
+            // Check roles content
+            roleIds.forEach { roleId ->
+                with(adminTestHelper.getRole(roleId)) {
+                    assertThat(this.permissions.map { it.id }.toSet()).withFailMessage("RoleId: $roleId")
+                        .isEqualTo(permIds)
+                }
+            }
         }
     }
 }

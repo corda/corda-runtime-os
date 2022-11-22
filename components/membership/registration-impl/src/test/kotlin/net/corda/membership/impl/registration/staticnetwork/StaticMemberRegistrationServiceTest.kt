@@ -38,6 +38,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -61,9 +62,12 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
@@ -76,6 +80,7 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -90,10 +95,12 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -144,6 +151,12 @@ class StaticMemberRegistrationServiceTest {
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
+    }
+
+    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
+
+    private val subscriptionFactory: SubscriptionFactory = mock {
+        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyValuePairList>>(), any()) } doReturn mockSubscription
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
@@ -241,10 +254,15 @@ class StaticMemberRegistrationServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(alice)) } doReturn virtualNodeInfo
     }
+    private val mockGroupParameters: GroupParameters = mock()
+    private val groupParametersFactory: GroupParametersFactory = mock {
+        on { create(any()) } doReturn mockGroupParameters
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
+        subscriptionFactory,
         keyEncodingService,
         cryptoOpsClient,
         configurationReadService,
@@ -256,7 +274,8 @@ class StaticMemberRegistrationServiceTest {
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
         platformInfoProvider,
-        virtualNodeInfoReadService
+        groupParametersFactory,
+        virtualNodeInfoReadService,
     )
 
     private fun setUpPublisher() {
@@ -275,7 +294,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             val registrationResult = registrationService.register(registrationId, alice, mockContext)
-            Mockito.verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
             CryptoConsts.Categories.all.forEach {
                 Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
                 Mockito.verify(hsmRegistrationClient, times(1))
@@ -343,6 +362,26 @@ class StaticMemberRegistrationServiceTest {
             registrationService.register(registrationId, alice, mockContext)
 
             assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        }
+
+        @Test
+        fun `registration persists group parameters for registering member`() {
+            val knownIdentity = HoldingIdentity(aliceName, "test-group")
+            val status = argumentCaptor<GroupParameters>()
+            whenever(
+                persistenceClient.persistGroupParameters(
+                    any(),
+                    status.capture()
+                )
+            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, knownIdentity, mockContext)
+
+            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
         }
     }
 
@@ -589,6 +628,32 @@ class StaticMemberRegistrationServiceTest {
             val notaryDetails = memberInfo.notaryDetails
             assertThat(notaryDetails)
                 .isNull()
+        }
+
+        @Test
+        fun `registration with notary role persists group parameters for all members who have vnodes set up`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+            whenever(
+                persistenceClient.persistGroupParameters(
+                    any(),
+                    any()
+                )
+            ).doReturn(MembershipPersistenceResult.Success(mock()))
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, bob, context)
+
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockGroupParameters))
+            verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockGroupParameters))
+            verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockGroupParameters))
         }
     }
 

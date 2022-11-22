@@ -27,6 +27,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 @Suppress("FunctionName")
 class CustomCryptoDigestTests {
     companion object {
+        private const val TIMEOUT_MILLIS = 10000L
         private const val PLATFORM_DIGEST_ONE_CLASSNAME = "com.example.PlatformCryptoConsumer"
         private const val PACKAGE_NAME_ONE="com.example"
         private const val PACKAGE_NAME_TWO="org.example"
@@ -45,7 +46,7 @@ class CustomCryptoDigestTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -54,7 +55,7 @@ class CustomCryptoDigestTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 1000)
+            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 

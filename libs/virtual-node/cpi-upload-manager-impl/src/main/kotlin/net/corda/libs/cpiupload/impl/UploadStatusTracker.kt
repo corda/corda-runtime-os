@@ -3,6 +3,7 @@ package net.corda.libs.cpiupload.impl
 import net.corda.chunking.RequestId
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * This tracks the latest state of an upload request.
@@ -25,7 +26,7 @@ class UploadStatusTracker {
     class LatestStatus {
         // Can't be a List<Pair<Int,...>> because we might repeatedly overwrite with the same sequence number
         // particularly for '0' where we might receive updates from multiple (chunk) processors.
-        private val status = mutableMapOf<Int, UploadStatus>()
+        private val status = ConcurrentHashMap<Int, UploadStatus>()
 
         fun add(key: UploadStatusKey, value: UploadStatus) {
             status[key.sequenceNumber] = value
@@ -37,7 +38,7 @@ class UploadStatusTracker {
         fun latest(): UploadStatus = status[status.keys.maxOrNull()!!]!!
     }
 
-    private val statusById = mutableMapOf<RequestId, LatestStatus>()
+    private val statusById = ConcurrentHashMap<RequestId, LatestStatus>()
 
     fun clear() = statusById.clear()
 

@@ -1,14 +1,14 @@
 package net.corda.processors.db.internal.reconcile.db
 
 import java.util.stream.Stream
-import javax.persistence.EntityManager
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.datamodel.findAllConfig
 import net.corda.reconciliation.VersionedRecord
 
-val getAllConfigDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<String, Configuration>> = { em ->
-    em.findAllConfig().map { configEntity ->
+val getAllConfigDBVersionedRecords
+    : (ReconciliationContext) -> Stream<VersionedRecord<String, Configuration>> = { context ->
+    context.entityManager.findAllConfig().map { configEntity ->
         val config = Configuration(
             configEntity.config,
             configEntity.config,

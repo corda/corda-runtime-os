@@ -3,8 +3,8 @@ package net.corda.membership.impl.p2p
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -329,7 +329,7 @@ class MembershipP2PIntegrationTest {
             val serializedHeader = headerSerializer.serialize(header)
                 ?: throw IllegalArgumentException("Serialized header cannot be null.")
             latestHeader = header
-            EciesParams( "salt".toByteArray(), serializedHeader )
+            HybridEncryptionParams( "salt".toByteArray(), serializedHeader )
         }
 
         val request = UnauthenticatedRegistrationRequest(

@@ -1,3 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
-internal class NoSuchNode(tenantId: String) : CertificatesServiceException("No node named $tenantId")
+import net.corda.virtualnode.ShortHash
+
+internal class NoSuchNode(holdingIdentityId: ShortHash) :
+    CertificatesServiceException("No node named $holdingIdentityId")

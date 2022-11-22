@@ -63,7 +63,6 @@ class MemberOpsServiceProcessor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
     private val clock: Clock = UTCClock(),
-    private val idFactory: () -> UUID = { UUID.randomUUID() }
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
     interface RpcHandler<REQUEST> {
@@ -105,7 +104,7 @@ class MemberOpsServiceProcessor(
             respFuture.complete(result)
         } catch (e: Throwable) {
             val message =
-                "${e.message}\nFailed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
+                "Failed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}: ${e.message}"
             logger.error(message, e)
             respFuture.completeExceptionally(MembershipRegistrationException(message, e))
         }
@@ -133,7 +132,7 @@ class MemberOpsServiceProcessor(
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
-            val registrationId = idFactory()
+            val registrationId = UUID.fromString(context.requestId)
             val result = try {
                 registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
@@ -174,9 +173,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
                 .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
+                ?: return RegistrationStatusResponse(null)
             val response = membershipQueryClient.queryRegistrationRequestStatus(
                 viewOwningIdentity = holdingIdentity,
                 registrationId = request.requestId

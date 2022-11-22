@@ -12,4 +12,10 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

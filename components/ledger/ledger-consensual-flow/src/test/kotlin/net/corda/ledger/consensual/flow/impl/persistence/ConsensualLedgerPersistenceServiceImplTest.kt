@@ -2,16 +2,15 @@ package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -34,8 +33,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private val signingService = mock<SigningService>()
-    private val digitalSignatureVerificationService = mock<DigitalSignatureVerificationService>()
+    private val transactionSignatureService = mock<TransactionSignatureService>()
 
     private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
 
@@ -44,7 +42,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     @BeforeEach
     fun setup() {
         consensualLedgerPersistenceService = ConsensualLedgerPersistenceServiceImpl(
-                externalEventExecutor, serializationService, signingService, digitalSignatureVerificationService
+                externalEventExecutor, serializationService, transactionSignatureService
         )
 
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
@@ -64,7 +62,12 @@ class ConsensualLedgerPersistenceServiceImplTest {
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
-        assertThat(consensualLedgerPersistenceService.persist(transaction, TransactionStatus.VERIFIED)).isEqualTo(listOf(expectedObj))
+        assertThat(
+            consensualLedgerPersistenceService.persist(
+                transaction,
+                TransactionStatus.VERIFIED
+            )
+        ).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
         verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
@@ -77,14 +80,13 @@ class ConsensualLedgerPersistenceServiceImplTest {
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
         val expectedObj = ConsensualSignedTransactionImpl(
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            transactionSignatureService,
             wireTransaction,
             signatures
         )
         val testId = SecureHash.parse("SHA256:1234567890123456")
-        whenever(serializationService.deserialize<ConsensualSignedTransactionContainer>(any<ByteArray>(), any()))
-            .thenReturn(ConsensualSignedTransactionContainer(wireTransaction, signatures))
+        whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
+            .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 
         assertThat(consensualLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 

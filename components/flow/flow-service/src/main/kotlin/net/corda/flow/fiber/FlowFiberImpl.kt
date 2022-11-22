@@ -3,11 +3,6 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
-import java.io.Serializable
-import java.nio.ByteBuffer
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
 import net.corda.utilities.clearMDC
@@ -18,6 +13,11 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
+import java.io.Serializable
+import java.nio.ByteBuffer
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 class FlowFiberImpl(
     override val flowId: UUID,
@@ -123,7 +123,7 @@ class FlowFiberImpl(
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             resetLoggingContext()
-            log.info("Parking...")
+            log.trace { "Parking..." }
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
         })
@@ -152,9 +152,9 @@ class FlowFiberImpl(
         // We close the sessions here, which delegates to the subFlow finished request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFinished(sessions))
         }
         flowCompletion.complete(outcomeOfFlow)
     }
@@ -164,11 +164,15 @@ class FlowFiberImpl(
         // We close the sessions here, which delegates to the subFlow failed request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
-        val flowStackItem = getRemainingFlowStackItem()
-        if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
+        val sessions = getRemainingInitiatedSessions()
+        if (sessions.isNotEmpty()) {
+            suspend(FlowIORequest.SubFlowFailed(throwable, sessions))
         }
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
+    }
+
+    private fun getRemainingInitiatedSessions(): List<String> {
+        return getRemainingFlowStackItem().sessions.filter { it.initiated }.map { it.sessionId }.toList()
     }
 
     @Suppress("ThrowsCount")

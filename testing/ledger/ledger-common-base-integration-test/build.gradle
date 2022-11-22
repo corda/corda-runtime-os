@@ -1,0 +1,24 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common abstract test class with dependencies made available for integration tests'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':libs:ledger:ledger-common-data')
+    api project(':testing:ledger:ledger-common-testkit')
+
+    api project(':testing:sandboxes')
+    api project(':testing:sandboxes-testkit')
+    api project(':libs:serialization:serialization-amqp')
+    implementation project(':testing:test-serialization')
+    implementation project(':components:flow:flow-service')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:serialization:serialization-internal')
+    implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+}

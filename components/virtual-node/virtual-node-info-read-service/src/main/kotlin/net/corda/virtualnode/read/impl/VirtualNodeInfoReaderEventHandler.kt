@@ -79,7 +79,6 @@ class VirtualNodeInfoReaderEventHandler(
             config
         )
         subscription?.start()
-        log.info("Switching to UP")
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -88,10 +87,6 @@ class VirtualNodeInfoReaderEventHandler(
             configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
-            log.info(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
-                        "Switching to ${event.status}"
-            )
             coordinator.updateStatus(event.status)
             configSubscription?.close()
         }

@@ -19,7 +19,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -69,8 +68,6 @@ class ChunkReadServiceImpl @Activate constructor(
     override fun stop() = coordinator.stop()
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        log.debug("onStartEvent")
-
         configurationReadService.start()
         cpiInfoWriteService.start()
 
@@ -86,8 +83,6 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        log.debug("onStopEvent")
-
         chunkDbWriter?.close()
         chunkDbWriter = null
 
@@ -95,14 +90,12 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
-        log.debug("onRegistrationStatusChangeEvent")
-
         if (event.status == LifecycleStatus.UP) {
             configSubscription =
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
-                        ConfigKeys.BOOT_CONFIG,
-                        ConfigKeys.MESSAGING_CONFIG
+                        BOOT_CONFIG,
+                        MESSAGING_CONFIG
                     )
                 )
         } else {
@@ -112,8 +105,6 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        log.debug("onConfigChangedEvent")
-
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()

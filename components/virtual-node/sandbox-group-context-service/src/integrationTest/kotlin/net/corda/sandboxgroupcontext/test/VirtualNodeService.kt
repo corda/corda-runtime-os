@@ -1,15 +1,17 @@
 package net.corda.sandboxgroupcontext.test
 
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
+import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
 import org.osgi.framework.BundleContext
@@ -55,15 +57,19 @@ class VirtualNodeService @Activate constructor(
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
-            cpi.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
+            cpi.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::fileChecksum),
             type,
-            SingletonSerializeAsToken::class.java,
             null
         )
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            val closeables = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            val closeables = listOf(
+                sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext),
+                sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext)
+            )
             sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
-            closeables
+            AutoCloseable {
+                closeables.forEach(AutoCloseable::close)
+            }
         }
     }
 

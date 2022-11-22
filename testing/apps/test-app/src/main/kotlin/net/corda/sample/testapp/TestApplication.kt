@@ -4,7 +4,6 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
-import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,12 +13,13 @@ import org.osgi.service.component.annotations.Reference
  *
  * The application shutdowns automatically after [SHUTDOWN_DELAY] ms to allow automatic tests.
  *
- * @param sandboxService    Set automatically because both [SandboxService] and this class are OSGi components.
+ * @param shutdownService    Set automatically because both [Shutdown] and this class are OSGi components.
  */
-@Component(immediate = true)
+@Component
 class TestApplication @Activate constructor(
     @Reference(service = Shutdown::class)
-    private val shutdownService: Shutdown
+    private val shutdownService: Shutdown,
+    private val bundleContext: BundleContext
 ) : Application {
 
     private companion object {
@@ -29,7 +29,7 @@ class TestApplication @Activate constructor(
         /**
          * Time in ms before the application shutdown itself.
          */
-        private val SHUTDOWN_DELAY = 5000L
+        private const val SHUTDOWN_DELAY = 5000L
 
     } //~ companion
 
@@ -47,7 +47,6 @@ class TestApplication @Activate constructor(
         logger.info("Press [CTRL+C] to stop the application or wait $SHUTDOWN_DELAY ms before auto shutdown...")
         Thread.sleep(SHUTDOWN_DELAY)
         Thread {
-            val bundleContext: BundleContext = FrameworkUtil.getBundle(this.javaClass).bundleContext
             shutdownService.shutdown(bundleContext.bundle)
         }.start()
     }

@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Group Parameters Writer Service'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(':components:reconciliation:reconciliation')
+    api project(':libs:virtual-node:virtual-node-info')
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-membership'
+}

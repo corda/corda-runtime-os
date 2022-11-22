@@ -109,6 +109,16 @@ internal class LifecycleStateManager(
     }
 
     /**
+     * Cancel al the timers own by the state manager.
+     */
+    fun cancelAllTimer() {
+        timerMap.values.forEach {
+            it.cancel(true)
+        }
+        timerMap.clear()
+    }
+
+    /**
      * Returns whether this coordinator has any open registrations, either on other coordinators or with other
      * coordinators on it.
      *

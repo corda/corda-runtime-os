@@ -1,12 +1,12 @@
 package net.corda.configuration.write.impl.tests.writer
 
-import net.corda.configuration.write.WrongConfigVersionException
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
