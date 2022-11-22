@@ -19,7 +19,7 @@ spec:
     spec:
       {{- include "corda.workerPodSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
-      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- include "corda.serviceAccount" . | nindent 6 }}
       containers:
       - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
