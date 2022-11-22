@@ -166,8 +166,12 @@ pipeline {
         }
         stage('Forward port and run tests') {
             environment {
+                E2E_CLUSTER_A_RPC_PASSWORD = "${getInitialAdminPassword('alice')}"
+                E2E_CLUSTER_B_RPC_PASSWORD = "${getInitialAdminPassword('bob')}"
+                E2E_CLUSTER_C_RPC_PASSWORD = "${getInitialAdminPassword('caroline')}"
+
                 // Bob's cluster is used as a primary access point by Smoke and E2E tests
-                INITIAL_ADMIN_USER_PASSWORD = "${getInitialAdminPassword('bob')}"
+                INITIAL_ADMIN_USER_PASSWORD = "${E2E_CLUSTER_B_RPC_PASSWORD}"
             }
 
             steps {

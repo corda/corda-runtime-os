@@ -16,13 +16,13 @@ class SingleClusterDynamicNetworkTest {
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..5).map {
-                E2eClusterMember("C=GB, L=London, O=Member-${cluster.testToolkit.uniqueName}")
+                E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
             }
         )
     }
 
     private val mgm = E2eClusterMember(
-        "O=Mgm, L=London, C=GB, OU=${cordaCluster.testToolkit.uniqueName}"
+        "O=Mgm, L=London, C=GB, OU=${cordaCluster.uniqueName}"
     )
 
     @Test

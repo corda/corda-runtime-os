@@ -18,7 +18,7 @@ class StaticNetworkTest {
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..5).map {
-                E2eClusterMember("C=GB, L=London, O=Member-${cluster.testToolkit.uniqueName}")
+                E2eClusterMember("C=GB, L=London, O=Member-${cluster.uniqueName}")
             }
         )
     }
