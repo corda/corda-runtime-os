@@ -122,7 +122,8 @@ class ConsensualLedgerRepository @Activate constructor(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
-            VALUES (:id, :privacySalt, :accountId, :createdAt)"""
+            VALUES (:id, :privacySalt, :accountId, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("id", wireTransaction.id.toString())
             .setParameter("privacySalt", wireTransaction.privacySalt.bytes)
@@ -144,7 +145,8 @@ class ConsensualLedgerRepository @Activate constructor(
         return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
-            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
+            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
@@ -165,7 +167,8 @@ class ConsensualLedgerRepository @Activate constructor(
         return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
-            VALUES (:id, :status, :createdAt)"""
+            VALUES (:id, :status, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("id", transactionId)
             .setParameter("status", status)
@@ -184,7 +187,8 @@ class ConsensualLedgerRepository @Activate constructor(
         return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)"""
+            VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
@@ -205,7 +209,8 @@ class ConsensualLedgerRepository @Activate constructor(
             INSERT INTO {h-schema}consensual_transaction_cpk
             SELECT :transactionId, file_checksum
             FROM {h-schema}consensual_cpk
-            WHERE file_checksum in (:fileChecksums)"""
+            WHERE file_checksum in (:fileChecksums)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", signedTransaction.id.toString())
             .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
