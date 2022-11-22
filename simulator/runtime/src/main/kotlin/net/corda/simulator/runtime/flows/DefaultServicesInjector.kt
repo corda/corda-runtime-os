@@ -81,6 +81,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     private fun injectOtherCordaServices(flow: Flow, member: MemberX500Name) {
         configuration.serviceOverrides.keys.minus(availableAPIs).forEach {
             flow.injectIfRequired(it) {
+                log.info("Injecting custom service for ${it.simpleName}")
                 val serviceOverrideBuilder: ServiceOverrideBuilder<*> = configuration.serviceOverrides[it]!!
                 serviceOverrideBuilder.buildService(member, flow.javaClass, null)!!
             }
