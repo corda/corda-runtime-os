@@ -57,7 +57,7 @@ fun checkAPIAvailability(flow: Flow, configuration: SimulatorConfiguration){
     }
 }
 
-private val availableAPIs = listOf(
+val availableAPIs = setOf(
     JsonMarshallingService::class.java,
     FlowEngine::class.java,
     FlowMessaging::class.java,

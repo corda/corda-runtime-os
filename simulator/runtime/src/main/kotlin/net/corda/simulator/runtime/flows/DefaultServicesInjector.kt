@@ -12,6 +12,7 @@ import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationServi
 import net.corda.simulator.runtime.signing.SimWithJsonSigningService
 import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.utils.checkAPIAvailability
+import net.corda.simulator.runtime.utils.availableAPIs
 import net.corda.simulator.runtime.utils.injectIfRequired
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
@@ -30,20 +31,10 @@ import net.corda.v5.base.util.contextLogger
 /**
  * Injector for default services for Simulator.
  */
+@Suppress("TooManyFunctions")
 class DefaultServicesInjector(private val configuration: SimulatorConfiguration) : FlowServicesInjector {
     private companion object {
         val log = contextLogger()
-
-        private val availableAPIs = listOf<Class<*>>(
-            JsonMarshallingService::class.java,
-            FlowEngine::class.java,
-            FlowMessaging::class.java,
-            MemberLookup::class.java,
-            SigningService::class.java,
-            DigitalSignatureVerificationService::class.java,
-            PersistenceService::class.java,
-            SignatureSpecService::class.java
-        )
     }
 
     /**
@@ -84,9 +75,13 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         doInject(member, flow, PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
         doInject(member, flow, SignatureSpecService::class.java) { createSpecService() }
 
+        injectOtherCordaServices(flow, member)
+    }
+
+    private fun injectOtherCordaServices(flow: Flow, member: MemberX500Name) {
         configuration.serviceOverrides.keys.minus(availableAPIs).forEach {
             flow.injectIfRequired(it) {
-                val serviceOverrideBuilder : ServiceOverrideBuilder<*> = configuration.serviceOverrides[it]!!
+                val serviceOverrideBuilder: ServiceOverrideBuilder<*> = configuration.serviceOverrides[it]!!
                 serviceOverrideBuilder.buildService(member, flow.javaClass, null)!!
             }
         }
