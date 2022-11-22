@@ -17,7 +17,7 @@ class BaseSimKeyStore : SimKeyStore {
     private val keyGenerator = KeyPairGenerator.getInstance("EC")
 
     init {
-        keyGenerator.initialize(ECGenParameterSpec("secp256k1"), SecureRandom())
+        keyGenerator.initialize(ECGenParameterSpec("secp256r1"), SecureRandom())
     }
 
     override fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey {

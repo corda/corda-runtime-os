@@ -5,25 +5,25 @@ import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.UploadStatus
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.libs.cpiupload.DuplicateCpiUploadException
-import net.corda.libs.cpiupload.ReUsedGroupIdException
-import net.corda.libs.cpiupload.ValidationException
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -93,13 +93,12 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         when (ex.errorType) {
             ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
             DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
-            ReUsedGroupIdException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
             else -> throw InternalServerException(ex.toString(), details)
         }
     }
 
     override fun getAllCpis(): GetCPIsResponse {
-        logger.info("Get all CPIs request")
+        logger.trace { "Get all CPIs request" }
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
         return GetCPIsResponse(cpis)

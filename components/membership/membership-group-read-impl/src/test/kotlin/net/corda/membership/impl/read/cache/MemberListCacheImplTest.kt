@@ -7,6 +7,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.TestProperties.Companion.charlieName
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -74,6 +75,17 @@ class MemberListCacheImplTest {
 
         assertMemberList(lookupWithDefaults(), memberInfo1)
         assertMemberList(lookupWithDefaults(aliceIdGroup2), memberInfo2)
+    }
+
+    @Test
+    fun `get all returns all information from cache`() {
+        addToCacheWithDefaults()
+        addToCacheWithDefaults(aliceIdGroup2, memberInfo = memberInfo2)
+
+        val cache = memberListCache.getAll()
+        assertThat(cache.size).isEqualTo(2)
+        assertMemberList(cache.get(aliceIdGroup1), memberInfo1)
+        assertMemberList(cache.get(aliceIdGroup2), memberInfo2)
     }
 
     @Test

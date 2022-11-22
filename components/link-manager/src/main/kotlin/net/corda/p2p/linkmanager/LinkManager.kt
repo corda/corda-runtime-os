@@ -9,9 +9,23 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.linkmanager.common.CommonComponents
+import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
+import net.corda.p2p.linkmanager.crypto.DelegatingCryptoService
+import net.corda.p2p.linkmanager.grouppolicy.ForwardingGroupPolicyProvider
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.grouppolicy.StubGroupPolicyProvider
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
+import net.corda.p2p.linkmanager.inbound.InboundLinkManager
+import net.corda.p2p.linkmanager.membership.ForwardingMembershipGroupReader
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.membership.StubMembershipGroupReader
+import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.utilities.time.Clock
@@ -32,6 +46,7 @@ class LinkManager(
     cryptoOpsClient: CryptoOpsClient,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
+    groupParametersReaderService: GroupParametersReaderService,
     thirdPartyComponentsMode: ThirdPartyComponentsMode,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
@@ -59,7 +74,8 @@ class LinkManager(
     }
 
     private val members: LinkManagerMembershipGroupReader = when(thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL -> ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory)
+        ThirdPartyComponentsMode.REAL ->
+            ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
         ThirdPartyComponentsMode.STUB -> StubMembershipGroupReader(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
     }
 

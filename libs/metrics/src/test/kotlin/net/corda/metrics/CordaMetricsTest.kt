@@ -44,7 +44,7 @@ class CordaMetricsTest {
     @Test
     fun `create http counter sets name`() {
         val meter = CordaMetrics.Metric.HttpRequestCount.builder().build()
-        assertThat(meter.id.name).isEqualTo(CordaMetrics.Metric.HttpRequestCount.metricsName)
+        assertThat(meter.id.name).isEqualTo("corda.${CordaMetrics.Metric.HttpRequestCount.metricsName}")
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.WorkerType.value, meterSourceName))
     }

@@ -1,35 +1,54 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.common.json.validation.JsonValidator
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
-private val minimalTransactionMetaData = TransactionMetaData(
-    linkedMapOf(
-        TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-    )
-)
+fun WireTransactionFactory.createExample(
+    jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator
+): WireTransaction {
+    val metadata = transactionMetadataExample()
+    val metadataJson = jsonMarshallingService.format(metadata)
+    val canonicalJson = jsonValidator.canonicalize(metadataJson)
+
+    val allGroupLists = listOf(
+        listOf(canonicalJson.toByteArray()),
+    ) + defaultComponentGroups
+    return create(allGroupLists, metadata)
+}
+
+@Suppress("LongParameterList")
 fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
-    metaData: TransactionMetaData = minimalTransactionMetaData
+    jsonValidator: JsonValidator,
+    metadata: TransactionMetadata = transactionMetadataExample(),
+    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
+    val metadataJson = jsonMarshallingService.format(metadata)
+    val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
-    val componentGroupLists = listOf(
-        listOf(jsonMarshallingService.format(metaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
-        listOf(".".toByteArray()),
-        listOf("abc d efg".toByteArray()),
-    )
+    val groups = listOf(
+        listOf(canonicalJson.toByteArray()),
+    ) + componentGroupLists
+
     return WireTransaction(
         merkleTreeProvider,
         digestService,
-        jsonMarshallingService,
         getPrivacySalt(),
-        componentGroupLists
+        groups,
+        metadata
     )
 }
+
+private val defaultComponentGroups: List<List<ByteArray>> = listOf(
+    listOf(".".toByteArray()),
+    listOf("abc d efg".toByteArray())
+)
 

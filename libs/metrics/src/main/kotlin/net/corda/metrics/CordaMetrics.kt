@@ -6,7 +6,9 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
+import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument.Tag as micrometerTag
+
 
 object CordaMetrics {
     sealed class Metric<T: Meter> (
@@ -80,7 +82,22 @@ object CordaMetrics {
      */
     fun configure(workerType: String, registry: MeterRegistry) {
         this.registry.add(registry)
-        this.registry.config().commonTags(Tag.WorkerType.value, workerType)
+        this.registry.config()
+            .meterFilter(object : MeterFilter {
+                override fun map(id: Meter.Id): Meter.Id {
+                    // prefix all metrics with `corda`, except standard JVM and Process metrics
+                    @Suppress("ComplexCondition")
+                    if(
+                        id.name.startsWith("corda") ||
+                        id.name.startsWith("jvm") ||
+                        id.name.startsWith("system") ||
+                        id.name.startsWith("process")) {
+                        return id
+                    }
+                    return id.withName("corda." + id.name)
+                }
+            })
+            .commonTags(Tag.WorkerType.value, workerType)
     }
 
     class MeterBuilder<T: Meter>(

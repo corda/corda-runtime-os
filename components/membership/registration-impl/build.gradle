@@ -16,12 +16,14 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-client-hsm")
-    implementation project(':components:crypto:crypto-ecies')
+    implementation project(':components:crypto:crypto-hes')
+    implementation project(":components:membership:group-params-writer-service")
     implementation project(":components:membership:group-policy")
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:membership:membership-p2p')
     implementation project(":components:membership:registration")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
@@ -42,6 +44,8 @@ dependencies {
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
 
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 

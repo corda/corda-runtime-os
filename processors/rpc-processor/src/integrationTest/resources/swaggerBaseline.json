@@ -64,22 +64,36 @@
     "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
   } ],
   "paths" : {
-    "/certificates/getprotocolversion" : {
+    "/certificates/cluster/{usage}" : {
       "get" : {
         "tags" : [ "Certificates API" ],
-        "description" : "",
-        "operationId" : "get_certificates_getprotocolversion",
-        "parameters" : [ ],
+        "description" : "This method gets the certificate chain aliases for a cluster.",
+        "operationId" : "get_certificates_cluster__usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
+            "description" : "The cluster level certificates aliases in the usage.",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
+                  "uniqueItems" : false,
+                  "type" : "array",
                   "nullable" : false,
-                  "example" : 0
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
                 }
               }
             }
@@ -91,21 +105,19 @@
             "description" : "Forbidden"
           }
         }
-      }
-    },
-    "/certificates/{tenantid}" : {
+      },
       "put" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method imports a certificate chain for a specified tenant.",
-        "operationId" : "put_certificates__tenantid_",
+        "description" : "This method imports a certificate chain for a cluster.",
+        "operationId" : "put_certificates_cluster__usage_",
         "parameters" : [ {
-          "name" : "tenantid",
+          "name" : "usage",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -143,6 +155,269 @@
         "responses" : {
           "200" : {
             "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/cluster/{usage}/{alias}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain in PEM format for a cluster.",
+        "operationId" : "get_certificates_cluster__usage___alias_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The certificate chain unique alias.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate chain unique alias.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The certificate in PEM format.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "",
+        "operationId" : "get_certificates_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/vnode/{holdingidentityid}/{usage}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain aliases for a virtual node.",
+        "operationId" : "get_certificates_vnode__holdingidentityid___usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The virtual node certificates aliases in the usage.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a virtual node.",
+        "operationId" : "put_certificates_vnode__holdingidentityid___usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/vnode/{holdingidentityid}/{usage}/{alias}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain in PEM format for a virtual node.",
+        "operationId" : "get_certificates_vnode__holdingidentityid___usage___alias_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The certificate chain unique alias.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate chain unique alias.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The certificate in PEM format.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
           },
           "401" : {
             "description" : "Unauthorized"
@@ -194,7 +469,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The CSR in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1404,6 +1679,36 @@
         }
       }
     },
+    "/maintenance/virtualnode/{virtualnodeshortid}/vault-schema/force-resync" : {
+      "post" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI migrations. This operation is destructive and will result in user vault data being deleted, but will not have any effect on system tables.",
+        "operationId" : "post_maintenance_virtualnode__virtualnodeshortid__vault_schema_force_resync",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to rollback",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to rollback",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A list of the shortIDs or the exception encountered"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/members/getprotocolversion" : {
       "get" : {
         "tags" : [ "Member Lookup API" ],
@@ -1584,7 +1889,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1683,7 +1988,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1951,6 +2256,43 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PermissionResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/permission/bulk" : {
+      "post" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method creates a set of permissions and optionally assigns them to the existing roles.",
+        "operationId" : "post_permission_bulk",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkCreatePermissionsRequestType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A set of identifiers for permissions created along with role identifiers they were associated with.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkCreatePermissionsResponseType"
                 }
               }
             }
@@ -2581,6 +2923,54 @@
   },
   "components" : {
     "schemas" : {
+      "BulkCreatePermissionsRequestType" : {
+        "required" : [ "permissionsToCreate", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionsToCreate" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CreatePermissionType"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        },
+        "description" : "The details of the permissions to be created along with existing role identifiers newly created permissions should be associated with."
+      },
+      "BulkCreatePermissionsResponseType" : {
+        "required" : [ "permissionIds", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
+      },
       "ChangeVirtualNodeStateResponse" : {
         "required" : [ "holdingIdShortHash", "newState" ],
         "type" : "object",
@@ -2784,6 +3174,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2793,8 +3184,7 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "description" : "\n            Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
+        }
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
@@ -2923,6 +3313,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3032,7 +3423,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "p2pTlsTenantId" : {
+          "sessionCertificateChainAlias" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"
@@ -3042,13 +3433,18 @@
             "nullable" : true,
             "example" : "string"
           },
-          "sessionKeyTenantId" : {
-            "type" : "string",
+          "useClusterLevelSessionCertificateAndKey" : {
+            "type" : "boolean",
             "nullable" : true,
-            "example" : "string"
+            "example" : true
+          },
+          "useClusterLevelTlsCertificateAndKey" : {
+            "type" : "boolean",
+            "nullable" : true,
+            "example" : true
           }
         },
-        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)\n                sessionKeyTenantId: the tenant ID under which the session initiation key is stored\n                sessionKeyId: the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type \n                and key be used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
@@ -3203,6 +3599,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3246,6 +3643,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3328,6 +3726,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]

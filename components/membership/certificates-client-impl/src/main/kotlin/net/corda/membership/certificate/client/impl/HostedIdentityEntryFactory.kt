@@ -2,17 +2,23 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -28,7 +34,7 @@ internal class HostedIdentityEntryFactory(
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val groupPolicyProvider: GroupPolicyProvider,
-    private val retrieveCertificates: (String, String) -> String?,
+    private val retrieveCertificates: (ShortHash?, CertificateUsage, String) -> String?,
 ) {
     private companion object {
         val logger = contextLogger()
@@ -54,7 +60,7 @@ internal class HostedIdentityEntryFactory(
                 0,
                 1,
                 CryptoKeyOrderBy.NONE,
-                mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT,),
+                mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT),
             )
         }.firstOrNull()
             ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
@@ -64,12 +70,13 @@ internal class HostedIdentityEntryFactory(
     }
 
     private fun getCertificates(
-        actualTlsTenantId: String,
+        certificateHoldingId: ShortHash?,
+        usage: CertificateUsage,
         certificateChainAlias: String,
     ): List<String> {
-        val certificateChain = retrieveCertificates(actualTlsTenantId, certificateChainAlias)
+        val certificateChain = retrieveCertificates(certificateHoldingId, usage, certificateChainAlias)
             ?: throw CertificatesResourceNotFoundException(
-                "Please import certificate chain into $actualTlsTenantId with alias $certificateChainAlias"
+                "Please import certificate chain with usage \"${usage.publicName}\" and alias $certificateChainAlias"
             )
         return certificateChain.reader().use { reader ->
             PEMParser(reader).use {
@@ -88,77 +95,160 @@ internal class HostedIdentityEntryFactory(
         }
     }
 
+    @Suppress("LongParameterList")
     fun createIdentityRecord(
         holdingIdentityShortHash: ShortHash,
-        certificateChainAlias: String,
-        tlsTenantId: String?,
-        sessionKeyTenantId: String?,
+        tlsCertificateChainAlias: String,
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        sessionCertificateChainAlias: String?,
+        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
-        val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash.toString()
-        val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
-        val actualTlsTenantId = tlsTenantId ?: holdingIdentityShortHash.toString()
-        val tlsCertificates = getCertificates(
-            actualTlsTenantId,
-            certificateChainAlias,
+        val policy = try {
+            groupPolicyProvider.getGroupPolicy(nodeInfo.holdingIdentity)
+        } catch (e: IllegalStateException) {
+            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
+            null
+        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
+        val (sessionKeyTenantId, sessionCertificateHoldingId) = if (useClusterLevelSessionCertificateAndKey) {
+            P2P to null
+        } else {
+            holdingIdentityShortHash.value to holdingIdentityShortHash
+        }
+        val sessionPublicKey = getKey(sessionKeyTenantId, sessionKeyId)
+        val (tlsKeyTenantId, tlsCertificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
+            P2P to null
+        } else {
+            holdingIdentityShortHash.value to holdingIdentityShortHash
+        }
+        val tlsCertificates = getAndValidateTlsCertificate(
+            tlsCertificateHoldingId,
+            tlsCertificateChainAlias,
+            tlsKeyTenantId,
+            nodeInfo,
+            policy,
         )
-        validateCertificates(actualTlsTenantId, nodeInfo.holdingIdentity, tlsCertificates)
+        val sessionCertificate = getAndValidateSessionCertificate(
+            sessionCertificateHoldingId,
+            sessionCertificateChainAlias,
+            sessionKeyTenantId,
+            nodeInfo,
+            policy
+        )
 
-        val hostedIdentityEntry = HostedIdentityEntry.newBuilder()
+        val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionKeyTenantId(actualSessionKeyTenantId)
+            .setSessionKeyTenantId(sessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
-            .setTlsTenantId(actualTlsTenantId)
-            .build()
+            .setTlsTenantId(tlsKeyTenantId)
+            .setSessionCertificates(sessionCertificate)
+        sessionCertificate?.let { hostedIdentityBuilder.setSessionCertificates(it) }
         return Record(
             topic = Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
             key = nodeInfo.holdingIdentity.shortHash.value,
-            value = hostedIdentityEntry,
+            value = hostedIdentityBuilder.build(),
         )
     }
 
-    @Suppress("ThrowsCount", "ForbiddenComment")
+    private fun getAndValidateSessionCertificate(
+        sessionCertificateHoldingId: ShortHash?,
+        sessionCertificateChainAlias: String?,
+        sessionKeyTenantId: String,
+        nodeInfo: VirtualNodeInfo,
+        policy: GroupPolicy,
+    ): List<String>? {
+        if (policy.p2pParameters.sessionPki != NO_PKI && sessionCertificateChainAlias == null) {
+            throw BadRequestException(
+                "The sessionCertificateChainAlias must be specified when using a group policy with sessionPki: " +
+                    policy.p2pParameters.sessionPki.name
+            )
+        }
+        val sessionCertificate = sessionCertificateChainAlias?.run {
+            val certificate = getCertificates(
+                sessionCertificateHoldingId,
+                CertificateUsage.P2P_SESSION,
+                sessionCertificateChainAlias
+            )
+            validateCertificates(
+                sessionKeyTenantId,
+                nodeInfo.holdingIdentity,
+                certificate,
+                CertificateType.SessionCertificate(policy.p2pParameters)
+            )
+            certificate
+        }
+        return sessionCertificate
+    }
+
+    private fun getAndValidateTlsCertificate(
+        tlsCertificateHoldingId: ShortHash?,
+        tlsCertificateChainAlias: String,
+        tlsKeyTenantId: String,
+        nodeInfo: VirtualNodeInfo,
+        policy: GroupPolicy
+    ): List<String> {
+        val tlsCertificates = getCertificates(
+            tlsCertificateHoldingId,
+            CertificateUsage.P2P_TLS,
+            tlsCertificateChainAlias,
+        )
+        validateCertificates(
+            tlsKeyTenantId,
+            nodeInfo.holdingIdentity,
+            tlsCertificates,
+            CertificateType.TlsCertificate(policy.p2pParameters)
+        )
+        return tlsCertificates
+    }
+
+    private sealed class CertificateType(val parameterName: String, val trustRoots: Collection<String>?) {
+        data class TlsCertificate(val p2PParameters: GroupPolicy.P2PParameters) :
+            CertificateType("tlsTrustRoots", p2PParameters.tlsTrustRoots)
+        data class SessionCertificate(val p2PParameters: GroupPolicy.P2PParameters) :
+            CertificateType("sessionTrustRoots", p2PParameters.sessionTrustRoots)
+    }
+
+    @Suppress("ThrowsCount")
     private fun validateCertificates(
-        tenantId: String,
+        keyTenantId: String,
         holdingIdentity: HoldingIdentity,
-        tlsCertificates: List<String>,
+        certificates: List<String>,
+        certificateType: CertificateType
     ) {
-        val firstCertificate = tlsCertificates.firstOrNull()
+        val firstCertificate = certificates.firstOrNull()
             ?: throw CordaRuntimeException("No certificate")
 
         val certificate = CertificateFactory.getInstance("X.509")
             .generateCertificate(firstCertificate.byteInputStream())
 
         val publicKey = certificate.publicKey
-        cryptoOpsClient.filterMyKeys(tenantId, listOf(publicKey))
+        cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey))
             .firstOrNull()
-            ?: throw CordaRuntimeException("This certificate public key is unknown to $tenantId")
+            ?: throw CordaRuntimeException("This certificate public key is unknown to $keyTenantId")
 
-        val policy = try {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity)
-        } catch (e: IllegalStateException) {
-            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
-            null
-        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.shortHash}].")
-        val tlsTrustRoots = policy.p2pParameters.tlsTrustRoots
-        if (tlsTrustRoots.isEmpty()) {
-            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
+        if (certificateType.trustRoots == null) {
+            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters ${certificateType.parameterName} is null")
         }
-        tlsTrustRoots
+        if (certificateType.trustRoots.isEmpty()) {
+            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters ${certificateType.parameterName} is empty")
+        }
+        certificateType.trustRoots
             .asSequence()
-            .map { tlsRootCertificateStr ->
+            .map { rootCertificateStr ->
                 CertificateFactory.getInstance("X.509")
-                    .generateCertificate(tlsRootCertificateStr.byteInputStream())
-            }.filter { tlsRootCertificate ->
+                    .generateCertificate(rootCertificateStr.byteInputStream())
+            }.filter { rootCertificate ->
                 try {
-                    certificate.verify(tlsRootCertificate.publicKey)
+                    certificate.verify(rootCertificate.publicKey)
                     true
                 } catch (e: InvalidKeyException) {
                     false
                 }
             }.firstOrNull()
-            ?: throw CordaRuntimeException("The certificate was not sign with the group TLS certificate authority")
+            ?: throw CordaRuntimeException(
+                "The ${CertificateType::class.java.simpleName} was not signed by the correct certificate authority"
+            )
     }
 }

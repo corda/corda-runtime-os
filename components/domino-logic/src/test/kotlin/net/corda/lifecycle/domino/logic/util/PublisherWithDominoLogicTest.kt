@@ -19,7 +19,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 class PublisherWithDominoLogicTest {
@@ -49,53 +48,6 @@ class PublisherWithDominoLogicTest {
     }
 
     private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig(""), messagingConfig)
-
-    @Test
-    fun `start will start the publisher`() {
-        wrapper.start()
-
-        verify(publisher).start()
-    }
-
-    @Test
-    fun `start will set the state to up`() {
-        wrapper.start()
-
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
-    }
-
-    @Test
-    fun `stop will close the publisher`() {
-        wrapper.start()
-        wrapper.stop()
-
-        verify(publisher).close()
-    }
-
-    @Test
-    fun `close will remember to close the coordinator`() {
-        wrapper.start()
-        wrapper.close()
-
-        verify(coordinator).close()
-    }
-
-    @Test
-    fun `close will remember to close the publisher`() {
-        wrapper.start()
-        wrapper.close()
-
-        verify(publisher).close()
-    }
-
-    @Test
-    fun `close will not close the publisher again if stopped`() {
-        wrapper.start()
-        wrapper.stop()
-        wrapper.close()
-
-        verify(publisher).close()
-    }
 
     @Test
     fun `publishToPartition will call the publisher`() {

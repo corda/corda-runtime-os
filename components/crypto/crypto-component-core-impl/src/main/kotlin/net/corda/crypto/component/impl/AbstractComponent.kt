@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,9 +10,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -45,18 +47,17 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.info("Starting...")
+        logger.trace { "$myName starting..." }
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping...")
+        logger.trace  { "$myName stopping..." }
         lifecycleCoordinator.stop()
     }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("LifecycleEvent received: $event")
         when (event) {
             is StartEvent -> {
                 upstream.follow(coordinator)
@@ -68,28 +69,26 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                 if (upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     if(_impl != null) {
                         val status = if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN
-                        logger.info("RegistrationStatusChangeEvent - setting as {}.", status)
                         coordinator.updateStatus(status)
                         _impl?.onRegistrationStatusChange(upstream.isUp)
                     } else {
                         if (upstream.isUp) {
                             doActivate(coordinator)
                         } else {
-                            logger.info("RegistrationStatusChangeEvent - setting as DOWN.")
                             coordinator.updateStatus(LifecycleStatus.DOWN)
                         }
                     }
                 }
             }
-            is TryAgainCreateActiveImpl -> {
+            is AbstractConfigurableComponent.TryAgainCreateActiveImpl -> {
                 if(_impl == null) {
                     doActivate(coordinator)
                 } else {
                     if(upstream.isUp) {
-                        logger.info("TryAgainCreateActiveImpl - setting as UP.")
+                        logger.trace { "TryAgainCreateActiveImpl - $myName - setting as UP." }
                         coordinator.updateStatus(LifecycleStatus.UP)
                     } else {
-                        logger.info("TryAgainCreateActiveImpl - skipping as stale as _impl already created.")
+                        logger.trace { "TryAgainCreateActiveImpl - $myName - skipping as stale as _impl already created." }
                     }
                 }
             }
@@ -103,20 +102,20 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     }
 
     private fun doActivate(coordinator: LifecycleCoordinator) {
-        logger.info("Creating active implementation")
+        logger.trace { "Creating active implementation" }
         try {
             _impl = createActiveImpl()
             activationFailureCounter.set(0)
         } catch (e: FatalActivationException) {
-            logger.error("Failed activate", e)
+            logger.error("$myName failed activate", e)
             coordinator.updateStatus(LifecycleStatus.ERROR)
             return
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.warn("Failed activate..., will try again", e)
+                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
                 coordinator.postEvent(TryAgainCreateActiveImpl())
             } else {
-                logger.error("Failed activate, giving up", e)
+                logger.error("$myName failed activate, giving up", e)
                 coordinator.updateStatus(LifecycleStatus.ERROR)
             }
             return

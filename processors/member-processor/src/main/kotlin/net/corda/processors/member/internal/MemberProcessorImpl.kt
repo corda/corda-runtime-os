@@ -4,15 +4,17 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.registration.RegistrationProxy
@@ -61,6 +63,10 @@ class MemberProcessorImpl @Activate constructor(
     private val synchronisationProxy: SynchronisationProxy,
     @Reference(service = StableKeyPairDecryptor::class)
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersReaderService::class)
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : MemberProcessor {
 
     private companion object {
@@ -83,6 +89,8 @@ class MemberProcessorImpl @Activate constructor(
         ::membershipGroupReaderProvider,
         ::synchronisationProxy,
         ::stableKeyPairDecryptor,
+        ::groupParametersWriterService,
+        ::groupParametersReaderService,
     )
 
     private val coordinator =

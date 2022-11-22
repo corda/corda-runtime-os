@@ -22,6 +22,7 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -48,11 +49,14 @@ import javax.crypto.AEADBadTagException
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
+@Suppress("LongParameterList")
 class AuthenticationProtocolInitiator(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
                                       private val ourPublicKey: PublicKey,
-                                      private val groupId: String): AuthenticationProtocol() {
+                                      private val groupId: String,
+                                      private val certificateCheckMode: CertificateCheckMode
+): AuthenticationProtocol(certificateCheckMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -123,8 +127,12 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 sessionId, 1, Instant.now().toEpochMilli())
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
+            val certificates = when(certificateCheckMode) {
+                is CertificateCheckMode.NoCertificate -> null
+                is CertificateCheckMode.CheckCertificate -> certificateCheckMode.ourCertificates
+            }
             val initiatorHandshakePayload = InitiatorHandshakePayload(
-                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize),
+                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, certificates),
                 ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
@@ -160,6 +168,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
      */
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
+                                     theirX500Name: MemberX500Name,
                                      theirPublicKey: PublicKey,
                                      theirSignatureSpec: SignatureSpec) {
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
@@ -218,6 +227,25 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 }
                 agreedMaxMessageSize = this
             }
+            validateCertificate(responderHandshakePayload, theirX500Name, theirPublicKey)
+        }
+    }
+
+    private fun validateCertificate(
+        responderHandshakePayload: ResponderHandshakePayload,
+        theirX500Name: MemberX500Name,
+        theirPublicKey: PublicKey,
+    ) {
+        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
+            if (responderHandshakePayload.responderEncryptedExtensions.responderCertificate != null) {
+                certificateValidator!!.validate(
+                    responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
+                    theirX500Name,
+                    theirPublicKey
+                )
+            } else {
+                throw InvalidPeerCertificate("No peer certificate was sent in the responder handshake message.")
+            }
         }
     }
 
@@ -262,7 +290,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
 }
 
 /**
- * Thrown when the responder sends an key hash that does not match the one we requested.
+ * Thrown when the responder sends a key hash that does not match the one we requested.
  */
 class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
 class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)

@@ -1,5 +1,9 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,10 +24,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -140,7 +140,7 @@ class LifecycleCoordinatorImpl(
      */
     override fun postEvent(event: LifecycleEvent) {
         if (isClosed) {
-            logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
+            logger.warn("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
         postInternalEvent(event)
@@ -167,7 +167,10 @@ class LifecycleCoordinatorImpl(
      */
     override fun cancelTimer(key: String) {
         logger.trace { "$name: Cancelling timer for key $key" }
-        postEvent(CancelTimer(key))
+        if (!isClosed) {
+            // No need to cancel any timer if the coordinator is closed
+            postEvent(CancelTimer(key))
+        }
     }
 
     /**
@@ -175,7 +178,9 @@ class LifecycleCoordinatorImpl(
      */
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
         logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
-        postEvent(StatusChange(newStatus, reason))
+        if (!isClosed) {
+            postEvent(StatusChange(newStatus, reason))
+        }
     }
 
     /**

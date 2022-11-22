@@ -5,9 +5,11 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
 class MerkleProofImpl(
+    override val proofType: MerkleProofType,
     override val treeSize: Int,
     override val leaves: List<IndexedMerkleLeaf>,
     override val hashes: List<SecureHash>

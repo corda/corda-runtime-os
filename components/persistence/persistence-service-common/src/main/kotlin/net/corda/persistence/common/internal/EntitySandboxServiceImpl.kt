@@ -2,42 +2,37 @@ package net.corda.persistence.common.internal
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.internal.EntitySandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
-import net.corda.internal.serialization.AMQP_P2P_CONTEXT
-import net.corda.internal.serialization.SerializationServiceImpl
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP
+import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
+import net.corda.sandboxgroupcontext.service.registerCustomCryptography
+import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
+import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicy
 
 /**
  * This is a sandbox service that is internal to this component.
@@ -49,17 +44,9 @@ import org.osgi.service.component.annotations.ReferencePolicy
  *
  */
 @Suppress("LongParameterList")
-@Component(
-    service = [EntitySandboxService::class],
-    reference = [
-        Reference(
-            name = INTERNAL_CUSTOM_SERIALIZERS,
-            service = InternalCustomSerializer::class,
-            cardinality = ReferenceCardinality.MULTIPLE,
-            policy = ReferencePolicy.DYNAMIC
-        )
-    ]
-)
+@RequireSandboxAMQP
+@RequireSandboxJSON
+@Component(service = [ EntitySandboxService::class ])
 class EntitySandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
@@ -68,22 +55,11 @@ class EntitySandboxServiceImpl @Activate constructor(
     @Reference
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     @Reference
-    private val dbConnectionManager: DbConnectionManager,
-    private val componentContext: ComponentContext
+    private val dbConnectionManager: DbConnectionManager
 ) : EntitySandboxService {
     companion object {
-        const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
-
         private val logger = contextLogger()
-
-        private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
-            @Suppress("unchecked_cast")
-            return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
-        }
     }
-
-    private val internalCustomSerializers
-        get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
         // We're throwing internal exceptions so that we can relay some information back to the flow worker
@@ -94,7 +70,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val cpks = cpiInfoService.get(virtualNode.cpiIdentifier)?.cpksMetadata
             ?: throw VirtualNodeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
 
-        val cpkIds = cpks.map { it.fileChecksum }.toSet()
+        val cpkIds = cpks.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
         if (!sandboxService.hasCpks(cpkIds))
             throw NotReadyException("CPKs not available (yet): $cpkIds")
 
@@ -109,24 +85,32 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx: MutableSandboxGroupContext
     ): AutoCloseable {
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
-        val serializerCloseable = putSerializer(ctx, cpks, virtualNode)
+        val customSerializers = sandboxService.registerCordappCustomSerializers(ctx)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
+        putTokenStateObservers(ctx, cpks)
+
+        val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
+        val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
-        logger.info(
-            "Initialising DB Sandbox for ${virtualNode.holdingIdentity}/" +
-                    "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]"
+        logger.info("Initialising DB Sandbox for {}/{}[{}]",
+            virtualNode.holdingIdentity,
+            virtualNode.cpiIdentifier.name,
+            virtualNode.cpiIdentifier.version
         )
 
         return AutoCloseable {
-            logger.info(
-                "Closing DB Sandbox for ${virtualNode.holdingIdentity}/" +
-                        "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]"
+            logger.info("Closing DB Sandbox for {}/{}[{}]",
+                virtualNode.holdingIdentity,
+                virtualNode.cpiIdentifier.name,
+                virtualNode.cpiIdentifier.version
             )
-            serializerCloseable.close()
+            jsonSerializers.close()
+            jsonDeserializers.close()
             emfCloseable.close()
+            customSerializers.close()
             customCrypto.close()
         }
     }
@@ -157,9 +141,11 @@ class EntitySandboxServiceImpl @Activate constructor(
         // Create the JPA entity set to pass into the EMF
         val entitiesSet = JpaEntitiesSet.create(virtualNode.vaultDmlConnectionId.toString(), entityClasses)
 
-        logger.debug("Creating EntityManagerFactory for DB Sandbox (${virtualNode.holdingIdentity}) with " +
-                "${entitiesSet.persistenceUnitName}: " +
-                entitiesSet.classes.joinToString(",") { "${it.canonicalName}[${it.classLoader}]" })
+        logger.info("Creating EntityManagerFactory for DB Sandbox ({}) with {}: {}",
+            virtualNode.holdingIdentity,
+            entitiesSet.persistenceUnitName,
+            entitiesSet.classes.joinToString(",") { "${it.canonicalName}[${it.classLoader}]" }
+        )
 
         // Create the per-sandbox EMF for all the entities
         // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.
@@ -174,62 +160,41 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx.putObjectByKey(SANDBOX_EMF, entityManagerFactory)
 
         return AutoCloseable {
-            logger.debug("Closing EntityManagerFactory for ${entitiesSet.persistenceUnitName}")
+            logger.debug("Closing EntityManagerFactory for {}", entitiesSet.persistenceUnitName)
             entityManagerFactory.close()
         }
     }
 
-    /** Add a per-sandbox serializer to this sandbox context's object store for retrieval later */
-    private fun putSerializer(
+    private fun putTokenStateObservers(
         ctx: MutableSandboxGroupContext,
-        cpks: Collection<CpkMetadata>,
-        virtualNode: VirtualNodeInfo
-    ): AutoCloseable {
-        // This code is "borrowed" from the flow worker - it should produce the same AMQP context that was
-        // used to serialize the data.  The "internalCustomSerializers" MUST be the same otherwise
-        // we might struggle to deserialize some entities.
-        val factory = SerializerFactoryBuilder.build(ctx.sandboxGroup)
-        registerCustomSerializers(factory)
-        internalCustomSerializers.forEach { factory.register(it, factory) }
+        cpks: Collection<CpkMetadata>
+    ) {
+        val tokenStateObserverMap = cpks
+            .flatMap { it.cordappManifest.tokenStateObservers }
+            .toSet()
+            .mapNotNull { getObserverFromClassName(it, ctx) }
+            .groupBy { it.stateType }
 
-        val cpkSerializers = cpks.flatMap { it.cordappManifest.serializers }.toSet()
-        val customSerializers = scanForCustomSerializerClasses(
-            ctx.sandboxGroup,
-            cpkSerializers
-        )
-
-        logger.debug(
-            "Creating SerializationService for DB Sandbox (${virtualNode.holdingIdentity}) with " +
-                    cpkSerializers.joinToString(",")
-        )
-
-        customSerializers.forEach { factory.registerExternal(it, factory) }
-
-        val serializationOutput = SerializationOutput(factory)
-        val deserializationInput = DeserializationInput(factory)
-
-        val serializationService = SerializationServiceImpl(
-            serializationOutput,
-            deserializationInput,
-            AMQP_P2P_CONTEXT.withSandboxGroup(ctx.sandboxGroup)
-        )
-
-        ctx.putObjectByKey(SANDBOX_SERIALIZER, serializationService)
-        return AutoCloseable {
-            /* no op at the moment */
-            logger.debug("Closing SerializationService for DB Sandbox (${virtualNode.holdingIdentity})")
-        }
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
     }
 
-    private fun scanForCustomSerializerClasses(
-        sandboxGroup: SandboxGroup,
-        serializerClassNames: Set<String>
-    ): List<SerializationCustomSerializer<*, *>> {
-        return serializerClassNames.map {
-            sandboxGroup.loadClassFromMainBundles(
-                it,
-                SerializationCustomSerializer::class.java
-            ).getConstructor().newInstance()
+    private fun getObserverFromClassName(
+        className: String,
+        ctx: MutableSandboxGroupContext
+    ): UtxoLedgerTokenStateObserver<ContractState>? {
+        val clazz = ctx.sandboxGroup.loadClassFromMainBundles(
+            className,
+            UtxoLedgerTokenStateObserver::class.java
+        )
+
+        return try {
+            uncheckedCast(clazz.getConstructor().newInstance())
+        } catch (e: Exception) {
+            logger.error(
+                "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",
+                e
+            )
+            null
         }
     }
 
@@ -237,9 +202,8 @@ class EntitySandboxServiceImpl @Activate constructor(
     private fun getVirtualNodeContext(virtualNode: VirtualNodeInfo, cpks: Collection<CpkMetadata>) =
         VirtualNodeContext(
             virtualNode.holdingIdentity,
-            cpks.mapTo(LinkedHashSet()) { it.fileChecksum },
-            SandboxGroupType.PERSISTENCE, // TODO - we're still not doing *anything* per sandbox type
-            SingletonSerializeAsToken::class.java,
+            cpks.mapTo(linkedSetOf(), CpkMetadata::fileChecksum),
+            SandboxGroupType.PERSISTENCE,
             null
         )
 }

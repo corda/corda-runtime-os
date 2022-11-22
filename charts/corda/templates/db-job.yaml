@@ -36,18 +36,17 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+          env:
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-db-schemas
           image: {{ include "corda.dbClientImage" . }}
-          command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
+          command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-rbac-db-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -56,6 +55,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -67,20 +67,17 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-crypto-db-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -89,6 +86,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -100,20 +98,17 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-rpc-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -122,31 +117,29 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rpc-admin
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/rbac-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/rbac-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-db-users-and-grant
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -154,21 +147,17 @@ spec:
           command: [ '/bin/sh', '-e', '-c' ]
           args:
             - |
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password'" || echo "User rbac_user already existed - skipping"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't perform usage grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't DML perform grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password'" || echo "User crypto_user already existed - skipping"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT USAGE ON SCHEMA CRYPTO to crypto_user;" || echo "Couldn't perform usage grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;" || echo "Couldn't DML perform grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} -c "CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password'" || echo "User rbac_user already existed - skipping"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't perform usage grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't DML perform grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password'" || echo "User crypto_user already existed - skipping"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA CRYPTO to crypto_user;" || echo "Couldn't perform usage grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;" || echo "Couldn't DML perform grant"
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
         - name: create-initial-crypto-worker-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -177,6 +166,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             - name: SALT
               valueFrom:
@@ -188,24 +178,22 @@ spec:
                 secretKeyRef:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
+            {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/crypto-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f /tmp/working_dir/crypto-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
+          {{- include "corda.clusterDbEnv" . | nindent 12 }}
 
       volumes:
         - name: working-volume
           emptyDir: {}
+        {{ include "corda.log4jVolume" . | nindent 8 }}
 
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
 

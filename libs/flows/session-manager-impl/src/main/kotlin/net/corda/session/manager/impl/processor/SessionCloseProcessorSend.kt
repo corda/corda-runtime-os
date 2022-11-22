@@ -59,7 +59,7 @@ class SessionCloseProcessorSend(
 
     private fun handleNullSession(sessionId: String): SessionState {
         val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
-        logger.error(errorMessage)
+        logger.warn(errorMessage)
         return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCLose-StateNull", instant)
     }
 
@@ -82,7 +82,7 @@ class SessionCloseProcessorSend(
     ): SessionState {
         val errorMessage = "Tried to send SessionClose on key $key for sessionId ${sessionState.sessionId} " +
                 "with status of : ${sessionState.status}"
-        logger.error(errorMessage)
+        logger.warn(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
@@ -128,7 +128,7 @@ class SessionCloseProcessorSend(
         sessionState: SessionState,
         errorType: String
     ): SessionState {
-        logger.error(errorMessage)
+        logger.warn(errorMessage)
         sessionState.status = SessionStateType.ERROR
         return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, errorType, instant)
     }

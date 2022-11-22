@@ -2,7 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
+import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftWrappingKeyMap

@@ -1,11 +1,17 @@
 package net.corda.membership.impl.registration.dynamic.member
 
+import java.nio.ByteBuffer
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.toByteArray
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -35,6 +41,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -51,6 +60,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -70,20 +80,19 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -110,6 +119,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = EphemeralKeyPairEncryptor::class)
     private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -133,7 +144,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
@@ -175,12 +185,10 @@ class DynamicMemberRegistrationService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("DynamicMemberRegistrationService started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("DynamicMemberRegistrationService stopped.")
         coordinator.stop()
     }
 
@@ -234,7 +242,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             } catch (ex: MembershipSchemaValidationException) {
                 return MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid. " + ex.getErrorSummary()
+                    "Registration failed. The registration context is invalid. " + ex.message
                 )
             }
             try {
@@ -291,12 +299,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                     mgmKey,
                     registrationRequestSerializer.serialize(message)!!
                 ) { ek, sk ->
-                    val aad = 1.toByteArray() + clock.instant().toEpochMilli().toByteArray() + keyEncodingService.encodeAsByteArray(ek)
+                    val aad = 1.toByteArray() +
+                            clock.instant().toEpochMilli().toByteArray() +
+                            keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
-                    EciesParams( salt, aad )
+                    HybridEncryptionParams(salt, aad)
                 }
 
                 val messageHeader = UnauthenticatedMessageHeader(
@@ -352,21 +362,34 @@ class DynamicMemberRegistrationService @Activate constructor(
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
-            return (
-                context.filterNot {
-                    it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
-                } + generateSessionKeyData(context, member.shortHash.value) +
-                    generateLedgerKeyData(context, member.shortHash.value) +
-                    mapOf(
-                        REGISTRATION_ID to registrationId.toString(),
-                        PARTY_NAME to member.x500Name.toString(),
-                        GROUP_ID to member.groupId,
-                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                        // temporarily hardcoded
-                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                        SERIAL to SERIAL_CONST,
-                    ) + roles.toMemberInfo { notaryKeys }
-                )
+            val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
+                ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
+            val filteredContext = context.filterNot {
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+            }
+            val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
+            val ledgerKeyContext = generateLedgerKeyData(context, member.shortHash.value)
+            val additionalContext = mapOf(
+                REGISTRATION_ID to registrationId.toString(),
+                PARTY_NAME to member.x500Name.toString(),
+                GROUP_ID to member.groupId,
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+                SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+                MEMBER_CPI_NAME to cpi.name,
+                MEMBER_CPI_VERSION to cpi.version,
+                SERIAL to SERIAL_CONST,
+            )
+            val roleContext = roles.toMemberInfo { notaryKeys }
+            val optionalContext = cpi.signerSummaryHash?.let {
+                mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
+            } ?: emptyMap()
+            return filteredContext +
+                    sessionKeyContext +
+                    ledgerKeyContext +
+                    additionalContext +
+                    roleContext +
+                    optionalContext
+
         }
 
         private fun validateContext(context: Map<String, String>) {
@@ -382,21 +405,30 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         @Suppress("NestedBlockDepth")
-        private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
-            with(cryptoOpsClient) {
-                lookup(tenantId, keyIds).apply {
-                    map { it.id }.apply {
-                        keyIds.forEach { keyId ->
-                            if (!contains(keyId)) {
-                                throw IllegalArgumentException("No key found for tenant: $tenantId under $keyId.")
-                            }
-                        }
+        private fun getKeysFromIds(
+            keyIds: List<String>,
+            tenantId: String,
+            expectedCategory: String,
+        ): List<CryptoSigningKey> =
+            cryptoOpsClient.lookup(tenantId, keyIds).also { keys ->
+                val ids = keys.onEach { key ->
+                    if (key.category != expectedCategory) {
+                        throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")
                     }
+                }.map {
+                    it.id
+                }.toSet()
+                val missingKeys = keyIds.filterNot {
+                    ids.contains(it)
+                }
+                if (missingKeys.isNotEmpty()) {
+                    throw IllegalArgumentException("No keys found for tenant: $tenantId under $missingKeys.")
                 }
             }
 
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {
+                key.validateSpecName(specFromContext)
                 return SignatureSpec(specFromContext)
             }
             logger.info(
@@ -433,7 +465,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     context.filter {
                         ledgerIdRegex.matches(it.key)
                     }.values.toList(),
-                    tenantId
+                    tenantId,
+                    LEDGER,
                 )
             return ledgerKeys.map {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
@@ -450,12 +483,15 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
-            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId).first()
+            val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId, SESSION_INIT).first()
             val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
                 SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,
-                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
+                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(
+                    sessionKey,
+                    context[SESSION_KEY_SIGNATURE_SPEC]
+                ).signatureName
             )
         }
 
@@ -464,7 +500,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 notaryIdRegex.matches(it)
             }.values
                 .toList()
-            return getKeysFromIds(keyIds, tenantId).mapIndexed { index, key ->
+            return getKeysFromIds(keyIds, tenantId, NOTARY).mapIndexed { index, key ->
                 Key(
                     key,
                     context[String.format(NOTARY_KEY_SPEC, index)]
@@ -491,7 +527,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -501,7 +536,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -513,7 +547,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -527,7 +560,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator,
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
@@ -545,7 +577,6 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Handling config changed event.")
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("dynamic-member-registration-service"),

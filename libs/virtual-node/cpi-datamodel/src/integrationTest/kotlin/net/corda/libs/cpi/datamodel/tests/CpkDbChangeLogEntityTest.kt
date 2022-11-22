@@ -206,12 +206,65 @@ class CpkDbChangeLogEntityTest {
                     cpi.version,
                     SecureHash.parse(cpi.signerSummaryHash)
                 )
-            ).sortedBy { it.id.entityVersion }
+            ).sortedBy { it.insertTimestamp }
 
             assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
                 .isNotEqualTo(loadedDbLogAuditEntities.first().id)
             assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
                 .isEqualTo(loadedDbLogAuditEntities.last().id)
+        }
+    }
+
+    @Test
+    fun `can get changelogs based on changesetId`() {
+        val anotherFakeId = UUID.randomUUID()
+        val (cpi, cpks) = TestObject.createCpiWithCpks()
+        val cpk = cpks.first()
+        val changeset1 = (1..3).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                anotherFakeId
+            )
+        }
+
+        transaction {
+            persist(cpi)
+            changeset1.forEach { persist(it) }
+            changeset1.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
+            flush()
+        }
+
+        val changeset2 = (4..6).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                fakeId
+            )
+        }
+
+        transaction {
+            changeset2.forEach { persist(it) }
+            changeset2.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
+            flush()
+        }
+
+        transaction {
+            val loadedDbLogAuditEntities = findDbChangeLogAuditForCpi(
+                this,
+                CpiIdentifier(
+                    cpi.name,
+                    cpi.version,
+                    SecureHash.parse(cpi.signerSummaryHash)
+                ),
+                setOf(anotherFakeId)
+            ).sortedBy { it.insertTimestamp }
+
+            assertThat(loadedDbLogAuditEntities.size).isEqualTo(3)
         }
     }
 

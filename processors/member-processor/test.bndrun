@@ -13,6 +13,7 @@
     bnd.identity;id='net.corda.member-processor',\
     bnd.identity;id='net.corda.group-policy',\
     bnd.identity;id='net.corda.group-policy-impl',\
+    bnd.identity;id='net.corda.group-params-writer-service-impl',\
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.synchronisation-impl',\
@@ -27,7 +28,7 @@
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-client-hsm-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
-    bnd.identity;id='net.corda.crypto-ecies-impl',\
+    bnd.identity;id='net.corda.crypto-hes-impl',\
     bnd.identity;id='net.corda.crypto-persistence-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.crypto-service-impl',\

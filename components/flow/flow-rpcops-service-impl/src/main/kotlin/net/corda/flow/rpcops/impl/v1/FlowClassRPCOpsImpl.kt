@@ -56,11 +56,9 @@ class FlowClassRPCOpsImpl @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, lifecycleCoordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                log.info("Received StartEvent")
                 dependentComponents.registerAndStartAll(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Received RegistrationStatusChangeEvent: $event")
                 if (event.status == LifecycleStatus.UP) {
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 } else {
@@ -68,7 +66,6 @@ class FlowClassRPCOpsImpl @Activate constructor(
                 }
             }
             is StopEvent -> {
-                log.info("Received stop event, closing dependencies and setting status to DOWN.")
                 dependentComponents.stopAll()
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }

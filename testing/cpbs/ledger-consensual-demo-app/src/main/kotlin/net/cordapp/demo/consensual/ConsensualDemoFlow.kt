@@ -27,8 +27,7 @@ import java.security.PublicKey
 
 @InitiatingFlow("consensual-flow-protocol")
 class ConsensualDemoFlow : RPCStartableFlow {
-    data class InputMessage(val number: Int)
-    data class ResultMessage(val text: String)
+    data class InputMessage(val input: String, val members: List<String>)
 
     class TestConsensualState(
         val testField: String,
@@ -57,34 +56,35 @@ class ConsensualDemoFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val request = requestBody.getRequestBodyAs<String>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
-            val alice = memberLookup.myInfo()
-            val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
+            val myInfo = memberLookup.myInfo()
+            val members = request.members.map { x500 ->
+                requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {
+                    "Member $x500 does not exist in the membership group"
+                }
+            }
 
             val testConsensualState = TestConsensualState(
-                request,
-                listOf(
-                    alice.ledgerKeys.first(),
-                    bob.ledgerKeys.first(),
-                )
+                request.input,
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
+            @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .sign(alice.ledgerKeys.first())
+                .toSignedTransaction(myInfo.ledgerKeys.first())
 
-            val session = flowMessaging.initiateFlow(bob.name)
-
-            val finalizedSignedTransaction = consensualLedgerService.finality(
+            val sessions = members.map { flowMessaging.initiateFlow(it.name) }
+            val finalizedSignedTransaction = consensualLedgerService.finalize(
                 signedTransaction,
-                listOf(session)
+                sessions
             )
 
-            val resultMessage = ResultMessage(text = finalizedSignedTransaction.toString())
+            val resultMessage = finalizedSignedTransaction.id.toString()
             log.info("Success! Response: $resultMessage")
-            return jsonMarshallingService.format(resultMessage)
+            return resultMessage
         } catch (e: Exception) {
             log.warn("Failed to process consensual flow for request body '$requestBody' because:'${e.message}'")
             throw e
@@ -104,14 +104,13 @@ class ConsensualResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { signedTransaction ->
-            val ledgerTransaction = signedTransaction.toLedgerTransaction()
+        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { ledgerTransaction ->
             val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
             if (state.testField == "fail") {
-                log.info("Failed to verify the transaction - $signedTransaction")
+                log.info("Failed to verify the transaction - $ledgerTransaction")
                 throw IllegalStateException("Failed verification")
             }
-            log.info("Verified the transaction- $signedTransaction")
+            log.info("Verified the transaction- $ledgerTransaction")
         }
 
         log.info("Finished responder flow - $finalizedSignedTransaction")

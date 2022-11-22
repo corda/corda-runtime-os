@@ -57,9 +57,9 @@ class StartRegistrationHandlerTest {
 
     private companion object {
         val clock = TestClock(Instant.ofEpochSecond(0))
-        val registrationId = UUID.randomUUID().toString()
+        val registrationId = UUID(0, 1).toString()
         val x500Name = MemberX500Name.parse("O=Tester,L=London,C=GB")
-        val groupId = UUID.randomUUID().toString()
+        val groupId = UUID(0, 1).toString()
         val holdingIdentity = HoldingIdentity(x500Name.toString(), groupId)
 
         val mgmX500Name = MemberX500Name.parse("O=TestMGM,L=London,C=GB")

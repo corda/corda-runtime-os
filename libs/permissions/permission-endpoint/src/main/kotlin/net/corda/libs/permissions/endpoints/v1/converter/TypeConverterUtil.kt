@@ -1,5 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
@@ -12,11 +14,13 @@ import net.corda.libs.permissions.endpoints.v1.user.types.PermissionSummaryRespo
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
+import net.corda.libs.permissions.manager.request.CreatePermissionsRequestDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
+import net.corda.libs.permissions.manager.response.PermissionsResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -132,6 +136,10 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
     )
 }
 
+fun PermissionsResponseDto.convertToEndpointType(): BulkCreatePermissionsResponseType {
+    return BulkCreatePermissionsResponseType(createdPermissionIds, roleIds)
+}
+
 fun PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
     return when(this) {
         PermissionType.ALLOW -> InternalPermissionTypeEnum.ALLOW
@@ -154,6 +162,19 @@ fun CreatePermissionType.convertToDto(requestedBy: String): CreatePermissionRequ
         groupVisibility,
         virtualNode
     )
+}
+
+fun BulkCreatePermissionsRequestType.convertToDto(requestedBy: String): CreatePermissionsRequestDto {
+    val permissions: Set<CreatePermissionRequestDto> = permissionsToCreate.map {
+        CreatePermissionRequestDto(
+        requestedBy,
+        it.permissionType.toRequestDtoType(),
+        it.permissionString,
+        it.groupVisibility,
+        it.virtualNode)
+    }.toSet()
+
+    return CreatePermissionsRequestDto(permissions, roleIds)
 }
 
 

@@ -86,7 +86,7 @@ internal class ConfigReadServiceEventHandler(
                 subscription = null
             }
             is ErrorEvent -> {
-                logger.error(
+                logger.warn(
                     "An error occurred in the configuration read service: ${event.cause.message}.",
                     event.cause
                 )

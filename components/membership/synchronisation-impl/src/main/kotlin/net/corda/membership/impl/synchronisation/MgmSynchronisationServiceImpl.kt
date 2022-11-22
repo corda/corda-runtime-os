@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation
 
+import java.util.UUID
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -45,12 +46,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [SynchronisationService::class])
@@ -170,12 +171,10 @@ class MgmSynchronisationServiceImpl internal constructor(
     private var impl: InnerSynchronisationService = InactiveImpl
 
     override fun start() {
-        logger.info("$SERVICE started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$SERVICE stopped.")
         coordinator.stop()
     }
 
@@ -216,14 +215,16 @@ class MgmSynchronisationServiceImpl internal constructor(
                 ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
             val allMembers = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
+            val groupParameters = groupReader.groupParameters
+                ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers))
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers, groupParameters))
             } else {
                 // member has not received the latest updates regarding its own membership
                 // will send its missing updates about themselves only
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo)))
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
             }
             logger.info("Sync package is sent to ${requester.x500Name}.")
         }
@@ -264,7 +265,8 @@ class MgmSynchronisationServiceImpl internal constructor(
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            members: Collection<MemberInfo>
+            members: Collection<MemberInfo>,
+            groupParameters: GroupParameters,
         ): MembershipPackage {
             val mgmSigner = signerFactory.createSigner(mgm)
             val signatures = membershipQueryClient
@@ -280,13 +282,13 @@ class MgmSynchronisationServiceImpl internal constructor(
                 mgmSigner,
                 signatures,
                 members,
-                membersTree.root
+                membersTree.root,
+                groupParameters,
             )
         }
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -296,7 +298,6 @@ class MgmSynchronisationServiceImpl internal constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -309,7 +310,6 @@ class MgmSynchronisationServiceImpl internal constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -323,7 +323,6 @@ class MgmSynchronisationServiceImpl internal constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator,
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
@@ -341,7 +340,6 @@ class MgmSynchronisationServiceImpl internal constructor(
 
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Handling config changed event.")
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("mgm-synchronisation-service"),

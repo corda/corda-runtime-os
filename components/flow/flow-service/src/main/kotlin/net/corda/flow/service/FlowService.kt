@@ -20,7 +20,6 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -49,10 +48,8 @@ class FlowService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "FlowService received: $event" }
         when (event) {
             is StartEvent -> {
-                logger.debug { "Starting flow runner component." }
                 registration?.close()
                 registration =
                     coordinator.followStatusChangesByName(
@@ -94,7 +91,6 @@ class FlowService @Activate constructor(
 
             is StopEvent -> {
                 flowExecutor.stop()
-                logger.debug { "Stopping flow runner component." }
                 registration?.close()
                 registration = null
             }

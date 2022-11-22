@@ -39,7 +39,6 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
                 is StartEvent -> {
-                    logger.info(MembershipGroupReaderProvider::class.simpleName + " handling start event.")
                     dependencyRegistrationHandle?.close()
                     dependencyRegistrationHandle = coordinator.followStatusChangesByName(
                         setOf(
@@ -48,7 +47,6 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
                     )
                 }
                 is StopEvent -> {
-                    logger.info(MembershipGroupReaderProvider::class.simpleName + " handling stop event.")
                     deactivateImplFunction.invoke("Stopped component due to StopEvent received.")
                     dependencyRegistrationHandle?.close()
                     configRegistrationHandle?.close()

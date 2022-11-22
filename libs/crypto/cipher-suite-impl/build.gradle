@@ -8,6 +8,7 @@ description 'Cipher suite default implementation'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -15,11 +16,11 @@ dependencies {
     api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'
 
-    api project(":libs:crypto:crypto-core")
-    api project(":libs:crypto:crypto-impl")
+    api project(':libs:crypto:crypto-core')
+    api project(':libs:crypto:crypto-impl')
+    api project(':libs:sandbox-types')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
-

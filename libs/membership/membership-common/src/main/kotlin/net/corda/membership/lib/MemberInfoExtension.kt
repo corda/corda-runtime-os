@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -8,6 +9,7 @@ import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
 import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -28,6 +30,9 @@ class MemberInfoExtension {
         const val LEDGER_KEY_HASHES = "corda.ledger.keys"
         const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
 
+        /** Key name for ledger key signature spec property. */
+        const val LEDGER_KEY_SIGNATURE_SPEC = "corda.ledger.keys.%s.signature.spec"
+
         /** Key name for platform version property. */
         const val PLATFORM_VERSION = "corda.platformVersion"
 
@@ -37,6 +42,9 @@ class MemberInfoExtension {
 
         /** Key name for the session key hash **/
         const val SESSION_KEY_HASH = "corda.session.key.hash"
+
+        /** Key name for the session key signature spec **/
+        const val SESSION_KEY_SIGNATURE_SPEC = "corda.session.key.signature.spec"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
@@ -81,6 +89,15 @@ class MemberInfoExtension {
         /** Key name for the ID of the registration in which the current member info was approved. */
         const val REGISTRATION_ID = "corda.registration.id"
 
+        /** Key name for the CPI name **/
+        const val MEMBER_CPI_NAME = "corda.cpi.name"
+
+        /** Key name for the CPI version **/
+        const val MEMBER_CPI_VERSION = "corda.cpi.version"
+
+        /** Key name for the CPI signer summary hash **/
+        const val MEMBER_CPI_SIGNER_HASH = "corda.cpi.signer.summary.hash"
+
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
 
@@ -119,10 +136,6 @@ class MemberInfoExtension {
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
 
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        // TODO we will need a CertPath converter somewhere
-        /*@JvmStatic
-        val MemberInfo.certificate: CertPath?
-            get() = memberProvidedContext.readAs(CERTIFICATE)*/
         @JvmStatic
         val MemberInfo.certificate: List<String>
             get() = memberProvidedContext.parseList(CERTIFICATE)
@@ -216,9 +229,22 @@ class MemberInfoExtension {
                 null
             }
 
-        /** Return the key used for ECIES encryption. Only MGMs should have a value set for ecdh key. */
+        /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */
         @JvmStatic
         val MemberInfo.ecdhKey: PublicKey?
             get() = memberProvidedContext.parseOrNull(ECDH_KEY)
+
+        /**
+         * Return the [CpiIdentifier] from the [MemberInfo]
+         */
+        @JvmStatic
+        val MemberInfo.cpiInfo: CpiIdentifier
+            get() = CpiIdentifier(
+                memberProvidedContext.parse(MEMBER_CPI_NAME),
+                memberProvidedContext.parse(MEMBER_CPI_VERSION),
+                memberProvidedContext.parseOrNull<String>(MEMBER_CPI_SIGNER_HASH)?.let {
+                    SecureHash.parse(it)
+                }
+            )
     }
 }

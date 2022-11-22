@@ -91,10 +91,10 @@ internal object ContextUtils {
             log.trace { "Get parameter values." }
 
             CordaMetrics.Metric.HttpRequestCount.builder()
-                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
                 .build().increment()
             val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
-                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
                 .build()
             requestTimer.recordCallable {
                 try {
@@ -113,7 +113,7 @@ internal object ContextUtils {
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
                     log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
-                    log.warn("Error invoking path '${this.fullPath}'.", e)
+                    log.info("Error invoking path '${this.fullPath}' - ${e.message}")
                     throw HttpExceptionMapper.mapToResponse(e)
                 } finally {
                     MDC.remove("http.method")

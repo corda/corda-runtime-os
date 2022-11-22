@@ -96,7 +96,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -124,7 +124,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -143,7 +143,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -164,7 +164,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -184,7 +184,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem().sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(emptyList()))
         }
 
         then {
@@ -207,7 +207,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -230,7 +230,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -245,7 +245,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving an out-of-order session close events does not resume the flow and sends a session ack`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -280,7 +280,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     ) {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -303,7 +303,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     ) {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1)))
         }
 
         `when` {
@@ -322,7 +322,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving a session data event instead of a close resumes the flow with an error`() {
         given {
             initiateSingleFlow(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1)))
         }
 
         `when` {
@@ -341,7 +341,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving a single session close event does not resume the flow sends a session ack and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -361,7 +361,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving all session close events resumes the flow sends session acks and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -403,7 +403,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -445,7 +445,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -473,7 +473,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -498,7 +498,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 3)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         then {
@@ -518,7 +518,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving a session error event for one session and a session close event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -544,7 +544,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -570,7 +570,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given two sessions receiving session data events for both sessions resumes the flow with an error and schedules session cleanup`() {
         given {
             initiateTwoFlows(this, 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
@@ -602,7 +602,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem().sessionIds)
+                    FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
         }
 
@@ -627,7 +627,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem().sessionIds)
+                    FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
         }
 
@@ -652,7 +652,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem().sessionIds)
+                    FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
         }
 
@@ -663,12 +663,4 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-
-    private fun initiatingFlowStackItem(vararg sessionIds: String): FlowStackItem =
-        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList())
-
-    private fun nonInitiatingFlowStackItem(): FlowStackItem =
-        FlowStackItem(
-            FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1), mutableKeyValuePairList(), mutableKeyValuePairList()
-        )
 }

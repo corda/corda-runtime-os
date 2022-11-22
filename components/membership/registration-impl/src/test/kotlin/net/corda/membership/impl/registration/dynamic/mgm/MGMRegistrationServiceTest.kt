@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
@@ -17,7 +19,6 @@ import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -28,10 +29,21 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.impl.registration.TEST_CPI_NAME
+import net.corda.membership.impl.registration.TEST_CPI_VERSION
+import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
+import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
+import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
+import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -68,11 +80,14 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -94,12 +109,12 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
-    companion object {
-        private const val SESSION_KEY_STRING = "1234"
-        private const val SESSION_KEY_ID = "1"
-        private const val ECDH_KEY_STRING = "5678"
-        private const val ECDH_KEY_ID = "2"
-        private const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+    private companion object {
+        const val SESSION_KEY_STRING = "1234"
+        const val SESSION_KEY_ID = "1"
+        const val ECDH_KEY_STRING = "5678"
+        const val ECDH_KEY_ID = "2"
+        const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -112,12 +127,15 @@ class MGMRegistrationServiceTest {
     }
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY_STRING.toByteArray())
+        on { category } doReturn SESSION_INIT
     }
     private val ecdhKey: PublicKey = mock {
         on { encoded } doReturn ECDH_KEY_STRING.toByteArray()
+        on { algorithm } doReturn "EC"
     }
     private val ecdhCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY_STRING.toByteArray())
+        on { category } doReturn PRE_AUTH
     }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
@@ -180,6 +198,7 @@ class MGMRegistrationServiceTest {
         )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
@@ -190,6 +209,7 @@ class MGMRegistrationServiceTest {
                 statusUpdate.capture()
             )
         } doReturn MembershipPersistenceResult.success()
+        on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -201,8 +221,15 @@ class MGMRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 5000
+    private val platformInfoProvider = buildMockPlatformInfoProvider()
+    private val virtualNodeInfo = buildTestVirtualNodeInfo(mgm)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { get(eq(mgm)) } doReturn virtualNodeInfo
+    }
+    private val writerService: GroupParametersWriterService = mock()
+    private val mockGroupParameters: GroupParameters = mock()
+    private val groupParametersFactory: GroupParametersFactory = mock {
+        on { create(mockGroupParametersList) } doReturn mockGroupParameters
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -215,14 +242,19 @@ class MGMRegistrationServiceTest {
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
-        platformInfoProvider
+        platformInfoProvider,
+        virtualNodeInfoReadService,
+        writerService,
+        groupParametersFactory,
     )
 
     private val properties = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
-        "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-        "corda.group.protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+        "corda.group.protocol.registration"
+                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+        "corda.group.protocol.synchronisation"
+                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
@@ -269,351 +301,396 @@ class MGMRegistrationServiceTest {
         )
     }
 
-    @Test
-    fun `starting the service succeeds`() {
-        registrationService.start()
-        assertThat(registrationService.isRunning).isTrue
-        verify(coordinator).start()
-    }
+    @Nested
+    inner class SuccessfulRegistrationTests {
+        @Test
+        fun `registration successfully builds MGM info and publishes it`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
-    @Test
-    fun `stopping the service succeeds`() {
-        registrationService.start()
-        registrationService.stop()
-        assertThat(registrationService.isRunning).isFalse
-        verify(coordinator).stop()
-    }
+            val result = registrationService.register(registrationRequest, mgm, properties)
 
-    @Test
-    fun `registration successfully builds MGM info and publishes it`() {
-        postConfigChangedEvent()
-        registrationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            val publishedList = capturedPublishedList.firstValue
+            val publishedMgmInfo = publishedList.first()
+            val publishedEvent = publishedList.last()
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+                it.assertThat(publishedList).hasSize(2)
 
-        val result = registrationService.register(registrationRequest, mgm, properties)
+                it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
+                it.assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
 
-        verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-        val publishedList = capturedPublishedList.firstValue
-        val publishedMgmInfo = publishedList.first()
-        val publishedEvent = publishedList.last()
-        assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
-            it.assertThat(publishedList).hasSize(2)
+                val expectedRecordKey = "$mgmId-$mgmId"
+                it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
+                it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
 
-            it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
-            it.assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
+                val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
 
-            val expectedRecordKey = "$mgmId-$mgmId"
-            it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
-            it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
-
-            val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
-
-            it.assertThat(persistedMgm.memberContext.items.map { item -> item.key })
-                .containsExactlyInAnyOrderElementsOf(
-                    listOf(
-                        GROUP_ID,
-                        PARTY_NAME,
-                        PARTY_SESSION_KEY,
-                        SESSION_KEY_HASH,
-                        ECDH_KEY,
-                        PLATFORM_VERSION,
-                        SOFTWARE_VERSION,
-                        SERIAL,
-                        String.format(URL_KEY, 0),
-                        String.format(PROTOCOL_VERSION, 0),
+                it.assertThat(persistedMgm.memberContext.items.map { item -> item.key })
+                    .containsExactlyInAnyOrderElementsOf(
+                        listOf(
+                            GROUP_ID,
+                            PARTY_NAME,
+                            PARTY_SESSION_KEY,
+                            SESSION_KEY_HASH,
+                            ECDH_KEY,
+                            PLATFORM_VERSION,
+                            SOFTWARE_VERSION,
+                            MEMBER_CPI_NAME,
+                            MEMBER_CPI_VERSION,
+                            MEMBER_CPI_SIGNER_HASH,
+                            SERIAL,
+                            URL_KEY.format(0),
+                            PROTOCOL_VERSION.format(0),
+                        )
                     )
-                )
-            it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
-                .containsExactlyInAnyOrderElementsOf(
-                    listOf(
-                        CREATED_TIME,
-                        MODIFIED_TIME,
-                        STATUS,
-                        IS_MGM
+                it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
+                    .containsExactlyInAnyOrderElementsOf(
+                        listOf(
+                            CREATED_TIME,
+                            MODIFIED_TIME,
+                            STATUS,
+                            IS_MGM
+                        )
                     )
-                )
 
-            fun getProperty(prop: String): String {
-                return persistedMgm
-                    .memberContext.items.firstOrNull { item ->
+                fun getProperty(prop: String): String {
+                    return persistedMgm
+                        .memberContext.items.firstOrNull { item ->
+                            item.key == prop
+                        }?.value ?: persistedMgm.mgmContext.items.firstOrNull { item ->
                         item.key == prop
-                    }?.value ?: persistedMgm.mgmContext.items.firstOrNull { item ->
-                    item.key == prop
-                }?.value ?: fail("Could not find property within published member for test")
-            }
-
-            it.assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
-            it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
-            it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
-            it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
-            it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
-            it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
-
-            val membershipEvent = publishedEvent.value as MembershipEvent
-            it.assertThat(membershipEvent.event).isInstanceOf(MgmOnboarded::class.java)
-            val mgmOnboardedEvent = membershipEvent.event as MgmOnboarded
-            it.assertThat(mgmOnboardedEvent.onboardedMgm).isEqualTo(mgm.toAvro())
-        }
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration persist the group properties`() {
-        postConfigChangedEvent()
-        registrationService.start()
-        val groupProperties = argumentCaptor<LayeredPropertyMap>()
-        whenever(
-            membershipPersistenceClient
-                .persistGroupPolicy(
-                    eq(mgm),
-                    groupProperties.capture(),
-                )
-        ).thenReturn(MembershipPersistenceResult.Success(3))
-
-        registrationService.register(registrationRequest, mgm, properties)
-
-        assertThat(groupProperties.firstValue.entries)
-            .containsExactlyInAnyOrderElementsOf(
-                mapOf(
-                    "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-                    "protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-                    "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
-                    "key.session.policy" to "Combined",
-                    "pki.session" to "Standard",
-                    "pki.tls" to "C5",
-                    "truststore.session.0"
-                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                    "truststore.tls.0"
-                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                ).entries
-            )
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration persist the MGM member info`() {
-        postConfigChangedEvent()
-        registrationService.start()
-
-        registrationService.register(registrationRequest, mgm, properties)
-
-        verify(membershipPersistenceClient).persistMemberInfo(
-            eq(mgm),
-            argThat {
-                this.size == 1 &&
-                        this.first().isMgm &&
-                        this.first().name == mgmName
-            }
-        )
-    }
-
-    @Test
-    fun `registration persists initial group parameters snapshot`() {
-        postConfigChangedEvent()
-        registrationService.start()
-
-        registrationService.register(registrationRequest, mgm, properties)
-
-        verify(membershipPersistenceClient).persistGroupParametersInitialSnapshot(eq(mgm))
-    }
-
-    @Test
-    fun `registration failure to persist return an error`() {
-        postConfigChangedEvent()
-        registrationService.start()
-        whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
-            .doReturn(MembershipPersistenceResult.Failure("Nop"))
-
-        val result = registrationService.register(registrationRequest, mgm, properties)
-
-        assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            it.assertThat(result.message).isEqualTo("Registration failed, persistence error. Reason: Nop")
-        }
-    }
-
-    @Test
-    fun `registration fails when coordinator is not running`() {
-        val registrationResult = registrationService.register(registrationRequest, mgm, mock())
-        assertThat(registrationResult).isEqualTo(
-            MembershipRequestRegistrationResult(
-                MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                "Registration failed. Reason: MGMRegistrationService is not running."
-            )
-        )
-    }
-
-    @Test
-    fun `registration fails when one or more properties are missing`() {
-        postConfigChangedEvent()
-        val testProperties = mutableMapOf<String, String>()
-        registrationService.start()
-        properties.entries.apply {
-            for (index in indices) {
-                val result = registrationService.register(registrationRequest, mgm, testProperties)
-                assertSoftly {
-                    it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                    }?.value ?: fail("Could not find property within published member for test")
                 }
-                elementAt(index).let { testProperties.put(it.key, it.value) }
+
+                it.assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
+                it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
+                it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
+                it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
+                it.assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
+                it.assertThat(getProperty(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
+                it.assertThat(getProperty(MEMBER_CPI_VERSION)).isEqualTo(TEST_CPI_VERSION)
+                it.assertThat(getProperty(MEMBER_CPI_NAME)).isEqualTo(TEST_CPI_NAME)
+                it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+                it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+
+
+                val membershipEvent = publishedEvent.value as MembershipEvent
+                it.assertThat(membershipEvent.event).isInstanceOf(MgmOnboarded::class.java)
+                val mgmOnboardedEvent = membershipEvent.event as MgmOnboarded
+                it.assertThat(mgmOnboardedEvent.onboardedMgm).isEqualTo(mgm.toAvro())
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration persist the group properties`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val groupProperties = argumentCaptor<LayeredPropertyMap>()
+            whenever(
+                membershipPersistenceClient
+                    .persistGroupPolicy(
+                        eq(mgm),
+                        groupProperties.capture(),
+                    )
+            ).thenReturn(MembershipPersistenceResult.Success(3))
+
+            registrationService.register(registrationRequest, mgm, properties)
+
+            assertThat(groupProperties.firstValue.entries)
+                .containsExactlyInAnyOrderElementsOf(
+                    mapOf(
+                        "protocol.registration"
+                                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                        "protocol.synchronisation"
+                                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                        "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
+                        "key.session.policy" to "Combined",
+                        "pki.session" to "Standard",
+                        "pki.tls" to "C5",
+                        "truststore.session.0"
+                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                        "truststore.tls.0"
+                                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    ).entries
+                )
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration persist the MGM member info`() {
+            postConfigChangedEvent()
+            registrationService.start()
+
+            registrationService.register(registrationRequest, mgm, properties)
+
+            verify(membershipPersistenceClient).persistMemberInfo(
+                eq(mgm),
+                argThat {
+                    this.size == 1 &&
+                            this.first().isMgm &&
+                            this.first().name == mgmName
+                }
+            )
+        }
+
+        @Test
+        fun `registration persists initial group parameters snapshot`() {
+            postConfigChangedEvent()
+            registrationService.start()
+
+            registrationService.register(registrationRequest, mgm, properties)
+
+            verify(membershipPersistenceClient).persistGroupParametersInitialSnapshot(eq(mgm))
+        }
+
+        @Test
+        fun `registration publishes initial group parameters snapshot to Kafka`() {
+            val groupParametersCaptor = argumentCaptor<GroupParameters>()
+            postConfigChangedEvent()
+            registrationService.start()
+
+            registrationService.register(registrationRequest, mgm, properties)
+
+            verify(writerService).put(eq(mgm), groupParametersCaptor.capture())
+            assertThat(groupParametersCaptor.firstValue).isEqualTo(mockGroupParameters)
+        }
+
+        @Test
+        fun `if session PKI mode is NoPKI, session trust root is optional`() {
+            postConfigChangedEvent()
+            val testProperties = properties.toMutableMap()
+            testProperties["corda.group.pki.session"] = "NoPKI"
+            testProperties.remove("corda.group.truststore.session.0")
+            registrationService.start()
+            val result = registrationService.register(registrationRequest, mgm, testProperties)
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+            }
+            registrationService.stop()
+        }
+    }
+
+    @Nested
+    inner class FailedRegistrationTests {
+        @Test
+        fun `registration failure to persist return an error`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
+                .doReturn(MembershipPersistenceResult.Failure("Nop"))
+
+            val result = registrationService.register(registrationRequest, mgm, properties)
+
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isEqualTo("Registration failed, persistence error. Reason: Nop")
             }
         }
-        registrationService.stop()
-    }
 
-    @Test
-    fun `registration fails when one or more properties are numbered incorrectly`() {
-        postConfigChangedEvent()
-        val testProperties =
-            properties + mapOf(
-                "corda.group.truststore.tls.100" to
-                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
-            )
-        registrationService.start()
-        val result = registrationService.register(registrationRequest, mgm, testProperties)
-        assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            it.assertThat(result.message)
-                .isEqualTo(
-                    "Onboarding MGM failed. " +
-                            "The registration context is invalid: Provided TLS trust stores are incorrectly numbered."
+        @Test
+        fun `registration fails when coordinator is not running`() {
+            val registrationResult = registrationService.register(registrationRequest, mgm, mock())
+            assertThat(registrationResult).isEqualTo(
+                MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                    "Registration failed. Reason: MGMRegistrationService is not running."
                 )
+            )
         }
-        registrationService.stop()
+
+        @Test
+        fun `registration fails when one or more properties are missing`() {
+            postConfigChangedEvent()
+            val testProperties = mutableMapOf<String, String>()
+            registrationService.start()
+            properties.entries.apply {
+                for (index in indices) {
+                    val result = registrationService.register(registrationRequest, mgm, testProperties)
+                    assertSoftly {
+                        it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                    }
+                    elementAt(index).let { testProperties.put(it.key, it.value) }
+                }
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when one or more properties are numbered incorrectly`() {
+            postConfigChangedEvent()
+            val testProperties =
+                properties + mapOf(
+                    "corda.group.truststore.tls.100" to
+                            "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                )
+            registrationService.start()
+            val result = registrationService.register(registrationRequest, mgm, testProperties)
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message)
+                    .isEqualTo(
+                        "Onboarding MGM failed. " +
+                                "Provided TLS trust stores are incorrectly numbered."
+                    )
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails if the registration context doesn't match the schema`() {
+            postConfigChangedEvent()
+            val err = "ERROR-MESSAGE"
+            val errReason = "ERROR-REASON"
+            whenever(
+                membershipSchemaValidator.validateRegistrationContext(
+                    eq(MembershipSchema.RegistrationContextSchema.Mgm),
+                    any(),
+                    any()
+                )
+            ).doThrow(
+                MembershipSchemaValidationException(
+                    err,
+                    null,
+                    MembershipSchema.RegistrationContextSchema.Mgm,
+                    listOf(errReason)
+                )
+            )
+
+            registrationService.start()
+            val result = registrationService.register(registrationRequest, mgm, properties)
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).contains(err)
+                it.assertThat(result.message).contains(errReason)
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when vnode info cannot be found`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(virtualNodeInfoReadService.get(eq(mgm))).doReturn(null)
+
+            val result = registrationService.register(registrationRequest, mgm, properties)
+
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isNotNull.contains("Could not find virtual node info")
+            }
+        }
     }
 
-    @Test
-    fun `registration fails if the registration context doesn't match the schema`() {
-        postConfigChangedEvent()
-        val err = "ERROR-MESSAGE"
-        val errReason = "ERROR-REASON"
-        whenever(
-            membershipSchemaValidator.validateRegistrationContext(
-                eq(MembershipSchema.RegistrationContextSchema.Mgm),
-                any(),
+    @Nested
+    inner class LifecycleTests {
+        @Test
+        fun `starting the service succeeds`() {
+            registrationService.start()
+            assertThat(registrationService.isRunning).isTrue
+            verify(coordinator).start()
+        }
+
+        @Test
+        fun `stopping the service succeeds`() {
+            registrationService.start()
+            registrationService.stop()
+            assertThat(registrationService.isRunning).isFalse
+            verify(coordinator).stop()
+        }
+
+        @Test
+        fun `component handle created on start and closed on stop`() {
+            postStartEvent()
+
+            verify(componentHandle, never()).close()
+            verify(coordinator).followStatusChangesByName(eq(dependentComponents))
+
+            postStartEvent()
+
+            verify(componentHandle).close()
+            verify(coordinator, times(2)).followStatusChangesByName(eq(dependentComponents))
+
+            postStopEvent()
+            verify(componentHandle, times(2)).close()
+        }
+
+        @Test
+        fun `status set to down after stop`() {
+            postStopEvent()
+
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+            verify(componentHandle, never()).close()
+            verify(configHandle, never()).close()
+            verify(mockPublisher, never()).close()
+        }
+
+        @Test
+        fun `registration status UP creates config handle and closes it first if it exists`() {
+            postStartEvent()
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP)
+
+            val configArgs = argumentCaptor<Set<String>>()
+            verify(configHandle, never()).close()
+            verify(configurationReadService).registerComponentForUpdates(
+                eq(coordinator),
+                configArgs.capture()
+            )
+            assertThat(configArgs.firstValue).isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+
+            postRegistrationStatusChangeEvent(LifecycleStatus.UP)
+            verify(configHandle).close()
+            verify(configurationReadService, times(2)).registerComponentForUpdates(eq(coordinator), any())
+
+            postStopEvent()
+            verify(configHandle, times(2)).close()
+        }
+
+        @Test
+        fun `registration status DOWN sets status to DOWN`() {
+            postRegistrationStatusChangeEvent(LifecycleStatus.DOWN)
+
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
+
+        @Test
+        fun `registration status ERROR sets status to DOWN`() {
+            postRegistrationStatusChangeEvent(LifecycleStatus.ERROR)
+
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
+
+        @Test
+        fun `config changed event creates publisher`() {
+            postConfigChangedEvent()
+
+            val configCaptor = argumentCaptor<PublisherConfig>()
+            verify(mockPublisher, never()).close()
+            verify(publisherFactory).createPublisher(
+                configCaptor.capture(),
                 any()
             )
-        ).doThrow(
-            MembershipSchemaValidationException(
-                err,
-                null,
-                MembershipSchema.RegistrationContextSchema.Mgm,
-                listOf(errReason)
+            verify(mockPublisher).start()
+            verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+
+            with(configCaptor.firstValue) {
+                assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
+            }
+
+            postConfigChangedEvent()
+            verify(mockPublisher).close()
+            verify(publisherFactory, times(2)).createPublisher(
+                configCaptor.capture(),
+                any()
             )
-        )
+            verify(mockPublisher, times(2)).start()
+            verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 
-        registrationService.start()
-        val result = registrationService.register(registrationRequest, mgm, properties)
-        assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            it.assertThat(result.message).contains(err)
-            it.assertThat(result.message).contains(errReason)
+            postStopEvent()
+            verify(mockPublisher, times(3)).close()
         }
-        registrationService.stop()
-    }
-
-    @Test
-    fun `if session PKI mode is NoPKI, session trust root is optional`() {
-        postConfigChangedEvent()
-        val testProperties = properties.toMutableMap()
-        testProperties["corda.group.pki.session"] = "NoPKI"
-        testProperties.remove("corda.group.truststore.session.0")
-        registrationService.start()
-        val result = registrationService.register(registrationRequest, mgm, testProperties)
-        assertSoftly {
-            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
-        }
-        registrationService.stop()
-    }
-
-    @Test
-    fun `component handle created on start and closed on stop`() {
-        postStartEvent()
-
-        verify(componentHandle, never()).close()
-        verify(coordinator).followStatusChangesByName(eq(dependentComponents))
-
-        postStartEvent()
-
-        verify(componentHandle).close()
-        verify(coordinator, times(2)).followStatusChangesByName(eq(dependentComponents))
-
-        postStopEvent()
-        verify(componentHandle, times(2)).close()
-    }
-
-    @Test
-    fun `status set to down after stop`() {
-        postStopEvent()
-
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        verify(componentHandle, never()).close()
-        verify(configHandle, never()).close()
-        verify(mockPublisher, never()).close()
-    }
-
-    @Test
-    fun `registration status UP creates config handle and closes it first if it exists`() {
-        postStartEvent()
-        postRegistrationStatusChangeEvent(LifecycleStatus.UP)
-
-        val configArgs = argumentCaptor<Set<String>>()
-        verify(configHandle, never()).close()
-        verify(configurationReadService).registerComponentForUpdates(
-            eq(coordinator),
-            configArgs.capture()
-        )
-        assertThat(configArgs.firstValue).isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
-
-        postRegistrationStatusChangeEvent(LifecycleStatus.UP)
-        verify(configHandle).close()
-        verify(configurationReadService, times(2)).registerComponentForUpdates(eq(coordinator), any())
-
-        postStopEvent()
-        verify(configHandle, times(2)).close()
-    }
-
-    @Test
-    fun `registration status DOWN sets status to DOWN`() {
-        postRegistrationStatusChangeEvent(LifecycleStatus.DOWN)
-
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
-
-    @Test
-    fun `registration status ERROR sets status to DOWN`() {
-        postRegistrationStatusChangeEvent(LifecycleStatus.ERROR)
-
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
-
-    @Test
-    fun `config changed event creates publisher`() {
-        postConfigChangedEvent()
-
-        val configCaptor = argumentCaptor<PublisherConfig>()
-        verify(mockPublisher, never()).close()
-        verify(publisherFactory).createPublisher(
-            configCaptor.capture(),
-            any()
-        )
-        verify(mockPublisher).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-        with(configCaptor.firstValue) {
-            assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
-        }
-
-        postConfigChangedEvent()
-        verify(mockPublisher).close()
-        verify(publisherFactory, times(2)).createPublisher(
-            configCaptor.capture(),
-            any()
-        )
-        verify(mockPublisher, times(2)).start()
-        verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
-
-        postStopEvent()
-        verify(mockPublisher, times(3)).close()
     }
 }
