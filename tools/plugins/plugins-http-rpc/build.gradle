@@ -2,11 +2,6 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
-
-ext {
-    releasable = false
-}
-
 description 'Plugins Common'
 
 dependencies {

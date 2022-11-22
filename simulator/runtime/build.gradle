@@ -4,6 +4,10 @@ plugins {
     id 'corda.javadoc-generation'
 }
 
+ext {
+    releasable = true
+}
+
 dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-application:$cordaApiVersion"
