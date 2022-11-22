@@ -2,6 +2,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadata
@@ -45,7 +46,7 @@ class FilteredTransactionImplTest {
     }
 
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val digestService = DigestServiceImpl(PlatformDigestServiceImpl(cipherSchemeMetadata), null)
 
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = mock<JsonMarshallingService>()

@@ -74,21 +74,21 @@ class SignatureSpecUtilsTests {
     }
 
     class DigestServiceMock : PlatformDigestService {
-        override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash =
-            SecureHash(digestAlgorithmName.name, MessageDigest.getInstance(digestAlgorithmName.name).digest(bytes))
+        override fun hash(bytes: ByteArray, platformDigestName: DigestAlgorithmName): SecureHash =
+            SecureHash(platformDigestName.name, MessageDigest.getInstance(platformDigestName.name).digest(bytes))
 
-        override fun hash(inputStream: InputStream, digestAlgorithmName: DigestAlgorithmName): SecureHash {
-            val messageDigest = MessageDigest.getInstance(digestAlgorithmName.name)
+        override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
+            val messageDigest = MessageDigest.getInstance(platformDigestName.name)
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             while(true) {
                 val read = inputStream.read(buffer)
                 if(read <= 0) break
                 messageDigest.update(buffer, 0, read)
             }
-            return SecureHash(digestAlgorithmName.name, messageDigest.digest())
+            return SecureHash(platformDigestName.name, messageDigest.digest())
         }
 
-        override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =
-            MessageDigest.getInstance(digestAlgorithmName.name).digestLength
+        override fun digestLength(platformDigestName: DigestAlgorithmName): Int =
+            MessageDigest.getInstance(platformDigestName.name).digestLength
     }
 }

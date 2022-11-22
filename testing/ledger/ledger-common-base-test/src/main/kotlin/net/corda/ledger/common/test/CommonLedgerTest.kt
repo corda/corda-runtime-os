@@ -18,8 +18,7 @@ import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 
 abstract class CommonLedgerTest {
     val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    val digestService =
-        DigestServiceImpl(PlatformDigestServiceImpl(cipherSchemeMetadata), null)
+    val digestService = DigestServiceImpl(PlatformDigestServiceImpl(cipherSchemeMetadata), null)
     val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val jsonMarshallingService = JsonMarshallingServiceImpl()
     val jsonValidator = JsonValidatorImpl()

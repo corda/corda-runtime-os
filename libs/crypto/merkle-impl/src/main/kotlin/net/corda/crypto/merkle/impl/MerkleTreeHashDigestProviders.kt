@@ -13,7 +13,7 @@ import net.corda.v5.crypto.merkle.MerkleProofType
 import java.nio.charset.Charset
 import java.security.SecureRandom
 
-// TODO: Confirm if all DigestService references in this file should be indeed sandbox.
+// TODO Confirm if all DigestService references in this file should be indeed sandbox.
 
 private fun createNonce(random: SecureRandom): ByteArray {
     val nonce = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH)

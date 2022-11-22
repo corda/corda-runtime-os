@@ -15,9 +15,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-// DigestServiceImpl is basically a wrapper around `PlatformDigestService` so main hashing functionality is tested
-// in PlatformDigestServiceImplTests. Here we will only test it looks for custom digest algorithms if not found
-// in platform ones.
+// DigestServiceImpl is basically a wrapper around `PlatformDigestServiceImpl` so main hashing functionality
+// is tested in `PlatformDigestServiceImplTest`. Here we will only assert wrapping behavior
+// i.e. it looks for custom digest algorithms if not found in platform ones.
 class DigestServiceImplTest {
     private companion object {
         val DUMMY_DIGEST = "DUMMY_DIGEST_NAME"
