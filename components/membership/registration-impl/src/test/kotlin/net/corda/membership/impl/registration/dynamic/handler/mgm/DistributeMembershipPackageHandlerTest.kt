@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
@@ -238,8 +239,9 @@ class DistributeMembershipPackageHandlerTest {
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? DistributeMembershipPackage)
-                assertThat(value).isNotNull
+                assertThat((it.value as? RegistrationCommand)?.command)
+                    .isNotNull
+                    .isInstanceOf(DistributeMembershipPackage::class.java)
             }
     }
 
@@ -253,8 +255,9 @@ class DistributeMembershipPackageHandlerTest {
             .hasSize(1)
             .allSatisfy {
                 assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-                val value = (it.value as? DistributeMembershipPackage)
-                assertThat(value).isNotNull
+                assertThat((it.value as? RegistrationCommand)?.command)
+                    .isNotNull
+                    .isInstanceOf(DistributeMembershipPackage::class.java)
             }
     }
 
