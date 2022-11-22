@@ -404,6 +404,17 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
+    fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
+        whenever(verifier.verify(eq(mgmSignatureGroupParameters), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(groupParametersWriterService, never()).put(any(), any())
+    }
+
+    @Test
     fun `verification is called with the correct data on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
