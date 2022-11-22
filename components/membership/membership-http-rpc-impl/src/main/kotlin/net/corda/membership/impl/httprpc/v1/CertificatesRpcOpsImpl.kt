@@ -195,6 +195,58 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
+    override fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.getCertificateAliases(
+                usageType,
+                holdingIdentityShortHash,
+            ).toList()
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
+        }
+    }
+
+    override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.retrieveCertificates(
+                holdingIdentityShortHash,
+                usageType,
+                alias
+            ) ?: throw ResourceNotFoundException(alias, "alias")
+        } catch (e: ResourceNotFoundException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
+        }
+    }
+
     override val targetInterface = CertificatesRpcOps::class.java
 
     override val protocolVersion = 1

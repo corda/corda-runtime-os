@@ -160,8 +160,10 @@ class MessageBusIntegrationTests {
 
     private lateinit var backingStore: ThrowableBackingStoreImplFake
 
+    private val groupId = UUID.randomUUID().toString()
+
     private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", "Test Group").toAvro()
+        "C=GB, L=London, O=Alice", groupId).toAvro()
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =

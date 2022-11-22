@@ -440,6 +440,7 @@ class SynchronisationIntegrationTest {
                     assertThat(member.groupId).isEqualTo(groupId)
                     assertThat(member.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 }
+            it.assertThat(membershipPackage.groupParameters).isNotNull
         }
     }
 

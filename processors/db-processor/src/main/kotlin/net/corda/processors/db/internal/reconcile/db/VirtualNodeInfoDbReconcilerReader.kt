@@ -11,13 +11,13 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import java.time.Instant
 import java.util.stream.Stream
-import javax.persistence.EntityManager
 
 /**
  * Gets and converts the database entity classes to 'Corda' classes
  */
-val getAllVirtualNodesDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
-    { em -> virtualNodeEntitiesToVersionedRecords(em.findAllVirtualNodes()) }
+val getAllVirtualNodesDBVersionedRecords
+        : (ReconciliationContext) -> Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
+    { context -> virtualNodeEntitiesToVersionedRecords(context.entityManager.findAllVirtualNodes()) }
 
 fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity>)
         : Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =

@@ -5,7 +5,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,6 +23,7 @@ import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_
 import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC2
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC2_OUTPUT
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
@@ -126,8 +126,6 @@ class EventLogSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        val records = getDemoRecords(EVENT_LOG_TOPIC2, 5, 2)
-        assertThat(records.size).isEqualTo(10)
         topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE))
 
         val coordinator =
@@ -141,50 +139,56 @@ class EventLogSubscriptionIntegrationTest {
             }
         coordinator.start()
 
+        //publish 20 records
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_LOG_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 2))
-        assertThat(futures.size).isEqualTo(1)
-        futures[0].get()
+        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4)).forEach { it.get() }
 
-        val latch = CountDownLatch(30)
-        val secondSubConfig = TEST_CONFIG.withValue(
-            INSTANCE_ID,
-            ConfigValueFactory.fromAnyRef(2)
-        )
-
-        val eventLogSub1 = createSub(TestEventLogProcessor(latch, null, "1"), TEST_CONFIG)
-        val eventLogSub2 = createSub(TestEventLogProcessor(latch, null, "2"), secondSubConfig)
-
+        //Start 2 subscriptions
+        val confirmProcessorLatch = CountDownLatch(20)
+        val eventLogSub1 = createSub(TestEventLogProcessor(latch = confirmProcessorLatch, outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "1"))
+        val eventLogSub2 = createSub(TestEventLogProcessor(latch = confirmProcessorLatch, outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "2"))
         coordinator.followStatusChangesByName(setOf(eventLogSub1.subscriptionName, eventLogSub2.subscriptionName))
-
         eventLogSub1.start()
         eventLogSub2.start()
 
+        //verify subscription has started and has begun processing
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
-            assertThat(latch.count).isEqualTo(20)
+            assertThat(confirmProcessorLatch.count).isEqualTo(0)
         }
 
+        //close subscription
         eventLogSub1.close()
         eventLogSub2.close()
 
-        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 10, 2)).forEach { it.get() }
-
-        val eventLogSub1part2 = createSub(TestEventLogProcessor(latch, null, "3"), TEST_CONFIG)
-        val eventLogSub2part2 = createSub(TestEventLogProcessor(latch, null, "4"), secondSubConfig)
-
+        //publish 20 more records and start new subscriptions
+        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4)).forEach { it.get() }
+        val eventLogSub1part2 = createSub(TestEventLogProcessor(outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "3"))
+        val eventLogSub2part2 = createSub(TestEventLogProcessor(outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "4"))
         eventLogSub1part2.start()
         eventLogSub2part2.start()
-        assertTrue(latch.await(40, TimeUnit.SECONDS))
+
+        //verify all 40 records make it to output topic
+        val verifyOutputs = CountDownLatch(40)
+        val verifySub = createSub(TestEventLogProcessor(verifyOutputs, null, "1"), EVENT_LOG_TOPIC2_OUTPUT)
+        verifySub.start()
+        verifyOutputs.await(10, TimeUnit.SECONDS)
+
+        //close resources
+        verifySub.close()
         eventLogSub1part2.close()
         eventLogSub2part2.close()
         publisher.close()
     }
 
-    fun createSub(processor: TestEventLogProcessor, config: SmartConfig): Subscription<String, DemoRecord> {
+    fun createSub(processor: TestEventLogProcessor, topic: String = EVENT_LOG_TOPIC2): Subscription<String, DemoRecord> {
+        val config = TEST_CONFIG.withValue(
+            INSTANCE_ID,
+            ConfigValueFactory.fromAnyRef(processor.id)
+        )
         return subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$EVENT_LOG_TOPIC2-group", EVENT_LOG_TOPIC2),
+            SubscriptionConfig("$topic-group", topic),
             processor,
             config,
             null

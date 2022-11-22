@@ -4,10 +4,13 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.SerializationServiceImpl
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.helper.createSerializerFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
-import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
@@ -41,17 +44,14 @@ abstract class CommonLedgerIntegrationTest {
 
     open val testingCpb = "/META-INF/ledger-common-empty-app.cpb"
 
-    val testSerializationContext = AMQP_STORAGE_CONTEXT
-
-    lateinit var flowSandboxService: FlowSandboxService
-    lateinit var sandboxGroupContext1: SandboxGroupContext
+    private lateinit var flowSandboxService: FlowSandboxService
+    lateinit var sandboxGroupContext: SandboxGroupContext
     lateinit var jsonMarshallingService: JsonMarshallingService
     lateinit var jsonValidator: JsonValidator
-    lateinit var sandboxSerializationService1: SerializationService
-    lateinit var sandboxSerializationService2: SerializationService
     lateinit var wireTransactionFactory: WireTransactionFactory
     lateinit var wireTransaction: WireTransaction
     lateinit var kryoSerializer: CheckpointSerializer
+    lateinit var serializationService: SerializationService
 
     @BeforeAll
     fun setup(
@@ -69,26 +69,25 @@ abstract class CommonLedgerIntegrationTest {
     open fun initialize(setup: SandboxSetup) {
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
 
-        val virtualNode1 = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
-        val virtualNodeInfo1 = virtualNode1.loadVirtualNode(testingCpb)
-        sandboxGroupContext1 = flowSandboxService.get(virtualNodeInfo1.holdingIdentity)
-        setup.withCleanup { virtualNode1.unloadSandbox(sandboxGroupContext1) }
+        val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+        val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
+        sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+        setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
 
-        val virtualNode2 = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
-        val virtualNodeInfo2 = virtualNode2.loadVirtualNode(testingCpb)
-        val sandboxGroupContext2 = flowSandboxService.get(virtualNodeInfo2.holdingIdentity)
-        setup.withCleanup { virtualNode2.unloadSandbox(sandboxGroupContext2) }
-
-        jsonMarshallingService = sandboxGroupContext1.getSandboxSingletonService()
-        jsonValidator = sandboxGroupContext1.getSandboxSingletonService()
-        wireTransactionFactory = sandboxGroupContext1.getSandboxSingletonService()
-        kryoSerializer = sandboxGroupContext1.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
+        jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
+        jsonValidator = sandboxGroupContext.getSandboxSingletonService()
+        wireTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+        kryoSerializer = sandboxGroupContext.getObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER)
             ?: fail("No CheckpointSerializer in sandbox context")
-        sandboxSerializationService1 = sandboxGroupContext1.getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
-            ?: fail("No Serializer in sandbox context")
-        sandboxSerializationService2 = sandboxGroupContext2.getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
-            ?: fail("No Serializer in sandbox context")
+        serializationService = SerializationServiceImpl(
+            // Use different SerializerFactories for serializationOutput and deserializationInput to not let them share
+            // anything unintentionally
+            serializationOutput = SerializationOutput(sandboxGroupContext.createSerializerFactory()),
+            deserializationInput = DeserializationInput(sandboxGroupContext.createSerializerFactory()),
+            context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
+        )
 
         wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)
+
     }
 }

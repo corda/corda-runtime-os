@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.consensual
 
+import net.corda.ledger.persistence.common.TuplesMapper
 import javax.persistence.Tuple
 
 /**
@@ -23,7 +24,7 @@ class ComponentGroupListsTuplesMapper: TuplesMapper<List<ByteArray>> {
             check(componentsList.size == leafIdx) {
                 // Missing leaf indices indicate that data is corrupted
                 val id = columns[0] as String
-                "Missing data for transaction with ID: $id, groupIdx: $groupIdx, leafIdx: ${componentsList.size}"
+                "Missing data for consensual transaction with ID: $id, groupIdx: $groupIdx, leafIdx: ${componentsList.size}"
             }
             componentsList.add(data)
         }
