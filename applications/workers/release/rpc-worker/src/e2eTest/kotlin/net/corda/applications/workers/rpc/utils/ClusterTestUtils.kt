@@ -41,7 +41,7 @@ fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
     isMgm: Boolean = false
 ): String {
-    clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
+    return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
             if (isMgm) {
@@ -61,7 +61,7 @@ fun E2eCluster.uploadCpi(
                 size = jar.size.toLong(),
             )
             val id = cpi(upload).id
-            return eventually {
+            eventually {
                 val status = try {
                     // status() throws exceptions for certain Http errors rather than returning an error. This means we
                     // must catch any errors expected due to asynchronicity here and fail them, so the eventually loop
