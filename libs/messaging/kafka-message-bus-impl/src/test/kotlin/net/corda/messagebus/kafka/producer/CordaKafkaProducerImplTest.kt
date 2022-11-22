@@ -8,7 +8,7 @@ import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentExceptionProducerRequiresReset
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -20,6 +20,7 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.TimeoutException
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -159,7 +160,7 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testBeginTransactionIllegalState() {
         doThrow(IllegalStateException("")).whenever(producer).beginTransaction()
-        assertThrows<CordaMessageAPIIntermittentExceptionProducerRequiresReset> { cordaKafkaProducer.beginTransaction() }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.beginTransaction() }
         verify(producer, times(1)).beginTransaction()
     }
 
@@ -187,7 +188,7 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testTryCommitTransactionRetry() {
         whenever(producer.commitTransaction()).thenThrow(TimeoutException()).thenThrow(InterruptException(""))
-        assertThrows<CordaMessageAPIIntermittentExceptionProducerRequiresReset> { cordaKafkaProducer.commitTransaction() }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(2)).commitTransaction()
     }
 
@@ -341,6 +342,20 @@ class CordaKafkaProducerImplTest {
             )
         }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+    }
+
+    @Test
+    fun testCatchinggIntermittentExceptionsCatchesProducerRestartErrors() {
+        // This test ensures that clients of producers who wish to restart their producers on any intermittent error
+        // need only catch the more generic exception. If this relationship ever changes, this test would fail.
+        // Corda Subscriptions rely on this behaviour.
+        try {
+            throw CordaMessageAPIProducerRequiresReset("")
+        } catch (ex: CordaMessageAPIIntermittentException) {
+            // do nothing
+        } catch (t: Throwable) {
+            fail("Catching CordaMessageAPIIntermittentException does not include producer restart exceptions")
+        }
     }
 
     @Test

@@ -22,15 +22,11 @@ import java.util.concurrent.TimeUnit
  */
 @Suppress("SpreadOperator")
 fun waitOnPublisherFutures(
-    futures: List<CompletableFuture<Unit>>?,
+    futures: List<CompletableFuture<Unit>>,
     timeout: Long,
     unit: TimeUnit,
     errorHandler: (Exception, Boolean) -> Unit
 ) {
-    if (futures == null) {
-        errorHandler(IllegalArgumentException("Futures list was null"), false)
-        return
-    }
     if (futures.isEmpty()) {
         errorHandler(IllegalArgumentException("Futures list was empty"), false)
         return

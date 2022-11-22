@@ -8,7 +8,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentExceptionProducerRequiresReset
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
@@ -219,7 +219,7 @@ class CordaPublisherImplTest {
 
     @Test
     fun testTransactionCommitIntermittentFailureRequiresNewPublisher() {
-        doThrow(CordaMessageAPIIntermittentExceptionProducerRequiresReset("")).whenever(producer).commitTransaction()
+        doThrow(CordaMessageAPIProducerRequiresReset("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         // Intermittent failures will retry once

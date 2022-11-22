@@ -9,7 +9,7 @@ import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentExceptionProducerRequiresReset
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -113,7 +113,7 @@ class CordaKafkaProducerImpl(
             // We have retired once, we are not retrying again, so the only other option compatible with the producer
             // contract is to close the producer without aborting. That is the responsibility of the client, which we
             // notify by throwing the relevant exception.
-            throw CordaMessageAPIIntermittentExceptionProducerRequiresReset("Unexpected error occurred committing transaction")
+            throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred committing transaction")
         }
     }
 
@@ -235,7 +235,7 @@ class CordaKafkaProducerImpl(
             is IllegalStateException -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
-                throw CordaMessageAPIIntermittentExceptionProducerRequiresReset("Error occurred $errorString", ex)
+                throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
             is TimeoutException,
@@ -257,7 +257,7 @@ class CordaKafkaProducerImpl(
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
                 // must close down, nor has it told us we can abort and retry. In this instance the most sensible thing
                 // for the client to do would be to close this producer and create a new one.
-                throw CordaMessageAPIIntermittentExceptionProducerRequiresReset("Unexpected error occurred $errorString", ex)
+                throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred $errorString", ex)
             }
         }
     }

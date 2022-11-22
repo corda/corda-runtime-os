@@ -8,7 +8,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentExceptionProducerRequiresReset
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
@@ -19,11 +19,11 @@ import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 
 /**
- * Publisher will use a kafka [producer] to communicate with kafka. Failed producers are closed and recreated.
+ * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
  * Records are sent via transactions if the instanceId provided in the configuration is not null.
  * Record values are serialized to [ByteBuffer] using [avroSchemaRegistry]
- * Record keys are serialized using kafka configured serializer.
- * Producer will automatically attempt resends based on [kafkaConfig].
+ * Record keys are serialized using whatever serializer has been configured for the message bus.
+ * Producer will automatically attempt resends based on the config.
  * Any Exceptions thrown during publish are returned in a [CompletableFuture]
  */
 internal class CordaPublisherImpl(
@@ -41,7 +41,7 @@ internal class CordaPublisherImpl(
     /**
      * Publish a record.
      * Records are published via transactions if an [transactionalId] is configured
-     * Publish will retry recoverable transaction related errors based on [kafkaConfig]
+     * Publish will retry recoverable transaction related errors based on the producer config.
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
      * Any intermittent errors are returned in the future as [CordaMessageAPIIntermittentException]
      * Note there is no contractual need to recreate the publisher under these circumstances because it resets itself by
@@ -104,7 +104,7 @@ internal class CordaPublisherImpl(
 
     /**
      * Send list of [records] as a transaction. It is not necessary to handle exceptions for each send in a transaction
-     * as this is handled by the [KafkaProducer] commitTransaction operation. commitTransaction will execute all sends synchronously
+     * as this is handled by the [CordaProducer] commitTransaction operation. commitTransaction will execute all sends synchronously
      * and will fail to send all if any individual sends fail
      * Set the [future] with the result of the transaction.
      * @return future set to true if transaction was successful.
@@ -135,6 +135,9 @@ internal class CordaPublisherImpl(
     private fun tryWithSingleRecoveryAttempt(block: () -> Unit) {
         try {
             block()
+        } catch (ex: CordaMessageAPIProducerRequiresReset) {
+            // Explicitly block this from being retried
+            throw ex
         } catch (ex: CordaMessageAPIIntermittentException) {
             log.warn("Attempting a single transaction retry")
             block()
@@ -153,9 +156,9 @@ internal class CordaPublisherImpl(
             }
         } catch (ex: Exception) {
             when (ex) {
-                is CordaMessageAPIIntermittentExceptionProducerRequiresReset -> {
+                is CordaMessageAPIProducerRequiresReset -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
+                        "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send, resetting producer", ex, future, false
                     )
                     resetProducer()
@@ -163,14 +166,14 @@ internal class CordaPublisherImpl(
 
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
+                        "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, false
                     )
                 }
 
                 else -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
+                        "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, true
                     )
                 }
@@ -183,10 +186,10 @@ internal class CordaPublisherImpl(
      * Helper function to set a [future] result based on the presence of an [exception]
      */
     private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>, topic: String) {
-        val message = "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
+        val message = "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                 "for topic $topic failed to send"
-        when {
-            (exception == null) -> {
+        when (exception) {
+            null -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
                 if (!config.transactional) {
                     future.complete(Unit)
@@ -195,12 +198,12 @@ internal class CordaPublisherImpl(
                 }
             }
 
-            exception is CordaMessageAPIFatalException -> {
-                log.warn("$message. Fatal Kafka producer error occurred.", exception)
+            is CordaMessageAPIFatalException -> {
+                log.warn("$message. Fatal producer error occurred.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             }
 
-            exception is CordaMessageAPIIntermittentException || exception is CordaMessageAPIIntermittentExceptionProducerRequiresReset -> {
+            is CordaMessageAPIIntermittentException -> {
                 log.warn(message, exception)
                 future.completeExceptionally(CordaMessageAPIIntermittentException(message, exception))
             }
@@ -222,7 +225,7 @@ internal class CordaPublisherImpl(
         fatal: Boolean
     ) {
         if (fatal) {
-            log.warn("$message. Fatal error, publisher cannot continue.", exception)
+            log.error("$message. Fatal error, publisher cannot continue.", exception)
             future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
         } else {
             log.info(message, exception)
@@ -252,7 +255,7 @@ internal class CordaPublisherImpl(
             cordaProducer.close()
         } catch (ex: Exception) {
 
-            log.warn("CordaKafkaPublisher failed to close producer safely. ClientId: ${config.clientId}", ex)
+            log.warn("CordaPublisherImpl failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }
 }
