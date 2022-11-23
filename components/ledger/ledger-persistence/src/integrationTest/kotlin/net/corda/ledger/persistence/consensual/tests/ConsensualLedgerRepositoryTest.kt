@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.consensual.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.db.persistence.testkit.components.SandboxService
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
@@ -80,8 +81,9 @@ class ConsensualLedgerRepositoryTest {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
+            val sandboxService = setup.fetchService<SandboxService>(TIMEOUT_MILLIS)
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
-            val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+            val ctx = sandboxService.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             wireTransactionFactory = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
             jsonValidator = ctx.getSandboxSingletonService()

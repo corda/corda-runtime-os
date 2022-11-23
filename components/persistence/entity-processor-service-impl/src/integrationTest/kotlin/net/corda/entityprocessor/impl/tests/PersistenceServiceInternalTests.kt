@@ -21,6 +21,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.SandboxService
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.BasicMocks
@@ -107,6 +108,7 @@ class PersistenceServiceInternalTests {
     private val lifecycle = EachTestLifecycle()
 
     private lateinit var virtualNode: VirtualNodeService
+    private lateinit var sanboxService: SandboxService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
@@ -133,6 +135,7 @@ class PersistenceServiceInternalTests {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             virtualNode = setup.fetchService(timeout = 10000)
+            sanboxService = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
             responseFactory = setup.fetchService(timeout = 10000)
@@ -720,7 +723,7 @@ class PersistenceServiceInternalTests {
 
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()) =
         EntitySandboxServiceFactory().create(
-            virtualNode.sandboxGroupContextComponent,
+            sanboxService.sandboxGroupContextComponent,
             cpiInfoReadService,
             virtualNodeInfoReadService,
             dbConnectionManager

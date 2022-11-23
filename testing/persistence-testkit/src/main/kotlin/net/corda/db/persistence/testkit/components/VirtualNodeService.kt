@@ -3,8 +3,6 @@ package net.corda.db.persistence.testkit.components
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.DbSchema
-import net.corda.persistence.common.EntitySandboxService
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.virtualnode.VirtualNodeInfo
@@ -24,12 +22,6 @@ class VirtualNodeService @Activate constructor(
 
     @Reference
     private val liquibaseSchemaMigrator: LiquibaseSchemaMigrator,
-
-    @Reference
-    val entitySandboxService: EntitySandboxService,
-
-    @Reference
-    val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) {
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
@@ -38,10 +30,6 @@ class VirtualNodeService @Activate constructor(
     }
 
     private var connectionCounter = AtomicInteger(0)
-
-    init {
-        sandboxGroupContextComponent.initCache(2)
-    }
 
     fun load(resourceName: String): VirtualNodeInfo {
         val virtualNodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())

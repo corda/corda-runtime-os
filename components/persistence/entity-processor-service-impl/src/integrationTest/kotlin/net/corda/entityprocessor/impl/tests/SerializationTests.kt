@@ -2,6 +2,7 @@ package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.SandboxService
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
@@ -38,6 +39,7 @@ class SerializationTests {
     private val lifecycle = EachTestLifecycle()
 
     private lateinit var virtualNode: VirtualNodeService
+    private lateinit var sandboxService: SandboxService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
@@ -54,6 +56,7 @@ class SerializationTests {
         lifecycle.accept(sandboxSetup) { setup ->
             // TODO - look at using generic fake implementations for these.
             virtualNode = setup.fetchService(timeout = 5000)
+            sandboxService = setup.fetchService(timeout = 5000)
             cpiInfoReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
         }
@@ -65,7 +68,7 @@ class SerializationTests {
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                sandboxService.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
                 BasicMocks.dbConnectionManager()

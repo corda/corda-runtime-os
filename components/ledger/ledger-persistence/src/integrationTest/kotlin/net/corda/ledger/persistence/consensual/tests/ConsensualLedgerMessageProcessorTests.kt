@@ -13,6 +13,7 @@ import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.SandboxService
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -77,6 +78,7 @@ class ConsensualLedgerMessageProcessorTests {
 
     // For sandboxing
     private lateinit var virtualNode: VirtualNodeService
+    private lateinit var sanboxService: SandboxService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
@@ -95,6 +97,7 @@ class ConsensualLedgerMessageProcessorTests {
         lifecycle.accept(sandboxSetup) { setup ->
             externalEventResponseFactory = setup.fetchService(TIMEOUT_MILLIS)
             virtualNode = setup.fetchService(TIMEOUT_MILLIS)
+            sanboxService = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
@@ -104,7 +107,7 @@ class ConsensualLedgerMessageProcessorTests {
     @Test
     fun `persistTransaction for consensual ledger deserialises the transaction and persists`() {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
+        val ctx = sanboxService.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
         val transaction = createTestTransaction(ctx)
 
@@ -116,7 +119,7 @@ class ConsensualLedgerMessageProcessorTests {
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
-            virtualNode.entitySandboxService,
+            sanboxService.entitySandboxService,
             delegatedRequestHandlerSelector,
             externalEventResponseFactory
         )
