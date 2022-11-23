@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.exceptions.NoProtocolAnnotationException
+import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.ConcurrentFlowMessaging
 import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFiber
@@ -11,6 +12,7 @@ import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationServi
 import net.corda.simulator.runtime.signing.SimWithJsonSigningService
 import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.utils.checkAPIAvailability
+import net.corda.simulator.runtime.utils.availableAPIs
 import net.corda.simulator.runtime.utils.injectIfRequired
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
@@ -29,6 +31,7 @@ import net.corda.v5.base.util.contextLogger
 /**
  * Injector for default services for Simulator.
  */
+@Suppress("TooManyFunctions")
 class DefaultServicesInjector(private val configuration: SimulatorConfiguration) : FlowServicesInjector {
     private companion object {
         val log = contextLogger()
@@ -43,10 +46,11 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
      * </ul>
      * As with the real Corda, injected service properties must be marked with the @CordaInject annotation.
      *
-     * @flow The flow to inject services into
-     * @member The name of the "virtual node"
-     * @protocolLookUp The "fiber" through which flow messaging will look up peers
-     * @flowFactory A factory for constructing flows
+     * @param flow The flow to inject services into.
+     * @param member The name of the "virtual node".
+     * @param protocolLookUp The "fiber" through which flow messaging will look up peers.
+     * @param flowFactory A factory for constructing flows.
+     * @param keystore The store for members' generated keys.
      */
     override fun injectServices(
         flow: Flow,
@@ -56,19 +60,47 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         keyStore: SimKeyStore
     ) {
         log.info("Injecting services into ${flow.javaClass} for \"$member\"")
-        checkAPIAvailability(flow)
-        flow.injectIfRequired(JsonMarshallingService::class.java) { createJsonMarshallingService() }
-        flow.injectIfRequired(FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
-        flow.injectIfRequired(FlowMessaging::class.java) {
+        checkAPIAvailability(flow, configuration)
+        
+        doInject(member, flow, JsonMarshallingService::class.java) { createJsonMarshallingService() }
+        doInject(member, flow, FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
+        doInject(member, flow, FlowMessaging::class.java) {
             createFlowMessaging(configuration, flow, member, fiber, flowFactory)
         }
-        flow.injectIfRequired(MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
-        flow.injectIfRequired(SigningService::class.java) {
+        doInject(member, flow, MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
+        doInject(member, flow, SigningService::class.java) {
             getOrCreateSigningService(SimpleJsonMarshallingService(), keyStore)
         }
-        flow.injectIfRequired(DigitalSignatureVerificationService::class.java) { createVerificationService() }
-        flow.injectIfRequired(PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
-        flow.injectIfRequired(SignatureSpecService::class.java) { createSpecService() }
+        doInject(member, flow, DigitalSignatureVerificationService::class.java) { createVerificationService() }
+        doInject(member, flow, PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
+        doInject(member, flow, SignatureSpecService::class.java) { createSpecService() }
+
+        injectOtherCordaServices(flow, member)
+    }
+
+    private fun injectOtherCordaServices(flow: Flow, member: MemberX500Name) {
+        configuration.serviceOverrides.keys.minus(availableAPIs).forEach {
+            flow.injectIfRequired(it) {
+                log.info("Injecting custom service for ${it.simpleName}")
+                val serviceOverrideBuilder: ServiceOverrideBuilder<*> = configuration.serviceOverrides[it]!!
+                serviceOverrideBuilder.buildService(member, flow.javaClass, null)!!
+            }
+        }
+    }
+
+    private fun <T> doInject(member: MemberX500Name, flow: Flow, serviceClass: Class<T>, builder: () -> T) {
+        val resolvedBuilder: () -> Any = if (configuration.serviceOverrides.containsKey(serviceClass)) {{
+            @Suppress("UNCHECKED_CAST")
+            val serviceOverrideBuilder = configuration.serviceOverrides[serviceClass] as ServiceOverrideBuilder<T>
+            serviceOverrideBuilder.buildService(member, flow::class.java, builder.invoke())?: error(
+                "No override and no builder provided for Service $serviceClass, this should never happen"
+            )
+        }} else {{
+            builder.invoke() ?: error(
+                "No override and no builder provided for Service $serviceClass, this should never happen"
+            )
+        }}
+        flow.injectIfRequired(serviceClass, resolvedBuilder)
     }
 
     private fun createSpecService() : SignatureSpecService {
