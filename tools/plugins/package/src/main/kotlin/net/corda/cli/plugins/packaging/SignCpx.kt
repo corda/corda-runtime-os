@@ -8,11 +8,12 @@ import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
 
 @CommandLine.Command(
-    name = "sign"
+    name = "sign",
+    description = ["Re-signs the CPK/CPB/CPI, removing the existing signature unless multiple signatures is enabled"]
 )
 class SignCpx : Runnable {
 
-    @CommandLine.Parameters(index = "0", paramLabel = "CPI or CPB or CPK", description=["path of the input CPI or CPB or CPK"])
+    @CommandLine.Parameters(index = "0", paramLabel = "CPI or CPB or CPK", description=["Path of the input CPI or CPB or CPK"])
     lateinit var cpxFile: String
 
     @CommandLine.Option(
