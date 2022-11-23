@@ -65,6 +65,7 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
+    @Suppress("LongParameterList")
     fun persistTransactionRelevancy(
         entityManager: EntityManager,
         transactionId: String,
