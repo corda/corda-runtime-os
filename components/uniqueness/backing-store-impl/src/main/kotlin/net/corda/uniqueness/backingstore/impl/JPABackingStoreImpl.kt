@@ -15,10 +15,15 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.jpa.datamodel.*
+import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
@@ -26,12 +31,12 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
@@ -93,7 +98,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
         val entityManager = entityManagerFactory.createEntityManager()
         // Enable Hibernate JDBC batch and set the batch size on a per-session basis.
-        entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
+       entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
 
         @Suppress("TooGenericExceptionCaught")
         try {
@@ -198,8 +203,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 val txId = state.txHash
                 val stateIndex = state.stateIndex
                 // Build a list of State composite primary keys from a collection of states.
-                val statePk = UniquenessTxAlgoStateRefKey(txId.algorithm, txId.bytes, stateIndex)
-                statePks.add(statePk)
+                statePks.add(UniquenessTxAlgoStateRefKey(txId.algorithm, txId.bytes, stateIndex))
             }
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
             val multiLoadAccess =
@@ -236,7 +240,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 entityManager.unwrap(Session::class.java).byMultipleIds(UniquenessTransactionDetailEntity::class.java)
             val existing = multiLoadAccess.multiLoad(txPks)
 
-            existing.firstOrNull()?.let { txEntity ->
+            existing.forEach { txEntity ->
                 val result = when (txEntity.result) {
                     RESULT_ACCEPTED_REPRESENTATION -> {
                         UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
