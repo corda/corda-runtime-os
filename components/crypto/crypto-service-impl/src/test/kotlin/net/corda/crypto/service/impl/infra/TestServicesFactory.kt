@@ -28,7 +28,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
@@ -126,7 +125,7 @@ class TestServicesFactory {
     val coordinatorFactory: TestLifecycleCoordinatorFactoryImpl = TestLifecycleCoordinatorFactoryImpl()
 
     val platformDigest = PlatformDigestServiceImpl(schemeMetadata)
-    val digest: DigestService = DigestServiceImpl(platformDigest, null)
+    val digest = DigestServiceImpl(platformDigest, null)
 
     val verifier: SignatureVerificationService =
         SignatureVerificationServiceImpl(schemeMetadata, digest)
