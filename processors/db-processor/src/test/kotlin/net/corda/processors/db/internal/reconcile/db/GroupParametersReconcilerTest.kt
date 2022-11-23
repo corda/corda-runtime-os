@@ -119,7 +119,7 @@ class GroupParametersReconcilerTest {
         on { create(eq(avroGroupParameters)) } doReturn groupParameters
     }
 
-    /*private val reconciler: Reconciler = mock()
+    private val reconciler: Reconciler = mock()
     private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters> = mock()
     private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters> = mock()
     private val reconcilerFactory: ReconcilerFactory = mock {
@@ -133,7 +133,7 @@ class GroupParametersReconcilerTest {
                 any()
             )
         } doReturn reconciler
-    }*/
+    }
 
     private val groupParametersReconciler = GroupParametersReconciler(
         cordaAvroSerializationFactory,
@@ -142,9 +142,9 @@ class GroupParametersReconcilerTest {
         virtualNodeInfoReadService,
         jpaEntitiesRegistry,
         groupParametersFactory,
-        /*reconcilerFactory,
+        reconcilerFactory,
         reconcilerWriter,
-        reconcilerReader,*/
+        reconcilerReader,
     )
 
     @Nested
@@ -154,21 +154,21 @@ class GroupParametersReconcilerTest {
             groupParametersReconciler.updateInterval(1000)
 
             assertThat(groupParametersReconciler.dbReconciler).isNotNull
-            //assertThat(groupParametersReconciler.reconciler).isNotNull
+            assertThat(groupParametersReconciler.reconciler).isNotNull
         }
 
         @Test
         fun `Reader and reconciler is not rebuilt if it already exists`() {
             groupParametersReconciler.updateInterval(1000)
             val originalDbReconciler = groupParametersReconciler.dbReconciler
-            //verify(reconciler, times(1)).start()
+            verify(reconciler, times(1)).start()
 
             groupParametersReconciler.updateInterval(1000)
             val currentDbReconciler = groupParametersReconciler.dbReconciler
 
             assertThat(originalDbReconciler).isEqualTo(currentDbReconciler)
-            //verify(reconciler, times(1)).start()
-            //verify(reconciler, times(1)).updateInterval(any())
+            verify(reconciler, times(1)).start()
+            verify(reconciler, times(1)).updateInterval(any())
         }
     }
 

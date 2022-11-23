@@ -35,9 +35,9 @@ class GroupParametersReconciler(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val groupParametersFactory: GroupParametersFactory,
-    /*private val reconcilerFactory: ReconcilerFactory,
+    private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters>,
-    private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,*/
+    private val reconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
         val logger = contextLogger()
@@ -61,14 +61,14 @@ class GroupParametersReconciler(
 
     @VisibleForTesting
     internal var dbReconciler: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
-    /*@VisibleForTesting
-    internal var reconciler: Reconciler? = null*/
+    @VisibleForTesting
+    internal var reconciler: Reconciler? = null
 
     override fun close() {
         dbReconciler?.stop()
         dbReconciler = null
-        /*reconciler?.stop()
-        reconciler = null*/
+        reconciler?.stop()
+        reconciler = null
     }
 
     override fun updateInterval(intervalMillis: Long) {
@@ -87,7 +87,7 @@ class GroupParametersReconciler(
             }
         }
 
-        /*if (reconciler == null) {
+        if (reconciler == null) {
             reconciler = reconcilerFactory.create(
                 dbReader = dbReconciler!!,
                 kafkaReader = reconcilerReader,
@@ -99,7 +99,7 @@ class GroupParametersReconciler(
         } else {
             logger.info("Updating Group Parameters ${Reconciler::class.java.name}")
             reconciler!!.updateInterval(intervalMillis)
-        }*/
+        }
     }
 
     private val reconciliationContextFactory = {
