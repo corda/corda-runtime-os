@@ -27,6 +27,7 @@ dependencies {
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:metrics")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")

@@ -35,6 +35,11 @@ object CordaMetrics {
          * Time it took to execute a message pattern processor
          */
         object MessageProcessorTime : Metric<Timer>("messaging.processor.time", Metrics::timer)
+
+        /**
+         * Time it took for a flow to complete sucessfully or to error.
+         */
+        object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
     }
 
     enum class Tag(val value: String) {
@@ -69,6 +74,22 @@ object CordaMetrics {
          * Message pattern clientId for which the metric is applicable.
          */
         MessagePatternClientId("messagePatternClientId"),
+
+        /**
+         * Flow class for which the metric is applicable.
+         */
+        FlowClass("flowClass"),
+
+
+        /**
+         * Flow Id for which the metric is applicable.
+         */
+        FlowId("flowId"),
+
+        /**
+         * The status of the operation. Can be used to indicate whether an operation was successful or failed.
+         */
+        OperationStatus("operationStatus"),
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
