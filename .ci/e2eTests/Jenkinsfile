@@ -64,6 +64,7 @@ pipeline {
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
+        booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
     }
 
     environment {
@@ -217,8 +218,10 @@ pipeline {
                 createSummary("yellow.png").appendText("<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/namespace_details?form.namespace=${NAMESPACE}&form.cluster_name=eks-e2e&form.period.earliest=0&form.period.latest=&form.span=5m&form.pod=*&form.event_message=*'>Splunk K8s E2E Dashboard</a>", false)
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
+                if (!params.KEEP_NS) {
+                    sh 'kubectl delete ns "${NAMESPACE}"'
+                }
             }
-             sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
 }
