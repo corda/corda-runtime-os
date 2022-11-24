@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
@@ -16,7 +17,6 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import org.osgi.service.component.annotations.Component
-import java.time.Instant
 
 @Component
 class SessionManagerImpl : SessionManager {
@@ -222,7 +222,7 @@ class SessionManagerImpl : SessionManager {
             val nonAckUndeliveredMessages = undeliveredMessages.filter { it.payload !is SessionAck }
             if (status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
                 status = SessionStateType.CLOSED
-            } else if (status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
+            } else if (status == SessionStateType.CREATED && !nonAckUndeliveredMessages.any { it.sequenceNum == 1 }) {
                 status = SessionStateType.CONFIRMED
             }
         }
@@ -237,7 +237,9 @@ class SessionManagerImpl : SessionManager {
      */
     private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
         val receivedEventsState = sessionState.receivedEventsState
-        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages
+            .filter { it.sequenceNum > receivedEventsState.lastProcessedSequenceNum }
+            .map { it.sequenceNum }
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
         return SessionEvent.newBuilder()
             .setMessageDirection(MessageDirection.OUTBOUND)

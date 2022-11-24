@@ -2,10 +2,10 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
@@ -16,7 +16,10 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.InputStream
+import java.lang.management.ManagementFactory
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
@@ -99,10 +102,10 @@ class WorkerHelpers {
             return url.openStream()
         }
 
-        /** Sets up the [healthMonitor] based on the [params]. */
-        fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: DefaultWorkerParams) {
-            if (!params.disableHealthMonitor) {
-                healthMonitor.listen(params.healthMonitorPort)
+        /** Sets up the [workerMonitor] based on the [params]. */
+        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams, workerType: String) {
+            if (!params.disableWorkerMonitor) {
+                workerMonitor.listen(params.workerMonitorPort, workerType)
             }
         }
 
@@ -131,6 +134,38 @@ class WorkerHelpers {
             }
 
             return false
+        }
+
+        /**
+         * Logs info about Worker startup process, including info from current process and [PlatformInfoProvider].
+         */
+        fun Logger.loggerStartupInfo(platformInfoProvider: PlatformInfoProvider) {
+            info("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}")
+            info("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}")
+
+            val processHandle = ProcessHandle.current()
+            val processInfo = processHandle.info()
+            info("PID: ${processHandle.pid()}")
+            info("Command: ${processInfo.command().orElse("Null")}")
+
+            val arguments = processInfo.arguments()
+            if (arguments.isPresent) {
+                arguments.get().forEachIndexed { i, arg ->
+                    if ("-ddatabase.pass" !in arg && "-spassphrase" !in arg) {
+                        info("argument $i, $arg")
+                    }
+                }
+            } else {
+                info("arguments: Null")
+            }
+
+            info("User: ${processInfo.user().orElse("Null")}")
+            info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
+            info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
+
+            val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
+            info("classpath: ${mxBeanInfo.classPath}")
+            info("VM ${mxBeanInfo.vmName} ${mxBeanInfo.vmVendor} ${mxBeanInfo.vmVersion}")
         }
     }
 }

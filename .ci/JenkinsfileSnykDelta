@@ -2,5 +2,6 @@
 
 snykDelta(
   snykOrgId: 'corda5-snyk-org-id',
-  snykTokenId: 'r3-snyk-corda5'
+  snykTokenId: 'r3-snyk-corda5',
+  snykAdditionalCommands: "--configuration-matching='^runtimeClasspath\$'"
 )

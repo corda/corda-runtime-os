@@ -24,6 +24,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-base"
+    implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-config-schema"
@@ -31,18 +32,17 @@ dependencies {
     api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:messaging:messaging")
-
+    implementation project(":libs:metrics")
     implementation project(':libs:packaging:packaging-core')
-    implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:sandbox')
+    implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:configuration:configuration-read-service")
 
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
+    runtimeOnly project(':components:virtual-node:sandbox-crypto')
     runtimeOnly project(':libs:sandbox-hooks')
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
@@ -60,7 +60,10 @@ dependencies {
     testRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    integrationTestImplementation project('test-impl-one')
+    integrationTestImplementation project('test-impl-two')
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:sandboxes:test-api')
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:security-manager-utilities')
@@ -77,6 +80,7 @@ dependencies {
     cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:crypto-custom-digest-two-consumer', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:sandbox-security-manager-one', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:sandbox-singletons-cpk', configuration: 'cordaCPB')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

@@ -17,7 +17,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
@@ -25,10 +27,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -59,10 +63,12 @@ class MGMOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "mgm-ops-client"
 
         private val clock = UTCClock()
+
+        private val TIMEOUT = 10.seconds
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun generateGroupPolicy(holdingIdentityShortHash: String): String
+        fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -81,16 +87,14 @@ class MGMOpsClientImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
-    override fun generateGroupPolicy(holdingIdentityShortHash: String) =
+    override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
         impl.generateGroupPolicy(holdingIdentityShortHash)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -154,7 +158,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityShortHash: String) =
+        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun close() = Unit
@@ -163,17 +167,17 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
+        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String {
 
             val holdingIdentity =
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))?.holdingIdentity
-                    ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
             val filteredMembers =
                 reader.lookup(holdingIdentity.x500Name)
-                    ?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
+                    ?:throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             if(filteredMembers.isMgm) {
 
@@ -182,13 +186,13 @@ class MGMOpsClientImpl @Activate constructor(
                         UUID.randomUUID().toString(),
                         clock.instant()
                     ),
-                    MGMGroupPolicyRequest(holdingIdentityShortHash)
+                    MGMGroupPolicyRequest(holdingIdentityShortHash.toString())
                 )
 
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            else throw CordaRuntimeException("Holding identity does not represent an MGM virtual node.")
+            else throw MemberNotAnMgmException(holdingIdentityShortHash)
 
         }
 
@@ -198,11 +202,10 @@ class MGMOpsClientImpl @Activate constructor(
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =
             response.groupPolicy.toString()
 
-        @Suppress("UNCHECKED_CAST")
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
-                logger.info("Sending request: $this")
-                val response = rpcSender.sendRequest(this).getOrThrow()
+                logger.debug { "Sending request: $this" }
+                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
                 require(response != null && response.responseContext != null && response.response != null) {
                     "Response cannot be null."
                 }

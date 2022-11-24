@@ -10,13 +10,14 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
     }
 
     private fun extractDataForFlow(
@@ -32,10 +33,11 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 initiatorToProtocol[flowName] = protocols
             }
+
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
                 if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
                     throw FlowFatalException(
-                        "Found a responder flow that does not implement ResponderFlow"
+                        "Flow ${flowClass.canonicalName} must implement ${ResponderFlow::class.simpleName}"
                     )
                 }
                 val protocol = flowClass.getAnnotation(InitiatedBy::class.java).protocol
@@ -61,7 +63,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         val protocolToResponder = mutableMapOf<FlowProtocol, String>()
 
         cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.flows }.forEach { flow ->
-            logger.info("Reading flow $flow for protocols")
+            logger.trace { "Reading flow $flow for protocols" }
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
             extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
         }

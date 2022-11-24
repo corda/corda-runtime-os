@@ -1,7 +1,6 @@
 package net.corda.messaging.subscription
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -19,6 +18,8 @@ import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
@@ -30,9 +31,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import net.corda.test.util.waitWhile
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -44,8 +48,8 @@ class StateAndEventSubscriptionImplTest {
     private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
+    private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
     private data class Mocks(
         val builder: StateAndEventBuilder,
@@ -105,14 +109,15 @@ class StateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll(any())
 
-        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
+            .createCoordinator(any(), any())
         doReturn("1".toByteArray()).`when`(cordaAvroSerializer).serialize(any())
 
         return Mocks(builder, producer, stateAndEventConsumer)
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription retries after intermittent exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
@@ -136,9 +141,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -156,10 +159,12 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription does not retry after fatal exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
@@ -183,9 +188,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
@@ -201,6 +204,45 @@ class StateAndEventSubscriptionImplTest {
         verify(eventConsumer, times(1)).poll(any())
         verify(producer, times(0)).beginTransaction()
         verify(rebalanceListener).close()
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
+    fun `state and event subscription looper stops thrown Throwables reaching the thread default handler`() {
+        val (builder, _, stateAndEventConsumer) = setupMocks(5)
+
+        val lock = ReentrantLock()
+        var subscriptionThread: Thread? = null
+        var uncaughtExceptionInSubscriptionThread: Throwable? = null
+        doAnswer {
+            lock.withLock {
+                subscriptionThread = Thread.currentThread()
+            }
+            // Here's our chance to make sure there are no uncaught exceptions in this, the subscription thread
+            subscriptionThread!!.setUncaughtExceptionHandler { _, e ->
+                lock.withLock {
+                    uncaughtExceptionInSubscriptionThread = e
+                }
+            }
+            @Suppress("TooGenericExceptionThrown")
+            throw Throwable()
+        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        // We must wait for the callback above in order we know what thread to join below
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
+        subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
+        assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
     }
 
     @Test
@@ -216,9 +258,7 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
 
@@ -271,10 +311,8 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning && !eventsPaused) {
-            Thread.sleep(10)
-        }
-        subscription.stop()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && !eventsPaused }
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -324,10 +362,8 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning && !eventsPaused) {
-            Thread.sleep(10)
-        }
-        subscription.stop()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && !eventsPaused }
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -383,10 +419,8 @@ class StateAndEventSubscriptionImplTest {
          * as we need to be sure the first poll has completed processing
          * before we go to the asserts
          */
-        while (subscription.isRunning && callCount <= 1) {
-            Thread.sleep(10)
-        }
-        subscription.stop()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -422,11 +456,13 @@ class StateAndEventSubscriptionImplTest {
         }.whenever(eventConsumer).poll(any())
 
         doAnswer {
-            CompletableFuture.completedFuture(StateAndEventProcessor.Response(
-                null,
-                listOf(outputRecord),
-                true
-            ))
+            CompletableFuture.completedFuture(
+                StateAndEventProcessor.Response(
+                    null,
+                    listOf(outputRecord),
+                    true
+                )
+            )
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
@@ -444,10 +480,8 @@ class StateAndEventSubscriptionImplTest {
          * as we need to be sure the first poll has completed processing
          * before we go to the asserts
          */
-        while (subscription.isRunning && callCount <= 1) {
-            Thread.sleep(10)
-        }
-        subscription.stop()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),

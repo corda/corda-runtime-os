@@ -1,7 +1,6 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -14,6 +13,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.util.stream.Stream
@@ -72,13 +72,13 @@ class CpiInfoReadServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         log.debug { "Cpi Info Reader Service component closing" }
         coordinator.close()
-        cpiInfoProcessor.close()
     }
 
-    override fun getAll(): List<CpiMetadata> = cpiInfoProcessor.getAll()
+    override fun getAll(): Collection<CpiMetadata> = cpiInfoProcessor.getAll()
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
         getAll()
@@ -93,7 +93,4 @@ class CpiInfoReadServiceImpl @Activate constructor(
             }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
-
-    override fun registerCallback(listener: CpiInfoListener): AutoCloseable =
-        cpiInfoProcessor.registerCallback(listener)
 }

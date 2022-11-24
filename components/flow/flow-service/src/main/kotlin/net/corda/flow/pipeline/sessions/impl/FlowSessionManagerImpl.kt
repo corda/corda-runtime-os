@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.sessions.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
@@ -21,8 +23,6 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Component(service = [FlowSessionManager::class])
 class FlowSessionManagerImpl @Activate constructor(
@@ -74,6 +74,7 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionToPayload: Map<String, ByteArray>,
         instant: Instant
     ): List<SessionState> {
+        validateSessionStates(checkpoint, sessionToPayload.keys, Operation.SENDING)
         return sessionToPayload.map { (sessionId, payload) ->
             sendSessionMessageToExistingSession(
                 checkpoint,
@@ -105,11 +106,12 @@ class FlowSessionManagerImpl @Activate constructor(
         throwable: Throwable,
         instant: Instant
     ): List<SessionState> {
+        val errorMessage = throwable.message ?: ""
         return sessionIds.map { sessionId ->
             sendSessionMessageToExistingSession(
                 checkpoint,
                 sessionId,
-                payload = SessionError(ExceptionEnvelope(throwable::class.qualifiedName, throwable.message)),
+                payload = SessionError(ExceptionEnvelope(throwable::class.qualifiedName, errorMessage)),
                 instant
             )
         }
@@ -125,6 +127,22 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
+    override fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState> {
+        return sessionIds.mapNotNull { sessionId ->
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
+            val receivedEventsState = sessionState.receivedEventsState
+            val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
+            receivedEventsState.undeliveredMessages.firstOrNull()?.let { message ->
+                if (message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose) {
+                    sessionState
+                } else null
+            }
+        }
+    }
+
     override fun acknowledgeReceivedEvents(eventsToAcknowledge: List<Pair<SessionState, SessionEvent>>) {
         for ((sessionState, eventToAcknowledgeProcessingOf) in eventsToAcknowledge) {
             sessionManager.acknowledgeReceivedEvent(sessionState, eventToAcknowledgeProcessingOf.sequenceNum)
@@ -132,6 +150,7 @@ class FlowSessionManagerImpl @Activate constructor(
     }
 
     override fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean {
+        validateSessionStates(checkpoint, sessionIds, Operation.RECEIVING)
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
@@ -153,13 +172,28 @@ class FlowSessionManagerImpl @Activate constructor(
         return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
     }
 
-    override fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>) {
+    private enum class Operation { SENDING, RECEIVING }
+
+    /**
+     * Validation only differs in that receiving messages can be more tolerant to sessions which are in the closing down
+     * state, before they are actually closed.
+     */
+    private fun validateSessionStates(
+        checkpoint: FlowCheckpoint,
+        sessionIds: Collection<String>,
+        operation: Operation
+    ) {
+        val validStatuses = when (operation) {
+            Operation.SENDING -> setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED)
+            Operation.RECEIVING -> setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        }
+
         val sessions = sessionIds.associateWith { checkpoint.getSessionState(it) }
         val missingSessionStates = sessions.filter { it.value == null }.map { it.key }.toList()
         val invalidSessions = sessions
             .map { it.value }
             .filterNotNull()
-            .filterNot { it.status == SessionStateType.CONFIRMED }
+            .filterNot { validStatuses.contains(it.status) }
             .toList()
 
         if (missingSessionStates.isEmpty() && invalidSessions.isEmpty()) {

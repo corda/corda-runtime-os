@@ -1,19 +1,31 @@
 package net.corda.membership.lib.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.EndpointInfo
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class EndpointInfoConverterTest {
     companion object {
-        private val endpoint = EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION)
+        private val endpointInfoFactory: EndpointInfoFactory = mock {
+            on { create(any(), any()) } doAnswer { invocation ->
+                mock {
+                    on { this.url } doReturn invocation.getArgument(0)
+                    on { this.protocolVersion } doReturn invocation.getArgument(1)
+                }
+            }
+        }
+        private val endpoint = endpointInfoFactory.create("https://localhost:10000")
         private val converters = listOf(EndpointInfoConverter())
     }
 
@@ -26,7 +38,10 @@ class EndpointInfoConverterTest {
             ),
             converters
         )
-        assertEquals(endpoint, memberContext.parse<EndpointInfo>("corda.endpoint"))
+        with(memberContext.parse<EndpointInfo>("corda.endpoint")) {
+            assertEquals(endpoint.url, this.url)
+            assertEquals(endpoint.protocolVersion, this.protocolVersion)
+        }
     }
 
     @Test
@@ -40,7 +55,8 @@ class EndpointInfoConverterTest {
         )
         val list = memberContext.parseList<EndpointInfo>("corda.endpoints")
         assertEquals(1, list.size)
-        assertEquals(endpoint, list[0])
+        assertEquals(endpoint.url, list[0].url)
+        assertEquals(endpoint.protocolVersion, list[0].protocolVersion)
     }
 
     @Test

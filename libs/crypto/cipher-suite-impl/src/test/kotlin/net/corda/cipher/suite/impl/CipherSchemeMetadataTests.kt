@@ -4,12 +4,13 @@ import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.cipher.suite.impl.infra.generateKeyPair
 import net.corda.cipher.suite.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.cipher.suite.impl.infra.signData
+import net.corda.crypto.impl.CompositeKeyImpl
+import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.impl.CordaSecureRandomService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -20,6 +21,7 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.ASN1EncodableVector
@@ -83,7 +85,7 @@ class CipherSchemeMetadataTests {
                     AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
                 ),
                 providerName = "SUN",
-                algorithmName = CompositeKey.KEY_ALGORITHM,
+                algorithmName = CompositeKeyImpl.KEY_ALGORITHM,
                 algSpec = null,
                 keySize = null,
                 capabilities = setOf(KeySchemeCapability.SIGN)
@@ -242,14 +244,18 @@ class CipherSchemeMetadataTests {
             val alicePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
             val bobPublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
             val charliePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
-            val aliceAndBob = CompositeKey.Builder()
-                .addKey(alicePublicKey, 2)
-                .addKey(bobPublicKey, 1)
-                .build(threshold = 2)
-            CompositeKey.Builder()
-                .addKey(aliceAndBob, 3)
-                .addKey(charliePublicKey, 2)
-                .build(threshold = 3)
+            val aliceAndBob = CompositeKeyProviderImpl().create(
+                listOf(
+                    CompositeKeyNodeAndWeight(alicePublicKey, 2),
+                    CompositeKeyNodeAndWeight(bobPublicKey, 1)
+                ), threshold = 2
+            )
+            CompositeKeyProviderImpl().create(
+                listOf(
+                    CompositeKeyNodeAndWeight(aliceAndBob, 3),
+                    CompositeKeyNodeAndWeight(charliePublicKey, 2)
+                ), 3
+            )
         } else {
             generateKeyPair(schemeMetadata, scheme.codeName).public
         }
@@ -525,6 +531,7 @@ class CipherSchemeMetadataTests {
         assert(encodedPublicKey.startsWith("-----BEGIN PUBLIC KEY-----")) { encodedPublicKey }
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
+        assertEquals(keyPair.public.algorithm, decodedPublicKey.algorithm)
         assertEquals(decodedPublicKey, keyPair.public)
         val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
         val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(
@@ -574,6 +581,7 @@ class CipherSchemeMetadataTests {
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
+        assertEquals(keyPair.public.algorithm, decodedPublicKey.algorithm)
     }
 
     @ParameterizedTest
@@ -596,11 +604,18 @@ class CipherSchemeMetadataTests {
         val alicePublicKey = keyPair1.public
         val bobPublicKey = keyPair2.public
         val charliePublicKey = keyPair3.public
-        val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
-        val aliceAndBobOrCharlie = CompositeKey
-            .Builder()
-            .addKeys(aliceAndBob, charliePublicKey)
-            .build(threshold = 1)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 1),
+                CompositeKeyNodeAndWeight(bobPublicKey, 2)
+            ), 2
+        )
+        val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceAndBob, 1),
+                CompositeKeyNodeAndWeight(charliePublicKey, 1)
+            ), 1
+        )
         val encoded = schemeMetadata.encodeAsByteArray(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
@@ -616,14 +631,22 @@ class CipherSchemeMetadataTests {
         val alicePublicKey = keyPair1.public
         val bobPublicKey = keyPair2.public
         val charliePublicKey = keyPair3.public
-        val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
-        val aliceAndBobOrCharlie = CompositeKey
-            .Builder()
-            .addKeys(aliceAndBob, charliePublicKey)
-            .build(threshold = 1)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 1),
+                CompositeKeyNodeAndWeight(bobPublicKey, 1)
+            ), null
+        )
+        val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceAndBob, 1),
+                CompositeKeyNodeAndWeight(charliePublicKey, 1)
+            ), 1
+        )
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
+        assertEquals(aliceAndBobOrCharlie.algorithm, decoded.algorithm)
     }
 
     @ParameterizedTest
@@ -636,16 +659,18 @@ class CipherSchemeMetadataTests {
         val alicePublicKey = keyPair1.public
         val bobPublicKey = keyPair2.public
         val charliePublicKey = keyPair3.public
-        val aliceAndBob = CompositeKey
-            .Builder()
-            .addKey(alicePublicKey, 2)
-            .addKey(bobPublicKey, 1)
-            .build(threshold = 2)
-        val aliceAndBobOrCharlie = CompositeKey
-            .Builder()
-            .addKey(aliceAndBob, 3)
-            .addKey(charliePublicKey, 2)
-            .build(threshold = 3)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 2),
+                CompositeKeyNodeAndWeight(bobPublicKey, 1)
+            ), 2
+        )
+        val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceAndBob, 3),
+                CompositeKeyNodeAndWeight(charliePublicKey, 2)
+            ), 3
+        )
         val encoded = schemeMetadata.encodeAsByteArray(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
@@ -661,19 +686,22 @@ class CipherSchemeMetadataTests {
         val alicePublicKey = keyPair1.public
         val bobPublicKey = keyPair2.public
         val charliePublicKey = keyPair3.public
-        val aliceAndBob = CompositeKey
-            .Builder()
-            .addKey(alicePublicKey, 2)
-            .addKey(bobPublicKey, 1)
-            .build(threshold = 2)
-        val aliceAndBobOrCharlie = CompositeKey
-            .Builder()
-            .addKey(aliceAndBob, 3)
-            .addKey(charliePublicKey, 2)
-            .build(threshold = 3)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 2),
+                CompositeKeyNodeAndWeight(bobPublicKey, 1)
+            ), 2
+        )
+        val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceAndBob, 3),
+                CompositeKeyNodeAndWeight(charliePublicKey, 2)
+            ), 3
+        )
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
+        assertEquals(aliceAndBobOrCharlie.algorithm, decoded.algorithm)
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -687,23 +715,26 @@ class CipherSchemeMetadataTests {
         val alicePublicKey = keyPair1.public
         val bobPublicKey = keyPair2.public
         val charliePublicKey = keyPair3.public
-        val aliceAndBob = CompositeKey
-            .Builder()
-            .addKey(alicePublicKey, 2)
-            .addKey(bobPublicKey, 1)
-            .build(threshold = 2)
-        val aliceAndBobOrCharlie = CompositeKey
-            .Builder()
-            .addKey(aliceAndBob, 3)
-            .addKey(charliePublicKey, 2)
-            .build(threshold = 3)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 2),
+                CompositeKeyNodeAndWeight(bobPublicKey, 1)
+            ), 2
+        )
+        val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceAndBob, 3),
+                CompositeKeyNodeAndWeight(charliePublicKey, 2)
+            ), 3
+        )
         val subjectAlias = newAlias()
         val pwdArray = "password".toCharArray()
         val keyStoreSave = KeyStore.getInstance("JKS")
         keyStoreSave.load(null, pwdArray)
         val scheme = schemeMetadata.findKeyScheme(keyPair1.public)
         val caKeyPair = generateKeyPair(schemeMetadata, scheme.codeName)
-        val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(caKeyPair.public, DigestAlgorithmName.SHA2_256)
+        val signatureSpec =
+            schemeMetadata.inferSignatureSpecOrCreateDefault(caKeyPair.public, DigestAlgorithmName.SHA2_256)
         val jksFile = ByteArrayOutputStream().use {
             keyStoreSave.setCertificateEntry(
                 subjectAlias, createDevCertificate(

@@ -125,6 +125,7 @@ internal class DBCordaConsumerImplTest {
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
@@ -132,7 +133,7 @@ internal class DBCordaConsumerImplTest {
         val test = consumer.poll(Duration.ZERO)
         consumer.poll(Duration.ZERO)
         assertThat(test.size).isEqualTo(1)
-        assertThat(test.single()).isEqualToComparingFieldByField(expectedRecord)
+        assertThat(test.single()).usingRecursiveComparison().isEqualTo(expectedRecord)
     }
 
     @Test
@@ -149,6 +150,7 @@ internal class DBCordaConsumerImplTest {
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
@@ -210,6 +212,13 @@ internal class DBCordaConsumerImplTest {
                 partition2 to partition2Offset,
             )
         }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer {
+            mapOf(
+                partition0 to Long.MAX_VALUE,
+                partition1 to Long.MAX_VALUE,
+                partition2 to Long.MAX_VALUE,
+            )
+        }
 
         val consumer = makeConsumer()
         consumer.poll(Duration.ZERO)
@@ -249,6 +258,7 @@ internal class DBCordaConsumerImplTest {
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 

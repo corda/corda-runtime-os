@@ -1,9 +1,13 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.PropertyKeys
+import net.corda.data.virtualnode.VirtualNodeDBResetRequest
+import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -37,7 +41,7 @@ import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
+import java.lang.Exception
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
@@ -84,7 +88,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                 }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
-                logger.info("${this::javaClass.name} is now Up")
             }
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
@@ -105,7 +108,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
-                logger.info("${this::javaClass.name} is now ${event.status}")
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
@@ -135,6 +137,28 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
+    override fun resyncVirtualNodeDb(virtualNodeShortId: String) {
+        logger.info(
+            "Resyncing back the virtual node vault database for the following virtual node: $virtualNodeShortId"
+        )
+
+        val instant = clock.instant()
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val request = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeDBResetRequest(
+                listOf(virtualNodeShortId),
+                actor
+            )
+        )
+        val resp: VirtualNodeManagementResponse = sendAndReceive(request)
+        when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeDBResetResponse -> Unit // We don't want to do anything with this
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+
     /**
      * Sends the [request] to the virtual topic on bus.
      *
@@ -155,6 +179,17 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")
 
         return sender.sendAndReceive(request)
+    }
+
+    private fun handleFailure(exception: ExceptionEnvelope?): Exception {
+        if (exception == null) {
+            logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+            return InternalServerException("Request was unsuccessful but no exception was provided.")
+        }
+        logger.warn(
+            "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
+        )
+        return InternalServerException(exception.errorMessage)
     }
 
     // Lookup and update the virtual node for the given virtual node short ID.
@@ -191,18 +226,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
                 }
             }
-            is VirtualNodeManagementResponseFailure -> {
-                val exception = resolvedResponse.exception
-                if (exception == null) {
-                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
-                }
-                logger.warn(
-                    "Remote request to update virtual node responded with exception of type " +
-                        "${exception.errorType}: ${exception.errorMessage}"
-                )
-                throw InternalServerException(exception.errorMessage)
-            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }
     }
@@ -210,5 +234,5 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()
-    override fun stop() = lifecycleCoordinator.close()
+    override fun stop() = lifecycleCoordinator.stop()
 }

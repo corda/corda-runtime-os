@@ -14,6 +14,8 @@
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.osgi.service.jdbc',\
+    bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='com.r3.testing.testing-cats',\
     bnd.identity;id='com.r3.testing.testing-dogs'

@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
@@ -44,6 +44,7 @@ public class JavaEvolutionTests {
     // Class as it was when it was serialized and written to disk. Uncomment
     // if the test referencing the object needs regenerating.
     /*
+    @CordaSerializable
     static class N2 {
         private String word;
         public N2(String word) { this.word = word; }
@@ -53,6 +54,7 @@ public class JavaEvolutionTests {
 
     // Class as it exists now with the newly added element
     @SuppressWarnings("unused")
+    @CordaSerializable
     static class N2 {
         private String word;
         private float wibble;

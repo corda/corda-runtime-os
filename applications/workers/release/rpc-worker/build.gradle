@@ -33,6 +33,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:platform-info')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:rpc-processor')
     implementation "info.picocli:picocli:$picocliVersion"
@@ -48,6 +49,8 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    e2eTestImplementation project(":libs:configuration:configuration-endpoints")
+    e2eTestImplementation project(":libs:crypto:certificate-generation")
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
@@ -67,9 +70,8 @@ dependencies {
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
+    e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
-
-    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
 
 tasks.register('e2eTest', Test) {
@@ -82,10 +84,39 @@ tasks.register('e2eTest', Test) {
 }
 
 tasks.named('e2eTest') {
+
+    def pluginsProject = project.rootProject.project('tools').project('plugins')
+    // Needs to build CLI tool along with plugins to be usable from within E2E tests
+    dependsOn pluginsProject.tasks.named('copyCliFiles')
+
+    // Set CLI_BUILD_DIR to be accessible from E2E tests
+    if(System.getenv("CLI_BUILD_DIR") == null) {
+        environment "CLI_BUILD_DIR", pluginsProject.layout.buildDirectory.get().asFile.absolutePath
+    }
+
     if(System.getenv("JDK_HOSTS_FILE") != null) {
         jvmArgs "-Djdk.net.hosts.file=${System.getenv("JDK_HOSTS_FILE")}"
     }
     if(System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG") != null) {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
+    }
+
+    ["A", "B", "C"].each {cluster ->
+        if(System.getenv("E2E_CLUSTER_${cluster}_RPC_HOST") == null) {
+            environment "E2E_CLUSTER_${cluster}_RPC_HOST",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}RpcHost","localhost")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_RPC_PORT") == null) {
+            environment "E2E_CLUSTER_${cluster}_RPC_PORT",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}RpcPort","8888")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_P2P_HOST") == null) {
+            environment "E2E_CLUSTER_${cluster}_P2P_HOST",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}P2pHost","localhost")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_P2P_PORT") == null) {
+            environment "E2E_CLUSTER_${cluster}_P2P_PORT",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}P2pPort","8080")
+        }
     }
 }

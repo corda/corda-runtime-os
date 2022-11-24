@@ -1,0 +1,78 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.javadoc-generation'
+}
+
+ext {
+    releasable = true
+}
+
+dependencies {
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-application:$cordaApiVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation project(':simulator:api')
+
+    // NOTE: references to modules internal to corda-runtime-os to be reviewed
+    implementation project(":libs:serialization:json-serializers")
+    implementation project(":libs:db:db-admin-impl")
+
+    compileOnly "org.osgi:osgi.core"
+    implementation project(":libs:sandbox")
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-serialization-impl")
+    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
+
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation "org.hsqldb:hsqldb:$hsqldbVersion"
+    
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-simulator-runtime'
+}
+
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'corda-simulator-runtime'
+                description = 'corda-simulator-runtime'
+                url = 'https://github.com/corda/corda-runtime-os'
+
+                scm {
+                    url = 'https://github.com/corda/corda-runtime-os'
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
+}

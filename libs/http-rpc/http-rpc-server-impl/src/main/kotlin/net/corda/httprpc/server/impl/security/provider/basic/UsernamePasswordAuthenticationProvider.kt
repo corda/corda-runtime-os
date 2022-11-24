@@ -9,11 +9,12 @@ import net.corda.httprpc.server.impl.security.provider.credentials.tokens.Userna
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationScheme
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider.Companion.REALM_KEY
+import java.util.function.Supplier
 
 /**
  * Simple AuthenticationProvider delegating username/password auth to RPCSecurityManager
  */
-internal class UsernamePasswordAuthenticationProvider(private val rpcSecurityManager: RPCSecurityManager) :
+internal class UsernamePasswordAuthenticationProvider(private val rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>) :
     AuthenticationProvider, AuthenticationSchemeProvider {
     override val authenticationMethod = AuthenticationScheme.BASIC
 
@@ -26,10 +27,10 @@ internal class UsernamePasswordAuthenticationProvider(private val rpcSecurityMan
             throw IllegalArgumentException("Provider only supports username password authentication.")
         }
 
-        return rpcSecurityManager.authenticate(credential.username, Password(credential.password))
+        return rpcSecurityManagerSupplier.get().authenticate(credential.username, Password(credential.password))
     }
 
     override fun provideParameters(): Map<String, String> {
-        return mapOf(REALM_KEY to rpcSecurityManager.id.value)
+        return mapOf(REALM_KEY to rpcSecurityManagerSupplier.get().id.value)
     }
 }

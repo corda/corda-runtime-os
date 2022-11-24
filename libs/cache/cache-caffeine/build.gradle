@@ -10,9 +10,10 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:metrics")
     implementation project(":libs:utilities")
     implementation 'net.corda:corda-base'
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    api "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 

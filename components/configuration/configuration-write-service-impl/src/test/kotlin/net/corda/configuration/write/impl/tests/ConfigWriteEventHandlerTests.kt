@@ -10,10 +10,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StopEvent
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -80,13 +78,5 @@ class ConfigWriteEventHandlerTests {
         assertThrows<ConfigWriteServiceException> {
             eventHandler.processEvent(BootstrapConfigEvent(mock()), mock())
         }
-    }
-
-    @Test
-    fun `StopEvent sets coordinator status to down`() {
-        val coordinator = mock<LifecycleCoordinator>()
-        eventHandler.processEvent(StopEvent(), coordinator)
-
-        verify(coordinator).updateStatus(eq(DOWN), any())
     }
 }

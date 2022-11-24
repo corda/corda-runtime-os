@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,6 +16,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
@@ -26,6 +28,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -50,7 +53,7 @@ class MembershipPersistenceServiceImplTest {
     }
     private val subRegistrationHandle: RegistrationHandle = mock()
     private val registrationHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
 
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
@@ -87,6 +90,8 @@ class MembershipPersistenceServiceImplTest {
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     @BeforeEach
     fun setUp() {
@@ -98,7 +103,9 @@ class MembershipPersistenceServiceImplTest {
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            keyEncodingService,
+            platformInfoProvider,
         )
         verify(coordinatorFactory).createCoordinator(any(), any())
     }

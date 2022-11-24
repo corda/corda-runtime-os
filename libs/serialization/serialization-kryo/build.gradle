@@ -20,10 +20,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
+    implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
 
@@ -48,6 +50,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
+    testImplementation project(":testing:kryo-serialization-testkit")
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project('cpks:serializable-cpk-one')

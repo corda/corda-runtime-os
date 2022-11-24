@@ -4,7 +4,6 @@ import net.corda.internal.serialization.NotSerializableDetailedException
 import net.corda.internal.serialization.amqp.PropertyDescriptor
 import net.corda.internal.serialization.amqp.TransformsAnnotationProcessor
 import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.amqp.calculatedPropertyDescriptors
 import net.corda.internal.serialization.amqp.componentType
 import net.corda.internal.serialization.amqp.propertyDescriptors
 import net.corda.internal.serialization.model.LocalTypeInformation.ACollection
@@ -23,8 +22,8 @@ import net.corda.internal.serialization.model.LocalTypeInformation.Top
 import net.corda.internal.serialization.model.LocalTypeInformation.Unknown
 import net.corda.kotlin.reflect.kotlinClass
 import net.corda.utilities.reflection.kotlinObjectInstance
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
+import net.corda.v5.base.annotations.ConstructorForDeserialization
+import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -33,6 +32,7 @@ import java.lang.reflect.Type
 import java.util.Locale
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 import kotlin.reflect.jvm.isAccessible
@@ -305,7 +305,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
@@ -324,7 +323,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
@@ -387,7 +385,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
             }.sortedBy { (name, _) -> name }.toMap(LinkedHashMap())
 
     private fun buildObjectProperties(rawType: Class<*>, constructorInformation: LocalConstructorInformation): Map<PropertyName, LocalPropertyInformation> =
-            (calculatedProperties(rawType) + nonCalculatedProperties(rawType, constructorInformation))
+            nonCalculatedProperties(rawType, constructorInformation)
                     .sortedBy { (name, _) -> name }
                     .toMap(LinkedHashMap())
 
@@ -421,15 +419,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                                               constructorInformation: LocalConstructorInformation): LocalPropertyInformation? {
 
         if (descriptor.getter == null) {
-            if (descriptor.field == null) return null
-            val paramType = descriptor.field.genericType
-            val paramTypeInformation = resolveAndBuild(paramType)
-
-            return LocalPropertyInformation.PrivateConstructorPairedProperty(
-                    descriptor.field,
-                    ConstructorSlot(constructorIndex, constructorInformation),
-                    paramTypeInformation,
-                    constructorInformation.parameters[constructorIndex].isMandatory)
+            return null
         }
 
         val paramType = descriptor.getter.genericReturnType
@@ -457,15 +447,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                             paramTypeInformation,
                             isMandatory)
                 }
-            }
-
-    private fun calculatedProperties(rawType: Class<*>): Sequence<Pair<String, LocalPropertyInformation>> =
-            rawType.calculatedPropertyDescriptors().asSequence().map { (name, v) ->
-                val paramType = v.getter!!.genericReturnType
-                val paramTypeInformation = resolveAndBuild(paramType)
-                val isMandatory = paramType.asClass().isPrimitive || !v.getter.returnsNullable()
-
-                name to LocalPropertyInformation.CalculatedProperty(v.getter, paramTypeInformation, isMandatory)
             }
 
     private fun buildTypeParameterInformation(type: ParameterizedType): List<LocalTypeInformation> =
@@ -521,7 +502,9 @@ private fun constructorForDeserialization(type: Type): KFunction<Any>? {
 
     val kotlinCtors = clazz.kotlin.constructors
 
-    val annotatedCtors = kotlinCtors.filter { it.findAnnotation<ConstructorForDeserialization>() != null }
+    val annotatedCtors = kotlinCtors.filter { ctor ->
+        ctor.hasAnnotation<ConstructorForDeserialization>()
+    }
     if (annotatedCtors.size > 1) return null
     if (annotatedCtors.size == 1) return annotatedCtors.first().apply { isAccessible = true }
 

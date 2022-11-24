@@ -5,18 +5,13 @@ import org.osgi.framework.BundleContext
 import org.osgi.framework.ServiceEvent
 import org.osgi.framework.hooks.service.EventListenerHook
 import org.osgi.framework.hooks.service.ListenerHook
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
 /**
  * This hook modifies the logic for which bundles receive service events (e.g. registration, modification).
  *
  * We only allow a bundle to receive service events for bundles it has visibility of.
  */
-@Component(immediate = true)
-internal class IsolatingEventListenerHook @Activate constructor(
-        @Reference
+internal class IsolatingEventListenerHook(
         private val sandboxService: SandboxContextService
 ) : EventListenerHook {
 

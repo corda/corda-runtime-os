@@ -17,7 +17,7 @@ import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -77,7 +77,7 @@ class PermissionStorageWriterProcessorImplTest {
         assertTrue(result.response is ExceptionEnvelope)
         val exception = result.response as ExceptionEnvelope
         assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
-        assertEquals("Received invalid permission request type.", exception.errorMessage)
+        assertEquals("Received invalid permission request type: kotlin.Unit", exception.errorMessage)
 
         verify(userWriter, never()).createUser(any(), eq(creatorUserId))
         verify(roleWriter, never()).createRole(any(), eq(creatorUserId))

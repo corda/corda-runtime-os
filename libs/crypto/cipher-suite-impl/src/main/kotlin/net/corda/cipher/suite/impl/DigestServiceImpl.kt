@@ -2,12 +2,15 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestAlgorithm
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.extensions.DigestAlgorithm
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -15,13 +18,17 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [ DigestService::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
+@Component(
+    service = [ DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = PROTOTYPE
+)
 class DigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
@@ -31,7 +38,7 @@ class DigestServiceImpl @Activate constructor(
         cardinality = OPTIONAL
     )
     private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
-) : DigestService, SingletonSerializeAsToken {
+) : DigestService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
         val factory = DoubleSHA256DigestFactory()
         it[factory.algorithm] = factory
@@ -106,3 +113,13 @@ class DigestServiceImpl @Activate constructor(
         }
     }
 }
+
+/**
+ * A [DigestService] singleton for everyone not inside a sandbox to share.
+ */
+@Component
+@ServiceRanking(1)
+class SingletonDigestServiceImpl @Activate constructor(
+    @Reference(scope = PROTOTYPE_REQUIRED)
+    private val digestService: DigestService
+) : DigestService by digestService

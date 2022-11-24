@@ -10,10 +10,9 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.lib.MemberInfoFactory
@@ -21,6 +20,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -55,12 +55,14 @@ class QueryMemberSignatureHandlerTest {
             )
         } doReturn keyValuePairListDeserializer
     }
+    private val vaultDmlConnectionId = UUID(0, 0)
     private val virtualNodeInfo = VirtualNodeInfo(
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
             "", "", null
         ),
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
         holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
         timestamp = clock.instant(),
     )
@@ -75,13 +77,14 @@ class QueryMemberSignatureHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                VirtualNodeDbType.VAULT.getConnectionName(virtualNodeInfo.holdingIdentity.shortHash),
-                DbPrivilege.DML,
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
                 jpaEntitiesSet
             )
         } doReturn factory
     }
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -89,6 +92,8 @@ class QueryMemberSignatureHandlerTest {
         memberInfoFactory,
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
+        keyEncodingService,
+        platformInfoProvider,
     )
     private val handler = QueryMemberSignatureHandler(service)
 

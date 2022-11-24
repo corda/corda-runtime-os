@@ -38,8 +38,8 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionManagementCacheService::class])
 class PermissionManagementCacheService @Activate constructor(
@@ -59,7 +59,7 @@ class PermissionManagementCacheService @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+        const val CONSUMER_GROUP = "PERMISSION_MANAGEMENT_SERVICE"
     }
 
     /**
@@ -148,7 +148,7 @@ class PermissionManagementCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                permissionManagementCacheRef.get()?.close()
+                permissionManagementCacheRef.get()?.stop()
                 permissionManagementCacheRef.set(null)
             }
         }
@@ -218,7 +218,7 @@ class PermissionManagementCacheService @Activate constructor(
             )
         )
 
-        permissionManagementCacheRef.get()?.close()
+        permissionManagementCacheRef.get()?.stop()
         permissionManagementCacheRef.set(permissionManagementCacheFactory.createPermissionManagementCache(
             userData,
             groupData,

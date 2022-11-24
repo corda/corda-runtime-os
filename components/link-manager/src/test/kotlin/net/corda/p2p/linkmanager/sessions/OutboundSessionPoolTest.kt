@@ -148,7 +148,7 @@ class OutboundSessionPoolTest {
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+        assertThat(gotSessions).hasSameElementsAs(mockSessions)
     }
 
     @Test
@@ -189,7 +189,7 @@ class OutboundSessionPoolTest {
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+        assertThat(gotSessions).hasSameElementsAs(mockSessions)
     }
 
     @Test
@@ -229,7 +229,7 @@ class OutboundSessionPoolTest {
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+        assertThat(gotSessions).hasSameElementsAs(mockSessions)
     }
 
     @Test
@@ -275,7 +275,7 @@ class OutboundSessionPoolTest {
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+        assertThat(gotSessions).hasSameElementsAs(mockSessions)
     }
 
     @Test
@@ -326,7 +326,7 @@ class OutboundSessionPoolTest {
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+        assertThat(gotSessions).hasSameElementsAs(mockSessions)
     }
 
     @Test

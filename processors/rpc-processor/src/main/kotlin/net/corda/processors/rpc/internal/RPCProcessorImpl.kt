@@ -2,7 +2,6 @@ package net.corda.processors.rpc.internal
 
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -23,6 +22,7 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
@@ -41,8 +41,6 @@ class RPCProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = ConfigRPCOpsService::class)
-    private val configRPCOpsService: ConfigRPCOpsService,
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
@@ -73,6 +71,8 @@ class RPCProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = GroupParametersReaderService::class)
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : RPCProcessor {
 
     private companion object {
@@ -85,7 +85,6 @@ class RPCProcessorImpl @Activate constructor(
         ::configReadService,
         ::httpRpcGateway,
         ::flowRPCOpsService,
-        ::configRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,
@@ -97,6 +96,7 @@ class RPCProcessorImpl @Activate constructor(
         ::certificatesClient,
         ::groupPolicyProvider,
         ::membershipQueryClient,
+        ::groupParametersReaderService,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(dependentComponents, ::eventHandler)
 

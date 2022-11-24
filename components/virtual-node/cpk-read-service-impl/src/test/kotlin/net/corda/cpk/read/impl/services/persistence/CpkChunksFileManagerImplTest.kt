@@ -79,28 +79,28 @@ class CpkChunksFileManagerImplTest {
     @Test
     fun `chunk file exists looks for requested cpk chunk id`() {
         val (cpkChunkId0, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), byteArrayOf())
         cpkChunkId0.toDummyFile()
         assertTrue(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId0).exists)
 
         val (cpkChunkId1, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 1, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 1, SecureHash.parse(DUMMY_HASH), byteArrayOf())
         assertFalse(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId1).exists)
     }
 
     @Test
     fun `on write chunk file writes chunk file creates corresponding CPK directory`() {
         val (cpkChunkId, _) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), byteArrayOf())
         val filePath = cpkChunkId.toDummyFile()
-        assertTrue(filePath.contains(fs.getPath(SecureHash.create(DUMMY_HASH).toHexString())))
+        assertTrue(filePath.contains(fs.getPath(SecureHash.parse(DUMMY_HASH).toHexString())))
     }
 
     @Test
     fun `on write chunk file writes chunk file`() {
         val bytes = byteArrayOf(0x01, 0x02)
         val (cpkChunkId, chunk) =
-            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), bytes)
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.parse(DUMMY_HASH), 0, SecureHash.parse(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
         assertTrue(cpkChunkFileExists(cpkChunkId))
 
@@ -110,13 +110,13 @@ class CpkChunksFileManagerImplTest {
 
     @Test
     fun `assembles cpk`() {
-        val cpkChecksum = SecureHash.create(DUMMY_HASH)
+        val cpkChecksum = SecureHash.parse(DUMMY_HASH)
         val bytes0 = byteArrayOf(0x01, 0x02)
         val bytes1 = byteArrayOf(0x03, 0x04)
         val (cpkChunkId0, chunk0) =
-            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.create(DUMMY_HASH), bytes0)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.parse(DUMMY_HASH), bytes0)
         val (cpkChunkId1, chunk1) =
-            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.create(DUMMY_HASH), bytes1)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.parse(DUMMY_HASH), bytes1)
 
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId0, chunk0)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId1, chunk1)

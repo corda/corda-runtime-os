@@ -7,9 +7,13 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.InvalidParamsException
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,6 +21,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
+import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
@@ -140,13 +145,26 @@ class KeysRpcOpsImpl @Activate constructor(
         alias: String,
         hsmCategory: String,
         scheme: String
-    ): String {
-        return cryptoOpsClient.generateKeyPair(
-            tenantId = tenantId,
-            category = hsmCategory.uppercase(),
-            alias = alias,
-            scheme = scheme
-        ).publicKeyId()
+    ): KeyPairIdentifier {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
+        return try {
+            KeyPairIdentifier(
+                cryptoOpsClient.generateKeyPair(
+                    tenantId = tenantId,
+                    category = hsmCategory.uppercase(),
+                    alias = alias,
+                    scheme = scheme,
+                ).publicKeyId()
+            )
+        } catch (e: KeyAlreadyExistsException) {
+            throw ResourceAlreadyExistsException(e.message!!)
+        } catch (e: InvalidParamsException) {
+            throw InvalidInputDataException(e.message!!)
+        }
     }
 
     override fun generateKeyPem(

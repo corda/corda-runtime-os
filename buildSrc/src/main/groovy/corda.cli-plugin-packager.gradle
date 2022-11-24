@@ -15,9 +15,6 @@ configurations {
         visible = false
 
         exclude group: 'net.corda.kotlin'
-        exclude group: 'net.corda', module: 'corda-http-rpc-client'
-        exclude group: 'net.corda', module: 'corda-http-rpc'
-        exclude group: 'net.corda', module: 'http-rpc'
         exclude group: 'net.corda', module: 'corda-api'
         exclude group: 'org.jetbrains.kotlin'
         exclude group: 'org.slf4j'
@@ -27,6 +24,7 @@ configurations {
         exclude group: 'com.fasterxml.jackson.databind'
         exclude group: 'com.fasterxml.jackson.annotation'
         exclude group: 'org.apache.servicemix.bundles'
+        exclude group: 'info.picocli.picocli'
     }
 }
 

@@ -3,6 +3,7 @@ package net.corda.messaging.integration.subscription
 import com.typesafe.config.ConfigValueFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
@@ -15,10 +16,14 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC1
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC2
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_LOG_TOPIC2_OUTPUT
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
@@ -46,10 +51,6 @@ class EventLogSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
-
-        //automatically created topics
-        const val TOPIC1 = "EventLogTopic1"
-        const val TOPIC2 = "EventLogTopic2"
     }
 
     @InjectService(timeout = 4000)
@@ -76,9 +77,9 @@ class EventLogSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE))
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1, false)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_LOG_TOPIC1, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
+        val futures = publisher.publish(getDemoRecords(EVENT_LOG_TOPIC1, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
@@ -100,7 +101,7 @@ class EventLogSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(10)
         val eventLogSub = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC1-group", TOPIC1),
+            SubscriptionConfig("$EVENT_LOG_TOPIC1-group", EVENT_LOG_TOPIC1),
             TestEventLogProcessor(latch),
             TEST_CONFIG,
             null
@@ -114,7 +115,7 @@ class EventLogSubscriptionIntegrationTest {
         }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS))
-        eventLogSub.stop()
+        eventLogSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
@@ -132,62 +133,65 @@ class EventLogSubscriptionIntegrationTest {
             { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
                 when (event) {
                     is RegistrationStatusChangeEvent -> {
-                        if (event.status == LifecycleStatus.UP) {
-                            coordinator.updateStatus(LifecycleStatus.UP)
-                        } else {
-                            coordinator.updateStatus(LifecycleStatus.DOWN)
-                        }
+                            coordinator.updateStatus(event.status)
                     }
                 }
             }
         coordinator.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2)
+        //publish 20 records
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_LOG_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
-        assertThat(futures.size).isEqualTo(1)
-        futures[0].get()
+        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4)).forEach { it.get() }
 
-        val latch = CountDownLatch(30)
-        val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2),
-            TestEventLogProcessor(latch),
-            TEST_CONFIG,
-            null
-        )
-
-        val secondSubConfig = TEST_CONFIG.withValue(
-            INSTANCE_ID,
-            ConfigValueFactory.fromAnyRef(2)
-        )
-        val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2),
-            TestEventLogProcessor(latch),
-            secondSubConfig,
-            null
-        )
-
+        //Start 2 subscriptions
+        val confirmProcessorLatch = CountDownLatch(20)
+        val eventLogSub1 = createSub(TestEventLogProcessor(latch = confirmProcessorLatch, outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "1"))
+        val eventLogSub2 = createSub(TestEventLogProcessor(latch = confirmProcessorLatch, outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "2"))
         coordinator.followStatusChangesByName(setOf(eventLogSub1.subscriptionName, eventLogSub2.subscriptionName))
-
         eventLogSub1.start()
         eventLogSub2.start()
 
+        //verify subscription has started and has begun processing
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
-            assertThat(latch.count).isEqualTo(20)
+            assertThat(confirmProcessorLatch.count).isEqualTo(0)
         }
 
-        eventLogSub1.stop()
-        eventLogSub2.stop()
+        //close subscription
+        eventLogSub1.close()
+        eventLogSub2.close()
 
-        publisher.publish(getDemoRecords(TOPIC2, 10, 2)).forEach { it.get() }
+        //publish 20 more records and start new subscriptions
+        publisher.publish(getDemoRecords(EVENT_LOG_TOPIC2, 5, 4)).forEach { it.get() }
+        val eventLogSub1part2 = createSub(TestEventLogProcessor(outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "3"))
+        val eventLogSub2part2 = createSub(TestEventLogProcessor(outputTopic = EVENT_LOG_TOPIC2_OUTPUT, id = "4"))
+        eventLogSub1part2.start()
+        eventLogSub2part2.start()
 
-        eventLogSub1.start()
-        eventLogSub2.start()
-        assertTrue(latch.await(40, TimeUnit.SECONDS))
-        eventLogSub1.stop()
-        eventLogSub2.stop()
+        //verify all 40 records make it to output topic
+        val verifyOutputs = CountDownLatch(40)
+        val verifySub = createSub(TestEventLogProcessor(verifyOutputs, null, "1"), EVENT_LOG_TOPIC2_OUTPUT)
+        verifySub.start()
+        verifyOutputs.await(10, TimeUnit.SECONDS)
+
+        //close resources
+        verifySub.close()
+        eventLogSub1part2.close()
+        eventLogSub2part2.close()
         publisher.close()
     }
 
+    fun createSub(processor: TestEventLogProcessor, topic: String = EVENT_LOG_TOPIC2): Subscription<String, DemoRecord> {
+        val config = TEST_CONFIG.withValue(
+            INSTANCE_ID,
+            ConfigValueFactory.fromAnyRef(processor.id)
+        )
+        return subscriptionFactory.createEventLogSubscription(
+            SubscriptionConfig("$topic-group", topic),
+            processor,
+            config,
+            null
+        )
+    }
 }

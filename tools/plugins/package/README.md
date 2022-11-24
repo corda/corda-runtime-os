@@ -10,8 +10,8 @@ These commands assume you have access to ./corda-cli.sh
 
 ```shell
 # Generate two self-signed signing keys to show how we select one key among multiple
-keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
-keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 2, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Plugin Example - Signing Key 1, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Plugin Example - Signing Key 2, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
 ```
 
 ### Trust the gradle plugin default signing key
@@ -36,6 +36,18 @@ Then run the following command to import the certificate into the keystore:
 keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
 ```
 
+### Trust your own signing key
+
+The plugin does not currently trust the signing keys within the keystore when doing signature verification. To trust those keys, export them as certificates and import them into the keystore.
+
+```shell
+keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1" -rfc -file signingkey1.crt
+keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 2" -rfc -file signingkey2.crt
+
+keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1 cert" --file signingkey1.crt
+keytool --importcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 2 cert" --file signingkey2.crt
+```
+
 ### Build a CPB
 ```shell
 ./corda-cli.sh package create-cpb \
@@ -53,7 +65,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
 ./corda-cli.sh mgm groupPolicy > TestGroupPolicy.json
 ```
 
-### Build a CPI
+### Build a CPI v1
 ```shell
 ./corda-cli.sh package create \
     --cpb mycpb.cpb \
@@ -64,7 +76,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
     --key "signing key 1"
 ```
 
-### Pipe group policy into CPI
+### Pipe group policy into CPI v1
 ```shell
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create \
     --cpb mycpb.cpb \
@@ -98,6 +110,8 @@ After QA, CorDapp developers will want to release sign their files. This command
 ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy TestGroupPolicy.json \
+    --cpi-name "cpi name" \
+    --cpi-version "1.0.0.0-SNAPSHOT" \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
@@ -109,6 +123,8 @@ After QA, CorDapp developers will want to release sign their files. This command
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy - \
+    --cpi-name "cpi name" \
+    --cpi-version "1.0.0.0-SNAPSHOT" \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \

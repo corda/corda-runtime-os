@@ -6,7 +6,7 @@ import net.corda.httprpc.server.impl.HttpRpcServerImpl;
 import net.corda.httprpc.test.CustomSerializationAPIImpl;
 import net.corda.httprpc.test.TestHealthCheckAPI;
 import net.corda.httprpc.test.TestHealthCheckAPIImpl;
-import net.corda.v5.base.util.NetworkHostAndPort;
+import net.corda.utilities.NetworkHostAndPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,12 +28,13 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
             HttpRpcIntegrationTestBase.Companion.getContext(),
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         );
         HttpRpcIntegrationTestBase.Companion.setServer(
                 new HttpRpcServerImpl(
                         List.of(new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()),
-                        HttpRpcIntegrationTestBase.Companion.getSecurityManager(),
+                        HttpRpcIntegrationTestBase.Companion::getSecurityManager,
                         httpRpcSettings,
                         Path.of(System.getProperty("java.io.tmpdir")),
                         true
@@ -44,7 +45,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
 
     @AfterAll
     static void cleanUpAfterClass() {
-        HttpRpcIntegrationTestBase.Companion.getServer().stop();
+        HttpRpcIntegrationTestBase.Companion.getServer().close();
     }
 
     @Test

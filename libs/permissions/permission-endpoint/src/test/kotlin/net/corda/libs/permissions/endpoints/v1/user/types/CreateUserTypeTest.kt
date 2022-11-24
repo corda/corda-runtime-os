@@ -33,8 +33,36 @@ class CreateUserTypeTest {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name exceed maximum length of 255.",
                 "Error #2" to "Login name exceed maximum length of 255.",
-                "Error #3" to "Password name exceed maximum length of 255.",
-                "Error #4" to "Invalid UUID string: 1234"
+                "Error #3" to "Login name contains invalid characters. Correct pattern is: '[-._@a-zA-Z0-9]{3,255}'.",
+                "Error #4" to "Password name exceed maximum length of 255.",
+                "Error #5" to "Invalid UUID string: 1234"
+            )
+        }
+    }
+
+    @Test
+    fun testBlankFullName() {
+        Assertions.assertThatThrownBy {
+            CreateUserType(
+                "", "Joe.Bloggs@company.com", true, "secret1234!", Instant.now(),
+                UUID.randomUUID().toString())
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Full name must not be blank.",
+            )
+        }
+    }
+
+    @Test
+    fun testBlankLoginName() {
+        Assertions.assertThatThrownBy {
+            CreateUserType(
+                "Joe Bloggs", "", true, "secret1234!", Instant.now(),
+                UUID.randomUUID().toString())
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Login name must not be blank.",
+                "Error #2" to "Login name contains invalid characters. Correct pattern is: '[-._@a-zA-Z0-9]{3,255}'.",
             )
         }
     }
@@ -47,7 +75,7 @@ class CreateUserTypeTest {
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#\' '.",
-                "Error #2" to "Login name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#'.",
+                "Error #2" to "Login name contains invalid characters. Correct pattern is: '[-._@a-zA-Z0-9]{3,255}'.",
                 "Error #3" to "Invalid UUID string: 1234"
             )
         }

@@ -1,0 +1,28 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Uniqueness checker component implementation'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform('net.corda:corda-api:$cordaApiVersion')
+
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation project(':components:crypto:crypto-client')
+    implementation project(':libs:crypto:merkle-impl')
+    implementation project(':libs:flows:flow-api')
+    implementation project(':libs:sandbox-types')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:uniqueness:common')
+    implementation project(':libs:virtual-node:virtual-node-info')
+}

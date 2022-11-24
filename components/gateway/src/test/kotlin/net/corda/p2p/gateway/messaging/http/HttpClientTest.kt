@@ -155,7 +155,7 @@ class HttpClientTest {
     @Test
     fun `start after stop will call the next write group again`() {
         client.start()
-        client.stop()
+        client.close()
         client.start()
 
         verify(writeGroup, times(2)).next()
@@ -165,7 +165,7 @@ class HttpClientTest {
     fun `close will stop the client channel`() {
         client.start()
         client.onOpen(HttpConnectionEvent(channel))
-        client.stop()
+        client.close()
 
         verify(channel).close()
     }
@@ -176,7 +176,7 @@ class HttpClientTest {
         doReturn(sync).whenever(channel).close()
         client.start()
         client.onOpen(HttpConnectionEvent(channel))
-        client.stop()
+        client.close()
 
         verify(sync).sync()
     }
@@ -203,7 +203,7 @@ class HttpClientTest {
         val future = client.write(byteArrayOf(1, 5))
 
         assertSoftly {
-            it.assertThat(request.firstValue.uri()).isEqualTo("https://www.r3.com:3023/gateway/send")
+            it.assertThat(request.firstValue.uri()).isEqualTo("https://www.r3.com:3023")
             it.assertThat(request.firstValue.method()).isEqualTo(HttpMethod.POST)
             it.assertThat(request.firstValue.content().array()).isEqualTo(byteArrayOf(1, 5))
         }
@@ -295,7 +295,7 @@ class HttpClientTest {
             mock()
         }
         client.start()
-        client.stop()
+        client.close()
         client.onClose(HttpConnectionEvent(channel))
 
         assertThat(bootstrap.constructed()).hasSize(1)

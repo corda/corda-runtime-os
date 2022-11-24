@@ -12,7 +12,7 @@ import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
-import net.corda.flow.state.FlowCheckpointFactory
+import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -65,13 +65,19 @@ class FlowEventPipelineFactoryImpl(
         flowCheckpointFactory: FlowCheckpointFactory,
         ) : this(flowRunner, flowGlobalPostProcessor,flowCheckpointFactory, mutableListOf(), mutableListOf(), mutableListOf())
 
-    override fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig): FlowEventPipeline {
+    override fun create(
+        checkpoint: Checkpoint?,
+        event: FlowEvent,
+        config: SmartConfig,
+        mdcProperties: Map<String, String>)
+    : FlowEventPipeline {
         val context = FlowEventContext<Any>(
             checkpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config),
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,
-            outputRecords = emptyList()
+            outputRecords = emptyList(),
+            mdcProperties = mdcProperties
         )
         return FlowEventPipelineImpl(
             flowEventHandlerMap,

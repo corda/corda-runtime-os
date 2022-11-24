@@ -2,16 +2,18 @@ package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.contains
+import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
+import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.httprpc.ResponseCode.OK
+import net.corda.test.util.eventually
+import org.apache.commons.text.StringEscapeUtils.escapeJson
+import org.assertj.core.api.Assertions.assertThat
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.applications.workers.smoketest.virtualnode.toJson
-import org.apache.commons.text.StringEscapeUtils.escapeJson
-import org.assertj.core.api.Assertions
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -21,7 +23,7 @@ fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
 fun startRpcFlow(
     holdingId: String,
     args: RpcSmokeTestInput,
-    expectedCode: Int = 200,
+    expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
 ): String {
 
@@ -44,7 +46,7 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): String {
+fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -59,7 +61,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 200 }
+            condition { it.code == expectedCode }
         }
 
         requestId
@@ -105,7 +107,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
-fun getFlowClasses(holdingId: String) : List<String> {
+fun getFlowClasses(holdingId: String): List<String> {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -119,37 +121,69 @@ fun getFlowClasses(holdingId: String) : List<String> {
     }
 }
 
-fun createVirtualNodeFor(x500: String): String {
+fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
+        // be a bit patient for the CPI info to get there in case it has just been uploaded
+        val json = eventually(
+            duration = Duration.ofSeconds(30)
+        ) {
+            val response = cpiList().toJson()
+            assertThat(response.contains("cpis"))
+            val cpis = response["cpis"]
+            val cpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == cpiName }
+            assertThat(cpi).isNotNull
+            cpi!!
+        }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-        val vNodeJson = assertWithRetry {
-            command { vNodeCreate(hash, x500) }
+        val vNodesJson = assertWithRetry {
+            command { vNodeList() }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$x500'")
+            failMessage("Failed to retrieve virtual nodes")
         }.toJson()
 
+        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(x500)) {
+            vNodeList().toJson()["virtualNodes"].toList().first { it["holdingIdentity"]["x500Name"].textValue() == x500 }
+        } else {
+            assertWithRetry {
+                command { vNodeCreate(hash, x500) }
+                condition { it.code == 200 }
+                failMessage("Failed to create the virtual node for '$x500'")
+            }.toJson()
+        }
+
         val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
-        Assertions.assertThat(holdingId).isNotNull.isNotEmpty
+        assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
     }
 }
 
-fun registerMember(holdingIdentityId: String) {
+fun registerMember(holdingIdentityShortHash: String, isNotary: Boolean = false) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
         val membershipJson = assertWithRetry {
-            command { registerMember(holdingIdentityId) }
+            command { registerMember(holdingIdentityShortHash, isNotary) }
             condition { it.code == 200 }
-            failMessage("Failed to register the member to the network '$holdingIdentityId'")
+            failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
         }.toJson()
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
-        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
+        assertThat(registrationStatus).isEqualTo("SUBMITTED")
+
+        assertWithRetry {
+            // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
+            // term this should be changed to not use the RPC message pattern and have the information available in a
+            // cache on the RPC worker, but for now this will have to suffice.
+            timeout(Duration.ofSeconds(60))
+            interval(Duration.ofSeconds(15))
+            command { getRegistrationStatus(holdingIdentityShortHash) }
+            condition {
+                it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == "APPROVED"
+            }
+            failMessage("Registration was not completed for $holdingIdentityShortHash")
+        }
     }
 }
 
@@ -172,9 +206,9 @@ fun createKeyFor(holdingId: String, alias: String, category: String, scheme: Str
             command { createKey(holdingId, alias, category, scheme) }
             condition { it.code == 200 }
             failMessage("Failed to create key for holding id '$holdingId'")
-        }.body
+        }.toJson()
         assertWithRetry {
-            command { getKey(holdingId, keyId) }
+            command { getKey(holdingId, keyId["id"].textValue()) }
             condition { it.code == 200 }
             failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
         }.body
@@ -190,7 +224,34 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
     val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
     return digest.digest(s.toByteArray())
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
-        .substring(0,12)
+        .substring(0, 12)
+}
+
+/**
+ * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding the default group policy
+ * used by smoke tests and upload the resulting CPI to the system if it doesn't already exist.
+ */
+fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, staticMemberNames: List<String>) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val cpis = cpiList().toJson()["cpis"]
+        val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }
+
+        if (existingCpi == null) {
+            val uploadResponse = cpiUpload(cpb, groupId, staticMemberNames, name)
+            assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
+            assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
+            val responseStatusId = uploadResponse.toJson()["id"].textValue()
+
+            assertWithRetry {
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
+                command { cpiStatus(responseStatusId) }
+                condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
+            }
+        }
+    }
 }
 
 class RpcSmokeTestInput {

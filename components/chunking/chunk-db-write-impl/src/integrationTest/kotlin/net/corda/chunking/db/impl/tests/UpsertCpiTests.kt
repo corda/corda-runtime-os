@@ -10,6 +10,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -29,10 +30,10 @@ import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -200,73 +201,170 @@ class UpsertCpiTests {
     }
 
     @Test
-    fun `can upsert a cpi into an empty database`() {
-        assertThat(cpiPersistence.canUpsertCpi("anything", "any version")).isTrue
-    }
-
-    @Test fun `can upsert cpi with same name and group id`() {
-        val groupId = "abcdef"
-        val name = "test"
-        val cpi = persistCpi(name, "1.0", groupId)
-        val entity = findCpiMetadataEntity(cpi)
-        assertThat(entity).isNotNull
-
-        assertThat(cpiPersistence.canUpsertCpi(name, groupId)).isTrue
-    }
-
-    @Test fun `cannot upsert cpis with same group ids and different names`() {
-        val groupId = "abcdef"
-        val name = "test"
-        val differentName = "test another"
-        val cpi = persistCpi(name, "1.0", groupId)
-        val entity = findCpiMetadataEntity(cpi)
-        assertThat(entity).isNotNull
-
-        assertThat(cpiPersistence.canUpsertCpi(differentName, groupId)).isFalse
-    }
-
-    @Test fun `can upsert cpis with different group ids and different names`() {
-        val groupId = "abcdef"
-        val differentGroupId = "abcdef1234567890"
-        val name = "test"
-        val differentName = "test another"
-        val cpi = persistCpi(name, "1.0", groupId)
-        val entity = findCpiMetadataEntity(cpi)
-        assertThat(entity).isNotNull
-
-        assertThat(cpiPersistence.canUpsertCpi(name, groupId)).isTrue
-        assertThat(cpiPersistence.canUpsertCpi(differentName, groupId)).isFalse
-        assertThat(cpiPersistence.canUpsertCpi(differentName, differentGroupId)).isTrue
-    }
-
-    @Test fun `can upsert on force upload if previous cpi of same version`() {
-        val groupId = "originalGroup"
-        val name = "originalCpi"
-        val version = "1.0.0"
-        persistCpi(name, version, groupId)
-        assertTrue(cpiPersistence.canUpsertCpi(name, groupId, true, version))
-    }
-
-    @Test fun `can't upsert on force upload if first instance of cpi`() {
-        val groupId = "nonExistent"
-        val name = "neverBefore"
-        val version = "1.0.0"
-        val ex = assertThrows<ValidationException> {
-            cpiPersistence.canUpsertCpi(name, groupId, true, version)
+    fun `can insert a cpi into an empty database`() {
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                "anything",
+                "any version",
+                "any version",
+                "any group",
+                forceUpload = false,
+                requestId = "ID"
+            )
         }
-
-        assertThat(ex).hasMessageContaining("No instance of same CPI with previous version found")
     }
 
-    @Test fun `can't upsert on force upload if new version of cpi`() {
-        val groupId = "newGroup"
-        val name = "newTest"
-        val version = "1.0.0"
-        persistCpi(name, version, groupId)
-        val ex = assertThrows<ValidationException> {
-            cpiPersistence.canUpsertCpi(name, groupId, true, "1.0.1")
+    @Test
+    fun `cannot force update a cpi ithat doesn't exist`() {
+        assertThrows<ValidationException> {
+            cpiPersistence.validateCanUpsertCpi(
+                "anything" + UUID.randomUUID().toString(),
+                "any version",
+                "any version",
+                "any group",
+                forceUpload = true,
+                requestId = "ID"
+            )
         }
+    }
 
-        assertThat(ex).hasMessageContaining("No instance of same CPI with previous version found")
+    @Test fun `can force update cpi with same name, signer version and group id`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version,
+                groupId,
+                forceUpload = true,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `cannot force update cpi with same name, signer version and different group id`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertThrows<ValidationException> {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version,
+                groupId + "_2",
+                forceUpload = true,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `cannot insert cpis with different group ids and same name, signer and version`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertThrows<DuplicateCpiUploadException> {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version,
+                groupId + "_2",
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `can insert cpis with same group id and different name`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name + UUID.randomUUID().toString(),
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version,
+                groupId,
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `can insert cpis with same group id and different version`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version + UUID.randomUUID().toString(),
+                groupId,
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `can insert cpis with same group id and different signer`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertDoesNotThrow {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                newRandomSecureHash().toString(),
+                cpi.metadata.cpiId.version,
+                groupId,
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
+    }
+
+    @Test fun `cannot insert or update duplicate CPI`() {
+        val groupId = "abcdef"
+        val name = "test"
+        val version = "1.0"
+        val cpi = persistCpi(name, version, groupId)
+        val entity = findCpiMetadataEntity(cpi)
+        assertThat(entity).isNotNull
+
+        assertThrows<DuplicateCpiUploadException> {
+            cpiPersistence.validateCanUpsertCpi(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.version,
+                groupId,
+                forceUpload = false,
+                requestId = "ID"
+            )
+        }
     }
 }

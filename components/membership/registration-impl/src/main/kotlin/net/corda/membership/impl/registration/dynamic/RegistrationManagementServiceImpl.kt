@@ -17,6 +17,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -27,12 +29,13 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -58,10 +61,14 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = DigestService::class)
-    private val hashingService: DigestService,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory,
 ) : RegistrationManagementService {
 
     companion object {
@@ -127,7 +134,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         configHandle?.close()
                         configHandle = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG, MEMBERSHIP_CONFIG)
                         )
                     } else if (event.registration == subRegistration) {
                         logger.info("Received config, started subscriptions and setting status to UP")
@@ -136,12 +143,17 @@ class RegistrationManagementServiceImpl @Activate constructor(
                 } else {
                     logger.info("Setting deactive state due to receiving registration status ${event.status}")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
+                    subRegistration?.close()
+                    subRegistration = null
                     subscription?.close()
                     subscription = null
                 }
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                val membershipConfig = event.config.getConfig(MEMBERSHIP_CONFIG)
+                subRegistration?.close()
+                subRegistration = null
                 subscription?.close()
                 subscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(
@@ -156,13 +168,15 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipPersistenceClient,
                         membershipQueryClient,
                         cryptoOpsClient,
-                        hashingService,
                         cipherSchemeMetadata,
+                        merkleTreeProvider,
+                        membershipConfig,
+                        groupParametersWriterService,
+                        groupParametersFactory,
                     ),
                     messagingConfig
                 ).also {
                     it.start()
-                    subRegistration?.close()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }

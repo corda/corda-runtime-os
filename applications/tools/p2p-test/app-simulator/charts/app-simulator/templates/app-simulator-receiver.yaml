@@ -1,0 +1,70 @@
+{{- if .Values.appSimulators.receiver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "appSimulator.fullname" . }}-receiver
+  labels:
+    app.kubernetes.io/component: receiver
+spec:
+  replicas: {{ .Values.appSimulators.receiver.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: receiver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: receiver
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      {{- include "appSimulator.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app.kubernetes.io/component"
+                      operator: In
+                      values:
+                        - receiver
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: {{ include "appSimulator.fullname" . }}-receiver
+          image: {{ include "appSimulator.image" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          args:
+            - "--mode RECEIVER"
+            - "--clients {{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
+            - "-tnumPartitions={{ .Values.appSimulators.receiver.topicCreation.numPartitions }}"
+            - "-treplicationFactor={{ .Values.appSimulators.receiver.topicCreation.replicationFactor }}"
+            {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: {{- if .Values.appSimulators.receiver.debug.enabled }}
+                -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if .Values.appSimulators.receiver.debug.suspend }}y{{ else }}n{{ end }}
+              {{- end -}}
+              {{- if .Values.kafka.sasl.enabled }}
+                -Djava.security.auth.login.config=/etc/config/jaas.conf
+              {{- end }}
+          volumeMounts:
+          {{- include "appSimulator.volumeMounts" . | nindent 10 }}
+          {{- if .Values.appSimulators.receiver.debug.enabled }}
+          ports:
+            - name: debug
+              containerPort: 5005
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      {{- include "appSimulator.volumes" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -62,12 +62,12 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         }
 
         @Test
-        fun `verify coordinator is closed on stop`() {
+        fun `verify coordinator is stopped on stop`() {
             val vnodeMaintenanceRpcOps =
                 VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.stop()
 
-            verify(mockCoordinator).close()
+            verify(mockCoordinator).stop()
         }
 
         @Test

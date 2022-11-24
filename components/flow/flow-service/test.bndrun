@@ -19,10 +19,7 @@
     sun.security.x509
 
 -runproperties: \
-    co.paralleluniverse.quasar.suspendableAnnotation=net.corda.v5.base.annotations.Suspendable,\
-    co.paralleluniverse.quasar.excludePackages='aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.slf4j**,org.junit.**,org.assertj.**,org.opentest4j**',\
-    co.paralleluniverse.quasar.verbose=false,\
-    org.osgi.framework.bundle.parent=framework
+    co.paralleluniverse.quasar.verbose=false
 
 -runrequires: \
     bnd.identity;id='flow-service-tests',\

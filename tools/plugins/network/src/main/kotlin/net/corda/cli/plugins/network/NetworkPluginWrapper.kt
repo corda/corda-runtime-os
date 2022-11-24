@@ -1,9 +1,8 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.client.HttpRpcClient
-import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import org.pf4j.Extension
@@ -12,8 +11,8 @@ import org.pf4j.PluginWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import kotlin.reflect.KClass
 
+@Suppress("unused")
 class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(NetworkPlugin::class.java)
@@ -33,27 +32,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin : CordaCliPlugin {
-        @CommandLine.Option(
-            names = ["-t", "--target"],
-            required = true,
-            description = ["The target address of the HTTP RPC Endpoint (e.g. `https://host:port`)"]
-        )
-        lateinit var targetUrl: String
-
-        @CommandLine.Option(
-            names = ["-u", "--user"],
-            description = ["User name"],
-            required = true
-        )
-        lateinit var username: String
-
-        @CommandLine.Option(
-            names = ["-p", "--password"],
-            description = ["Password"],
-            required = true
-        )
-        lateinit var password: String
+    class NetworkPlugin : HttpRpcCommand(), CordaCliPlugin {
 
         @Suppress("LongParameterList")
         @CommandLine.Command(
@@ -74,13 +53,13 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
             @CommandLine.Option(
                 names = ["-ou"],
                 arity = "0..1",
-                description = ["Optional. Organisation Unit (OU) attribute of the X.500 name to filter members by."]
-            ) organisationUnit: String?,
+                description = ["Optional. Organization Unit (OU) attribute of the X.500 name to filter members by."]
+            ) organizationUnit: String?,
             @CommandLine.Option(
                 names = ["-o"],
                 arity = "0..1",
-                description = ["Optional. Organisation (O) attribute of the X.500 name to filter members by."]
-            ) organisation: String?,
+                description = ["Optional. Organization (O) attribute of the X.500 name to filter members by."]
+            ) organization: String?,
             @CommandLine.Option(
                 names = ["-l"],
                 arity = "0..1",
@@ -107,8 +86,8 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
                         result = lookup(
                             holdingIdentityShortHash,
                             commonName,
-                            organisation,
-                            organisationUnit,
+                            organization,
+                            organizationUnit,
                             locality,
                             state,
                             country
@@ -121,21 +100,6 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
                 }
             }
             println(result)
-        }
-
-        private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
-            if(targetUrl.endsWith("/")){
-                targetUrl = targetUrl.dropLast(1)
-            }
-            return HttpRpcClient(
-                baseAddress = "$targetUrl/api/v1/",
-                rpcOps.java,
-                HttpRpcClientConfig()
-                    .enableSSL(true)
-                    .username(username)
-                    .password(password),
-                healthCheckInterval = 500
-            )
         }
     }
 }

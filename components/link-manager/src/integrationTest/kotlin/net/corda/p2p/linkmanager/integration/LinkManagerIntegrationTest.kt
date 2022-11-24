@@ -17,24 +17,29 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
+
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
+import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -64,7 +69,7 @@ class LinkManagerIntegrationTest {
         lateinit var configReadService: ConfigurationReadService
 
         @InjectService(timeout = 4000)
-        lateinit var lifecycleCoordinatorFactory : LifecycleCoordinatorFactory
+        lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
         @InjectService(timeout = 4000)
         lateinit var cryptoOpsClient: CryptoOpsClient
@@ -74,6 +79,9 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var membershipQueryClient: MembershipQueryClient
+
+        @InjectService(timeout = 4000)
+        lateinit var groupParametersReaderService: GroupParametersReaderService
     }
 
     private val replayPeriod = 2000
@@ -86,6 +94,7 @@ class LinkManagerIntegrationTest {
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+            .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
             .withValue(
                 LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
                 ConfigFactory.empty().withValue(
@@ -93,22 +102,28 @@ class LinkManagerIntegrationTest {
                     innerConfig.root()
                 ).root()
             )
+            .withValue(LinkManagerConfiguration.REVOCATION_CHECK_KEY, ConfigValueFactory.fromAnyRef(RevocationCheckMode.OFF.toString()))
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
-        .create(ConfigFactory.empty()
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-            .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .create(
+            ConfigFactory.empty()
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+                .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         )
 
     private fun Publisher.publishLinkManagerConfig(config: Config) {
         val configSource = config.root().render(ConfigRenderOptions.concise())
-        this.publish(listOf(Record(
-            Schemas.Config.CONFIG_TOPIC,
-            ConfigKeys.P2P_LINK_MANAGER_CONFIG,
-            Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
-        ))).forEach { it.get() }
+        this.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.P2P_LINK_MANAGER_CONFIG,
+                    Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
+                )
+            )
+        ).forEach { it.get() }
     }
 
     @BeforeEach
@@ -142,10 +157,11 @@ class LinkManagerIntegrationTest {
             cryptoOpsClient,
             membershipGroupReaderProvider,
             membershipQueryClient,
+            groupParametersReaderService,
             ThirdPartyComponentsMode.STUB
         )
 
-        linkManager.use {
+        linkManager.usingLifecycle {
             linkManager.start()
 
             logger.info("Publishing valid configuration")

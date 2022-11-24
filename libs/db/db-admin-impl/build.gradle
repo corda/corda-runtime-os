@@ -1,6 +1,14 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
+    id 'corda.javadoc-generation'
+}
+
+// Temporary measure for DP2, required as a transitive dependency by simulator modules
+// This code marks this module as to be published externally.
+// TODO To be revisited prior to beta program.
+ext {
+    releasable = true
 }
 
 description 'Database Admin Implementation'
@@ -13,7 +21,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
-    implementation project(":libs:db:db-admin")
+    api project(":libs:db:db-admin")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

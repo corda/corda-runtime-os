@@ -2,9 +2,8 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
 import net.corda.sandbox.SandboxCreationService
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.BASE_DIRECTORY_KEY
-import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.TEST_BUNDLE_KEY
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
@@ -18,7 +17,9 @@ import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import java.nio.file.Path
 import java.util.Collections.unmodifiableSet
+import java.util.Deque
 import java.util.Hashtable
+import java.util.LinkedList
 import java.util.concurrent.TimeoutException
 
 @Suppress("unused")
@@ -51,12 +52,15 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.base",
             "net.corda.cipher-suite",
             "net.corda.crypto",
+            "net.corda.crypto-extensions",
             "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
             "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.ledger-consensual",
+            "net.corda.ledger-utxo",
             "net.corda.membership",
             "net.corda.persistence",
             "net.corda.serialization",
+            "net.corda.test-api",
             "org.apache.aries.spifly.dynamic.framework.extension",
             "org.apache.felix.framework",
             "org.apache.felix.scr",
@@ -68,7 +72,7 @@ class SandboxSetupImpl @Activate constructor(
         private val logger = loggerFor<SandboxSetup>()
     }
 
-    private val cleanups = mutableListOf<AutoCloseable>()
+    private val cleanups: Deque<AutoCloseable> = LinkedList()
 
     override fun configure(
         bundleContext: BundleContext,
@@ -77,10 +81,10 @@ class SandboxSetupImpl @Activate constructor(
         val testBundle = bundleContext.bundle
         logger.info("Configuring sandboxes for [{}]", testBundle.symbolicName)
 
-        configAdmin.getConfiguration(CpkReadServiceImpl::class.java.name)?.also { config ->
+        configAdmin.getConfiguration(CpiLoader.COMPONENT_NAME)?.also { config ->
             val properties = Hashtable<String, Any?>()
-            properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
-            properties[TEST_BUNDLE_KEY] = testBundle.location
+            properties[CpiLoader.BASE_DIRECTORY_KEY] = baseDirectory.toString()
+            properties[CpiLoader.TEST_BUNDLE_KEY] = testBundle.location
             config.update(properties)
         }
 
@@ -95,7 +99,7 @@ class SandboxSetupImpl @Activate constructor(
      * the framework to create new instances of it.
      */
     override fun start() {
-        componentContext.enableComponent(CpkReadServiceImpl::class.java.name)
+        componentContext.enableComponent(CpiLoader.COMPONENT_NAME)
     }
 
     /**
@@ -115,7 +119,7 @@ class SandboxSetupImpl @Activate constructor(
          * for the framework to unregister it.
          */
         with(componentContext) {
-            disableComponent(CpkReadServiceImpl::class.java.name)
+            disableComponent(CpiLoader.COMPONENT_NAME)
             while (locateService<CpkReadService>(INSTALLER_NAME) != null) {
                 Thread.sleep(WAIT_MILLIS)
             }
@@ -130,14 +134,14 @@ class SandboxSetupImpl @Activate constructor(
      * this reference when we've finished with it to allow the
      * service to be destroyed.
      */
-    override fun <T> getService(serviceType: Class<T>, timeout: Long): T {
+    override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
         var remainingMillis = timeout.coerceAtLeast(0)
         while (true) {
-            bundleContext.getServiceReference(serviceType)?.let { ref ->
+            bundleContext.getServiceReferences(serviceType, filter).maxOrNull()?.let { ref ->
                 val service = bundleContext.getService(ref)
                 if (service != null) {
-                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
+                    withCleanup { bundleContext.ungetService(ref) }
                     return service
                 }
             }
@@ -148,6 +152,11 @@ class SandboxSetupImpl @Activate constructor(
             Thread.sleep(waitMillis)
             remainingMillis -= waitMillis
         }
-        throw TimeoutException("Service $serviceType did not arrive in $timeout milliseconds")
+        val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
+        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
+    }
+
+    override fun withCleanup(closeable: AutoCloseable) {
+        cleanups.addFirst(closeable)
     }
 }

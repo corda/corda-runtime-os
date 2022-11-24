@@ -3,7 +3,6 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,11 +13,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
-import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
+import net.corda.sandboxgroupcontext.service.CacheConfiguration
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
@@ -31,15 +28,13 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
-import net.corda.v5.crypto.SecureHash
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
  * that has a lifecycle.
  */
 @Suppress("Unused", "LongParameterList")
-@Component(service = [SandboxGroupContextComponent::class])
-@RequireSandboxHooks
+@Component(service = [ SandboxGroupContextComponent::class ])
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = CpkReadService::class)
     private val cpkReadService: CpkReadService,
@@ -50,9 +45,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference
+    private val sandboxGroupContextService: SandboxGroupContextService,
+    @Reference
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext
-) : SandboxGroupContextComponent {
+) : SandboxGroupContextComponent, SandboxGroupContextService by sandboxGroupContextService {
     companion object {
         private val logger = contextLogger()
 
@@ -66,15 +63,18 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.base",
                 "net.corda.cipher-suite",
                 "net.corda.crypto",
+                "net.corda.crypto-extensions",
                 "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
                 "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+                "net.corda.ledger-common",
                 "net.corda.ledger-consensual",
+                "net.corda.ledger-utxo",
                 "net.corda.membership",
+                "net.corda.notary-plugin",
                 "net.corda.persistence",
                 "net.corda.serialization",
                 "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
-                "org.apache.felix.scr",
                 "org.hibernate.orm.core",
                 "org.jetbrains.kotlin.osgi-bundle",
                 "slf4j.api"
@@ -85,40 +85,12 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         //  when configuration default handling is complete (CORE-3780), this should be moved
         //  and changed to a sensible default, while keeping 2 as a default for our test environments.
         //  2 is good for a test environment as it is likely to validate both caching and eviction.
-        const val SANDBOX_CACHE_SIZE_DEFAULT: Long = 2
+        const val SANDBOX_CACHE_SIZE_DEFAULT = 2L
     }
 
-    private var sandboxGroupContextService: SandboxGroupContextServiceImpl? = null
     private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
     private var registrationHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
-
-    override fun getOrCreate(
-        virtualNodeContext: VirtualNodeContext, initializer: SandboxGroupContextInitializer
-    ): SandboxGroupContext =
-        sandboxGroupContextService?.getOrCreate(virtualNodeContext, initializer) ?:
-            throw IllegalStateException("SandboxGroupContextService is not ready.")
-
-
-    override fun registerMetadataServices(
-        sandboxGroupContext: SandboxGroupContext,
-        serviceNames: (CpkMetadata) -> Iterable<String>,
-        isMetadataService: (Class<*>) -> Boolean,
-        serviceMarkerType: Class<*>
-    ): AutoCloseable =
-        sandboxGroupContextService?.registerMetadataServices(
-            sandboxGroupContext, serviceNames, isMetadataService, serviceMarkerType
-        )?: throw IllegalStateException("SandboxGroupContextService is not ready.")
-
-    override fun registerCustomCryptography(
-        sandboxGroupContext: SandboxGroupContext
-    ): AutoCloseable =
-        sandboxGroupContextService?.registerCustomCryptography(sandboxGroupContext) ?:
-            throw IllegalStateException("SandboxGroupContextService is not ready.")
-
-    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean =
-        sandboxGroupContextService?.hasCpks(cpkChecksums)?:
-        throw IllegalStateException("SandboxGroupContextService is not ready.")
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -133,8 +105,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Deactivate
     override fun close() {
         coordinator.close()
-        sandboxGroupContextService?.close()
-        cpkReadService.close()
+        cpkReadService.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -160,17 +131,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
 
-            val service = sandboxGroupContextService ?: run {
-                initCache(cacheSize)
-                sandboxGroupContextService ?: throw IllegalStateException("SandboxGroupContextService not initialized")
-            }
-            if (service.cache.cacheSize != cacheSize) {
-                // this means the cache size has been reconfigured, which means we need to recreate the cache
-                logger.info("Re-creating Sandbox cache with size: $cacheSize")
-                val oldCache = service.cache
-                service.cache = SandboxGroupContextCacheImpl(cacheSize)
-                oldCache.close()
-            }
+            logger.info("Re-creating Sandbox cache with size: {}", cacheSize)
+            resizeCache(cacheSize)
 
             coordinator.updateStatus(LifecycleStatus.UP)
         // }
@@ -204,8 +166,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     private fun onStop() {
         logger.debug { "${javaClass.name} stopping" }
-        sandboxGroupContextService?.close()
-        sandboxGroupContextService = null
+        sandboxGroupContextService.close()
         registrationHandle?.close()
         registrationHandle = null
         coordinator.stop()
@@ -218,14 +179,13 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 
-    override fun initCache(cacheSize: Long) {
-        logger.info("Initialising Sandbox cache with size: $cacheSize")
-        sandboxGroupContextService = SandboxGroupContextServiceImpl(
-            sandboxCreationService,
-            cpkReadService,
-            serviceComponentRuntime,
-            bundleContext,
-            SandboxGroupContextCacheImpl(cacheSize)
-        )
+    override fun initCache(capacity: Long) {
+        logger.info("Initialising Sandbox cache with capacity: $capacity")
+        resizeCache(capacity)
+    }
+
+    private fun resizeCache(capacity: Long) {
+        (sandboxGroupContextService as? CacheConfiguration)?.initCache(capacity)
+            ?: throw IllegalStateException("Sandbox cache could not be resized to $capacity")
     }
 }

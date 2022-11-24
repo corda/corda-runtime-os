@@ -4,25 +4,34 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
+import net.corda.data.virtualnode.VirtualNodeDBResetRequest
+import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
+import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -31,19 +40,23 @@ import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import java.lang.System.currentTimeMillis
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
+import javax.sql.DataSource
+import kotlin.system.measureTimeMillis
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -57,7 +70,7 @@ import javax.persistence.EntityManager
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
  *           than always simply the system wall clock time so that we can control everything in tests.
- * @property an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
+ * @property getChangelogs an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
  *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
  *           returns a list of CpkDbChangeLogEntity.
  */
@@ -75,69 +88,218 @@ internal class VirtualNodeWriterProcessor(
     companion object {
         private val logger = contextLogger()
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
+        val systemTerminatorTag = "${VAULT.name}-system-final"
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "ComplexMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        create.validationError()?.let { errMsg ->
-            handleException(respFuture, VirtualNodeWriteServiceException(errMsg))
-            return
+        // TODO - replace this with real metrics
+        logger.info("Create new Virtual Node: ${create.x500Name} and ${create.cpiFileChecksum}")
+        val startMillis = currentTimeMillis()
+
+        measureTimeMillis {
+            create.validationError()?.let { errMsg ->
+                handleException(respFuture, IllegalArgumentException(errMsg))
+                return
+            }
+        }.also {
+            logger.debug {"[Create ${create.x500Name}] validation took $it ms, elapsed " +
+                    "${currentTimeMillis() - startMillis} ms"}
         }
 
+
         try {
-            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByChecksum(create.cpiFileChecksum)
-            if (cpiMetadata == null) {
-                handleException(
-                    respFuture,
-                    VirtualNodeWriteServiceException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
-                )
-                return
+            val cpiMetadata: CpiMetadataLite?
+            measureTimeMillis {
+                cpiMetadata = virtualNodeEntityRepository.getCpiMetadataByChecksum(create.cpiFileChecksum)
+                if (cpiMetadata == null) {
+                    handleException(
+                        respFuture,
+                        CpiNotFoundException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
+                    )
+                    return
+                }
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             // Generate group ID for MGM
-            val groupId = cpiMetadata.mgmGroupId.let {
+            val groupId = cpiMetadata!!.mgmGroupId.let {
                 if (it == MGM_DEFAULT_GROUP_ID) UUID.randomUUID().toString() else it
             }
             val holdingId = HoldingIdentity(MemberX500Name.parse(create.getX500CanonicalName()), groupId)
-            if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
-                handleException(
-                    respFuture,
-                    VirtualNodeWriteServiceException(
-                        "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists."
+            measureTimeMillis {
+                if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
+                    handleException(
+                        respFuture,
+                        VirtualNodeAlreadyExistsException(
+                            "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name " +
+                                    "${create.x500Name} already exists."
+                        )
                     )
-                )
-                return
+                    return
+                }
+                checkUniqueId(holdingId)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
-            checkUniqueId(holdingId)
 
-            val vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
+            val vNodeDbs:  Map<VirtualNodeDbType, VirtualNodeDb>
+            measureTimeMillis {
+                vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            createSchemasAndUsers(holdingId, vNodeDbs.values)
+            measureTimeMillis {
+                createSchemasAndUsers(holdingId, vNodeDbs.values)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            runDbMigrations(holdingId, vNodeDbs.values)
+            measureTimeMillis {
+                runDbMigrations(holdingId, vNodeDbs.values)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
             val vaultDb = vNodeDbs[VAULT]
             if (null == vaultDb) {
                 handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
                 return
             } else {
-                runCpiMigrations(cpiMetadata, vaultDb)
+                measureTimeMillis {
+                    runCpiMigrations(cpiMetadata, vaultDb)
+                }.also {
+                    logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"}
+                }
             }
 
-            val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
+            val dbConnections: VirtualNodeDbConnections
+            measureTimeMillis {
+                dbConnections =
+                    persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+            measureTimeMillis {
+                publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            measureTimeMillis {
+                publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
+            measureTimeMillis {
+                sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
         } catch (e: Exception) {
             handleException(respFuture, e)
         }
+    }
+
+    private fun resetVirtualNodeDb(
+        instant: Instant,
+        dbResetRequest: VirtualNodeDBResetRequest,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>
+    ) {
+        val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+        val shortHashes = em.use {
+            dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
+                val shortHash = ShortHash.Companion.of(shortHashString)
+                // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
+                //  another database.
+                it.transaction { tx ->
+                    // Retrieve virtual node info
+                    val virtualNodeInfo = try {
+                        virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                    } catch (e: VirtualNodeNotFoundException) {
+                        logger.warn("Could not find the virtual node: $shortHashString", e)
+                        respFuture.complete(
+                            VirtualNodeManagementResponse(
+                                instant,
+                                VirtualNodeManagementResponseFailure(
+                                    ExceptionEnvelope(
+                                        e::class.java.name,
+                                        e.message
+                                    )
+                                )
+                            )
+                        )
+                        return
+                    }
+                    // Retrieve CPI metadata
+                    val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                        virtualNodeInfo.cpiIdentifier.name,
+                        virtualNodeInfo.cpiIdentifier.version
+                    )!!
+                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        // Look up the tags(UUIDs) of the applied changelog entries
+                        val appliedVersions: Set<UUID> = getAppliedVersions(
+                            tx,
+                            dataSource,
+                            systemTerminatorTag
+                        )
+                        // Look up all audit entries that correspond to the UUID set that we just got
+                        val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
+                        // Attempt to rollback the acquired changes
+                        rollbackVirtualNodeDb(
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                            migrationSet,
+                            systemTerminatorTag
+                        )
+                    }
+                    logger.info("Finished rolling back previous migrations, attempting to apply new ones")
+                    // Attempt to apply the changes from the current CPI
+                    val changelogs = getChangelogs(em, cpiMetadata.id)
+                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        runCpiResyncMigrations(
+                            dataSource,
+                            changelogs
+                        )
+                    }
+                }
+                shortHash.value
+            }
+        }
+
+        respFuture.complete(
+            VirtualNodeManagementResponse(
+                instant,
+                VirtualNodeDBResetResponse(shortHashes)
+            )
+        )
+    }
+
+    private fun rollbackVirtualNodeDb(
+        dataSource: CloseableDataSource,
+        changelogs: List<CpkDbChangeLogAuditEntity>,
+        tagToRollbackTo: String
+    ) {
+        val dbChange = VirtualNodeDbChangeLog(changelogs)
+        val connection = dataSource.connection
+        LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
     }
 
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
@@ -162,7 +324,9 @@ internal class VirtualNodeWriterProcessor(
                 val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                     this.cpiName,
                     this.cpiVersion
-                ) ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityShortHash)
+                ) ?: throw CpiNotFoundException(
+                    "No corresponding meta data found for cpi for ${this.holdingIdentity.holdingIdentityShortHash}"
+                )
                 val holdingIdentity = HoldingIdentity(
                     MemberX500Name.parse(this.holdingIdentity.x500Name),
                     this.holdingIdentity.mgmGroupId
@@ -179,6 +343,8 @@ internal class VirtualNodeWriterProcessor(
                     this.holdingIdentity.vaultDMLConnectionId!!,
                     this.holdingIdentity.cryptoDDLConnectionId,
                     this.holdingIdentity.cryptoDMLConnectionId!!,
+                    this.holdingIdentity.uniquenessDDLConnectionId,
+                    this.holdingIdentity.uniquenessDMLConnectionId!!,
                     this.holdingIdentity.hsmConnectionId,
                     VirtualNodeState.valueOf(this.virtualNodeState),
                     this.entityVersion,
@@ -240,17 +406,26 @@ internal class VirtualNodeWriterProcessor(
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
 
     private fun VirtualNodeCreateRequest.validationError(): String? {
+        if (cpiFileChecksum.isNullOrBlank()) {
+            return "CPI file checksum value is missing"
+        }
+
         if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
             return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
         }
 
         if (!cryptoDdlConnection.isNullOrBlank() && cryptoDmlConnection.isNullOrBlank()) {
             return "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
+        }
+
+        if (!uniquenessDdlConnection.isNullOrBlank() && uniquenessDmlConnection.isNullOrBlank()) {
+            return "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
         }
 
         try {
@@ -300,7 +475,9 @@ internal class VirtualNodeWriterProcessor(
                             putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
                             putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
-                            putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!
+                            putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!,
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor)!!,
                         )
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
@@ -339,7 +516,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun runDbMigrations(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.forEach { it.runDbMigration() }
+            vNodeDbs.forEach { it.runDbMigration(systemTerminatorTag) }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error running virtual node DB migration for holding identity $holdingIdentity",
@@ -357,8 +534,9 @@ internal class VirtualNodeWriterProcessor(
                 val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
                 logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
                 val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
+                val changesetId = cpkChangelogs.first().changesetId
                 try {
-                    vaultDb.runCpiMigrations(dbChange)
+                    vaultDb.runCpiMigrations(dbChange, changesetId.toString())
                 } catch (e: Exception) {
                     logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
                     throw VirtualNodeWriteServiceException(
@@ -369,6 +547,20 @@ internal class VirtualNodeWriterProcessor(
                 logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
             }
         }
+
+    private fun runCpiResyncMigrations(dataSource: CloseableDataSource, changelogs: List<CpkDbChangeLogEntity>) {
+        changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
+            val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
+            val newChangeSetId = cpkChangelogs.first().changesetId
+            logger.info("Applying change logs from $cpkName at $newChangeSetId")
+            val connection = dataSource.connection
+            LiquibaseSchemaMigratorImpl().updateDb(
+                connection,
+                VirtualNodeDbChangeLog(cpkChangelogs),
+                tag = newChangeSetId.toString()
+            )
+        }
+    }
 
     private fun createVirtualNodeRecord(
         holdingIdentity: HoldingIdentity,
@@ -386,6 +578,8 @@ internal class VirtualNodeWriterProcessor(
                 vaultDmlConnectionId,
                 cryptoDdlConnectionId,
                 cryptoDmlConnectionId,
+                uniquenessDdlConnectionId,
+                uniquenessDmlConnectionId,
                 timestamp = clock.instant(),
                 state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
@@ -440,6 +634,18 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<UUID> = (
+        em.createNativeQuery(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                "ORDER BY orderexecuted"
+        )
+            .setParameter("systemTerminatorTag", systemTerminatorTag)
+            .resultList
+            .toSet() as Set<String>
+        ).map { UUID.fromString(it) }.toSet()
+
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         instant: Instant,
@@ -456,6 +662,8 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),
                 dbConnections.cryptoDmlConnectionId.toString(),
+                dbConnections.uniquenessDdlConnectionId?.toString(),
+                dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
                 VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
@@ -482,6 +690,3 @@ internal class VirtualNodeWriterProcessor(
         return respFuture.complete(response)
     }
 }
-
-class CpiNotFoundException(holdingIdentityShortId: String) :
-    CordaRuntimeException("No corresponding meta data found for cpi for $holdingIdentityShortId")

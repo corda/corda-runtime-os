@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -9,7 +10,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
@@ -33,7 +34,7 @@ class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
-) : Lifecycle,
+) : Resource,
     HttpServerListener {
 
     companion object {
@@ -73,7 +74,12 @@ class HttpServer(
         } else {
             logger.debug("Writing HTTP response to channel $channel")
             val response = HttpHelper.createResponse(message, statusCode)
-            channel.writeAndFlush(response)
+            if (statusCode == HttpResponseStatus.OK) {
+                channel.writeAndFlush(response)
+            } else {
+                // if request failed, we close the connection.
+                channel.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
+            }
             logger.debug("Done writing HTTP response to channel $channel")
         }
     }
@@ -99,18 +105,18 @@ class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))
         }
     }
 
-    override val isRunning: Boolean
+    internal val isRunning: Boolean
         get() {
             lock.withLock {
                 return shutdownSequence.isNotEmpty()
             }
         }
 
-    override fun stop() {
+    override fun close() {
         lock.withLock {
             shutdownSequence.forEach {
                 try {
@@ -126,7 +132,7 @@ class HttpServer(
         }
     }
 
-    override fun start() {
+    fun start() {
         lock.withLock {
             if (shutdownSequence.isEmpty()) {
                 logger.info("Starting HTTP Server")

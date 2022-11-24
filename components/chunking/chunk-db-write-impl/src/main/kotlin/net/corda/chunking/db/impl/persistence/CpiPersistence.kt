@@ -67,23 +67,24 @@ interface CpiPersistence {
     fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?
 
     /**
-     * Can we insert (or update) this Cpi into the database given its name and groupId?
+     * Can we insert (or update) this CPI into the database given its name and groupId?
      *
      * Entries are 'unique' on `(name, groupId)`.
      *
-     * @param cpiName the name of the cpi
+     * @param cpiName the name of the CPI
+     * @param cpiSignerSummaryHash signer summary hash of the CPI
+     * @param cpiVersion version of the CPI
      * @param groupId the MGM group id that we want to use for this CPI
-     *
-     * @return
-     *
-     * false: If `(aaa, 123456)` is in the db, we cannot upsert `(bbb, 123456)` for
-     * the same group id
-     *
-     * true: If `(aaa, 123456)` is in the db, we can still "upsert" `(aaa, 123456)`
-     *
-     * true: If `(aaa, 123456)` is in the db, we can upsert a new cpi `(bbb, 654321)`
-     *
-     * true: If nothing is in the db we can clearly insert `(any, any)`
+     * @param forceUpload flag indicating if this is part of a force upload operation
+     * @param requestId upload request ID
      */
-    fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean = false, cpiVersion: String? = null): Boolean
+    @Suppress("LongParameterList")
+    fun validateCanUpsertCpi(
+        cpiName: String,
+        cpiSignerSummaryHash: String,
+        cpiVersion: String,
+        groupId: String,
+        forceUpload: Boolean,
+        requestId: String
+    )
 }

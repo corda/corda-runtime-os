@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -8,7 +9,6 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class SessionDataProcessorSendTest {
 
@@ -54,7 +54,7 @@ class SessionDataProcessorSendTest {
 
 
     @Test
-    fun `Send data when in state CREATED results in error`() {
+    fun `Send data when in state CREATED results in send`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionData())
         val inputState = buildSessionState(
             SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
@@ -62,10 +62,11 @@ class SessionDataProcessorSendTest {
 
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.ERROR)
+        assertThat(result.status).isEqualTo(SessionStateType.CREATED)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
-    }
+        val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
+        assertThat(sessionEventOutput.sequenceNum).isNotNull
+        assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)    }
 
     @Test
     fun `Send data when state is CONFIRMED`() {

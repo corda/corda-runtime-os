@@ -1,7 +1,14 @@
 package net.corda.httprpc.server.impl.apigen.processing.openapi.schema
 
 import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.media.BooleanSchema
+import io.swagger.v3.oas.models.media.ComposedSchema
+import io.swagger.v3.oas.models.media.IntegerSchema
+import io.swagger.v3.oas.models.media.NumberSchema
+import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.StringSchema
+import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.JsonSchemaModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaDurableReturnResultModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaEnumModel
@@ -56,6 +63,20 @@ object SchemaModelToOpenApiSchemaConverter {
             // extraordinary case, where the object's ref is expected to be found in the overall structure
             is SchemaRefObjectModel -> Schema<Any>().apply {
                 `$ref`(schemaModel.ref)
+            }
+            is JsonSchemaModel -> ComposedSchema().apply {
+                description = "Can be any value - string, number, boolean, array or object."
+                example = "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
+                anyOf(
+                    listOf(
+                        StringSchema(),
+                        NumberSchema(),
+                        IntegerSchema(),
+                        BooleanSchema(),
+                        ArraySchema(),
+                        ObjectSchema(),
+                    )
+                )
             }
             else -> convertBaseSchemaModel(schemaModel)
 

@@ -1,12 +1,10 @@
 package net.corda.membership.impl.registration.dynamic
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,6 +13,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
@@ -25,6 +24,7 @@ import net.corda.membership.registration.RegistrationManagementService
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ class RegistrationManagementServiceTest {
     @Captor
     val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
 
-    private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+    private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
     private val dependencyServices = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
@@ -53,7 +53,7 @@ class RegistrationManagementServiceTest {
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
     )
     private val registrationHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val subscription: StateAndEventSubscription<String, RegistrationState, RegistrationCommand> = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
@@ -83,8 +83,11 @@ class RegistrationManagementServiceTest {
 
     private fun postConfigChangedEvent() = postEvent(
         ConfigChangedEvent(
-            setOf(MESSAGING_CONFIG),
-            mapOf(MESSAGING_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()))
+            setOf(MESSAGING_CONFIG, MEMBERSHIP_CONFIG),
+            mapOf(
+                MESSAGING_CONFIG to mock(),
+                MEMBERSHIP_CONFIG to mock(),
+            )
         )
     )
 
@@ -101,6 +104,8 @@ class RegistrationManagementServiceTest {
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             membershipQueryClient,
+            mock(),
+            mock(),
             mock(),
             mock(),
             mock(),

@@ -23,9 +23,10 @@ class DeferredWebSocketCloserService : WebSocketCloserService {
     override fun close(webSocketContext: WsContext, closeStatus: CloseStatus) {
         deferredWebsocketClosePool.schedule({
             if (webSocketContext.session.isOpen) {
-                log.info("Closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}")
+                log.info("Closing open session ${webSocketContext.sessionId}: status ${closeStatus.code}, reason: ${closeStatus.phrase}")
             } else {
-                log.info("Closing session that's already closed with status ${closeStatus.code}, reason: ${closeStatus.phrase}")
+                log.info("Closing session ${webSocketContext.sessionId} that's already reported closed: " +
+                        "status ${closeStatus.code}, reason: ${closeStatus.phrase}")
             }
             webSocketContext.closeSession(closeStatus)
         }, 1, TimeUnit.SECONDS)

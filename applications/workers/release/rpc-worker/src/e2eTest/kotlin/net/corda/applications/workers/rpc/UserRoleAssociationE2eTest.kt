@@ -6,6 +6,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -32,12 +33,15 @@ class UserRoleAssociationE2eTest {
             val createRoleType = CreateRoleType(name, null)
             val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
-                    it.assertThat(roleName).isEqualTo(name)
-                    it.assertThat(version).isEqualTo(0L)
-                    it.assertThat(groupVisibility).isNull()
-                    it.assertThat(permissions).isEmpty()
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.roleName).isEqualTo(name)
+                    it.assertThat(this.responseBody.version).isEqualTo(0L)
+                    it.assertThat(this.responseBody.groupVisibility).isNull()
+                    it.assertThat(this.responseBody.permissions).isEmpty()
                 }
-                id
+
+                this.responseBody.id
             }
 
             // Check the role does exist now. The distribution of Role record may take some time to complete on the
@@ -67,8 +71,10 @@ class UserRoleAssociationE2eTest {
             val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
             with(proxy.createUser(createUserType)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
 
@@ -93,22 +99,26 @@ class UserRoleAssociationE2eTest {
             // add the role to the user
             with(proxy.addRole(userName, roleId)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(roleAssociations).hasSize(1)
-                    it.assertThat(roleAssociations.first().roleId).isEqualTo(roleId)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.roleAssociations).hasSize(1)
+                    it.assertThat(this.responseBody.roleAssociations.first().roleId).isEqualTo(roleId)
                 }
             }
 
             // add the role again to assert validation
             Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
-                .isInstanceOf(RequestErrorException::class.java)
+                .isInstanceOf(ResourceAlreadyExistsException::class.java)
                 .hasMessageContaining("Role '$roleId' is already associated with User '${userName.lowercase()}'.")
 
             // remove role
             with(proxy.removeRole(userName, roleId)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(roleAssociations).hasSize(0)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.roleAssociations).hasSize(0)
                 }
             }
 

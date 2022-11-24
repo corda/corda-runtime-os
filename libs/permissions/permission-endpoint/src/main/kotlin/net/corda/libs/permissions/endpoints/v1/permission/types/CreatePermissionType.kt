@@ -1,5 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.permission.types
 
+import net.corda.httprpc.exception.InvalidInputDataException
+
 /**
  * Request type for creating a Permission in the permission system.
  */
@@ -25,4 +27,10 @@ data class CreatePermissionType(
      * Optional identifier of the virtual node within which the physical node permission applies to.
      */
     val virtualNode: String?
-)
+) {
+    init {
+        if (permissionString.isBlank()) {
+            throw InvalidInputDataException("Permission string must not be null or blank.")
+        }
+    }
+}

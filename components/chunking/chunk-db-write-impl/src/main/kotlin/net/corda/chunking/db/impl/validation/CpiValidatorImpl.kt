@@ -4,34 +4,46 @@ import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
+import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SecureHash
-import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.security.KeyStore
 import java.security.cert.X509Certificate
+import java.util.jar.JarInputStream
 
 @Suppress("LongParameterList")
-class CpiValidatorImpl constructor(
+class CpiValidatorImpl(
     private val publisher: StatusPublisher,
     private val chunkPersistence: ChunkPersistence,
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
+    private val membershipSchemaValidator: MembershipSchemaValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
-    private val clock: Clock
+    certificatesService: CertificatesService,
+    private val clock: Clock,
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
+    }
+
+    private val certificateExtractor by lazy {
+        CertificateExtractor(certificatesService)
     }
 
     override fun validate(requestId: RequestId): SecureHash {
@@ -42,39 +54,38 @@ class CpiValidatorImpl constructor(
         publisher.update(requestId, "Validating upload")
         val fileInfo = assembleFileFromChunks(cpiCacheDir, chunkPersistence, requestId, ChunkReaderFactoryImpl)
 
-        publisher.update(requestId, "Checking signatures")
-        fileInfo.checkSignature()
-
-        // The following bit in only just adds the verifyCpi call site to compile. Having said that:
-        // - The following (cordadevcodesignpublic.pem) is the certificate of "cordadevcodesign.p12" (default)
-        // used in `corda-gradle-plugins.cordapp-cpk` (defaulted CPB developer certificate).
-        // - Normally we would need to load two certificates to verify a CPI, the CPB developer's and the network operator's (?).
-        // - The following CPI verification is de-activated for now because does not work.
-        // TODO "cpiVerificationEnabled" deactivation flag is to be removed once CPI verification works as per
-        //  https://r3-cev.atlassian.net/browse/CORE-5407
-        val cpiVerificationEnabled = System.getProperty("cpiVerificationEnabled", "false").toBoolean()
-        if (cpiVerificationEnabled) {
-            publisher.update(requestId, "Verifying CPI")
-            // - The certificates are normally going to be loaded from the database.
-            val certs = getCerts()
-            verifyCpi(fileInfo.name, Files.newInputStream(fileInfo.path), certs)
-        }
+        publisher.update(requestId, "Verifying CPI")
+        fileInfo.verifyCpi(certificateExtractor.getAllCertificates(), requestId)
 
         publisher.update(requestId, "Validating CPI")
-        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir)
+        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId)
+
+        publisher.update(requestId, "Checking group policy is well formed.")
+        try {
+            membershipSchemaValidator.validateGroupPolicy(
+                GroupPolicySchema.Default,
+                Version(cpi.validateAndGetGroupPolicyFileVersion(), 0),
+                cpi.metadata.groupPolicy!!
+            )
+        } catch (ex: MembershipSchemaValidationException) {
+            throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)
+        }
 
         publisher.update(requestId, "Checking group id in CPI")
-        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)
-
-        if (!fileInfo.forceUpload) {
-            publisher.update(requestId, "Validating group id against DB")
-            cpiPersistence.verifyGroupIdIsUniqueForCpi(cpi)
-        }
+        val groupId = cpi.validateAndGetGroupId(requestId, GroupPolicyParser::groupIdFromJson)
 
         publisher.update(
             requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
         )
-        canUpsertCpi(cpi, groupId, fileInfo.forceUpload)
+
+        cpiPersistence.validateCanUpsertCpi(
+            cpiName = cpi.metadata.cpiId.name,
+            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+            cpiVersion = cpi.metadata.cpiId.version,
+            groupId = groupId,
+            forceUpload = fileInfo.forceUpload,
+            requestId = requestId
+        )
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
@@ -98,38 +109,29 @@ class CpiValidatorImpl constructor(
     }
 
     /**
-     *  Check that we can upsert a CPI with the same name and group id, or a new cpi
-     *  with a different name *and* different group id.  This is enforcing the policy
-     *  of one CPI per mgm group id.
+     * Verifies CPI
+     *
+     * @throws ValidationException if CPI format > 1.0
      */
-    private fun canUpsertCpi(cpi: Cpi, groupId: String, forceUpload: Boolean) {
-        if (!cpiPersistence.canUpsertCpi(
-                cpi.metadata.cpiId.name,
-                groupId,
-                forceUpload,
-                cpi.metadata.cpiId.version
-            )
-        ) {
-            throw ValidationException(
-                "Group id ($groupId) in use with another CPI.  " +
-                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
-            )
+    private fun FileInfo.verifyCpi(certificates: Collection<X509Certificate>, requestId: String) {
+        fun isCpiFormatV1() =
+            try {
+                val format = JarInputStream(Files.newInputStream(path)).use {
+                    it.manifest.mainAttributes.getValue(PackagingConstants.CPI_FORMAT_ATTRIBUTE)
+                }
+                format == null || format == "1.0"
+            } catch (t: Throwable) {
+                false
+            }
+
+        try {
+            verifyCpi(name, Files.newInputStream(path), certificates)
+        } catch (ex: Exception) {
+            if (isCpiFormatV1()) {
+                log.warn("Error validating CPI. Ignoring error for format 1.0: ${ex.message}", ex)
+            } else {
+                throw ValidationException("Error validating CPI.  ${ex.message}", requestId, ex)
+            }
         }
-    }
-
-    // TODO The implementation of this method needs updating to load needed certificates from the database.
-    //  It currently just loads the default certificate as a loaded resource whose private key is used at CPB signing
-    //  in `corda-gradle-plugins.cordapp-cpk`.
-    private fun getCerts(): Collection<X509Certificate> {
-        val certs = mutableSetOf<X509Certificate>()
-
-        val defaultCertificate = "cordadevcodesignpublic.pem"
-        val keyStoreInputStream = this::class.java.classLoader.getResourceAsStream(defaultCertificate)
-            ?: throw FileNotFoundException("Resource file \"$defaultCertificate\" not found")
-
-        val keyStore = KeyStore.getInstance("PKCS12")
-        keyStoreInputStream.use { keyStore.load(it, "cordacadevpass".toCharArray()) }
-        certs.add(keyStore.getCertificate("cordacodesign") as X509Certificate)
-        return certs
     }
 }

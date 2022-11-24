@@ -2,12 +2,13 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
@@ -49,9 +50,10 @@ interface BackingStore : Lifecycle {
 
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the
-     * context of the session.
+     * context of the session. A session is tied to a specific [holdingIdentity], which must be
+     * specified when opening the session.
      */
-    fun session(block: (Session) -> Unit)
+    fun session(holdingIdentity: HoldingIdentity, block: (Session) -> Unit)
 
     /**
      * Convenience function which opens a session with the backing store and then immediately
@@ -59,8 +61,11 @@ interface BackingStore : Lifecycle {
      * and [TransactionOps][Session.TransactionOps] interfaces. Useful when you know you will need
      * to perform commit operations up front.
      */
-    fun transactionSession(block: (Session, Session.TransactionOps) -> Unit) {
-        session { session -> session.executeTransaction(block) }
+    fun transactionSession(
+        holdingIdentity: HoldingIdentity,
+        block: (Session, Session.TransactionOps) -> Unit
+    ) {
+        session(holdingIdentity) { session -> session.executeTransaction(block) }
     }
 
     /**
@@ -82,8 +87,8 @@ interface BackingStore : Lifecycle {
          * have been previously committed, keyed by their state reference.
          */
         fun getStateDetails(
-            states: Collection<UniquenessCheckInternalStateRef>
-        ): Map<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>
+            states: Collection<UniquenessCheckStateRef>
+        ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
 
         /**
          * For the given list of transaction id's, returns a map of transaction details for
@@ -91,7 +96,7 @@ interface BackingStore : Lifecycle {
          */
         fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckInternalTransactionDetails>
+        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.
@@ -103,7 +108,7 @@ interface BackingStore : Lifecycle {
              * Instructs the backing store to record new state records which are marked as
              * unconsumed.
              */
-            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckInternalStateRef>)
+            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckStateRef>)
 
             /**
              * Instructs the backing store to mark previously unconsumed states as consumed by
@@ -111,7 +116,7 @@ interface BackingStore : Lifecycle {
              */
             fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             )
 
             /**
@@ -119,7 +124,7 @@ interface BackingStore : Lifecycle {
              */
             fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
+                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
             )
         }
     }

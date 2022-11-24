@@ -3,8 +3,10 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -20,13 +22,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.Random
+import java.util.*
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
-import net.corda.libs.cpi.datamodel.CpkKey
-import net.corda.libs.packaging.core.CordappType
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
@@ -48,7 +48,7 @@ class CpiInfoDbReconcilerReaderTest {
             )
         ),
         CordappManifest(
-            "net.corda.Bundle",
+            "net.cordapp.Bundle",
             "1.2.3",
             12,
             34,
@@ -110,19 +110,21 @@ class CpiInfoDbReconcilerReaderTest {
         val em = mock<EntityManager>()
         whenever(em.transaction).thenReturn(mock())
         whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
+        val reconciliationContext = mock<ReconciliationContext>()
+        whenever(reconciliationContext.entityManager).thenReturn(em)
 
-        val versionedRecords = getAllCpiInfoDBVersionedRecords(em).toList()
+        val versionedRecords = getAllCpiInfoDBVersionedRecords(reconciliationContext).toList()
         val record = versionedRecords.single()
 
         val expectedId = CpiIdentifier(
             dummyCpiMetadataEntity.name,
             dummyCpiMetadataEntity.version,
-            SecureHash.create(dummyCpiMetadataEntity.signerSummaryHash))
+            SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
 
         assertThat(record.key).isEqualTo(expectedId)
         assertThat(record.value.cpiId).isEqualTo(expectedId)
 
-        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.create(dummyCpiMetadataEntity.fileChecksum))
+        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.parse(dummyCpiMetadataEntity.fileChecksum))
         assertThat(record.value.groupPolicy).isEqualTo(dummyCpiMetadataEntity.groupPolicy)
         assertThat(record.value.cpksMetadata).containsExactly(dummyCpkMetadata)
     }

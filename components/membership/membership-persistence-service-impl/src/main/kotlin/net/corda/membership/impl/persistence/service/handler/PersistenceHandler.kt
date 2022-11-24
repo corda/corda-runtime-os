@@ -3,15 +3,15 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -36,6 +36,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
+    val keyEncodingService get() = persistenceHandlerServices.keyEncodingService
+    val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
@@ -43,14 +45,17 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                 "Virtual node info can't be retrieved for " +
                         "holding identity ID $holdingIdentityShortHash"
             )
-
-        return getEntityManagerFactory(virtualNodeInfo).transaction(block)
+        val factory = getEntityManagerFactory(virtualNodeInfo)
+        return try {
+            factory.transaction(block)
+        } finally {
+            factory.close()
+        }
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.getOrCreateEntityManagerFactory(
-            name = VirtualNodeDbType.VAULT.getConnectionName(info.holdingIdentity.shortHash),
-            privilege = DbPrivilege.DML,
+        return dbConnectionManager.createEntityManagerFactory(
+            connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
@@ -65,5 +70,7 @@ internal data class PersistenceHandlerServices(
     val jpaEntitiesRegistry: JpaEntitiesRegistry,
     val memberInfoFactory: MemberInfoFactory,
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    val keyEncodingService: KeyEncodingService,
+    val platformInfoProvider: PlatformInfoProvider,
 )

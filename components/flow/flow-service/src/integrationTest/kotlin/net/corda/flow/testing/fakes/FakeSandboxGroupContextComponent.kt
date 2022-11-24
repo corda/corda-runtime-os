@@ -6,6 +6,8 @@ import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -55,7 +57,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         TODO("Not yet implemented")
     }
 
-    override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
+    override fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext) {
         TODO("Not yet implemented")
     }
 
@@ -63,7 +65,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         return cpkChecksums.any { availableCpk.contains(it) }
     }
 
-    override fun initCache(cacheSize: Long) {
+    override fun initCache(capacity: Long) {
         TODO("Not yet implemented")
     }
 
@@ -76,6 +78,9 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     override fun stop() {
     }
 
+    override fun close() {
+    }
+
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
         override val sandboxGroup: SandboxGroup,
@@ -84,7 +89,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         private val cache = mapOf(
             FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
             FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
-            FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
+            RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE to FakeSerializationService(),
             FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE to makeProtocolStore()
         )
 
@@ -107,8 +112,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         override fun injectServices(flow: Flow) {
         }
 
-        override fun getRegisteredSingletons(): Set<SingletonSerializeAsToken> {
-            return setOf()
+        override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {
+            return emptySet()
         }
 
         override fun close() {
@@ -157,6 +162,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
 
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
+            TODO("Not yet implemented")
+        }
+
+        override fun loadClassFromPublicBundles(className: String): Class<*>? {
             TODO("Not yet implemented")
         }
     }

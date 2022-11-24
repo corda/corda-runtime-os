@@ -2,6 +2,7 @@ package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -20,7 +21,13 @@ class FlowEngineImplTest {
     private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxGroupContext.dependencyInjector
     private val flowFiber = flowFiberService.flowFiber
-    private val flowStackItem = FlowStackItem()
+    private val flowStackItem = FlowStackItem.newBuilder()
+        .setFlowName("flow-id")
+        .setIsInitiatingFlow(true)
+        .setSessions(listOf())
+        .setContextPlatformProperties(mutableKeyValuePairList())
+        .setContextUserProperties(mutableKeyValuePairList())
+        .build()
     private val subFlow = mock<SubFlow<String>>()
     private val result = "result"
 
@@ -54,11 +61,11 @@ class FlowEngineImplTest {
             verify(subFlow).call()
 
             // Assert the flow stack item is popped of the stack
-            // and passed to  the sub flow finished IO request
+            // and passed to the sub flow finished IO request
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessions.map { it.sessionId })
             }
         }
     }
@@ -89,7 +96,7 @@ class FlowEngineImplTest {
                 verify(flowFiber).suspend(capture())
 
                 assertThat(firstValue.throwable).isEqualTo(error)
-                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessions.map { it.sessionId })
             }
         }
     }

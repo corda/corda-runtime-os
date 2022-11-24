@@ -11,19 +11,18 @@ import java.util.concurrent.TimeoutException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-const val X500_BOB = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
-const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
-//Charlie and David for use in multiple flow status endpoints. Number of flows they start is asserted. Do not start flows using these names
-const val X500_CHARLIE = "CN=Charlie, OU=Application, O=R3, L=Dublin, C=IE"
-const val X500_DAVID = "CN=David, OU=Application, O=R3, L=Dublin, C=IE"
-const val CPI_NAME = "flow-worker-dev"
-
 const val USERNAME = "admin"
-const val PASSWORD = "admin"
-const val GROUP_ID = "placeholder"
+val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
+const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
+
+// The CPB and CPI used in smoke tests
+const val TEST_CPI_NAME = "test-cordapp"
+const val TEST_CPB_LOCATION = "/META-INF/test-cordapp.cpb"
+const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
+const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
+const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
 
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))
-
 
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
 // return a full hash (64 chars?) but the same API only accepts the first 12 chars.
@@ -32,6 +31,8 @@ fun truncateLongHash(shortHash:String):String {
 }
 
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
+
+fun <K, V> Map<K, V>.toJsonString(): String = ObjectMapper().writeValueAsString(this)
 
 fun Any.contextLogger(): Logger = LoggerFactory.getLogger(javaClass.enclosingClass)
 

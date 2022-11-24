@@ -1,10 +1,10 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.cordapp-cpb2'
     id 'org.jetbrains.kotlin.jvm'
 }
 
 description 'Animal CPB'
-group 'net.corda.testing.animals'
+group 'net.cordapp.testing.animals'
 
 cordapp {
     targetPlatformVersion platformVersion as Integer

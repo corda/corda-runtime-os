@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.lifecycle.LifecycleStatus
@@ -54,6 +55,7 @@ class CryptoServiceFactoryTests {
             component.impl
         }
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -65,6 +67,7 @@ class CryptoServiceFactoryTests {
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -83,6 +86,7 @@ class CryptoServiceFactoryTests {
     fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -105,6 +109,7 @@ class CryptoServiceFactoryTests {
     fun `findInstance(tenant,category) should return same instance`() {
         assertFalse(component.isRunning)
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -129,14 +134,15 @@ class CryptoServiceFactoryTests {
     fun `findInstance(tenant,category) should fail when this component not handling the HSM`() {
         assertFalse(component.isRunning)
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertThrows<IllegalStateException> {
+        assertThrows<InvalidParamsException> {
             component.findInstance(tenantId2, CryptoConsts.Categories.LEDGER)
         }
-        assertThrows<IllegalStateException> {
+        assertThrows<InvalidParamsException> {
             component.findInstance(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
         }
     }
@@ -148,6 +154,7 @@ class CryptoServiceFactoryTests {
             component.impl
         }
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -165,6 +172,7 @@ class CryptoServiceFactoryTests {
             component.impl
         }
         component.start()
+        component.bootstrapConfig(factory.bootstrapConfig)
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)

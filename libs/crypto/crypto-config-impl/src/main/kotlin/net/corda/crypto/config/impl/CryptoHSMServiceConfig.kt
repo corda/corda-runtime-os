@@ -24,14 +24,6 @@ class CryptoHSMServiceConfig(private val config: SmartConfig) {
         }
     }
 
-    val cache: CacheConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            CacheConfig(config.getConfig(this::cache.name))
-        } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::cache.name}", e)
-        }
-    }
-
     val downstreamMaxAttempts: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getInt(this::downstreamMaxAttempts.name)

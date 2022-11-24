@@ -10,7 +10,6 @@ import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,6 +21,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.httprpc.ResponseCode
 import net.corda.permissions.management.PermissionManagementService
+import org.junit.jupiter.api.Assertions.assertNotNull
 
 internal class RoleEndpointImplTest {
 
@@ -62,8 +62,11 @@ internal class RoleEndpointImplTest {
         whenever(permissionManager.createRole(createRoleDtoCapture.capture())).thenReturn(roleResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createRole(createRoleType)
+        val response = endpoint.createRole(createRoleType)
+        val responseType = response.responseBody
 
+        assertEquals(ResponseCode.CREATED, response.responseCode)
+        assertNotNull(responseType)
         assertEquals("roleId", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
@@ -80,7 +83,7 @@ internal class RoleEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.getRole("roleId")
 
-        Assertions.assertNotNull(responseType)
+        assertNotNull(responseType)
         assertEquals("roleId", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)

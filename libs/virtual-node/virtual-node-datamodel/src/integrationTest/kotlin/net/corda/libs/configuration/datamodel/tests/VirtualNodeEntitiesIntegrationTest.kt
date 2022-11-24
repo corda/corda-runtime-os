@@ -71,8 +71,17 @@ class VirtualNodeEntitiesIntegrationTest {
     fun `can persist and read back Holding Identity entity`() {
         val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
         val holdingIdentity = HoldingIdentityEntity(
-            holdingIdentityShortHash, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
-            "${random.nextInt()}", null, null, null, null, null
+            holdingIdentityShortHash,
+            "a=b",
+            "OU=LLC, O=Bob, L=Dublin, C=IE",
+            "${random.nextInt()}",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -185,6 +194,21 @@ class VirtualNodeEntitiesIntegrationTest {
         assertEquals(virtualNode.holdingIdentity.x500Name, vnodes.last().holdingIdentity.x500Name)
     }
 
+    @Test
+    fun `lookup returns null if no vnode found`() {
+        // "set up"
+        val numberOfVNodes = 5
+        (1..numberOfVNodes).forEach { i ->
+            newVNode("Test CPI $i", "1.0-${Generator.epochMillis()}", "hash$i")
+        }
+
+        val virtualNode = entityManagerFactory.createEntityManager().use {
+            it.findVirtualNode("something")
+        }
+
+        assertEquals(virtualNode, null)
+    }
+
     private fun newVNode(name: String, version: String, hash: String): VirtualNodeEntity {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())
@@ -204,6 +228,8 @@ class VirtualNodeEntitiesIntegrationTest {
         vaultDMLConnectionId = null,
         cryptoDDLConnectionId = null,
         cryptoDMLConnectionId = null,
+        uniquenessDDLConnectionId = null,
+        uniquenessDMLConnectionId = null,
         hsmConnectionId = null
     )
 

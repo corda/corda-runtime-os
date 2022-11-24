@@ -3,6 +3,7 @@ package net.corda.membership.certificate.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
@@ -15,6 +16,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -26,6 +28,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -58,11 +61,12 @@ class CertificatesClientImplTest {
         on { createPublisher(any(), any()) } doReturn publisher
     }
     private val configurationReadService = mock<ConfigurationReadService>()
-    private var retrieveCertificates: ((String, String) -> String?)? = null
+    private var retrieveCertificates: ((ShortHash?, CertificateUsage, String) -> String?)? = null
     private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
         @Suppress("UNCHECKED_CAST")
-        retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
+        retrieveCertificates = settings.arguments()[4] as? ((ShortHash?, CertificateUsage, String) -> String?)
     }
+    private val shortHash = ShortHash.of("AF77BF2471F3")
 
     private val client = CertificatesClientImpl(
         coordinatorFactory,
@@ -90,12 +94,13 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificates("tenantId", "alias", "certificate")
+            client.importCertificates(CertificateUsage.RPC_API_TLS, null, "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateUsage.RPC_API_TLS,
+                        null,
                         ImportCertificateRpcRequest(
                             "alias",
                             "certificate"
@@ -114,7 +119,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateUsage.P2P_TLS, null, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Failure")
@@ -123,7 +128,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates throws exception if client is not ready`() {
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateUsage.CODE_SIGNER, null, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Certificates client is not ready")
@@ -142,21 +147,23 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
-                "sessionAlias"
+                true,
+                true,
+                "sessionAlias",
+                null,
             )
 
             verify(
                 mockHostedIdentityEntryFactory.constructed().first()
             ).createIdentityRecord(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
-                "sessionAlias"
+                true,
+                null,
+                true,
+                "sessionAlias",
             )
         }
 
@@ -169,12 +176,13 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            retrieveCertificates?.invoke("tenantId", "alias")
+            retrieveCertificates?.invoke(null, CertificateUsage.P2P_SESSION, "alias")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateUsage.P2P_SESSION,
+                        null,
                         RetrieveCertificateRpcRequest(
                             "alias",
                         )
@@ -186,11 +194,12 @@ class CertificatesClientImplTest {
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
-                    "tlsTenantId",
-                    "sessionKeyTenantId",
-                    "sessionAlias"
+                    true,
+                    false,
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -206,11 +215,12 @@ class CertificatesClientImplTest {
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
-                    "tlsTenantId",
-                    "sessionKeyTenantId",
-                    "sessionAlias"
+                    false,
+                    true,
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -220,7 +230,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), any(), any(), any(), any())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -229,11 +239,12 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
-                "tlsTenantId",
-                "sessionKeyTenantId",
-                "sessionAlias"
+                false,
+                true,
+                "sessionAlias",
+                "chain",
             )
 
             verify(publisher).publish(listOf(record))
@@ -244,7 +255,6 @@ class CertificatesClientImplTest {
     inner class PlumbingTests {
         @Test
         fun `isRunning return true if sender is running`() {
-            whenever(sender.isRunning).doReturn(true)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -252,18 +262,6 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             assertThat(client.isRunning).isTrue
-        }
-
-        @Test
-        fun `isRunning return false if sender is not`() {
-            whenever(sender.isRunning).doReturn(false)
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
-
-            assertThat(client.isRunning).isFalse
         }
 
         @Test
@@ -316,7 +314,7 @@ class CertificatesClientImplTest {
             fun `StopEvent will stop everything`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 handler.firstValue.processEvent(StartEvent(), coordinator)
                 val event = ConfigChangedEvent(
@@ -365,7 +363,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client stop listen to configuration when configuration is ready in the second time`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
@@ -409,7 +407,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client goes down and stop listen to configuration when configuration goes down`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)

@@ -12,6 +12,7 @@ import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
+import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
@@ -21,12 +22,12 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
-import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
+import org.apache.avro.specific.SpecificRecord
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -48,7 +49,7 @@ class DefaultKryoCustomizer {
             serializers: Map<Class<*>, Serializer<*>>,
             classResolver: CordaClassResolver,
             classSerializer: ClassSerializer,
-            ): Kryo {
+        ): Kryo {
             return kryo.apply {
 
                 classResolver.setKryo(this)
@@ -80,8 +81,6 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 
-                // Exceptions. We don't bother sending the stack traces as the client will fill in its own anyway.
-                addDefaultSerializer(Array<StackTraceElement>::class.java, StackTraceSerializer())
                 addDefaultSerializer(BitSet::class.java, BitSetSerializer())
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
@@ -104,6 +103,9 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
+
+                // Register a serializer to reject the serialization of Avro generated classes
+                addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {

@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -8,7 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -23,14 +24,15 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,8 +44,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
-import net.corda.test.util.time.TestClock
-import net.corda.virtualnode.ShortHash
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -70,9 +70,17 @@ class MemberLookupRpcOpsTest {
     private val knownKey: PublicKey = mock()
     private val keys = listOf(knownKey, knownKey)
 
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
+    }
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
-        EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+        endpointInfoFactory.create("https://corda5.r3.com:10000"),
+        endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
@@ -84,6 +92,7 @@ class MemberLookupRpcOpsTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
+        MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
 
@@ -119,7 +128,7 @@ class MemberLookupRpcOpsTest {
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             SOFTWARE_VERSION to "5.0.0",
-            PLATFORM_VERSION to "10",
+            PLATFORM_VERSION to "5000",
             SERIAL to "1"
         ),
         sortedMapOf(
@@ -167,7 +176,12 @@ class MemberLookupRpcOpsTest {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
             timestamp = Instant.now()
         )
     }
@@ -222,13 +236,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation (O) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "ALICE")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
         assertEquals(1, result1.members.size)
         assertEquals(aliceRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "alice")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
         assertEquals(1, result2.members.size)
         assertEquals(aliceRpcResult, result2)
         memberLookupRpcOps.deactivate("")
@@ -236,13 +250,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "unit2")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
         assertEquals(1, result1.members.size)
         assertEquals(bobRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "UNIT2")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
         assertEquals(1, result2.members.size)
         assertEquals(bobRpcResult, result2)
         memberLookupRpcOps.deactivate("")

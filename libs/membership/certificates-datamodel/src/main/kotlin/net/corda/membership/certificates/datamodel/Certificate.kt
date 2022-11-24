@@ -14,8 +14,11 @@ import javax.persistence.Table
 data class Certificate(
     @Id
     @Column(name = "alias", nullable = false, updatable = false)
-    val alias: String,
+    override val alias: String,
+
+    @Column(name = "usage", nullable = false, updatable = false)
+    override val usage: String,
 
     @Column(name = "raw_certificate", nullable = false, updatable = true)
-    val rawCertificate: String,
-)
+    override val rawCertificate: String,
+) : CertificateEntity

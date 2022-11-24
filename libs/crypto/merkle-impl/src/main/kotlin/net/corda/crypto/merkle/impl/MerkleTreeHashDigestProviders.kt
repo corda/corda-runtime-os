@@ -2,13 +2,14 @@ package net.corda.crypto.merkle.impl
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.merkle.MerkleProofType
 import java.nio.charset.Charset
 import java.security.SecureRandom
 
@@ -103,7 +104,7 @@ open class NonceHashDigestProvider(
         override fun leafNonce(index: Int): ByteArray? = null
 
         override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
-            require(nonce == null) { "Nonce must not be null" }
+            require(nonce == null) { "Nonce must be null" }
             return SecureHash.deserialize(bytes, digestService)
         }
 
@@ -119,7 +120,7 @@ open class NonceHashDigestProvider(
         val preHashedLeaves = allLeavesProof.leaves.map {
             IndexedMerkleLeaf(it.index, null, leafHash(it.index, it.nonce, it.leafData).serialize())
         }
-        return MerkleProofImpl(allLeavesProof.treeSize, preHashedLeaves, allLeavesProof.hashes)
+        return MerkleProofImpl(MerkleProofType.SIZE, allLeavesProof.treeSize, preHashedLeaves, allLeavesProof.hashes)
     }
 
     override fun leafNonce(index: Int): ByteArray {

@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import com.google.common.collect.ImmutableList;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -31,12 +31,20 @@ class Wrapper {
     Wrapper(JavaTestContractState cs) {
         this.cs = cs;
     }
+
+    public JavaTestContractState getCs() {
+        return cs;
+    }
 }
 
 @CordaSerializable
 class TemplateWrapper<T> {
     public T obj;
     TemplateWrapper(T obj) { this.obj = obj; }
+
+    public T getObj() {
+        return obj;
+    }
 }
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)

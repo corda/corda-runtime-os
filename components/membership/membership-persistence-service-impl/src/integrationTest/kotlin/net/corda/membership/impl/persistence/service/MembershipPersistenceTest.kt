@@ -10,7 +10,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -21,6 +21,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -31,12 +32,15 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_DECLINED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
@@ -45,13 +49,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_DECLINED
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toMap
+import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -61,6 +64,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -73,11 +77,16 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.calculateHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -88,6 +97,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
@@ -95,6 +105,10 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
     companion object {
+
+        private const val EPOCH_KEY = "corda.epoch"
+        private const val MPV_KEY = "corda.minimumPlatformVersion"
+        private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
 
         private val logger = contextLogger()
 
@@ -164,6 +178,9 @@ class MembershipPersistenceTest {
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
 
+        @InjectService(timeout = 5000)
+        lateinit var keyEncodingService: KeyEncodingService
+
         /**
          * Wrapper class which allows the client to wait until the underlying DB message bus has been set up correctly with partitions required.
          * Without this the client often tries to send RPC requests before the service has set up the kafka topics required
@@ -182,6 +199,26 @@ class MembershipPersistenceTest {
                 groupPolicy: LayeredPropertyMap,
             ) = safeCall {
                 membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+            }
+
+            override fun persistGroupParameters(
+                viewOwningIdentity: HoldingIdentity,
+                groupParameters: GroupParameters
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupParameters(viewOwningIdentity, groupParameters)
+            }
+
+            override fun persistGroupParametersInitialSnapshot(
+                viewOwningIdentity: HoldingIdentity
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupParametersInitialSnapshot(viewOwningIdentity)
+            }
+
+            override fun addNotaryToGroupParameters(
+                viewOwningIdentity: HoldingIdentity,
+                notary: MemberInfo
+            ) = safeCall {
+                membershipPersistenceClient.addNotaryToGroupParameters(viewOwningIdentity, notary)
             }
 
             override fun persistRegistrationRequest(
@@ -315,6 +352,7 @@ class MembershipPersistenceTest {
                 CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", null),
                 vaultDmlConnectionId = connectionID,
                 cryptoDmlConnectionId = connectionID,
+                uniquenessDmlConnectionId = connectionID,
                 timestamp = clock.instant()
             )
             virtualNodeReadService.putVNodeInfo(vnodeInfo)
@@ -376,8 +414,11 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
+                ),
             )
         )
 
@@ -413,6 +454,329 @@ class MembershipPersistenceTest {
     }
 
     @Test
+    fun `persistGroupParametersInitialSnapshot can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+        }
+        val persisted = membershipPersistenceClientWrapper.persistGroupParametersInitialSnapshot(viewOwningHoldingIdentity)
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(
+                GroupParametersEntity::class.java,
+                1
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.epoch).isEqualTo(1)
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
+            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized[EPOCH_KEY]).isEqualTo("1")
+            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
+            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
+        }
+    }
+
+    @Test
+    fun `persistGroupParameters can persist over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                1,
+                cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "1"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(MPV_KEY, "5000")
+                        )
+                    )
+                )!!
+            )
+            it.persist(entity)
+        }
+        val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(mapOf(
+            EPOCH_KEY to "2",
+            MPV_KEY to "5000",
+            MODIFIED_TIME_KEY to clock.instant().toString()
+        ))
+        val persisted = membershipPersistenceClientWrapper.persistGroupParameters(viewOwningHoldingIdentity, groupParameters)
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(
+                GroupParametersEntity::class.java,
+                2
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!.toMap()
+            assertThat(deserialized.size).isEqualTo(3)
+            assertThat(deserialized[EPOCH_KEY]).isEqualTo("2")
+            assertDoesNotThrow { Instant.parse(deserialized[MODIFIED_TIME_KEY]) }
+            assertThat(deserialized[MPV_KEY]).isEqualTo("5000")
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist new notary service over RPC topic`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                50,
+                cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "50"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(MPV_KEY, "5000")
+                        )
+                    )
+                )!!
+            )
+            it.persist(entity)
+        }
+
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "https://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val notaryKey = with(KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())) {
+            generateKeyPair().public
+        }
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SERIAL, "1"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair("corda.notary.service.name", notaryServiceName),
+                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
+                KeyValuePair("corda.roles.0", "notary"),
+                KeyValuePair("corda.notary.keys.0.pem", keyEncodingService.encodeAsString(notaryKey)),
+                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
+            )
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "51"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", keyEncodingService.encodeAsString(notaryKey)),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(6)
+            assertThat(containsAll(expectedGroupParameters))
+        }
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(
+                GroupParametersEntity::class.java,
+                51
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist notary to existing notary service over RPC topic`() {
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "http://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val notaryKey = with(KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())) {
+            generateKeyPair().public
+        }
+        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SERIAL, "1"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair("corda.notary.service.name", notaryServiceName),
+                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
+                KeyValuePair("corda.roles.0", "notary"),
+                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
+                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
+            )
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                100,
+                cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "100"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(MPV_KEY, "5000"),
+                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin)
+                            )
+                        )
+                    )!!
+                )
+            it.persist(entity)
+        }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "101"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", notaryKeyAsString),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(6)
+            assertThat(containsAll(expectedGroupParameters))
+        }
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(
+                GroupParametersEntity::class.java,
+                101
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(6)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
+    fun `addNotaryToGroupParameters can persist notary with rotated keys over RPC topic`() {
+        val keyGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val groupId = randomUUID().toString()
+        val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
+        val endpointUrl = "http://localhost:8080"
+        val notaryServiceName = "O=New Service, L=London, C=GB"
+        val notaryServicePlugin = "Notary Plugin"
+        val notaryKey = with(keyGenerator) {
+            generateKeyPair().public
+        }
+        val notaryKeyAsString = keyEncodingService.encodeAsString(notaryKey)
+        val notaryKeyHash = notaryKey.calculateHash()
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, memberx500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SERIAL, "1"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+                KeyValuePair("corda.notary.service.name", notaryServiceName),
+                KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
+                KeyValuePair("corda.roles.0", "notary"),
+                KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
+                KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+            ).sorted()
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
+            )
+        )
+        val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val oldNotaryKey = with(keyGenerator) {
+            keyEncodingService.encodeAsString(generateKeyPair().public)
+        }
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                150,
+                cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "150"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(MPV_KEY, "5000"),
+                            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+                            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+                            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey)
+                        )
+                    )
+                )!!
+            )
+            it.persist(entity)
+        }
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, "151"),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("corda.notary.service.0.name", notaryServiceName),
+            KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin),
+            KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey),
+            KeyValuePair("corda.notary.service.0.keys.1", notaryKeyAsString),
+        )
+
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+
+        assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        with((persisted as? MembershipPersistenceResult.Success<KeyValuePairList>)!!.payload.items) {
+            assertThat(size).isEqualTo(7)
+            assertThat(containsAll(expectedGroupParameters))
+        }
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(
+                GroupParametersEntity::class.java,
+                151
+            )
+        }
+        assertThat(persistedEntity).isNotNull
+        with(persistedEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            assertThat(deserialized.items.size).isEqualTo(7)
+            assertThat(deserialized.items.containsAll(expectedGroupParameters))
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
+        }
+    }
+
+    @Test
     fun `member infos can persist over RPC topic`() {
         val groupId = randomUUID().toString()
         val memberx500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
@@ -423,7 +787,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(PLATFORM_VERSION, "5000"),
                 KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0")
             )
@@ -471,7 +835,7 @@ class MembershipPersistenceTest {
             .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
             .containsEntry(GROUP_ID, groupId)
             .containsEntry(PARTY_NAME, memberx500Name.toString())
-            .containsEntry(PLATFORM_VERSION, "11")
+            .containsEntry(PLATFORM_VERSION, "5000")
             .containsEntry(SERIAL, "1")
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
@@ -594,6 +958,11 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
+            val signatureContext = KeyValuePairList(
+                listOf(
+                    KeyValuePair("key", "value")
+                )
+            )
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
@@ -605,12 +974,15 @@ class MembershipPersistenceTest {
                             context
                         )
                     ),
-                    publicKey,
-                    signature,
+                    CryptoSignatureWithKey(
+                        publicKey,
+                        signature,
+                        signatureContext,
+                    )
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, KeyValuePairList(emptyList())
+                publicKey, signature, signatureContext
             )
             holdingId to cryptoSignatureWithKey
         }
@@ -641,8 +1013,11 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
+                ),
             )
         )
 
@@ -686,7 +1061,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberName.toString()),
-                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(PLATFORM_VERSION, "5000"),
                 KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0")
             )
@@ -724,9 +1099,25 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
+                ),
             )
         )
+    }
+
+    private class TestGroupParametersImpl(
+        private val map: LayeredPropertyMap
+    ) : LayeredPropertyMap by map, GroupParameters {
+        override val epoch: Int
+            get() = 5
+        override val minimumPlatformVersion: Int
+            get() = 5000
+        override val modifiedTime: Instant
+            get() = clock.instant()
+        override val notaries: List<NotaryInfo>
+            get() = emptyList()
     }
 }

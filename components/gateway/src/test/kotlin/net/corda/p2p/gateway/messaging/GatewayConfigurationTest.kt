@@ -18,8 +18,10 @@ class GatewayConfigurationTest {
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
             on { getInt("hostPort") } doReturn 231
+            on { getString("urlPath") } doReturn "/"
             on { getString("hostAddress") } doReturn "address"
             on { getConfig("sslConfig") } doReturn sslConfig
+            on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
         }
 
@@ -28,8 +30,10 @@ class GatewayConfigurationTest {
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
                 hostPort = 231,
+                urlPath = "/",
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
+                maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL),
@@ -56,7 +60,9 @@ class GatewayConfigurationTest {
             on { hasPath("connectionConfig") } doReturn true
             on { getInt("hostPort") } doReturn 231
             on { getString("hostAddress") } doReturn "address"
+            on { getString("urlPath") } doReturn "/"
             on { getConfig("sslConfig") } doReturn sslConfig
+            on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
             on { getConfig("connectionConfig") } doReturn connectionConfiguration
         }
@@ -66,6 +72,7 @@ class GatewayConfigurationTest {
         assertThat(gatewayConfig).isEqualTo(
             GatewayConfiguration(
                 hostPort = 231,
+                urlPath = "/",
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(
                     maxClientConnections = 100,
@@ -76,6 +83,7 @@ class GatewayConfigurationTest {
                     initialReconnectionDelay = 1.seconds,
                     maxReconnectionDelay = 15.minutes,
                 ),
+                maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)

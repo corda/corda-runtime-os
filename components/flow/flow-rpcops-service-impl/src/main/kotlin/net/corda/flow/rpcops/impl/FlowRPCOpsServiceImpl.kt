@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,7 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -89,12 +89,12 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 event.config.getConfig(MESSAGING_CONFIG).apply {
-                    flowRpcOps.initialise(this)
+                    flowRpcOps.initialise(this, ::signalErrorStatus)
                     flowStatusCacheService.initialise(this)
                 }
             }
             is StopEvent -> {
-                flowStatusCacheService.close()
+                flowStatusCacheService.stop()
             }
             else -> {
                 log.error("Unexpected event $event!")
@@ -106,5 +106,9 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
         if(isRunning){
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
+    }
+
+    private fun signalErrorStatus() {
+        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
     }
 }

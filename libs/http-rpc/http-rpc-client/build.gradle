@@ -12,15 +12,15 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
     implementation "net.corda:corda-crypto"
 
-    implementation project(":libs:http-rpc:http-rpc")
+    api project(":libs:http-rpc:http-rpc")
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(":libs:http-rpc:json-serialization")
+    implementation project(":libs:utilities")
 
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"

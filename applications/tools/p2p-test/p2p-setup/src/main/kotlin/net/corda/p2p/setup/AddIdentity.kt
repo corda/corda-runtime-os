@@ -24,7 +24,7 @@ import java.util.concurrent.Callable
 class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
     companion object {
         fun Config.toIdentityRecord(topic: String = P2P_HOSTED_IDENTITIES_TOPIC): Record<String, HostedIdentityEntry> {
-            val x500Name = this.getString("x500name")
+            val x500Name = this.getString("x500Name")
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
             val tlsTenantId = dataConfig.getString("tlsTenantId")
@@ -55,6 +55,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
                     sessionKeyTenantId,
                     tlsCertificates,
                     publicSessionKey,
+                    null
                 )
             )
         }

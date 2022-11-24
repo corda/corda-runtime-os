@@ -12,30 +12,39 @@ import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
+import net.corda.flow.pipeline.factory.sample.flows.ExampleJavaFlow
+import net.corda.flow.pipeline.factory.sample.flows.NoDefaultConstructorJavaFlow
+import net.corda.flow.pipeline.factory.sample.flows.PrivateConstructorJavaFlow
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import net.corda.v5.base.annotations.Suspendable
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class FlowFactoryImplTest {
-
-    private val className = "flow-class-1"
-    private val args = "arg1"
     private val flowSession = mock<FlowSession>()
     private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val sandboxGroup = mock<SandboxGroup>()
     private val flowSessionFactory = mock<FlowSessionFactory>()
     private val flowFiberService = mock<FlowFiberService>()
     private val flowFactory = FlowFactoryImpl(flowSessionFactory, flowFiberService)
+    private val contextMap = mapOf("key" to "value")
+    private val flowStartContext = FlowStartContext().apply {
+        startArgs = "flow-argument-1"
+        statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
+        initiatedBy = BOB_X500_HOLDING_IDENTITY
+    }
 
     @BeforeEach
     fun setup() {
@@ -43,90 +52,161 @@ class FlowFactoryImplTest {
     }
 
     @Test
-    fun `create initiated flow`() {
-        val flowStartContext = FlowStartContext().apply {
-            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
-            flowClassName = className
-            startArgs = args
-        }
-
-        whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
-        whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
-            .thenReturn(ExampleFlow2::class.java)
-
-        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as InitiatedFlow
-        assertTrue(result.logic is ExampleFlow2)
-    }
-
-    @Test
-    fun `create flow`() {
-        val startArgs = "args"
-        val flowStartContext = FlowStartContext().apply {
-            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
-            flowClassName = className
-        }
-        val flowStartEvent = StartFlow(). apply {
+    fun `create flow throws flow fatal exception on error`() {
+        val flowStartEvent = StartFlow().apply {
             startContext = flowStartContext
-            flowStartArgs= startArgs
+            flowStartArgs = "flow-argument-2"
         }
+        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", RPCStartableFlow::class.java))
+            .thenThrow(IllegalStateException())
 
-        whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
-            .thenReturn(ExampleFlow1::class.java)
-
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RPCStartedFlow
-        assertTrue(result.logic is ExampleFlow1)
-        assertEquals("result", result.invoke())
+        assertThatThrownBy {
+            flowFactory.createFlow(flowStartEvent, sandboxGroupContext)
+        }.isInstanceOf(FlowFatalException::class.java)
     }
 
     @Test
     fun `create initiated flow throws flow fatal exception on error`() {
-        val flowStartContext = FlowStartContext().apply {
-            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
-            flowClassName = className
-            startArgs = args
-        }
-
-        whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
-        whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, BOB_X500_NAME, contextMap))
+            .thenReturn(flowSession)
+        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", ResponderFlow::class.java))
             .thenThrow(IllegalStateException())
 
-        assertThrows<FlowFatalException> {
-            flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)
-        }
+        assertThatThrownBy {
+            flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap)
+        }.isInstanceOf(FlowFatalException::class.java)
     }
 
-    @Test
-    fun `create flow throws flow fatal exception on error`() {
-        val startArgs = "args"
-        val flowStartContext = FlowStartContext().apply {
-            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
-            flowClassName = className
+    @ParameterizedTest
+    @ValueSource(classes = [NoDefaultConstructorJavaFlow::class, NoDefaultConstructorFlow::class])
+    fun `create flow throws fatal exception when flow class does not have default no args constructor`(flowClass: Class<*>) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
+
+        assertThatThrownBy {
+            flowFactory.createFlow(
+                StartFlow().apply { startContext = flowStartContext },
+                sandboxGroupContext
+            )
         }
-        val flowStartEvent = StartFlow(). apply {
+            .hasMessageContaining(testFlowClassName)
+            .isInstanceOf(FlowFatalException::class.java)
+            .hasCauseInstanceOf(NoSuchMethodException::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [PrivateConstructorJavaFlow::class, PrivateConstructorFlow::class])
+    fun `create flow throws fatal exception when flow class does not have default public constructor`(flowClass: Class<*>) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
+
+        assertThatThrownBy {
+            flowFactory.createFlow(
+                StartFlow().apply { startContext = flowStartContext },
+                sandboxGroupContext
+            )
+        }
+            .hasMessageContaining(testFlowClassName)
+            .isInstanceOf(FlowFatalException::class.java)
+            .hasCauseInstanceOf(IllegalAccessException::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [NoDefaultConstructorJavaFlow::class, NoDefaultConstructorFlow::class])
+    fun `create initiated flow throws fatal exception when flow class does not have default no arg constructor`(
+        flowClass: Class<*>
+    ) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
+
+        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap) }
+            .hasMessageContaining(testFlowClassName)
+            .isInstanceOf(FlowFatalException::class.java)
+            .hasCauseInstanceOf(NoSuchMethodException::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [PrivateConstructorJavaFlow::class, PrivateConstructorFlow::class])
+    fun `create initiated flow throws fatal exception when flow class does not have default public constructor`(
+        flowClass: Class<*>
+    ) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
+
+        assertThatThrownBy { flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap) }
+            .hasMessageContaining(testFlowClassName)
+            .isInstanceOf(FlowFatalException::class.java)
+            .hasCauseInstanceOf(IllegalAccessException::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [ExampleJavaFlow::class, ExampleFlow::class])
+    fun `create flow`(flowClass: Class<*>) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        val flowStartEvent = StartFlow().apply {
             startContext = flowStartContext
-            flowStartArgs= startArgs
+            flowStartArgs = "flow-argument-2"
         }
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
 
-        whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
-            .thenThrow(IllegalStateException())
-
-        assertThrows<FlowFatalException> {
-            flowFactory.createFlow(flowStartEvent, sandboxGroupContext)
-        }
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RPCStartedFlow
+        assertThat(result.logic).isInstanceOf(flowClass)
+        assertThat(result.invoke()).isEqualTo(flowClass.simpleName)
     }
 
-    class ExampleFlow1 : RPCStartableFlow {
-        override fun call(requestBody: RPCRequestData) : String {
-            return "result"
-        }
+    @ParameterizedTest
+    @ValueSource(classes = [ExampleJavaFlow::class, ExampleFlow::class])
+    fun `create initiated flow`(flowClass: Class<*>) {
+        val testFlowClassName = flowClass.name
+        flowStartContext.flowClassName = testFlowClassName
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, BOB_X500_NAME, contextMap)).thenReturn(
+            flowSession
+        )
+        doReturn(flowClass).whenever(sandboxGroup)
+            .loadClassFromMainBundles(testFlowClassName, ResponderFlow::class.java)
+
+        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap) as InitiatedFlow
+        assertThat(result.logic).isInstanceOf(flowClass)
     }
 
-    class ExampleFlow2 : ResponderFlow {
+    class ExampleFlow : RPCStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
+        }
+
+        override fun call(requestBody: RPCRequestData): String {
+            return ExampleFlow::class.java.simpleName
+        }
+    }
+
+    class PrivateConstructorFlow private constructor() : RPCStartableFlow, ResponderFlow {
+        override fun call(session: FlowSession) {
+            throw IllegalStateException("Should not reach this point")
+        }
+
+        @Suspendable
+        override fun call(requestBody: RPCRequestData): String {
+            throw IllegalStateException("Should not reach this point")
+        }
+    }
+
+    class NoDefaultConstructorFlow(private val message: String) : RPCStartableFlow, ResponderFlow {
+        override fun call(session: FlowSession) {
+            throw IllegalStateException(message)
+        }
+
+        @Suspendable
+        override fun call(requestBody: RPCRequestData): String {
+            throw IllegalStateException(message)
         }
     }
 }

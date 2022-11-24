@@ -1,6 +1,5 @@
 package net.corda.membership.read
 
-import net.corda.membership.lib.CPIWhiteList
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.base.types.MemberX500Name
@@ -24,12 +23,7 @@ interface MembershipGroupReader {
     /**
      * The current group parameters for the group represented by [groupId].
      */
-    val groupParameters: GroupParameters
-
-    /**
-     * The CPI whitelist for the group represented by [groupId].
-     */
-    val cpiWhiteList: CPIWhiteList
+    val groupParameters: GroupParameters?
 
     /**
      * Returns a list of all visible [MemberInfo]s for the member represented by [owningMember]
@@ -66,4 +60,9 @@ interface MembershipGroupReader {
      * @param sessionKeyHash Hash of the session key belonging to the member to be looked up.
      */
     fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo?
+
+    /**
+     * A service to lookup of a notary virtual nodes in the group.
+     */
+    val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
 }

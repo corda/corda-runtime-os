@@ -1,19 +1,18 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -21,13 +20,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
@@ -40,10 +40,10 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 
 @Suppress("LongParameterList")
-class StartRegistrationHandler(
+internal class StartRegistrationHandler(
     private val clock: Clock,
     private val memberInfoFactory: MemberInfoFactory,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberTypeChecker: MemberTypeChecker,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -53,7 +53,7 @@ class StartRegistrationHandler(
         val logger = contextLogger()
     }
 
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+    private val keyValuePairListDeserializer =
         cordaAvroSerializationFactory.createAvroDeserializer({
             logger.error("Deserialization of registration request KeyValuePairList failed.")
         }, KeyValuePairList::class.java)
@@ -71,6 +71,11 @@ class StartRegistrationHandler(
             }
 
         val (outputCommand, outputStates) = try {
+            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
+                "Registration request is registering an MGM holding identity."
+            }
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
+
             logger.info("Persisting the received registration request.")
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
@@ -79,8 +84,7 @@ class StartRegistrationHandler(
                 }
             }
 
-            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
-            logger.info("Registering with MGM for holding identity: $mgmHoldingId")
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -95,8 +99,9 @@ class StartRegistrationHandler(
             )
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
-                        && existingMemberInfo.payload.isEmpty()
-            ) { "Member Info already exists for applying member" }
+                        && (existingMemberInfo.payload.isEmpty()
+                        || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
+            ) { "The latest member info for given member is in 'Active' status" }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -107,6 +112,9 @@ class StartRegistrationHandler(
             validateRegistrationRequest(
                 pendingMemberInfo.endpoints.isNotEmpty()
             ) { "Registering member has not specified any endpoints" }
+
+            // Validate role-specific information if any role is set
+            validateRoleInformation(pendingMemberInfo)
 
             // Persist pending member info
             membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
@@ -167,7 +175,6 @@ class StartRegistrationHandler(
             .deserialize(registrationRequest.memberContext.array())
             ?.items?.associate { it.key to it.value }?.toSortedMap()
             ?: emptyMap()
-
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -184,23 +191,34 @@ class StartRegistrationHandler(
     }
 
     private fun getMGMMemberInfo(mgm: HoldingIdentity): MemberInfo {
-        val mgmMemberName = mgm.x500Name
-        return membershipGroupReaderProvider.getGroupReader(mgm).lookup(mgmMemberName).apply {
+        return memberTypeChecker.getMgmMemberInfo(mgm).apply {
             validateRegistrationRequest(this != null) {
-                "Could not find MGM matching name: [$mgmMemberName]"
-            }
-            validateRegistrationRequest(this!!.isMgm) {
                 "Registration request is targeted at non-MGM holding identity."
             }
         }!!
     }
 
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest = RegistrationRequest(
-        RegistrationStatus.NEW,
-        memberRegistrationRequest.registrationId,
-        source.toCorda(),
-        memberRegistrationRequest.memberContext,
-        memberRegistrationRequest.memberSignature.publicKey,
-        memberRegistrationRequest.memberSignature.bytes
-    )
+    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
+        return RegistrationRequest(
+            RegistrationStatus.NEW,
+            memberRegistrationRequest.registrationId,
+            source.toCorda(),
+            memberRegistrationRequest.memberContext,
+            memberRegistrationRequest.memberSignature,
+        )
+    }
+
+    private fun validateRoleInformation(member: MemberInfo) {
+        // If role is set to notary, notary details are specified
+        member.notaryDetails?.let { notary ->
+            validateRegistrationRequest(
+                notary.keys.isNotEmpty()
+            ) { "Registering member has role set to 'notary', but has missing notary key details." }
+            notary.servicePlugin?.let {
+                validateRegistrationRequest(
+                    it.isNotBlank()
+                ) { "Registering member has specified an invalid notary service plugin type." }
+            }
+        }
+    }
 }

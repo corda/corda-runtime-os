@@ -10,7 +10,7 @@ import java.lang.reflect.Method
  * Note: These are also exempt from sanity checks in HttpRpcClientProxyHandler.invoke(...).
  */
 private val staticExposedGetMethods: Map<String, String> =
-    mapOf("getProtocolVersion" to "Integer value specifying the version of the endpoint.")
+    mapOf("getProtocolVersion" to "An integer value specifying the version of the endpoint")
         .mapKeys { it.key.lowercase() }
 
 fun Method.isStaticallyExposedGet(): Boolean {

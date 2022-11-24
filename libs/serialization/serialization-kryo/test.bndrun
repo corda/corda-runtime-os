@@ -17,11 +17,6 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0
 
--runproperties: \
-    co.paralleluniverse.quasar.suspendableAnnotation=net.corda.v5.base.annotations.Suspendable,\
-    co.paralleluniverse.quasar.excludePackages='aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.slf4j**,org.junit.**,org.assertj.**,org.opentest4j**',\
-    org.osgi.framework.bundle.parent=framework
-
 -runrequires: \
     bnd.identity;id='serialization-kryo-tests',\
     bnd.identity;id='net.corda.serialization-kryo',\

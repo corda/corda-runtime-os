@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.PermissionManager
@@ -18,7 +19,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -29,7 +29,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
@@ -54,16 +54,21 @@ internal class PermissionManagementServiceEventHandler(
     @VisibleForTesting
     internal var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>? = null
 
+    @Volatile
     internal var permissionManager: PermissionManager? = null
-    internal var permissionValidator: PermissionValidator? = null
+
+    internal val permissionValidator: PermissionValidator
+        get() = permissionValidationService.permissionValidator
+
+    @Volatile
     internal var basicAuthenticationService: BasicAuthenticationService? = null
 
+    @Volatile
     private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following dependencies.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
@@ -86,14 +91,12 @@ internal class PermissionManagementServiceEventHandler(
                             coordinator,
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
                         )
-                        permissionValidator = permissionValidationService.permissionValidator
                     }
                     LifecycleStatus.DOWN -> {
-                        permissionManager?.close()
+                        permissionManager?.stop()
                         permissionManager = null
-                        basicAuthenticationService?.close()
+                        basicAuthenticationService?.stop()
                         basicAuthenticationService = null
-                        permissionValidator = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
                     LifecycleStatus.ERROR -> {
@@ -104,6 +107,7 @@ internal class PermissionManagementServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
                 val rpcConfig = event.config[RPC_CONFIG]!!
@@ -111,18 +115,16 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                log.info("Stop event received, stopping dependencies.")
                 permissionValidationService.stop()
                 permissionManagementCacheService.stop()
                 configSubscription?.close()
                 configSubscription = null
                 rpcSender?.close()
                 rpcSender = null
-                permissionManager?.close()
+                permissionManager?.stop()
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
-                permissionValidator = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
@@ -133,7 +135,7 @@ internal class PermissionManagementServiceEventHandler(
 
         val permissionValidationCacheRef = permissionValidationCacheService.permissionValidationCacheRef
 
-        permissionManager?.close()
+        permissionManager?.stop()
         log.info("Creating and starting permission manager.")
         permissionManager =
             permissionManagerFactory.createPermissionManager(
@@ -144,7 +146,7 @@ internal class PermissionManagementServiceEventHandler(
             )
                 .also { it.start() }
 
-        basicAuthenticationService?.close()
+        basicAuthenticationService?.stop()
         log.info("Creating and starting basic authentication service using permission system.")
         basicAuthenticationService = permissionManagerFactory.createBasicAuthenticationService(permissionManagementCacheRef)
             .also { it.start() }

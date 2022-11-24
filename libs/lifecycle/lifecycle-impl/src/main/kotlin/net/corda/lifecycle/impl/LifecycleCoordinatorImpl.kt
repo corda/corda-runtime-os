@@ -1,5 +1,9 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -10,6 +14,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -19,10 +24,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -139,7 +140,7 @@ class LifecycleCoordinatorImpl(
      */
     override fun postEvent(event: LifecycleEvent) {
         if (isClosed) {
-            logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
+            logger.warn("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
         postInternalEvent(event)
@@ -166,7 +167,10 @@ class LifecycleCoordinatorImpl(
      */
     override fun cancelTimer(key: String) {
         logger.trace { "$name: Cancelling timer for key $key" }
-        postEvent(CancelTimer(key))
+        if (!isClosed) {
+            // No need to cancel any timer if the coordinator is closed
+            postEvent(CancelTimer(key))
+        }
     }
 
     /**
@@ -174,7 +178,9 @@ class LifecycleCoordinatorImpl(
      */
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
         logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
-        postEvent(StatusChange(newStatus, reason))
+        if (!isClosed) {
+            postEvent(StatusChange(newStatus, reason))
+        }
     }
 
     /**
@@ -214,11 +220,11 @@ class LifecycleCoordinatorImpl(
         return followStatusChanges(coordinators)
     }
 
-    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T) {
+    override fun <T : Resource> createManagedResource(name: String, generator: () -> T) {
         processor.addManagedResource(name, generator)
     }
 
-    override fun <T: AutoCloseable> getManagedResource(name: String) : T? {
+    override fun <T: Resource> getManagedResource(name: String) : T? {
         return uncheckedCast(processor.getManagedResource(name))
     }
 
@@ -262,10 +268,11 @@ class LifecycleCoordinatorImpl(
     }
 
     override fun close() {
-        logger.trace { "$name: Closing coordinator" }
-        stop()
-        postEvent(CloseCoordinator())
-        registry.removeCoordinator(name)
-        _isClosed.set(true)
+        if (_isClosed.compareAndSet(false, true)) {
+            logger.trace { "$name: Closing coordinator" }
+            postInternalEvent(StopEvent())
+            postInternalEvent(CloseCoordinator())
+            registry.removeCoordinator(name)
+        }
     }
 }

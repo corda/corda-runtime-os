@@ -24,11 +24,29 @@ data class CpkMetadataEntity(
     @Column(name = "metadata", nullable = false)
     var serializedMetadata: String,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
-) : Serializable {
+    var isDeleted: Boolean = false,
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
+) {
+    /**
+     * We'll override to only use the primary key as the default equals causes issues when converting a stream to a list
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CpkMetadataEntity) return false
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    /**
+     * We'll override to only use the primary key as the default equals causes issues when converting a stream to a list
+     */
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 }
 
 /**

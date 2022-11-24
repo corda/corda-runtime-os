@@ -1,10 +1,12 @@
 package net.corda.libs.permissions.endpoints.common
 
-import java.util.concurrent.TimeoutException
+
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.UnexpectedErrorException
+import java.util.concurrent.TimeoutException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
@@ -17,11 +19,11 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import org.slf4j.Logger
 
 @Suppress("ComplexMethod", "ThrowsCount")
-fun <T : Any> withPermissionManager(
+fun <T : Any?> withPermissionManager(
     permissionManager: PermissionManager,
     logger: Logger,
-    block: PermissionManager.() -> T?
-): T? {
+    block: PermissionManager.() -> T
+): T {
     return try {
         block.invoke(permissionManager)
 
@@ -36,8 +38,8 @@ fun <T : Any> withPermissionManager(
         when (e.exceptionType) {
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
-            EntityAssociationAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
-            EntityAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
+            EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
+            EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
             else -> throw InternalServerException(
                 details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )

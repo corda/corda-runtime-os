@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import java.time.Instant
 import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -29,8 +30,10 @@ class RbacE2eClientRequestHelper(
         val createUserType = CreateUserType(newUserName, newUserName, true, newUserPassword, newUserPasswordExpiry, null)
         with(proxy.createUser(createUserType)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(loginName).isEqualToIgnoringCase(newUserName)
-                it.assertThat(this.passwordExpiry).isEqualTo(newUserPasswordExpiry)
+                it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                it.assertThat(this.responseBody).isNotNull
+                it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(newUserName)
+                it.assertThat(this.responseBody.passwordExpiry).isEqualTo(newUserPasswordExpiry)
             }
         }
         verifyUserCreationPersisted(proxy, newUserName, newUserPasswordExpiry)
@@ -56,9 +59,11 @@ class RbacE2eClientRequestHelper(
         val createRoleType = CreateRoleType(roleName, null)
         val roleId = with(proxy.createRole(createRoleType)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(this.roleName).isEqualTo(roleName)
+                it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                it.assertThat(this.responseBody).isNotNull
+                it.assertThat(this.responseBody.roleName).isEqualTo(roleName)
             }
-            this.id
+            this.responseBody.id
         }
         verifyRoleCreationPersisted(proxy, roleId, roleName)
         return roleId
@@ -90,7 +95,9 @@ class RbacE2eClientRequestHelper(
         for(permissionId in permissionIds) {
             with(proxy.addPermission(roleId, permissionId)) {
                 SoftAssertions.assertSoftly {
-                    it.assertThat(this.permissions.map { perm -> perm.id }).contains(permissionId)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.permissions.map { perm -> perm.id }).contains(permissionId)
                 }
             }
         }
@@ -101,7 +108,9 @@ class RbacE2eClientRequestHelper(
         val proxy = client.start().proxy
         with(proxy.addRole(userName, roleId)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(this.roleAssociations.map { role -> role.roleId }).contains(roleId)
+                it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                it.assertThat(this.responseBody).isNotNull
+                it.assertThat(this.responseBody.roleAssociations.map { role -> role.roleId }).contains(roleId)
             }
         }
     }
@@ -111,7 +120,9 @@ class RbacE2eClientRequestHelper(
         val proxy = client.start().proxy
         with(proxy.removeRole(userName, roleId)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(this.roleAssociations.map { role -> role.roleId }).contains(roleId)
+                it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                it.assertThat(this.responseBody).isNotNull
+                it.assertThat(this.responseBody.roleAssociations.map { role -> role.roleId }).contains(roleId)
             }
         }
     }
@@ -159,6 +170,26 @@ class RbacE2eClientRequestHelper(
             this
         }
     }
+
+    fun createPermissionsAndAssignToRoles(
+        permissionsToCreate: Set<Pair<PermissionType, String>>,
+        roleIds: Set<String>
+    ): Set<String> {
+        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
+        val proxy = client.start().proxy
+
+        val permissionsToCreateDto: Set<CreatePermissionType> =
+            permissionsToCreate.map { CreatePermissionType(it.first, it.second, null, null) }.toSet()
+
+        val responseEntity =
+            proxy.createAndAssignPermissions(BulkCreatePermissionsRequestType(permissionsToCreateDto, roleIds))
+
+        SoftAssertions.assertSoftly {
+            it.assertThat(responseEntity.responseCode.statusCode).isEqualTo(201)
+            it.assertThat(responseEntity.responseBody.permissionIds).isNotEmpty
+        }
+        return responseEntity.responseBody.permissionIds
+    }
 }
 
 fun PermissionEndpoint.createPermission(
@@ -169,10 +200,12 @@ fun PermissionEndpoint.createPermission(
     val type = CreatePermissionType(permissionType, permissionString, null, null)
     val permissionId = with(createPermission(type)) {
         SoftAssertions.assertSoftly {
-            it.assertThat(this.permissionType).isEqualTo(permissionType)
-            it.assertThat(this.permissionString).isEqualTo(permissionString)
+            it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+            it.assertThat(this.responseBody).isNotNull
+            it.assertThat(this.responseBody.permissionType).isEqualTo(permissionType)
+            it.assertThat(this.responseBody.permissionString).isEqualTo(permissionString)
         }
-        this.id
+        this.responseBody.id
     }
     if (verify) {
         verifyPermissionCreationPersisted(this, permissionId, permissionType, permissionString)

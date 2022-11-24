@@ -33,7 +33,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Data
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.HttpPathUtils.toOpenApiPath
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
@@ -178,8 +178,8 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
                     HttpStatus.OK_200.toString(),
                     ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
-                .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized."))
-                .addApiResponse(HttpStatus.FORBIDDEN_403.toString(), ApiResponse().description("Forbidden."))
+                .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized"))
+                .addApiResponse(HttpStatus.FORBIDDEN_403.toString(), ApiResponse().description("Forbidden"))
         )
         .parameters(parameters.filter { it.type != ParameterType.BODY }
             .map { it.toOpenApiParameter(schemaModelProvider) })
@@ -218,7 +218,7 @@ private fun ApiResponse.withResponseBodyFrom(
         } else this
 
         endpoint.responseBody.description.let {
-            response.description = it.ifBlank { "Success." }
+            response.description = it.ifBlank { "Success" }
         }
         log.trace { "ApiResponse with ResponseBody from Endpoint: \"$endpoint\" completed." }
         return response

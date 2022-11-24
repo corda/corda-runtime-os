@@ -1,46 +1,23 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
-import net.corda.p2p.gateway.messaging.RevocationConfig
-import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import org.bouncycastle.asn1.ASN1InputStream
-import org.bouncycastle.asn1.DEROctetString
-import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier
-import org.bouncycastle.asn1.x509.CRLDistPoint
-import org.bouncycastle.asn1.x509.DistributionPointName
-import org.bouncycastle.asn1.x509.Extension
-import org.bouncycastle.asn1.x509.GeneralName
-import org.bouncycastle.asn1.x509.GeneralNames
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier
-import org.bouncycastle.cert.X509CertificateHolder
+import net.corda.crypto.utils.certPathToString
+import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.ByteArrayInputStream
 import java.net.Socket
 import java.net.URI
-import java.security.KeyStore
 import java.security.SecureRandom
-import java.security.cert.CertPathBuilder
-import java.security.cert.CertPathValidatorException
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
-import java.security.cert.PKIXBuilderParameters
-import java.security.cert.PKIXRevocationChecker
-import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
-import java.util.LinkedList
-import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.ManagerFactoryParameters
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
-import net.corda.v5.base.util.toHex
-import org.bouncycastle.asn1.ASN1IA5String
-import org.bouncycastle.asn1.x500.X500Name
 
 const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
@@ -108,121 +85,7 @@ fun createServerSslHandler(keyStore: KeyStoreWithPassword): SslHandler {
     return sslHandler
 }
 
-fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
-    val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
-    val revocationChecker = when (revocationConfig.mode) {
-        RevocationConfigMode.OFF -> AllowAllRevocationChecker
-        RevocationConfigMode.SOFT_FAIL, RevocationConfigMode.HARD_FAIL -> {
-            val certPathBuilder = CertPathBuilder.getInstance("PKIX")
-            val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker
-            // We only set SOFT_FAIL as a checker option if specified. Everything else is left as default, which means
-            // OCSP is used if possible, CRL as a fallback
-            if (revocationConfig.mode == RevocationConfigMode.SOFT_FAIL) {
-                pkixRevocationChecker.options = setOf(PKIXRevocationChecker.Option.SOFT_FAIL)
-            }
-            pkixRevocationChecker
-        }
-    }
-    pkixParams.addCertPathChecker(revocationChecker)
-    return CertPathTrustManagerParameters(pkixParams)
-}
-
-fun X509Certificate.distributionPoints() : Set<String> {
-    val logger = LoggerFactory.getLogger("net.corda.p2p.gateway.messaging.http.SSLHelper")
-
-    logger.debug("Checking CRLDPs for $subjectX500Principal")
-
-    val crldpExtBytes = getExtensionValue(Extension.cRLDistributionPoints.id)
-    if (crldpExtBytes == null) {
-        logger.debug("NO CRLDP ext")
-        return emptySet()
-    }
-
-    val derObjCrlDP = ASN1InputStream(ByteArrayInputStream(crldpExtBytes)).readObject()
-    val dosCrlDP = derObjCrlDP as? DEROctetString
-    if (dosCrlDP == null) {
-        logger.error("Expected to have DEROctetString, actual type: ${derObjCrlDP.javaClass}")
-        return emptySet()
-    }
-    val crldpExtOctetsBytes = dosCrlDP.octets
-    val dpObj = ASN1InputStream(ByteArrayInputStream(crldpExtOctetsBytes)).readObject()
-    val distPoint = CRLDistPoint.getInstance(dpObj)
-    if (distPoint == null) {
-        logger.error("Could not instantiate CRLDistPoint, from: $dpObj")
-        return emptySet()
-    }
-
-    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter {
-        it.type == DistributionPointName.FULL_NAME
-    }
-    val generalNames = dpNames.flatMap { GeneralNames.getInstance(it.name).names.asList() }
-    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map {
-        ASN1IA5String.getInstance(it.name).string
-    }.toSet()
-}
-
-fun X509Certificate.toBc() = X509CertificateHolder(encoded)
-
 fun Certificate.x509(): X509Certificate = requireNotNull(this as? X509Certificate) { "Not an X.509 certificate: $this" }
-
-fun X509Certificate.distributionPointsToString() : String {
-    return with(distributionPoints()) {
-        if(isEmpty()) {
-            "NO CRLDP ext"
-        } else {
-            sorted().joinToString()
-        }
-    }
-}
-
-fun certPathToString(certPath: Array<out X509Certificate>?): String {
-    if (certPath == null) {
-        return "<empty certpath>"
-    }
-    val certs = certPath.map {
-        val bcCert = it.toBc()
-        val subject = bcCert.subject.toString()
-        val issuer = bcCert.issuer.toString()
-        val keyIdentifier = try {
-            SubjectKeyIdentifier.getInstance(bcCert.getExtension(Extension.subjectKeyIdentifier).parsedValue).keyIdentifier.toHex()
-        } catch (ex: Exception) {
-            "null"
-        }
-        val authorityKeyIdentifier = try {
-            AuthorityKeyIdentifier.getInstance(bcCert.getExtension(Extension.authorityKeyIdentifier).parsedValue).keyIdentifier.toHex()
-        } catch (ex: Exception) {
-            "null"
-        }
-        "  $subject[$keyIdentifier] issued by $issuer[$authorityKeyIdentifier] [${it.distributionPointsToString()}]"
-    }
-    return certs.joinToString("\r\n")
-}
-
-object AllowAllRevocationChecker : PKIXRevocationChecker() {
-
-    private val logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
-
-    override fun check(cert: Certificate?, unresolvedCritExts: MutableCollection<String>?) {
-        logger.debug("Passing certificate check for: $cert")
-        // Nothing to do
-    }
-
-    override fun isForwardCheckingSupported(): Boolean {
-        return true
-    }
-
-    override fun getSupportedExtensions(): MutableSet<String>? {
-        return null
-    }
-
-    override fun init(forward: Boolean) {
-        // Nothing to do
-    }
-
-    override fun getSoftFailExceptions(): MutableList<CertPathValidatorException> {
-        return LinkedList()
-    }
-}
 
 /**
  * Wrapper which adds useful logging about certificates being checked and does client side identity check of presented

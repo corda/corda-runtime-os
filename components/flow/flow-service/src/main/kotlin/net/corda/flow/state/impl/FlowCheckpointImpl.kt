@@ -1,13 +1,14 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
-import net.corda.data.flow.state.crypto.CryptoState
-import net.corda.data.flow.state.persistence.PersistenceState
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.state.FlowCheckpoint
@@ -15,8 +16,6 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -93,19 +92,12 @@ class FlowCheckpointImpl(
         get() = flowStateManager?.sessions
             ?: throw IllegalStateException("Attempted to access sessions before the flow has been initialised.")
 
-    override var persistenceState: PersistenceState?
-        get() = flowStateManager?.persistenceState
+    override var externalEventState: ExternalEventState?
+        get() = flowStateManager?.externalEventState
         set(value) {
             checkNotNull(flowStateManager) {
                 "Attempt to set the flow state before it has been created"
-            }.persistenceState = value
-        }
-    override var cryptoState: CryptoState?
-        get() = flowStateManager?.cryptoState
-        set(value) {
-            checkNotNull(flowStateManager) {
-                "Attempt to set the flow state before it has been created"
-            }.cryptoState = value
+            }.externalEventState = value
         }
 
     override val doesExist: Boolean
@@ -139,7 +131,7 @@ class FlowCheckpointImpl(
         val flowState = FlowState.newBuilder().apply {
             fiber = ByteBuffer.wrap(byteArrayOf())
             setFlowStartContext(flowStartContext)
-            persistenceState = null
+            externalEventState = null
             sessions = mutableListOf()
             flowStackItems = mutableListOf()
             waitingFor = null
@@ -162,6 +154,15 @@ class FlowCheckpointImpl(
         val manager = flowStateManager
             ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
         manager.putSessionState(sessionState)
+    }
+
+    override fun putSessionStates(sessionStates: List<SessionState>) {
+        checkFlowNotDeleted()
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to set session states before the flow has been initialised.")
+        sessionStates.forEach {
+            manager.putSessionState(it)
+        }
     }
 
     override fun markDeleted() {

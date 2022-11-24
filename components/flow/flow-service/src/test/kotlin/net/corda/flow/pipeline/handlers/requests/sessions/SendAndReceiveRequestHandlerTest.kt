@@ -5,7 +5,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
@@ -26,8 +26,14 @@ class SendAndReceiveRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
-    private val ioRequest = FlowIORequest.SendAndReceive(mapOf(sessionId1 to payload1, sessionId2 to payload2))
-    private val handler = SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val ioRequest = FlowIORequest.SendAndReceive(
+        mapOf(
+            FlowIORequest.SessionInfo(sessionId1, testContext.counterparty) to payload1,
+            FlowIORequest.SessionInfo(sessionId2, testContext.counterparty) to payload2
+        )
+    )
+    private val handler =
+        SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
@@ -63,11 +69,11 @@ class SendAndReceiveRequestHandlerTest {
             )
         ).thenReturn(true)
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
+        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2))
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
-            eq(ioRequest.sessionToPayload),
+            any(),
             any()
         )
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
@@ -85,7 +91,7 @@ class SendAndReceiveRequestHandlerTest {
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
-            eq(ioRequest.sessionToPayload),
+            any(),
             any()
         )
 
@@ -97,6 +103,6 @@ class SendAndReceiveRequestHandlerTest {
         whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any()))
             .thenThrow(FlowSessionStateException("Session does not exist"))
 
-        assertThrows<FlowFatalException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
+        assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
     }
 }

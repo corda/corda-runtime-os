@@ -30,10 +30,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -186,6 +188,114 @@ internal class LifecycleCoordinatorImplTest {
             assertFalse(timerLatch.await(TIMER_DELAY, TimeUnit.MILLISECONDS))
         }
         assertEquals(0, deliveredTimerEvents)
+    }
+
+    @Test
+    fun `cancelTimer is posted when the coordinator is not closed`() {
+        val future = mock<ScheduledFuture<*>>()
+        val scheduler = mock<LifecycleCoordinatorScheduler> {
+            on { timerSchedule(any(), any(), any()) } doReturn future
+            on { execute(any()) } doAnswer {
+                (it.arguments[0] as Runnable).run()
+            }
+        }
+        val coordinator = LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName("Test"),
+            1,
+            null,
+            mock(),
+            scheduler,
+            mock(),
+        )
+        coordinator.postEvent(StartEvent())
+        coordinator.setTimer("Timer", 10) { name ->
+            object : TimerEvent {
+                override val key = name
+            }
+        }
+
+        coordinator.cancelTimer("Timer")
+
+        verify(future).cancel(any())
+    }
+
+    @Test
+    fun `cancelTimer after close will not cancel the future again`() {
+        val future = mock<ScheduledFuture<*>>()
+        val scheduler = mock<LifecycleCoordinatorScheduler> {
+            on { timerSchedule(any(), any(), any()) } doReturn future
+            on { execute(any()) } doAnswer {
+                (it.arguments[0] as Runnable).run()
+            }
+        }
+        val coordinator = LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName("Test"),
+            1,
+            null,
+            mock(),
+            scheduler,
+            mock(),
+        )
+        coordinator.postEvent(StartEvent())
+        coordinator.setTimer("Timer", 10) { name ->
+            object : TimerEvent {
+                override val key = name
+            }
+        }
+        coordinator.close()
+
+        coordinator.cancelTimer("Timer")
+
+        verify(future, times(1)).cancel(any())
+    }
+
+    @Test
+    fun `updateStatus will be posted if the coordinator is not closed`() {
+        val future = mock<ScheduledFuture<*>>()
+        val scheduler = mock<LifecycleCoordinatorScheduler> {
+            on { timerSchedule(any(), any(), any()) } doReturn future
+            on { execute(any()) } doAnswer {
+                (it.arguments[0] as Runnable).run()
+            }
+        }
+        val coordinator = LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName("Test"),
+            1,
+            null,
+            mock(),
+            scheduler,
+            mock(),
+        )
+        coordinator.postEvent(StartEvent())
+
+        coordinator.updateStatus(LifecycleStatus.ERROR)
+
+        assertThat(coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+    }
+
+    @Test
+    fun `updateStatus will not be posted if the coordinator is closed`() {
+        val future = mock<ScheduledFuture<*>>()
+        val scheduler = mock<LifecycleCoordinatorScheduler> {
+            on { timerSchedule(any(), any(), any()) } doReturn future
+            on { execute(any()) } doAnswer {
+                (it.arguments[0] as Runnable).run()
+            }
+        }
+        val coordinator = LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName("Test"),
+            1,
+            null,
+            mock(),
+            scheduler,
+            mock(),
+        )
+        coordinator.postEvent(StartEvent())
+        coordinator.close()
+
+        coordinator.updateStatus(LifecycleStatus.ERROR)
+
+        assertThat(coordinator.status).isNotEqualTo(LifecycleStatus.ERROR)
     }
 
     @Test
@@ -344,6 +454,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
             assertTrue(timerLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            coordinator.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(key, deliveredKey)
@@ -1106,6 +1217,7 @@ internal class LifecycleCoordinatorImplTest {
         coordinator.use {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         verify(registry).removeCoordinator(coordinator.name)
@@ -1244,6 +1356,14 @@ internal class LifecycleCoordinatorImplTest {
         val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
 
         registration.close()
+        coordinator1.close()
+    }
+
+    @Test
+    fun `closing a coordinator twice doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+
+        coordinator1.close()
         coordinator1.close()
     }
 

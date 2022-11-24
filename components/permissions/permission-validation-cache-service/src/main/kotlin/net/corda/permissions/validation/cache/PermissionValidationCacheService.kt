@@ -29,8 +29,8 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionValidationCacheService::class])
 class PermissionValidationCacheService @Activate constructor(
@@ -50,7 +50,7 @@ class PermissionValidationCacheService @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+        const val CONSUMER_GROUP = "PERMISSION_VALIDATION_SERVICE"
     }
 
     /**
@@ -101,6 +101,7 @@ class PermissionValidationCacheService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
+                downTransition()
                 createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
             }
             // Let's set the component as UP when it has received all the snapshots it needs
@@ -114,13 +115,14 @@ class PermissionValidationCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                permissionValidationCacheRef.get()?.close()
+                permissionValidationCacheRef.get()?.stop()
                 permissionValidationCacheRef.set(null)
             }
         }
     }
 
     private fun downTransition() {
+        log.info("Performing down transition")
         coordinator.updateStatus(LifecycleStatus.DOWN)
 
         configHandle?.close()
@@ -143,7 +145,7 @@ class PermissionValidationCacheService @Activate constructor(
         permissionSummarySubscription =
             createPermissionSummarySubscription(permissionSummaryData, config).also { it.start() }
 
-        permissionValidationCacheRef.get()?.close()
+        permissionValidationCacheRef.get()?.stop()
         permissionValidationCacheRef.set(permissionValidationCacheFactory.createPermissionValidationCache(
             permissionSummaryData
         )

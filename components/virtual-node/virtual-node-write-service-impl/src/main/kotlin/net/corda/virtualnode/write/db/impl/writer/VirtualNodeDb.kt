@@ -25,7 +25,7 @@ import net.corda.virtualnode.ShortHash
  */
 @Suppress("LongParameterList")
 class VirtualNodeDb(
-    private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: ShortHash,
+    val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: ShortHash,
     val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
     private val dbConnectionManager: DbConnectionManager, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
@@ -68,31 +68,47 @@ class VirtualNodeDb(
     }
 
     /**
-     * Runs DB migration
+     * runDBMigration
+     *
+     * @param migrationTagToApply [string?] is an optional tag to be added to the liquibase migration.
+     *  See: https://docs.liquibase.com/change-types/tag-database.html
      */
-    fun runDbMigration() {
+    fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
-        if (dbConnection == null) throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
+            ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             val dbChangeFiles = dbType.dbChangeFiles
             val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
             }
             val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-            val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
 
             dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                if (isClusterDb) {
+                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema, migrationTagToApply)
+                } else {
+                    schemaMigrator.updateDb(connection, dbChange, migrationTagToApply)
+                }
             }
         }
     }
 
-    fun runCpiMigrations(dbChange: DbChange) {
+    /**
+     * runCpiMigrations: runs a changeset represented as a [DbChange], with the [migrationTagToApply] tagged to each
+     *  change within that changeset.
+     *
+     * These migrations come from the CPI and so are user created.
+     *
+     * @param dbChange
+     * @param migrationTagToApply
+     */
+    fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
+                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, tag = migrationTagToApply)
             }
         }
     }

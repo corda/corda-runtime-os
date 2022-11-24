@@ -1,11 +1,8 @@
 package net.corda.membership.impl.client
 
-import java.util.concurrent.CompletableFuture
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
@@ -21,14 +18,17 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -37,9 +37,20 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -48,19 +59,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
-import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MGMOpsClientTest {
     companion object {
@@ -68,7 +73,8 @@ class MGMOpsClientTest {
             "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
             "DEFAULT_MEMBER_GROUP_ID"
         )
-        private const val HOLDING_IDENTITY_STRING = "1234567890ab"
+        private const val HOLDING_IDENTITY_STRING = "1234567890AB"
+        private val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         private const val KNOWN_KEY = "12345"
 
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
@@ -76,20 +82,33 @@ class MGMOpsClientTest {
     }
 
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
-        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(shortHash) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID(),
-            timestamp = Instant.now()
+            null,
+            UUID(0, 1),
+            null,
+            UUID(1, 2),
+            null,
+            UUID(3, 1),
+            timestamp = Instant.ofEpochSecond(1)
         )
     }
 
     private val knownKey: PublicKey = mock()
     private val keys = listOf(knownKey, knownKey)
 
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
+    }
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
-        EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+        endpointInfoFactory.create("https://corda5.r3.com:10000"),
+        endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
@@ -99,6 +118,7 @@ class MGMOpsClientTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
+        MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
 
@@ -115,7 +135,7 @@ class MGMOpsClientTest {
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-            MemberInfoExtension.PLATFORM_VERSION to "10",
+            MemberInfoExtension.PLATFORM_VERSION to "5000",
             MemberInfoExtension.SERIAL to "1"
         ),
         sortedMapOf(
@@ -161,7 +181,7 @@ class MGMOpsClientTest {
     }
 
     private val componentHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
     private val coordinator: LifecycleCoordinator = mock {
@@ -269,7 +289,7 @@ class MGMOpsClientTest {
     fun `rpc sender sends the expected request - starting generate group policy process`() {
         mgmOpsClient.start()
         setUpRpcSender()
-        mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+        mgmOpsClient.generateGroupPolicy(shortHash)
         mgmOpsClient.stop()
 
         val requestSent = rpcRequest?.request as MGMGroupPolicyRequest
@@ -281,7 +301,7 @@ class MGMOpsClientTest {
     fun `should fail when rpc sender is not ready`() {
         mgmOpsClient.start()
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
         mgmOpsClient.stop()
@@ -290,7 +310,7 @@ class MGMOpsClientTest {
     @Test
     fun `should fail when service is not running`() {
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
     }
@@ -302,7 +322,7 @@ class MGMOpsClientTest {
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains(message) }
         mgmOpsClient.stop()
@@ -328,7 +348,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("null") }
         mgmOpsClient.stop()
@@ -356,7 +376,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("ID") }
         mgmOpsClient.stop()
@@ -384,7 +404,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("timestamp") }
         mgmOpsClient.stop()
@@ -410,10 +430,46 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("Expected class") }
         mgmOpsClient.stop()
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member can not be found`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+
+        assertThrows<CouldNotFindMemberException> {
+            mgmOpsClient.generateGroupPolicy(ShortHash.of("000000000000"))
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member can not be read`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+        whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+        assertThrows<CouldNotFindMemberException> {
+            mgmOpsClient.generateGroupPolicy(shortHash)
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member is not an mgm`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+        val mgmContext = mock<MGMContext>()
+        val memberInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmContext
+        }
+        whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+        assertThrows<MemberNotAnMgmException> {
+            mgmOpsClient.generateGroupPolicy(shortHash)
+        }
     }
 
     @Test

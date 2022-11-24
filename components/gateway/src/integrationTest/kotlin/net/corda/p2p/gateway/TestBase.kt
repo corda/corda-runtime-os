@@ -52,36 +52,41 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.testing.p2p.certificates.Certificates
+import java.net.URI
+import java.net.URL
 
 open class TestBase {
     companion object {
         private val lastUsedPort = AtomicInteger(3000)
     }
 
-    private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
+    private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
-            javaClass.classLoader.getResource("$fileName.jks")!!.openStream().use {
+            url!!.openStream().use {
                 keyStore.load(it, password.toCharArray())
             }
         }
         return KeyStoreWithPassword(keyStore, password)
     }
     protected val truststoreCertificatePem by lazy {
-        javaClass.classLoader.getResource("truststore/certificate.pem").readText()
+        Certificates.truststoreCertificatePem.readText()
     }
+
     private val c4TruststoreCertificatePem by lazy {
-        javaClass.classLoader.getResource("truststore_c4/cordarootca.pem").readText()
+        Certificates.c4TruststoreCertificatePem.readText()
     }
     protected val truststoreKeyStore by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore
+        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore!!
     }
 
     protected val c4TruststoreKeyStore by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
+        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore!!
     }
 
     protected fun getOpenPort(): Int {
@@ -104,24 +109,24 @@ open class TestBase {
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
-    protected val aliceKeyStore = readKeyStore("sslkeystore_alice")
+    protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
     protected val aliceSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
-    protected val bobKeyStore = readKeyStore("sslkeystore_bob")
+    protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
     )
-    protected val chipKeyStore = readKeyStore("sslkeystore_chip")
+    protected val chipKeyStore = readKeyStore(Certificates.chipKeyStoreFile)
     protected val chipSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
     )
-    protected val daleKeyStore = readKeyStore("sslkeystore_dale")
+    protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
     protected val daleSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
 
     )
-    protected val c4sslKeyStore = readKeyStore("sslkeystore_c4", keystorePass_c4)
+    protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
@@ -167,6 +172,8 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
+                .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
+                .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
@@ -198,6 +205,13 @@ open class TestBase {
     }
 
     fun Lifecycle.startAndWaitForStarted() {
+        this.start()
+        eventually(duration = 20.seconds) {
+            assertThat(this.isRunning).isTrue
+        }
+    }
+
+    fun HttpServer.startAndWaitForStarted() {
         this.start()
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue

@@ -16,6 +16,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -31,7 +32,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
+    internal fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -54,10 +55,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         } ?: return null
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
-            if (it == "") null else SecureHash.create(it)
+            if (it == "") null else SecureHash.parse(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -78,10 +79,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
-            if (it.isBlank()) null else SecureHash.create(it)
+            if (it.isBlank()) null else SecureHash.parse(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -115,7 +116,9 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 connections.vaultDdlConnectionId,
                 connections.vaultDmlConnectionId,
                 connections.cryptoDdlConnectionId,
-                connections.cryptoDmlConnectionId
+                connections.cryptoDmlConnectionId,
+                connections.uniquenessDdlConnectionId,
+                connections.uniquenessDmlConnectionId
             )
         } ?: HoldingIdentityEntity(
             holdingIdentity.shortHash.value,
@@ -126,6 +129,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             connections.vaultDmlConnectionId,
             connections.cryptoDdlConnectionId,
             connections.cryptoDmlConnectionId,
+            connections.uniquenessDdlConnectionId,
+            connections.uniquenessDmlConnectionId,
             null
         )
         entityManager.persist(entity)
@@ -144,6 +149,31 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 val hie = it.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value) ?: return false // TODO throw?
                 val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
                 it.find(VirtualNodeEntity::class.java, key) != null
+            }
+        }
+    }
+
+    internal fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
+        entityManagerFactory.transaction {
+            val virtualNodeEntity = it.findVirtualNode(holdingIdentityShortHash)
+                ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+
+            return virtualNodeEntity.run {
+                val evaluatedCpiSignerSummaryHash = if (cpiSignerSummaryHash.isEmpty()) null else SecureHash.parse(cpiSignerSummaryHash)
+                VirtualNodeInfo(
+                    HoldingIdentity(MemberX500Name.parse(holdingIdentity.x500Name), holdingIdentity.mgmGroupId),
+                    CpiIdentifier(cpiName, cpiVersion, evaluatedCpiSignerSummaryHash),
+                    holdingIdentity.vaultDDLConnectionId,
+                    holdingIdentity.vaultDMLConnectionId!!,
+                    holdingIdentity.cryptoDDLConnectionId,
+                    holdingIdentity.cryptoDMLConnectionId!!,
+                    holdingIdentity.uniquenessDDLConnectionId,
+                    holdingIdentity.uniquenessDMLConnectionId!!,
+                    holdingIdentity.hsmConnectionId,
+                    VirtualNodeState.valueOf(virtualNodeState),
+                    entityVersion,
+                    insertTimestamp!!
+                )
             }
         }
     }
@@ -196,6 +226,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         connections?.vaultDmlConnectionId,
         connections?.cryptoDdlConnectionId,
         connections?.cryptoDmlConnectionId,
+        connections?.uniquenessDdlConnectionId,
+        connections?.uniquenessDmlConnectionId,
         null
     )
 }

@@ -13,6 +13,9 @@ class PublicKeyHashConverter : CustomPropertyConverter<PublicKeyHash> {
     override val type: Class<PublicKeyHash>
         get() = PublicKeyHash::class.java
 
-    override fun convert(context: ConversionContext): PublicKeyHash? =
+    override fun convert(context: ConversionContext): PublicKeyHash? = if (context.value("hash") != null) {
+        context.value("hash")?.let { PublicKeyHash.parse(it) }
+    } else {
         context.value()?.let { PublicKeyHash.parse(it) }
+    }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -14,10 +15,11 @@ import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
+import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmId
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -86,9 +88,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        event,
-        hsmService,
-        cryptoServiceProvider as CryptoServiceProvider<Any>
+        bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
+        event = event,
+        hsmService = hsmService,
+        cryptoServiceProvider = cryptoServiceProvider as CryptoServiceProvider<Any>
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -97,7 +100,14 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(hsmId: String): CryptoService =
         impl.getInstance(hsmId)
 
+    override fun bootstrapConfig(config: SmartConfig) {
+        lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun isReady(): Boolean = bootConfig != null
+
     class Impl(
+        bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmService: HSMService,
         private val cryptoServiceProvider: CryptoServiceProvider<Any>
@@ -111,7 +121,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         init {
             cryptoConfig = event.config.toCryptoConfig()
-            hsmId = cryptoConfig.hsmId()
+            hsmId = bootConfig.bootstrapHsmId()
             hsmConfig = cryptoConfig.hsm(hsmId)
             if(hsmConfig.hsm.name != cryptoServiceProvider.name) {
                 throw FatalActivationException(
@@ -124,7 +134,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
             val retry = hsmConfig.retry
             val hsm = hsmConfig.hsm
             val cryptoService = cryptoServiceProvider.getInstance(
-                objectMapper.convertValue(hsm.cfg.root().unwrapped(), cryptoServiceProvider.configType),
+                objectMapper.readValue(
+                    hsm.cfg.root().render(ConfigRenderOptions.concise()),
+                    cryptoServiceProvider.configType
+                ),
                 cryptoConfig.toConfigurationSecrets()
             )
             CryptoServiceDecorator.create(
@@ -135,13 +148,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         fun findInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
+            logger.debug { "Getting the crypto service for tenantId '$tenantId', category '$category'." }
             val association = hsmService.findAssignedHSM(tenantId, category)
-                ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
+                ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
             if(association.hsmId != hsmId) {
-                throw IllegalStateException(
-                    "This hsmId=$hsmId is not configured to handle tenant=$tenantId " +
-                            "with category=$category and association=$association"
+                throw InvalidParamsException(
+                    "This hsmId '$hsmId' is not configured to handle tenant '$tenantId' " +
+                            "with category '$category' and association '$association'."
                 )
             }
             logger.info("Creating {}: association={}", CryptoServiceRef::class.simpleName, association)

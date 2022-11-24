@@ -32,7 +32,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FlowEventExceptionProcessorImplTest {
-
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowEventContextConverter = mock<FlowEventContextConverter>()
@@ -94,7 +93,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `flow transient exception processed as fatal when retry limit reached`() {
-        val error = FlowTransientException("error")
+        val error = FlowTransientException("mock error message")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(2)
@@ -102,7 +101,8 @@ class FlowEventExceptionProcessorImplTest {
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Max retry attempts '2' has been reached."
+                "Execution failed with \"${error.message}\" after " +
+                        "${flowConfig.getInt(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)} retry attempts.",
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
@@ -158,7 +158,7 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `flow flow exception outputs the transformed context as normal`() {
+    fun `flow exception outputs the transformed context as normal`() {
         val error = FlowEventException("error")
 
         val result = target.process(error, context)

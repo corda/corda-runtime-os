@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common test objects'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-cipher-suite'
+
+    implementation project(':libs:ledger:ledger-common-data')
+    api project(':components:ledger:ledger-common-flow-api')
+    api project(':libs:application:application-impl')
+    api project(':libs:platform-info')
+    api project(":libs:serialization:json-validator")
+}

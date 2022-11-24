@@ -1,34 +1,47 @@
 imagePullSecrets:
-  - docker-registry-cred
+  - "docker-registry-cred"
 
 bootstrap:
-  initialAdminUser:
-    password: "admin"
+  db:
+    clientImage:
+      registry: docker-remotes.software.r3.com
+
 
 logging:
   format: "text"
-  level: "info"
-
-kafka:
-  bootstrapServers: prereqs-kafka:9092
-  tls:
-    enabled: true
-    truststore:
-      secretRef:
-        name: prereqs-kafka-0-tls
-  sasl:
-    enabled: true
 
 db:
   cluster:
-    host: prereqs-postgresql
-    existingSecret:
-      prereqs-postgresql
+    username:
+      value: "user"
+    password:
+      valueFrom:
+        secretKeyRef:
+          key: "password"
+
+kafka:
+  bootstrapServers: "prereqs-kafka:9092"
+  tls:
+    enabled: true
+    truststore:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka-0-tls"
+          key: "ca.crt"
+  sasl:
+    enabled: true
+    username:
+      value: "user"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka-jaas"
+          key: "client-passwords"
 
 resources:
   requests:
-    memory: 620Mi
-    cpu: 500m
+    memory: "620Mi"
+    cpu: "500m"
   limits:
-    memory: 1250Mi
-    cpu: 1000m
+    memory: "1250Mi"
+    cpu: "1000m"

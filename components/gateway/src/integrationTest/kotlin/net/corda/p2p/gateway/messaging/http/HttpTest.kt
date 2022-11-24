@@ -9,15 +9,13 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
 import org.apache.logging.log4j.Level
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -29,10 +27,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
-import java.security.KeyStore
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.Arrays
+import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
@@ -45,6 +42,8 @@ class HttpTest : TestBase() {
 
     companion object {
         lateinit var loggingInterceptor: LoggingInterceptor
+
+        const val MAX_REQUEST_SIZE = 50_000_000L
 
         @BeforeAll
         @JvmStatic
@@ -74,7 +73,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                "/",
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -112,7 +113,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                "/",
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         )
@@ -174,7 +177,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                "/",
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -209,7 +214,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                bobSslConfig
+                "/",
+                bobSslConfig,
+                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
         ).use { server ->
@@ -243,7 +250,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                c4sslConfig
+                "/",
+                c4sslConfig,
+                MAX_REQUEST_SIZE
             ),
             c4sslKeyStore,
         ).use { server ->
@@ -340,7 +349,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                "/",
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -383,7 +394,9 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                bobSslConfig
+                "/",
+                bobSslConfig,
+                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
         ).use { server ->
@@ -420,7 +433,7 @@ class HttpTest : TestBase() {
         private val host: String,
         private val port: Int,
         val keyStoreWithPassword: KeyStoreWithPassword,
-    ) : Lifecycle {
+    ) : Resource {
 
         private val lock = ReentrantLock()
         private var bossGroup: EventLoopGroup? = null
@@ -428,10 +441,10 @@ class HttpTest : TestBase() {
         private var serverChannel: Channel? = null
 
         private var started = false
-        override val isRunning: Boolean
+        val isRunning: Boolean
             get() = started
 
-        override fun start() {
+        fun start() {
             lock.withLock {
                 bossGroup = NioEventLoopGroup(1)
                 workerGroup = NioEventLoopGroup(4)
@@ -445,7 +458,7 @@ class HttpTest : TestBase() {
             }
         }
 
-        override fun stop() {
+        override fun close() {
             lock.withLock {
                 try {
                     serverChannel?.close()

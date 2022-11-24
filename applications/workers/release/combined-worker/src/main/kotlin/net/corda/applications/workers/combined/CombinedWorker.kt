@@ -2,16 +2,18 @@ package net.corda.applications.workers.combined
 
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -24,7 +26,7 @@ import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.DatabaseConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -54,10 +56,12 @@ class CombinedWorker @Activate constructor(
     private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
+    @Reference(service = WorkerMonitor::class)
+    private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider
 ) : Application {
 
     private companion object {
@@ -68,6 +72,7 @@ class CombinedWorker @Activate constructor(
     @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
+        logger.loggerStartupInfo(platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")
@@ -75,26 +80,27 @@ class CombinedWorker @Activate constructor(
 
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
-
+        if (params.hsmId.isBlank()) {
+            // the combined worker may use SOFT HSM by default unlike the crypto worker
+            params.hsmId = SOFT_HSM_ID
+        }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
+        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val config = getBootstrapConfig(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)
-        ).addDefaultBootCryptoConfig(
-            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_USER))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER) else "user"
-        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_PASS))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS) else "password"
+        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
+        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
 
@@ -109,7 +115,7 @@ class CombinedWorker @Activate constructor(
             secretsPassphrase
         ).run()
 
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         JavaSerialisationFilter.install()
 
@@ -137,7 +143,7 @@ class CombinedWorker @Activate constructor(
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
 
-        healthMonitor.stop()
+        workerMonitor.stop()
     }
 }
 
@@ -152,6 +158,6 @@ private class CombinedWorkerParams {
     @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
     var rpcParams = emptyMap<String, String>()
 
-    @Option(names = ["--cryptoParams"], description = ["Crypto parameters for the worker."])
-    var cryptoParams = emptyMap<String, String>()
+    @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
+    var hsmId = ""
 }

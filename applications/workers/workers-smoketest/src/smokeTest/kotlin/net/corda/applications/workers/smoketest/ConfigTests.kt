@@ -1,70 +1,50 @@
 package net.corda.applications.workers.smoketest
 
-import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ReconciliationConfig
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 
 @Order(40)
+@Suppress("FunctionName")
 class ConfigTests {
-    @Test
-    fun `can update config`() {
-        cluster {
-            val cb = this
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            val existing = getConfig(this, "corda.reconciliation")
-
-            val payload = getReconConfig(getConfigVersion(existing.body))
-
-            val response = assertWithRetry {
-                command {
-                    putConfig(cb, payload)
-                }
-                condition { it.code == 200 }
-            }
-
-            val expectedConfig = getConfigValue(payload)
-            val actualConfig = getConfigValue(response.body)
-            assertThat(actualConfig).isEqualTo(expectedConfig)
-        }
-    }
 
     @Test
     fun `get config includes defaults`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        val defaultedConfigValues = getConfig(RECONCILIATION_CONFIG).configWithDefaultsNode()
+        ReconciliationConfig::class.java.declaredFields
+            .filter { it.name != "INSTANCE" }
+            .map { it.get(ConfigKeys) as String }
+            .forEach {
+                assertThat(defaultedConfigValues[it].asText())
+                    .isNotBlank
+                    .withFailMessage("missing $it configuration key")
+            }
+    }
 
-            val existing = getConfig(this, "corda.reconciliation")
+    @Test
+    fun `can update config`() {
+        val initialValue = getReconConfigValue(defaults = true)
+        val newValue = (initialValue * 2)
+        updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
+        waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
 
-            val sourceConfigValues = existing.body.toJson()["sourceConfig"].textValue().toJson().count()
-            val defaultedConfigValues = existing.body.toJson()["configWithDefaults"].textValue().toJson().count()
-            assertThat(defaultedConfigValues).isGreaterThan(sourceConfigValues)
+        try {
+            val updatedValue = getReconConfigValue(defaults = false)
+            assertThat(updatedValue).isEqualTo(newValue)
+        } finally {
+            // Be a good neighbour and rollback the configuration change back to what it was
+            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to initialValue).toJsonString(), RECONCILIATION_CONFIG)
+            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, initialValue.toString(), false)
         }
     }
 
-    private fun getReconConfig(version: String) = """
-    {
-        "config": "{\"configIntervalMs\":15000}",
-        "schemaVersion": {
-          "major": 1,
-          "minor": 0
-        },
-        "section": "corda.reconciliation",
-        "version": $version
+    private fun getReconConfigValue(defaults: Boolean): Int {
+        val currentConfig = getConfig(RECONCILIATION_CONFIG)
+        val configJSON = if (defaults) { currentConfig.configWithDefaultsNode() } else { currentConfig.sourceConfigNode() }
+        return configJSON[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
     }
-    """.trimIndent()
-
-    private fun getConfigVersion(body: String) = body.toJson()["version"].toString()
-
-    private fun getConfigValue(body: String) = body.toJson()["config"].toString()
-
-    private fun getConfig(builder: ClusterBuilder, section: String) =
-        builder.get("/api/v1/config/$section")
-
-
-    private fun putConfig(builder: ClusterBuilder, config: String) =
-        builder.put("/api/v1/config", config)
 }

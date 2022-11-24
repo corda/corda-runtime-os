@@ -1,20 +1,22 @@
 package net.corda.configuration.rpcops.impl
 
-import net.corda.configuration.read.ConfigurationGetService
 import java.util.concurrent.CompletableFuture
-import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
+import net.corda.configuration.read.ConfigurationGetService
+import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -27,8 +29,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -36,6 +36,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+
+data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 /**
  * Tests of [ConfigRPCOpsImpl].
@@ -56,20 +58,20 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = UpdateConfigParameters("section", 999, "a=b", ConfigSchemaVersion(888, 0))
+    private val req = UpdateConfigParameters("section", 999, TestJsonObject("a=b"), ConfigSchemaVersion(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
-            true, null, req.section, req.config, ConfigurationSchemaVersion(
+            true, null, req.section, req.config.escapedJson, ConfigurationSchemaVersion(
                 req.schemaVersion.major, req.schemaVersion.minor
             ), req.version
         )
     }
-    private val successResponse = UpdateConfigResponse(
-        req.section, req.config, ConfigSchemaVersion(
+    private val successResponse = ResponseEntity.accepted(UpdateConfigResponse(
+        req.section, req.config.escapedJson, ConfigSchemaVersion(
             req.schemaVersion.major,
             req.schemaVersion.minor
         ), req.version
-    )
+    ))
 
     private val configSection = "section"
     private val config = Configuration("CONFIG+DEFAULT", "CONFIG", 1, ConfigurationSchemaVersion(2,3))
@@ -97,20 +99,10 @@ class ConfigRPCOpsImplTests {
     }
 
     @Test
-    fun `stop closes existing RPC sender if one exists`() {
-        val (rpcSender, configRPCOps) = getConfigRPCOps()
-
-        configRPCOps.createAndStartRPCSender(mock())
-        configRPCOps.stop()
-
-        verify(rpcSender).close()
-    }
-
-    @Test
     fun `updateConfig sends the correct request to the RPC sender`() {
         val rpcRequest = req.run {
             ConfigurationManagementRequest(
-                section, config, ConfigurationSchemaVersion(
+                section, config.escapedJson, ConfigurationSchemaVersion(
                     schemaVersion.major,
                     schemaVersion.minor
                 ), actor, version
@@ -133,13 +125,16 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertEquals(successResponse, configRPCOps.updateConfig(req))
+        val result = configRPCOps.updateConfig(req)
+        assertEquals(successResponse.responseCode, result.responseCode)
+        assertEquals(successResponse.responseBody, result.responseBody)
     }
 
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
-        val invalidConfig = "a=b\nc"
-        val expectedMessage = "Configuration \"$invalidConfig\" could not be validated. Valid JSON or HOCON expected. " +
+        val invalidConfig = TestJsonObject("a=b\nc")
+        val expectedMessage =
+            "Configuration \"${invalidConfig.escapedJson}\" could not be validated. Valid JSON or HOCON expected. " +
                 "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
@@ -173,7 +168,7 @@ class ConfigRPCOpsImplTests {
                 false,
                 exception,
                 section,
-                config,
+                config.escapedJson,
                 ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
                 version
             )
@@ -213,7 +208,7 @@ class ConfigRPCOpsImplTests {
         val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.setTimeout(1000)
-        val e = assertThrows<ConfigRPCOpsServiceException> {
+        val e = assertThrows<ConfigRPCOpsException> {
             configRPCOps.updateConfig(req)
         }
 
@@ -228,7 +223,7 @@ class ConfigRPCOpsImplTests {
         val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.createAndStartRPCSender(mock())
-        val e = assertThrows<ConfigRPCOpsServiceException> {
+        val e = assertThrows<ConfigRPCOpsException> {
             configRPCOps.updateConfig(req)
         }
 
@@ -245,33 +240,11 @@ class ConfigRPCOpsImplTests {
 
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
-        val e = assertThrows<ConfigRPCOpsServiceException> {
+        val e = assertThrows<ConfigRPCOpsException> {
             configRPCOps.updateConfig(req)
         }
 
         assertEquals("Could not publish updated configuration.", e.message)
-    }
-
-    @Test
-    fun `is not running if RPC sender is not created`() {
-        val configRPCOps = ConfigRPCOpsImpl(mock(), mock(), mock())
-        configRPCOps.setTimeout(0)
-        assertFalse(configRPCOps.isRunning)
-    }
-
-    @Test
-    fun `is not running if RPC timeout is not set`() {
-        val (_, configRPCOps) = getConfigRPCOps()
-        configRPCOps.createAndStartRPCSender(mock())
-        assertFalse(configRPCOps.isRunning)
-    }
-
-    @Test
-    fun `is running if RPC sender is created and RPC timeout is set`() {
-        val (_, configRPCOps) = getConfigRPCOps()
-        configRPCOps.createAndStartRPCSender(mock())
-        configRPCOps.setTimeout(0)
-        assertTrue(configRPCOps.isRunning)
     }
 
     @Test
@@ -290,7 +263,7 @@ class ConfigRPCOpsImplTests {
         )).isEqualTo(configRPCOps.get(configSection))
     }
 
-    /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests.
+    /** Returns a [ConfigRPCOps] where the RPC sender returns [future] in response to any RPC requests.
      * @param future to return for any rpc requests
      * @param failValidation Set to true to cause the validator to fail validation for a request
      * @return RPCSender and ConfigRPCOpsInternal
@@ -298,7 +271,7 @@ class ConfigRPCOpsImplTests {
     private fun getConfigRPCOps(
         future: CompletableFuture<ConfigurationManagementResponse> = successFuture,
         failValidation: Boolean = false
-    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOpsInternal> {
+    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOpsImpl> {
 
         val rpcSender = mock<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>>().apply {
             whenever(sendRequest(any())).thenReturn(future)
@@ -320,6 +293,6 @@ class ConfigRPCOpsImplTests {
             whenever(createConfigValidator()).thenReturn(validator)
         }
 
-        return rpcSender to ConfigRPCOpsImpl(publisherFactory, validatorFactory, configurationGetService)
+        return rpcSender to ConfigRPCOpsImpl(mock(), mock(), publisherFactory, validatorFactory, configurationGetService)
     }
 }

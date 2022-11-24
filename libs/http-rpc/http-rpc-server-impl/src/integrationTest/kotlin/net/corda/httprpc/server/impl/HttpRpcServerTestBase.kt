@@ -10,8 +10,8 @@ abstract class HttpRpcServerTestBase {
         lateinit var server: HttpRpcServer
         fun isServerInitialized() = ::server.isInitialized
         lateinit var client: TestHttpClient
-        val userName = "admin"
-        val password = "admin"
+        const val userName = FakeSecurityManager.USERNAME
+        const val password = FakeSecurityManager.PASSWORD
         val securityManager = FakeSecurityManager()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
     }

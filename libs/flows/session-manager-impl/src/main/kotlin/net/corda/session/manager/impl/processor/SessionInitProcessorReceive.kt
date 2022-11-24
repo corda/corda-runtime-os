@@ -8,6 +8,7 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import java.time.Instant
 import java.util.*
 
@@ -65,7 +66,7 @@ class SessionInitProcessorReceive(
                 .setHasScheduledCleanup(false)
                 .build()
 
-            logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
+            logger.trace { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
             return newSessionState
         }
     }

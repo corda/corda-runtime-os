@@ -1,15 +1,21 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,8 +35,6 @@ class MGMRpcOpsImpl @Activate constructor(
     private interface InnerMGMRpcOps {
         fun generateGroupPolicy(holdingIdentityShortHash: String): String
     }
-
-    private val className = this::class.java.simpleName
 
     override val protocolVersion = 1
 
@@ -54,12 +58,10 @@ class MGMRpcOpsImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$className started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$className stopped.")
         coordinator.stop()
     }
 
@@ -85,7 +87,18 @@ class MGMRpcOpsImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
-            return mgmOpsClient.generateGroupPolicy(holdingIdentityShortHash)
+            return try {
+                mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
         }
     }
 }

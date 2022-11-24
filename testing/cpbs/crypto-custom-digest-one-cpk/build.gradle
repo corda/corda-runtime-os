@@ -1,6 +1,6 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 description 'Corda Crypto Custom Digest One'
@@ -20,5 +20,7 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'net.corda:corda-crypto'
+    cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'
 }

@@ -11,7 +11,7 @@ import net.corda.httprpc.test.utils.WebResponse
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -36,11 +36,12 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true
@@ -52,7 +53,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         @AfterAll
         @JvmStatic
         fun cleanUpAfterClass() {
-            server.stop()
+            server.close()
         }
     }
 

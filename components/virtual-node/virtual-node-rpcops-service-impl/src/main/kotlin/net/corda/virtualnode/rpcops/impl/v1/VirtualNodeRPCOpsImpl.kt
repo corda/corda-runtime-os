@@ -1,5 +1,6 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -8,7 +9,6 @@ import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
@@ -28,9 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -39,32 +37,26 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.translate
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRPCOps::class])
 // Primary constructor is for test. This is until a clock service is available
-internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
+internal class VirtualNodeRPCOpsImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    private var clock: Clock
+    @Reference(service = ClockFactory::class)
+    private var clockFactory: ClockFactory
 ) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
-
-    @Activate constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService,
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = VirtualNodeSenderFactory::class)
-        virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    ) : this(coordinatorFactory, configurationReadService, virtualNodeInfoReadService, virtualNodeSenderFactory, UTCClock())
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
@@ -74,6 +66,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
+
+    private val clock = clockFactory.createUTCClock()
 
     // Http RPC values
     override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
@@ -96,7 +90,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                 }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
-                logger.info("${this::javaClass.name} is now Up")
             }
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
@@ -117,7 +110,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
-                logger.info("${this::javaClass.name} is now ${event.status}")
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
@@ -200,6 +192,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     vaultDmlConnection,
                     cryptoDdlConnection,
                     cryptoDmlConnection,
+                    uniquenessDdlConnection,
+                    uniquenessDmlConnection,
                     actor
                 )
             )
@@ -216,20 +210,14 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                         vaultDmlConnectionId,
                         cryptoDdlConnectionId,
                         cryptoDmlConnectionId,
+                        uniquenessDdlConnectionId,
+                        uniquenessDmlConnectionId,
                         hsmConnectionId,
                         virtualNodeState
                     )
                 }
             }
-            is VirtualNodeManagementResponseFailure -> {
-                val exception = resolvedResponse.exception
-                if (exception == null) {
-                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
-                }
-                logger.warn("Remote request to create virtual node responded with exception: ${exception.errorMessage}")
-                throw InternalServerException(exception.errorMessage)
-            }
+            is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }
@@ -245,6 +233,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.toString(),
             cryptoDmlConnectionId.toString(),
+            uniquenessDdlConnectionId?.toString(),
+            uniquenessDmlConnectionId.toString(),
             hsmConnectionId.toString(),
             state.name
         )
@@ -264,5 +254,5 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()
-    override fun stop() = lifecycleCoordinator.close()
+    override fun stop() = lifecycleCoordinator.stop()
 }

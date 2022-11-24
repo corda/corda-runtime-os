@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger consensual test objects'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-cipher-suite'
+    api 'net.corda:corda-ledger-consensual'
+
+    implementation project(":libs:serialization:json-validator")
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-consensual-data')
+    implementation project(':testing:ledger:ledger-common-testkit')
+    api project(':components:ledger:ledger-consensual-flow')
+    api project(':testing:ledger:ledger-common-base-integration-test')
+}

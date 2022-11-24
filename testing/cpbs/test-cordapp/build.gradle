@@ -1,0 +1,26 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Flow Worker Development"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-ledger-consensual'
+    cordaProvided 'net.corda:corda-ledger-utxo'
+    cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'net.corda:corda-notary-plugin'
+
+    cordapp project(':testing:bundles:testing-dogs')
+    // Common and API packages pulled in as transitive dependencies through client
+    cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
+}

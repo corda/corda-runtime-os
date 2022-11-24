@@ -17,7 +17,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
 /**
@@ -52,8 +52,6 @@ class CpiUploadRPCOpsServiceHandler(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        log.info("CPI Upload RPCOpsServiceHandler event - start")
-
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -63,8 +61,6 @@ class CpiUploadRPCOpsServiceHandler(
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        log.info("CPI Upload RPCOpsServiceHandler event - stop")
-
         closeResources()
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
@@ -73,8 +69,6 @@ class CpiUploadRPCOpsServiceHandler(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        log.info("CPI Upload RPCOpsServiceHandler event - registration status changed")
-
         if (event.status == LifecycleStatus.UP) {
             log.info("Registering to ConfigurationReadService to receive RPC configuration")
             configSubscription = configReadService.registerComponentForUpdates(
@@ -86,7 +80,6 @@ class CpiUploadRPCOpsServiceHandler(
                 )
             )
         } else {
-            log.info("Received ${event.status} event from ConfigurationReadService. Switching to ${event.status} as well.")
             closeResources()
             coordinator.updateStatus(event.status)
         }

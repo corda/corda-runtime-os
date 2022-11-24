@@ -1,12 +1,12 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.model.EnumTransforms
+import net.corda.internal.serialization.model.InvalidEnumTransformsException
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
-import net.corda.internal.serialization.model.EnumTransforms
-import net.corda.internal.serialization.model.InvalidEnumTransformsException
-import org.assertj.core.api.Java6Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
@@ -16,8 +16,8 @@ import kotlin.test.assertFailsWith
 class EnumTransformationTests {
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault(old = "C", new = "D"),
-            CordaSerializationTransformEnumDefault(old = "D", new = "E")
+            CordaSerializationTransformEnumDefault(oldName = "C", newName = "D"),
+            CordaSerializationTransformEnumDefault(oldName = "D", newName = "E")
     )
     @CordaSerializationTransformRenames(
         CordaSerializationTransformRename(to = "BOB", from = "FRED"),

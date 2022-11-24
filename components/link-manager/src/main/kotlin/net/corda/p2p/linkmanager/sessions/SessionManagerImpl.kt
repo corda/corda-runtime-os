@@ -10,6 +10,10 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -27,19 +31,24 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.InboundAssignmentListener
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.OutboundMessageProcessor
-import net.corda.p2p.linkmanager.PendingSessionMessageQueues
-import net.corda.p2p.linkmanager.PublicKeyReader.Companion.getSignatureSpec
-import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
+import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.p2p.linkmanager.hosting.HostingMapListener
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
+import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
+import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.messaging.MessageConverter
-import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
@@ -56,7 +65,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.HoldingIdentity
@@ -117,7 +126,11 @@ internal class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
-    private val config = AtomicReference<SessionManagerConfig>()
+    // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
+    // the configuration has been received and the session manager has started (see CORE-6730).
+    private val config = AtomicReference(
+        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF, 432000)
+    )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
         publisherFactory,
@@ -139,18 +152,23 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
+    private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
+    private val executorService = executorServiceFactory()
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
+        onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
+            revocationCheckerClient.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle()),
+            publisher.dominoTile.toNamedLifecycle(), revocationCheckerClient.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -158,6 +176,8 @@ internal class SessionManagerImpl(
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val sessionsPerCounterparties: Int,
+        val revocationConfigMode: RevocationCheckMode,
+        val sessionRefreshThreshold: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -199,7 +219,9 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
+            config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
+            config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
     }
 
@@ -287,6 +309,10 @@ internal class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
+            if(sessionInitMessage.isEmpty()) {
+                outboundSessionPool.removeSessions(counterparties)
+                return
+            }
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
                 return
@@ -335,6 +361,7 @@ internal class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
+        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
@@ -342,11 +369,42 @@ internal class SessionManagerImpl(
                 groupInfo.protocolModes,
                 sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.sessionPublicKey,
-                ourIdentityInfo.holdingIdentity.groupId
+                ourIdentityInfo.holdingIdentity.groupId,
+                pkiMode
             )
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
         return messagesAndProtocol
+    }
+
+    private fun pkiMode(
+        groupInfo: GroupPolicyListener.GroupInfo,
+        ourIdentityInfo: HostingMapListener.IdentityInfo,
+        sessionManagerConfig: SessionManagerConfig
+    ): CertificateCheckMode? {
+        return when (groupInfo.sessionPkiMode) {
+            STANDARD -> {
+                if (ourIdentityInfo.sessionCertificates == null) {
+                    logger.error("Expected session certificates to be in hosting map for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    return null
+                }
+                if (groupInfo.sessionTrustStore == null) {
+                    logger.error("Expected session trust stores to be in group policy for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    return null
+                }
+                CertificateCheckMode.CheckCertificate(
+                    groupInfo.sessionTrustStore,
+                    ourIdentityInfo.sessionCertificates,
+                    sessionManagerConfig.revocationConfigMode,
+                    revocationCheckerClient::checkRevocation
+                )
+            }
+            STANDARD_EV3, CORDA_4 -> {
+                logger.error("PkiMode ${groupInfo.sessionPkiMode} is unsupported by the link manager.")
+                return null
+            }
+            NO_PKI -> CertificateCheckMode.NoCertificate
+        }
     }
 
     private fun linkOutMessagesFromSessionInitMessages(
@@ -518,13 +576,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        try {
-            session.validatePeerHandshakeMessage(message, memberInfo.sessionPublicKey, memberInfo.publicKeyAlgorithm.getSignatureSpec())
-        } catch (exception: InvalidHandshakeResponderKeyHash) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
-        } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        if (!session.validatePeerHandshakeMessageHandleError(message, memberInfo, sessionCounterparties)) {
             return null
         }
         val authenticatedSession = session.getSession()
@@ -545,22 +597,44 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
+        val sessionManagerConfig = config.get()
+        executorService.schedule(
+            { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
+            sessionManagerConfig.sessionRefreshThreshold.toLong(),
+            TimeUnit.SECONDS
+        )
         return null
+    }
+
+    private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {
+        logger.info(
+            "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
+                    "out to refresh ephemeral keys and it will be cleaned up."
+        )
+        refreshOutboundSession(sessionCounterparties, sessionId) 
+        heartbeatManager.stopTrackingSpecifiedSession(sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == message.source.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == message.source.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${message.source.groupId}. The initiator message was discarded.")
             return null
         }
 
         val sessionManagerConfig = config.get()
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
-        if (peer == null) {
+        val (hostedIdentityInSameGroup, peer) = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
+                val member = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
+                if (member == null) {
+                    null
+                } else {
+                    hostedIdentityInSameGroup to member
+                }
+            } ?: let {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -574,12 +648,19 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(hostedIdentityInSameGroup)
+        if (ourIdentityInfo == null) {
+            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
+            return null
+        }
+        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
                 sessionId,
                 groupInfo.protocolModes,
-                sessionManagerConfig.maxMessageSize
+                sessionManagerConfig.maxMessageSize,
+                pkiMode
             )
             session.receiveInitiatorHello(message)
             session
@@ -599,15 +680,18 @@ internal class SessionManagerImpl(
         }
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == initiatorIdentityData.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == initiatorIdentityData.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${initiatorIdentityData.groupId}. The initiator handshake message" +
                     " was discarded.")
             return null
         }
 
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+        val peer = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
+                members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+            }
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
@@ -618,19 +702,7 @@ internal class SessionManagerImpl(
         }
 
         session.generateHandshakeSecrets()
-        val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.sessionPublicKey, peer.publicKeyAlgorithm.getSignatureSpec())
-        } catch (exception: WrongPublicKeyHashException) {
-            logger.error("The message was discarded. ${exception.message}")
-            return null
-        } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                exception.message
-            )
-            return null
-        }
+        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer,) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
         val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
@@ -682,6 +754,53 @@ internal class SessionManagerImpl(
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
         return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupInfo.networkType)
+    }
+
+    private fun AuthenticationProtocolResponder.validatePeerHandshakeMessageHandleError(
+        message: InitiatorHandshakeMessage,
+        peer: LinkManagerMembershipGroupReader.MemberInfo): HandshakeIdentityData? {
+        return try {
+            this.validatePeerHandshakeMessage(
+                message,
+                peer.holdingIdentity.x500Name,
+                peer.sessionPublicKey,
+                peer.publicKeyAlgorithm.getSignatureSpec()
+            )
+        } catch (exception: WrongPublicKeyHashException) {
+            logger.error("The message was discarded. ${exception.message}")
+            null
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
+        }
+    }
+
+    private fun AuthenticationProtocolInitiator.validatePeerHandshakeMessageHandleError(
+        message: ResponderHandshakeMessage,
+        memberInfo: LinkManagerMembershipGroupReader.MemberInfo,
+        sessionCounterparties: SessionCounterparties,
+    ): Boolean {
+        return try {
+            this.validatePeerHandshakeMessage(
+                message,
+                sessionCounterparties.counterpartyId.x500Name,
+                memberInfo.sessionPublicKey,
+                memberInfo.publicKeyAlgorithm.getSignatureSpec()
+            )
+            true
+        } catch (exception: InvalidHandshakeResponderKeyHash) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        }
     }
 
     class HeartbeatManager(
@@ -785,6 +904,10 @@ internal class SessionManagerImpl(
 
         fun stopTrackingAllSessions() {
             trackedSessions.clear()
+        }
+
+        fun stopTrackingSpecifiedSession(sessionId: String) {
+            trackedSessions.remove(sessionId)
         }
 
         fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {
@@ -927,4 +1050,7 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
     }
+
+
+
 }

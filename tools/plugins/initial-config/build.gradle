@@ -5,6 +5,10 @@ plugins {
     id 'corda.cli-plugin-packager'
 }
 
+ext {
+    releasable = false
+}
+
 group 'net.corda.cli.deployment'
 
 dependencies {
@@ -16,10 +20,14 @@ dependencies {
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli:$picocliVersion"
 
+    implementation 'net.corda:corda-config-schema'
+
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-password')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:crypto:crypto-config-impl")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-core')
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 

@@ -9,6 +9,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
+@Suppress("unused")
 class VirtualNodeCliPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     private companion object {

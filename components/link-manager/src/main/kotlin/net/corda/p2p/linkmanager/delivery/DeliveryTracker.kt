@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,8 +17,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
@@ -32,6 +31,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
@@ -63,15 +63,19 @@ internal class DeliveryTracker(
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
-    private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
-        messageTracker.processor,
-        messagingConfiguration,
-        messageTracker.listener
-    )
+    private val subscriptionConfig = SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS)
+    private val messageTrackerSubscription = {
+        subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig,
+            messageTracker.processor,
+            messagingConfiguration,
+            messageTracker.listener
+        )
+    }
     private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
         coordinatorFactory,
         messageTrackerSubscription,
+        subscriptionConfig,
         setOf(
             replayScheduler.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName,

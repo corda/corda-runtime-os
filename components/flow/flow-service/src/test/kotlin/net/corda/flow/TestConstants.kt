@@ -3,7 +3,7 @@ package net.corda.flow
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.base.types.MemberX500Name
 
 val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
@@ -14,11 +14,12 @@ val BOB_X500_HOLDING_IDENTITY = HoldingIdentity(BOB_X500, "group1")
 val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity(ALICE_X500, "group1")
 val SESSION_ID_1 = "S1"
 val FLOW_ID_1 = "F1"
+val REQUEST_ID_1 ="R1"
 
 val MINIMUM_SMART_CONFIG = SmartConfigFactory.create(ConfigFactory.empty()).create(
     ConfigFactory.parseMap(
         mapOf<String, Any>(
-            FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION to 60000
+            MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000
         )
     )
 )

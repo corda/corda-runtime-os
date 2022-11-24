@@ -14,6 +14,8 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -38,7 +40,7 @@ class SessionEventHandler @Activate constructor(
         val checkpoint = context.checkpoint
         val sessionEvent = context.inputEventPayload
 
-        log.info("Session event in handler: ${sessionEvent.payload}")
+        log.trace { "Session event in handler: ${sessionEvent.payload}" }
 
         val now = Instant.now()
 
@@ -103,13 +105,13 @@ class SessionEventHandler @Activate constructor(
     }
 
     private fun discardSessionEvent(context: FlowEventContext<SessionEvent>, sessionEvent: SessionEvent) {
-        log.info(
+        log.debug {
             "Received a ${sessionEvent.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist. " +
                     "The event will be discarded. ${SessionEvent::class.simpleName}: $sessionEvent"
-        )
+        }
         throw FlowEventException(
-            "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
-                    "does not exist"
+            "SessionEventHandler received a ${context.inputEventPayload.payload::class.simpleName} for flow" +
+                    " [${context.inputEvent.flowId}] that does not exist"
         )
     }
 }

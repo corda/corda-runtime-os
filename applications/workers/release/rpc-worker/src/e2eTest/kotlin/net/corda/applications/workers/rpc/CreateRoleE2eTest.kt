@@ -4,6 +4,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -46,12 +47,14 @@ class CreateRoleE2eTest {
 
             val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
-                    it.assertThat(roleName).isEqualTo(name)
-                    it.assertThat(version).isEqualTo(0L)
-                    it.assertThat(groupVisibility).isNull()
-                    it.assertThat(permissions).isEmpty()
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody.roleName).isEqualTo(name)
+                    it.assertThat(this.responseBody.version).isEqualTo(0L)
+                    it.assertThat(this.responseBody.groupVisibility).isNull()
+                    it.assertThat(this.responseBody.permissions).isEmpty()
                 }
-                id
+                this.responseBody.id
             }
 
             // Check the role does exist now. The distribution of Role record may take some time to complete on the
@@ -100,14 +103,14 @@ class CreateRoleE2eTest {
             // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
             eventually {
                 assertDoesNotThrow {
-                    assertNotNull(proxy.getPermission(perm.id))
+                    assertNotNull(proxy.getPermission(perm.responseBody.id))
                 }
             }
             perm
         }
 
-        val permId = permission.id
-        val permTs = permission.updateTimestamp
+        val permId = permission.responseBody.id
+        val permTs = permission.responseBody.updateTimestamp
 
         // Test adding/removing permission to a role
         testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
@@ -118,7 +121,7 @@ class CreateRoleE2eTest {
                 .hasMessageContaining("Permission '$permId' is not associated with Role '$roleId'.")
 
             val roleWithPermission = proxy.addPermission(roleId, permId)
-            assertEquals(permId, roleWithPermission.permissions[0].id)
+            assertEquals(permId, roleWithPermission.responseBody.permissions[0].id)
 
             eventually {
                 assertDoesNotThrow {
@@ -133,12 +136,12 @@ class CreateRoleE2eTest {
             }
 
             // Try to add same association again when it already exists
-            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(RequestErrorException::class.java)
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(ResourceAlreadyExistsException::class.java)
                 .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
 
             // Remove permission and test the outcome
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
-            assertTrue(roleWithPermissionRemoved.permissions.isEmpty())
+            assertTrue(roleWithPermissionRemoved.responseBody.permissions.isEmpty())
             eventually {
                 assertDoesNotThrow {
                     assertTrue(proxy.getRole(roleId).permissions.isEmpty())

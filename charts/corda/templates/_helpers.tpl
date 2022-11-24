@@ -66,7 +66,18 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
+{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
+{{- end }}
+
+{{/*
+Worker annotations
+*/}}
+{{- define "corda.workerAnnotations" -}}
+{{ if .Values.metrics.scrape -}}
+prometheus.io/scrape: "true"
+prometheus.io/path: /metrics
+prometheus.io/port: "7000"
+{{- end }}
 {{- end }}
 
 {{/*
@@ -100,6 +111,18 @@ Worker image
 {{- end }}
 
 {{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
 CLI image
 */}}
 {{- define "corda.bootstrapImage" -}}
@@ -110,7 +133,7 @@ CLI image
 DB client image
 */}}
 {{- define "corda.dbClientImage" -}}
-"{{- if .Values.db.clientImage.registry }}{{.Values.db.clientImage.registry}}/{{- end }}{{ .Values.db.clientImage.repository }}:{{ .Values.db.clientImage.tag }}"
+"{{- if .Values.bootstrap.db.clientImage.registry }}{{.Values.bootstrap.db.clientImage.registry}}/{{- end }}{{ .Values.bootstrap.db.clientImage.repository }}:{{ .Values.bootstrap.db.clientImage.tag }}"
 {{- end }}
 
 {{/*
@@ -133,6 +156,17 @@ resources:
   {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
   {{- end }}
+{{- end }}
+
+{{/*
+Node selector for the bootstrapper
+*/}}
+
+{{- define "corda.bootstrapNodeSelector" }}
+{{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -160,35 +194,63 @@ Worker environment variables
       apiVersion: v1
       fieldPath: metadata.namespace
 - name: JAVA_TOOL_OPTIONS
-  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+  value:
+    {{ ( get .Values.workers .worker ).javaOptions }}
+    {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
-    {{- if ( get .Values.workers .worker ).profiling.enabled }}
-      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- if  ( get .Values.workers .worker ).profiling.enabled }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
+    {{- end -}}
+    {{- if .Values.heapDumpOnOutOfMemoryError }}
+      -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpPath=/dumps/heap
     {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
     {{- end -}}
     {{- if .Values.kafka.sasl.enabled }}
       -Djava.security.auth.login.config=/etc/config/jaas.conf
-    {{- end -}}
-    {{- if .Values.openTelemetry.enabled }}
-      -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
-      -Dotel.resource.attributes=service.name={{ .worker }}-worker,k8s.namespace.name=$(K8S_NAMESPACE),k8s.node.name=$(K8S_NODE_NAME),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID)
-      -Dotel.instrumentation.common.default-enabled=false
-      -Dotel.instrumentation.runtime-metrics.enabled=true
-      {{- if .Values.openTelemetry.endpoint }}
-      -Dotel.exporter.otlp.endpoint={{ .Values.openTelemetry.endpoint }}
-      -Dotel.exporter.otlp.protocol={{ .Values.openTelemetry.protocol }}
-      {{- else }}
-      -Dotel.metrics.exporter=logging
-      -Dotel.traces.exporter=logging
-      {{- end -}}
     {{- end }}
 - name: LOG4J_CONFIG_FILE
-  value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"
+  {{- if  ( get .Values.workers .worker ).logging.override }}
+  value: "/etc/log4j/log4j2.xml,/etc/log4j/log4j2-{{ .worker }}.xml"
+  {{- else }}
+  value: "/etc/log4j/log4j2.xml"
+  {{- end }}
+- name: CONSOLE_LOG_FORMAT
+  value: {{ .Values.logging.format | quote }}
 - name: CONSOLE_LOG_LEVEL
-  value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level }}
+  value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level | quote }}
+{{- end }}
+
+{{/*
+CLI log4j volume
+*/}}
+{{- define "corda.log4jVolume" -}}
+- name: log4j
+  configMap:
+    name: {{ printf "%s-log4j" (include "corda.fullname" .) }}
+{{- end }}
+
+{{/*
+Log4j volume mounts
+*/}}
+{{- define "corda.log4jVolumeMount" -}}
+- name: log4j
+  mountPath: /etc/log4j
+{{- end }}
+
+{{/*
+Corda CLI environment variables
+*/}}
+{{- define "corda.cliEnv" -}}
+- name: JAVA_TOOL_OPTIONS
+  value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+- name: CONSOLE_LOG_FORMAT
+  value: {{ .Values.logging.format }}
+- name: CONSOLE_LOG_LEVEL
+  value: {{ .Values.logging.level }}
 {{- end }}
 
 {{/*
@@ -202,22 +264,45 @@ Kafka bootstrap servers
 Initial admin user secret name
 */}}
 {{- define "corda.initialAdminUserSecretName" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.name | default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{ default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+Initial admin user username secret name
+*/}}
+{{- define "corda.initialAdminUserUsernameSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name | default ((include "corda.initialAdminUserSecretName" .)) }}
+{{- end }}
+
+{{/*
+Initial admin user password secret name
+*/}}
+{{- define "corda.initialAdminUserPasswordSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name | default (include "corda.initialAdminUserSecretName" .) }}
 {{- end }}
 
 {{/*
 Initial admin user secret username key
 */}}
 {{- define "corda.initialAdminUserSecretUsernameKey" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.usernameKey }}
-{{- end }}
+{{- if .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.name -}}
+{{ required "Must specify bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.key" .Values.bootstrap.initialAdminUser.username.valueFrom.secretKeyRef.key }}
+{{- else -}}
+username
+{{- end -}}
+{{- end -}}
 
 {{/*
 Initial admin user secret password key
 */}}
 {{- define "corda.initialAdminUserSecretPasswordKey" -}}
-{{ .Values.bootstrap.initialAdminUser.secretRef.passwordKey }}
-{{- end }}
+{{- if .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.name -}}
+{{ required "Must specify bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.key" .Values.bootstrap.initialAdminUser.password.valueFrom.secretKeyRef.key }}
+{{- else -}}
+password
+{{- end -}}
+{{- end -}}
+
 
 {{/*
 Worker Kafka arguments
@@ -232,11 +317,11 @@ Worker Kafka arguments
 {{- else }}
 - "-msecurity.protocol=SSL"
 {{- end }}
-{{- if .Values.kafka.tls.truststore.secretRef.name }}
+{{- if .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - "-mssl.truststore.location=/certs/ca.crt"
 - "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
-{{- if .Values.kafka.tls.truststore.password }}
-- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
+{{- if or .Values.kafka.tls.truststore.password.value .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name }}
+- "-mssl.truststore.password=$TRUSTSTORE_PASSWORD"
 {{- end }}
 {{- end }}
 {{- else }}
@@ -251,7 +336,6 @@ Worker Kafka arguments
 Resources for corda workers
 */}}
 {{- define "corda.workerResources" }}
-
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
@@ -265,15 +349,15 @@ resources:
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
-    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
-  {{- end }} 
+    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
+  {{- end }}
 {{- end }}
 
 {{/*
 Volume mounts for corda workers
 */}}
-{{- define "corda.workerVolumeMounts" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- define "corda.workerVolumeMounts" -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - mountPath: "/certs"
   name: "certs"
   readOnly: true
@@ -283,25 +367,37 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
+{{- if .Values.dumpHostPath }}
+- mountPath: /dumps
+  name: dumps
+  subPathExpr: $(K8S_POD_NAME)
+{{- end }}
+{{ include "corda.log4jVolumeMount" . }}
 {{- end }}
 
 {{/*
 Volumes for corda workers
 */}}
 {{- define "corda.workerVolumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - name: certs
   secret:
-    secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+    secretName: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name | quote }}
     items:
-      - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+      - key: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
         path: "ca.crt"
 {{- end -}}
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
-  secret:
-    secretName: {{ include "corda.fullname" . }}-kafka-sasl
+  emptyDir: {}
 {{- end }}
+{{- if .Values.dumpHostPath }}
+- name: dumps
+  hostPath:
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/
+    type: DirectoryOrCreate
+{{- end }}
+{{ include "corda.log4jVolume" . }}
 {{- end }}
 
 {{/*
@@ -319,13 +415,6 @@ Cluster DB port
 {{- end -}}
 
 {{/*
-Cluster DB user
-*/}}
-{{- define "corda.clusterDbUser" -}}
-{{- .Values.db.cluster.user | default "user" }}
-{{- end -}}
-
-{{/*
 Cluster DB name
 */}}
 {{- define "corda.clusterDbName" -}}
@@ -333,8 +422,123 @@ Cluster DB name
 {{- end -}}
 
 {{/*
-Cluster DB secret name
+Cluster DB credentials environment variables
 */}}
-{{- define "corda.clusterDbSecretName" -}}
-{{- .Values.db.cluster.existingSecret | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) }}
+{{- define "corda.clusterDbDefaultSecretName" -}}
+{{ printf "%s-cluster-db" (include "corda.fullname" .) }}
 {{- end -}}
+
+{{/*
+Cluster DB credentials environment variables
+*/}}
+{{- define "corda.clusterDbEnv" -}}
+- name: PGUSER
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify .Values.db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- end }}
+- name: PGPASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify .Values.db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
+{{- end -}}
+
+{{/*
+Kafka TLS truststore password
+*/}}
+{{- define "corda.kafkaTlsPassword" -}}
+{{- if .Values.kafka.tls.enabled -}}
+  {{- if .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name -}}
+- name: TRUSTSTORE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.tls.truststore.password.valueFrom.secretKeyRef.key" .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if .Values.kafka.tls.truststore.password.value -}}
+- name: TRUSTSTORE_PASSWORD
+  value: {{ .Values.kafka.tls.truststore.password.value | quote }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Kafka SASL username environment variable
+*/}}
+{{- define "corda.kafkaSaslUsername" -}}
+{{- if .Values.kafka.sasl.enabled -}}
+  {{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
+- name: SASL_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else -}}
+- name: SASL_USERNAME
+  value: {{ required "Must specify kafka.sasl.username.value or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value | quote }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+Kafka SASL password environment variable
+*/}}
+{{- define "corda.kafkaSaslPassword" -}}
+{{- if and .Values.kafka.sasl.enabled -}}
+  {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
+- name: SASL_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else -}}
+- name: SASL_PASSWORD
+  value: {{ required "Must specify kafka.sasl.password.value or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value | quote }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Kafka SASL init container
+*/}}
+{{- define "corda.kafkaSaslInitContainer" -}}
+{{- if .Values.kafka.sasl.enabled }}
+- name: create-sasl-jaas-conf
+  image: {{ include "corda.workerImage" . }}
+  imagePullPolicy:  {{ .Values.imagePullPolicy }}
+  env:
+  {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
+  {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  command:
+  - /bin/bash
+  - -c
+  args:
+    - |
+        cat <<EOF > /etc/config/jaas.conf
+        KafkaClient {
+            {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+            {{- else }}
+            org.apache.kafka.common.security.scram.ScramLoginModule required
+            {{- end }}
+            username=$SASL_USERNAME
+            password=$SASL_PASSWORD;
+        };    
+        EOF
+  volumeMounts:
+  - mountPath: "/etc/config"
+    name: "jaas-conf"
+    readOnly: false
+{{- end}}    
+{{- end}}

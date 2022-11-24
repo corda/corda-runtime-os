@@ -42,6 +42,8 @@ internal val CPI_VERSION_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Version")
 
 internal val CPI_UPGRADE_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Upgrade")
 
+private const val READ_FROM_STDIN = "-"
+
 /**
  * Creates a CPI v2 from a CPB and GroupPolicy.json file.
  */
@@ -80,21 +82,6 @@ class CreateCpiV2 : Runnable {
     var signingOptions = SigningOptions()
 
     /**
-     * Represents option to read group policy from file or stdin
-     */
-    private sealed class GroupPolicySource {
-        /**
-         * Read group policy from stdin
-         */
-        object StdIn : GroupPolicySource()
-
-        /**
-         * Read group policy from file
-         */
-        class File(val path: Path) : GroupPolicySource()
-    }
-
-    /**
      * Check user supplied options, then start the process of building and signing the CPI
      */
     override fun run() {
@@ -102,6 +89,13 @@ class CreateCpiV2 : Runnable {
         // Check input files exist
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
+
+        val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
+            System.`in`.readAllBytes().toString(Charsets.UTF_8)
+        else
+            File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
+
+        GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         // Check input Cpb file is indeed a Cpb
         verifyIsValidCpbV2(cpbPath)
@@ -115,13 +109,7 @@ class CreateCpiV2 : Runnable {
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
-        // Allow piping group policy file into stdin
-        val groupPolicy = if (groupPolicyFileName == "-")
-            GroupPolicySource.StdIn
-        else
-            GroupPolicySource.File(requireFileExists(groupPolicyFileName))
-
-        buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
+        buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
     }
 
     /**
@@ -147,7 +135,7 @@ class CreateCpiV2 : Runnable {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
+    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: String) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
@@ -174,7 +162,7 @@ class CreateCpiV2 : Runnable {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
+    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: String) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
@@ -201,12 +189,9 @@ class CreateCpiV2 : Runnable {
      *
      * Reads group policy from stdin or file depending on user choice
      */
-    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: GroupPolicySource) {
+    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
         cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
-        when (groupPolicy) {
-            is GroupPolicySource.File -> Files.copy(groupPolicy.path, cpiJar)
-            is GroupPolicySource.StdIn -> System.`in`.copyTo(cpiJar)
-        }
+        cpiJar.write(groupPolicy.toByteArray())
         cpiJar.closeEntry()
     }
 }

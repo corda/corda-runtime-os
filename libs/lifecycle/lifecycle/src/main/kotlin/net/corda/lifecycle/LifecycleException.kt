@@ -1,5 +1,7 @@
 package net.corda.lifecycle
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
+
 /**
  * An exception thrown from the lifecycle library.
  *
@@ -7,4 +9,4 @@ package net.corda.lifecycle
  * @param cause The cause of this exception
  */
 class LifecycleException(override val message: String, override val cause: Throwable? = null) :
-    Throwable(message, cause)
+    CordaRuntimeException(message, cause)

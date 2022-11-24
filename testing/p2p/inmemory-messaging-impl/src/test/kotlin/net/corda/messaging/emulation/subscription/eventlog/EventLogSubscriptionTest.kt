@@ -51,7 +51,7 @@ class EventLogSubscriptionTest {
     @Test
     fun `stop will stop the lifecycle`() {
         subscription.start()
-        subscription.stop()
+        subscription.close()
 
         verify(consumption).stop()
     }
@@ -59,8 +59,8 @@ class EventLogSubscriptionTest {
     @Test
     fun `second stop will stop the lifecycle only once`() {
         subscription.start()
-        subscription.stop()
-        subscription.stop()
+        subscription.close()
+        subscription.close()
 
         verify(consumption, times(1)).stop()
     }

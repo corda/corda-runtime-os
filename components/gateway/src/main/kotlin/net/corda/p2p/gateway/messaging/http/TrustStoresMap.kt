@@ -1,10 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
-import java.io.ByteArrayInputStream
-import java.security.KeyStore
-import java.security.cert.CertificateFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
+import net.corda.crypto.utils.convertToKeyStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -19,6 +15,10 @@ import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -33,11 +33,14 @@ internal class TrustStoresMap(
         private val logger = contextLogger()
     }
     private val ready = CompletableFuture<Unit>()
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES),
-        Processor(),
-        messagingConfiguration
-    )
+    private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES)
+    private val subscription = {
+        subscriptionFactory.createCompactedSubscription(
+            subscriptionConfig,
+            Processor(),
+            messagingConfiguration
+        )
+    }
 
     private val entriesPerKey = ConcurrentHashMap<String, TruststoreKey>()
     private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()
@@ -45,6 +48,7 @@ internal class TrustStoresMap(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList()
     )
@@ -72,17 +76,8 @@ internal class TrustStoresMap(
         pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
-
-        val trustStore: KeyStore by lazy {
-            KeyStore.getInstance("PKCS12").also { keyStore ->
-                keyStore.load(null, null)
-                pemCertificates.withIndex().forEach { (index, pemCertificate) ->
-                    val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        certificateFactory.generateCertificate(it)
-                    }
-                    keyStore.setCertificateEntry("gateway-$index", certificate)
-                }
-            }
+        val trustStore: KeyStore? by lazy {
+            convertToKeyStore(certificateFactory, pemCertificates, "gateway")
         }
     }
 

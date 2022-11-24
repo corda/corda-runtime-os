@@ -9,6 +9,12 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.uniqueness.datamodel.serialize.UniquenessCheckErrorTypeMixin
+import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateDetailsTypeMixin
+import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateRefTypeMixin
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 
 /**
@@ -24,6 +30,10 @@ fun jpaBackingStoreObjectMapper() = jacksonObjectMapper().apply {
     module.addSerializer(SecureHash::class.java, SecureHashSerializer)
     module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
     registerModule(module)
+
+    addMixIn(UniquenessCheckError::class.java, UniquenessCheckErrorTypeMixin::class.java)
+    addMixIn(UniquenessCheckStateDetails::class.java, UniquenessCheckStateDetailsTypeMixin::class.java)
+    addMixIn(UniquenessCheckStateRef::class.java, UniquenessCheckStateRefTypeMixin::class.java)
 }
 
 internal object SecureHashSerializer : JsonSerializer<SecureHash>() {
@@ -34,6 +44,6 @@ internal object SecureHashSerializer : JsonSerializer<SecureHash>() {
 
 internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return SecureHash.create(parser.text)
+        return SecureHash.parse(parser.text)
     }
 }

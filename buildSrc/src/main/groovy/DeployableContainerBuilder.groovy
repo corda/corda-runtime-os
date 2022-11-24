@@ -35,6 +35,7 @@ import java.time.Instant
 abstract class DeployableContainerBuilder extends DefaultTask {
 
     private static final String CONTAINER_LOCATION = "/opt/override/"
+    private static final String JDBC_DRIVER_LOCATION = "/opt/jdbc-driver/"
     private final String projectName = project.name
     private final String version = project.version
     private String targetRepo
@@ -65,7 +66,27 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             )
 
     @Input
+    @Optional
+    final Property<String> dockerHubUsername = getObjects().property(String).
+            convention(getProviderFactory().environmentVariable("DOCKER_HUB_USERNAME")
+                    .orElse(getProviderFactory().gradleProperty("dockerHubUsername"))
+                    .orElse(getProviderFactory().systemProperty("docker.hub.username"))
+            )
+
+    @Input
+    @Optional
+    final Property<String> dockerHubPassword = getObjects().property(String).
+            convention(getProviderFactory().environmentVariable("DOCKER_HUB_PASSWORD")
+                    .orElse(getProviderFactory().gradleProperty("dockerHubPassword"))
+                    .orElse(getProviderFactory().systemProperty("docker.hub.password"))
+            )
+
+    @Input
     final Property<Boolean> remotePublish =
+            getObjects().property(Boolean).convention(false)
+
+    @Input
+    final Property<Boolean> dockerHubPublish =
             getObjects().property(Boolean).convention(false)
 
     @Input
@@ -99,7 +120,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11')
+            getObjects().property(String).convention('11.0.15-11.56.19')
 
     @Input
     final Property<String> subDir =
@@ -120,6 +141,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     final ConfigurableFileCollection extraSourceFiles =
             getObjects().fileCollection()
 
+    @PathSensitive(RELATIVE)
+    @InputFiles
+    final ConfigurableFileCollection jdbcDriverFiles =
+            getObjects().fileCollection()
+
     @Input
     final Property<String> overrideEntryName =
             getObjects().property(String).convention('')
@@ -131,6 +157,16 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @Input
     final MapProperty<String, String> environment =
             getObjects().mapProperty(String, String).empty()
+
+    @Input
+    final Property<Boolean> multiArch =
+            getObjects().property(Boolean).convention(true)
+
+    @Input
+    @Optional
+    // Force Target Platform, using format "operatingSystem/architecture"
+    final Property<String> targetPlatform =
+            getObjects().property(String).convention('')
 
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
@@ -152,7 +188,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     def updateImage() {
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
-
+        String tagPrefix = ""
         String gitRevision = gitTask.flatMap { it.revision }.get()
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
@@ -189,10 +225,17 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
         }
+
+        List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
+        if (!jdbcDrivers.empty) {
+            builder.addLayer(jdbcDrivers, JDBC_DRIVER_LOCATION)
+        }
+
         List<Path> imageFiles = extraSourceFiles.collect { it.toPath() }
         if (!imageFiles.empty) {
             builder.addLayer(imageFiles, CONTAINER_LOCATION)
         }
+
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
                 .addLayer(
@@ -222,43 +265,55 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
         builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
-        if (System.properties['os.arch'] == "aarch64") {
+        if (!targetPlatform.get().empty) {
+            logger.quiet("Forcing Jib to use ${targetPlatform.get()} platform")
+            String[] osArch = targetPlatform.get().split("/")
+            builder.setPlatforms(Set.of(new Platform(osArch[1], osArch[0])))
+        } else if (System.getenv().containsKey("JENKINS_URL") && multiArch.get()) {
+            logger.quiet("${multiArch.get() ? 'Running on CI server - producing arm64 and amd64 images' : 'Running on CI server but multiArch flag set to false - producing amd64 images'}")
+            builder.addPlatform("arm64","linux")
+        } else if (System.properties['os.arch'] == "aarch64") { 
             logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
-            Set<Platform> platformSet = new HashSet<Platform>()
-            platformSet.add(new Platform("arm64", "linux"))
-            builder.setPlatforms(platformSet)
+            builder.setPlatforms(Set.of(new Platform("arm64", "linux")))
+            tagPrefix = "arm64-"
+        } else {
+            logger.quiet("Detected amd64 host, producing amd64 images")
+            // Default JIB configuration no specific action needed
         }
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
-        if (preTest.get()) {
+        if (dockerHubPublish.get()) {
+            targetRepo = "corda/corda-os-${containerName}"
+            tagContainer(builder, version)
+        } else if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "preTest-"+version)
-            tagContainer(builder, "preTest-"+gitRevision)
+            tagContainer(builder, "preTest-${tagPrefix}"+version)
+            tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "latest")
-            tagContainer(builder, version)
+            tagContainer(builder, "${tagPrefix}latest")
+            tagContainer(builder, "${tagPrefix}${version}")
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "unstable")
-            gitAndVersionTag(builder, gitRevision)
+            tagContainer(builder, "${tagPrefix}unstable")
+            gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
-            gitAndVersionTag(builder, gitRevision)
+            gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'BETA' && nightlyBuild.get()){
             targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "nightly")
-            tagContainer(builder, "nightly" + "-" + timeStamp)
+            tagContainer(builder, "${tagPrefix}nightly")
+            tagContainer(builder, "${tagPrefix}nightly" + "-" + timeStamp)
         } else if (releaseType == 'ALPHA' && nightlyBuild.get()) {
             targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${containerName}"
             if (!jiraTicket.isEmpty()) {
-                tagContainer(builder, "nightly-" + jiraTicket)
-                tagContainer(builder, "nightly" + "-" + jiraTicket + "-" + timeStamp)
-                tagContainer(builder, "nightly" + "-" + jiraTicket + "-" + gitRevision)
+                tagContainer(builder, "${tagPrefix}nightly-" + jiraTicket)
+                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + timeStamp)
+                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + gitRevision)
             }else{
-                gitAndVersionTag(builder, "nightly-" + version)
-                gitAndVersionTag(builder, "nightly-" + gitRevision)
+                gitAndVersionTag(builder, "${tagPrefix}nightly-" + version)
+                gitAndVersionTag(builder, "${tagPrefix}nightly-" + gitRevision)
             }
         } else{
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
@@ -293,13 +348,17 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
                             .addCredential(registryUsername.get(), registryPassword.get())).setAlwaysCacheBaseImage(true))
+        } else if (dockerHubPublish.get()){
+            builder.containerize(
+                    Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
+                            .addCredential(dockerHubUsername.get(), dockerHubPassword.get())).setAlwaysCacheBaseImage(true))
         } else {
             builder.containerize(
                     Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}")).setAlwaysCacheBaseImage(true)
             )
         }
 
-        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with jar from '${projectName}', from base '${baseImageName.get()}:${baseImageTag.get()}'")
+        logger.quiet("Publishing '${targetRepo}:${tag}' ${(remotePublish.get() || dockerHubPublish.get()) ? "${dockerHubPublish.get() ? 'to docker hub' : 'to remote artifactory'}" : "to local docker daemon"} with jar from '${projectName}', from base '${baseImageName.get()}:${baseImageTag.get()}'")
     }
 
     /**
@@ -352,4 +411,3 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
     }
 }
-

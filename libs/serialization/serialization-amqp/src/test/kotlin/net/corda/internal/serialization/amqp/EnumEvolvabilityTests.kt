@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 class EnumEvolvabilityTests {
     @Suppress("UNUSED")
     val localPath: URI = projectRootDir.toUri().resolve(
-        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+        "libs/serialization/serialization-amqp/src/test/resources/net/corda/internal/serialization/amqp"
     )
 
     companion object {
@@ -45,22 +45,22 @@ class EnumEvolvabilityTests {
         A, B, C, D
     }
 
-    @CordaSerializationTransformEnumDefault("D", "A")
+    @CordaSerializationTransformEnumDefault(newName = "D", oldName = "A")
     @CordaSerializable
     enum class AnnotatedEnumOnce {
         A, B, C, D
     }
 
     @CordaSerializationTransformEnumDefaults(
-        CordaSerializationTransformEnumDefault("E", "D"),
-        CordaSerializationTransformEnumDefault("D", "A")
+        CordaSerializationTransformEnumDefault(newName = "E", oldName = "D"),
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "A")
     )
     @CordaSerializable
     enum class AnnotatedEnumTwice {
         A, B, C, D, E
     }
 
-    @CordaSerializationTransformRename("E", "D")
+    @CordaSerializationTransformRename(to = "E", from = "D")
     @CordaSerializable
     enum class RenameEnumOnce {
         A, B, C, E
@@ -250,8 +250,8 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRenames(
-        CordaSerializationTransformRename("E", "C"),
-        CordaSerializationTransformRename("F", "D")
+        CordaSerializationTransformRename(to = "E", from = "C"),
+        CordaSerializationTransformRename(to = "F", from = "D")
     )
     @CordaSerializable
     enum class RenameEnumTwice {
@@ -301,7 +301,7 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRename(from = "A", to = "X")
-    @CordaSerializationTransformEnumDefault(old = "X", new = "E")
+    @CordaSerializationTransformEnumDefault(oldName = "X", newName = "E")
     @CordaSerializable
     enum class RenameAndExtendEnum {
         X, B, C, D, E
@@ -339,8 +339,8 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-        CordaSerializationTransformEnumDefault("D", "A"),
-        CordaSerializationTransformEnumDefault("D", "A")
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "A"),
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "A")
     )
     enum class RepeatedAnnotation {
         A, B, C, D, E
@@ -357,22 +357,22 @@ class EnumEvolvabilityTests {
         }.isInstanceOf(NotSerializableException::class.java)
     }
 
-    @CordaSerializationTransformEnumDefault("D", "A")
+    @CordaSerializationTransformEnumDefault(newName = "D", oldName = "A")
     @CordaSerializable
     enum class E1 {
         A, B, C, D
     }
 
     @CordaSerializationTransformEnumDefaults(
-        CordaSerializationTransformEnumDefault("D", "A"),
-        CordaSerializationTransformEnumDefault("E", "A")
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "A"),
+        CordaSerializationTransformEnumDefault(newName = "E", oldName = "A")
     )
     @CordaSerializable
     enum class E2 {
         A, B, C, D, E
     }
 
-    @CordaSerializationTransformEnumDefaults(CordaSerializationTransformEnumDefault("D", "A"))
+    @CordaSerializationTransformEnumDefaults(CordaSerializationTransformEnumDefault(newName = "D", oldName = "A"))
     @CordaSerializable
     enum class E3 {
         A, B, C, D
@@ -546,8 +546,8 @@ class EnumEvolvabilityTests {
     // And we're not at 3. However, we ban this rename
     //
     @CordaSerializationTransformRenames(
-        CordaSerializationTransformRename("D", "C"),
-        CordaSerializationTransformRename("C", "D")
+        CordaSerializationTransformRename(to = "D", from = "C"),
+        CordaSerializationTransformRename(to = "C", from = "D")
     )
     enum class RejectCyclicRename { A, B, C }
 
@@ -562,11 +562,11 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRenames(
-        CordaSerializationTransformRename("G", "C"),
-        CordaSerializationTransformRename("F", "G"),
-        CordaSerializationTransformRename("E", "F"),
-        CordaSerializationTransformRename("D", "E"),
-        CordaSerializationTransformRename("C", "D")
+        CordaSerializationTransformRename(to = "G", from = "C"),
+        CordaSerializationTransformRename(to = "F", from = "G"),
+        CordaSerializationTransformRename(to = "E", from = "F"),
+        CordaSerializationTransformRename(to = "D", from = "E"),
+        CordaSerializationTransformRename(to = "C", from = "D")
     )
     enum class RejectCyclicRenameRedux { A, B, C }
 
@@ -580,7 +580,7 @@ class EnumEvolvabilityTests {
         }.isInstanceOf(NotSerializableException::class.java)
     }
 
-    @CordaSerializationTransformEnumDefault(new = "D", old = "X")
+    @CordaSerializationTransformEnumDefault(newName = "D", oldName = "X")
     enum class RejectBadDefault { A, B, C, D }
 
     @Test
@@ -593,7 +593,7 @@ class EnumEvolvabilityTests {
         }.isInstanceOf(NotSerializableException::class.java)
     }
 
-    @CordaSerializationTransformEnumDefault(new = "D", old = "D")
+    @CordaSerializationTransformEnumDefault(newName = "D", oldName = "D")
     enum class RejectBadDefaultToSelf { A, B, C, D }
 
     @Test

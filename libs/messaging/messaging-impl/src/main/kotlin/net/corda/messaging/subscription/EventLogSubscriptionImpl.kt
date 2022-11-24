@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription
 
+import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -26,10 +27,6 @@ import net.corda.messaging.utils.toEventLogRecord
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.*
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 /**
  * Implementation of an EventLogSubscription.
@@ -59,27 +56,19 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    @Volatile
-    private var stopped = false
-    private val lock = ReentrantLock()
-    private var consumeLoopThread: Thread? = null
+    private var threadLooper =
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "durable processing thread", ::runConsumeLoop)
+
     private lateinit var deadLetterRecords: MutableList<ByteArray>
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
             "${config.clientId}."
 
-
-    /**
-     * Is the subscription running.
-     */
     override val isRunning: Boolean
-        get() {
-            return !stopped
-        }
+        get() = threadLooper.isRunning
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = lifecycleCoordinator.name
+        get() = threadLooper.lifecycleCoordinatorName
 
     /**
      * Begin consuming events from the configured topic, process them
@@ -88,55 +77,17 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
      */
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
-        lock.withLock {
-            if (consumeLoopThread == null) {
-                stopped = false
-                lifecycleCoordinator.start()
-                consumeLoopThread = thread(
-                    start = true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "durable processing thread ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
-                )
-            }
-        }
+        threadLooper.start()
     }
 
-    /**
-     * Stop the subscription.
-     */
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
-    override fun close() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.close()
-        }
-    }
-
-    private fun stopConsumeLoop() {
-        val thread = lock.withLock {
-            stopped = true
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
-        }
-        thread?.join(config.threadStopTimeout.toMillis())
-    }
+    override fun close() = threadLooper.close()
 
     @Suppress("NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
         var consumer: CordaConsumer<K, V>?
         var producer: CordaProducer?
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
@@ -161,7 +112,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                        threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
                     }
                 }
@@ -177,13 +128,12 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         log.error(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                        threadLooper.stopLoop()
                     }
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**
@@ -198,7 +148,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
      */
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>, producer: CordaProducer) {
         var attempts = 0
-        while (!stopped) {
+        while (!threadLooper.loopStopped) {
             try {
                 processDurableRecords(consumer.poll(config.pollTimeout), producer, consumer)
                 attempts = 0
@@ -294,5 +244,4 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             }
         }
     }
-
 }

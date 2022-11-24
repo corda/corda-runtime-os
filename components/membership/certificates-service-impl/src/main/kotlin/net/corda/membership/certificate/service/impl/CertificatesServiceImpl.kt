@@ -6,16 +6,17 @@ import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,20 +31,38 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CertificatesService::class])
 @Suppress("LongParameterList")
-class CertificatesServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class CertificatesServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = DbConnectionManager::class)
-    dbConnectionManager: DbConnectionManager,
-    @Reference(service = JpaEntitiesRegistry::class)
-    jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    override val client: DbCertificateClient,
 ) : CertificatesService {
+
+    @Activate
+    constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
+        @Reference(service = JpaEntitiesRegistry::class)
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this(
+        coordinatorFactory,
+        subscriptionFactory,
+        configurationReadService,
+        DbClientImpl(
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService,
+        )
+    )
+
     private companion object {
         val logger = contextLogger()
         const val GROUP_NAME = "membership.certificates.service"
@@ -52,27 +71,19 @@ class CertificatesServiceImpl @Activate constructor(
 
     private var registrationHandle: AutoCloseable? = null
     private var subscriptionRegistrationHandle: AutoCloseable? = null
-    private var configHandle: AutoCloseable? = null
-    private var rpcSubscription: Lifecycle? = null
-    private val processor = CertificatesProcessor(
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        virtualNodeInfoReadService,
-    )
+    private var configHandle: Resource? = null
+    private var rpcSubscription: Resource? = null
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
     override fun start() {
-        logger.info("Starting component.")
         coordinator.start()
     }
     override fun stop() {
-        logger.info("Stopping component.")
         coordinator.stop()
     }
 
     @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> {
                 registrationHandle?.close()
@@ -107,7 +118,7 @@ class CertificatesServiceImpl @Activate constructor(
                         )
                     } else {
                         configHandle = null
-                        rpcSubscription?.stop()
+                        rpcSubscription?.close()
                         rpcSubscription = null
                     }
                 } else if (event.registration == subscriptionRegistrationHandle) {
@@ -137,7 +148,7 @@ class CertificatesServiceImpl @Activate constructor(
                         requestType = CertificateRpcRequest::class.java,
                         responseType = CertificateRpcResponse::class.java
                     ),
-                    responderProcessor = processor,
+                    responderProcessor = CertificatesProcessor(client),
                     messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 ).also {
                     subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
@@ -150,5 +161,5 @@ class CertificatesServiceImpl @Activate constructor(
         }
     }
 
-    override val isRunning = rpcSubscription?.isRunning ?: false
+    override val isRunning = rpcSubscription != null
 }

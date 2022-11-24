@@ -10,7 +10,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.AzureAdMock
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,11 +27,12 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
             context,
             null,
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
         server = HttpRpcServerImpl(
             listOf(TestHealthCheckAPIImpl()),
-            securityManager,
+            ::securityManager,
             httpRpcSettings,
             multipartDir,
             true
@@ -40,7 +41,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
 
     @AfterEach
     fun tearDown() {
-        server.stop()
+        server.close()
     }
 
     @Test

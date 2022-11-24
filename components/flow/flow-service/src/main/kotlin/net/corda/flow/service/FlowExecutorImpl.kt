@@ -1,26 +1,28 @@
 package net.corda.flow.service
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -65,7 +67,8 @@ class FlowExecutorImpl constructor(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             val messagingConfig = toMessagingConfig(config)
-            val flowConfig = checkNotNull(config[FLOW_CONFIG]) { "Failed to find a FLOW_CONFIG section in '${config}'" }
+            val flowConfig = config.getConfig(FLOW_CONFIG)
+                .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
@@ -107,10 +110,10 @@ class FlowExecutorImpl constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                log.debug { "Flow executor is stopping..." }
+                log.trace { "Flow executor is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 subscription?.close()
-                log.debug { "Flow executor stopped" }
+                log.trace { "Flow executor stopped" }
             }
         }
     }

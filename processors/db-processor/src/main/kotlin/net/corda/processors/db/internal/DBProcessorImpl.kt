@@ -14,6 +14,7 @@ import net.corda.cpk.write.CpkWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
+import net.corda.ledger.persistence.LedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
@@ -64,6 +65,8 @@ class DBProcessorImpl @Activate constructor(
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = LedgerPersistenceService::class)
+    private val consensualLedgerPersistenceService: LedgerPersistenceService,
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
@@ -124,6 +127,7 @@ class DBProcessorImpl @Activate constructor(
         ::dbConnectionManager,
         ::configWriteService,
         ::configurationReadService,
+        ::consensualLedgerPersistenceService,
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,

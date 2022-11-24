@@ -16,7 +16,8 @@ import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNo
  */
 @HttpRpcResource(
     name = "Virtual Node Maintenance API",
-    description = "Virtual node maintenance endpoints.",
+    description = "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management." +
+            "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
     path = "maintenance/virtualnode"
 )
 interface VirtualNodeMaintenanceRPCOps : RpcOps {
@@ -26,16 +27,30 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
      *
      * Even if CPI with the same metadata has already been previously uploaded, this endpoint will overwrite earlier
      * stored CPI record.
-     * Furthermore, any sandboxes running an overwritten version of CPI will be purged and optionally vault data for
-     * the affected Virtual Nodes wiped out.
+     * The plugin purges any sandboxes running an overwritten version of a CPI.
      */
     @HttpRpcPOST(
         path = "forceCpiUpload",
-        title = "Upload a CPI",
-        description = "Uploads a CPI",
-        responseDescription = "The request Id calculated for a CPI upload request"
+        title = "This method force uploads a CPI file.",
+        description = "Even if CPI with the same metadata has already been uploaded, " +
+                "this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running " +
+                "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
+        responseDescription = "The response ID which can be used to track the progress of the force CPI upload operation."
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse
+
+    @HttpRpcPOST(
+        path = "{virtualNodeShortId}/vault-schema/force-resync",
+        title = "Resync the virtual node vault",
+        description = "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI " +
+            "migrations. This operation is destructive and will result in user vault data being deleted, but will " +
+            "not have any effect on system tables.",
+        responseDescription = "A list of the shortIDs or the exception encountered"
+    )
+    fun resyncVirtualNodeDb(
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to rollback")
+        virtualNodeShortId: String
+    )
 
     /**
      * Updates a virtual nodes state.
@@ -46,13 +61,14 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
     @HttpRpcPUT(
         path = "{virtualNodeShortId}/state/{newState}",
         title = "Update virtual node state",
-        description = "Updates the state of a new virtual node.",
-        responseDescription = "The details of the updated virtual node."
+        description = "This method updates the state of a new virtual node to one of the pre-defined values.",
+        responseDescription = "Complete information about updated virtual node which will also contain the updated state."
     )
     fun updateVirtualNodeState(
         @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @HttpRpcPathParameter(description = "State to transition virtual node instance into")
+        @HttpRpcPathParameter(description = "State to transition virtual node instance into. " +
+                "Possible values are: IN_MAINTENANCE and ACTIVE.")
         newState: String
     ): ChangeVirtualNodeStateResponse
 }

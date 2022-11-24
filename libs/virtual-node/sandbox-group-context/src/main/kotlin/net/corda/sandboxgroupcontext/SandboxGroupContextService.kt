@@ -55,7 +55,7 @@ interface SandboxGroupContextService: AutoCloseable {
      *       ctx!!.getUniqueObject<AnotherObject>()!!.doSomethingElse()
      *    }
      *
-     * @throws Exception or "something" if the requested [CPK]s cannot be found in the local package cache.
+     * @throws Exception or "something" if the requested CPKs cannot be found in the local package cache.
      *
      * @return a non-null [SandboxGroupContext] instance
      */
@@ -72,13 +72,13 @@ interface SandboxGroupContextService: AutoCloseable {
      * `corda.sandbox=true` service property.
      *
      * Each service is always registered as an instance of
-     * [VirtualNodeContext.serviceMarkerType]. If the service
+     * [SandboxGroupType.serviceMarkerType]. If the service
      * is already an OSGi component then it is also registered
      * with that component's service interfaces. Otherwise it
      * is also registered with the service's class.
      *
      * The OSGi framework itself will insist that each metadata
-     * service also implements [VirtualNodeContext.serviceMarkerType].
+     * service also implements [SandboxGroupType.serviceMarkerType].
      *
      * You should register these metadata services as part of the
      * [SandboxGroupContextInitializer].
@@ -95,23 +95,16 @@ interface SandboxGroupContextService: AutoCloseable {
         sandboxGroupContext: SandboxGroupContext,
         serviceNames: (CpkMetadata) -> Iterable<String>,
         isMetadataService: (Class<*>) -> Boolean = { true },
-        serviceMarkerType: Class<*> = sandboxGroupContext.virtualNodeContext.serviceMarkerType
+        serviceMarkerType: Class<*> = sandboxGroupContext.virtualNodeContext.sandboxGroupType.serviceMarkerType
     ): AutoCloseable
 
     /**
-     * This function registers any [DigestAlgorithmFactory][net.corda.v5.cipher.suite.DigestAlgorithmFactory]
-     * instances that exist inside the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s CPKs.
-     * The [DigestAlgorithmFactoryProvider][net.corda.crypto.core.DigestAlgorithmFactoryProvider]
-     * component will discover these services when the sandbox uses its
-     * [DigestService][net.corda.v5.crypto.DigestService] for the first time.
+     * Instruct all [CustomMetadataConsumer][net.corda.sandboxgroupcontext.CustomMetadataConsumer]
+     * services inside the sandbox to accept their custom metadata.
      *
      * @param sandboxGroupContext
-     *
-     * @return an [AutoCloseable] for unregistering the services.
      */
-    fun registerCustomCryptography(
-        sandboxGroupContext: SandboxGroupContext
-    ): AutoCloseable
+    fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext)
 
     /**
      * Does the service 'contain' the cpks in its cache?

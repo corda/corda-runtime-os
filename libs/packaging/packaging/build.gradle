@@ -9,8 +9,8 @@ description 'Corda Packaging'
 
 allprojects {
     ext {
-        contractSymbolicName = 'net.corda.packaging.test.contract'
-        workflowSymbolicName = 'net.corda.packaging.test.workflow'
+        contractSymbolicName = 'net.cordapp.packaging.test.contract'
+        workflowSymbolicName = 'net.cordapp.packaging.test.workflow'
     }
 }
 
@@ -37,7 +37,7 @@ dependencies {
 
     api 'net.corda:corda-base'
     api 'net.corda:corda-crypto'
-    api 'net.corda:corda-cipher-suite'
+    api 'net.corda:corda-crypto-extensions'
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(':libs:utilities')
@@ -45,6 +45,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation 'org.osgi:osgi.core'
+    testImplementation 'net.corda:corda-cipher-suite'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -70,12 +71,12 @@ tasks.named('test', Test) {
 
     doFirst {
         systemProperties([
-            'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
-            'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
-            'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
-            'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
-            'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion,
-            'net.corda.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
+            'net.cordapp.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
+            'net.cordapp.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
+            'net.cordapp.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
+            'net.cordapp.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
+            'net.cordapp.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion,
+            'net.cordapp.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
         ])
     }
 }

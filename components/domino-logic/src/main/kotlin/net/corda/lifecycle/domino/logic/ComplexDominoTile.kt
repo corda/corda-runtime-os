@@ -1,6 +1,12 @@
 package net.corda.lifecycle.domino.logic
 
 import com.typesafe.config.Config
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
@@ -9,10 +15,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.DominoTileState.Created
@@ -23,12 +29,6 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * This class encapsulates more complicated domino logic for components that might need to start external resources,
@@ -118,7 +118,7 @@ class ComplexDominoTile(
     @Volatile
     private var configReady = false
     @Volatile
-    private var configRegistration: AutoCloseable? = null
+    private var configRegistration: Resource? = null
 
     private sealed class ConfigUpdateResult {
         object Success : ConfigUpdateResult()
@@ -195,15 +195,12 @@ class ComplexDominoTile(
 
                     when (event.status) {
                          LifecycleStatus.UP -> {
-                            logger.info("Status change: child $child went up.")
                             handleChildStarted()
                         }
                         LifecycleStatus.DOWN -> {
-                            logger.info("Status change: child $child went down.")
                             handleChildDownOrError()
                         }
                         LifecycleStatus.ERROR -> {
-                            logger.info("Status change: child $child errored.")
                             handleChildDownOrError()
                         }
                     }
@@ -369,23 +366,8 @@ class ComplexDominoTile(
         configResources.close()
         withLifecycleWriteLock {
             isOpen.set(false)
-
             stopTile()
-
-            try {
-                coordinator.close()
-            } catch (e: LifecycleException) {
-                // This try-catch should be removed once CORE-2786 is fixed
-                logger.debug("Could not close coordinator", e)
-            }
-        }
-        managedChildren.forEach {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                it.lifecycle.close()
-            } catch (e: Throwable) {
-                logger.warn("Could not close ${it.name}", e)
-            }
+            coordinator.close()
         }
         onClose?.invoke()
     }

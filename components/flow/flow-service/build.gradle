@@ -17,19 +17,20 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:crypto:crypto-flow")
-    implementation project(":libs:flows:crypto-manager")
-    implementation project(':libs:flows:persistence-manager')
+    implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
-    implementation project(":libs:serialization:serialization-amqp")
-    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(':libs:virtual-node:virtual-node-info')
 
@@ -37,9 +38,11 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger-utxo"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
+    implementation 'net.corda:corda-ledger-common'
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

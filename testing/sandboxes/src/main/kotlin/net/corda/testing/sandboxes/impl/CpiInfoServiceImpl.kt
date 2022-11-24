@@ -1,6 +1,5 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -44,10 +43,6 @@ class CpiInfoServiceImpl @Activate constructor(
     override fun get(identifier: CpiIdentifier): CpiMetadata? {
         val cpiFile = loader.getCpiMetadata(identifier)
         return cpiFile.get()
-    }
-
-    override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
-        return AutoCloseable {}
     }
 
     override fun start() {

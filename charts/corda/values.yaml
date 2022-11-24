@@ -32,17 +32,19 @@ resources:
 logging:
   # -- log format; "json" or "text"
   format: "json"
-  # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
-  level: "warn"
+  # -- log level; one of "all", "trace", "debug", "info" (the default), "warn", "error", "fatal", or "off"
+  level: "info"
 
-# Open Telemetry configuration
-openTelemetry:
-  # -- enables the Open Telemetry Java agent for the Corda workers
-  enabled: false
-  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
-  endpoint:
-  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
-  protocol: "grpc"
+# Metrics configuration
+metrics:
+  # -- enable scraping of worker metrics through Prometheus annotations
+  scrape: true
+
+# -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
+dumpHostPath: ""
+
+# -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
+heapDumpOnOutOfMemoryError: false
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
@@ -57,21 +59,31 @@ db:
     type: "postgresql"
     # -- the cluster database port
     port: 5432
-    # -- the cluster database user
-    user: user
-    # -- the name of the cluster database
+    # the cluster database user configuration
+    username:
+      # -- the cluster database user
+      value: ""
+      # the cluster database user secret configuration; used in preference to value if name is set
+      valueFrom: 
+        # the cluster database user secret key reference
+        secretKeyRef:
+          # -- the cluster database user secret name 
+          name: ""
+          # -- the cluster database user secret key 
+          key: ""
+    # the cluster database password configuration
+    password: 
+      # -- the cluster database password
+      value: "" 
+      # the cluster database password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the cluster database password secret key reference
+        secretKeyRef:
+          # -- the cluster database password secret name
+          name: ""
+          # -- the cluster database password secret key
+          key: ""
     database: cordacluster
-    # -- the cluster database password (ignored if existingSecret is set, otherwise required)
-    password: ""
-    # -- the name of an existing secret containing the cluster database password with a key of 'password'
-    existingSecret: ""
-  clientImage:
-    # -- registry for image containing a db client, used to set up the db
-    registry: ""
-    # -- repository for image containing a db client, used to set up the db
-    repository: postgres
-    # -- tag for image containing a db client, used to set up the db
-    tag: 14.4
 
 # Kafka configuration
 kafka:
@@ -86,47 +98,118 @@ kafka:
     # if TLS is enabled, the truststore configuration for client connections to Kafka
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
-      secretRef:
-        # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
-        name: ""
-        # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
-        key: "ca.crt"
+      valueFrom:
+        # -- the truststore secret key reference
+        secretKeyRef:
+          # -- the truststore secret name
+          name: ""
+          # -- the truststore secret key
+          key: ""
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
-      password: ""
+      password: 
+        # -- the truststore password
+        value: ""
+        # -- the truststore password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # -- the truststore password secret key reference
+          secretKeyRef:
+            # -- the truststore password secret name
+            name: ""
+            # -- the truststore password secret key
+            key: ""
+
+
   # SASL configuration for client connection to Kafka
   sasl:
-    # -- SASL username for client connection to Kafka 
-    username: "user"
-    # -- SASL password for client connection to Kafka 
-    password: ""
-    # -- SASL mechanism for client connection to Kafka 
+    # -- SASL mechanism for client connection to Kafka
     mechanism: "SCRAM-SHA-256"
-    # -- enable/disable SASL for client connection to Kafka 
+    # -- enable/disable SASL for client connection to Kafka
     enabled: false
+    # -- SASL username configuration for client connection to Kafka
+    username: 
+      # -- the SASL user
+      value: ""
+      # -- the SASL user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the SASL user secret key reference
+        secretKeyRef:
+          # -- the SASL user secret name
+          name: ""
+          # -- the SASL user secret key 
+          key: ""
+    # -- SASL password configuration for client connection to Kafka
+    password: 
+      # -- the SASL password
+      value: ""
+      # -- the SASL password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the SASL password secret key reference
+        secretKeyRef:
+          # -- the SASL password secret name
+          name: ""
+          # -- the SASL password secret key 
+          key: ""
+
+
 
 # Configuration for cluster bootstrap
 bootstrap:
-
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
-    # -- Username for the initial admin user
-    username: "admin"
-    # -- Password for the initial admin user; generated if not specified
-    password: ""
-    # Reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password
-    secretRef:
-      # -- If specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password
-      name: ""
-      # -- The key name for the secret entry containing the initial admin user's username
-      usernameKey: "username"
-      # -- The key name for the secret entry containing the initial admin user's password
-      passwordKey: "password"
-
+    # -- the initial admin user username configuration
+    username: 
+      # -- the initial admin user username
+      value: "admin"
+      # -- the initial admin user username secret configuration; used in preference to value if name is set
+      valueFrom:
+        # -- the initial admin user username secret key reference
+        secretKeyRef:
+          # -- the initial admin user username secret name
+          name: ""
+          # -- the initial admin user username secret key
+          key: ""
+    # -- the initial admin user password configuration
+    password: 
+      # -- the initial admin user password; generated if not specified
+      value: ""
+      # -- the initial admin user password secret configuration
+      valueFrom:
+        # -- the initial admin user password secret key reference
+        secretKeyRef:
+          # -- the initial admin user password secret name
+          name: ""
+          # -- the initial admin user password secret key
+          key: ""
   # Configuration for database bootstrap
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation
+    enabled: true
+    # crypto configuration
+    crypto:
+      # JDBC connection pool configuration for crypto DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for crypto DB
+        maxSize: 5
+    # RBAC configuration
+    rbac:
+      # JDBC connection pool configuration for RBAC DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for RBAC DB
+        maxSize: 5
+    # Image containing DB client, used to set up the DB
+    clientImage:
+      # -- registry for image containing a db client, used to set up the db
+      registry: ""
+      # -- repository for image containing a db client, used to set up the db
+      repository: postgres
+      # -- tag for image containing a db client, used to set up the db
+      tag: "14.4"
+
+  # Configuration for RBAC roles bootstrap
+  rbac:
+    # -- Indicates whether RBAC roles bootstrapping is enabled as part of installation
     enabled: true
 
   # Configuration for Kafka bootstrap
@@ -156,6 +239,9 @@ bootstrap:
     # -- the CPU/memory resource limits for the bootstrap containers
     limits: { }
 
+  # node selector for the bootstrap containers
+  nodeSelector: { }
+
 # worker configuration
 workers:
   # crypto worker configuration
@@ -170,6 +256,8 @@ workers:
       tag: ""
     # -- crypto worker replica count
     replicaCount: 1
+    # -- additional Java options for the crypto worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # crypto worker debug configuration
     debug:
       # -- run crypto worker with debug enabled
@@ -179,7 +267,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run crypto worker with profiling enabled
       enabled: false
@@ -189,6 +279,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # crypto worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- crypto worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # DB worker configuration
   db:
@@ -202,6 +296,8 @@ workers:
       tag: ""
     # -- DB worker replica count
     replicaCount: 1
+    # -- additional Java options for the DB worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # DB worker debug configuration
     debug:
       # -- run DB worker with debug enabled
@@ -211,20 +307,26 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
     # -- DB worker salt, defaults to a value randomly-generated on install
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
-    passphrase: ""    
+    passphrase: ""
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    # DB worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- DB worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # flow worker configuration
   flow:
@@ -238,6 +340,8 @@ workers:
       tag: ""
     # -- flow worker replica count
     replicaCount: 1
+    # -- additional Java options for the flow worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # flow worker debug configuration
     debug:
       # -- run flow worker with debug enabled
@@ -247,7 +351,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run flow worker with profiling enabled
       enabled: false
@@ -272,6 +378,8 @@ workers:
       tag: ""
     # -- membership worker replica count
     replicaCount: 1
+    # -- additional Java options for the membership worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # membership worker debug configuration
     debug:
       # -- run membership worker with debug enabled
@@ -281,7 +389,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run membership worker with profiling enabled
       enabled: false
@@ -304,6 +414,8 @@ workers:
       tag: ""
     # -- RPC worker replica count
     replicaCount: 1
+    # -- additional Java options for the rpc worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # RPC worker debug configuration
     debug:
       # -- run RPC worker with debug enabled
@@ -313,7 +425,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run RPC worker with profiling enabled
       enabled: false
@@ -341,11 +455,13 @@ workers:
       # -- p2p-link-manager worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-link-manager worker image repository
-      repository: "corda-os-p2p-link-manager"
+      repository: "corda-os-p2p-link-manager-worker"
       # -- p2p-link-manager worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-link-manager worker replica count
     replicaCount: 1
+    # -- additional Java options for the p2p-link-manager worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # -- Use stubbed crypto processor, membership group reader and group policy provider
     useStubs: false
     # p2p-link-manager worker debug configuration
@@ -357,7 +473,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run p2p-link-manager worker with profiling enabled
       enabled: false
@@ -375,11 +493,13 @@ workers:
       # -- p2p-gateway worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-gateway worker image repository
-      repository: "corda-os-p2p-gateway"
+      repository: "corda-os-p2p-gateway-worker"
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
+    # -- additional Java options for the p2p-gateway worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
     # -- Use stub crypto processor
     useStubs: false
     # p2p-gateway worker debug configuration
@@ -391,7 +511,9 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
     profiling:
       # -- run p2p-gateway worker with profiling enabled
       enabled: false
@@ -401,7 +523,7 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-gateway worker containers
       limits: {}
-    # p2p-gateway worker worker service configuration
+    # p2p-gateway worker service configuration
     service:
       # -- The Gateway HTTP port
       port: 8080

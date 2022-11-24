@@ -6,12 +6,14 @@ object PackagingConstants {
 
     const val CPK_FILE_EXTENSION = ".cpk"
     const val CPK_LIB_FOLDER = "lib" // The folder that contains a CPK's library JARs.
+    const val CPK_LIB_FOLDER_V2 = "META-INF/privatelib/"
     const val CPK_DEPENDENCIES_FILE_NAME = "CPKDependencies"
     const val CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME = "DependencyConstraints"
     const val CPK_DEPENDENCIES_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCIES_FILE_NAME"
     const val CPK_DEPENDENCIES_FILE_NAME_V2 = "$CPK_DEPENDENCIES_FILE_NAME.json"
     const val CPK_DEPENDENCIES_FILE_ENTRY_V2 = "$META_INF_FOLDER/$CPK_DEPENDENCIES_FILE_NAME_V2"
     const val CPK_DEPENDENCIES_FORMAT_VERSION2 = "2.0"
+    const val CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER = "CPK Format Version 2 Main Bundle Placeholder"
     const val CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME"
     const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
     const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"

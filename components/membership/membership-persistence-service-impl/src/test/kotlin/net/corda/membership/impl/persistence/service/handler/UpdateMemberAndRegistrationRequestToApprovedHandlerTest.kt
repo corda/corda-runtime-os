@@ -7,14 +7,13 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -27,6 +26,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -67,12 +67,14 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
+    private val vaultDmlConnectionId = UUID(0, 0)
     private val virtualNodeInfo = VirtualNodeInfo(
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
             "", "", null
         ),
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
         holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
         timestamp = clock.instant(),
     )
@@ -87,13 +89,14 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                VirtualNodeDbType.VAULT.getConnectionName(virtualNodeInfo.holdingIdentity.shortHash),
-                DbPrivilege.DML,
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
                 jpaEntitiesSet
             )
         } doReturn factory
     }
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -101,6 +104,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         memberInfoFactory,
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
+        keyEncodingService,
+        platformInfoProvider,
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

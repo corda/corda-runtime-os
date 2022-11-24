@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sessions
 
+import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
@@ -11,7 +12,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
-import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
@@ -53,7 +53,8 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionData] messages to send.
      *
-     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
+     * the CONFIRMED state.
      */
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
@@ -125,7 +126,8 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have received their next session event, `false` otherwise.
      *
-     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
+     * the CONFIRMED or CLOSING state. Receiving events is tolerant to sessions which are closing but not yet closed.
      */
     fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean
 
@@ -160,12 +162,14 @@ interface FlowSessionManager {
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
 
     /**
-     * Checks the sessions to ensure they are in valid state for sending data to a peer
-     *
-     * @param checkpoint The flow's [FlowCheckpoint].
-     * @param sessionIds The session ids to check the status of.
-     *
-     * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
+     * Get the states whose next ordered message is a SessionClose.
+     * This allows for detection of states which have received an ordered close when it is not expected.
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return The list of states whose next received ordered message is a SessionClose
      */
-    fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
+    fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState>
 }

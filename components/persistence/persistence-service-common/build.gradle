@@ -1,0 +1,34 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Persistence Service Common"
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-ledger-utxo'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
+
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:virtual-node:sandbox-group-context')
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

@@ -1,13 +1,12 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-ledger-obsolete'
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 

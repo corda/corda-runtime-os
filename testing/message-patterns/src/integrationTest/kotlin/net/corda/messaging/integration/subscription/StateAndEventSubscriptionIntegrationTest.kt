@@ -44,6 +44,7 @@ import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
@@ -66,6 +67,8 @@ class StateAndEventSubscriptionIntegrationTest {
     private lateinit var publisher: Publisher
 
     private companion object {
+        private val log = contextLogger()
+
         const val CLIENT_ID = "integrationTestEventPublisher"
         const val EVENTSTATE_OUTPUT2 = "EventStateOutputTopic2"
         const val EVENTSTATE_OUTPUT3 = "EventStateOutputTopic3"
@@ -98,7 +101,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC1_TEMPLATE))
 
@@ -148,6 +151,7 @@ class StateAndEventSubscriptionIntegrationTest {
         coordinator1.followStatusChangesByName(setOf(stateEventSub1.subscriptionName))
         coordinator2.followStatusChangesByName(setOf(stateEventSub2.subscriptionName))
 
+        log.info("Starting Subscriptions")
         stateEventSub1.start()
         stateEventSub2.start()
 
@@ -155,15 +159,18 @@ class StateAndEventSubscriptionIntegrationTest {
             Assertions.assertEquals(LifecycleStatus.UP, coordinator1.status)
             Assertions.assertEquals(LifecycleStatus.UP, coordinator2.status)
         }
+        log.info("Subscriptions UP")
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        log.info("Publishing Records")
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
+        log.info("Waiting for subscriptions to receive")
         assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
 
-        stateEventSub1.stop()
-        stateEventSub2.stop()
+        stateEventSub1.close()
+        stateEventSub2.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             Assertions.assertEquals(LifecycleStatus.DOWN, coordinator1.status)
@@ -190,7 +197,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC2, 5, 2)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
-        stateEventSub1.stop()
+        stateEventSub1.close()
 
         val durableLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
@@ -201,7 +208,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         durableSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
     }
 
     @Test
@@ -224,7 +231,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
 
         assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
-        stateEventSub1.stop()
+        stateEventSub1.close()
 
         val durableLatch = CountDownLatch(2)
         val durableSub = subscriptionFactory.createDurableSubscription(
@@ -235,7 +242,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         durableSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
 
         val expectedSyncState = mapOf("key1" to "2")
         val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key1" to "2"))
@@ -255,7 +262,7 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(onNextLatch2.await(30, TimeUnit.SECONDS))
         assertTrue(syncPartitionLatch.await(30, TimeUnit.SECONDS))
         assertTrue(commitStatesLatch.await(30, TimeUnit.SECONDS))
-        stateEventSub2.stop()
+        stateEventSub2.close()
         assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
@@ -299,12 +306,12 @@ class StateAndEventSubscriptionIntegrationTest {
         }
 
         //trigger rebalance
-        stateEventSub2.stop()
+        stateEventSub2.close()
 
         //assert first sub picks up all the work
         assertTrue(onNextLatch1.await(180, TimeUnit.SECONDS))
 
-        stateEventSub1.stop()
+        stateEventSub1.close()
 
         val durableLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
@@ -315,7 +322,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         durableSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
     }
 
     @Test
@@ -363,9 +370,9 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         assertTrue(deadLetterLatch.await(30, TimeUnit.SECONDS))
 
-        durableSub.stop()
-        deadLetterSub.stop()
-        stateEventSub1.stop()
+        durableSub.close()
+        deadLetterSub.close()
+        stateEventSub1.close()
     }
 
     @Test
@@ -404,8 +411,8 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
         assertTrue(durableLatch.await(60, TimeUnit.SECONDS))
 
-        durableSub.stop()
-        stateEventSub1.stop()
+        durableSub.close()
+        stateEventSub1.close()
     }
 
     @Test
@@ -428,7 +435,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getStringRecords(EVENT_TOPIC7, 5, 2)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
-        stateEventSub1.stop()
+        stateEventSub1.close()
 
         val durableLatch = CountDownLatch(10)
         val dlqLatch = CountDownLatch(10)
@@ -448,7 +455,7 @@ class StateAndEventSubscriptionIntegrationTest {
         dlqSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         assertTrue(dlqLatch.await(30, TimeUnit.SECONDS))
-        durableSub.stop()
-        dlqSub.stop()
+        durableSub.close()
+        dlqSub.close()
     }
 }

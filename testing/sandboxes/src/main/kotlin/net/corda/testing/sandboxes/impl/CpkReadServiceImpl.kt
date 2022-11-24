@@ -5,10 +5,11 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -20,10 +21,10 @@ import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
 @Component(
+    name = CpiLoader.COMPONENT_NAME,
     service = [ CpkReadService::class, CpiLoader::class ],
     configurationPolicy = REQUIRE
 )
@@ -32,17 +33,12 @@ class CpkReadServiceImpl @Activate constructor(
     bundleContext: BundleContext,
     properties: Map<String, Any?>
 ) : CpkReadService, CpiLoader {
-    companion object {
-        const val BASE_DIRECTORY_KEY = "baseDirectory"
-        const val TEST_BUNDLE_KEY = "testBundle"
-    }
-
     private val logger = loggerFor<CpkReadService>()
 
-    private val cpkDir = (properties[BASE_DIRECTORY_KEY] as? String)?.let { Paths.get(it) }
+    private val cpkDir = (properties[CpiLoader.BASE_DIRECTORY_KEY] as? String)?.let { Paths.get(it) }
         ?: throw IllegalStateException("Base directory not configured")
 
-    private val testBundle = (properties[TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
+    private val testBundle = (properties[CpiLoader.TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
         ?: throw IllegalStateException("Test bundle not found")
 
     private val cpis = ConcurrentHashMap<CpiIdentifier, Cpi>()
@@ -50,7 +46,7 @@ class CpkReadServiceImpl @Activate constructor(
         get() = cpis.values.flatMap(Cpi::cpks)
 
     private val cpksMeta: Collection<CpkMetadata>
-        get() = cpks.map {it.metadata}
+        get() = cpks.map(Cpk::metadata)
 
     override val isRunning: Boolean get() = true
 
@@ -65,7 +61,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun loadCPI(resourceName: String): Cpi {
         return getInputStream(resourceName).buffered().use { input ->
-            CpiReader.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
+            TestCpbReaderV2.readCpi(input, expansionLocation = cpkDir)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
@@ -82,7 +78,7 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {
-        val cpiList = cpis.values.map { it.metadata }
+        val cpiList = cpis.values.map(Cpi::metadata)
         return CompletableFuture.completedFuture(cpiList)
     }
 
@@ -93,9 +89,7 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun get(cpkFileChecksum: SecureHash): Cpk? {
-        val cpk = cpks.firstOrNull { it.metadata.fileChecksum == cpkFileChecksum }
-
-        return cpk
+        return cpks.firstOrNull { it.metadata.fileChecksum == cpkFileChecksum }
     }
 
     override fun start() {

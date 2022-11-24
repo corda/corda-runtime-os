@@ -1,5 +1,6 @@
 package net.corda.session.mapper.service
 
+import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -12,7 +13,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,8 +29,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -61,7 +61,6 @@ class FlowMapperService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                logger.info("Starting flow mapper processor component.")
                 configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
@@ -87,12 +86,7 @@ class FlowMapperService @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                logger.info("Flow mapper processor component configuration received")
                 restartFlowMapperService(event)
-            }
-
-            is StopEvent -> {
-                logger.info("Stopping flow mapper component.")
             }
         }
     }
@@ -145,7 +139,8 @@ class FlowMapperService @Activate constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         coordinator.close()
     }
 }

@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelPipeline
@@ -29,10 +30,10 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 import java.net.InetSocketAddress
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
@@ -42,7 +43,9 @@ class HttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
-        sslConfig = mock()
+        urlPath = "/",
+        sslConfig = mock(),
+        maxRequestSize = 1_000
     )
     private val address = InetSocketAddress("www.r3.com", 30)
     private val channel = mock<Channel> {
@@ -98,19 +101,41 @@ class HttpServerTest {
     @Test
     fun `write will write to an open channel`() {
         val response = argumentCaptor<DefaultFullHttpResponse>()
-        whenever(channel.writeAndFlush(response.capture())).doReturn(mock())
+        val writeFuture = mock<ChannelFuture>()
+        whenever(channel.writeAndFlush(response.capture())).doReturn(writeFuture)
         server.onOpen(HttpConnectionEvent(channel))
 
         server.write(
-            HttpResponseStatus.ACCEPTED,
+            HttpResponseStatus.OK,
             byteArrayOf(5, 7),
             address
         )
 
         assertSoftly {
             it.assertThat(response.firstValue.content().array()).isEqualTo(byteArrayOf(5, 7))
-            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.ACCEPTED)
+            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.OK)
         }
+        verify(writeFuture, never()).addListener(ChannelFutureListener.CLOSE)
+    }
+
+    @Test
+    fun `write will write to an open channel and close the channel if request failed`() {
+        val response = argumentCaptor<DefaultFullHttpResponse>()
+        val writeFuture = mock<ChannelFuture>()
+        whenever(channel.writeAndFlush(response.capture())).doReturn(writeFuture)
+        server.onOpen(HttpConnectionEvent(channel))
+
+        server.write(
+            HttpResponseStatus.BAD_REQUEST,
+            byteArrayOf(5, 7),
+            address
+        )
+
+        assertSoftly {
+            it.assertThat(response.firstValue.content().array()).isEqualTo(byteArrayOf(5, 7))
+            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST)
+        }
+        verify(writeFuture).addListener(ChannelFutureListener.CLOSE)
     }
 
     @Test
@@ -188,7 +213,7 @@ class HttpServerTest {
     fun `stop will terminate all the groups`() {
         server.start()
 
-        server.stop()
+        server.close()
 
         verify(groups[0]).shutdownGracefully()
         verify(groups[1]).shutdownGracefully()
@@ -200,7 +225,7 @@ class HttpServerTest {
         whenever(serverChannel.isOpen).doReturn(true)
         whenever(serverChannel.close()).doReturn(mock())
 
-        server.stop()
+        server.close()
 
         verify(serverChannel).close()
     }
@@ -210,7 +235,7 @@ class HttpServerTest {
         server.start()
         whenever(serverChannel.isOpen).doReturn(false)
 
-        server.stop()
+        server.close()
 
         verify(serverChannel, times(0)).close()
     }
@@ -222,7 +247,7 @@ class HttpServerTest {
         whenever(serverChannel.close()).doThrow(RuntimeException(""))
 
         assertDoesNotThrow {
-            server.stop()
+            server.close()
         }
     }
 
@@ -230,7 +255,7 @@ class HttpServerTest {
     fun `stop will remove the address from the list`() {
         server.start()
         server.onOpen(HttpConnectionEvent(channel))
-        server.stop()
+        server.close()
 
         assertThrows<IllegalStateException> {
             server.write(

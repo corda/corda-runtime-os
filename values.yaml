@@ -12,10 +12,10 @@
 # See `debug.yaml` for debug settings
 # NOTE: The below assumes you deploy Kafka and the PostgreSQL database in the same namespace, so that domain names containing just the service name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>)
 #       If that is not the case, you might need to add the namespace as a suffix.
-imagePullPolicy: IfNotPresent
+imagePullPolicy: "IfNotPresent"
 image:
-  registry: corda-os-docker-dev.software.r3.com
-  tag: latest-local
+  registry: "corda-os-docker-dev.software.r3.com"
+  tag: "latest-local"
 
 logging:
   format: "text"
@@ -23,19 +23,28 @@ logging:
 
 bootstrap:
   initialAdminUser:
-    password: "admin"
+    password:
+      value: "admin"
   kafka:
     replicas: 1
 
 kafka:
-  bootstrapServers: prereqs-kafka:9092
+  bootstrapServers: "prereqs-kafka:9092"
   tls:
     enabled: true
     truststore:
-      secretRef:
-        name: prereqs-kafka-0-tls
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka-0-tls"
+          key: "ca.crt"
 
 db:
   cluster:
-    host: prereqs-postgresql
-    existingSecret: prereqs-postgresql
+    host: "prereqs-postgresql"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-postgresql"
+          key: "password"
+    username:
+      value: "user"

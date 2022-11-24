@@ -8,6 +8,11 @@ configurations {
         transitive = false
     }
 
+    dockerImageJdbc {
+        canBeConsumed = false
+        transitive = false
+    }
+
     profilerAgent {
         canBeConsumed = false
         visible = false
@@ -25,10 +30,15 @@ if (enableProfiling.toBoolean()) {
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)
+    it.jdbcDriverFiles.setFrom(configurations.dockerImageJdbc)
     it.useShortName = true
 
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
     }
 
     if (project.hasProperty('isReleaseCandidate')) {
@@ -49,5 +59,17 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
+    }
+
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
+
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
+    if (project.hasProperty('workerBaseImageTag')) {
+        baseImageTag = workerBaseImageTag
     }
 }

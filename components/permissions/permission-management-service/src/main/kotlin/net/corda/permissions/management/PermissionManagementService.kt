@@ -64,32 +64,25 @@ class PermissionManagementService @Activate constructor(
      */
     val permissionManager: PermissionManager
         get() {
-            checkNotNull(handler.permissionManager) {
+            return checkNotNull(handler.permissionManager) {
                 "Permission Manager is null. Getter should be called only after service is UP."
             }
-            return handler.permissionManager!!
         }
 
     /**
      * Validator for performing permission validation operations using the permission system.
      */
     val permissionValidator: PermissionValidator
-        get() {
-            checkNotNull(handler.permissionValidator) {
-                "Permission Validator is null. Getter should be called only after service is UP."
-            }
-            return handler.permissionValidator!!
-        }
+        get() = handler.permissionValidator
 
     /**
      * Service that exposes functionality to perform basic authentication using the permission system.
      */
     val basicAuthenticationService: BasicAuthenticationService
         get() {
-            checkNotNull(handler.basicAuthenticationService) {
+            return checkNotNull(handler.basicAuthenticationService) {
                 "Permission basic authenticator is null. Getter should be called only after service is UP."
             }
-            return handler.basicAuthenticationService!!
         }
 
     override val isRunning: Boolean

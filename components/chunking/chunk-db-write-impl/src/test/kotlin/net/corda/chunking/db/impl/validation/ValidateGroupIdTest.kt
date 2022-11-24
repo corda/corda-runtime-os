@@ -16,7 +16,7 @@ class ValidateGroupIdTest {
         val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(null) }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
 
-        assertThrows<ValidationException> { cpi.validateAndGetGroupId { s -> s } }
+        assertThrows<ValidationException> { cpi.validateAndGetGroupId("") { s -> s } }
     }
 
     @Test
@@ -24,8 +24,8 @@ class ValidateGroupIdTest {
         val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(null) }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
 
-        assertThrows<ValidationException> { cpi.validateAndGetGroupId { "" } }
-        assertThrows<ValidationException> { cpi.validateAndGetGroupId { "   " } }
+        assertThrows<ValidationException> { cpi.validateAndGetGroupId("") { "" } }
+        assertThrows<ValidationException> { cpi.validateAndGetGroupId("") { "   " } }
     }
 
     @Test
@@ -34,7 +34,7 @@ class ValidateGroupIdTest {
         val json = """{ "groupId": "$expectedGroupId" }"""
         val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(json ) }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
-        assertThat(cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)).isEqualTo(expectedGroupId)
+        assertThat(cpi.validateAndGetGroupId("", GroupPolicyParser::groupIdFromJson)).isEqualTo(expectedGroupId)
     }
 
     @Test
@@ -42,7 +42,7 @@ class ValidateGroupIdTest {
         val emptyJson = """{ }"""
         val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(emptyJson ) }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
-        assertThrows<ValidationException> {cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)}
+        assertThrows<ValidationException> {cpi.validateAndGetGroupId("", GroupPolicyParser::groupIdFromJson)}
     }
 
     @Test
@@ -50,6 +50,6 @@ class ValidateGroupIdTest {
         val emptyJson = """{ "groupId": "" }"""
         val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(emptyJson ) }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
-        assertThrows<ValidationException> {cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)}
+        assertThrows<ValidationException> {cpi.validateAndGetGroupId("", GroupPolicyParser::groupIdFromJson)}
     }
 }

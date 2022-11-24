@@ -5,7 +5,7 @@ import net.corda.v5.crypto.SecureHash
 
 // HACK: needed to use this group id as it is hard
 // coded in the implementation code, we need to remove this
-const val HOLDING_IDENTITY_GROUP = "flow-worker-dev"
+const val HOLDING_IDENTITY_GROUP = "test-cordapp"
 
 const val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
 val BOB_X500_NAME = MemberX500Name.parse(BOB_X500)
@@ -31,6 +31,7 @@ const val PROTOCOL_2 = "protocol2"
 const val SESSION_ID_1 = "S1"
 const val SESSION_ID_2 = "S2"
 const val INITIATED_SESSION_ID_1 = "S1-INITIATED"
+val DATA_MESSAGE_0 = byteArrayOf(0)
 val DATA_MESSAGE_1 = byteArrayOf(1)
 val DATA_MESSAGE_2 = byteArrayOf(2)
 val CPK1_CHECKSUM = SecureHash("ALG", byteArrayOf(0, 0, 0, 0))

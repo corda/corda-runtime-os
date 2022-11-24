@@ -20,7 +20,7 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
                 .substringAfterLast('.')
 
         }
-        .substring(0..15) // Also need to truncate it to avoid DB errors
+        .take(15) // Also need to truncate it to avoid DB errors
     }
 
     /**

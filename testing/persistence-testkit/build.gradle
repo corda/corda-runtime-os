@@ -1,0 +1,28 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description "DB Persistence test Helpers and Fake Implementations"
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:persistence:persistence-service-common')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':libs:db:db-admin-impl')
+    implementation project(':libs:db:db-orm-impl')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':testing:db-testkit')
+    implementation project(':testing:sandboxes-testkit')
+    implementation project(':testing:test-utilities')
+
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-db-schema'
+
+    implementation("org.mockito:mockito-core:$mockitoVersion")
+    implementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
+}

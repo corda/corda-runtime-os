@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -13,6 +14,8 @@ import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,14 +38,18 @@ class NetworkRpcOpsImpl @Activate constructor(
     ) {
         try {
             certificatesClient.setupLocallyHostedIdentity(
-                holdingIdentityShortHash,
+                ShortHash.ofOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
-                request.p2pTlsTenantId,
-                request.sessionKeyTenantId,
+                request.useClusterLevelTlsCertificateAndKey != false,
+                request.useClusterLevelSessionCertificateAndKey == true,
                 request.sessionKeyId,
+                request.sessionCertificateChainAlias
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)
+        } catch (e: BadRequestException) {
+            logger.warn(e.message)
+            throw e
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

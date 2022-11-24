@@ -2,6 +2,7 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
@@ -13,6 +14,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -26,6 +28,8 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.Extension
@@ -64,8 +68,8 @@ class CertificatesRpcOpsImpl @Activate constructor(
         private val logger = contextLogger()
 
         private val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
             GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
             RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
@@ -89,8 +93,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
     override fun generateCsr(
         tenantId: String,
         keyId: String,
-        x500name: String,
-        certificateRole: String,
+        x500Name: String,
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
@@ -116,7 +119,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
-            X500Principal(x500name), publicKey
+            X500Principal(x500Name), publicKey
         )
 
         p10Builder
@@ -132,13 +135,33 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
+    override fun importCertificateChain(
+        usage: String,
+        holdingIdentityId: String?,
+        alias: String,
+        certificates: List<HttpFileUpload>,
+    ) {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
         // validate certificate
         if (certificates.isEmpty()) {
             throw InvalidInputDataException(
                 details = mapOf("certificate" to "No certificates")
             )
         }
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
         val rawCertificates = certificates.map {
             it.content.reader().readText()
         }
@@ -159,12 +182,68 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
-
         try {
-            certificatesClient.importCertificates(tenantId, alias, rawCertificates.joinToString(separator = "\n"))
+            certificatesClient.importCertificates(
+                usageType,
+                holdingIdentityShortHash,
+                alias,
+                rawCertificates.joinToString(separator = "\n"),
+            )
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")
+        }
+    }
+
+    override fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.getCertificateAliases(
+                usageType,
+                holdingIdentityShortHash,
+            ).toList()
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
+        }
+    }
+
+    override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.retrieveCertificates(
+                holdingIdentityShortHash,
+                usageType,
+                alias
+            ) ?: throw ResourceNotFoundException(alias, "alias")
+        } catch (e: ResourceNotFoundException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
         }
     }
 

@@ -8,6 +8,7 @@ import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
@@ -18,11 +19,14 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import javax.persistence.EntityManager
@@ -72,19 +76,30 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         entityManagerFactory.createEntityManager().transaction { em ->
 
             val cpiCpkEntities = cpi.cpks.mapTo(HashSet()) { cpk ->
+                val cpiCpkKey = CpiCpkKey(
+                    cpi.metadata.cpiId.name,
+                    cpi.metadata.cpiId.version,
+                    cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
+                    // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
+                    cpk.metadata.cpkId.name,
+                    cpk.metadata.cpkId.version,
+                    cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
+                )
+                val cpiCpkInDb = em.find(CpiCpkEntity::class.java, cpiCpkKey)
+                val cpkMetadataKey = cpk.metadata.cpkId.toCpkKey()
+                val cpkMetadataInDb = em.find(CpkMetadataEntity::class.java, cpkMetadataKey)
                 CpiCpkEntity(
-                    CpiCpkKey(
-                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
-                    ),
+                    cpiCpkKey,
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
                     CpkMetadataEntity(
-                        cpk.metadata.cpkId.toCpkKey(),
+                        cpkMetadataKey,
                         cpk.metadata.fileChecksum.toString(),
                         cpk.metadata.manifest.cpkFormatVersion.toString(),
-                        cpk.metadata.toJsonAvro()
-                    )
+                        cpk.metadata.toJsonAvro(),
+                        entityVersion = cpkMetadataInDb?.entityVersion ?: 0
+                    ),
+                    cpiCpkInDb?.entityVersion ?: 0
                 )
             }
 
@@ -94,10 +109,78 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
+    }
+
+    /**
+     * Update the changelogs in the db for cpi upload
+     *
+     * @property cpkDbChangeLogEntities: [List]<[CpkDbChangeLogEntity]> a list of changelogs extracted from the force
+     *  uploaded cpi.
+     * @property em: [EntityManager] the entity manager from the call site. We reuse this for several operations as part
+     *  of CPI upload
+     * @property cpi: [Cpi] is the Cpi that has just been uploaded
+     *
+     * @return [Boolean] indicating whether we actually updated any changelogs
+     */
+    private fun updateChangeLogs(
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
+        em: EntityManager,
+        cpi: Cpi
+    ) {
+        // The incoming changelogs will not be marked deleted
+        cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
+        val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
+        val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
+
+        // Then, for the currently declared changelogs, we'll save the record and clear any isDeleted flags.
+        // This all happens under one transaction so no one will see the isDeleted flags flicker.
+        (dbChangelogs + changeLogUpdates)
+            .entries
+            .forEach { (changelogId, changelog) ->
+                val inDb = em.find(CpkDbChangeLogEntity::class.java, changelogId)
+                // Keep track of what updated version we persist.
+                //  Also simulate the bumped entity version where appropriate.
+                val ret: CpkDbChangeLogEntity? = if (inDb != null) {
+                    changelog.entityVersion = inDb.entityVersion
+                    // Check prior to merge
+                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
+                        changelog.changesetId != inDb.changesetId
+                    if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
+                        // Mark as not deleted if this is one of the new entries
+                        changelog.isDeleted = false
+                    } else {
+                        // Otherwise we assume that it's out of date and should be marked as deleted
+                        changelog.isDeleted = true
+                    }
+                    em.merge(changelog)
+                    if (hasChanged) {
+                        // Simulate entityVersion increase
+                        changelog.entityVersion += 1
+                        // Return changelog
+                        changelog
+                    } else {
+                        // There's no new audit entry required as there hasn't been an update
+                        null
+                    }
+                } else {
+                    em.persist(changelog)
+                    // Return changelog
+                    changelog
+                }
+                if (ret != null) {
+                    log.debug {
+                        "Creating new audit entry for ${ret.id.cpkName}:${ret.id.cpkVersion} with signer summary " +
+                            "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion} " +
+                            "with checksum ${ret.fileChecksum}"
+                    }
+                    val audit = CpkDbChangeLogAuditEntity(ret)
+                    em.persist(audit)
+                }
+            }
     }
 
     override fun updateMetadataAndCpks(
@@ -138,7 +221,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity
         }
@@ -225,10 +308,17 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 entityToUpdate.metadata.formatVersion = cpk.metadata.manifest.cpkFormatVersion.toString()
                 entityToUpdate
             } else {
+                // Is it possible that this code can fail with OptimisticLockException due to not setting
+                // entityVersion in CpiCpkEntity or CpkMetadataEntity?
+                // (better to eliminate the duplication with similar logic in persistMetadataAndCpks
                 CpiCpkEntity(
                     CpiCpkKey(
-                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash.toString(),
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                        cpi.metadata.cpiId.name,
+                        cpi.metadata.cpiId.version,
+                        cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+                        cpk.metadata.cpkId.name,
+                        cpk.metadata.cpkId.version,
+                        cpk.metadata.cpkId.signerSummaryHashForDbQuery
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
@@ -278,11 +368,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                         .setParameter(QUERY_PARAM_ID, cpkKey)
                         .executeUpdate()
 
-                    if (updatedEntities < 1)
+                    if (updatedEntities < 1) {
                         throw OptimisticLockException(
                             "Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
                                 "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}."
                         )
+                    }
                 }
             } else {
                 // the cpk doesn't exist so we'll persist a new file
@@ -293,31 +384,45 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String) {
-        if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null)
-            throw ValidationException("No instance of same CPI with previous version found")
-    }
-
-    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?): Boolean {
-        val entitiesFound = entityManagerFactory.createEntityManager().transaction {
+    override fun validateCanUpsertCpi(
+        cpiName: String,
+        cpiSignerSummaryHash: String,
+        cpiVersion: String,
+        groupId: String,
+        forceUpload: Boolean,
+        requestId: String) {
+        val sameCPis = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
-                "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
+                "FROM ${CpiMetadataEntity::class.simpleName} c " +
+                        "WHERE c.name = :cpiName " +
+                        "AND c.signerSummaryHash = :cpiSignerSummaryHash",
                 CpiMetadataEntity::class.java
-            ).setParameter("groupId", groupId).resultList
+            )
+                .setParameter("cpiName", cpiName)
+                .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash).resultList
         }
 
-        // we can insert this CPI, it's the first one with this group id
-        if (entitiesFound.isEmpty() && !forceUpload) return true
-
-        if (forceUpload && cpiVersion != null) {
-            checkForMatchingEntity(entitiesFound, cpiName, cpiVersion)
-            // We can update this CPI if we find one with the same version in the case of a forceUpload
-            return true
-        } else if (entitiesFound.map { it.name }.contains(cpiName)) {
-            // we can insert this CPI, it has the same name and group id (we are NOT checking the version)
-            return true
+        if (forceUpload) {
+            if (!sameCPis.any { it.version == cpiVersion }) {
+                throw ValidationException("No instance of same CPI with previous version found", requestId)
+            }
+            if(sameCPis.first().groupId != groupId) {
+                throw ValidationException("Cannot force update a CPI with a different group ID", requestId)
+            }
+            // We can force-update this CPI because we found one with the same version
+            return
         }
 
-        return false
+        // outside a force-update, anything goes except identical ID (name, signer and version)
+        if (sameCPis.any { it.version == cpiVersion }) {
+            throw DuplicateCpiUploadException("CPI $cpiName, $cpiVersion, $cpiSignerSummaryHash already exists.")
+        }
+
+        // NOTE: we may do additional validation here, such as validate that the group ID is not changing during a
+        //  regular update. For now, just logging this as un-usual.
+        if(sameCPis.any { it.groupId != groupId }) {
+            log.info("CPI upload $requestId contains a CPI with the same name ($cpiName) and " +
+                    "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID.")
+        }
     }
 }

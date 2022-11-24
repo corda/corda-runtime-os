@@ -30,17 +30,17 @@ class SessionDataProcessorSend(
 
         if (sessionState == null) {
             val errorMessage = "Tried to send SessionData for sessionState which was null. Key: $key, SessionEvent: $sessionEvent"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         }
 
         return when (val currentStatus = sessionState.status) {
             SessionStateType.ERROR -> {
                 val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
-                logger.error(errorMessage)
+                logger.warn(errorMessage)
                 sessionState
             }
-            SessionStateType.CONFIRMED -> {
+            SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.sequenceNum = nextSeqNum
 
@@ -54,7 +54,7 @@ class SessionDataProcessorSend(
                 // more data messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
                 val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId when status was : $currentStatus. " +
                         "SessionState: $sessionState"
-                logger.error(errorMessage)
+                logger.warn(errorMessage)
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages =

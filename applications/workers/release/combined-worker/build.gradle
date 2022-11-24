@@ -2,28 +2,50 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
     id 'corda.docker-app'
+    id 'corda.javadoc-generation'
+}
+
+ext {
+    releasable = true
 }
 
 description 'Combined Worker'
 
 osgiRun {
     frameworkProperties.putAll(
-        'org.osgi.framework.security': 'osgi'
+            'org.osgi.framework.security': 'osgi'
     )
 }
 
 quasar {
     excludeLocations = [ 'PERSISTENCE/*', 'VERIFICATION/*' ]
     excludePackages.addAll([
-        'org.eclipse.jetty**',
-        'net.corda.membership**'
+            'org.eclipse.jetty**',
+            'net.corda.membership**'
     ])
+}
+
+configurations {
+    drivers {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 dependencies {
     // for BundleManager
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    drivers "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // Oracle isn't OSGi wrapped, but if it were, it is sufficient to just do this:
+    // OSGi bundle that registers a `DataSourceFactory` on behalf of Oracle,
+    // and add the OSGi wrapped version, i.e.
+    //
+    // drivers "org.ops4j.pax.jdbc:pax-jdbc-oracle:1.5.3"
+    // drivers "com.oracle.database.jdbc:ojdbc10WRAPPED-AS-A-BUNDLE:19.15.0.0"
+
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
@@ -34,6 +56,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
+    implementation project(':libs:platform-info')
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
     implementation project(':processors:flow-processor')
@@ -62,5 +85,67 @@ dependencies {
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
+    }
+}
+
+// Download drivers into this folder - if you change this folder
+// or this location, you'll have to change the .run/*.xml files to
+// reflect the change in relative path.  This is used by intellij:
+//  -ddatabase.jdbc.directory=$ProjectFileDir$/applications/workers/release/combined-worker/drivers
+def download = tasks.register("download", Copy) {
+    from configurations.drivers
+    into 'drivers'
+}
+
+tasks.named('jar', Jar) {
+    dependsOn(download)
+}
+
+publishing {
+    // Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
+    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+        repositories {
+            maven {
+                url = project.findProperty('maven.repo.s3')
+                credentials(AwsCredentials) {
+                    accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                    secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                    sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                }
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            artifactId 'corda-combined-worker'
+            groupId project.group
+            artifact javadocJar
+            pom {
+                name = 'corda-combined-worker'
+                description = 'corda-combined-worker'
+                url = 'https://github.com/corda/corda-runtime-os'
+
+                scm {
+                    url = 'https://github.com/corda/corda-runtime-os'
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
     }
 }

@@ -30,8 +30,6 @@ class RbacBasicAuthenticationServiceTest {
     companion object {
         private val passwordService: PasswordService = mock()
         private val permissionManagementCache = mock<PermissionManagementCache>()
-        private val rbacBasicAuthenticationService =
-            RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
 
         private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private val permissionString = "flow/start/com.myapp.MyFlow"
@@ -132,6 +130,9 @@ class RbacBasicAuthenticationServiceTest {
             whenever(permissionManagementCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
         }
     }
+
+    private val rbacBasicAuthenticationService =
+        RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
 
     @Test
     fun `authenticate user will return false when user cannot be found in cache`() {

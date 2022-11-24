@@ -77,12 +77,6 @@ class PubSubSubscription<K : Any, V : Any>(
      * Stop the executor.
      * Join the thread
      */
-    override fun stop() {
-        log.debug { "Stopping pubsub subscription with config: $subscriptionConfig" }
-        stopConsumer()
-        lifecycleCoordinator.stop()
-    }
-
     override fun close() {
         log.debug { "Closing pubsub subscription with config: $subscriptionConfig" }
         stopConsumer()

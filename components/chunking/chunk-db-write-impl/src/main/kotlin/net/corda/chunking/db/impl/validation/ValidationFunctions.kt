@@ -8,15 +8,16 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
@@ -55,7 +56,7 @@ fun assembleFileFromChunks(
 
     return with(fileName) {
         if (this == null) {
-            throw ValidationException("Did not combine all chunks to produce file for $requestId")
+            throw ValidationException("Did not combine all chunks to produce file", requestId)
         }
 
         FileInfo(this, tempPath, checksum, localProperties)
@@ -67,18 +68,18 @@ fun assembleFileFromChunks(
  *
  * @throws ValidationException
  */
-fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
+fun FileInfo.validateAndGetCpi(cpiPartsDir: Path, requestId: String): Cpi {
     val cpi: Cpi =
         try {
             Files.newInputStream(this.path).use { CpiReader.readCpi(it, cpiPartsDir) }
         } catch (ex: Exception) {
             when (ex) {
                 is PackagingException -> {
-                    throw ValidationException("Invalid CPI.  ${ex.message}", ex)
+                    throw ValidationException("Invalid CPI.  ${ex.message}", requestId, ex)
                 }
 
                 else -> {
-                    throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", ex)
+                    throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", requestId, ex)
                 }
             }
         }
@@ -131,19 +132,28 @@ fun CpiPersistence.persistCpiToDatabase(
                 cpkDbChangeLogEntities
             )
         } else {
-            throw ValidationException(
-                "CPI has already been inserted with cpks for " +
-                        "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId"
+            throw UnsupportedOperationException(
+                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery} " +
+                        "already exists and cannot be replaced."
             )
         }
     } catch (ex: Exception) {
+        log.info("Unexpected error when persisting CPI to the database", ex)
         when (ex) {
-            is ValidationException -> throw ex
-            is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", ex)
-            is CordaRuntimeException -> throw ValidationException("Could not persist CPI and CPK to database", ex)
-            else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", ex)
+            is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
+            is CordaRuntimeException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
+            else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", requestId, ex)
         }
     }
+}
+
+/**
+ * Checks that a CPI has a group policy.
+ *
+ * @throws ValidationException if there is no group policy json.
+ */
+private fun Cpi.validateHasGroupPolicy(requestId: String? = null) {
+    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file", requestId)
 }
 
 /**
@@ -156,53 +166,36 @@ fun CpiPersistence.persistCpiToDatabase(
  * @return `groupId`
  */
 @Suppress("ThrowsCount")
-fun Cpi.validateAndGetGroupId(getGroupIdFromJson: (String) -> String): String {
-    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
+fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) -> String): String {
+    validateHasGroupPolicy(requestId)
     val groupId = try {
         getGroupIdFromJson(this.metadata.groupPolicy!!)
-    } catch (e: CordaRuntimeException) {
-        throw ValidationException("CPI group policy file needs a groupId", e)
+        // catch specific exceptions, and wrap them up so as to capture the request ID
+        // This exception will end up going over Kafka and being picked up by the RPC worker,
+        // which then matches by class name,  so we cannot use subtypes of ValidationException without
+        // introducing knowledge of specific failure modes into the RPC worker
+    } catch (e: GroupPolicyIdNotFoundException) {
+        throw ValidationException("Unable to upload CPI due to group ID not found", requestId)
+    } catch (e: GroupPolicyParseException) {
+        throw ValidationException("Unable to upload CPI due to group policy parse error ${e.message}", requestId, e)
     }
-    if (groupId.isBlank()) throw ValidationException("CPI group policy file needs a groupId")
+    if (groupId.isBlank()) throw ValidationException("Unable to upload CPI due to group ID being blank", requestId)
     return groupId
 }
 
 /**
- * @throws ValidationException if the signature is incorrect
+ * Get fileFormatVersion from group policy JSON on the [Cpi] object.
+ *
+ * @throws ValidationException if there is no group policy json.
+ * @throws CordaRuntimeException if there is an error parsing the group policy json.
+ * @return the group policy file format version
  */
-fun FileInfo.checkSignature() {
-    if (!Files.newInputStream(this.path).use { isSigned(it) }) {
-        throw ValidationException("Signature invalid: ${this.name}")
-    }
-}
-
-/**
- * STUB - this needs to be implemented
- */
-@Suppress("UNUSED_PARAMETER")
-private fun isSigned(cpiInputStream: InputStream): Boolean {
-    // STUB:  we need to implement this (can change function argument to Path).
-    // The CPI loading code has some signature validation in it, so this stub may be unnecessary.
-    return true
-}
-
-/**
- * Checks the group id for cpi of a specific (name, version)
- * @throws ValidationException if the CPI (name, version) is already uploaded with this group
- */
-fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
-    val groupIdInDatabase = this.getGroupId(
-        cpi.metadata.cpiId.name,
-        cpi.metadata.cpiId.version,
-        cpi.metadata.cpiId.signerSummaryHashForDbQuery
-    )
-
-    if (groupIdInDatabase != null) {
-        // Carefully constructed message because the "409/conflict" exception:
-        // ResourceAlreadyExistsException
-        // just wants "the resource".
-        val resource = "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} (groupId=$groupIdInDatabase)"
-        throw DuplicateCpiUploadException(resource)
+fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
+    validateHasGroupPolicy()
+    return try {
+        GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+    } catch (e: Exception) {
+        throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
     }
 }
 

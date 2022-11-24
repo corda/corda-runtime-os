@@ -2,17 +2,20 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
+import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -28,6 +31,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -117,6 +121,57 @@ class MembershipPersistenceClientImpl(
         }
     }
 
+    override fun persistGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        groupParameters: GroupParameters
+    ): MembershipPersistenceResult<KeyValuePairList> {
+        logger.info("Persisting group parameters.")
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            PersistGroupParameters(groupParameters.toAvro())
+        ).execute()
+        return when (val response = result.payload) {
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
+        }
+    }
+
+    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<KeyValuePairList> {
+        logger.info("Persisting initial snapshot of group parameters.")
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            PersistGroupParametersInitialSnapshot()
+        ).execute()
+        return when (val response = result.payload) {
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
+        }
+    }
+
+    override fun addNotaryToGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        notary: MemberInfo
+    ): MembershipPersistenceResult<KeyValuePairList> {
+        logger.info("Adding notary to persisted group parameters.")
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            AddNotaryToGroupParameters(
+                PersistentMemberInfo(
+                    viewOwningIdentity.toAvro(),
+                    notary.memberProvidedContext.toAvro(),
+                    notary.mgmProvidedContext.toAvro()
+                )
+            )
+        ).execute()
+        return when (val response = result.payload) {
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.groupParameters)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
+        }
+    }
+
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
@@ -131,11 +186,7 @@ class MembershipPersistenceClientImpl(
                     MembershipRegistrationRequest(
                         registrationId,
                         memberContext,
-                        CryptoSignatureWithKey(
-                            publicKey,
-                            signature,
-                            KeyValuePairList(emptyList())
-                        )
+                        signature,
                     )
                 }
             )
@@ -193,7 +244,7 @@ class MembershipPersistenceClientImpl(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus
     ): MembershipPersistenceResult<Unit> {
-        logger.info("Updating the status of a registration request with ID $registrationId.")
+        logger.info("Updating the status of a registration request with ID '$registrationId'.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus)

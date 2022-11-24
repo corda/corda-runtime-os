@@ -1,9 +1,12 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,15 +28,16 @@ class FlowMessagingImplTest {
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowStackService = mockFlowFiberService.flowStack
     private val flowSession = mock<FlowSession>()
+    private val serializationService = mock<SerializationServiceInternal>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(create(any(), eq(ALICE_X500_NAME), initiated = eq(false))).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
     }
 
-    private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory)
+    private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory, serializationService)
 
     @Test
-    fun `initiateFlow creates an uninitiated FlowSession when the current flow stack item represents an initiating flow`() {
+    fun `initiateFlow creates an initiating FlowSession when the current flow stack item represents an initiating flow`() {
         whenever(flowStackService.peek()).thenReturn(
             FlowStackItem(
                 FLOW_NAME,
@@ -44,7 +48,27 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).create(any(), eq(ALICE_X500_NAME), initiated = eq(false))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(null))
+    }
+
+    @Test
+    fun `initiateFlow builder overload creates an initiating FlowSession passing a context builder`() {
+        whenever(flowStackService.peek()).thenReturn(
+            FlowStackItem(
+                FLOW_NAME,
+                true,
+                mutableListOf(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
+        )
+
+        val builder = FlowContextPropertiesBuilder {
+            // do nothing
+        }
+
+        flowMessaging.initiateFlow(ALICE_X500_NAME, builder)
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test
@@ -53,7 +77,7 @@ class FlowMessagingImplTest {
             FlowStackItem(FLOW_NAME, true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        assertEquals(1, flowStackItem.sessionIds.size)
+        assertEquals(1, flowStackItem.sessions.size)
     }
 
     @Test
@@ -61,13 +85,17 @@ class FlowMessagingImplTest {
         val flowStackItem = FlowStackItem(
             FLOW_NAME,
             true,
-            mutableListOf("1", "2", "3"),
+            mutableListOf(
+                FlowStackItemSession("1", false),
+                FlowStackItemSession("2", false),
+                FlowStackItemSession("3", false)
+            ),
             mutableKeyValuePairList(),
             mutableKeyValuePairList()
         )
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        assertEquals(4, flowStackItem.sessionIds.size)
+        assertEquals(4, flowStackItem.sessions.size)
     }
 
     @Test

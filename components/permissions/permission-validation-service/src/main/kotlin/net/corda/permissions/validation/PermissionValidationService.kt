@@ -49,10 +49,9 @@ class PermissionValidationService @Activate constructor(
      */
     val permissionValidator: PermissionValidator
         get() {
-            checkNotNull(_permissionValidator) {
+            return checkNotNull(_permissionValidator) {
                 "Permission Validator is null. Getter should be called only after service is UP."
             }
-            return _permissionValidator!!
         }
 
     private fun eventHandler(event: LifecycleEvent) {
@@ -79,7 +78,7 @@ class PermissionValidationService @Activate constructor(
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
                 permissionValidationCacheService.stop()
-                _permissionValidator?.close()
+                _permissionValidator?.stop()
                 _permissionValidator = null
                 registration?.close()
                 registration = null
@@ -88,7 +87,7 @@ class PermissionValidationService @Activate constructor(
     }
 
     private fun startValidationComponent() {
-        _permissionValidator?.close()
+        _permissionValidator?.stop()
         _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCacheRef)
             .also { it.start() }
     }

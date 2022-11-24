@@ -17,13 +17,14 @@ import kotlin.streams.toList
 class VirtualNodeDbReconcilerReaderTest {
     companion object {
         const val x500name = "O=Alice,L=London,C=GB"
-        val cpiSignerSummaryHash = SecureHash.create("ABC:1234567890ABCDEF")
+        val cpiSignerSummaryHash = SecureHash.parse("ABC:1234567890ABCDEF")
         const val cpiName = "test"
         const val cpiVersion = "1.0"
         const val holdingId = "ABCDEF1234567890"
         const val groupId = "123456"
         val vaultDmlConnectionId = UUID.randomUUID()
         val cryptoDmlConnectionId = UUID.randomUUID()
+        val uniquenessDmlConnectionId = UUID.randomUUID()
         val timestamp = Instant.now()
         const val entityVersion = 999
     }
@@ -50,6 +51,8 @@ class VirtualNodeDbReconcilerReaderTest {
             whenever(it.vaultDDLConnectionId).then { null }
             whenever(it.cryptoDMLConnectionId).then { cryptoDmlConnectionId }
             whenever(it.cryptoDDLConnectionId).then { null }
+            whenever(it.uniquenessDMLConnectionId).then { uniquenessDmlConnectionId }
+            whenever(it.uniquenessDDLConnectionId).then { null }
             whenever(it.hsmConnectionId).then { null }
         }
     }
@@ -72,6 +75,8 @@ class VirtualNodeDbReconcilerReaderTest {
             vaultDmlConnectionId = vaultDmlConnectionId,
             cryptoDdlConnectionId = null,
             cryptoDmlConnectionId = cryptoDmlConnectionId,
+            uniquenessDdlConnectionId = null,
+            uniquenessDmlConnectionId = uniquenessDmlConnectionId,
             hsmConnectionId = null,
             version = entityVersion,
             timestamp = timestamp

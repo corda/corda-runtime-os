@@ -7,7 +7,7 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 
 @Suppress("ThrowsCount")
 inline fun <reified T : Any> sendPermissionWriteRequest(

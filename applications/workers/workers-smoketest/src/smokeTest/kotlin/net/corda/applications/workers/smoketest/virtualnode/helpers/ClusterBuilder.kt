@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 
@@ -23,9 +24,15 @@ class ClusterBuilder {
 
     fun get(cmd: String) = client!!.get(cmd)
 
-    private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
+    private fun uploadCpiResource(
+        cmd: String,
+        resourceName: String,
+        groupId: String,
+        staticMemberNames: List<String>,
+        cpiName: String
+    ): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupId).use {
+        return CpiLoader.get(resourceName, groupId, staticMemberNames, cpiName).use {
             client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
@@ -37,18 +44,47 @@ class ClusterBuilder {
         }
     }
 
+    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String): SimpleResponse {
+        val fileName = Paths.get(resourceName).fileName.toString()
+        return getInputStream(resourceName).use {
+            client!!.putMultiPart(
+                cmd,
+                mapOf("alias" to alias),
+                mapOf("certificate" to HttpsClientFileUpload(it, fileName))
+            )
+        }
+    }
+
+    private fun getInputStream(resourceName: String) =
+        this::class.java.getResource(resourceName)?.openStream()
+            ?: throw FileNotFoundException("No such resource: '$resourceName'")
+
+    fun importCertificate(resourceName: String, usage: String, alias: String) =
+        uploadCertificateResource("/api/v1/certificates/cluster/$usage", resourceName, alias)
+
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
+    fun cpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
+        uploadCpiResource("/api/v1/cpi/", resourceName, groupId, staticMemberNames, cpiName)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/maintenance/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun forceCpiUpload(resourceName: String, groupId: String) =
-        uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId)
+    fun forceCpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
+        uploadCpiResource(
+            "/api/v1/maintenance/virtualnode/forcecpiupload/",
+            resourceName,
+            groupId,
+            staticMemberNames,
+            cpiName
+        )
+
+    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    fun syncVirtualNode(virtualNodeShortId: String) =
+        post("/api/v1/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
@@ -62,6 +98,18 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
+    // TODO CORE-7248 Review once plugin loading logic is added
+    private fun registerNotaryBody() =
+        """{ 
+            |  "action": "requestJoin",
+            |  "context": { 
+            |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
+            |    "corda.roles.0" : "notary",
+            |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
+            |    "corda.notary.service.plugin" : "net.corda.notary.MyNotaryService"
+            |   } 
+            | }""".trimMargin()
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -72,8 +120,14 @@ class ClusterBuilder {
     /**
      * Register a member to the network
      */
-    fun registerMember(holdingId: String) =
-        post("/api/v1/membership/$holdingId", registerMemberBody())
+    fun registerMember(holdingIdShortHash: String, isNotary: Boolean = false) =
+        post(
+            "/api/v1/membership/$holdingIdShortHash",
+            if (isNotary) registerNotaryBody() else registerMemberBody()
+        )
+
+    fun getRegistrationStatus(holdingIdShortHash: String) =
+        get("/api/v1/membership/$holdingIdShortHash")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
@@ -96,6 +150,9 @@ class ClusterBuilder {
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
         get("/api/v1/flowclass/$holdingIdentityShortHash")
 
+    /** Get all RBAC roles */
+    fun getRbacRoles() = get("/api/v1/role")
+
     /** Start a flow */
     fun flowStart(
         holdingIdentityShortHash: String,
@@ -108,8 +165,34 @@ class ClusterBuilder {
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
-            |"$requestData" }""".trimMargin()
+            |"$requestData" }
+        """.trimMargin()
 
+    /** Get cluster configuration for the specified section */
+    fun getConfig(section: String) = get("/api/v1/config/$section")
+
+    /** Update the cluster configuration for the specified section and versions with unescaped Json */
+    fun putConfig(
+        config: String,
+        section: String,
+        configVersion: String,
+        schemaMajorVersion: String,
+        schemaMinorVersion: String
+    ): SimpleResponse {
+        val payload = """
+            {
+                "config": $config,
+                "schemaVersion": {
+                  "major": "$schemaMajorVersion",
+                  "minor": "$schemaMinorVersion"
+                },
+                "section": "$section",
+                "version": "$configVersion"
+            }
+        """.trimIndent()
+
+        return put("/api/v1/config", payload)
+    }
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)

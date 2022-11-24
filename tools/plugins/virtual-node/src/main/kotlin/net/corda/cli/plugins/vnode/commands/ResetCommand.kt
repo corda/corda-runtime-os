@@ -1,9 +1,8 @@
 package net.corda.cli.plugins.vnode.commands
 
+import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.client.HttpRpcClient
-import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
 import org.slf4j.Logger
@@ -12,47 +11,18 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import kotlin.reflect.KClass
 
 @Command(
     name = "reset",
     description = ["Upload and overwrite earlier stored CPI record.",
-        "Any sandboxes running an overwritten version of CPI will be purged and optionally",
-        "vault data for the affected Virtual Nodes wiped out."]
+        "The plugin purges any sandboxes running an overwritten version of a CPI and optionally ",
+        "deletes vault data for the affected Virtual Nodes."]
 )
-class ResetCommand : Runnable {
+class ResetCommand : HttpRpcCommand(), Runnable {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
-
-    @Option(
-        names = ["-t", "--target"],
-        required = true,
-        description = ["The target address of the HTTP RPC Endpoint (e.g. `https://host:port`)"]
-    )
-    lateinit var targetUrl: String
-
-    @Option(
-        names = ["-u", "--user"],
-        description = ["User name"],
-        required = true
-    )
-    lateinit var username: String
-
-    @Option(
-        names = ["-p", "--password"],
-        description = ["Password"],
-        required = true
-    )
-    lateinit var password: String
-
-    @Option(
-        names = ["-pv", "--protocol-version"],
-        required = false,
-        description = ["Minimum protocol version."]
-    )
-    var minimumServerProtocolVersion: Int = 1
 
     @Option(
         names = ["-c", "--cpi"],
@@ -68,9 +38,21 @@ class ResetCommand : Runnable {
     )
     var wait: Boolean = false
 
+    @Option(
+        names = ["-r", "--resync"],
+        required = false,
+        description = ["A list of virtual node shortIds for the vaults to be resynchronised"]
+    )
+    var resync: List<String> = emptyList()
+
     override fun run() {
+        if (resync.isNotEmpty() && !wait) {
+            println("You cannot use the resync option without waiting")
+            return
+        }
         var virtualNodeMaintenanceResult: String
-        val virtualNodeMaintenance = createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class)
+        val virtualNodeMaintenance =
+            createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class)
 
         virtualNodeMaintenance.use {
             val connection = virtualNodeMaintenance.start()
@@ -92,6 +74,9 @@ class ResetCommand : Runnable {
         }
         if (wait) {
             pollForOKStatus(virtualNodeMaintenanceResult)
+            if (resync.isNotEmpty()) {
+                resyncVaults(resync)
+            }
         } else {
             println(virtualNodeMaintenanceResult)
         }
@@ -119,19 +104,19 @@ class ResetCommand : Runnable {
         }
     }
 
-    private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
-        if(targetUrl.endsWith("/")){
-            targetUrl = targetUrl.dropLast(1)
+    private fun resyncVaults(virtualNodeShortIds: List<String>) {
+        createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class).use { client ->
+            val virtualNodeMaintenance = client.start().proxy
+            try {
+                virtualNodeShortIds.forEach { virtualNodeShortId ->
+                    virtualNodeMaintenance.resyncVirtualNodeDb(virtualNodeShortId)
+                    println("Virtual node $virtualNodeShortId successfully resynced")
+                }
+            } catch (e: Exception) {
+                println(e.message)
+                logger.error("Unexpected error when resyncing vaults", e)
+                return
+            }
         }
-        return HttpRpcClient(
-            baseAddress = "$targetUrl/api/v1/",
-            rpcOps.java,
-            HttpRpcClientConfig()
-                .enableSSL(true)
-                .minimumServerProtocolVersion(minimumServerProtocolVersion)
-                .username(username)
-                .password(password),
-            healthCheckInterval = 500
-        )
     }
 }

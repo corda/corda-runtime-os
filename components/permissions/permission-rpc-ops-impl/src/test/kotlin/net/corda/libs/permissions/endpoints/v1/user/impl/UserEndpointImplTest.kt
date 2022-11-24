@@ -22,13 +22,15 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import org.junit.jupiter.api.Assertions.assertTrue
-import java.util.*
+import java.util.UUID
 import net.corda.permissions.management.PermissionManagementService
+import org.assertj.core.api.Assertions
 
 internal class UserEndpointImplTest {
 
@@ -58,7 +60,7 @@ internal class UserEndpointImplTest {
         emptyList(),
     )
 
-    private val lifecycleCoordinator: LifecycleCoordinator = mock<LifecycleCoordinator>()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
         whenever(it.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
     }
@@ -90,8 +92,11 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createUser(createUserType)
+        val response = endpoint.createUser(createUserType)
+        val responseType = response.responseBody
 
+        assertEquals(ResponseCode.CREATED, response.responseCode)
+        assertNotNull(responseType)
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
@@ -160,7 +165,10 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.addRoleToUser(capture.capture())).thenReturn(userResponseDtoWithRole)
 
         endpoint.start()
-        val responseType = endpoint.addRole("userLogin1", "roleId1")
+        val response = endpoint.addRole("userLogin1", "roleId1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -202,7 +210,10 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.removeRoleFromUser(capture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.removeRole("userLogin1", "roleId1")
+        val response = endpoint.removeRole("userLogin1", "roleId1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -232,5 +243,17 @@ internal class UserEndpointImplTest {
             endpoint.removeRole("userLogin1", "roleId1")
         }
         assertEquals("Unexpected permission management error occurred.", e.message)
+    }
+
+    @Test
+    fun `create with invalid user login`() {
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+
+        endpoint.start()
+        Assertions.assertThatThrownBy {
+            endpoint.createUser(createUserType.copy(loginName = "foo/bar"))
+        }.isInstanceOf(InvalidInputDataException::class.java)
+            .hasMessageContaining("Invalid input data for user creation.")
     }
 }

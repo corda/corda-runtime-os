@@ -5,7 +5,7 @@ import net.corda.sandbox.SandboxException
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
+import org.osgi.framework.BundleException
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -49,6 +50,11 @@ class SandboxIrresolvableBundleTest {
         val e = assertThrows<SandboxException> {
             sandboxFactory.createSandboxGroupFor("META-INF/sandbox-irresolvable-cpk.cpb")
         }
-        assertTrue(e.cause?.message!!.contains("Unable to resolve com.example.sandbox.sandbox-irresolvable-cpk"))
+        assertThat(e)
+            .hasMessageStartingWith("Failed to resolve bundles: ")
+            .hasMessageContaining("com.example.sandbox.sandbox-irresolvable-cpk")
+        assertThat(e.suppressed)
+            .allMatch { it is BundleException }
+            .hasSize(1)
     }
 }

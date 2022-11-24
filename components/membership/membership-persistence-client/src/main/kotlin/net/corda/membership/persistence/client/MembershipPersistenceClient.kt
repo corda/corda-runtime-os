@@ -1,9 +1,11 @@
 package net.corda.membership.persistence.client
 
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -40,6 +42,57 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
     ): MembershipPersistenceResult<Int>
+
+    /**
+     * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist
+     * the initial snapshot that contains basic fields defined in [GroupParameters]. The group parameters persisted in
+     * this method do not contain other properties such as notary service information.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     *
+     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
+     */
+    fun persistGroupParametersInitialSnapshot(
+        viewOwningIdentity: HoldingIdentity
+    ): MembershipPersistenceResult<KeyValuePairList>
+
+    /**
+     * Persists a set of group parameters. This method is expected to be used by members to persist group parameters
+     * as distributed by the MGM.
+     *
+     * The epoch of the new [groupParameters] to be persisted must be higher than that of previous group parameter versions.
+     *
+     * @param viewOwningIdentity The holding identity owning this view of the group parameters.
+     * @param groupParameters The group parameters to persist.
+     *
+     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
+     */
+    fun persistGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        groupParameters: GroupParameters
+    ): MembershipPersistenceResult<KeyValuePairList>
+
+    /**
+     * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to
+     * either add a notary vnode to a new notary service, or add a new notary vnode (or notary vnode with rotated keys)
+     * to an existing notary service within the group parameters. If successful, a new set of group parameters containing
+     * the specified notary information is persisted.
+     *
+     * If adding a notary vnode to an existing notary service, the optional plugin name, if specified, must match
+     * that of the notary service.
+     *
+     * @param viewOwningIdentity The holding identity owning this view of the group parameters.
+     * @param notary [MemberInfo] of the notary to be added.
+     *
+     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
+     */
+    fun addNotaryToGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        notary: MemberInfo
+    ): MembershipPersistenceResult<KeyValuePairList>
 
     /**
      * Persists a registration request record as viewed by a specific holding identity.

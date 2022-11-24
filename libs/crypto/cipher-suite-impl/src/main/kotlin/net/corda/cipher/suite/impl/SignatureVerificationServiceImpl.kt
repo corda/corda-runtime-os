@@ -1,31 +1,41 @@
 package net.corda.cipher.suite.impl
 
 import net.corda.crypto.impl.SignatureInstances
+import net.corda.crypto.impl.getSigningData
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.getParamsSafely
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 import javax.crypto.Cipher
 
-@Component(service = [SignatureVerificationService::class])
+@Component(
+    service = [ SignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    scope = PROTOTYPE
+)
 class SignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val hashingService: DigestService
-) : SignatureVerificationService {
+) : SignatureVerificationService,
+    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     companion object {
         private val logger = contextLogger()
     }

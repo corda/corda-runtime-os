@@ -84,8 +84,10 @@ class VirtualNodeInfoReaderEventHandler(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
+            configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
+            coordinator.updateStatus(event.status)
             configSubscription?.close()
         }
     }

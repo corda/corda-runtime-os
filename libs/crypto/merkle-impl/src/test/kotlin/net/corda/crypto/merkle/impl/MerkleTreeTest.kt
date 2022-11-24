@@ -3,14 +3,15 @@ package net.corda.crypto.merkle.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.core.toByteArray
+import net.corda.crypto.merkle.impl.mocks.getZeroHash
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.getZeroHash
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.MerkleProofType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -88,9 +89,9 @@ class MerkleTreeTest {
     }
 
     private fun MerkleTreeImpl.calcLeafHash(index: Int): SecureHash {
-        return digestProvider.leafHash(
+        return digest.leafHash(
             index,
-            digestProvider.leafNonce(index),
+            digest.leafNonce(index),
             leaves[index]
         )
     }
@@ -118,7 +119,7 @@ class MerkleTreeTest {
         val root = merkleTree.root
         val leaf0 = merkleTree.calcLeafHash(0)
         val leaf1 = merkleTree.calcLeafHash(1)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, leaf0, leaf1)
+        val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
     }
 
@@ -130,8 +131,8 @@ class MerkleTreeTest {
         val leaf0 = merkleTree.calcLeafHash(0)
         val leaf1 = merkleTree.calcLeafHash(1)
         val leaf2 = merkleTree.calcLeafHash(2)
-        val node1 = merkleTree.digestProvider.nodeHash(1, leaf0, leaf1)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node1, leaf2)
+        val node1 = merkleTree.digest.nodeHash(1, leaf0, leaf1)
+        val manualRoot = merkleTree.digest.nodeHash(0, node1, leaf2)
         assertEquals(manualRoot, root)
     }
 
@@ -144,9 +145,9 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val leaf2 = merkleTree.calcLeafHash(2)
         val leaf3 = merkleTree.calcLeafHash(3)
-        val node1 = merkleTree.digestProvider.nodeHash(1, leaf0, leaf1)
-        val node2 = merkleTree.digestProvider.nodeHash(1, leaf2, leaf3)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node1, node2)
+        val node1 = merkleTree.digest.nodeHash(1, leaf0, leaf1)
+        val node2 = merkleTree.digest.nodeHash(1, leaf2, leaf3)
+        val manualRoot = merkleTree.digest.nodeHash(0, node1, node2)
         assertEquals(manualRoot, root)
     }
 
@@ -160,10 +161,10 @@ class MerkleTreeTest {
         val leaf2 = merkleTree.calcLeafHash(2)
         val leaf3 = merkleTree.calcLeafHash(3)
         val leaf4 = merkleTree.calcLeafHash(4)
-        val node1 = merkleTree.digestProvider.nodeHash(2, leaf0, leaf1)
-        val node2 = merkleTree.digestProvider.nodeHash(2, leaf2, leaf3)
-        val node3 = merkleTree.digestProvider.nodeHash(1, node1, node2)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node3, leaf4)
+        val node1 = merkleTree.digest.nodeHash(2, leaf0, leaf1)
+        val node2 = merkleTree.digest.nodeHash(2, leaf2, leaf3)
+        val node3 = merkleTree.digest.nodeHash(1, node1, node2)
+        val manualRoot = merkleTree.digest.nodeHash(0, node3, leaf4)
         assertEquals(manualRoot, root)
     }
 
@@ -178,11 +179,11 @@ class MerkleTreeTest {
         val leaf3 = merkleTree.calcLeafHash(3)
         val leaf4 = merkleTree.calcLeafHash(4)
         val leaf5 = merkleTree.calcLeafHash(5)
-        val node1 = merkleTree.digestProvider.nodeHash(2, leaf0, leaf1)
-        val node2 = merkleTree.digestProvider.nodeHash(2, leaf2, leaf3)
-        val node3 = merkleTree.digestProvider.nodeHash(1, node1, node2)
-        val node4 = merkleTree.digestProvider.nodeHash(1, leaf4, leaf5)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node3, node4)
+        val node1 = merkleTree.digest.nodeHash(2, leaf0, leaf1)
+        val node2 = merkleTree.digest.nodeHash(2, leaf2, leaf3)
+        val node3 = merkleTree.digest.nodeHash(1, node1, node2)
+        val node4 = merkleTree.digest.nodeHash(1, leaf4, leaf5)
+        val manualRoot = merkleTree.digest.nodeHash(0, node3, node4)
         assertEquals(manualRoot, root)
     }
 
@@ -198,12 +199,12 @@ class MerkleTreeTest {
         val leaf4 = merkleTree.calcLeafHash(4)
         val leaf5 = merkleTree.calcLeafHash(5)
         val leaf6 = merkleTree.calcLeafHash(6)
-        val node1 = merkleTree.digestProvider.nodeHash(3, leaf0, leaf1)
-        val node2 = merkleTree.digestProvider.nodeHash(3, leaf2, leaf3)
-        val node3 = merkleTree.digestProvider.nodeHash(2, leaf4, leaf5)
-        val node4 = merkleTree.digestProvider.nodeHash(2, node1, node2)
-        val node5 = merkleTree.digestProvider.nodeHash(1, node3, leaf6)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node4, node5)
+        val node1 = merkleTree.digest.nodeHash(3, leaf0, leaf1)
+        val node2 = merkleTree.digest.nodeHash(3, leaf2, leaf3)
+        val node3 = merkleTree.digest.nodeHash(2, leaf4, leaf5)
+        val node4 = merkleTree.digest.nodeHash(2, node1, node2)
+        val node5 = merkleTree.digest.nodeHash(1, node3, leaf6)
+        val manualRoot = merkleTree.digest.nodeHash(0, node4, node5)
         assertEquals(manualRoot, root)
     }
 
@@ -220,13 +221,13 @@ class MerkleTreeTest {
         val leaf5 = merkleTree.calcLeafHash(5)
         val leaf6 = merkleTree.calcLeafHash(6)
         val leaf7 = merkleTree.calcLeafHash(7)
-        val node1 = merkleTree.digestProvider.nodeHash(2, leaf0, leaf1)
-        val node2 = merkleTree.digestProvider.nodeHash(2, leaf2, leaf3)
-        val node3 = merkleTree.digestProvider.nodeHash(2, leaf4, leaf5)
-        val node4 = merkleTree.digestProvider.nodeHash(2, leaf6, leaf7)
-        val node5 = merkleTree.digestProvider.nodeHash(1, node1, node2)
-        val node6 = merkleTree.digestProvider.nodeHash(1, node3, node4)
-        val manualRoot = merkleTree.digestProvider.nodeHash(0, node5, node6)
+        val node1 = merkleTree.digest.nodeHash(2, leaf0, leaf1)
+        val node2 = merkleTree.digest.nodeHash(2, leaf2, leaf3)
+        val node3 = merkleTree.digest.nodeHash(2, leaf4, leaf5)
+        val node4 = merkleTree.digest.nodeHash(2, leaf6, leaf7)
+        val node5 = merkleTree.digest.nodeHash(1, node1, node2)
+        val node6 = merkleTree.digest.nodeHash(1, node3, node4)
+        val manualRoot = merkleTree.digest.nodeHash(0, node5, node6)
         assertEquals(manualRoot, root)
     }
 
@@ -246,7 +247,7 @@ class MerkleTreeTest {
         val leafData = (0 until treeSize).map { it.toByteArray() }
         val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
 
-        if (merkleTree.leaves.size > 0) {
+        if (merkleTree.leaves.isNotEmpty()) {
             // Should not build proof for empty list
             assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(emptyList())
@@ -306,28 +307,40 @@ class MerkleTreeTest {
                 badHashBytes[0] = badHashBytes[0] xor 1
                 badHashes[j] = SecureHash(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
                 val badProof : MerkleProof =
-                    MerkleProofImpl(proof.treeSize, proof.leaves, badHashes)
+                    MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves, badHashes)
                 assertFalse(badProof.verify(root, nonceHashDigestProviderVerify))
             }
 
             // We add one extra hash which breaks the proof.
             val badProof1: MerkleProof =
-                MerkleProofImpl(proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
-                    digestAlgorithm
-                ))
+                MerkleProofImpl(
+                    MerkleProofType.AUDIT, proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
+                        digestAlgorithm
+                    )
+                )
             assertFalse( badProof1.verify(root, nonceHashDigestProviderVerify))
 
             // We remove one hash which breaks the proof.
             if (proof.hashes.size > 1) {
                 val badProof2: MerkleProof =
-                    MerkleProofImpl(proof.treeSize, proof.leaves, proof.hashes.take(proof.hashes.size - 1))
+                    MerkleProofImpl(
+                        MerkleProofType.AUDIT,
+                        proof.treeSize,
+                        proof.leaves,
+                        proof.hashes.take(proof.hashes.size - 1)
+                    )
                 assertFalse( badProof2.verify(root, nonceHashDigestProviderVerify))
             }
 
             // We remove one leaf which breaks the proof.
             if (proof.leaves.size > 1) {
                 val badProof3: MerkleProof =
-                    MerkleProofImpl(proof.treeSize, proof.leaves.take(proof.leaves.size - 1), proof.hashes)
+                    MerkleProofImpl(
+                        MerkleProofType.AUDIT,
+                        proof.treeSize,
+                        proof.leaves.take(proof.leaves.size - 1),
+                        proof.hashes
+                    )
                 assertFalse( badProof3.verify(root, nonceHashDigestProviderVerify))
             }
 
@@ -341,19 +354,24 @@ class MerkleTreeTest {
                 )
                 // We add one leaf which breaks the proof.
                 val badProof4: MerkleProof =
-                    MerkleProofImpl(proof.treeSize, proof.leaves + extraLeaf, proof.hashes)
+                    MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + extraLeaf, proof.hashes)
                 assertFalse( badProof4.verify(root, nonceHashDigestProviderVerify))
 
                 // We replace one leaf which breaks the proof.
                 val badProof5: MerkleProof =
-                    MerkleProofImpl(proof.treeSize, proof.leaves.dropLast(1) + extraLeaf, proof.hashes)
+                    MerkleProofImpl(
+                        MerkleProofType.AUDIT,
+                        proof.treeSize,
+                        proof.leaves.dropLast(1) + extraLeaf,
+                        proof.hashes
+                    )
                 assertFalse( badProof5.verify(root, nonceHashDigestProviderVerify))
 
             }
 
             // We duplicate one leaf which breaks the proof.
             val badProof6: MerkleProof =
-                MerkleProofImpl(proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
+                MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
             assertFalse( badProof6.verify(root, nonceHashDigestProviderVerify))
 
         }

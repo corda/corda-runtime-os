@@ -6,14 +6,19 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -37,18 +42,19 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
+import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.makeCryptoConfig
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -80,7 +86,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
@@ -139,6 +145,9 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
 
+        @InjectService(timeout = 5000L)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
@@ -164,13 +173,11 @@ class CryptoProcessorTests {
 
         private lateinit var connectionIds: Map<String, UUID>
 
-        private val boostrapConfig = makeBootstrapConfig(
-            mapOf(
-                BOOT_DB_PARAMS to clusterDb.config
-            )
-        )
+        private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
 
-        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+        private val messagingConfig = makeMessagingConfig()
+
+        private val cryptoConfig = makeCryptoConfig()
 
         @JvmStatic
         @BeforeAll
@@ -195,7 +202,7 @@ class CryptoProcessorTests {
 
         private fun setupPrerequisites() {
             // Creating this publisher first (using the messagingConfig) will ensure we're forcing
-            // the in-memory message bus. Otherwise we may attempt to use a real database for the test
+            // the in-memory message bus. Otherwise, we may attempt to use a real database for the test
             // and that can cause message bus conflicts when the tests are run in parallel.
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
@@ -210,12 +217,28 @@ class CryptoProcessorTests {
                             0,
                             ConfigurationSchemaVersion(1, 0)
                         )
+                    ),
+                    Record(
+                        CONFIG_TOPIC,
+                        CRYPTO_CONFIG,
+                        Configuration(
+                            cryptoConfig.root().render(),
+                            cryptoConfig.root().render(),
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
                     )
                 )
             )
-            flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer =
-                cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
+            flowOpsResponses = FlowOpsResponses(
+                messagingConfig,
+                subscriptionFactory,
+                cordaAvroSerializationFactory.createAvroDeserializer({}, FlowOpsResponse::class.java)
+            )
+            transformer = cryptoFlowOpsTransformerFactory.create(
+                requestingComponent = "test",
+                responseTopic = RESPONSE_TOPIC
+            )
         }
 
         private fun setupDatabases() {
@@ -284,6 +307,7 @@ class CryptoProcessorTests {
                         signerSummaryHash = null
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),
                     timestamp = Instant.now()
                 )
@@ -383,7 +407,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new key pair using alias then find it and use for ECIES`(
+    fun `Should generate a new key pair using alias then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val alias = UUID.randomUUID().toString()
@@ -406,7 +430,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testTenants")
-    fun `Should generate a new a new fresh key pair then find it and use for ECIES`(
+    fun `Should generate a new a new fresh key pair then find it and use for hybrid encryption`(
         tenantId: String
     ) {
         val category = CryptoConsts.Categories.SESSION_INIT
@@ -600,19 +624,18 @@ class CryptoProcessorTests {
     }
 
     private fun `Should be able to derive secret and encrypt`(tenantId: String, publicKey: PublicKey) {
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello World!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = publicKey,
-            plainText = plainText,
-            aad = null
-        )
+            plainText = plainText
+        ) { _, _ ->
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+                schemeMetadata.secureRandom.nextBytes(this)
+            }, null)
+        }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.params.salt,
             publicKey = publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
@@ -677,15 +700,17 @@ class CryptoProcessorTests {
         schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
-                "Publishing: createSign({}, {}, {})",
+                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
                 tenantId,
                 publicKey.publicKeyId(),
                 spec
@@ -721,12 +746,14 @@ class CryptoProcessorTests {
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
             val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",

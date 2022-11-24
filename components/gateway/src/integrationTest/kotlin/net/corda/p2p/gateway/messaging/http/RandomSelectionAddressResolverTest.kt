@@ -4,6 +4,7 @@ import io.netty.util.concurrent.GlobalEventExecutor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.InetSocketAddress
@@ -27,7 +28,7 @@ class RandomSelectionAddressResolverTest {
                 resolved.address.address.joinToString(".")
             )
 
-            assertThat(allIps).hasSize(9)
+            assertThatIterable(allIps).hasSize(9)
                 .containsExactlyInAnyOrder(
                     "1.2.3.1",
                     "1.2.3.2",

@@ -1,14 +1,9 @@
 package net.corda.messaging.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,6 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -32,10 +28,11 @@ import net.corda.messaging.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCUnresponsiveResponderProcessor
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,6 +44,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -156,7 +154,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator1.status)
@@ -188,6 +186,7 @@ class RPCSubscriptionIntegrationTest {
         var responseReceived = false
         var attempts = 5
         val response = RPCResponse(
+            "sender",
             "test",
             timestamp,
             ResponseStatus.OK,
@@ -198,6 +197,7 @@ class RPCSubscriptionIntegrationTest {
             try {
                 val future = rpcSender.sendRequest(
                     RPCRequest(
+                        "sender",
                         "test",
                         Instant.ofEpochMilli(0L),
                         "test",
@@ -217,7 +217,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -260,7 +260,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -302,7 +302,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -325,24 +325,36 @@ class RPCSubscriptionIntegrationTest {
 
         rpcSender.start()
         rpcSub.start()
+
+        //Ensure the sender has been started and is able to send, therefore proving it is assigned partitions
         var attempts = 5
         var messageSent = false
-        var future = CompletableFuture<String>()
+        var initialSetupFuture: CompletableFuture<String>
+        var initialSetupFutureResult: String? = null
         while (!messageSent && attempts > 0) {
             attempts--
             try {
-                future = rpcSender.sendRequest("REQUEST")
+                initialSetupFuture = rpcSender.sendRequest("PLEASE RESPOND")
+                initialSetupFutureResult = initialSetupFuture.getOrThrow(Duration.ofSeconds(5))
                 messageSent = true
-                rpcSender.close()
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: Exception) {
+                if (attempts == 0) {
+                    fail("Failed to get initial partition assignment")
+                }
                 Thread.sleep(2000)
             }
         }
+        assertThat(initialSetupFutureResult).isNotNull
+
+        //trigger new send and then trigger repartition
+        val sendRequest = rpcSender.sendRequest("DONT RESPOND")
+        rpcSender.close()
+
         eventually(10.seconds, 1.seconds) {
-            assertThrows<CordaRPCAPISenderException> {
-                future.getOrThrow()
+            assertThrows<CordaRPCAPIPartitionException> {
+                sendRequest.getOrThrow()
             }
         }
-        rpcSub.stop()
+        rpcSub.close()
     }
 }

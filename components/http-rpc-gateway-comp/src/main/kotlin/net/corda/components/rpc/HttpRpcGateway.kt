@@ -76,7 +76,6 @@ class HttpRpcGateway @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        log.info("Starting lifecycle coordinator")
         coordinator.start()
     }
 

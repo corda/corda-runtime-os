@@ -86,13 +86,6 @@ class CpiInfoReadServiceFake internal constructor(
         return cpiData[identifier]
     }
 
-    override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
-        throwIfNotRunning()
-        callbacks += listener
-        listener.onUpdate(cpiData.keys, cpiData)
-        return AutoCloseable { callbacks.remove(listener) }
-    }
-
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
         TODO("Not yet implemented")
     }
@@ -117,10 +110,6 @@ class CpiInfoReadServiceFake internal constructor(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    override fun close() {
-        coordinator.close()
     }
 
     private fun throwIfNotRunning() {

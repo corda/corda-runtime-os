@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
@@ -10,11 +11,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -77,21 +80,22 @@ class NetworkRpcOpsImplTest {
         @Test
         fun `it calls the client code`() {
             networkOps.setupHostedIdentities(
-                "id",
+                "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
-                    "tls",
-                    "session-tenant",
+                    true,
+                    true,
                     "session"
                 )
             )
 
             verify(certificatesClient).setupLocallyHostedIdentity(
-                "id",
+                ShortHash.of("1234567890ab"),
                 "alias",
-                "tls",
-                "session-tenant",
+                true,
+                true,
                 "session",
+                null
             )
         }
         @Test
@@ -103,21 +107,38 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(CertificatesResourceNotFoundException("Nop"))
 
             assertThrows<ResourceNotFoundException> {
                 networkOps.setupHostedIdentities(
-                    "id",
+                    "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        false,
+                        true,
                         "session"
                     )
                 )
             }
         }
+
+        @Test
+        fun `it catches bad request exception exception`() {
+            assertThrows<BadRequestException> {
+                networkOps.setupHostedIdentities(
+                    "id",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        false,
+                        true,
+                        "session"
+                    )
+                )
+            }
+        }
+
         @Test
         fun `it catches any other exception exception`() {
             whenever(
@@ -127,16 +148,17 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    anyOrNull()
                 )
             ).doThrow(RuntimeException("Nop"))
 
             assertThrows<InternalServerException> {
                 networkOps.setupHostedIdentities(
-                    "id",
+                    "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
-                        "tls",
-                        "session-tenant",
+                        true,
+                        true,
                         "session"
                     )
                 )

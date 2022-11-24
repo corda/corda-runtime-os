@@ -19,6 +19,8 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -91,7 +93,7 @@ class VirtualNodeWriterProcessorTests {
         ByteBuffer.wrap("\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000".toByteArray())
     )
     private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
-    val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
+    val summaryHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
         CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy)
@@ -108,15 +110,29 @@ class VirtualNodeWriterProcessorTests {
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
-            connectionId, connectionId, connectionId, connectionId,
-            null, "ACTIVE", -1, clock.instant()
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            null,
+            "ACTIVE",
+            -1,
+            clock.instant()
         )
 
     private val vnodeCreationReq =
         VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
 
     private val em = mock<EntityManager>() {
@@ -155,14 +171,17 @@ class VirtualNodeWriterProcessorTests {
         VirtualNodeDbType.VAULT, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
     private val cryptoDb = VirtualNodeDb(
         VirtualNodeDbType.CRYPTO, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
+    private val uniquenessDb = VirtualNodeDb(
+        VirtualNodeDbType.UNIQUENESS, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
     private val vNodeFactory = mock<VirtualNodeDbFactory>() {
         on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
             VirtualNodeDbType.VAULT to vaultDb,
-            VirtualNodeDbType.CRYPTO to cryptoDb))
+            VirtualNodeDbType.CRYPTO to cryptoDb,
+            VirtualNodeDbType.UNIQUENESS to uniquenessDb))
     }
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-        on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
+        on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         on { virtualNodeExists(any(), any()) }.doReturn(false)
         on { getHoldingIdentity(any()) }.doReturn(null)
     }
@@ -240,8 +259,10 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `runs empty CPI DB Migrations`() {
+        val fakeId = UUID.randomUUID()
         val changeLog = mock<CpkDbChangeLogEntity> {
             on { id } doReturn CpkDbChangeLogKey("alpha", "1", "0", "stuff.xml")
+            on { changesetId } doReturn fakeId
         }
         Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
             Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
@@ -260,7 +281,7 @@ class VirtualNodeWriterProcessorTests {
                 assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
                 verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
                     dbChange.masterChangeLogFiles.isEmpty()
-                })
+                }, eq(fakeId?.toString()))
             }
         }
     }
@@ -269,7 +290,7 @@ class VirtualNodeWriterProcessorTests {
     fun `publishes MGM member info to Kafka`() {
         val publisher = getPublisher()
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
-            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaDataWithMGM)
+            on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaDataWithMGM)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -317,7 +338,7 @@ class VirtualNodeWriterProcessorTests {
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
         val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
+            on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -348,12 +369,18 @@ class VirtualNodeWriterProcessorTests {
     fun `generates group ID during MGM virtual node creation`() {
         val mgmVnodeCreationReq =
             VirtualNodeCreateRequest(
-                mgmName.toString(), CPI_ID_SHORT_HASH,
-                "dummy_vault_ddl_config", "dummy_vault_dml_config",
-                "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+                mgmName.toString(),
+                CPI_ID_SHORT_HASH,
+                "dummy_vault_ddl_config",
+                "dummy_vault_dml_config",
+                "dummy_crypto_ddl_config",
+                "dummy_crypto_dml_config",
+                "dummy_uniqueness_ddl_config",
+                "dummy_uniqueness_dml_config",
+                "update_actor"
             )
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
-            on { getCPIMetadataByChecksum(any()) }.doReturn(
+            on { getCpiMetadataByChecksum(any()) }.doReturn(
                 CpiMetadataLite(
                     cpiId,
                     CPI_ID_SHORT_HASH,
@@ -404,6 +431,8 @@ class VirtualNodeWriterProcessorTests {
                 connectionId,
                 connectionId,
                 connectionId,
+                connectionId,
+                connectionId,
                 null,
                 "ACTIVE"
             )
@@ -449,10 +478,180 @@ class VirtualNodeWriterProcessorTests {
         assertTrue(resp.exception.errorMessage.contains("written to the database, but couldn't be published"))
     }
 
+    private fun testInvalidRequest(request: VirtualNodeCreateRequest, expectedEnvelope: ExceptionEnvelope) {
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeManagementResponseFailure(
+                expectedEnvelope
+            )
+        )
+
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            groupPolicyParser,
+            clock
+        )   { _, _ ->
+            listOf()
+        }
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
+
+        assertEquals(expectedResp, resp)
+    }
+
+    @Test
+    fun `sends RPC failure response if CPI checksum is null`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            null,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "CPI file checksum value is missing"
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if CPI checksum is blank`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            "",
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "CPI file checksum value is missing"
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if Vault DDL connection is provided but Vault DML connection is not`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if Crypto DDL connection is provided, Crypto DML connection is not`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            null,
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if Uniqueness DDL connection is provided, Uniqueness DML connection is not`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            null,
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if X500 name is null`() {
+        val request = VirtualNodeCreateRequest(
+            null,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "X500 name \"${request.x500Name}\" could not be parsed. Cause: x500Name must not be null"
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
+    fun `sends RPC failure response if X500 name can't be parsed`() {
+        val request = VirtualNodeCreateRequest(
+            "invalid x500 name",
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "X500 name \"${request.x500Name}\" could not be parsed. Cause: improperly specified input name: invalid x500 name"
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
     @Test
     fun `sends RPC failure response if the CPI with the given ID is not stored on the node`() {
         val expectedEnvelope = ExceptionEnvelope(
-            VirtualNodeWriteServiceException::class.java.name,
+            CpiNotFoundException::class.java.name,
             "CPI with file checksum ${vnodeCreationReq.cpiFileChecksum} was not found."
         )
         val expectedResp = VirtualNodeManagementResponse(
@@ -463,7 +662,40 @@ class VirtualNodeWriterProcessorTests {
         )
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
-            whenever(getCPIMetadataByChecksum(any())).thenReturn(null)
+            whenever(getCpiMetadataByChecksum(any())).thenReturn(null)
+        }
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            entityRepository,
+            vNodeFactory,
+            groupPolicyParser,
+            clock
+        )   { _, _ ->
+            listOf()
+        }
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+        assertEquals(expectedResp, resp)
+    }
+
+    @Test
+    fun `sends RPC failure response if the virtual node already exists`() {
+        val expectedEnvelope = ExceptionEnvelope(
+            VirtualNodeAlreadyExistsException::class.java.name,
+            "Virtual node for CPI with file checksum ${vnodeCreationReq.cpiFileChecksum}" +
+                    " and x500Name ${vnodeCreationReq.x500Name} already exists."
+        )
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeManagementResponseFailure(
+                expectedEnvelope
+            )
+        )
+
+        val entityRepository = mock<VirtualNodeEntityRepository>().apply {
+            whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
+            whenever(virtualNodeExists(any(), any())).thenReturn(true)
         }
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
@@ -494,7 +726,7 @@ class VirtualNodeWriterProcessorTests {
         }
 
         val entityRepository = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
+            on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
             on { virtualNodeExists(any(), any()) }.doReturn(false)
             on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
         }

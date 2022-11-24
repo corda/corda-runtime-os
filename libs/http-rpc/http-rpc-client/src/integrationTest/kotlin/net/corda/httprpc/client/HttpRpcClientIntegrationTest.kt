@@ -17,7 +17,7 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -54,7 +54,8 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(
@@ -65,7 +66,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     TestEntityRpcOpsImpl(),
                     TestFileUploadImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true
@@ -77,7 +78,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         @Suppress("Unused")
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

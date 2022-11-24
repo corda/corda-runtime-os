@@ -11,7 +11,8 @@ import net.corda.orm.EntityManagerConfiguration
  */
 class TestDbInfo(
     val name: String,
-    val schemaName: String? = null
+    val schemaName: String? = null,
+    showSql: Boolean = true
 ) {
     companion object {
         private val configFactory = SmartConfigFactory.create(
@@ -35,6 +36,7 @@ class TestDbInfo(
 
     val emConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
         inMemoryDbName = name,
-        schemaName = schemaName
+        schemaName = schemaName,
+        showSql = showSql
     )
 }
