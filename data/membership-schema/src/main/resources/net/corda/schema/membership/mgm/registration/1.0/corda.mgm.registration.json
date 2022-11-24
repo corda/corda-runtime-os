@@ -34,13 +34,15 @@
     "corda.group.protocol.registration": {
       "description": "Group configuration. The fully qualified class name of the registration protocol that all registering members should use.",
       "type": "string",
+      "pattern": "^(([a-zA-Z][a-zA-Z_$0-9]*(\\.[a-zA-Z][a-zA-Z_$0-9]*)*)\\.)?([a-zA-Z][a-zA-Z_$0-9]*)$",
       "examples": [
         "net.corda.membership.impl.registration.dynamic.MemberRegistrationService"
       ]
     },
     "corda.group.protocol.synchronisation": {
       "description": "Group configuration. The fully qualified class name of the synchronisation protocol that all members should use.",
-      "type": "string"
+      "type": "string",
+      "pattern": "^(([a-zA-Z][a-zA-Z_$0-9]*(\\.[a-zA-Z][a-zA-Z_$0-9]*)*)\\.)?([a-zA-Z][a-zA-Z_$0-9]*)$"
     },
     "corda.group.key.session.policy": {
       "description": "The policy for handling session keys. 'Combined' means a combined ledger and session key is used. 'Distinct means these keys must differ'",

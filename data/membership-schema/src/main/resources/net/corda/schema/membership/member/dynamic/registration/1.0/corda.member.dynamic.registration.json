@@ -58,7 +58,7 @@
     "corda.notary.service.plugin": {
       "description": "The notary plugin type (FQN of notary service plugin class). Valid only when one of the roles is notary.",
       "type": "string",
-      "pattern": "^(([a-zA-Z][a-zA-Z_$0-9]*(\\.[a-zA-Z][a-zA-Z_$0-9]*)*)\\.)?([a-zA-Z][a-zA-Z_$0-9]*)$",
+      "maxLength": 255,
       "examples": [
         "net.corda.notary.MyNotaryService"
       ]
