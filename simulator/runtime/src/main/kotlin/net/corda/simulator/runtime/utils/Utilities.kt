@@ -11,6 +11,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -65,5 +66,6 @@ val availableAPIs = setOf(
     SigningService::class.java,
     DigitalSignatureVerificationService::class.java,
     PersistenceService::class.java,
-    SignatureSpecService::class.java
+    SignatureSpecService::class.java,
+    SerializationService::class.java
 )

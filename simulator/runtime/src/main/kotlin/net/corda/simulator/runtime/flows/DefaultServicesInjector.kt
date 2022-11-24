@@ -6,6 +6,7 @@ import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.ConcurrentFlowMessaging
 import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationService
@@ -25,6 +26,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
@@ -69,11 +71,12 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         }
         doInject(member, flow, MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
         doInject(member, flow, SigningService::class.java) {
-            getOrCreateSigningService(SimpleJsonMarshallingService(), keyStore)
+            createSigningService(SimpleJsonMarshallingService(), keyStore)
         }
         doInject(member, flow, DigitalSignatureVerificationService::class.java) { createVerificationService() }
         doInject(member, flow, PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
         doInject(member, flow, SignatureSpecService::class.java) { createSpecService() }
+        doInject(member, flow, SerializationService::class.java) { createSerializationService() }
 
         injectOtherCordaServices(flow, member)
     }
@@ -103,6 +106,11 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         flow.injectIfRequired(serviceClass, resolvedBuilder)
     }
 
+    private fun createSerializationService() : SerializationService {
+        log.info("Injecting ${SerializationService::class.java.simpleName}")
+        return BaseSerializationService()
+    }
+
     private fun createSpecService() : SignatureSpecService {
         log.info("Injecting ${SignatureSpecService::class.java.simpleName}")
         return OnlyOneSignatureSpecService()
@@ -113,7 +121,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         return SimWithJsonSignatureVerificationService()
     }
 
-    private fun getOrCreateSigningService(
+    private fun createSigningService(
         jsonMarshallingService: JsonMarshallingService,
         keyStore: SimKeyStore
     ): SigningService {
