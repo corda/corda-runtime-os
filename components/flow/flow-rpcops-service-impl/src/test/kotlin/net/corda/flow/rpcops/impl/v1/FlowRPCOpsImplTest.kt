@@ -64,6 +64,7 @@ class FlowRPCOpsImplTest {
     private lateinit var publisher: Publisher
     private lateinit var permissionValidationService: PermissionValidationService
     private lateinit var permissionValidator: PermissionValidator
+    private lateinit var fatalErrorFunction: () -> Unit
 
     private companion object {
         val loginName = "${FlowRPCOpsImplTest::class.java.simpleName}-User"
@@ -114,6 +115,7 @@ class FlowRPCOpsImplTest {
         cpiInfoReadService = mock()
         permissionValidationService = mock()
         permissionValidator = mock()
+        fatalErrorFunction = mock()
 
         val cpiMetadata = getMockCPIMeta()
         whenever(cpiInfoReadService.get(any())).thenReturn(cpiMetadata)
@@ -148,7 +150,7 @@ class FlowRPCOpsImplTest {
             messageFactory,
             cpiInfoReadService,
             permissionValidationService
-        ).apply { if (initialise) (initialise(SmartConfigImpl.empty())) }
+        ).apply { if (initialise) (initialise(SmartConfigImpl.empty(), fatalErrorFunction)) }
     }
 
     @Test
@@ -166,6 +168,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -181,6 +184,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -194,6 +198,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -205,6 +210,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(2)).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -220,6 +226,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -233,6 +240,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     data class TestJsonObject(override val escapedJson: String = "") : JsonObject
@@ -252,6 +260,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -269,6 +278,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -284,6 +294,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -301,6 +312,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -319,6 +331,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(0)).publish(any())
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -338,13 +351,14 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
     fun `start flow throws FlowRPCOpsServiceException exception when publish fails synchronously`() {
         val flowRPCOps = createFlowRpcOps()
 
-        doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).publish(any())
         assertThrows<FlowRPCOpsServiceException> {
             flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
         }
@@ -355,6 +369,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -376,6 +391,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -393,6 +409,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, times(1)).invoke()
 
         // flowRPCOps should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
@@ -407,6 +424,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, times(1)).invoke()
     }
 
     @Test
@@ -428,6 +446,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, times(1)).invoke()
 
         // flowRPCOps should have marked itself as unable to start flows after fata error, which means throwing without
         // attempting to start the flow
@@ -442,6 +461,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(fatalErrorFunction, times(1)).invoke()
     }
 
     @Test
@@ -459,6 +479,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
         assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -475,6 +496,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
         assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
+        verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
@@ -492,5 +514,6 @@ class FlowRPCOpsImplTest {
             flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(fatalErrorFunction, never()).invoke()
     }
 }

@@ -73,8 +73,10 @@ class FlowRPCOpsImpl @Activate constructor(
 
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
+    private lateinit var onFatalError:() -> Unit
 
-    override fun initialise(config: SmartConfig) {
+    override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
+        this.onFatalError = onFatalError
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config)
     }
@@ -166,7 +168,8 @@ class FlowRPCOpsImpl @Activate constructor(
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {
         fatalErrorOccurred = true
-        log.error("This worker will terminate, fatal error occurred", exception)
+        log.error("Fatal error occurred, FlowRPCOps can no longer start flows, worker expected to terminate.", exception)
+        onFatalError()
         return failureException(exception)
     }
 
