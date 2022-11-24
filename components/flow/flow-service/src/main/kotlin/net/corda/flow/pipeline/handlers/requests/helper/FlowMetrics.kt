@@ -19,7 +19,6 @@ fun recordFlowRuntimeMetric(checkpoint: FlowCheckpoint, result: String) {
     CordaMetrics.Metric.FlowRunTime.builder()
         .withTag(CordaMetrics.Tag.VirtualNode, checkpoint.holdingIdentity.shortHash.toString())
         .withTag(CordaMetrics.Tag.FlowClass, flowStartContext.flowClassName)
-        .withTag(CordaMetrics.Tag.FlowId, checkpoint.flowId)
         .withTag(CordaMetrics.Tag.OperationStatus, result)
         .build().record(Duration.ofMillis(flowRunningTime))
 }
