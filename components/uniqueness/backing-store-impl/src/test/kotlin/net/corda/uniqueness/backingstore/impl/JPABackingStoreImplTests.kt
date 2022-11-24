@@ -18,7 +18,15 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.MultiIdentifierLoadAccess
+import org.hibernate.Session
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
@@ -53,11 +61,11 @@ class JPABackingStoreImplTests {
     private lateinit var dummyDataSource: CloseableDataSource
     private lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
-    private lateinit var txnDetails: List<UniquenessTransactionDetailEntity>
-    private lateinit var txnDetailQuery: TypedQuery<UniquenessTransactionDetailEntity>
-    private lateinit var stateEntities: List<UniquenessStateDetailEntity>
-    private lateinit var stateDetailSelectQuery: TypedQuery<UniquenessStateDetailEntity>
-    private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
+    /* These lists act as the database, the data added to these lists will be returned by the multi loads */
+    private lateinit var txnDetails: MutableList<UniquenessTransactionDetailEntity>
+    private lateinit var stateEntities: MutableList<UniquenessStateDetailEntity>
+    private lateinit var errorEntities: MutableList<UniquenessRejectedTransactionEntity>
+
     private lateinit var dbConnectionManager: DbConnectionManager
 
     private val groupId = UUID.randomUUID().toString()
@@ -68,7 +76,7 @@ class JPABackingStoreImplTests {
     @Suppress("ComplexMethod")
     @BeforeEach
     fun init() {
-        lifecycleCoordinator = mock<LifecycleCoordinator>()
+        lifecycleCoordinator = mock()
         lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
@@ -76,41 +84,36 @@ class JPABackingStoreImplTests {
             whenever(isActive) doReturn true
         }
 
-        stateEntities = mock<List<UniquenessStateDetailEntity>>()
-        stateDetailSelectQuery = mock<TypedQuery<UniquenessStateDetailEntity>>().apply {
-            whenever(setParameter(eq("txAlgo"), any())) doReturn this
-            whenever(setParameter(eq("txId"), any())) doReturn this
-            whenever(setParameter(eq("stateIndex"), any())) doReturn this
-            whenever(resultList) doReturn stateEntities
+        // These lists will act as the "dataset" returned from the database, by default they can be empty
+        // as some of the tests are not using these at all
+        stateEntities = mutableListOf()
+        txnDetails = mutableListOf()
+        errorEntities = mutableListOf()
+
+        val stateMultiLoad = mock<MultiIdentifierLoadAccess<UniquenessStateDetailEntity>>().apply {
+            whenever(multiLoad(any<List<UniquenessTxAlgoStateRefKey>>())) doReturn stateEntities
+        }
+        val txMultiLoad = mock<MultiIdentifierLoadAccess<UniquenessTransactionDetailEntity>>().apply {
+            whenever(multiLoad(any<List<UniquenessTxAlgoIdKey>>())) doReturn txnDetails
         }
 
-        txnDetails = mock<List<UniquenessTransactionDetailEntity>>()
-        txnDetailQuery = mock<TypedQuery<UniquenessTransactionDetailEntity>>().apply {
+        val txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
             whenever(setParameter(eq("txAlgo"), any())) doReturn this
             whenever(setParameter(eq("txId"), any())) doReturn this
-            whenever(resultList) doReturn txnDetails
+            whenever(resultList) doReturn errorEntities
         }
 
-        txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
-            whenever(setParameter(eq("txAlgo"), any())) doReturn this
-            whenever(setParameter(eq("txId"), any())) doReturn this
-            whenever(resultList) doReturn mock()
+        val dummySession = mock<Session>().apply {
+            // No need do anything here as this will have no effect in a unit test
+            whenever(setJdbcBatchSize(any())).thenAnswer {  }
+
+            whenever(byMultipleIds(UniquenessStateDetailEntity::class.java)) doReturn stateMultiLoad
+            whenever(byMultipleIds(UniquenessTransactionDetailEntity::class.java)) doReturn txMultiLoad
         }
 
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
-            whenever(
-                createNamedQuery(
-                    "UniquenessStateDetailEntity.select",
-                    UniquenessStateDetailEntity::class.java
-                )
-            ) doReturn stateDetailSelectQuery
-            whenever(
-                createNamedQuery(
-                    "UniquenessTransactionDetailEntity.select",
-                    UniquenessTransactionDetailEntity::class.java
-                )
-            ) doReturn txnDetailQuery
+            whenever(unwrap(Session::class.java)) doReturn dummySession
             whenever(
                 createNamedQuery(
                     "UniquenessRejectedTransactionEntity.select",
@@ -244,21 +247,48 @@ class JPABackingStoreImplTests {
         @Test
         fun `Throw if no error detail is available for a failed transaction`() {
             // Prepare a rejected transaction
-            txnDetails.apply {
-                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
-                    "SHA-256",
-                    "0xA1".toByteArray(),
-                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-                )
-            }
+            txnDetails.add(UniquenessTransactionDetailEntity(
+                "SHA-256",
+                "0xA1".toByteArray(),
+                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
+                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
+                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+            ))
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() })
                 }
+            }
+        }
+
+        @Test
+        fun `Retrieve correct failed status without exceptions when both tx details and rejection details are present`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            // Prepare a rejected transaction
+            txnDetails.add(UniquenessTransactionDetailEntity(
+                "SHA-256",
+                txId.bytes,
+                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
+                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
+                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+            ))
+
+            errorEntities.add(UniquenessRejectedTransactionEntity(
+                "SHA-256",
+                txId.bytes,
+                jpaBackingStoreObjectMapper().writeValueAsBytes(
+                    UniquenessCheckErrorMalformedRequestImpl("Error")
+                )
+            ))
+
+            backingStoreImpl.session(aliceIdentity) { session ->
+                val txResult = session.getTransactionDetails(listOf(txId))[txId]?.result!!
+
+                assertThat(txResult).isInstanceOf(UniquenessCheckResultFailure::class.java)
+                assertThat((txResult as UniquenessCheckResultFailure).error)
+                    .isInstanceOf(UniquenessCheckErrorMalformedRequest::class.java)
             }
         }
     }
