@@ -84,6 +84,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, "StateAndEvent")
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onNext")
         .build()
 
     /**

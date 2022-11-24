@@ -52,6 +52,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, "RPC")
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "rpcResponder")
         .build()
 
     val isRunning: Boolean

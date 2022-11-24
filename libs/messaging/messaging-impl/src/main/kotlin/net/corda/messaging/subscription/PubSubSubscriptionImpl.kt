@@ -51,6 +51,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, "PubSub")
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onNext")
         .build()
 
     override val isRunning: Boolean
