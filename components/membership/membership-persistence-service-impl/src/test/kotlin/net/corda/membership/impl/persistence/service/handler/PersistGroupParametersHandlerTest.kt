@@ -65,10 +65,11 @@ class PersistGroupParametersHandlerTest {
     private val transaction = mock<EntityTransaction>()
     private val resultList: List<GroupParametersEntity> = mock {
         on { isEmpty() } doReturn false
+        on { size } doReturn 1
+        on { singleOrNull() } doReturn GroupParametersEntity(1, "test".toByteArray())
     }
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
         on { resultList } doReturn resultList
-        on { singleResult } doReturn GroupParametersEntity(1, "test".toByteArray())
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
         on { setMaxResults(1) } doReturn previousEntry

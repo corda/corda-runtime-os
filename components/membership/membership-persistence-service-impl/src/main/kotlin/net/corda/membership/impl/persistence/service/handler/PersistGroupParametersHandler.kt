@@ -39,14 +39,14 @@ internal class PersistGroupParametersHandler(
             val query = queryBuilder
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
-            val latestEntry = em.createQuery(query).setMaxResults(1)
-            if(latestEntry.resultList.isNotEmpty()) {
-                latestEntry.singleResult
-                    ?.epoch?.let {
-                        require(epochFromRequest > it) {
-                            throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
-                        }
+            // if there is any data in the db, updated group parameters epoch should always be
+            // larger than the existing group parameters epoch
+            with(em.createQuery(query).setMaxResults(1).resultList) {
+                singleOrNull()?.epoch?.let {
+                    require(epochFromRequest > it) {
+                        throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
                     }
+                }
             }
             
             val entity = GroupParametersEntity(

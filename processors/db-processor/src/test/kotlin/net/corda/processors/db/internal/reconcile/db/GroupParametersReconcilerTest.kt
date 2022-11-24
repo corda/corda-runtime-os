@@ -153,22 +153,22 @@ class GroupParametersReconcilerTest {
         fun `Successfully build reader and reconciler`() {
             groupParametersReconciler.updateInterval(1000)
 
-            assertThat(groupParametersReconciler.dbReconciler).isNotNull
+            assertThat(groupParametersReconciler.dbReconcilerReader).isNotNull
             assertThat(groupParametersReconciler.reconciler).isNotNull
         }
 
         @Test
         fun `Reader and reconciler is not rebuilt if it already exists`() {
             groupParametersReconciler.updateInterval(1000)
-            val originalDbReconciler = groupParametersReconciler.dbReconciler
-            verify(reconciler, times(1)).start()
+            val originalDbReconciler = groupParametersReconciler.dbReconcilerReader
+            verify(reconciler).start()
 
             groupParametersReconciler.updateInterval(1000)
-            val currentDbReconciler = groupParametersReconciler.dbReconciler
+            val currentDbReconciler = groupParametersReconciler.dbReconcilerReader
 
             assertThat(originalDbReconciler).isEqualTo(currentDbReconciler)
-            verify(reconciler, times(1)).start()
-            verify(reconciler, times(1)).updateInterval(any())
+            verify(reconciler).start()
+            verify(reconciler).updateInterval(any())
         }
     }
 
@@ -178,9 +178,9 @@ class GroupParametersReconcilerTest {
         fun `get versioned records query acts as expected`() {
             groupParametersReconciler.updateInterval(1000)
 
-            assertThat(groupParametersReconciler.dbReconciler).isNotNull
+            assertThat(groupParametersReconciler.dbReconcilerReader).isNotNull
 
-            val output = groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
+            val output = groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
             assertThat(output).isNotNull
 
             val records = output?.collect(Collectors.toList())
@@ -205,7 +205,7 @@ class GroupParametersReconcilerTest {
         fun `processing versioned records stream calls expected functions`() {
             groupParametersReconciler.updateInterval(1000)
 
-            groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
+            groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
 
             verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
             verify(em1).criteriaBuilder
@@ -221,7 +221,7 @@ class GroupParametersReconcilerTest {
         fun `Consuming the versioned records stream closes resources`() {
             groupParametersReconciler.updateInterval(1000)
 
-            val stream = groupParametersReconciler.dbReconciler?.getAllVersionedRecords()
+            val stream = groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
             verify(emf1, never()).close()
             verify(emf2, never()).close()
             verify(em1, never()).close()

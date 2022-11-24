@@ -109,8 +109,6 @@ class DBProcessorImpl @Activate constructor(
     private val groupParametersReaderService: GroupParametersReaderService,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = JpaEntitiesRegistry::class)
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
 ) : DBProcessor {
@@ -175,7 +173,7 @@ class DBProcessorImpl @Activate constructor(
         configBusReconcilerReader,
         reconcilerFactory,
         cordaAvroSerializationFactory,
-        jpaEntitiesRegistry,
+        entitiesRegistry,
         groupParametersFactory,
     )
 
