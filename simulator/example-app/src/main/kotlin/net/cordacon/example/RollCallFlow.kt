@@ -10,6 +10,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -33,6 +34,9 @@ class RollCallFlow: RPCStartableFlow {
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -91,9 +95,9 @@ class RollCallFlow: RPCStartableFlow {
     @Suspendable
     private fun sendTruancyRecord(truancyOffice : MemberX500Name, truants: List<MemberX500Name>) {
         if (truants.isNotEmpty()) {
-            val unsignedTruants = jsonMarshallingService.format(truants)
+            val unsignedTruants = serializationService.serialize(truants)
             val signedTruants = signingService.sign(
-                unsignedTruants.toByteArray(),
+                unsignedTruants.bytes,
                 memberLookup.myInfo().ledgerKeys[0],
                 SignatureSpec.ECDSA_SHA256
             )
