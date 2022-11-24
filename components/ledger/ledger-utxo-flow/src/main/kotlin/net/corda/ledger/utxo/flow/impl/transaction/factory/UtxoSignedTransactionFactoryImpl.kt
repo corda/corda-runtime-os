@@ -160,7 +160,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
                     UtxoComponentGroup.REFERENCES ->
                         utxoTransactionBuilder.referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-                }
+                }.let { it.ifEmpty { listOf(byteArrayOf(0, 0, 0, 0)) } }
             }
     }
 }

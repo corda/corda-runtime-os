@@ -19,6 +19,7 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransac
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
+import org.hibernate.Session
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
