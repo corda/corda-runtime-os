@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@jansz/CORE-4935/buildkit-nightly') _
+@Library('corda-shared-build-pipeline-steps@jansz/CORE-4935/buildkit-nightly-pipeline') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
