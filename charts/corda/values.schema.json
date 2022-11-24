@@ -186,7 +186,6 @@
                 false,
                 true
             ]
-            
         },
         "nodeSelector": {
             "type": "object",
@@ -195,6 +194,28 @@
             "required": [],
             "properties": {},
             "examples": [{}]
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "security context for pod assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+            "required": [],
+            "properties": {},
+            "examples": [{}]
+        },
+        "securityContext": {
+            "type": "object",
+            "default": {},
+            "title": "security context for container assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+            "required": [],
+            "properties": {},
+            "examples": [{}]
+        },
+        "serviceAccount": {
+            "type": "string",
+            "default": "",
+            "title": "service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+            "examples": [""]
         },
         "db": {
             "type": "object",
@@ -780,6 +801,20 @@
                     "required": [],
                     "properties": {},
                     "examples": [{}]
+                },
+                "securityContext": {
+                    "type": "object",
+                    "default": {},
+                    "title": "security context for the bootstrap containers",
+                    "required": [],
+                    "properties": {},
+                    "examples": [{}]
+                },
+                "serviceAccount": {
+                    "type": "string",
+                    "default": "",
+                    "title": "service account for the bootstrap containers",
+                    "examples": [""]
                 },
                 "rbac": {
                     "type": "object",

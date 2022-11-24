@@ -133,6 +133,16 @@ securityContext:
 {{- end }}
 
 {{/*
+Worker service account
+*/}}
+
+{{- define "corda.serviceAccount" }}
+{{- if .Values.serviceAccount  }}
+serviceAccountName: {{ default .Values.bootstrap.serviceAccount .Values.serviceAccount }}
+{{- end }}
+{{- end }}
+
+{{/*
 CLI image
 */}}
 {{- define "corda.bootstrapImage" -}}
