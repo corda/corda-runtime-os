@@ -111,6 +111,10 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
 
+    if(project.hasProperty('useBuildx')){
+        it.isBuildx = useBuildx.toBoolean()
+    }
+
     if(project.hasProperty('tag')){
         it.containerTag = tag
     }
