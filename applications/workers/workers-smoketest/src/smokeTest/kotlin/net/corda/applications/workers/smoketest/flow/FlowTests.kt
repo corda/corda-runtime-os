@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
 import kotlin.text.Typography.quote
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
@@ -739,117 +741,150 @@ class FlowTests {
 
     @Test
     fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(),
-                "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
-            )
+        val requestID = startRpcFlow(
+            bobHoldingId,
+            mapOf(),
+            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
+        )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
-    // TODO CORE-7939 For now this flow WILL succeed, however, this will require modifications once the ledger has been
-    //  finalised. Specifically, create a state before trying to spend it.
     @Test
-    fun `Notary - Non-validating plugin executes successfully and returns signatures`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                emptyMap(),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult)
-            .isEqualTo("Received 1 signatures from the notary, plugin ran successfully.")
+    @Suppress("unchecked_cast")
+    fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
+        issueStatesAndValidateResult(3) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+
+            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
+
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+            assertThat(issuedStateRefs).hasSize(3)
+
+            // 3. Make sure no extra states were consumed
+            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
+            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+        }
     }
 
     @Test
     fun `Notary - Non-validating plugin returns error when time window invalid`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(
-                    "timeWindowUpperBoundOffsetMs" to "-1000",
-                    "timeWindowLowerBoundOffsetMs" to "-2000"
-                ),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
-        assertThat(result.flowError?.message).contains("NotaryErrorTimeWindowOutOfBounds")
+        issueStatesAndValidateResult(
+            3,
+            timeWindowLowerBoundOffsetMs = -2000,
+            timeWindowUpperBoundOffsetMs = -1000
+        ) { issuanceResult ->
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(issuanceResult.flowError?.message).contains("Unable to notarise transaction")
+            assertThat(issuanceResult.flowError?.message).contains("NotaryErrorTimeWindowOutOfBounds")
+        }
     }
 
-    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
-    //  empty list of input state and refs (no back-chain resolution)
     @Test
     @Disabled
+    @Suppress("unchecked_cast")
+    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
+    fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
+        // 1. Issue 1 state
+        val issuedStates = mutableListOf<String>()
+        issueStatesAndValidateResult(1) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
+
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+            assertThat(issuedStateRefs).hasSize(1)
+
+            issuedStates.addAll(issuedStateRefs)
+
+            // 3. Make sure no extra states were consumed
+            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
+            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+        }
+
+        // 4. Consume one of the issued states as an input state
+        consumeStatesAndValidateResult(
+            inputStates = listOf(issuedStates.first()),
+            refStates = emptyList()
+        ) { consumeResult ->
+            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+
+            // 5. Make sure only one input state was consumed, and nothing was issued
+            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(consumeResult.flowResult!!)
+
+            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(1)
+            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+            assertThat(flowResultMap["issuedStateRefs"] as List<String>).hasSize(0)
+        }
+    }
+
+    @Test
+    @Disabled
+    @Suppress("unchecked_cast")
+    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin returns error when using reference state that is spent in same tx`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(
-                    "refStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-                    ),
-                    "inputStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-                    )
-                ),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        // 1. Issue 1 state
+        val issuedStates = mutableListOf<String>()
+        issueStatesAndValidateResult(1) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
-        assertThat(result.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+            assertThat(issuedStateRefs).hasSize(1)
+
+            issuedStates.addAll(issuedStateRefs)
+
+            // 3. Make sure no extra states were consumed
+            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
+            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+        }
+
+        // 4. Consume one of the issued states twice in the same TX (as input and as ref)
+        val toConsume = issuedStates.first()
+
+        consumeStatesAndValidateResult(
+            inputStates = listOf(toConsume),
+            refStates = listOf(toConsume)
+        ) { consumeResult ->
+            // 5. Make sure the request failed due to double spend error
+            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+            assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+        }
     }
 
-    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
-    //  empty list of input state and refs (no back-chain resolution)
     @Test
     @Disabled
+    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(
-                    "inputStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-                    )
-                ),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
-        assertThat(result.flowError?.message).contains("NotaryErrorInputStateUnknown")
+        consumeStatesAndValidateResult(
+            inputStates = listOf(
+                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+            ),
+            refStates = emptyList()
+        ) { consumeResult ->
+            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+            assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+        }
     }
 
-    // TODO CORE-7939 For now it's impossible to test this scenario as the `LedgerTransaction` will always return an
-    //  empty list of input state and refs (no back-chain resolution)
     @Test
     @Disabled
+    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(
-                    "refStates" to arrayOf(
-                        "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-                    )
-                ),
-                "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+        consumeStatesAndValidateResult(
+            inputStates = emptyList(),
+            refStates = listOf(
+                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
             )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowError?.message).contains("Unable to notarise transaction")
-        assertThat(result.flowError?.message).contains("NotaryErrorReferenceStateUnknown")
+        ) { consumeResult ->
+            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+            assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+        }
     }
 
     @Test
@@ -931,5 +966,61 @@ class FlowTests {
             """.trimJson()
 
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
+    }
+
+    /**
+     * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
+     * then runs the given [validateResult] block on the flow result.
+     */
+    @Suppress("unchecked_cast")
+    private fun issueStatesAndValidateResult(
+        outputStateCount: Int,
+        timeWindowLowerBoundOffsetMs: Long? = null,
+        timeWindowUpperBoundOffsetMs: Long? = null,
+        validateResult: (flowResult: FlowStatus) -> Unit
+    ) {
+        val paramMap = mutableMapOf("outputStateCount" to "$outputStateCount")
+        timeWindowLowerBoundOffsetMs?.let {
+            paramMap.put("timeWindowLowerBoundOffsetMs", "$it")
+        }
+        timeWindowUpperBoundOffsetMs?.let {
+            paramMap.put("timeWindowUpperBoundOffsetMs", "$it")
+        }
+
+        // 1. Issue `outputStateCount` states
+        val issuanceRequestID = startRpcFlow(
+            bobHoldingId,
+            paramMap,
+            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+        )
+
+        // 2. Make sure they were actually issued
+        val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
+
+        validateResult(issuanceResult)
+    }
+
+    /**
+     * Consumes the provided states as either input or ref states, and runs it through the notarisation flow,
+     * then runs the given [validateResult] block on the flow result.
+     */
+    @Suppress("unchecked_cast")
+    private fun consumeStatesAndValidateResult(
+        inputStates: List<String>,
+        refStates: List<String>,
+        validateResult: (flowResult: FlowStatus) -> Unit
+    ) {
+        val consumeRequestID = startRpcFlow(
+            bobHoldingId,
+            mapOf(
+                "inputStateRefs" to inputStates,
+                "referenceStateRefs" to refStates
+            ),
+            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+        )
+
+        val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)
+
+        validateResult(consumeResult)
     }
 }
