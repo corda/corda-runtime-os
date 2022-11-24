@@ -48,8 +48,7 @@ class CordaPublisherFactory @Activate constructor(
         val config = configBuilder.buildPublisherConfig(publisherConfig, messagingConfig)
         // TODO 3781 - topic prefix
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, config.transactional, ProducerRoles.PUBLISHER)
-        val producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
-        return CordaPublisherImpl(config, producer)
+        return CordaPublisherImpl(config, producerConfig, cordaProducerBuilder)
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
