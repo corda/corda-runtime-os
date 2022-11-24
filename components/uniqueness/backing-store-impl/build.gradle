@@ -5,6 +5,26 @@ plugins {
 
 description 'Backing store component implementation'
 
+configurations {
+    backingStoreBenchmarkApi.extendsFrom integrationTestApi
+    backingStoreBenchmarkCompileOnly.extendsFrom integrationTestCompileOnly
+    backingStoreBenchmarkImplementation.extendsFrom integrationTestImplementation
+    backingStoreBenchmarkRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+}
+
+sourceSets {
+    backingStoreBenchmark {
+        kotlin {
+            srcDirs = [ 'src/backingStoreBenchmark/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/backingStoreBenchmark/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -47,7 +67,31 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
+    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+}
+
+tasks.register('backingStoreBenchmark', Test) {
+    description = "Runs uniqueness checker backing store benchmarks."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["backingStoreBenchmark"].output.classesDirs
+    classpath = project.sourceSets["backingStoreBenchmark"].runtimeClasspath
+
+    systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
+    systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
+
+    systemProperty "postgresDb", project.getProperty("postgresDb")
+    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "postgresPassword", project.getProperty("postgresPassword")
+    systemProperty "postgresPort", project.getProperty("postgresPort")
+    systemProperty "postgresUser", project.getProperty("postgresUser")
+}
+
+backingStoreBenchmark {
+    // Ensures benchmark is always re-run if executed from the console
+    outputs.upToDateWhen { false }
 }
