@@ -379,6 +379,72 @@ class FlowRPCOpsImplTest {
     }
 
     @Test
+    fun `start flow always returns error after synchronous fatal failure`() {
+        val flowRPCOps = createFlowRpcOps()
+
+        doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
+        assertThrows<FlowRPCOpsServiceException> {
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(publisher, times(1)).publish(any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+
+        // flowRPCOps should have marked itself as unable to start flows after fata error, which means throwing without
+        // attempting to start the flow
+
+        assertThrows<FlowRPCOpsServiceException> {
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(publisher, times(1)).publish(any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+    }
+
+    @Test
+    fun `start flow always returns error after asynchronous fatal failure`() {
+        val flowRPCOps = createFlowRpcOps()
+        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply {
+            completeExceptionally(
+                CordaMessageAPIFatalException("")
+            )
+        }))
+
+        assertThrows<FlowRPCOpsServiceException> {
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(publisher, times(1)).publish(any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+
+        // flowRPCOps should have marked itself as unable to start flows after fata error, which means throwing without
+        // attempting to start the flow
+
+        assertThrows<FlowRPCOpsServiceException> {
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatus(any(), any())
+        verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+        verify(publisher, times(1)).publish(any())
+        verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
+    }
+
+    @Test
     fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
         val duplexChannel = mock<DuplexChannel>()
         val exceptionArgumentCaptor = argumentCaptor<Exception>()

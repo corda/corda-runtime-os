@@ -24,6 +24,7 @@ import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -71,6 +72,7 @@ class FlowRPCOpsImpl @Activate constructor(
     override val protocolVersion: Int = 1
 
     private var publisher: Publisher? = null
+    private var fatalErrorOccurred = false
 
     override fun initialise(config: SmartConfig) {
         publisher?.close()
@@ -84,6 +86,14 @@ class FlowRPCOpsImpl @Activate constructor(
     ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
+        }
+        if (fatalErrorOccurred) {
+            // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
+            // replaced by another worker and have been "fenced". In that case it would be unsafe to create another
+            // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
+            // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
+            // closing us down soon. There are other fatal error types, but none are recoverable by definition.
+            throw FlowRPCOpsServiceException("Fatal error occurred, can no longer start flows from this worker")
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
@@ -139,20 +149,29 @@ class FlowRPCOpsImpl @Activate constructor(
 
         val recordFutures = try {
             publisher!!.publish(records)
+        } catch (ex: CordaMessageAPIFatalException) {
+            throw markFatalAndReturnFailureException(ex)
         } catch (ex: Exception) {
-            throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", ex)
+            throw failureException(ex)
         }
-        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { exception, failureIsTerminal ->
+        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
             if (failureIsTerminal) {
-                log.error("This worker will terminate, fatal error occurred", exception)
-                // TODO terminate process
-                throw FlowRPCOpsServiceException("Failed to publish the Start Flow event, failure is terminal.", exception)
+                throw markFatalAndReturnFailureException(ex)
             } else {
-                throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", exception)
+                throw failureException(ex)
             }
         }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
+
+    private fun markFatalAndReturnFailureException(exception: Exception): Exception {
+        fatalErrorOccurred = true
+        log.error("This worker will terminate, fatal error occurred", exception)
+        return failureException(exception)
+    }
+
+    private fun failureException(cause: Exception): Exception =
+        FlowRPCOpsServiceException("Failed to publish the Start Flow event.", cause)
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
