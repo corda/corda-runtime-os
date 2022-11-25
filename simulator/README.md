@@ -53,6 +53,9 @@ Simulator configuration can be set using the `SimulatorConfigurationBuilder`. Yo
 - the clock (defaults to system default clock)
 - timeouts for flows (defaults to 1 minute)
 - polling interval (defaults to 100 ms)
+- service overrides
+
+### Time-based Configuration
 
 The default timeout should be suitable for most tests. For demos, showcasing proofs of concept etc. you may want
 to make it longer.
@@ -60,11 +63,33 @@ to make it longer.
 The polling interval is used to check for any exceptions thrown by responder flows.
 
 ```kotlin
-val simulator = Simulator(SimulatorConfigurationBuilder.create()
-    .withTimeout(Duration.ofMinutes(2))
-    .withPollInterval(Duration.ofMillis(50))
-    .build()
-)
+val config = SimulatorConfigurationBuilder.create()
+  .withTimeout(Duration.ofMinutes(2))
+  .withPollInterval(Duration.ofMillis(50))
+  .build()
+val simulator = Simulator(config)
+```
+
+### Service Overrides
+
+Simulator provides implementations of various services which Corda injects into flows. You can override or decorate
+these by providing your own `ServiceOverrideBuilder`; a SAM interface which takes three parameters:
+
+- the member whose flow is being constructed,
+- the flowClass for which the service is being constructed,
+- Simulator's implementation of the service.
+
+If Simulator doesn't support an implementation of the given service (for instance, if using a version that is out of
+sync with your version of Corda) then the service provided by Simulator will be null. You can still provide your own
+implementation in this instance.
+
+```kotlin
+val serviceBuilder = ServiceOverrideBuilder<JsonMarshallingService> {
+    member, flowClass, service -> MyJsonMarshallingService(member, flowClass, service)
+}
+val config = SimulatorConfigurationBuilder.create()
+  .withServiceOverride(JsonMarshallingService::class.java, serviceBuilder)
+  .build()
 ```
 
 ## RequestData

@@ -87,10 +87,10 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val myInfo = memberLookup.myInfo()
 
-        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we need to find the
-        //  notary instead of a random member
+        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
+        //  need to find the notary instead of the first whose common name contains "Notary".
         val notary = memberLookup.lookup().first {
-            it.name != myInfo.name
+            it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
 
         val notaryParty = Party(notary.name, notary.sessionInitiationKey)
@@ -174,4 +174,3 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         )
     }
 }
-

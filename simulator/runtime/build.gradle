@@ -21,6 +21,14 @@ dependencies {
     implementation project(":libs:serialization:json-serializers")
     implementation project(":libs:db:db-admin-impl")
 
+    compileOnly "org.osgi:osgi.core"
+    implementation project(":libs:sandbox")
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-serialization-impl")
+    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
+
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"
     

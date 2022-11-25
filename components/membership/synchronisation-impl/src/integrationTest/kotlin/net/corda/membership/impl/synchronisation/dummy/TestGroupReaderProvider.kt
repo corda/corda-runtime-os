@@ -66,12 +66,12 @@ class TestGroupReaderProviderImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("${TestGroupReaderProvider::class.java.simpleName} starting.")
+        logger.info("${this::class.java.simpleName} starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("TestGroupReaderProvider starting.")
+        logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
 }

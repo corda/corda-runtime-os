@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DistributeMembershipPackage
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
@@ -123,7 +124,7 @@ class DistributeMembershipPackageHandler(
         } catch (e: Exception) {
             logger.warn("Could not distribute membership packages after registration request: '$registrationId' was approved. " +
                         "Distribution will be reattempted.", e)
-            listOf(Record(REGISTRATION_COMMAND_TOPIC, key, command))
+            listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(command)))
         }
 
         return RegistrationHandlerResult(
@@ -139,7 +140,7 @@ class DistributeMembershipPackageHandler(
     ): RegistrationHandlerResult {
         logger.info("Retrieved group parameters are outdated or null. Republishing the distribute command to be processed" +
                 " later when the updated set of group parameters is available.")
-        return RegistrationHandlerResult(state, listOf(Record(REGISTRATION_COMMAND_TOPIC, key, command)))
+        return RegistrationHandlerResult(state, listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(command))))
     }
 
     private fun createMembershipPackageFactory(
