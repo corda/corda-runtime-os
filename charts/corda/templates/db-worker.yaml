@@ -41,16 +41,8 @@ spec:
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
         {{- include "corda.clusterDbEnv" . | nindent 10 }}
-          - name: SALT
-            valueFrom:
-              secretKeyRef:
-                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                key: salt
-          - name: PASSPHRASE
-            valueFrom:
-              secretKeyRef:
-                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                key: passphrase
+        {{- include "corda.dbSaltEnv" . | nindent 10 }}
+        {{- include "corda.dbPassphraseEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
           - -spassphrase=$(PASSPHRASE)
