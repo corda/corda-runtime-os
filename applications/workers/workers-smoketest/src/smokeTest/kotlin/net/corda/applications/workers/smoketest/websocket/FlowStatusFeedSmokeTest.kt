@@ -28,7 +28,6 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.time.Duration
 
 // This test relies on `VirtualNodeRpcTest` and `FlowTest` to run first which will create vNodes necessary to run this test
-@Disabled("CORE-7629 - these tests are flaky")
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {

@@ -18,6 +18,7 @@ dependencies {
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(':components:crypto:crypto-client')
+    implementation project(":components:membership:group-params-writer-service")
     implementation project(":components:membership:group-policy")
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-p2p')
@@ -35,7 +36,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation project(':components:crypto:crypto-ecies')
+    testImplementation project(':components:crypto:crypto-hes')
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:test-utilities')
@@ -45,8 +46,9 @@ dependencies {
     integrationTestImplementation project(':testing:db-message-bus-testkit')
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
     integrationTestRuntimeOnly project(':components:crypto:crypto-client-impl')
-    integrationTestRuntimeOnly project(':components:crypto:crypto-ecies-impl')
+    integrationTestRuntimeOnly project(':components:crypto:crypto-hes-impl')
     integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
+    integrationTestRuntimeOnly project(":components:membership:group-params-writer-service-impl")
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
     integrationTestRuntimeOnly project(':components:membership:membership-p2p-impl')
     integrationTestRuntimeOnly project(':components:membership:membership-persistence-client-impl')

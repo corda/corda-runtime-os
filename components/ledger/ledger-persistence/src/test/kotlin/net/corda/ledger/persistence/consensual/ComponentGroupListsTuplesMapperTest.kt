@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.consensual
 
+import net.corda.ledger.persistence.common.mapTuples
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -35,7 +36,7 @@ class ComponentGroupListsTuplesMapperTest {
         val exception = assertThrows<IllegalStateException> {
             rows.mapTuples(ComponentGroupListsTuplesMapper())
         }
-        assertEquals("Missing data for transaction with ID: id1, groupIdx: 1, leafIdx: 1", exception.message)
+        assertEquals("Missing data for consensual transaction with ID: id1, groupIdx: 1, leafIdx: 1", exception.message)
     }
 
     @Test

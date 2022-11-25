@@ -24,12 +24,23 @@ import kotlin.concurrent.withLock
  * drops out. That means you do not need to post explicit [LifecycleStatus.DOWN] events at the end of the loop function.
  * To raise UP or other lifecycle events at any time, the [updateLifecycleStatus] can be called.
  */
+@Suppress("LongParameterList")
 class ThreadLooper(
     private val log: Logger,
     private val config: ResolvedSubscriptionConfig,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val threadNamePrefix: String,
-    private val loopFunction: () -> Unit
+    private val loopFunction: () -> Unit,
+    private val threadFactory: (String, () -> Unit) -> Thread = { name, block ->
+        thread(
+            start = true,
+            isDaemon = true,
+            contextClassLoader = null,
+            name = name,
+            priority = -1,
+            block = block,
+        )
+    },
 ) : LifecycleStatusUpdater {
     @Volatile
     private var _isRunning = true
@@ -87,13 +98,9 @@ class ThreadLooper(
 
                 _loopStopped = false
                 lifecycleCoordinator.start()
-                thread = thread(
-                    start = true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "$threadNamePrefix ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
+                thread = threadFactory(
+                    "$threadNamePrefix ${config.group}-${config.topic}",
+                    ::runConsumeLoop,
                 )
             }
         }
@@ -145,11 +152,15 @@ class ThreadLooper(
     }
 
     override fun updateLifecycleStatus(newStatus: LifecycleStatus) {
-        lifecycleCoordinator.updateStatus(newStatus)
+        if (isRunning) {
+            lifecycleCoordinator.updateStatus(newStatus)
+        }
     }
 
     override fun updateLifecycleStatus(newStatus: LifecycleStatus, reason: String) {
-        lifecycleCoordinator.updateStatus(newStatus, reason)
+        if (isRunning) {
+            lifecycleCoordinator.updateStatus(newStatus, reason)
+        }
     }
 
     private fun runConsumeLoop() {
@@ -158,6 +169,7 @@ class ThreadLooper(
         // by an apparent programming error at this point.
         try {
             loopFunction()
+            _isRunning = false
             lifecycleCoordinator.close()
         } catch (t: Throwable) {
             val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"

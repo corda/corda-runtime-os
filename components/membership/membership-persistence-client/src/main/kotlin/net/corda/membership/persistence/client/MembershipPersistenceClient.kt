@@ -1,5 +1,6 @@
 package net.corda.membership.persistence.client
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -49,12 +50,12 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
-     * @return Membership persistence result to indicate the result of the operation.
-     * No payload is returned in the case of success.
+     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
      */
     fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceResult<KeyValuePairList>
 
     /**
      * Persists a set of group parameters. This method is expected to be used by members to persist group parameters
@@ -66,12 +67,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param groupParameters The group parameters to persist.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
-     * will include the epoch of the newly persisted group parameters.
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<Int>
+    ): MembershipPersistenceResult<KeyValuePairList>
 
     /**
      * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to
@@ -86,12 +87,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param notary [MemberInfo] of the notary to be added.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
-     * will include the epoch of the newly persisted group parameters, which is the previous set's epoch incremented by 1.
+     * will include a [KeyValuePairList] of the newly persisted group parameters.
      */
     fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         notary: MemberInfo
-    ): MembershipPersistenceResult<Int>
+    ): MembershipPersistenceResult<KeyValuePairList>
 
     /**
      * Persists a registration request record as viewed by a specific holding identity.

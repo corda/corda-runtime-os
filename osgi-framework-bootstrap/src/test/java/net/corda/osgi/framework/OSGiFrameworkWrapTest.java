@@ -8,9 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkEvent;
@@ -90,11 +89,9 @@ final class OSGiFrameworkWrapTest {
         this.frameworkStorageDir = frameworkStorageDir;
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void activate(String frameworkFactoryFQN) throws Exception {
+    @Test
+    void activate() throws Exception {
         final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(
-            frameworkFactoryFQN,
             frameworkStorageDir,
             OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
         );
@@ -110,26 +107,15 @@ final class OSGiFrameworkWrapTest {
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void getFrameworkFrom(String frameworkFactoryFQN) throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+    @Test
+    void getFrameworkFrom() throws Exception {
+        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
         assertNotNull(framework);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void getFrameworkFromWithClassNotFoundException() {
-        assertThrows(ClassNotFoundException.class, () ->
-            OSGiFrameworkWrap.getFrameworkFrom("no_class", frameworkStorageDir, "")
-        );
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void install(String frameworkFactoryFQN) throws Exception {
+    @Test
+    void install() throws Exception {
         final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(
-            frameworkFactoryFQN,
             frameworkStorageDir,
             OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
         );
@@ -144,22 +130,20 @@ final class OSGiFrameworkWrapTest {
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void installWithIllegalStateException(String frameworkFactoryFQN) {
+    @Test
+    void installWithIllegalStateException() {
         assertThrows(IllegalStateException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES);
             }
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void installWithIOException(String frameworkFactoryFQN) {
+    @Test
+    void installWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(NO_APPLICATION_BUNDLES);
@@ -167,11 +151,10 @@ final class OSGiFrameworkWrapTest {
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void installBundleJarWithIOException(String frameworkFactoryFQN) {
+    @Test
+    void installBundleJarWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(SICK_APPLICATION_BUNDLES);
@@ -179,11 +162,10 @@ final class OSGiFrameworkWrapTest {
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void installBundleListWithIOException(String frameworkFactoryFQN) {
+    @Test
+    void installBundleListWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(NO_APPLICATION_BUNDLES);
@@ -191,11 +173,10 @@ final class OSGiFrameworkWrapTest {
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void start(String frameworkFactoryFQN) throws Exception {
+    @Test
+    void start() throws Exception {
         final AtomicInteger startupStateAtomic = new AtomicInteger(0);
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
         framework.init(frameworkEvent -> {
             assertThat(startupStateAtomic.get()).isLessThan(frameworkEvent.getBundle().getState());
             assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.getBundle().getState()));
@@ -209,10 +190,9 @@ final class OSGiFrameworkWrapTest {
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider.class)
-    void stop(String frameworkFactoryFQN) throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir, "");
+    @Test
+    void stop() throws Exception {
+        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
         try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
             frameworkWrap.start();
             assertEquals(Bundle.ACTIVE, framework.getState());

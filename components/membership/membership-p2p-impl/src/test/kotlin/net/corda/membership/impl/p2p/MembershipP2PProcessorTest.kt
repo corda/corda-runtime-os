@@ -1,6 +1,6 @@
 package net.corda.membership.impl.p2p
 
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash

@@ -10,11 +10,14 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-membership'
     implementation project(':components:chunking:chunk-read-service')
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:ledger:ledger-persistence')
+    implementation project(':components:membership:group-params-writer-service')
+    implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
@@ -36,7 +39,9 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:db:db-core")
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:layered-property-map')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:membership:membership-common')
     implementation project(':libs:membership:membership-datamodel')
     implementation project(":libs:permissions:permission-datamodel")
     implementation project(":libs:utilities")
@@ -63,6 +68,8 @@ dependencies {
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
     runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
     runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
+    runtimeOnly project(':components:membership:group-params-writer-service-impl')
+    runtimeOnly project(':components:membership:membership-group-read-impl')
     runtimeOnly project(':components:membership:membership-persistence-service-impl')
     runtimeOnly project(':components:virtual-node:cpk-read-service-impl')
     runtimeOnly project(':components:virtual-node:cpk-write-service-impl')

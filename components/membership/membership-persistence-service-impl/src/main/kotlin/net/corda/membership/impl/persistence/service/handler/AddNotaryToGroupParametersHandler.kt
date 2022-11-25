@@ -52,7 +52,7 @@ internal class AddNotaryToGroupParametersHandler(
         context: MembershipRequestContext,
         request: AddNotaryToGroupParameters
     ): PersistGroupParametersResponse {
-        val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+        val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
             val root = queryBuilder.from(GroupParametersEntity::class.java)
@@ -61,10 +61,11 @@ internal class AddNotaryToGroupParametersHandler(
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
             val previous = em.createQuery(query)
                 .setMaxResults(1)
-                .singleResult
-                ?: throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")
+            if(previous.resultList.isEmpty()) {
+                throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")
+            }
 
-            val parametersMap = deserializeProperties(previous.parameters).toMap()
+            val parametersMap = deserializeProperties(previous.singleResult.parameters).toMap()
             val notary = memberInfoFactory.create(request.notary).notaryDetails
                 ?: throw MembershipPersistenceException("Cannot add notary to group parameters - notary details not found.")
             val notaryServiceName = notary.serviceName.toString()
@@ -74,7 +75,7 @@ internal class AddNotaryToGroupParametersHandler(
             val (epoch, groupParameters) = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
                 updateExistingNotaryService(parametersMap, notary, notaryServiceNumber, keyEncodingService, logger).apply {
-                    first ?: return@transaction previous.epoch
+                    first ?: return@transaction deserializeProperties(previous.singleResult.parameters)
                 }
             } else {
                 // Add new notary service
@@ -84,9 +85,9 @@ internal class AddNotaryToGroupParametersHandler(
 
             em.persist(entity)
 
-            epoch
+            groupParameters
         }
 
-        return PersistGroupParametersResponse(epoch)
+        return PersistGroupParametersResponse(persistedGroupParameters)
     }
 }

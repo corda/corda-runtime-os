@@ -37,8 +37,8 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
 fun E2eCluster.generateCsr(
     member: E2eClusterMember,
     tlsKeyId: String
-) = with(testToolkit) {
-    httpClientFor(CertificatesRpcOps::class.java)
+): String {
+    return clusterHttpClientFor(CertificatesRpcOps::class.java)
         .use { client ->
             client.start().proxy.generateCsr(
                 P2P_TENANT_ID,
@@ -52,8 +52,8 @@ fun E2eCluster.generateCsr(
 
 fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
-) = with(testToolkit) {
-    httpClientFor(CertificatesRpcOps::class.java).use { client ->
+) {
+    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
         client.start().proxy.importCertificateChain(
             usage = "p2p-tls",
             alias = TLS_CERT_ALIAS,

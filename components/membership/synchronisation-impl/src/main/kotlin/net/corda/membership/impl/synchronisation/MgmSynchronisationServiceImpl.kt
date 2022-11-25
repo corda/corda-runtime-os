@@ -46,6 +46,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -214,14 +215,16 @@ class MgmSynchronisationServiceImpl internal constructor(
                 ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
             // we don't want to include the MGM in the data package since MGM information comes from the group policy
             val allMembers = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
+            val groupParameters = groupReader.groupParameters
+                ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers))
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers, groupParameters))
             } else {
                 // member has not received the latest updates regarding its own membership
                 // will send its missing updates about themselves only
-                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo)))
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo), groupParameters))
             }
             logger.info("Sync package is sent to ${requester.x500Name}.")
         }
@@ -262,7 +265,8 @@ class MgmSynchronisationServiceImpl internal constructor(
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            members: Collection<MemberInfo>
+            members: Collection<MemberInfo>,
+            groupParameters: GroupParameters,
         ): MembershipPackage {
             val mgmSigner = signerFactory.createSigner(mgm)
             val signatures = membershipQueryClient
@@ -278,7 +282,8 @@ class MgmSynchronisationServiceImpl internal constructor(
                 mgmSigner,
                 signatures,
                 members,
-                membersTree.root
+                membersTree.root,
+                groupParameters,
             )
         }
     }

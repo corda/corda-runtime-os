@@ -1,6 +1,5 @@
 package net.corda.applications.workers.rpc.utils
 
-import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import java.io.ByteArrayOutputStream
 import java.util.jar.Attributes
@@ -18,7 +17,7 @@ private val cordaVersion by lazy {
     manifest?.mainAttributes?.getValue("Bundle-Version") ?: "5.0.0.0-SNAPSHOT"
 }
 
-internal fun TestToolkit.createEmptyJarWithManifest(groupPolicy: ByteArray): ByteArray {
+internal fun E2eCluster.createEmptyJarWithManifest(groupPolicy: ByteArray): ByteArray {
     return ByteArrayOutputStream().use { outputStream ->
         val manifest = Manifest()
         manifest.mainAttributes[Attributes.Name.MANIFEST_VERSION] = "1.0"
