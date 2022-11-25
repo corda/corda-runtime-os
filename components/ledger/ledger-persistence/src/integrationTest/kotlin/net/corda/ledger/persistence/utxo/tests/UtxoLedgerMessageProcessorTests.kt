@@ -15,6 +15,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -33,6 +34,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -103,6 +105,7 @@ class UtxoLedgerMessageProcessorTests {
 
     @Test
     fun `persistTransaction for utxo ledger deserialises the transaction and persists`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 

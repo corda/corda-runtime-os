@@ -8,6 +8,7 @@
     sun.security.x509
 
 -runrequires: \
+    bnd.identity;id='net.corda.group-params-writer-service-impl',\
     bnd.identity;id='net.corda.synchronisation-impl',\
     bnd.identity;id='net.corda.membership-p2p-impl',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\

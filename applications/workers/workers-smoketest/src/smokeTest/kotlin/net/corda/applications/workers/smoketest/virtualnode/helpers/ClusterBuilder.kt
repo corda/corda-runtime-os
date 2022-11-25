@@ -120,14 +120,14 @@ class ClusterBuilder {
     /**
      * Register a member to the network
      */
-    fun registerMember(holdingIdShortHash: String) =
-        post("/api/v1/membership/$holdingIdShortHash", registerMemberBody())
+    fun registerMember(holdingIdShortHash: String, isNotary: Boolean = false) =
+        post(
+            "/api/v1/membership/$holdingIdShortHash",
+            if (isNotary) registerNotaryBody() else registerMemberBody()
+        )
 
     fun getRegistrationStatus(holdingIdShortHash: String) =
         get("/api/v1/membership/$holdingIdShortHash")
-
-    fun registerNotary(holdingId: String) =
-        post("/api/v1/membership/$holdingId", registerNotaryBody())
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")

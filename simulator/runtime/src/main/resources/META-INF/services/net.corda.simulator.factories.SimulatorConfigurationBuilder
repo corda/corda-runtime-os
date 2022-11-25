@@ -1,1 +1,1 @@
-net.corda.simulator.runtime.DefaultConfigurationBuilder
+net.corda.simulator.runtime.config.DefaultConfigurationBuilder

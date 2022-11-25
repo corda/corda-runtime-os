@@ -25,8 +25,13 @@ interface FlowRpcOps : RpcOps {
     /**
      * Initialises the API implementation. This method may be called multiple times throughout the life
      * of the API.
+     * @param config A config
+     * @param onFatalError A method the [FlowRpcOps] will call if a fatal error is generated internally. This method hands
+     * over responsibility to the client on how to handle fatal errors. The method may handle fatal errors asynchronously.
+     * The [FlowRpcOps] will ensure it is left in a state where it is inoperable functionally after a fatal error, but
+     * safe to interact with.
      */
-    fun initialise(config: SmartConfig)
+    fun initialise(config: SmartConfig, onFatalError: () -> Unit)
 
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}",

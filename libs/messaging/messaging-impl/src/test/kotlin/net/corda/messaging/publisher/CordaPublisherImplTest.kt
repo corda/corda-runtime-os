@@ -2,9 +2,13 @@ package net.corda.messaging.publisher
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
@@ -32,7 +36,9 @@ import java.util.concurrent.ExecutionException
 class CordaPublisherImplTest {
     private lateinit var publisherConfig: ResolvedPublisherConfig
     private lateinit var cordaPublisherImpl: CordaPublisherImpl
-    private lateinit var producer: CordaProducer
+    private var producerBuilder = mock<CordaProducerBuilder>()
+    private var producer = mock<CordaProducer>()
+    private var producerConfig = ProducerConfig("", 0, false, ProducerRoles.PUBLISHER)
     private val record = Record("topic", "key1", ByteBuffer.wrap("value1".toByteArray()))
 
     @Throws(IllegalStateException::class)
@@ -48,7 +54,6 @@ class CordaPublisherImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        producer = mock()
         publisherConfig = ResolvedPublisherConfig(
             "clientId1",
             1,
@@ -56,11 +61,14 @@ class CordaPublisherImplTest {
             Duration.ofMillis(100L),
             SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         )
+        producer = mock()
+        whenever(producerBuilder.createProducer(any(), any())).thenReturn(producer)
     }
 
     @Test
     fun testPublish() {
         publish(false, listOf(record, record, record))
+        verify(producerBuilder, times(1)).createProducer(any(), any())
         verify(producer, times(3)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
@@ -172,9 +180,10 @@ class CordaPublisherImplTest {
         doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
-        verify(producer, times(1)).sendRecords(any())
-        verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).commitTransaction()
+        // Intermittent failures will retry once
+        verify(producer, times(2)).sendRecords(any())
+        verify(producer, times(2)).beginTransaction()
+        verify(producer, times(2)).commitTransaction()
     }
 
     @Test
@@ -182,9 +191,10 @@ class CordaPublisherImplTest {
         doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
-        verify(producer, times(1)).sendRecordsToPartitions(any())
-        verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).commitTransaction()
+        // Intermittent failures will retry once
+        verify(producer, times(2)).sendRecordsToPartitions(any())
+        verify(producer, times(2)).beginTransaction()
+        verify(producer, times(2)).commitTransaction()
     }
 
     @Test
@@ -208,8 +218,21 @@ class CordaPublisherImplTest {
     }
 
     @Test
+    fun testTransactionCommitIntermittentFailureRequiresNewPublisher() {
+        doThrow(CordaMessageAPIProducerRequiresReset("")).whenever(producer).commitTransaction()
+        val futures = publish(true, listOf(record))
+        assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
+        // Intermittent failures will retry once
+        verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).beginTransaction()
+        verify(producer, times(1)).commitTransaction()
+        verify(producer, times(1)).close()
+        verify(producerBuilder, times(2)).createProducer(any(), any())
+    }
+
+    @Test
     fun testSafeClose() {
-        cordaPublisherImpl = CordaPublisherImpl(publisherConfig, producer)
+        cordaPublisherImpl = CordaPublisherImpl(publisherConfig, producerConfig, producerBuilder)
 
         cordaPublisherImpl.close()
         verify(producer, times(1)).close()
@@ -238,6 +261,6 @@ class CordaPublisherImplTest {
             Duration.ofMillis(100L),
             SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         )
-        return CordaPublisherImpl(publisherConfig, producer)
+        return CordaPublisherImpl(publisherConfig, producerConfig, producerBuilder)
     }
 }
