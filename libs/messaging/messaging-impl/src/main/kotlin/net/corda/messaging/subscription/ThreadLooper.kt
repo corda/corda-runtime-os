@@ -85,11 +85,14 @@ class ThreadLooper(
         }
 
         fun stopAndJoin() {
-            lock.withLock {
+            val threadToJoin = lock.withLock {
                 if (_loopStopped) return
                 check(Thread.currentThread().id != thread?.id) { "Invalid function call from outside thread" }
-                doStopLoopAndClearThread().join(config.threadStopTimeout.toMillis())
+                doStopLoopAndClearThread()
             }
+            // Do not wait to join the thread under lock or we can create deadlocks as the loop function in this thread
+            // is continuously asking for the value of loopStopped which also attempts to acquire the lock
+            threadToJoin.join(config.threadStopTimeout.toMillis())
         }
 
         fun start() {
