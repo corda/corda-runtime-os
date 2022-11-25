@@ -32,8 +32,6 @@ class ThreadLooper(
     private val loopFunction: () -> Unit
 ) : LifecycleStatusUpdater {
     @Volatile
-    private var _stopped = false
-    @Volatile
     private var _isRunning = true
 
     /**
@@ -46,10 +44,10 @@ class ThreadLooper(
      * looper function drops out, and it's the status external entities can consider the process to be finished. If you
      * are exposing a status of whether or not the [ThreadLooper] is finished, this is the property that should be used.
      */
-    val loopStopped:Boolean
-        get() = _stopped
+    val loopStopped: Boolean
+        get() = stoppableThread.loopStopped
 
-    val isRunning:Boolean
+    val isRunning: Boolean
         get() = _isRunning
 
     val lifecycleCoordinatorName
@@ -58,14 +56,36 @@ class ThreadLooper(
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
-    private val lock = ReentrantLock()
-    private var thread: Thread? = null
+    /**
+     * Thread handling and loop status isolated to this class to ensure all public facing operations are performed under
+     * lock and all variables pertaining to the thread and loop are in sync.
+     */
+    private inner class StoppableThread {
+        private val lock = ReentrantLock()
+        private var thread: Thread? = null
+        private var _loopStopped = false
 
-    fun start() {
-        _isRunning = true
-        lock.withLock {
-            if (thread == null) {
-                _stopped = false
+        fun stopFromWithin() {
+            lock.withLock {
+                if (_loopStopped) return
+                check(Thread.currentThread().id == thread?.id) { "Invalid function call from within thread" }
+                doStopLoopAndClearThread()
+            }
+        }
+
+        fun stopAndJoin() {
+            lock.withLock {
+                if (_loopStopped) return
+                check(Thread.currentThread().id != thread?.id) { "Invalid function call from outside thread" }
+                doStopLoopAndClearThread().join(config.threadStopTimeout.toMillis())
+            }
+        }
+
+        fun start() {
+            lock.withLock {
+                if (thread != null) return
+
+                _loopStopped = false
                 lifecycleCoordinator.start()
                 thread = thread(
                     start = true,
@@ -77,6 +97,27 @@ class ThreadLooper(
                 )
             }
         }
+
+        val loopStopped: Boolean
+            get() = lock.withLock {
+                _loopStopped
+            }
+
+        /**
+         * Must be called from within the lock
+         */
+        private fun doStopLoopAndClearThread(): Thread = thread.let {
+            _loopStopped = true
+            thread = null
+            it// return original Thread
+        } ?: throw IllegalStateException("Clearing state, thread was null on non-stopped ThreadLooper")
+    }
+
+    private var stoppableThread = StoppableThread()
+
+    fun start() {
+        _isRunning = true
+        stoppableThread.start()
     }
 
     /**
@@ -89,8 +130,7 @@ class ThreadLooper(
      * @throws IllegalStateException if called from within the looper function.
      */
     fun close() {
-        check(Thread.currentThread().id != thread?.id) { "Cannot call close from consume loop thread" }
-        doStopConsumeLoop()?.join(config.threadStopTimeout.toMillis())
+        stoppableThread.stopAndJoin()
     }
 
     /**
@@ -101,8 +141,7 @@ class ThreadLooper(
      * @throws IllegalStateException if called from outside the looper function.
      */
     fun stopLoop() {
-        check(Thread.currentThread().id == thread?.id) { "Cannot call stopLoop from outside the loop thread" }
-        doStopConsumeLoop()
+        stoppableThread.stopFromWithin()
     }
 
     override fun updateLifecycleStatus(newStatus: LifecycleStatus) {
@@ -120,18 +159,12 @@ class ThreadLooper(
         try {
             loopFunction()
             lifecycleCoordinator.close()
-            _isRunning = false
         } catch (t: Throwable) {
-            log.error("runConsumeLoop Throwable caught, subscription in an unrecoverable bad state:", t)
+            val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"
+            log.error(msg, t)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, msg)
+        } finally {
+            _isRunning = false
         }
-    }
-
-    private fun doStopConsumeLoop(): Thread? = lock.withLock {
-        if (_stopped) return null
-        thread?.let {
-            _stopped = true
-            thread = null
-            it// return original Thread
-        } ?: throw IllegalStateException("thread was null on non-stopped ThreadLooper")
     }
 }
