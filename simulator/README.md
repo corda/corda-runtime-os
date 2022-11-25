@@ -47,6 +47,17 @@ To release resources used by Simulator, including any database connections, call
   simulator.close()
 ```
 
+## Logging
+
+Simulator uses SLF4j for its logging. To turn logging on, either add a dependency to a logging framework bridge of your
+choice, for instance:
+
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
+
+or turn on SLF4J's simple logging:
+
+    testImplementation `org.slf4j:slf4j-simple:2.0.4`
+
 ## Configuration
 
 Simulator configuration can be set using the `SimulatorConfigurationBuilder`. You can configure:
