@@ -48,8 +48,9 @@ class GroupParametersReconciler(
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
         )
         const val FAILED_DESERIALIZATION = "Could not deserialize group parameters from the database entity."
-        val lock = ReentrantLock()
     }
+
+    private val lock = ReentrantLock()
 
     private val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
         { logger.warn(FAILED_DESERIALIZATION) },
@@ -68,10 +69,12 @@ class GroupParametersReconciler(
     internal var reconciler: Reconciler? = null
 
     override fun close() {
-        dbReconcilerReader?.stop()
-        dbReconcilerReader = null
-        reconciler?.stop()
-        reconciler = null
+        lock.withLock {
+            dbReconcilerReader?.stop()
+            dbReconcilerReader = null
+            reconciler?.stop()
+            reconciler = null
+        }
     }
 
     override fun updateInterval(intervalMillis: Long) {
