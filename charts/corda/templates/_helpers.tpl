@@ -138,7 +138,7 @@ Worker service account
 
 {{- define "corda.serviceAccount" }}
 {{- if .Values.serviceAccount  }}
-serviceAccountName: {{ default .Values.bootstrap.serviceAccount .Values.serviceAccount }}
+serviceAccountName: {{ .Values.serviceAccount }}
 {{- end }}
 {{- end }}
 
@@ -206,7 +206,7 @@ Service account for the bootstrapper
 
 {{- define "corda.bootstrapServiceAccount" }}
 {{- if or .Values.bootstrap.serviceAccount .Values.serviceAccount }}
-serviceAccountName: {{ default .Values.bootstrap.serviceAccount .Values.serviceAccount }}
+serviceAccountName: {{ default .Values.serviceAccount .Values.bootstrap.serviceAccount }}
 {{- end }}
 {{- end }}
 
