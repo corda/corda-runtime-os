@@ -14,11 +14,13 @@ spec:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       containers:
         - name: create-rbac-role-user-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
@@ -40,6 +42,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
@@ -61,6 +64,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
