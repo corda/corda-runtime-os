@@ -45,7 +45,6 @@ dependencies {
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
-    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")

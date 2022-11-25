@@ -754,7 +754,7 @@ class FlowTests {
     @Suppress("unchecked_cast")
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
-            // 2. Make sure the states were issued
+            // 1. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
             val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
@@ -762,7 +762,7 @@ class FlowTests {
             val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
             assertThat(issuedStateRefs).hasSize(3)
 
-            // 3. Make sure no extra states were consumed
+            // 2. Make sure no extra states were consumed
             assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
             assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
         }
@@ -987,14 +987,12 @@ class FlowTests {
             paramMap.put("timeWindowUpperBoundOffsetMs", "$it")
         }
 
-        // 1. Issue `outputStateCount` states
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
-        // 2. Make sure they were actually issued
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
 
         validateResult(issuanceResult)

@@ -65,9 +65,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    @CordaInject
-    lateinit var notaryLookup: NotaryLookup
-
     private companion object {
         val log = loggerFor<NonValidatingNotaryTestFlow>()
     }
