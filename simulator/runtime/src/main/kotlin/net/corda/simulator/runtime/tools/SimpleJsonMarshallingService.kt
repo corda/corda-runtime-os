@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.common.json.serializers.standardTypesModule
 import net.corda.simulator.RequestData
 import net.corda.simulator.runtime.RPCRequestDataWrapper
+import net.corda.simulator.runtime.utils.publicKeyModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
 /**
@@ -23,6 +24,7 @@ class SimpleJsonMarshallingService : JsonMarshallingService{
         module.addDeserializer(RequestData::class.java, RequestDataSerializer())
         objectMapper.registerModule(module)
         objectMapper.registerModule(standardTypesModule())
+        objectMapper.registerModule(publicKeyModule())
     }
 
     override fun format(data: Any): String {
@@ -30,7 +32,7 @@ class SimpleJsonMarshallingService : JsonMarshallingService{
     }
 
     override fun <T> parse(input: String, clazz: Class<T>): T {
-        return objectMapper.readValue<T>(input, clazz)
+        return objectMapper.readValue(input, clazz)
     }
 
     override fun <T> parseList(input: String, clazz: Class<T>): List<T> {

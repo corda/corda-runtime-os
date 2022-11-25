@@ -1,4 +1,4 @@
-package net.cordacon.example.utils
+package net.cordacon.example.rollcall.utils
 
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
