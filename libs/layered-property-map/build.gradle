@@ -4,6 +4,10 @@ plugins {
     id 'corda.osgi-test-conventions'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Layered property map internal API and implementation'
 
 dependencies {
