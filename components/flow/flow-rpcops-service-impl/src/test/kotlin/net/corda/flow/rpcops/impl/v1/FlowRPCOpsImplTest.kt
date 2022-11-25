@@ -193,6 +193,7 @@ class FlowRPCOpsImplTest {
 
         assertThrows<BadRequestException> {
             flowRPCOps.getFlowStatus("invalid", "")
+            flowRPCOps.getFlowStatus("12345678901d22", "")
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
@@ -235,6 +236,7 @@ class FlowRPCOpsImplTest {
 
         assertThrows<BadRequestException> {
             flowRPCOps.getMultipleFlowStatus("invalid")
+            flowRPCOps.getMultipleFlowStatus("12345678901d22")
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
@@ -287,6 +289,7 @@ class FlowRPCOpsImplTest {
 
         assertThrows<BadRequestException> {
             flowRPCOps.startFlow("invalid", StartFlowParameters("", "", TestJsonObject()))
+            flowRPCOps.startFlow("12345678901d22", StartFlowParameters("", "", TestJsonObject()))
         }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
