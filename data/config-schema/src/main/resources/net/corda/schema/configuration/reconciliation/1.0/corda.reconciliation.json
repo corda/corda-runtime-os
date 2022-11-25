@@ -40,6 +40,13 @@
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
+    },
+    "groupParamsIntervalMs": {
+      "description": "Interval in ms between aligning Kafka Group Parameters state with DB GroupParameters per virtual node.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 30000
     }
   }
 }
