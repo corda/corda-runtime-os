@@ -4,6 +4,7 @@ plugins {
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
+
 description 'Corda Non-Validating Notary Plugin Server'
 
 group 'com.r3.corda.notary.plugin.nonvalidating'
