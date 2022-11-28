@@ -11,6 +11,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -104,12 +105,16 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
     }
 }
 
+@CordaSerializable
 data class DoorCode(val code: String)
+
+@CordaSerializable
 data class DoorCodeChangeRequest(val newDoorCode: DoorCode, val participants: List<MemberX500Name>)
 
+@CordaSerializable
 data class DoorCodeChangeResult(val newDoorCode: DoorCode, val signedBy: Set<MemberX500Name>)
 
-
+@CordaSerializable
 class DoorCodeConsensualState(val code: DoorCode, override val participants: List<PublicKey>) : ConsensualState {
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
 }
