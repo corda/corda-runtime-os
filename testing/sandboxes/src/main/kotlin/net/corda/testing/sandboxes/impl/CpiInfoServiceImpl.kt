@@ -6,14 +6,17 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.stream.Stream
 
 @Suppress("unused")
 @Component
+@ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class CpiInfoServiceImpl @Activate constructor(
     @Reference
     private val loader: CpiLoader
