@@ -1,7 +1,5 @@
 package net.corda.simulator.runtime.messaging
 
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 import net.corda.simulator.exceptions.NoRegisteredResponderException
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
@@ -10,6 +8,8 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 /**
  * FlowMessaging is responsible for sending messages and from other "virtual nodes".

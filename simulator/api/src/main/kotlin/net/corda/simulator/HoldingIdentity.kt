@@ -30,6 +30,7 @@ interface HoldingIdentity {
          * @param commonName The string to use as the common name.
          * @return A [HoldingIdentity] whose [MemberX500Name] has the given common name.
          */
+        @JvmStatic
         fun create(commonName: String): HoldingIdentity {
             return factory.create(
                 MemberX500Name.parse("CN=$commonName, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB")
@@ -42,6 +43,7 @@ interface HoldingIdentity {
          * @param member The member for which to create a holding identity.
          * @return A [HoldingIdentity].
          */
+        @JvmStatic
         fun create(member: MemberX500Name): HoldingIdentity {
             return factory.create(member)
         }

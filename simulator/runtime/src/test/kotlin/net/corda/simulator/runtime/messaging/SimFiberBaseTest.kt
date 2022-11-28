@@ -1,14 +1,20 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
+import net.corda.simulator.runtime.signing.KeyStoreFactory
+import net.corda.simulator.runtime.signing.SigningServiceFactory
+import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +24,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.KeyPairGenerator
 
 class SimFiberBaseTest {
 
@@ -159,7 +164,7 @@ class SimFiberBaseTest {
     }
 
     @Test
-    fun `should make registered keys available via MemberInfos`() {
+    fun `should make generated keys available via MemberInfos`() {
         // Given a SimFiber
         val fiber = SimFiberBase()
 
@@ -170,11 +175,44 @@ class SimFiberBaseTest {
         // When we get their memberInfos then the keys should be empty
         assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf()))
 
-        // When we register a key then the memberInfo should have the key
-        val key = KeyPairGenerator.getInstance("EC").generateKeyPair().public
-        fiber.registerKey(member, key)
+        // When we generate a key then the memberInfo should also have it
+        val key = fiber.generateAndStoreKey("my-key", HsmCategory.LEDGER, "any scheme", member)
         assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf(key)))
     }
+
+    @Test
+    fun `should be able to create a signing service with the keystore for the given member`(){
+        // Given a SimFiber which will create a signing service for our member
+        val signingServiceFactory = mock<SigningServiceFactory>()
+        val signingService = mock<SigningService>()
+        val keyStoreFactory = mock<KeyStoreFactory>()
+        val keyStore = mock<SimKeyStore>()
+        val fiber = SimFiberBase(signingServiceFactory = signingServiceFactory, keystoreFactory = keyStoreFactory)
+
+        whenever(keyStoreFactory.createKeyStore()).thenReturn(keyStore)
+        whenever(signingServiceFactory.createSigningService(keyStore)).thenReturn(signingService)
+
+        // When we register a member then create a signing service
+        val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
+        fiber.registerInitiator(member)
+        val createdService = fiber.createSigningService(member)
+
+        // Then the signing service should have the keystore (it won't be created if it wasn't passed correctly)
+        assertNotNull(createdService)
+    }
+
+    @Test
+    fun `should throw an exception if an attempt to create a keystore is made for a member that was not registered`() {
+        // Given a SimFiber which will create a signing service for our member
+        val signingServiceFactory = mock<SigningServiceFactory>()
+        val fiber = SimFiberBase(signingServiceFactory = signingServiceFactory)
+
+        // When we create a signing service for a member that has not been registered (so no key store)
+        // Then it should throw an exception
+        val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
+        assertThrows<IllegalStateException> { fiber.createSigningService(member) }
+    }
+
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
     class Flow2 : ResponderFlow { override fun call(session: FlowSession) = Unit }
