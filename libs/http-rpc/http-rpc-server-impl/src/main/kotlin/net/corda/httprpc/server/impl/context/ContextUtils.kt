@@ -18,12 +18,12 @@ import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.withMDC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.MDC
 import java.lang.IllegalArgumentException
 import javax.security.auth.login.FailedLoginException
 
@@ -40,16 +40,7 @@ internal object ContextUtils {
     private const val PATH_MDC = "http.path"
 
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
-        return listOf(USER_MDC to user, METHOD_MDC to method, PATH_MDC to path).toMap().withMDC(block)
-    }
-
-    private fun <T> Map<String, String>.withMDC(block: () -> T): T {
-        forEach { MDC.put(it.key, it.value) }
-        return try {
-            block()
-        } finally {
-            keys.forEach { MDC.remove(it) }
-        }
+        return withMDC(listOf(USER_MDC to user, METHOD_MDC to method, PATH_MDC to path).toMap(), block)
     }
 
     private fun String.loggerFor(): Logger {
