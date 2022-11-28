@@ -61,6 +61,7 @@ fun createStaticMemberGroupPolicyJson(
             "tlsTrustRoots" to listOf(ca.caCertificate.toPem()),
             "sessionPki" to "NoPKI",
             "tlsPki" to "Standard",
+            "tlsType" to "ONE_WAY",
             "tlsVersion" to "1.3",
             "protocolMode" to "Authenticated_Encryption"
         ),
@@ -89,6 +90,7 @@ fun createMgmRegistrationContext(
     "corda.group.key.session.policy" to "Distinct",
     "corda.group.pki.session" to "NoPKI",
     "corda.group.pki.tls" to "Standard",
+    "corda.group.tls.type" to "ONE_WAY",
     "corda.group.tls.version" to "1.3",
     "corda.endpoints.0.connectionURL" to p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1",
