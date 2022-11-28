@@ -163,7 +163,6 @@ DB client image
 Resources for the bootstrapper
 */}}
 {{- define "corda.bootstrapResources" }}
-
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
@@ -294,6 +293,8 @@ Corda CLI environment variables
   value: {{ .Values.logging.format }}
 - name: CONSOLE_LOG_LEVEL
   value: {{ .Values.logging.level }}
+- name: CORDA_CLI_HOME_DIR
+  value: "/tmp"
 {{- end }}
 
 {{/*

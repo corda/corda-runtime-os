@@ -15,10 +15,16 @@ spec:
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: create-rbac-role-user-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
@@ -41,6 +47,8 @@ spec:
         - name: create-rbac-role-vnode-creator
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
@@ -63,6 +71,8 @@ spec:
         - name: create-rbac-role-corda-dev
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
