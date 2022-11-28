@@ -1,6 +1,5 @@
 package net.corda.ledger.common.test
 
-import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.internal.serialization.amqp.helper.MockitoHelper
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType

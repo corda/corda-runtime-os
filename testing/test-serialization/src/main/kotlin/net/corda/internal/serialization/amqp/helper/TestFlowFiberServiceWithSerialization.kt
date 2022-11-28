@@ -13,7 +13,9 @@ import net.corda.virtualnode.HoldingIdentity
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
 
-class TestFlowFiberServiceWithSerialization(currentSandboxGroupContext: CurrentSandboxGroupContext) : FlowFiberService, SingletonSerializeAsToken {
+class TestFlowFiberServiceWithSerialization(
+    currentSandboxGroupContext: CurrentSandboxGroupContext
+) : FlowFiberService, SingletonSerializeAsToken {
     private val mockFlowFiber = mock(FlowFiber::class.java)
     private val mockFlowSandboxGroupContext = mock(FlowSandboxGroupContext::class.java)
     private val membershipGroupReader = mock(MembershipGroupReader::class.java)
