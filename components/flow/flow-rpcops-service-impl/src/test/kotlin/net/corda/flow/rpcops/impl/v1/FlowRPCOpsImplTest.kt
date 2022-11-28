@@ -41,6 +41,8 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
@@ -70,7 +72,6 @@ class FlowRPCOpsImplTest {
         val loginName = "${FlowRPCOpsImplTest::class.java.simpleName}-User"
         const val FLOW1 = "flow1"
         const val VALID_SHORT_HASH = "1234567890ab"
-        val INVALID_SHORT_HASHES = listOf("invalid", "${VALID_SHORT_HASH}22")
     }
 
     private fun getMockCPIMeta(): CpiMetadata {
@@ -189,14 +190,13 @@ class FlowRPCOpsImplTest {
         verify(fatalErrorFunction, never()).invoke()
     }
 
-    @Test
-    fun `get flow status throws bad request if short hash is invalid`() {
+    @ParameterizedTest
+    @ValueSource(strings = ["invalid", "${VALID_SHORT_HASH}AB"])
+    fun `get flow status throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRPCOps = createFlowRpcOps()
 
-        INVALID_SHORT_HASHES.forEach {
-            assertThrows<BadRequestException> {
-                flowRPCOps.getFlowStatus(it, "")
-            }
+        assertThrows<BadRequestException> {
+            flowRPCOps.getFlowStatus(invalidShortHash, "")
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
@@ -233,14 +233,13 @@ class FlowRPCOpsImplTest {
         verify(fatalErrorFunction, never()).invoke()
     }
 
-    @Test
-    fun `get multiple flow status throws bad request if short hash is invalid`() {
+    @ParameterizedTest
+    @ValueSource(strings = ["invalid", "${VALID_SHORT_HASH}AB"])
+    fun `get multiple flow status throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRPCOps = createFlowRpcOps()
 
-        INVALID_SHORT_HASHES.forEach {
-            assertThrows<BadRequestException> {
-                flowRPCOps.getMultipleFlowStatus(it)
-            }
+        assertThrows<BadRequestException> {
+            flowRPCOps.getMultipleFlowStatus(invalidShortHash)
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
@@ -287,14 +286,13 @@ class FlowRPCOpsImplTest {
         verify(fatalErrorFunction, never()).invoke()
     }
 
-    @Test
-    fun `start flow event throws bad request if short hash is invalid`() {
+    @ParameterizedTest
+    @ValueSource(strings = ["invalid", "${VALID_SHORT_HASH}AB"])
+    fun `start flow event throws bad request if short hash is invalid`(invalidShortHash: String) {
         val flowRPCOps = createFlowRpcOps()
 
-        INVALID_SHORT_HASHES.forEach {
-            assertThrows<BadRequestException> {
-                flowRPCOps.startFlow(it, StartFlowParameters("", "", TestJsonObject()))
-            }
+        assertThrows<BadRequestException> {
+            flowRPCOps.startFlow(invalidShortHash, StartFlowParameters("", "", TestJsonObject()))
         }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
