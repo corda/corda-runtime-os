@@ -426,6 +426,7 @@ class P2PLayerEndToEndTest {
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
                 .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
+                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 
