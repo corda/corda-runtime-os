@@ -1,9 +1,15 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.exceptions.NoProtocolAnnotationException
+import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
+import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.InitiatedBy
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
@@ -13,6 +19,7 @@ import net.corda.simulator.runtime.signing.signingServiceFactoryBase
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -31,7 +38,8 @@ class SimFiberBase(
     private val persistenceServiceFactory : PersistenceServiceFactory = DbPersistenceServiceFactory(),
     private val memberLookUpFactory: MemberLookupFactory = BaseMemberLookupFactory(),
     private val signingServiceFactory: SigningServiceFactory = signingServiceFactoryBase(),
-    private val keystoreFactory: KeyStoreFactory = keystoreFactoryBase()
+    private val keystoreFactory: KeyStoreFactory = keystoreFactoryBase(),
+    private val flowMessagingFactory: FlowMessagingFactory = BaseFlowMessagingFactory()
 ) : SimFiber {
 
     private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
@@ -168,6 +176,28 @@ class SimFiberBase(
     }
 
 
+    override fun createFlowMessaging(
+        configuration: SimulatorConfiguration,
+        flow: Flow,
+        member: MemberX500Name,
+        injector: FlowServicesInjector
+    ): FlowMessaging {
+        val instanceFlowMap = nodeInitiatorInstances[member]
+        val protocol: String
+
+        if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
+            val flowClass = flow.javaClass
+            protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
+                ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
+                        ?: throw NoProtocolAnnotationException(flowClass)
+
+        }else{
+            protocol = instanceFlowMap[flow]!!
+        }
+
+        return flowMessagingFactory
+            .createFlowMessaging( FlowContext(configuration, member, protocol), this, injector)
+    }
     override fun close() {
         persistenceServices.values.forEach { it.close() }
     }

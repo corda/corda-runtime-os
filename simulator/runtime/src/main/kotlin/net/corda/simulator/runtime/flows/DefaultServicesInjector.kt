@@ -1,11 +1,8 @@
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.ledger.SimConsensualLedgerService
-import net.corda.simulator.runtime.messaging.ConcurrentFlowMessaging
-import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
@@ -19,8 +16,6 @@ import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -66,7 +61,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         doInject(member, flow, JsonMarshallingService::class.java) { createJsonMarshallingService() }
         doInject(member, flow, FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
         doInject(member, flow, FlowMessaging::class.java) {
-            createFlowMessaging(configuration, flow, member, fiber, flowFactory)
+            createFlowMessaging(configuration, flow, member, fiber)
         }
         doInject(member, flow, MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
         doInject(member, flow, SigningService::class.java) {
@@ -170,30 +165,10 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         configuration: SimulatorConfiguration,
         flow: Flow,
         member: MemberX500Name,
-        fiber: SimFiber,
-        flowFactory: FlowFactory
+        fiber: SimFiber
     ): FlowMessaging {
-
         log.info("Injecting ${FlowMessaging::class.java.simpleName}")
-        val instanceFlowMap = fiber.lookUpInitiatorInstance(member)
-        val protocol: String
-
-        if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
-            val flowClass = flow.javaClass
-            protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
-                ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
-                        ?: throw NoProtocolAnnotationException(flowClass)
-
-        }else{
-            protocol = instanceFlowMap[flow]!!
-        }
-
-        return ConcurrentFlowMessaging(
-            FlowContext(configuration, member, protocol),
-            fiber,
-            this,
-            flowFactory
-        )
+        return fiber.createFlowMessaging(configuration, flow, member, this);
     }
 }
 

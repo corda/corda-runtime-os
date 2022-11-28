@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.simulator.runtime.config.DefaultConfigurationBuilder
+import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
@@ -11,6 +13,7 @@ import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
@@ -228,6 +231,30 @@ class SimFiberBaseTest {
 
         // Then it should successfully return it
         assertThat(result, `is`(hashMapOf(flow to protocol)))
+    }
+
+    @Test
+    fun `should create flow messaging for instance initiator flow`(){
+        val flMsgFactory = mock<FlowMessagingFactory>()
+        val fiber = SimFiberBase(flowMessagingFactory = flMsgFactory)
+
+        // And some members who are going to be looked up
+        val flow = mock<RPCStartableFlow>()
+        val protocol = "protocol-1"
+        fiber.registerInitiatorInstance(memberA, protocol, flow)
+
+        val injector = mock<FlowServicesInjector>()
+        val flowContext = FlowContext(DefaultConfigurationBuilder().build(), memberA, protocol)
+
+        // And a mock factory that will create a memberLookup for us
+        val flowMessaging = mock<FlowMessaging>()
+        whenever(flMsgFactory.createFlowMessaging(any(), eq(fiber), any())).thenReturn(flowMessaging)
+
+        // When we create a member lookup
+        fiber.createFlowMessaging(flowContext.configuration, flow, memberA, injector)
+
+        // Then it should use the factory to do it
+        verify(flMsgFactory, times(1)).createFlowMessaging(flowContext, fiber, injector)
     }
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) = Unit }

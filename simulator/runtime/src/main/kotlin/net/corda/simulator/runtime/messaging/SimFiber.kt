@@ -1,10 +1,14 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.runtime.flows.FlowServicesInjector
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -95,6 +99,15 @@ interface SimFiber : Closeable, HasMemberInfos {
      * @return A [MemberLookup] containing member details and a copy of any keys currently registered.
      */
     fun createMemberLookup(member: MemberX500Name): MemberLookup
+
+    /**
+     * Creates a member lookup as it exists at the time of calling.
+     *
+     * @param member The member for whom to create a member lookup.
+     * @return A [FlowMessaging] containing member details and a copy of any keys currently registered.
+     */
+    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow,
+                            member: MemberX500Name, injector: FlowServicesInjector): FlowMessaging
 
     /**
      * @param alias The alias to use for the key.
