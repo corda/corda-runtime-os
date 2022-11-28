@@ -58,4 +58,7 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
     override val log = HttpRpcServerWebsocketTest.log
 
     override val httpRpcSettings = HttpRpcServerWebsocketTest.httpRpcSettings
+
+    override val port: Int
+        get() = server.port
 }
