@@ -15,7 +15,6 @@ import net.corda.httprpc.test.TestEntityRpcOps
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.test.util.eventually
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.seconds
@@ -42,15 +41,13 @@ import net.corda.httprpc.test.utils.multipartDir
 
 internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     companion object {
-        private var port: Int = -1
 
         @BeforeAll
         @JvmStatic
         @Suppress("Unused")
         fun setUpBeforeClass() {
-            port = findFreePort()
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", port),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -87,7 +84,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -140,7 +137,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `return list of complex types`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -173,7 +170,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and custom serializers succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             CustomSerializationAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -194,7 +191,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and infinite durable streams call succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             NumberSequencesRPCOps::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -249,7 +246,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and finite durable streams call succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             CalendarRPCOps::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -293,7 +290,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with less than rpc version since but valid version for the resource fails only on the unsupported call`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -321,7 +318,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with lower protocol version than minimum expected fails`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -337,7 +334,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `operations on TestEntity`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestEntityRpcOps::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -374,7 +371,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `operations on file upload using InputStream`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestFileUploadAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -417,7 +414,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `operations on file upload using HttpFileUpload`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestFileUploadAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -495,7 +492,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `name in annotation method call`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -518,7 +515,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `test api with nullable object return type that returns null`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -540,7 +537,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `test api with nullable String return type that returns null`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -563,7 +560,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `test api with object return type with nullable String inside returns that null string value`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
@@ -587,7 +584,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `optional query parameter call`() {
         val client = HttpRpcClient(
-            baseAddress = "http://localhost:$port/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)

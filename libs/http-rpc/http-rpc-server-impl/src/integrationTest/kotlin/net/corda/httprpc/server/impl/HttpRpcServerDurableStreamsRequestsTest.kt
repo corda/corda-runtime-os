@@ -9,7 +9,6 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.FakeSecurityManager
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
@@ -19,29 +18,31 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 
-class HttpRpcServerDurableStreamsRequestsTest {
+class HttpRpcServerDurableStreamsRequestsTest : HttpRpcServerTestBase() {
 
     companion object {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), HttpRpcServerTestBase.context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
-            HttpRpcServerTestBase.server = HttpRpcServerImpl(
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  0),
+                context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
+            server = HttpRpcServerImpl(
                 listOf(NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 { FakeSecurityManager() } ,
                 httpRpcSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            HttpRpcServerTestBase.client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
 
         }
 
         @AfterAll
         @JvmStatic
         fun cleanUpAfterClass() {
-            if (HttpRpcServerTestBase.isServerInitialized()) {
-                HttpRpcServerTestBase.server.close()
+            if (isServerInitialized()) {
+                server.close()
             }
         }
     }
@@ -58,7 +59,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
             |"remainingElementsCountEstimate":9223372036854775807
             |}""".compact()
 
-        val response = HttpRpcServerTestBase.client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("numberseq/retrieve", requestBody), HttpRpcServerTestBase.userName, HttpRpcServerTestBase.password)
+        val response = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("numberseq/retrieve", requestBody), userName, password)
 
         assertEquals(HttpStatus.SC_OK, response.responseStatus, response.toString())
         assertEquals(responseBody, response.body)
@@ -76,7 +77,8 @@ class HttpRpcServerDurableStreamsRequestsTest {
             |"positionedValues":[{"value":7,"position":3},{"value":9,"position":4}],
             |"remainingElementsCountEstimate":9223372036854775807
             |}""".compact()
-        val secondResponse = HttpRpcServerTestBase.client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("numberseq/retrieve", requestBodyNewPosition), HttpRpcServerTestBase.userName, HttpRpcServerTestBase.password)
+        val secondResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST,
+            WebRequest<Any>("numberseq/retrieve", requestBodyNewPosition), userName, password)
         assertEquals(HttpStatus.SC_OK, secondResponse.responseStatus)
         assertEquals(responseBodyNewPosition, secondResponse.body)
     }
@@ -93,7 +95,8 @@ class HttpRpcServerDurableStreamsRequestsTest {
             |"remainingElementsCountEstimate":363,
             |"isLastResult":false}""".compact()
 
-        val response = HttpRpcServerTestBase.client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("calendar/daysoftheyear", requestBody), HttpRpcServerTestBase.userName, HttpRpcServerTestBase.password)
+        val response = client.call(net.corda.httprpc.tools.HttpVerb.POST,
+            WebRequest<Any>("calendar/daysoftheyear", requestBody), userName, password)
 
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
         assertEquals(responseBody, response.body)
@@ -111,7 +114,8 @@ class HttpRpcServerDurableStreamsRequestsTest {
             |"remainingElementsCountEstimate":361,
             |"isLastResult":false}""".compact()
 
-        val secondResponse = HttpRpcServerTestBase.client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("calendar/daysoftheyear", requestBodyNewPosition), HttpRpcServerTestBase.userName, HttpRpcServerTestBase.password)
+        val secondResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST,
+            WebRequest<Any>("calendar/daysoftheyear", requestBodyNewPosition), userName, password)
         assertEquals(HttpStatus.SC_OK, secondResponse.responseStatus)
         assertEquals(responseBodyNewPosition, secondResponse.body)
     }
