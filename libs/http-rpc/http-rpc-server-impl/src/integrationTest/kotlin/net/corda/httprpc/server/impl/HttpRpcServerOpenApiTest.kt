@@ -35,13 +35,12 @@ import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
         private val httpRpcSettings = HttpRpcSettings(
-            NetworkHostAndPort("localhost", findFreePort()),
+            NetworkHostAndPort("localhost", 0),
             context,
             null,
             null,
@@ -66,7 +65,8 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll
