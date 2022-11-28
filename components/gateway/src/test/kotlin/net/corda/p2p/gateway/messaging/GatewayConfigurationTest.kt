@@ -14,6 +14,7 @@ class GatewayConfigurationTest {
     fun `toGatewayConfiguration return correct configuration with default connectionConfig`() {
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
+            on { getEnum(TlsType::class.java, "tlsType") } doReturn TlsType.ONE_WAY
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
@@ -56,6 +57,7 @@ class GatewayConfigurationTest {
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
+            on { getEnum(TlsType::class.java, "tlsType") } doReturn TlsType.ONE_WAY
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn true

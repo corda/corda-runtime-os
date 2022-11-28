@@ -11,6 +11,7 @@ class SslConfigurationTest {
     fun `toSslConfiguration return correct configuration`() {
         val config = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.SOFT_FAIL
+            on { getEnum(TlsType::class.java, "tlsType") } doReturn TlsType.ONE_WAY
         }
 
         val sslConfiguration = config.toSslConfiguration()

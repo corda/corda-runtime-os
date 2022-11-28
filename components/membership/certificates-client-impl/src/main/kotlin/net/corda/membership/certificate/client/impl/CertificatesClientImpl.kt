@@ -26,6 +26,8 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.MissingClientCertificateInMutualTls
 import net.corda.membership.certificate.client.NoClientCertificateInOneWayTls
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.p2p.helpers.TlsType
+import net.corda.membership.p2p.helpers.TlsType.Companion.tlsType
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -71,7 +73,7 @@ class CertificatesClientImpl @Activate constructor(
     private var senderRegistrationHandle: AutoCloseable? = null
     private var configHandle: AutoCloseable? = null
     private var publisher: Publisher? = null
-    private var tlsMode: String? = null
+    private var tlsType: TlsType? = null
 
     private val hostedIdentityEntryFactory = HostedIdentityEntryFactory(
         virtualNodeInfoReadService = virtualNodeInfoReadService,
@@ -107,7 +109,7 @@ class CertificatesClientImpl @Activate constructor(
         sessionKeyId: String?,
         sessionCertificateChainAlias: String?
     ) {
-        if (tlsMode == "ONE_WAY") {
+        if (tlsType == TlsType.ONE_WAY) {
             if (p2pTlsClientCertificateChainAlias != null) {
                 throw NoClientCertificateInOneWayTls()
             }
@@ -230,7 +232,7 @@ class CertificatesClientImpl @Activate constructor(
         sender?.close()
         senderRegistrationHandle = null
 
-        tlsMode = event.config.getConfig(ConfigKeys.P2P_GATEWAY_CONFIG).getString("sslConfig.tlsType")
+        tlsType = event.tlsType()
 
         sender = publisherFactory.createRPCSender(
             rpcConfig = RPCConfig(
