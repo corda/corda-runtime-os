@@ -3415,10 +3415,15 @@
         }
       },
       "HostedIdentitySetupRequest" : {
-        "required" : [ "p2pTlsCertificateChainAlias" ],
+        "required" : [ "p2pServerTlsCertificateChainAlias" ],
         "type" : "object",
         "properties" : {
-          "p2pTlsCertificateChainAlias" : {
+          "p2pClientTlsCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "p2pServerTlsCertificateChainAlias" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
