@@ -33,12 +33,13 @@ interface CertificatesRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * certificatesOps.importCertificateChain(usage = "p2p-tls", alias = "cert58B6030FABDD",
+     * certificatesOps.importCertificateChain(usage = "p2p-server-tls", alias = "cert58B6030FABDD",
      * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
      * ```
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -51,7 +52,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
@@ -88,7 +90,8 @@ interface CertificatesRpcOps : RpcOps {
      * ```
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -102,7 +105,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
@@ -129,7 +133,8 @@ interface CertificatesRpcOps : RpcOps {
      * The [getCertificateAliases] method enables you to get the aliases of all the cluster level certificate chains.
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -142,7 +147,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
@@ -157,7 +163,8 @@ interface CertificatesRpcOps : RpcOps {
      * The [getCertificateAliases] method enables you to get the virtual node certificate aliases..
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -171,7 +178,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
@@ -187,7 +195,8 @@ interface CertificatesRpcOps : RpcOps {
      * The [getCertificateChain] method enables you to get a specific certificate chain by alias in PEM format.
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -201,7 +210,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
@@ -221,7 +231,8 @@ interface CertificatesRpcOps : RpcOps {
      * The [getCertificateAliases] method enables you to get the virtual node certificate chain in PEM format.
      *
      * @param usage The certificate usage. Can be:
-     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-server-tls' for a Server TLS certificate to be used in P2P communication.
+     *     * 'p2p-client-tls' for a Client TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
@@ -236,7 +247,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+                "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."

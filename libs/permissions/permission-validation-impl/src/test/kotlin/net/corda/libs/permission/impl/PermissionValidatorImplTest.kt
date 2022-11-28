@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
 class PermissionValidatorImplTest {
 
     private val cpiUploadRequest = "POST:/api/v1/cpi"
-    private val certsInstallRequest = "PUT:/api/v1/certificates/p2p-tls/cluster"
+    private val certsInstallRequest = "PUT:/api/v1/certificates/p2p-server-tls/cluster"
 
     private val userName = "userLoginName"
 
