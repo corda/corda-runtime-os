@@ -51,7 +51,7 @@ spec:
       - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy:  {{ .Values.imagePullPolicy }}
-        {{- include "corda.workerConainterSecurityContext" . | nindent 8 }}
+        {{- include "corda.workerContainerSecurityContext" . | nindent 8 }}
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
