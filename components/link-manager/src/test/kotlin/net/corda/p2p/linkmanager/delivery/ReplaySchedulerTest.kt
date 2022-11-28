@@ -9,8 +9,8 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.MockTimeFacilitiesProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll

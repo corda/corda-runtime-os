@@ -53,8 +53,8 @@ import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes

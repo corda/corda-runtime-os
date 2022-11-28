@@ -1,6 +1,5 @@
-package net.corda.test.util
+package net.corda.test.util.time
 
-import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.any
