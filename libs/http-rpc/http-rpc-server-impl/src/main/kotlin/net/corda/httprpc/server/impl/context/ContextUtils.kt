@@ -21,6 +21,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import java.lang.IllegalArgumentException
@@ -49,6 +50,10 @@ internal object ContextUtils {
         } finally {
             keys.forEach { MDC.remove(it) }
         }
+    }
+
+    private fun String.loggerFor(): Logger {
+        return LoggerFactory.getLogger(ContextUtils::class.java.name + "." + this)
     }
 
     fun authenticate(
@@ -101,16 +106,18 @@ internal object ContextUtils {
 
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
-            withMDC(rpcContext()?.principal ?: "<anonymous>", ctx.method(), ctx.path()) {
-                log.info("Servicing ${ctx.method()} request to '${ctx.path()}'")
-                log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
-                log.trace { "Get parameter values." }
+            val ctxMethod = ctx.method()
+            withMDC(rpcContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
+                val methodLogger = ctxMethod.loggerFor()
+                methodLogger.info("Servicing $ctxMethod request to '${ctx.path()}'")
+                methodLogger.debug { "Invoke method \"${method.method.name}\" for route info." }
+                methodLogger.trace { "Get parameter values." }
 
                 CordaMetrics.Metric.HttpRequestCount.builder()
-                    .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
+                    .withTag(CordaMetrics.Tag.Address, "$ctxMethod ${ctx.matchedPath()}")
                     .build().increment()
                 val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
-                    .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
+                    .withTag(CordaMetrics.Tag.Address, "$ctxMethod ${ctx.matchedPath()}")
                     .build()
                 requestTimer.recordCallable {
                     try {
@@ -119,7 +126,7 @@ internal object ContextUtils {
                         val clientHttpRequestContext = ClientHttpRequestContext(ctx)
                         val paramValues = retrieveParameters(clientHttpRequestContext)
 
-                        log.debug {
+                        methodLogger.debug {
                             "Invoke method \"${method.method.name}\" with paramValues \"${
                                 paramValues.joinToString(
                                     ","
@@ -133,9 +140,9 @@ internal object ContextUtils {
                         ctx.buildJsonResult(result, this.method.method.returnType)
 
                         ctx.header(Header.CACHE_CONTROL, "no-cache")
-                        log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
+                        methodLogger.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                     } catch (e: Exception) {
-                        log.info("Error invoking path '${this.fullPath}' - ${e.message}")
+                        methodLogger.info("Error invoking path '${this.fullPath}' - ${e.message}")
                         throw HttpExceptionMapper.mapToResponse(e)
                     } finally {
                         if (ctx.isMultipartFormData()) {
