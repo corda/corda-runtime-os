@@ -315,7 +315,7 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
+            certificatesOps.importCertificateChain("p2p-server-tls", null, "alias", listOf(certificate))
 
             verify(certificatesClient).importCertificates(CertificateUsage.P2P_SERVER_TLS, null, "alias", certificateText)
         }
@@ -327,7 +327,7 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("p2p-tls", "123123123123", "alias", listOf(certificate))
+            certificatesOps.importCertificateChain("p2p-server-tls", "123123123123", "alias", listOf(certificate))
 
             verify(certificatesClient).importCertificates(
                 CertificateUsage.P2P_SERVER_TLS,

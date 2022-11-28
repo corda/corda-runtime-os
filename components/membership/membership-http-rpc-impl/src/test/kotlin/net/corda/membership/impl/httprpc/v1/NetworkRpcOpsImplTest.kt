@@ -105,8 +105,8 @@ class NetworkRpcOpsImplTest {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
-                    anyOrNull(),
                     any(),
+                    anyOrNull(),
                     any(),
                     any(),
                     any(),
@@ -149,8 +149,8 @@ class NetworkRpcOpsImplTest {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
-                    anyOrNull(),
                     any(),
+                    anyOrNull(),
                     any(),
                     any(),
                     any(),
