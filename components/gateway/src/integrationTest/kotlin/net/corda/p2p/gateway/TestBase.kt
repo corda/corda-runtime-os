@@ -179,6 +179,7 @@ open class TestBase {
                 .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
+                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
