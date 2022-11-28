@@ -31,7 +31,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will throw an exception for invalid holding identity`() {
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "nop",
             ListCertificateAliasesRpcRequest()
         )
@@ -44,7 +44,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will call the client importCertificates if needed`() {
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             null,
             ImportCertificateRpcRequest(
                 "alias",
@@ -55,7 +55,7 @@ class CertificatesProcessorTest {
         processor.onNext(request, future)
 
         verify(client).importCertificates(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             null,
             "alias",
             "certificate"
@@ -65,7 +65,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will return CertificateImportedRpcResponse after import`() {
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             null,
             ImportCertificateRpcRequest(
                 "alias",
@@ -89,7 +89,7 @@ class CertificatesProcessorTest {
             )
         ).doThrow(CordaRuntimeException("Ooops"))
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             null,
             ImportCertificateRpcRequest(
                 "alias",
@@ -105,7 +105,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will call the client retrieveCertificates if needed`() {
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "123123123213",
             RetrieveCertificateRpcRequest(
                 "alias"
@@ -116,7 +116,7 @@ class CertificatesProcessorTest {
 
         verify(client).retrieveCertificates(
             ShortHash.of("123123123213"),
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias",
         )
     }
@@ -146,7 +146,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will call the client getCertificateAliases if needed`() {
         val request = CertificateRpcRequest(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "123123123213",
             ListCertificateAliasesRpcRequest()
         )
@@ -154,7 +154,7 @@ class CertificatesProcessorTest {
         processor.onNext(request, future)
 
         verify(client).getCertificateAliases(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             ShortHash.of("123123123213"),
         )
     }

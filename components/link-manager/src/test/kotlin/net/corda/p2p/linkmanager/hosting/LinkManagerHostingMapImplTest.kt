@@ -62,6 +62,7 @@ class LinkManagerHostingMapImplTest {
         "id1",
         "id2",
         listOf("cert1", "cert2"),
+        null,
         "pem",
         listOf("certificate")
     )
@@ -197,7 +198,8 @@ class LinkManagerHostingMapImplTest {
             ).isEqualTo(
                 HostingMapListener.IdentityInfo(
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
-                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsServerCertificates = listOf("cert1", "cert2"),
+                    tlsClientCertificates = null,
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
                     sessionPublicKey = publicKeyOne,
@@ -220,7 +222,8 @@ class LinkManagerHostingMapImplTest {
             it.assertThat(testObject.getInfo(entryOne.holdingIdentity.toCorda())).isEqualTo(
                 HostingMapListener.IdentityInfo(
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
-                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsServerCertificates = listOf("cert1", "cert2"),
+                    tlsClientCertificates = null,
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
                     sessionPublicKey = publicKeyOne,
@@ -249,7 +252,8 @@ class LinkManagerHostingMapImplTest {
         assertThat(entries).containsExactly(
             HostingMapListener.IdentityInfo(
                 entryOne.holdingIdentity.toCorda(),
-                entryOne.tlsCertificates,
+                entryOne.tlsServerCertificates,
+                entryOne.tlsClientCertificates,
                 entryOne.tlsTenantId,
                 entryOne.sessionKeyTenantId,
                 publicKeyOne,

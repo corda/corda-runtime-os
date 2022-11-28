@@ -70,16 +70,16 @@ class DbClientImplTest {
     )
 
     @Test
-    fun `importCertificates merge the certificate into the P2P_TLS tenant`() {
+    fun `importCertificates merge the certificate into the P2P_SERVER_TLS tenant`() {
         client.importCertificates(
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             null,
             "alias",
             "certificate"
         )
 
         verify(clusterEntityManager).merge(
-            ClusterCertificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate")
+            ClusterCertificate("alias", CertificateUsage.P2P_SERVER_TLS.publicName, "certificate")
         )
     }
 
@@ -128,10 +128,10 @@ class DbClientImplTest {
     }
 
     @Test
-    fun `retrieveCertificates find the certificate from the P2P_TLS tenant`() {
+    fun `retrieveCertificates find the certificate from the P2P_SERVER_TLS tenant`() {
         client.retrieveCertificates(
             null,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -145,7 +145,7 @@ class DbClientImplTest {
     fun `retrieveCertificates find the certificate from the node entity`() {
         client.retrieveCertificates(
             nodeTenantId,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -159,7 +159,7 @@ class DbClientImplTest {
     fun `retrieveCertificates will close the node factory`() {
         client.retrieveCertificates(
             nodeTenantId,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -170,7 +170,7 @@ class DbClientImplTest {
     fun `retrieveCertificates will not close the node factory`() {
         client.retrieveCertificates(
             null,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -199,7 +199,7 @@ class DbClientImplTest {
     fun `retrieveCertificates returns null if not found`() {
         val certificate = client.retrieveCertificates(
             nodeTenantId,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -209,11 +209,11 @@ class DbClientImplTest {
     @Test
     fun `retrieveCertificates returns the certificate`() {
         whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
-            .doReturn(Certificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate"))
+            .doReturn(Certificate("alias", CertificateUsage.P2P_SERVER_TLS.publicName, "certificate"))
 
         val certificate = client.retrieveCertificates(
             nodeTenantId,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             "alias"
         )
 
@@ -223,7 +223,7 @@ class DbClientImplTest {
     @Test
     fun `retrieveCertificates returns null if the usage is wrong with value`() {
         whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
-            .doReturn(Certificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate"))
+            .doReturn(Certificate("alias", CertificateUsage.P2P_SERVER_TLS.publicName, "certificate"))
 
         val certificate = client.retrieveCertificates(
             nodeTenantId,

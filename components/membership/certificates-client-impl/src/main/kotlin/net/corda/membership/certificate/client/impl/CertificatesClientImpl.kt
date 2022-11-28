@@ -23,6 +23,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificate.client.MissingClientCertificateInMutualTls
+import net.corda.membership.certificate.client.NoClientCertificateInOneWayTls
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -69,6 +71,7 @@ class CertificatesClientImpl @Activate constructor(
     private var senderRegistrationHandle: AutoCloseable? = null
     private var configHandle: AutoCloseable? = null
     private var publisher: Publisher? = null
+    private var tlsMode: String? = null
 
     private val hostedIdentityEntryFactory = HostedIdentityEntryFactory(
         virtualNodeInfoReadService = virtualNodeInfoReadService,
@@ -97,15 +100,26 @@ class CertificatesClientImpl @Activate constructor(
 
     override fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
-        p2pTlsCertificateChainAlias: String,
+        p2pTlsServerCertificateChainAlias: String,
+        p2pTlsClientCertificateChainAlias: String?,
         useClusterLevelTlsCertificateAndKey: Boolean,
         useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
         sessionCertificateChainAlias: String?
     ) {
+        if (tlsMode == "ONE_WAY") {
+            if (p2pTlsClientCertificateChainAlias != null) {
+                throw NoClientCertificateInOneWayTls()
+            }
+        } else {
+            if (p2pTlsClientCertificateChainAlias == null) {
+                throw MissingClientCertificateInMutualTls()
+            }
+        }
         val record = hostedIdentityEntryFactory.createIdentityRecord(
             holdingIdentityShortHash = holdingIdentityShortHash,
-            tlsCertificateChainAlias = p2pTlsCertificateChainAlias,
+            tlsServerCertificateChainAlias = p2pTlsServerCertificateChainAlias,
+            tlsClientCertificateChainAlias = p2pTlsClientCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey = useClusterLevelTlsCertificateAndKey,
             sessionCertificateChainAlias = sessionCertificateChainAlias,
             useClusterLevelSessionCertificateAndKey = useClusterLevelSessionCertificateAndKey,
@@ -187,7 +201,7 @@ class CertificatesClientImpl @Activate constructor(
                 configHandle?.close()
                 configHandle = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.P2P_GATEWAY_CONFIG)
                 )
             } else if (event.registration == senderRegistrationHandle) {
                 coordinator.updateStatus(
@@ -215,6 +229,9 @@ class CertificatesClientImpl @Activate constructor(
         senderRegistrationHandle?.close()
         sender?.close()
         senderRegistrationHandle = null
+
+        tlsMode = event.config.getConfig(ConfigKeys.P2P_GATEWAY_CONFIG).getString("sslConfig.tlsType")
+
         sender = publisherFactory.createRPCSender(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,

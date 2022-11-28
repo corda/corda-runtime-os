@@ -70,6 +70,7 @@ class TlsCertificatesPublisherTest {
     private val identityInfo = HostingMapListener.IdentityInfo(
         createTestHoldingIdentity("CN=Alice, O=Bob Corp, L=LDN, C=GB", "Group1",),
         listOf("one", "two"),
+        null,
         "id1",
         "id2",
         mock(),
@@ -109,6 +110,7 @@ class TlsCertificatesPublisherTest {
                         GatewayTlsCertificates(
                             "id1",
                             listOf("one", "two"),
+                            null,
                         )
                     )
                 )
@@ -134,7 +136,7 @@ class TlsCertificatesPublisherTest {
 
             publisher.identityAdded(
                 identityInfo.copy(
-                    tlsCertificates = identityInfo.tlsCertificates.reversed()
+                    tlsServerCertificates = identityInfo.tlsServerCertificates.reversed()
                 )
             )
 
@@ -150,15 +152,15 @@ class TlsCertificatesPublisherTest {
 
             publisher.identityAdded(
                 identityInfo.copy(
-                    tlsCertificates = certificatesTwo
+                    tlsServerCertificates = certificatesTwo
                 )
             )
 
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
-                    GatewayTlsCertificates("id1", identityInfo.tlsCertificates))),
+                    GatewayTlsCertificates("id1", identityInfo.tlsServerCertificates, null))),
                 listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
-                    GatewayTlsCertificates("id1", certificatesTwo))),
+                    GatewayTlsCertificates("id1", certificatesTwo, null))),
             )
         }
 
@@ -232,7 +234,8 @@ class TlsCertificatesPublisherTest {
                 mapOf(
                     "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}" to GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
-                        identityInfo.tlsCertificates,
+                        identityInfo.tlsServerCertificates,
+                        null,
                     )
                 )
             )
@@ -248,7 +251,8 @@ class TlsCertificatesPublisherTest {
                 mapOf(
                     "Group1-Alice" to GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
-                        identityInfo.tlsCertificates,
+                        identityInfo.tlsServerCertificates,
+                        null,
                     )
                 )
             )
@@ -276,7 +280,8 @@ class TlsCertificatesPublisherTest {
                     "Group1-Alice",
                     GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
-                        identityInfo.tlsCertificates,
+                        identityInfo.tlsServerCertificates,
+                        null,
                     )
                 ),
                 null, emptyMap()

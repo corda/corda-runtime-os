@@ -143,7 +143,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord create the correct record`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
@@ -159,6 +160,7 @@ class HostedIdentityEntryFactoryTest {
                     VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
+                    null,
                     PUBLIC_KEY_PEM,
                     null
                 )
@@ -171,7 +173,8 @@ class HostedIdentityEntryFactoryTest {
         whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             sessionKeyId = null,
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelSessionCertificateAndKey = false,
@@ -187,8 +190,9 @@ class HostedIdentityEntryFactoryTest {
                     VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
+                    null,
                     PUBLIC_KEY_PEM,
-                    listOf(certificatePem)
+                    listOf(certificatePem),
                 )
             )
         }
@@ -199,7 +203,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = INVALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = true,
                 sessionKeyId = null,
@@ -212,7 +217,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will use virtual node tenant ID if asked for`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
@@ -228,7 +234,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
                 useClusterLevelSessionCertificateAndKey = true,
@@ -241,7 +248,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will use session tenant ID if provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
@@ -255,7 +263,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will use cluster tenant ID if provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = true,
             sessionKeyId = null,
@@ -269,7 +278,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will default to holding identity short hash if session tenant ID is not provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
@@ -284,7 +294,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will look for ID if provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
@@ -300,7 +311,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will filter by category if no id is provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = false,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
@@ -318,7 +330,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -332,7 +345,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = "NOP",
+                tlsServerCertificateChainAlias = "NOP",
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -346,7 +360,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = true,
                 sessionKeyId = null,
@@ -370,14 +385,15 @@ class HostedIdentityEntryFactoryTest {
 
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = true,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
             sessionCertificateChainAlias = null,
         )
 
-        assertThat(usage).isEqualTo(CertificateUsage.P2P_TLS)
+        assertThat(usage).isEqualTo(CertificateUsage.P2P_SERVER_TLS)
     }
 
     @Test
@@ -397,7 +413,8 @@ class HostedIdentityEntryFactoryTest {
         }
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
@@ -411,7 +428,8 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord with another TLS tenant will return that ID`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             useClusterLevelTlsCertificateAndKey = true,
             useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
@@ -428,7 +446,8 @@ class HostedIdentityEntryFactoryTest {
 
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsClientCertificateChainAlias = null,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelSessionCertificateAndKey = false,
@@ -452,7 +471,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -468,7 +488,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -487,7 +508,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -506,7 +528,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 useClusterLevelTlsCertificateAndKey = false,
                 useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
@@ -526,7 +549,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,
@@ -546,7 +570,8 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsServerCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsClientCertificateChainAlias = null,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,

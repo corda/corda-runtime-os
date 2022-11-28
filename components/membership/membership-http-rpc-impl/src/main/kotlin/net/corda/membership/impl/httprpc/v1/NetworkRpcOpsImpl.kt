@@ -10,6 +10,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
+import net.corda.membership.certificate.client.MissingClientCertificateInMutualTls
+import net.corda.membership.certificate.client.NoClientCertificateInOneWayTls
 import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -39,12 +41,17 @@ class NetworkRpcOpsImpl @Activate constructor(
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.ofOrThrow(holdingIdentityShortHash),
-                request.p2pTlsCertificateChainAlias,
+                request.p2pServerTlsCertificateChainAlias,
+                request.p2pClientTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
                 request.useClusterLevelSessionCertificateAndKey == true,
                 request.sessionKeyId,
                 request.sessionCertificateChainAlias
             )
+        } catch (e: NoClientCertificateInOneWayTls) {
+            throw ResourceNotFoundException(e.message!!)
+        } catch (e: MissingClientCertificateInMutualTls) {
+            throw BadRequestException(e.message!!)
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)
         } catch (e: BadRequestException) {

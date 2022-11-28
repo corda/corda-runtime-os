@@ -7,7 +7,8 @@ import java.security.PublicKey
 interface HostingMapListener {
     data class IdentityInfo(
         val holdingIdentity: HoldingIdentity,
-        val tlsCertificates: List<PemCertificate>,
+        val tlsServerCertificates: List<PemCertificate>,
+        val tlsClientCertificates: List<PemCertificate>?,
         val tlsTenantId: String,
         val sessionKeyTenantId: String,
         val sessionPublicKey: PublicKey,

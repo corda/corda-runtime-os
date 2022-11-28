@@ -116,7 +116,7 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `returns null when cluster certificate not found by alias`() {
 
-        val testUsage = CertificateUsage.P2P_TLS
+        val testUsage = CertificateUsage.P2P_SERVER_TLS
         val testAlias = "testAlias"
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
@@ -160,7 +160,7 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `returns empty list when tenant's cluster certificates not found`() {
 
-        val testUsage = CertificateUsage.P2P_TLS
+        val testUsage = CertificateUsage.P2P_SERVER_TLS
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
             it.persist(ClusterCertificate("otherTenant", "otherAlias", "otherCertificate"))
@@ -216,10 +216,10 @@ internal class CertificatesServiceImplTest {
         val testAlias = "testAlias"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
-            it.persist(Certificate("otherAlias", CertificateUsage.P2P_TLS.publicName, "otherCertificate"))
+            it.persist(Certificate("otherAlias", CertificateUsage.P2P_SERVER_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.client.retrieveCertificates( testTenant, CertificateUsage.P2P_TLS, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates( testTenant, CertificateUsage.P2P_SERVER_TLS, testAlias)
 
         assertThat(certificate).isNull()
     }

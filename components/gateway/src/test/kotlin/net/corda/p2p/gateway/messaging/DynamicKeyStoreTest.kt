@@ -144,7 +144,7 @@ class DynamicKeyStoreTest {
         fun `onSnapshot save the correct data`() {
             processorForKeystoreWithStubs.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", certificates.keys.toList(), null)
                 )
             )
 
@@ -155,7 +155,7 @@ class DynamicKeyStoreTest {
         fun `onNext remove data with null value`() {
             processorForKeystoreWithStubs.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", certificates.keys.toList(), null)
                 )
             )
 
@@ -178,7 +178,7 @@ class DynamicKeyStoreTest {
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
-                    GatewayTlsCertificates("id", certificates.keys.toList()),
+                    GatewayTlsCertificates("id", certificates.keys.toList(), null),
                 ),
                 null,
                 emptyMap()
@@ -222,11 +222,13 @@ class DynamicKeyStoreTest {
                     mapOf(
                         "one" to GatewayTlsCertificates(
                             tenantIdOne,
-                            listOf("1")
+                            listOf("1"),
+                            null,
                         ),
                         "three" to GatewayTlsCertificates(
                             tenantIdOne,
-                            listOf("3")
+                            listOf("3"),
+                            null,
                         ),
                     )
                 )
@@ -304,7 +306,8 @@ class DynamicKeyStoreTest {
                     "one",
                     GatewayTlsCertificates(
                         tenantIdTwo,
-                        listOf("2")
+                        listOf("2"),
+                        null,
                     ),
                 ),
                 null,

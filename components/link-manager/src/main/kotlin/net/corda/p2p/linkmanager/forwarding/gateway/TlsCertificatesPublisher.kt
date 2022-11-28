@@ -35,7 +35,9 @@ internal class TlsCertificatesPublisher(
         private const val MISSING_DATA_WRITER_GROUP_NAME = "linkmanager_tlscertificates_writer"
     }
 
-    private val publishedIds = ConcurrentHashMap<String, Set<PemCertificate>>()
+    private data class PublishedCertificates(val server: Set<PemCertificate>, val client: Set<PemCertificate>?)
+
+    private val publishedIds = ConcurrentHashMap<String, PublishedCertificates>()
     private val toPublish = ConcurrentLinkedQueue<HostingMapListener.IdentityInfo>()
 
     private val publisher = PublisherWithDominoLogic(
@@ -51,13 +53,17 @@ internal class TlsCertificatesPublisher(
 
     private fun publishIfNeeded(identity: HostingMapListener.IdentityInfo) {
         publishedIds.compute(identity.holdingIdentity.asString()) { id, publishedCertificates ->
-            val certificatesSet = identity.tlsCertificates.toSet()
-            if (certificatesSet != publishedCertificates) {
+            val certificates = PublishedCertificates(
+                server = identity.tlsServerCertificates.toSet(),
+                client = identity.tlsClientCertificates?.toSet(),
+            )
+            if (certificates != publishedCertificates) {
                 val record = Record(
                     GATEWAY_TLS_CERTIFICATES, id,
                     GatewayTlsCertificates(
                         identity.tlsTenantId,
-                        identity.tlsCertificates
+                        identity.tlsServerCertificates,
+                        identity.tlsClientCertificates,
                     )
                 )
                 publisher.publish(
@@ -66,7 +72,7 @@ internal class TlsCertificatesPublisher(
                     it.join()
                 }
             }
-            certificatesSet
+            certificates
         }
     }
 
@@ -83,7 +89,10 @@ internal class TlsCertificatesPublisher(
         override fun onSnapshot(currentData: Map<String, GatewayTlsCertificates>) {
             publishedIds.putAll(
                 currentData.mapValues {
-                    it.value.tlsCertificates.toSet()
+                    PublishedCertificates(
+                        server = it.value.serverTlsCertificates.toSet(),
+                        client = it.value.clientTlsCertificates?.toSet(),
+                    )
                 }
             )
             ready.complete(Unit)
@@ -95,11 +104,16 @@ internal class TlsCertificatesPublisher(
             oldValue: GatewayTlsCertificates?,
             currentData: Map<String, GatewayTlsCertificates>,
         ) {
-            val certificates = newRecord.value?.tlsCertificates
+            val certificates = newRecord.value?.let {
+                PublishedCertificates(
+                    server = it.serverTlsCertificates.toSet(),
+                    client = it.clientTlsCertificates?.toSet(),
+                )
+            }
             if (certificates == null) {
                 publishedIds.remove(newRecord.key)
             } else {
-                publishedIds[newRecord.key] = certificates.toSet()
+                publishedIds[newRecord.key] = certificates
             }
         }
     }

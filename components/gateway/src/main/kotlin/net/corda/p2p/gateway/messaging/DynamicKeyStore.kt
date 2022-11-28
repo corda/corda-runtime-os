@@ -35,7 +35,7 @@ internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    private val signingMode: SigningMode,
+    signingMode: SigningMode,
     private val cryptoOpsClient: CryptoOpsClient,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
@@ -115,7 +115,7 @@ internal class DynamicKeyStore(
         override fun onSnapshot(currentData: Map<String, GatewayTlsCertificates>) {
             aliasToCertificates.putAll(
                 currentData.mapValues { entry ->
-                    entry.value.tlsCertificates.map { pemCertificate ->
+                    entry.value.serverTlsCertificates.map { pemCertificate ->
                         ByteArrayInputStream(pemCertificate.toByteArray()).use {
                             certificateFactory.generateCertificate(it)
                         }
@@ -144,7 +144,7 @@ internal class DynamicKeyStore(
                 }
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
-                aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
+                aliasToCertificates[newRecord.key] = chain.serverTlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
                         certificateFactory.generateCertificate(it)
                     }

@@ -197,7 +197,8 @@ class SessionManagerTest {
     }
     private val hostingIdentity = HostingMapListener.IdentityInfo(
         holdingIdentity = OUR_PARTY,
-        tlsCertificates = emptyList(),
+        tlsServerCertificates = emptyList(),
+        tlsClientCertificates = null,
         tlsTenantId = "tlsId",
         sessionKeyTenantId = "id",
         sessionPublicKey = OUR_KEY.public,

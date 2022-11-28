@@ -52,13 +52,13 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.testing.p2p.certificates.Certificates
-import java.net.URI
 import java.net.URL
 
 open class TestBase {
@@ -111,24 +111,28 @@ open class TestBase {
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
     protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
     protected val aliceSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val chipKeyStore = readKeyStore(Certificates.chipKeyStoreFile)
     protected val chipSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
     protected val daleSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-
+        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
 
     protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -234,7 +238,7 @@ open class TestBase {
             val certificateRecord = Record(
                 Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                 name,
-                GatewayTlsCertificates(tenantId, pems)
+                GatewayTlsCertificates(tenantId, pems, null)
             )
             val privateKey = keyStoreWithPassword
                 .keyStore

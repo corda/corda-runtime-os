@@ -365,6 +365,7 @@ class StaticMemberRegistrationService @Activate constructor(
             memberId.value,
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
+            null,
             DUMMY_PUBLIC_SESSION_KEY,
             null
         )

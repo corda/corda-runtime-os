@@ -85,7 +85,7 @@ private fun Config.toConnectionConfig(): ConnectionConfiguration {
         maxClientConnections = this.getLong("maxClientConnections"),
         acquireTimeout = Duration.ofSeconds(this.getLong("acquireTimeout")),
         connectionIdleTimeout = Duration.ofSeconds(this.getLong("connectionIdleTimeout")),
-        responseTimeout =  Duration.ofMillis(this.getLong("responseTimeout")),
+        responseTimeout = Duration.ofMillis(this.getLong("responseTimeout")),
         retryDelay = Duration.ofMillis(this.getLong("retryDelay")),
         initialReconnectionDelay = Duration.ofSeconds(this.getLong("initialReconnectionDelay")),
         maxReconnectionDelay = Duration.ofSeconds(this.getLong("maxReconnectionDelay")),

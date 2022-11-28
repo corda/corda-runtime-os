@@ -13,7 +13,8 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
      *
      *
      * @param holdingIdentityShortHash ID of the holding identity to be published.
-     * @param p2pTlsCertificateChainAlias The certificates chain alias.
+     * @param p2pTlsServerCertificateChainAlias The server certificates chain alias.
+     * @param p2pTlsClientCertificateChainAlias The client certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node certificate and key.
      * @param useClusterLevelSessionCertificateAndKey Should we use the P2P cluster level session certificate type and P2P key or
@@ -25,7 +26,8 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
     @Suppress("LongParameterList")
     fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
-        p2pTlsCertificateChainAlias: String,
+        p2pTlsServerCertificateChainAlias: String,
+        p2pTlsClientCertificateChainAlias: String?,
         useClusterLevelTlsCertificateAndKey: Boolean,
         useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,

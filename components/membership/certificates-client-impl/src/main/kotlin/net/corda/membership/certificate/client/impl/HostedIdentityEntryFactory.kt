@@ -98,7 +98,8 @@ internal class HostedIdentityEntryFactory(
     @Suppress("LongParameterList")
     fun createIdentityRecord(
         holdingIdentityShortHash: ShortHash,
-        tlsCertificateChainAlias: String,
+        tlsServerCertificateChainAlias: String,
+        tlsClientCertificateChainAlias: String?,
         useClusterLevelTlsCertificateAndKey: Boolean,
         sessionCertificateChainAlias: String?,
         useClusterLevelSessionCertificateAndKey: Boolean,
@@ -122,13 +123,22 @@ internal class HostedIdentityEntryFactory(
         } else {
             holdingIdentityShortHash.value to holdingIdentityShortHash
         }
-        val tlsCertificates = getAndValidateTlsCertificate(
+        val tlsServerCertificates = getAndValidateTlsCertificate(
             tlsCertificateHoldingId,
-            tlsCertificateChainAlias,
+            tlsServerCertificateChainAlias,
             tlsKeyTenantId,
             nodeInfo,
             policy,
         )
+        val tlsClientCertificates = tlsClientCertificateChainAlias?.let {
+            getAndValidateTlsCertificate(
+                tlsCertificateHoldingId,
+                it,
+                tlsKeyTenantId,
+                nodeInfo,
+                policy,
+            )
+        }
         val sessionCertificate = getAndValidateSessionCertificate(
             sessionCertificateHoldingId,
             sessionCertificateChainAlias,
@@ -141,7 +151,8 @@ internal class HostedIdentityEntryFactory(
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
             .setSessionKeyTenantId(sessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
-            .setTlsCertificates(tlsCertificates)
+            .setTlsServerCertificates(tlsServerCertificates)
+            .setTlsClientCertificates(tlsClientCertificates)
             .setTlsTenantId(tlsKeyTenantId)
             .setSessionCertificates(sessionCertificate)
         sessionCertificate?.let { hostedIdentityBuilder.setSessionCertificates(it) }
@@ -191,7 +202,7 @@ internal class HostedIdentityEntryFactory(
     ): List<String> {
         val tlsCertificates = getCertificates(
             tlsCertificateHoldingId,
-            CertificateUsage.P2P_TLS,
+            CertificateUsage.P2P_SERVER_TLS,
             tlsCertificateChainAlias,
         )
         validateCertificates(

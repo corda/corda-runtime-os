@@ -212,6 +212,7 @@ fun E2eCluster.setUpNetworkIdentity(
             holdingId,
             HostedIdentitySetupRequest(
                 TLS_CERT_ALIAS,
+                null,
                 true,
                 null,
                 sessionKeyId

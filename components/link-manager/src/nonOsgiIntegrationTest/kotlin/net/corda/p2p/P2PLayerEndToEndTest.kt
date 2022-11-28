@@ -45,6 +45,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
@@ -371,7 +372,8 @@ class P2PLayerEndToEndTest {
     ) : AutoCloseable {
 
         private val sslConfig = SslConfiguration(
-            revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
+            revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF),
+            tlsType = TlsType.ONE_WAY,
         )
         private val keyPairs = ourIdentities.map {
             KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
@@ -535,6 +537,7 @@ class P2PLayerEndToEndTest {
                         TLS_KEY_TENANT_ID,
                         identity.x500Name,
                         tlsCertificatesPem[i],
+                        null,
                         keyPairs[i].public.toPem(),
                         null
                     )

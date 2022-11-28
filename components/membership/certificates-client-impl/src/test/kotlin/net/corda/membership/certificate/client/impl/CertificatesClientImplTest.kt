@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -119,7 +120,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             val exception = assertThrows<Exception> {
-                client.importCertificates(CertificateUsage.P2P_TLS, null, "alias", "certificate")
+                client.importCertificates(CertificateUsage.P2P_SERVER_TLS, null, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Failure")
@@ -149,6 +150,7 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
+                null,
                 true,
                 true,
                 "sessionAlias",
@@ -160,6 +162,7 @@ class CertificatesClientImplTest {
             ).createIdentityRecord(
                 shortHash,
                 "Alias",
+                null,
                 true,
                 null,
                 true,
@@ -196,6 +199,7 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
+                    null,
                     true,
                     false,
                     "sessionAlias",
@@ -217,6 +221,7 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
+                    null,
                     false,
                     true,
                     "sessionAlias",
@@ -230,7 +235,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), anyOrNull(), any(), any(), any(), any())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -241,6 +246,7 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
+                null,
                 false,
                 true,
                 "sessionAlias",

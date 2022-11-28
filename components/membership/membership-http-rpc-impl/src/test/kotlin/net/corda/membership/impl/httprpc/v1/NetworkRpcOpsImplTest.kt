@@ -83,6 +83,7 @@ class NetworkRpcOpsImplTest {
                 "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
+                    null,
                     true,
                     true,
                     "session"
@@ -92,6 +93,7 @@ class NetworkRpcOpsImplTest {
             verify(certificatesClient).setupLocallyHostedIdentity(
                 ShortHash.of("1234567890ab"),
                 "alias",
+                null,
                 true,
                 true,
                 "session",
@@ -103,6 +105,7 @@ class NetworkRpcOpsImplTest {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
+                    anyOrNull(),
                     any(),
                     any(),
                     any(),
@@ -116,6 +119,7 @@ class NetworkRpcOpsImplTest {
                     "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
+                        null,
                         false,
                         true,
                         "session"
@@ -131,6 +135,7 @@ class NetworkRpcOpsImplTest {
                     "id",
                     HostedIdentitySetupRequest(
                         "alias",
+                        null,
                         false,
                         true,
                         "session"
@@ -144,6 +149,7 @@ class NetworkRpcOpsImplTest {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
+                    anyOrNull(),
                     any(),
                     any(),
                     any(),
@@ -157,6 +163,7 @@ class NetworkRpcOpsImplTest {
                     "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
+                        null,
                         true,
                         true,
                         "session"

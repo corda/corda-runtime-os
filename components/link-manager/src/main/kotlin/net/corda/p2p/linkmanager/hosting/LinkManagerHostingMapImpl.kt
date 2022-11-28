@@ -126,7 +126,8 @@ internal class LinkManagerHostingMapImpl(
     private fun addEntry(entry: HostedIdentityEntry) {
         val info = HostingMapListener.IdentityInfo(
             holdingIdentity = entry.holdingIdentity.toCorda(),
-            tlsCertificates = entry.tlsCertificates,
+            tlsServerCertificates = entry.tlsServerCertificates,
+            tlsClientCertificates = entry.tlsClientCertificates,
             tlsTenantId = entry.tlsTenantId,
             sessionKeyTenantId = entry.sessionKeyTenantId,
             sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey),
