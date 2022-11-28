@@ -28,6 +28,7 @@ internal class MGMRegistrationContextValidator(
                 SESSION_KEY_POLICY to format("session key policy"),
                 PKI_SESSION to format("session PKI property"),
                 PKI_TLS to format("TLS PKI property"),
+                TLS_TYPE to format("TLS Type property"),
             )
         }
     }

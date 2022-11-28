@@ -61,6 +61,8 @@ class GroupPolicyConstants {
             const val TLS_VERSION = "tlsVersion"
 
             const val PROTOCOL_MODE = "protocolMode"
+
+            const val TLS_TYPE = "tlsType"
         }
     }
 
@@ -179,6 +181,20 @@ class GroupPolicyConstants {
                     return mode
                 }
             }
+
+            /**
+             * Enum defining the allowed TLS type.
+             */
+            enum class TlsType {
+                ONE_WAY,
+                MUTUAL;
+
+                companion object {
+                    fun fromString(str: String?): TlsType? = values().firstOrNull {
+                        it.name.equals(str, ignoreCase = true)
+                    }
+                }
+            }
         }
     }
 
@@ -195,5 +211,6 @@ class GroupPolicyConstants {
         const val SESSION_TRUST_ROOTS = "truststore.session"
         const val TLS_TRUST_ROOTS = "truststore.tls"
         const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
+        const val P2P_TLS_TYPE = "tls_type"
     }
 }

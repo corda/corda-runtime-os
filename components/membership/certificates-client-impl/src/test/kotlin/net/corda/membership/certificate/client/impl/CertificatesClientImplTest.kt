@@ -20,6 +20,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.p2p.helpers.TlsType
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -68,6 +69,16 @@ class CertificatesClientImplTest {
         retrieveCertificates = settings.arguments()[4] as? ((ShortHash?, CertificateUsage, String) -> String?)
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
+    private val gatewayConfig = mock<SmartConfig> {
+        on { getEnum(eq(TlsType::class.java), anyOrNull()) } doReturn TlsType.ONE_WAY
+    }
+    private val configChangedEvent = ConfigChangedEvent(
+        emptySet(),
+        mapOf(
+            ConfigKeys.MESSAGING_CONFIG to mock(),
+            ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfig
+        )
+    )
 
     private val client = CertificatesClientImpl(
         coordinatorFactory,
@@ -89,11 +100,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates sends an ImportCertificateRpcRequest`() {
             whenever(sender.sendRequest(any())).doReturn(mock())
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             client.importCertificates(CertificateUsage.RPC_API_TLS, null, "alias", "certificate")
 
@@ -113,11 +120,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates throws exception if service had issues`() {
             whenever(sender.sendRequest(any())).doReturn(CompletableFuture.failedFuture(Exception("Failure")))
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             val exception = assertThrows<Exception> {
                 client.importCertificates(CertificateUsage.P2P_SERVER_TLS, null, "alias", "certificate")
@@ -141,11 +144,7 @@ class CertificatesClientImplTest {
     inner class SetupLocallyHostedIdentityTest {
         @Test
         fun `publishToLocallyHostedIdentities calls createIdentityRecord`() {
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             client.setupLocallyHostedIdentity(
                 shortHash,
@@ -173,11 +172,7 @@ class CertificatesClientImplTest {
         @Test
         fun `hostedIdentityEntryFactory creation send the correct sender`() {
             whenever(sender.sendRequest(any())).doReturn(mock())
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             retrieveCertificates?.invoke(null, CertificateUsage.P2P_SESSION, "alias")
 
@@ -199,7 +194,7 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
-                    null,
+                    "",
                     true,
                     false,
                     "sessionAlias",
@@ -211,11 +206,7 @@ class CertificatesClientImplTest {
         @Test
         fun `publishToLocallyHostedIdentities throws exception if publisher future fails`() {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException(""))))
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
@@ -237,11 +228,7 @@ class CertificatesClientImplTest {
                 mockHostedIdentityEntryFactory.constructed().first()
                     .createIdentityRecord(any(), any(), anyOrNull(), any(), any(), any(), any())
             ).doReturn(record)
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             client.setupLocallyHostedIdentity(
                 shortHash,
@@ -261,11 +248,7 @@ class CertificatesClientImplTest {
     inner class PlumbingTests {
         @Test
         fun `isRunning return true if sender is running`() {
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             assertThat(client.isRunning).isTrue
         }
@@ -323,11 +306,7 @@ class CertificatesClientImplTest {
                 val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 handler.firstValue.processEvent(StartEvent(), coordinator)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                handler.firstValue.processEvent(configChangedEvent, coordinator)
                 val registrationStatusChangeEvent = RegistrationStatusChangeEvent(
                     registrationHandle,
                     LifecycleStatus.UP,
@@ -363,7 +342,7 @@ class CertificatesClientImplTest {
 
                 verify(configurationReadService).registerComponentForUpdates(
                     coordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.P2P_GATEWAY_CONFIG)
                 )
             }
 
@@ -395,11 +374,7 @@ class CertificatesClientImplTest {
             fun `client set its state to up when sender goes UP`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                handler.firstValue.processEvent(configChangedEvent, coordinator)
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
@@ -440,11 +415,7 @@ class CertificatesClientImplTest {
             fun `client set its state to down when sender goes down`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val event = ConfigChangedEvent(
-                    emptySet(),
-                    mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-                )
-                handler.firstValue.processEvent(event, coordinator)
+                handler.firstValue.processEvent(configChangedEvent, coordinator)
 
                 handler.firstValue.processEvent(
                     RegistrationStatusChangeEvent(
@@ -465,7 +436,10 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(
                     ConfigChangedEvent(
                         emptySet(),
-                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                        mapOf(
+                            ConfigKeys.MESSAGING_CONFIG to config,
+                            ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfig,
+                        )
                     ),
                     coordinator
                 )
@@ -487,7 +461,10 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(
                     ConfigChangedEvent(
                         emptySet(),
-                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                        mapOf(
+                            ConfigKeys.MESSAGING_CONFIG to config,
+                            ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfig,
+                        )
                     ),
                     coordinator
                 )
@@ -507,7 +484,10 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(
                     ConfigChangedEvent(
                         emptySet(),
-                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                        mapOf(
+                            ConfigKeys.MESSAGING_CONFIG to config,
+                            ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfig,
+                        )
                     ),
                     coordinator
                 )
@@ -515,7 +495,10 @@ class CertificatesClientImplTest {
                 handler.firstValue.processEvent(
                     ConfigChangedEvent(
                         emptySet(),
-                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                        mapOf(
+                            ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfig,
+                            ConfigKeys.MESSAGING_CONFIG to config
+                        )
                     ),
                     coordinator
                 )
