@@ -101,10 +101,13 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun createMemberLookup(member: MemberX500Name): MemberLookup
 
     /**
-     * Creates a member lookup as it exists at the time of calling.
+     * Creates a flow messing service.
      *
-     * @param member The member for whom to create a member lookup.
-     * @return A [FlowMessaging] containing member details and a copy of any keys currently registered.
+     * @param configuration for the Simulator
+     * @param flow for which FlowMessaging is required
+     * @param member The member for whom to create the FlowMessaging service
+     * @param injector for flow services
+     * @return A [FlowMessaging] services responsible for sending and receiving messages
      */
     fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow,
                             member: MemberX500Name, injector: FlowServicesInjector): FlowMessaging
