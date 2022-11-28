@@ -42,6 +42,7 @@ object GroupPolicyUtils {
                 ),
                 "sessionPki" to "Standard",
                 "tlsPki" to "Standard",
+                "tlsType" to "ONE_WAY",
                 "tlsVersion" to "1.3",
                 "protocolMode" to "Authenticated_Encryption"
             ),
