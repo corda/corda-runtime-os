@@ -30,6 +30,7 @@ class DefaultServicesInjectorTest {
         // With some helpful classes to use in services
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
         val fiber = SimFiberBase()
+        fiber.registerInitiator(member)
 
         fiber.use {
             // When we inject services into it
@@ -44,6 +45,7 @@ class DefaultServicesInjectorTest {
             assertNotNull(flow.signingService)
             assertNotNull(flow.signatureVerificationService)
             assertNotNull(flow.signatureSpecService)
+            assertNotNull(flow.consensualLedgerService)
         }
     }
 
