@@ -2,6 +2,9 @@ package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
+import net.corda.simulator.HoldingIdentity
+import net.corda.simulator.RequestData
+import net.corda.simulator.Simulator
 import net.corda.simulator.runtime.messaging.SimFiberBase
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.v5.application.crypto.MerkleTreeFactory
@@ -9,6 +12,21 @@ import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.simulator.runtime.testflows.PingAckFlow
+import net.corda.simulator.runtime.testflows.PingAckMessage
+import net.corda.simulator.runtime.testflows.PingAckResponderFlow
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.marshalling.parse
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -127,4 +145,92 @@ class DefaultServicesInjectorTest {
         @CordaInject
         lateinit var clock: Clock
     }
+
+    @Test
+    fun `should inject services to instance responder flows`() {
+        val alice = HoldingIdentity.create("Alice")
+        val bob = HoldingIdentity.create("Bob")
+        val simulator = Simulator()
+
+        // When we create a instance responder flow
+        val responder = object : ResponderFlow {
+            @CordaInject
+            lateinit var flowEngine: FlowEngine
+            @CordaInject
+            lateinit var jsonMarshallingService: JsonMarshallingService
+            @CordaInject
+            lateinit var persistenceService: PersistenceService
+            @CordaInject
+            lateinit var memberLookup: MemberLookup
+            @CordaInject
+            lateinit var signingService: SigningService
+            @CordaInject
+            lateinit var signatureVerificationService: DigitalSignatureVerificationService
+
+            @Suspendable
+            override fun call(session: FlowSession) {
+                session.send(PingAckMessage("Ack to ${session.counterparty}"))
+            }
+        }
+
+        // And I upload the relevant flow and the instance responder
+        val aliceNode = simulator.createVirtualNode(alice, PingAckFlow::class.java)
+        simulator.createVirtualNode(bob, "ping-ack", responder)
+
+        aliceNode.callFlow(
+            RequestData.create(
+                "r1",
+                PingAckFlow::class.java,
+                bob.member
+            ))
+
+        // Then it should have services injected to the instance responder flow
+        assertNotNull(responder.flowEngine)
+        assertNotNull(responder.jsonMarshallingService)
+        assertNotNull(responder.persistenceService)
+        assertNotNull(responder.memberLookup)
+        assertNotNull(responder.signingService)
+        assertNotNull(responder.signatureVerificationService)
+    }
+
+    @Test
+    fun `should inject services to instance initiating flows`() {
+
+        val alice = HoldingIdentity.create("Alice")
+        val bob = HoldingIdentity.create("Bob")
+        val simulator = Simulator()
+
+        val flow = object : RPCStartableFlow {
+            @CordaInject
+            lateinit var flowMessaging: FlowMessaging
+            @CordaInject
+            lateinit var jsonMarshallingService: JsonMarshallingService
+
+            @Suspendable
+            override fun call(requestBody: RPCRequestData): String {
+                val whoToPing = jsonMarshallingService.parse<MemberX500Name>(requestBody.getRequestBody())
+                val session = flowMessaging.initiateFlow(whoToPing)
+                session.send(jsonMarshallingService.format(PingAckMessage("Ping to ${session.counterparty}")))
+                return session.receive(PingAckMessage::class.java).message
+            }
+        }
+
+        val aliceNode = simulator.createVirtualNode(alice, "ping-ack", flow)
+        simulator.createVirtualNode(bob, PingAckResponderFlow::class.java)
+
+        val result = aliceNode.callInstanceFlow(
+            RequestData.create(
+                "r1",
+                flow::class.java,
+                bob.member
+            ), flow
+        )
+
+        // Then it should have services injected to the instance responder flow
+        assertNotNull(flow.flowMessaging)
+        assertNotNull(flow.jsonMarshallingService)
+        assertNotNull(result)
+        assertThat(result, `is`("Ack to " + alice.member))
+    }
+
 }

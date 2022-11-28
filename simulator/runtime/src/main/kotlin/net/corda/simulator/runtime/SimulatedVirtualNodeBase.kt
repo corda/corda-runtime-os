@@ -7,6 +7,7 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -42,6 +43,16 @@ class SimulatedVirtualNodeBase(
         log.info("Finished flow $flowClassName for member \"$member\"")
         return result
     }
+
+    override fun callInstanceFlow(input: RequestData, flow: RPCStartableFlow): String {
+        val flowClassName = input.flowClassName
+        log.info("Calling flow $flowClassName for member \"$member\" with request: ${input.requestBody}")
+        injector.injectServices(flow, member, fiber, flowFactory)
+        val result = flow.call(input.toRPCRequestData())
+        log.info("Finished flow $flowClassName for member \"$member\"")
+        return result
+    }
+
 
     override fun getPersistenceService(): PersistenceService =
         fiber.getOrCreatePersistenceService(member)

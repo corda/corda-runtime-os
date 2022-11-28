@@ -7,6 +7,7 @@ import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -213,6 +214,21 @@ class SimFiberBaseTest {
         assertThrows<IllegalStateException> { fiber.createSigningService(member) }
     }
 
+
+    @Test
+    fun `should look up instance initiating flows for a given member`() {
+        // Given a fiber with a concrete implementation registered for a protocol
+        val fiber = SimFiberBase()
+        val flow = mock<RPCStartableFlow>()
+        val protocol = "protocol-1"
+        fiber.registerInitiatorInstance(memberA, protocol, flow)
+
+        // When we look up an instance of a flow
+        val result = fiber.lookUpInitiatorInstance(memberA)
+
+        // Then it should successfully return it
+        assertThat(result, `is`(hashMapOf(flow to protocol)))
+    }
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
     class Flow2 : ResponderFlow { override fun call(session: FlowSession) = Unit }

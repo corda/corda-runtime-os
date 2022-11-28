@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
@@ -31,6 +32,12 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun registerResponderClass(responder: MemberX500Name, protocol: String, flowClass: Class<out ResponderFlow>)
 
     /**
+     * Registers an instance initiating flows for a given member and protocol
+     */
+    fun registerInitiatorInstance(initiator: MemberX500Name, protocol: String, initatingFlow: RPCStartableFlow)
+
+
+    /**
      * Registers an instance of a responder class against the given member name and protocol.
      *
      * @param responder The member for whom to register the responder class.
@@ -47,6 +54,14 @@ interface SimFiber : Closeable, HasMemberInfos {
      * no class has been registered.
      */
     fun lookUpResponderClass(member: MemberX500Name, protocol: String): Class<out ResponderFlow>?
+
+    /**
+     * @param member The member for whom to look up the initiator instance.
+     * @param protocol The protocol for the initiator flow.
+     *
+     * @return A [Map] of previously registered instance initiating flows with protocols
+     */
+    fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>?
 
     /**
      * @param member The member for whom to look up the responder instance.

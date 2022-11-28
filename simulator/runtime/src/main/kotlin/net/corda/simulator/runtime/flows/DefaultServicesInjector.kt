@@ -175,11 +175,18 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     ): FlowMessaging {
 
         log.info("Injecting ${FlowMessaging::class.java.simpleName}")
+        val instanceFlowMap = fiber.lookUpInitiatorInstance(member)
+        val protocol: String
 
-        val flowClass = flow.javaClass
-        val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
-            ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
-            ?: throw NoProtocolAnnotationException(flowClass)
+        if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
+            val flowClass = flow.javaClass
+            protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
+                ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
+                        ?: throw NoProtocolAnnotationException(flowClass)
+
+        }else{
+            protocol = instanceFlowMap[flow]!!
+        }
 
         return ConcurrentFlowMessaging(
             FlowContext(configuration, member, protocol),

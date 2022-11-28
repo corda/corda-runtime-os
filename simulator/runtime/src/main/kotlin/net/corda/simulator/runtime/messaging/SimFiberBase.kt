@@ -4,6 +4,7 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.SimKeyStore
@@ -38,12 +39,30 @@ class SimFiberBase(
     private val persistenceServices = HashMap<MemberX500Name, CloseablePersistenceService>()
     private val memberInfos = HashMap<MemberX500Name, BaseMemberInfo>()
     private val keyStores = HashMap<MemberX500Name, SimKeyStore>()
+    private val nodeInitiatorInstances = HashMap<MemberX500Name, HashMap<RPCStartableFlow, String>>()
+
 
     override val members: Map<MemberX500Name, MemberInfo>
         get() = memberInfos
 
     override fun registerInitiator(initiator: MemberX500Name) {
         registerMember(initiator)
+    }
+
+    override fun registerInitiatorInstance(initiator: MemberX500Name, protocol: String, initatingFlow: RPCStartableFlow) {
+        if(!nodeInitiatorInstances.contains(initiator)) {
+            nodeInitiatorInstances[initiator] = hashMapOf(initatingFlow to protocol)
+            registerMember(initiator)
+        }else if(nodeInitiatorInstances[initiator]!![initatingFlow] == null){
+            nodeInitiatorInstances[initiator]!![initatingFlow] = protocol
+        }else{
+            throw IllegalStateException("Member \"$initiator\" has already registered " +
+                    "flow instance for protocol \"$protocol\"")
+        }
+    }
+
+    override fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>? {
+        return nodeInitiatorInstances[member]
     }
 
     private fun registerMember(member: MemberX500Name) {

@@ -14,6 +14,7 @@ import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -79,14 +80,22 @@ class SimulatorDelegateBase  (
     }
 
     override fun createVirtualNode(
-        responder: HoldingIdentity,
+        holdingIdentity: HoldingIdentity,
         protocol: String,
-        responderFlow: ResponderFlow
+        instanceFlow: Flow
     ): SimulatedVirtualNode {
-        log.info("Creating virtual node for \"${responder.member}\", flow instance provided for protocol $protocol")
-        fiber.registerResponderInstance(responder.member, protocol, responderFlow)
-        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory)
+        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow instance provided for protocol $protocol")
+        if(instanceFlow is ResponderFlow) {
+            fiber.registerResponderInstance(holdingIdentity.member, protocol, instanceFlow)
+        }else if(instanceFlow is RPCStartableFlow){
+            fiber.registerInitiatorInstance(holdingIdentity.member, protocol, instanceFlow)
+        }else {
+            "$instanceFlow is neither a  ${RPCStartableFlow::class.java}" +
+                    "nor a ${ResponderFlow::class.java}"
+        }
+        return SimulatedVirtualNodeBase(holdingIdentity, fiber, injector, flowFactory)
     }
+
 
     override fun close() {
         log.info("Closing Simulator")
