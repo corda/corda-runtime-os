@@ -11,6 +11,7 @@ import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
+import net.corda.httprpc.server.impl.context.ClientRequestContext.Companion.METHOD_SEPARATOR
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
 import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
@@ -32,6 +33,23 @@ internal object ContextUtils {
     const val contentTypeApplicationJson = "application/json"
 
     private const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
+
+    private const val USER_MDC = "http.user"
+    private const val METHOD_MDC = "http.method"
+    private const val PATH_MDC = "http.path"
+
+    private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
+        return listOf(USER_MDC to user, METHOD_MDC to method, PATH_MDC to path).toMap().withMDC(block)
+    }
+
+    private fun <T> Map<String, String>.withMDC(block: () -> T): T {
+        forEach { MDC.put(it.key, it.value) }
+        return try {
+            block()
+        } finally {
+            keys.forEach { MDC.remove(it) }
+        }
+    }
 
     fun authenticate(
         ctx: ClientRequestContext,
@@ -83,44 +101,46 @@ internal object ContextUtils {
 
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
-            MDC.put("http.method", ctx.method())
-            MDC.put("http.path", ctx.path())
-            MDC.put("http.user", rpcContext()?.principal ?: "<anonymous>")
-            log.info("Servicing ${ctx.method()} request to '${ctx.path()}'")
-            log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
-            log.trace { "Get parameter values." }
+            withMDC(rpcContext()?.principal ?: "<anonymous>", ctx.method(), ctx.path()) {
+                log.info("Servicing ${ctx.method()} request to '${ctx.path()}'")
+                log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
+                log.trace { "Get parameter values." }
 
-            CordaMetrics.Metric.HttpRequestCount.builder()
-                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
-                .build().increment()
-            val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
-                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
-                .build()
-            requestTimer.recordCallable {
-                try {
-                    validateRequestContentType(this, ctx)
+                CordaMetrics.Metric.HttpRequestCount.builder()
+                    .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
+                    .build().increment()
+                val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
+                    .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.matchedPath()}")
+                    .build()
+                requestTimer.recordCallable {
+                    try {
+                        validateRequestContentType(this, ctx)
 
-                    val clientHttpRequestContext = ClientHttpRequestContext(ctx)
-                    val paramValues = retrieveParameters(clientHttpRequestContext)
+                        val clientHttpRequestContext = ClientHttpRequestContext(ctx)
+                        val paramValues = retrieveParameters(clientHttpRequestContext)
 
-                    log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
+                        log.debug {
+                            "Invoke method \"${method.method.name}\" with paramValues \"${
+                                paramValues.joinToString(
+                                    ","
+                                )
+                            }\"."
+                        }
 
-                    @Suppress("SpreadOperator")
-                    val result = invokeDelegatedMethod(*paramValues.toTypedArray())
+                        @Suppress("SpreadOperator")
+                        val result = invokeDelegatedMethod(*paramValues.toTypedArray())
 
-                    ctx.buildJsonResult(result, this.method.method.returnType)
+                        ctx.buildJsonResult(result, this.method.method.returnType)
 
-                    ctx.header(Header.CACHE_CONTROL, "no-cache")
-                    log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
-                } catch (e: Exception) {
-                    log.info("Error invoking path '${this.fullPath}' - ${e.message}")
-                    throw HttpExceptionMapper.mapToResponse(e)
-                } finally {
-                    MDC.remove("http.method")
-                    MDC.remove("http.path")
-                    MDC.remove("http.user")
-                    if (ctx.isMultipartFormData()) {
-                        cleanUpMultipartRequest(ctx)
+                        ctx.header(Header.CACHE_CONTROL, "no-cache")
+                        log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
+                    } catch (e: Exception) {
+                        log.info("Error invoking path '${this.fullPath}' - ${e.message}")
+                        throw HttpExceptionMapper.mapToResponse(e)
+                    } finally {
+                        if (ctx.isMultipartFormData()) {
+                            cleanUpMultipartRequest(ctx)
+                        }
                     }
                 }
             }
@@ -151,8 +171,15 @@ internal object ContextUtils {
     fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
-        if (!authorizingSubject.isPermitted(resourceAccessString))
-            throw ForbiddenResponse("User not authorized.")
+        if (!authorizingSubject.isPermitted(resourceAccessString)) {
+            val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
+            withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
+                "User not authorized.".let {
+                    log.info(it)
+                    throw ForbiddenResponse(it)
+                }
+            }
+        }
         log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 }
