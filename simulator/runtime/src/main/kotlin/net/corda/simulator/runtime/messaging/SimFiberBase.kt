@@ -49,7 +49,11 @@ class SimFiberBase(
         registerMember(initiator)
     }
 
-    override fun registerInitiatorInstance(initiator: MemberX500Name, protocol: String, initatingFlow: RPCStartableFlow) {
+    override fun registerInitiatorInstance(
+        initiator: MemberX500Name,
+        protocol: String,
+        initatingFlow: RPCStartableFlow
+    ) {
         if(!nodeInitiatorInstances.contains(initiator)) {
             nodeInitiatorInstances[initiator] = hashMapOf(initatingFlow to protocol)
             registerMember(initiator)

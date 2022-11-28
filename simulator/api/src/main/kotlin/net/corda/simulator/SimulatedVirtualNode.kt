@@ -27,9 +27,9 @@ interface SimulatedVirtualNode {
      * Calls the flow with the given request. Note that this call happens on the calling thread, which will wait until
      * the flow has completed before returning the response.
      *
-     * @input The data to input to the flow.
+     * @param input The data to input to the flow.
      *
-     * @return The response from the flow.
+     * @param return The response from the flow.
      */
     fun callFlow(input: RequestData): String
 
@@ -37,8 +37,8 @@ interface SimulatedVirtualNode {
      * Calls the flow with the given request. Note that this call happens on the calling thread, which will wait until
      * the flow has completed before returning the response.
      *
-     * @input The data to input to the flow.
-     * @flow The flow to be called
+     * @param input The data to input to the flow.
+     * @param flow The flow to be called
      *
      * @return The response from the flow.
      */

@@ -46,7 +46,7 @@ class SimulatedVirtualNodeBase(
 
     override fun callInstanceFlow(input: RequestData, flow: RPCStartableFlow): String {
         val flowClassName = input.flowClassName
-        log.info("Calling flow $flowClassName for member \"$member\" with request: ${input.requestBody}")
+        log.info("Calling flow instance $flowClassName for member \"$member\" with request: ${input.requestBody}")
         injector.injectServices(flow, member, fiber, flowFactory)
         val result = flow.call(input.toRPCRequestData())
         log.info("Finished flow $flowClassName for member \"$member\"")
