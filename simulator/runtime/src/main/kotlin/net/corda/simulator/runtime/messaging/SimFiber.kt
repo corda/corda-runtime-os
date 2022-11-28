@@ -24,7 +24,7 @@ interface SimFiber : Closeable, HasMemberInfos {
     /**
      * Registers an initiating member for [MemberLookup].
      */
-    fun registerInitiator(initiator: MemberX500Name)
+    fun registerMember(member: MemberX500Name)
 
     /**
      * Registers a responder class against the given member name and protocol.
@@ -37,18 +37,12 @@ interface SimFiber : Closeable, HasMemberInfos {
 
     /**
      * Registers an instance initiating flows for a given member and protocol
-     */
-    fun registerInitiatorInstance(initiator: MemberX500Name, protocol: String, initatingFlow: RPCStartableFlow)
-
-
-    /**
-     * Registers an instance of a responder class against the given member name and protocol.
      *
-     * @param responder The member for whom to register the responder class.
-     * @param protocol The detected protocol of the responder class.
-     * @param flowClass The instance of responder flow to use in response to the given protocol.
+     * @param member The member who initiates/ responds to the flow
+     * @param protocol The protocol of the initiating flow
+     * @param instanceFlow The instance flow class
      */
-    fun registerResponderInstance(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow)
+    fun registerFlowInstance(member: MemberX500Name, protocol: String, instanceFlow: Flow)
 
     /**
      * @param member The member for whom to look up the responder class.

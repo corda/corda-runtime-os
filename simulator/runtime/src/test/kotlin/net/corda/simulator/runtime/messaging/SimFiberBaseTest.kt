@@ -8,7 +8,6 @@ import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
 import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.SimKeyStore
-import net.corda.simulator.runtime.testflows.PingAckResponderFlow
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
@@ -39,7 +38,7 @@ class SimFiberBaseTest {
         // Given a fiber with a concrete implementation registered for a protocol
         val fiber = SimFiberBase()
         val flow = Flow1()
-        fiber.registerResponderInstance(memberA, "protocol-1", flow)
+        fiber.registerFlowInstance(memberA, "protocol-1", flow)
 
         // When we look up an instance of a flow
         val result = fiber.lookUpResponderInstance(memberA, "protocol-1")
@@ -69,7 +68,7 @@ class SimFiberBaseTest {
         // Given a fiber and a node with a flow and protocol already
         val fiber = SimFiberBase()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
-        fiber.registerResponderInstance(memberB, "protocol-1", Flow2())
+        fiber.registerFlowInstance(memberB, "protocol-1", Flow2())
 
         // When we try to register a node and flow with the same protocol
         // regardless of whether it is, or was, a class or instance
@@ -81,10 +80,10 @@ class SimFiberBaseTest {
             fiber.registerResponderClass(memberB, "protocol-1", Flow2::class.java)
         }
         assertThrows<IllegalStateException> { // instance, then instance
-            fiber.registerResponderInstance(memberA, "protocol-1", Flow1())
+            fiber.registerFlowInstance(memberA, "protocol-1", Flow1())
         }
         assertThrows<IllegalStateException> { // class, then instance
-            fiber.registerResponderInstance(memberA, "protocol-1", Flow1())
+            fiber.registerFlowInstance(memberA, "protocol-1", Flow1())
         }
     }
 
@@ -93,7 +92,7 @@ class SimFiberBaseTest {
         // Given a fiber and a node with a flow and protocol already
         val fiber = SimFiberBase()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
-        fiber.registerResponderInstance(memberB, "protocol-2", Flow2())
+        fiber.registerFlowInstance(memberB, "protocol-2", Flow2())
 
         // When we try to look up a member or protocol that doesn't exist
         // Then it should throw an error
@@ -112,7 +111,7 @@ class SimFiberBaseTest {
 
         // And some members who are going to be looked up
         val alice = MemberX500Name.parse("O=Alice, L=London, C=GB")
-        fiber.registerInitiator(alice)
+        fiber.registerMember(alice)
 
         // And a mock factory that will create a memberLookup for us
         val memberLookup = mock<MemberLookup>()
@@ -150,31 +149,13 @@ class SimFiberBaseTest {
     }
 
     @Test
-    fun `should provide MemberInfos for all members`() {
-        // Given a SimFiber
-        val fiber = SimFiberBase()
-
-        // With members who have registered in multiple different ways
-        val members = listOf("Alice", "Bob", "Charlie").map { MemberX500Name.parse("O=$it, L=London, C=GB")}
-        fiber.registerInitiator(members[0])
-        fiber.registerResponderClass(members[1], "ping-ack", PingAckResponderFlow::class.java)
-        fiber.registerResponderInstance(members[2], "ping-ack", PingAckResponderFlow())
-
-        // When we get their memberInfos
-        val memberInfos = fiber.members
-
-        // Then they should all be there, but none of them twice
-        assertThat(memberInfos.keys.sortedBy { it.organization }, `is`(members))
-    }
-
-    @Test
     fun `should make generated keys available via MemberInfos`() {
         // Given a SimFiber
         val fiber = SimFiberBase()
 
         // With a member
         val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
-        fiber.registerInitiator(member)
+        fiber.registerMember(member)
 
         // When we get their memberInfos then the keys should be empty
         assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf()))
@@ -198,7 +179,7 @@ class SimFiberBaseTest {
 
         // When we register a member then create a signing service
         val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
-        fiber.registerInitiator(member)
+        fiber.registerMember(member)
         val createdService = fiber.createSigningService(member)
 
         // Then the signing service should have the keystore (it won't be created if it wasn't passed correctly)
@@ -224,7 +205,7 @@ class SimFiberBaseTest {
         val fiber = SimFiberBase()
         val flow = mock<RPCStartableFlow>()
         val protocol = "protocol-1"
-        fiber.registerInitiatorInstance(memberA, protocol, flow)
+        fiber.registerFlowInstance(memberA, protocol, flow)
 
         // When we look up an instance of a flow
         val result = fiber.lookUpInitiatorInstance(memberA)
@@ -241,7 +222,7 @@ class SimFiberBaseTest {
         // And some members who are going to be looked up
         val flow = mock<RPCStartableFlow>()
         val protocol = "protocol-1"
-        fiber.registerInitiatorInstance(memberA, protocol, flow)
+        fiber.registerFlowInstance(memberA, protocol, flow)
 
         val injector = mock<FlowServicesInjector>()
         val flowContext = FlowContext(DefaultConfigurationBuilder().build(), memberA, protocol)

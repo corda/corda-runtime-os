@@ -14,7 +14,6 @@ import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -62,9 +61,10 @@ class SimulatorDelegateBase  (
     ) {
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder == null) {
-            fiber.registerInitiator(member)
+            fiber.registerMember(member)
         } else {
             val responderFlowClass = castInitiatedFlowToResponder(flowClass)
+            fiber.registerMember(member)
             fiber.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
@@ -85,14 +85,8 @@ class SimulatorDelegateBase  (
         instanceFlow: Flow
     ): SimulatedVirtualNode {
         log.info("Creating virtual node for \"${holdingIdentity.member}\", flow instance provided for protocol $protocol")
-        if(instanceFlow is ResponderFlow) {
-            fiber.registerResponderInstance(holdingIdentity.member, protocol, instanceFlow)
-        }else if(instanceFlow is RPCStartableFlow){
-            fiber.registerInitiatorInstance(holdingIdentity.member, protocol, instanceFlow)
-        }else {
-            "$instanceFlow is neither a  ${RPCStartableFlow::class.java}" +
-                    "nor a ${ResponderFlow::class.java}"
-        }
+        fiber.registerMember(holdingIdentity.member)
+        fiber.registerFlowInstance(holdingIdentity.member, protocol, instanceFlow)
         return SimulatedVirtualNodeBase(holdingIdentity, fiber, injector, flowFactory)
     }
 
