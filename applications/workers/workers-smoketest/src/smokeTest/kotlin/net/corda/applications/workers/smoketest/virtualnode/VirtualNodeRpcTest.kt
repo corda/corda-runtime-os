@@ -374,7 +374,7 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             // Note CPI/CPK timestamp
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             // Perform force upload of the CPI
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
@@ -390,7 +390,7 @@ class VirtualNodeRpcTest {
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
             // Allow ample time for CPI upload to be propagated through the system
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
@@ -421,7 +421,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -433,7 +433,7 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
@@ -466,7 +466,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -478,7 +478,7 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
 
             runReturnAStringFlow("original-cpi")
@@ -516,11 +516,10 @@ class VirtualNodeRpcTest {
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
-    private fun ClusterBuilder.getCpkTimestamp(cpiName: String): Instant {
+    private fun ClusterBuilder.getCpiFileChecksum(cpiName: String): String {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        val cpksJson = cpiJson["cpks"].toList()
-        return cpksJson.first()["timestamp"].toInstant()
+        return cpiJson["cpiFileFullChecksum"].toString()
     }
 
     private fun JsonNode.toInstant(): Instant {
