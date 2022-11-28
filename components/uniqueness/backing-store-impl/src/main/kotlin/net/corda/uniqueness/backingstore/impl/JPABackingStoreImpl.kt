@@ -127,6 +127,7 @@ open class JPABackingStoreImpl @Activate constructor(
     ) : BackingStore.Session {
 
         protected open val transactionOps = TransactionOpsImpl()
+        private val hibernateSession = entityManager.unwrap(Session::class.java)
 
         @Suppress("NestedBlockDepth")
         override fun executeTransaction(
@@ -197,17 +198,13 @@ open class JPABackingStoreImpl @Activate constructor(
             val results = HashMap<
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
-            val statePks = mutableListOf<UniquenessTxAlgoStateRefKey>()
-
-            states.forEach { state ->
-                val txId = state.txHash
-                val stateIndex = state.stateIndex
-                // Build a list of State composite primary keys from a collection of states.
-                statePks.add(UniquenessTxAlgoStateRefKey(txId.algorithm, txId.bytes, stateIndex))
+            val statePks = states.map{
+                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, it.txHash.bytes, it.stateIndex)
             }
+
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
             val multiLoadAccess =
-                entityManager.unwrap(Session::class.java).byMultipleIds(UniquenessStateDetailEntity::class.java)
+                hibernateSession.byMultipleIds(UniquenessStateDetailEntity::class.java)
             val existing = multiLoadAccess.multiLoad(statePks)
 
             existing.forEach { stateEntity ->
@@ -228,19 +225,16 @@ open class JPABackingStoreImpl @Activate constructor(
             txIds: Collection<SecureHash>
         ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal> {
 
-            val results = HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
-
-            val txPks = mutableListOf<UniquenessTxAlgoIdKey>()
-            txIds.forEach { txId ->
-                val txPk = UniquenessTxAlgoIdKey(txId.algorithm, txId.bytes)
-                txPks.add(txPk)
+            val txPks = txIds.map {
+                UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
             }
+
             // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
             val multiLoadAccess =
-                entityManager.unwrap(Session::class.java).byMultipleIds(UniquenessTransactionDetailEntity::class.java)
+                hibernateSession.byMultipleIds(UniquenessTransactionDetailEntity::class.java)
             val existing = multiLoadAccess.multiLoad(txPks)
 
-            existing.forEach { txEntity ->
+            val results = existing.map { txEntity ->
                 val result = when (txEntity.result) {
                     RESULT_ACCEPTED_REPRESENTATION -> {
                         UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
@@ -262,8 +256,8 @@ open class JPABackingStoreImpl @Activate constructor(
                     )
                 }
                 val txHash = SecureHash(txEntity.txIdAlgo, txEntity.txId)
-                results[txHash] = UniquenessCheckTransactionDetailsInternal(txHash, result)
-            }
+                txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
+            }.toMap()
 
             return results
         }
