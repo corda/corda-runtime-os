@@ -12,15 +12,11 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
@@ -69,7 +65,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         val log = loggerFor<NonValidatingNotaryTestFlow>()
     }
 
-    @Suppress("unchecked_cast", "deprecation")
+    @Suppress("unchecked_cast", "deprecation", "ComplexMethod")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
