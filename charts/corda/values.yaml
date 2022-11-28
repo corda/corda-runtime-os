@@ -50,17 +50,14 @@ heapDumpOnOutOfMemoryError: false
 nodeSelector: {}
 
 # -- security context for pod assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+podSecurityContext: {}
 
 # -- security context for container assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/
-securityContext:
-  allowPrivilegeEscalation: false
+securityContext: {}
 
 # -- service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
-serviceAccount: "" 
+serviceAccount:
+  name: ""
 
 # Database configuration
 db:
@@ -259,7 +256,8 @@ bootstrap:
   securityContext: { }
 
   # service account for the bootstrap containers
-  serviceAccount: "" 
+  serviceAccount:
+    name: ""
 
 # worker configuration
 workers:

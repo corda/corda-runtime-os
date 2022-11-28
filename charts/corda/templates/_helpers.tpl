@@ -115,8 +115,11 @@ Worker pod security context
 */}}
 {{- define "corda.workerPodSecurityContext" -}}
 {{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
-{{- with .Values.podSecurityContext }}
 securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- with .Values.podSecurityContext }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
@@ -126,8 +129,9 @@ securityContext:
 Worker container security context
 */}}
 {{- define "corda.workerContainerSecurityContext" -}}
-{{- with .Values.securityContext }}
 securityContext:
+  allowPrivilegeEscalation: false
+{{- with .Values.securityContext }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
@@ -136,8 +140,8 @@ securityContext:
 Worker service account
 */}}
 {{- define "corda.serviceAccount" }}
-{{- if .Values.serviceAccount  }}
-serviceAccountName: {{ .Values.serviceAccount }}
+{{- if .Values.serviceAccount.name  }}
+serviceAccountName: {{ .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -192,8 +196,9 @@ nodeSelector:
 Security context for the bootstrapper
 */}}
 {{- define "corda.bootstrapSecurityContext" }}
-{{- with .Values.bootstrap.securityContext | default .Values.securityContext }}
 securityContext:
+  allowPrivilegeEscalation: false
+{{- with .Values.bootstrap.securityContext | default .Values.securityContext }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
@@ -202,8 +207,8 @@ securityContext:
 Service account for the bootstrapper
 */}}
 {{- define "corda.bootstrapServiceAccount" }}
-{{- if or .Values.bootstrap.serviceAccount .Values.serviceAccount }}
-serviceAccountName: {{ default .Values.serviceAccount .Values.bootstrap.serviceAccount }}
+{{- if or .Values.bootstrap.serviceAccount.name .Values.serviceAccount.name }}
+serviceAccountName: {{ default .Values.serviceAccount.name .Values.bootstrap.serviceAccount.name }}
 {{- end }}
 {{- end }}
 

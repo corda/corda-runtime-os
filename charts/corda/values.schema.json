@@ -212,10 +212,22 @@
             "examples": [{}]
         },
         "serviceAccount": {
-            "type": "string",
-            "default": "",
+            "type": "object",
+            "default": {},
             "title": "service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
-            "examples": [""]
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "default": "",
+                    "title": "name of the service account",
+                    "examples": [""]
+                }
+            },
+            "examples": [{}]
         },
         "db": {
             "type": "object",
@@ -811,10 +823,22 @@
                     "examples": [{}]
                 },
                 "serviceAccount": {
-                    "type": "string",
+                    "type": "object",
                     "default": "",
                     "title": "service account for the bootstrap containers",
-                    "examples": [""]
+                    "additionalProperties": false,
+                    "required": [
+                        "name"
+                    ],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "",
+                            "title": "name of the service account",
+                            "examples": [""]
+                        }
+                    },
+                    "examples": [{}]
                 },
                 "rbac": {
                     "type": "object",
