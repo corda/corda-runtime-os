@@ -25,6 +25,24 @@ fun JsonNode.getMandatoryString(
         }
     }
 }
+@Suppress("ThrowsCount")
+fun JsonNode.getOptionalString(
+    key: String
+): String? {
+    if (!hasNonNull(key)) {
+        return null
+    }
+    return get(key).run {
+        if (!isTextual) {
+            return null
+        }
+        textValue().apply {
+            if (isBlank()) {
+                return null
+            }
+        }
+    }
+}
 
 fun JsonNode.getOptionalStringList(
     key: String
@@ -86,6 +104,17 @@ fun <T> JsonNode.getMandatoryEnum(
         mapper(value)
     } catch (e: IllegalArgumentException) {
         throw BadGroupPolicyException(getBadEnumError(key, value))
+    }
+}
+fun <T> JsonNode.getOptionalEnum(
+    key: String,
+    mapper: (String?) -> T
+): T {
+    val value = getOptionalString(key)
+    return try {
+        mapper(value)
+    } catch (e: IllegalArgumentException) {
+        throw BadGroupPolicyException(getBadEnumError(key, value ?: "null"))
     }
 }
 

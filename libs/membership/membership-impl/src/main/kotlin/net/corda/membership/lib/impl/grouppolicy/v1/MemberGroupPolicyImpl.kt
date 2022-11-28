@@ -36,6 +36,7 @@ import net.corda.membership.lib.impl.grouppolicy.getMandatoryStringList
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryStringMap
 import net.corda.membership.lib.impl.grouppolicy.getMissingCertError
 import net.corda.membership.lib.impl.grouppolicy.getMissingKeyError
+import net.corda.membership.lib.impl.grouppolicy.getOptionalEnum
 import net.corda.membership.lib.impl.grouppolicy.getOptionalJsonNode
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
@@ -163,13 +164,10 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
             }
         }
 
-        override val tlsType = p2pParameters.getMandatoryEnum(TLS_TYPE) {
+        override val tlsType = p2pParameters.getOptionalEnum(TLS_TYPE) {
             TlsType.values().firstOrNull { type ->
                 type.name.equals(it, ignoreCase = true)
-            } ?: throw IllegalArgumentException(
-                "\"$it\" is not a valid tls type. " +
-                    "Allowed values are: [${TlsType.values().joinToString()}]"
-            )
+            } ?: TlsType.ONE_WAY
         }
 
         override val protocolMode = p2pParameters.getMandatoryEnum(PROTOCOL_MODE) {

@@ -42,6 +42,7 @@ class MGMRegistrationContextValidatorTest {
                 SESSION_KEY_POLICY to "session key policy",
                 PKI_SESSION to "session PKI property",
                 PKI_TLS to "TLS PKI property",
+                TLS_TYPE to "ONE_WAY",
                 URL_KEY.format(0) to "https://localhost:8080",
                 PROTOCOL_VERSION.format(0) to "1",
                 TRUSTSTORE_SESSION.format(0) to "session truststore",

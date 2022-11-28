@@ -261,6 +261,7 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
+        "corda.group.tls.type" to "ONE_WAY",
         "corda.group.truststore.session.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
         "corda.group.truststore.tls.0"
@@ -411,6 +412,7 @@ class MGMRegistrationServiceTest {
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
+                        "tls.type" to "ONE_WAY",
                         "truststore.session.0"
                                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
                         "truststore.tls.0"
