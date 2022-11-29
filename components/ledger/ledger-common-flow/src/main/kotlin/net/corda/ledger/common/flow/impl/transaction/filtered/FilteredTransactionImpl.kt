@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITH
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
@@ -95,7 +95,7 @@ class FilteredTransactionImpl(
         }
     }
 
-    override val metadata: TransactionMetadata by lazy {
+    override val metadata: TransactionMetadataImpl by lazy {
         val proof = checkNotNull(filteredComponentGroups[0]?.merkleProof) { "Component group 0's Merkle proof does not exist" }
         check(proof.leaves.size == 1) { "Component group 0's Merkle proof must have a single leaf but contains ${proof.leaves.size}" }
         jsonMarshallingService.parse(proof.leaves.single().leafData.decodeToString())

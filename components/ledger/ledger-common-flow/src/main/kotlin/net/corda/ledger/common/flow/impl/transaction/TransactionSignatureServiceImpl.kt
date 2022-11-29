@@ -1,6 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.sandbox.type.UsedByFlow
@@ -89,8 +89,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
 /**
  * TODO [CORE-7126] Fake values until we can get CPI information properly
  */
-private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummary(
+private fun getCpiSummary(): CordaPackageSummaryImpl =
+    CordaPackageSummaryImpl(
         name = "CPI name",
         version = "CPI version",
         signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),

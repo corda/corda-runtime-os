@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -17,12 +17,12 @@ interface ConsensualLedgerPersistenceService {
      * @param transaction Consensual signed transaction to persist.
      * @param transactionStatus Transaction's status
      *
-     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     * @return list of [CordaPackageSummaryImpl] for missing CPKs (that were not linked)
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
     @Suspendable
-    fun persist(transaction: ConsensualSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummary>
+    fun persist(transaction: ConsensualSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummaryImpl>
 
     /**
      * Find a consensual signed transaction in the persistence context given it's [id].

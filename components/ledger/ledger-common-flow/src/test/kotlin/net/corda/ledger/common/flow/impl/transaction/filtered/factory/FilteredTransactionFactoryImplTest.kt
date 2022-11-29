@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.v5.crypto.merkle.MerkleProofType
@@ -65,7 +65,7 @@ class FilteredTransactionFactoryImplTest {
             filteredTransaction = filteredTransactionFactory.create(
                 wireTransaction,
                 componentGroupFilterParameters = listOf(
-                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                     ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
                     ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
                 )
@@ -84,14 +84,14 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
             )
         ) { false }
 
         assertThat(filteredTransaction.getComponentGroupContent(0)?.single()?.second)
             .isEqualTo(wireTransaction.componentGroupLists.first().single())
-        verify(serializationService, never()).deserialize(any<ByteArray>(), eq(TransactionMetadata::class.java))
+        verify(serializationService, never()).deserialize(any<ByteArray>(), eq(TransactionMetadataImpl::class.java))
     }
 
     @Test
@@ -107,7 +107,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
             )
         ) { true }
@@ -132,7 +132,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
             )
         ) { it is MyClassA || it is MyClassB }
@@ -167,7 +167,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
             )
         ) { false }
@@ -193,7 +193,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         ) {
@@ -222,7 +222,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         ) { false }
@@ -252,7 +252,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         ) { false }

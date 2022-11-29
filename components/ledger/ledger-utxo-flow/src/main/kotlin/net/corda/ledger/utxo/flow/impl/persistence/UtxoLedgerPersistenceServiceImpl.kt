@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -53,7 +53,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     override fun persist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
-    ): List<CordaPackageSummary> {
+    ): List<CordaPackageSummaryImpl> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
