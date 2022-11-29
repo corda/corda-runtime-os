@@ -19,7 +19,7 @@ class LifecycleTest<T : Lifecycle>(
 ) {
 
     private val dependencies = ConcurrentHashMap.newKeySet<LifecycleCoordinatorName>()
-    private val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
+    val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
     private val configCoordinator = argumentCaptor<LifecycleCoordinator>()
     private val configKeys = argumentCaptor<Set<String>>()
 
@@ -46,7 +46,7 @@ class LifecycleTest<T : Lifecycle>(
         }
     }
 
-    private val registry
+    val registry
         get() = coordinatorFactory.registry
 
     // Must go after all the initialization above as those classes may be used by the lambda
@@ -250,10 +250,10 @@ class LifecycleTest<T : Lifecycle>(
      * @throws IllegalArgumentException if the keys in [config] don't match what the coordinator registered
      * for [testClass].
      */
-    fun sendConfigUpdate(
+    inline fun <reified D> sendConfigUpdate(
         config: Map<String, SmartConfig>
     ) {
-        val coordinator = registry.getCoordinator(LifecycleCoordinatorName(testClass::class.java.name))
+        val coordinator = registry.getCoordinator(LifecycleCoordinatorName.forComponent<D>())
         // assert that the config contains exactly the keys from required keys set
         // during registration
         val configKeys = coordinatorToConfigKeys[coordinator]

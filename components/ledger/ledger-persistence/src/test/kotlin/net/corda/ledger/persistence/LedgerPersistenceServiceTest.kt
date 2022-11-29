@@ -58,7 +58,7 @@ class LedgerPersistenceServiceTest {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
             verify(persistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
             verify(subscription).start()
@@ -73,12 +73,12 @@ class LedgerPersistenceServiceTest {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
             verify(persistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
             verify(subscription1).start()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
             verify(subscription1).close()
             verify(subscription2).start()
         }
@@ -105,7 +105,7 @@ class LedgerPersistenceServiceTest {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
             verifyIsUp<LedgerPersistenceService>()
 
             bringDependencyDown(name)
@@ -125,7 +125,7 @@ class LedgerPersistenceServiceTest {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
             verifyIsUp<LedgerPersistenceService>()
 
             setDependencyToError(name)

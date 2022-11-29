@@ -118,7 +118,7 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             context.verifyIsUp<TestRegistrationComponent>()
             assertNotNull(context.testClass.registrationServiceLifecycleHandler.publisher)
@@ -132,13 +132,13 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             context.verifyIsUp<TestRegistrationComponent>()
 
             // A config update of any variety should not trigger the test component to go down. This can be verified by
             // sending the same thing again, as the code will still respond to this event as if it were a change.
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
         }
     }
@@ -149,7 +149,7 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             context.verifyIsUp<TestRegistrationComponent>()
             testClass.stop()
@@ -165,14 +165,14 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             toggleDependency<GroupPolicyProvider>({
                 context.verifyIsDown<TestRegistrationComponent>()
             }, {
                 context.verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
 
             toggleDependency<ConfigurationReadService>({
@@ -180,7 +180,7 @@ class RegistrationServiceLifecycleHandlerTest {
             }, {
                 context.verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
 
             toggleDependency<HSMRegistrationClient>({
@@ -188,7 +188,7 @@ class RegistrationServiceLifecycleHandlerTest {
             }, {
                 context.verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
         }
     }
@@ -199,7 +199,7 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             context.verifyIsUp<TestRegistrationComponent>()
 
@@ -217,7 +217,7 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
 
             setDependencyToError<HSMRegistrationClient>()
@@ -225,7 +225,7 @@ class RegistrationServiceLifecycleHandlerTest {
             bringDependencyUp<HSMRegistrationClient>()
 
             // Model a config update coming back due to us re-registering with the config read service.
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
             context.verifyIsUp<TestRegistrationComponent>()
         }
     }
@@ -236,7 +236,7 @@ class RegistrationServiceLifecycleHandlerTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             context.verifyIsUp<TestRegistrationComponent>()
 

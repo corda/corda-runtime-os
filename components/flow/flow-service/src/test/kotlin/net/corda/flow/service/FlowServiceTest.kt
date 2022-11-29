@@ -80,7 +80,7 @@ class FlowServiceTest {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
 
             verifyIsUp<FlowService>()
         }
@@ -94,7 +94,7 @@ class FlowServiceTest {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
 
             verify(flowExecutor).onConfigChange(any())
             verify(flowWakeUpScheduler).onConfigChange(any())
@@ -122,7 +122,7 @@ class FlowServiceTest {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
             verifyIsUp<FlowService>()
 
             bringDependencyDown(name)
@@ -140,7 +140,7 @@ class FlowServiceTest {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
             verifyIsUp<FlowService>()
 
             setDependencyToError(name)
