@@ -13,6 +13,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -89,7 +90,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
 /**
  * TODO [CORE-7126] Fake values until we can get CPI information properly
  */
-private fun getCpiSummary(): CordaPackageSummaryImpl =
+private fun getCpiSummary(): CordaPackageSummary =
     CordaPackageSummaryImpl(
         name = "CPI name",
         version = "CPI version",

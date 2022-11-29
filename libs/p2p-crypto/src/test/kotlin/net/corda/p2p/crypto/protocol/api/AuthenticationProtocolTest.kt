@@ -65,7 +65,7 @@ class AuthenticationProtocolTest {
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
-        val ourCertificate = mutableListOf("testcert")
+        val ourCertificate = mutableListOf("")
         val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), RevocationCheckMode.HARD_FAIL, mock())
         val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
 

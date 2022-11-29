@@ -3,9 +3,10 @@ package net.corda.ledger.common.testkit
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 fun transactionMetadataExample(cpiMetadata: CordaPackageSummaryImpl = cpiPackageSummaryExample,
-                               cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample): TransactionMetadataImpl =
+                               cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample): TransactionMetadata =
     TransactionMetadataImpl(linkedMapOf(
     TransactionMetadataImpl.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
     TransactionMetadataImpl.LEDGER_VERSION_KEY to 1,
