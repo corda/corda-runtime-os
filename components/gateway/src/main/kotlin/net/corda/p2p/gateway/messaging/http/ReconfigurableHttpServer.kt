@@ -23,14 +23,15 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
-class ReconfigurableHttpServer(
+internal class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     signingMode: SigningMode,
-    cryptoOpsClient: CryptoOpsClient
+    cryptoOpsClient: CryptoOpsClient,
+    private val trustStoresMap: TrustStoresMap,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -89,7 +90,8 @@ class ReconfigurableHttpServer(
                         val newServer = HttpServer(
                             listener,
                             newConfiguration,
-                            dynamicKeyStore.keyStore
+                            dynamicKeyStore.keyStore,
+                            trustStoresMap,
                         )
                         newServer.start()
                         resources.keep(newServer)
@@ -103,7 +105,8 @@ class ReconfigurableHttpServer(
                     val newServer = HttpServer(
                         listener,
                         newConfiguration,
-                        dynamicKeyStore.keyStore
+                        dynamicKeyStore.keyStore,
+                        trustStoresMap,
                     )
                     newServer.start()
                     resources.keep(newServer)

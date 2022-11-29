@@ -12,6 +12,7 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -30,10 +31,11 @@ import kotlin.concurrent.withLock
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
  */
-class HttpServer(
+internal class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
+    private val trustStoresMap: TrustStoresMap,
 ) : Resource,
     HttpServerListener {
 
@@ -98,11 +100,22 @@ class HttpServer(
         eventListener.onRequest(request)
     }
 
+    private val trustManager by lazy {
+        if (configuration.sslConfig.tlsType == TlsType.MUTUAL) {
+            DynamicX509ExtendedTrustManager(
+                trustStoresMap,
+                configuration.sslConfig.revocationCheck,
+            )
+        } else {
+            null
+        }
+    }
+
     private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(keyStore))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, trustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))

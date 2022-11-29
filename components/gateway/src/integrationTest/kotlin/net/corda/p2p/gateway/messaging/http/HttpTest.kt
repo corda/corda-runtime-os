@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 import java.net.URI
 import java.security.SecureRandom
 import java.time.Instant
@@ -75,9 +76,10 @@ class HttpTest : TestBase() {
                 serverAddress.port,
                 "/",
                 aliceSslConfig,
-                MAX_REQUEST_SIZE
+                MAX_REQUEST_SIZE,
             ),
             aliceKeyStore,
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -118,6 +120,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
+            mock(),
         )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
@@ -182,6 +185,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -219,6 +223,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             bobKeyStore,
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -255,6 +260,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             c4sslKeyStore,
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -354,6 +360,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
+            mock(),
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
@@ -399,6 +406,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             bobKeyStore,
+            mock(),
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(

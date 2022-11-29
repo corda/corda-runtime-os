@@ -216,7 +216,7 @@ open class TestBase {
         }
     }
 
-    fun HttpServer.startAndWaitForStarted() {
+    internal fun HttpServer.startAndWaitForStarted() {
         this.start()
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue

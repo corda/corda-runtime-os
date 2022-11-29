@@ -28,6 +28,7 @@ import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
@@ -43,7 +44,8 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     signingMode: SigningMode,
-    cryptoOpsClient: CryptoOpsClient
+    cryptoOpsClient: CryptoOpsClient,
+    trustStoresMap: TrustStoresMap,
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
@@ -69,7 +71,8 @@ internal class InboundMessageHandler(
         subscriptionFactory,
         messagingConfiguration,
         signingMode,
-        cryptoOpsClient
+        cryptoOpsClient,
+        trustStoresMap,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

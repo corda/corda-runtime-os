@@ -41,6 +41,7 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    private val trustStoresMap: TrustStoresMap,
     retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
@@ -54,12 +55,6 @@ internal class OutboundMessageHandler(
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
         configurationReaderService
-    )
-
-    private val trustStoresMap = TrustStoresMap(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration
     )
 
     private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
@@ -82,8 +77,8 @@ internal class OutboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         onClose = { retryThreadPool.shutdown() },
-        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
-        managedChildren = listOf(outboundSubscriptionTile.toNamedLifecycle(), trustStoresMap.dominoTile.toNamedLifecycle()),
+        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName),
+        managedChildren = listOf(outboundSubscriptionTile.toNamedLifecycle()),
     )
 
     private val retryThreadPool = retryThreadPoolFactory()

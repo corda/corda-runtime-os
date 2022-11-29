@@ -75,7 +75,8 @@ class ReconfigurableHttpServerTest {
         mock(),
         mock(),
         SigningMode.STUB,
-        mock()
+        mock(),
+        mock(),
     )
 
     @AfterEach

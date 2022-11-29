@@ -49,6 +49,7 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
@@ -305,6 +306,11 @@ class GatewayIntegrationTest : TestBase() {
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
+            val trustStoresMap = TrustStoresMap(
+                lifecycleCoordinatorFactory,
+                alice.subscriptionFactory,
+                messagingConfig,
+            )
 
             val configPublisher = ConfigPublisher()
 
@@ -336,6 +342,7 @@ class GatewayIntegrationTest : TestBase() {
                     MAX_REQUEST_SIZE
                 ),
                 aliceKeyStore,
+                trustStoresMap
             ).use { recipientServer ->
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 listenToOutboundMessages.server = recipientServer
@@ -481,6 +488,11 @@ class GatewayIntegrationTest : TestBase() {
             }.map {
                 "http://www.chip.net:$it"
             }
+            val trustStoresMap = TrustStoresMap(
+                lifecycleCoordinatorFactory,
+                alice.subscriptionFactory,
+                messagingConfig,
+            )
             val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
             }.map { serverUri ->
@@ -501,6 +513,7 @@ class GatewayIntegrationTest : TestBase() {
                     serverListener,
                     GatewayConfiguration(serverUri.host, serverUri.port, "/", chipSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
+                    trustStoresMap,
                 ).also {
                     serverListener.server = it
                 }

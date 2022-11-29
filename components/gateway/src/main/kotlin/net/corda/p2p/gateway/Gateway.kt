@@ -11,6 +11,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.certificates.RevocationChecker
 import net.corda.p2p.gateway.messaging.SigningMode
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.utilities.VisibleForTesting
@@ -37,6 +38,11 @@ class Gateway(
     cryptoOpsClient: CryptoOpsClient
 ) : LifecycleWithDominoTile {
 
+    private val trustStoresMap = TrustStoresMap(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration
+    )
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -44,13 +50,15 @@ class Gateway(
         subscriptionFactory,
         messagingConfiguration,
         signingMode,
-        cryptoOpsClient
+        cryptoOpsClient,
+        trustStoresMap,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         messagingConfiguration,
+        trustStoresMap,
     )
     private val revocationChecker = RevocationChecker(
         subscriptionFactory,
@@ -60,8 +68,17 @@ class Gateway(
 
     @VisibleForTesting
     internal val children: Collection<DominoTile> =
-        listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile, revocationChecker.dominoTile)
+        listOf(
+            inboundMessageHandler.dominoTile,
+            outboundMessageProcessor.dominoTile,
+            revocationChecker.dominoTile,
+            trustStoresMap.dominoTile,
+        )
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
-        dependentChildren = children.map { it.coordinatorName }, managedChildren = children.map { it.toNamedLifecycle() })
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        dependentChildren = children.map { it.coordinatorName },
+        managedChildren = children.map { it.toNamedLifecycle() }
+    )
 }

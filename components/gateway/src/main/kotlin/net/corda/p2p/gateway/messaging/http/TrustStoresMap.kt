@@ -12,6 +12,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
+import net.corda.p2p.gateway.certificates.RevocationChecker
+import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -19,6 +21,9 @@ import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import javax.net.ssl.CertPathTrustManagerParameters
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -41,6 +46,8 @@ internal class TrustStoresMap(
             messagingConfiguration
         )
     }
+    val allTrustedCertificates: Collection<TrustedCertificates>
+        get() = trustRootsPerHoldingIdentity.values
 
     private val entriesPerKey = ConcurrentHashMap<String, TruststoreKey>()
     private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()
@@ -76,9 +83,23 @@ internal class TrustStoresMap(
         pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
+        private val trustManagers by lazy {
+            ConcurrentHashMap<RevocationConfig, Collection<TrustManager>?>()
+        }
         val trustStore: KeyStore? by lazy {
             convertToKeyStore(certificateFactory, pemCertificates, "gateway")
         }
+
+        fun trustManagers(
+            revocationCheck: RevocationConfig,
+            trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()),
+        ): Collection<TrustManager>? =
+            trustManagers.computeIfAbsent(revocationCheck) {
+                val keyStore = trustStore ?: return@computeIfAbsent null
+                val pkixParams = RevocationChecker.getCertCheckingParameters(keyStore, revocationCheck)
+                trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
+                trustManagerFactory.trustManagers.toList()
+            }
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {

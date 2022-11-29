@@ -92,12 +92,8 @@ class OutboundMessageHandlerTest {
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
     private val truststore = mock<KeyStore>()
-    private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
-        whenever(mock.getTrustStore(any(), eq(GROUP_ID))).doReturn(truststore)
-        val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    private val trustStores = mock<TrustStoresMap> {
+        on { getTrustStore(any(), eq(GROUP_ID)) } doReturn truststore
     }
 
     private val sentMessages = mutableListOf<GatewayMessage>()
@@ -138,11 +134,11 @@ class OutboundMessageHandlerTest {
         configurationReaderService,
         subscriptionFactory,
         SmartConfigImpl.empty(),
+        trustStores,
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
     fun cleanUp() {
-        trustStores.close()
         connectionManager.close()
         dominoTile.close()
         subscriptionTile.close()
@@ -157,6 +153,7 @@ class OutboundMessageHandlerTest {
             configurationReaderService,
             subscriptionFactory,
             SmartConfigImpl.empty(),
+            mock(),
         ) { mockExecutorService }
         onClose!!.invoke()
         verify(mockExecutorService).shutdown()
@@ -342,7 +339,7 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first())
+        verify(trustStores)
             .getTrustStore(MemberX500Name.parse(VALID_X500_NAME), GROUP_ID)
     }
 
