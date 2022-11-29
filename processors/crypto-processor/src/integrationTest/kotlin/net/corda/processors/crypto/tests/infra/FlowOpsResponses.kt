@@ -13,8 +13,9 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions
+import net.corda.utilities.concurrent.getOrThrow
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 class FlowOpsResponses(
     messagingConfig: SmartConfig,
@@ -33,7 +34,7 @@ class FlowOpsResponses(
             partitionAssignmentListener = null
         ).also { it.start() }
 
-    private val receivedEvents = ConcurrentHashMap<String, FlowOpsResponse?>()
+    private val receivedEvents = ConcurrentHashMap<String, CompletableFuture<FlowOpsResponse?>>()
 
     override val keyClass: Class<String> = String::class.java
 
@@ -43,17 +44,23 @@ class FlowOpsResponses(
         events.forEach {
             val response = ((it.value as FlowEvent).payload as ExternalEventResponse)
             val flowOpsResponse = deserializer.deserialize(response.payload.array())
-            receivedEvents[it.key] = flowOpsResponse
+            val future = receivedEvents.computeIfAbsent(it.key) {
+                // If future already set for this key means testing thread has already called `waitForResponse`.
+                CompletableFuture()
+            }
+            future.complete(flowOpsResponse)
         }
         return emptyList()
     }
 
-    fun waitForResponse(key: String): FlowOpsResponse =
-        eventually(duration = Duration.ofSeconds(20)) {
-            val event = receivedEvents[key]
-            Assertions.assertNotNull(event)
-            event!!
+    fun waitForResponse(key: String): FlowOpsResponse {
+        val future: Future<FlowOpsResponse?> = receivedEvents.computeIfAbsent(key) {
+            CompletableFuture()
         }
+
+        val flowOpsResponse = future.getOrThrow(Duration.ofSeconds(20))
+        return requireNotNull(flowOpsResponse)
+    }
 
     override fun close() {
         subscription.close()
