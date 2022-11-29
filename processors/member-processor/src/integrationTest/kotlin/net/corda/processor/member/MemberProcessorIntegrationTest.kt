@@ -50,7 +50,9 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMembers
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
@@ -169,6 +171,7 @@ class MemberProcessorIntegrationTest {
         private val membershipConfig = makeMembershipConfig()
         private val messagingConfig = makeMessagingConfig()
         private val cryptoConfig = makeCryptoConfig()
+        private val gatewayConfig = makeGatewayConfig()
 
         private lateinit var connectionIds: Map<String, UUID>
 
@@ -202,6 +205,7 @@ class MemberProcessorIntegrationTest {
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishMembershipConf(membershipConfig)
             publisher.publishDefaultCryptoConf(cryptoConfig)
+            publisher.publishGatewayConfig(gatewayConfig)
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,

@@ -87,6 +87,17 @@ class MemberProcessorTestUtils {
                         ConfigValueFactory.fromAnyRef(100L))
             )
 
+        fun makeGatewayConfig(): SmartConfig =
+            SmartConfigFactory.create(
+                ConfigFactory.empty()
+            ).create(
+                ConfigFactory.empty()
+                    .withValue(
+                        "sslConfig.tlsType",
+                        ConfigValueFactory.fromAnyRef("ONE_WAY")
+                    )
+            )
+
         private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.create(
             ConfigFactory.parseString(
                 """
@@ -281,6 +292,8 @@ class MemberProcessorTestUtils {
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+        fun Publisher.publishGatewayConfig(gatewayConfig: SmartConfig) =
+            publishConf(ConfigKeys.P2P_GATEWAY_CONFIG, gatewayConfig.root().render())
 
         private fun getSampleGroupPolicy(fileName: String): String {
             val url = this::class.java.getResource(fileName)
