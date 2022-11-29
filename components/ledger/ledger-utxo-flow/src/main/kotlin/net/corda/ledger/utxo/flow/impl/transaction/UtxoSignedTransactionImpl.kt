@@ -12,6 +12,7 @@ import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -60,6 +61,10 @@ data class UtxoSignedTransactionImpl(
         get() = wrappedWireTransaction.referenceInputStateRefs
     override val timeWindow: TimeWindow
         get() = wrappedWireTransaction.timeWindow
+    override val signatories: List<PublicKey>
+        get() = wrappedWireTransaction.signatories
+    override val commands: List<Command>
+        get() = wrappedWireTransaction.commands
 
     @Suspendable
     override fun sign(publicKey: PublicKey): Pair<UtxoSignedTransactionInternal, DigitalSignatureAndMetadata> {
