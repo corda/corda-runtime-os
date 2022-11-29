@@ -1,38 +1,20 @@
 package net.corda.processors.crypto.tests.infra
 
-import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.utilities.concurrent.getOrThrow
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 
 class FlowOpsResponses(
-    messagingConfig: SmartConfig,
-    subscriptionFactory: SubscriptionFactory,
     private val deserializer: CordaAvroDeserializer<FlowOpsResponse>
-) : DurableProcessor<String, FlowEvent>, AutoCloseable {
-
-    private val subscription: Subscription<String, FlowEvent> =
-        subscriptionFactory.createDurableSubscription(
-            subscriptionConfig = SubscriptionConfig(
-                groupName = "TEST",
-                eventTopic = Schemas.Flow.FLOW_EVENT_TOPIC
-            ),
-            processor = this,
-            messagingConfig = messagingConfig,
-            partitionAssignmentListener = null
-        ).also { it.start() }
+) : DurableProcessor<String, FlowEvent> {
 
     private val receivedEvents = ConcurrentHashMap<String, CompletableFuture<FlowOpsResponse?>>()
 
@@ -60,9 +42,5 @@ class FlowOpsResponses(
 
         val flowOpsResponse = future.getOrThrow(Duration.ofSeconds(20))
         return requireNotNull(flowOpsResponse)
-    }
-
-    override fun close() {
-        subscription.close()
     }
 }
