@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
@@ -26,7 +27,7 @@ import kotlin.test.assertFailsWith
 
 class MGMRpcOpsTest {
     companion object {
-        private const val HOLDING_IDENTITY_ID = "00111213141500"
+        private const val HOLDING_IDENTITY_ID = "111213141500"
     }
 
     private var coordinatorIsRunning = false
@@ -89,6 +90,16 @@ class MGMRpcOpsTest {
 
         assertThrows<InvalidInputDataException> {
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy throws bad request if short hash is invalid`() {
+        mgmRpcOps.start()
+        mgmRpcOps.activate("")
+
+        assertThrows<BadRequestException> {
+            mgmRpcOps.generateGroupPolicy("ABS09234745D")
         }
     }
 
