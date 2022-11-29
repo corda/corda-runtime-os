@@ -15,7 +15,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -90,7 +90,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         state: String?,
         country: String?
     ) = impl.lookup(
-        ShortHash.ofOrThrow(holdingIdentityShortHash),
+        ShortHash.parseOrThrow(holdingIdentityShortHash),
         commonName,
         organization,
         organizationUnit,

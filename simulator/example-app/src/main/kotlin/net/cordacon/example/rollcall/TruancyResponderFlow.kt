@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject

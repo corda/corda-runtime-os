@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -17,8 +17,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.cordacon.example.utils.createScript
-import net.cordacon.example.utils.findStudents
+import net.cordacon.example.rollcall.utils.createScript
+import net.cordacon.example.rollcall.utils.findStudents
 
 
 @InitiatingFlow("roll-call")

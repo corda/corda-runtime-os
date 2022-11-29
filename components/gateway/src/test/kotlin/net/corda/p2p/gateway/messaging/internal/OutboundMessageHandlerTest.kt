@@ -28,7 +28,7 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat

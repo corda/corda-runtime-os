@@ -4,7 +4,6 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.LifecycleRPCOpsImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.test.util.lifecycle.usingLifecycle
@@ -25,7 +24,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -40,7 +39,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
+                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
                         "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 

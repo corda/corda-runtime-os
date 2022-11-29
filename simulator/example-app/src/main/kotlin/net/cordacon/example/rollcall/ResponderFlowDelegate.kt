@@ -1,9 +1,9 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.cordacon.example.utils.rollCallName
+import net.cordacon.example.rollcall.utils.rollCallName
 
 class ResponderFlowDelegate {
 

@@ -80,7 +80,7 @@ class GroupParametersCacheTest {
                 val params = this.groupParameters.toMap()
                 assertThat(params[EPOCH_KEY]).isEqualTo("1")
                 assertThat(params[MPV_KEY]).isEqualTo("5000")
-                assertThat(Instant.parse(params[MODIFIED_TIME_KEY])).isBefore(Instant.now())
+                assertThat(Instant.parse(params[MODIFIED_TIME_KEY])).isBeforeOrEqualTo(Instant.now())
             }
         }
     }

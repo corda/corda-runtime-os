@@ -218,11 +218,3 @@ Simulator has some components which can also be used independently:
 - A `FlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
   `JsonMarshallingServiceFactory`.
-
-## TODO:
-
-- Check for @CordaSerializable on messages
-- Handle errors for unmatched sends / receives
-- Implement FlowMessaging send / receive methods
-- Allow upload and invocation of InitiatingFlow instances
-- Timeouts

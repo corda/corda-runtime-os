@@ -3,6 +3,7 @@ package net.corda.testing.sandboxes.testkit.impl
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.service.CacheConfiguration
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -11,7 +12,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 
 @Suppress("unused")
 @Component(service = [ SandboxGroupContextComponent::class ])
-@ServiceRanking(Int.MAX_VALUE)
+@ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference
     private val sandboxGroupContextService: SandboxGroupContextService
