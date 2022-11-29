@@ -25,6 +25,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
@@ -239,6 +240,7 @@ class MemberOpsServiceProcessor(
             val sessionPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.SESSION_PKI_MODE)
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
+            val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)
@@ -262,6 +264,7 @@ class MemberOpsServiceProcessor(
                     TLS_TRUST_ROOTS to tlsTrustroots,
                     SESSION_PKI to sessionPkiMode,
                     TLS_PKI to tlsPkiMode,
+                    TLS_TYPE to tlsType,
                     TLS_VERSION to tlsVersion,
                     PROTOCOL_MODE to p2pMode
                 ).apply {

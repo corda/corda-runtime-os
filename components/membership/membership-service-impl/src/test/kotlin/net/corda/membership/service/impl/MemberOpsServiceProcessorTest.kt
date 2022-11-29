@@ -138,6 +138,7 @@ class MemberOpsServiceProcessorTest {
         PropertyKeys.SESSION_TRUST_ROOTS+".0" to "truststore-sess",
         PropertyKeys.TLS_TRUST_ROOTS+".0" to "truststore-tls",
         PropertyKeys.P2P_PROTOCOL_MODE to "p2p-mode",
+        PropertyKeys.P2P_TLS_TYPE to "ONE_WAY",
     )
 
     class LayeredContextImpl(private val map: LayeredPropertyMap) : LayeredPropertyMap by map
