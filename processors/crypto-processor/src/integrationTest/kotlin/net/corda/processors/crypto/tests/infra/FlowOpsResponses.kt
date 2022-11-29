@@ -27,7 +27,8 @@ class FlowOpsResponses(
             val response = ((it.value as FlowEvent).payload as ExternalEventResponse)
             val flowOpsResponse = deserializer.deserialize(response.payload.array())
             val future = receivedEvents.computeIfAbsent(it.key) {
-                // If future already set for this key means testing thread has already called `waitForResponse`.
+                // If future is already set for this key means testing thread has already called `waitForResponse`
+                // for this key.
                 CompletableFuture()
             }
             future.complete(flowOpsResponse)
