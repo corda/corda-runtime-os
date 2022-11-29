@@ -123,7 +123,7 @@ class ThreadLooper(
         } ?: throw IllegalStateException("Clearing state, thread was null on non-stopped ThreadLooper")
     }
 
-    private var stoppableThread = StoppableThread()
+    private val stoppableThread = StoppableThread()
 
     fun start() {
         _isRunning = true
