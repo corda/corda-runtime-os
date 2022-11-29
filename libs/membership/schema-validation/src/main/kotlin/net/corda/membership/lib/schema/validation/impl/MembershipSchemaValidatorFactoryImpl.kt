@@ -7,6 +7,6 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [MembershipSchemaValidatorFactory::class])
 class MembershipSchemaValidatorFactoryImpl : MembershipSchemaValidatorFactory {
     override fun createValidator() = MembershipSchemaValidatorImpl(
-        MembershipSchemaProviderFactory.getSchemaProvider()
+        MembershipSchemaProviderFactory.getSchemaProvider(),
     )
 }

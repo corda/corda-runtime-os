@@ -1,5 +1,6 @@
 package net.corda.membership.lib.schema.validation
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.versioning.Version
 
@@ -20,7 +21,8 @@ interface MembershipSchemaValidator {
     fun validateGroupPolicy(
         schema: MembershipSchema.GroupPolicySchema,
         version: Version,
-        groupPolicy: String
+        groupPolicy: String,
+        gatewayConfig: SmartConfig?,
     )
 
     /**

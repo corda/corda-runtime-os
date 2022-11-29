@@ -22,6 +22,7 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.p2p.helpers.TlsType.Companion.tlsType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -32,6 +33,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -122,8 +124,8 @@ class MGMRegistrationService @Activate constructor(
         coordinator.stop()
     }
 
-    private fun activate(coordinator: LifecycleCoordinator) {
-        impl = ActiveImpl()
+    private fun activate(coordinator: LifecycleCoordinator, configChangedEvent: ConfigChangedEvent) {
+        impl = ActiveImpl(configChangedEvent)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -153,10 +155,13 @@ class MGMRegistrationService @Activate constructor(
         override fun close() = Unit
     }
 
-    private inner class ActiveImpl : InnerRegistrationService {
+    private inner class ActiveImpl(
+        configChangedEvent: ConfigChangedEvent,
+    ) : InnerRegistrationService {
 
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
-            membershipSchemaValidatorFactory
+            membershipSchemaValidatorFactory,
+            configChangedEvent.tlsType(),
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
@@ -270,7 +275,7 @@ class MGMRegistrationService @Activate constructor(
                 configHandle?.close()
                 configHandle = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, P2P_GATEWAY_CONFIG)
                 )
             }
             else -> {
@@ -290,6 +295,6 @@ class MGMRegistrationService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
-        activate(coordinator)
+        activate(coordinator, event)
     }
 }

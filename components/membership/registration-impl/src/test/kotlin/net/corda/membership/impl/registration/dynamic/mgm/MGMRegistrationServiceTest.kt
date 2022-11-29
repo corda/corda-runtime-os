@@ -64,6 +64,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.p2p.helpers.TlsType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -76,6 +77,7 @@ import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -292,10 +294,13 @@ class MGMRegistrationServiceTest {
     private fun postConfigChangedEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
-                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG, P2P_GATEWAY_CONFIG),
                 mapOf(
                     BOOT_CONFIG to testConfig,
-                    MESSAGING_CONFIG to testConfig
+                    MESSAGING_CONFIG to testConfig,
+                    P2P_GATEWAY_CONFIG to mock {
+                        on { getEnum(eq(TlsType::class.java), any()) } doReturn TlsType.ONE_WAY
+                    }
                 )
             ),
             coordinator
@@ -641,7 +646,7 @@ class MGMRegistrationServiceTest {
                 eq(coordinator),
                 configArgs.capture()
             )
-            assertThat(configArgs.firstValue).isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+            assertThat(configArgs.firstValue).isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG, P2P_GATEWAY_CONFIG))
 
             postRegistrationStatusChangeEvent(LifecycleStatus.UP)
             verify(configHandle).close()

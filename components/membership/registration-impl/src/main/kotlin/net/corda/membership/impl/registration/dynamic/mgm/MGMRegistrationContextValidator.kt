@@ -5,12 +5,14 @@ import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerif
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.p2p.helpers.TlsType
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.versioning.Version
 
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    private val clusterTlsType: TlsType,
     private val orderVerifier: OrderVerifier = OrderVerifier(),
     private val p2pEndpointVerifier: P2pEndpointVerifier = P2pEndpointVerifier(orderVerifier)
 ) {
@@ -84,6 +86,7 @@ internal class MGMRegistrationContextValidator(
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
         }
+        require(context[TLS_TYPE] == clusterTlsType.name) { "This cluster is configured to support only ${clusterTlsType.name} TLS type." }
     }
 }
 

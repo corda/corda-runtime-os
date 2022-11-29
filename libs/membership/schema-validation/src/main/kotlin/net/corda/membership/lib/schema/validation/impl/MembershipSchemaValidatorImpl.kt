@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.uri.URIFetcher
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.schema.validation.MembershipSchemaFetchException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -17,7 +18,7 @@ import java.io.InputStream
 import java.net.URI
 
 class MembershipSchemaValidatorImpl(
-    private val membershipSchemaProvider: MembershipSchemaProvider
+    private val membershipSchemaProvider: MembershipSchemaProvider,
 ) : MembershipSchemaValidator {
     private companion object {
         private val REGISTERED_SCHEMES = listOf("https", "http")
@@ -31,9 +32,9 @@ class MembershipSchemaValidatorImpl(
     override fun validateGroupPolicy(
         schema: MembershipSchema.GroupPolicySchema,
         version: Version,
-        groupPolicy: String
+        groupPolicy: String,
+        gatewayConfig: SmartConfig?,
     ) {
-
         val schemaInput = try {
             membershipSchemaProvider.getSchema(schema, version)
         } catch (ex: MembershipSchemaException) {
@@ -49,6 +50,20 @@ class MembershipSchemaValidatorImpl(
             throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
         validateJson(schema, schemaInput, groupPolicyJson)
+
+        if (gatewayConfig != null) {
+            val groupPolicyTlsType = groupPolicyJson.get("p2pParameters")?.get("tlsType")?.asText()
+            if ((groupPolicyTlsType != null) && (groupPolicyTlsType != gatewayConfig.getString("sslConfig.tlsType"))) {
+                throw MembershipSchemaValidationException(
+                    VALIDATION_ERROR,
+                    null,
+                    schema,
+                    listOf(
+                        "Group policy TLS type must be the same as the cluster group policy",
+                    )
+                )
+            }
+        }
     }
 
     override fun validateRegistrationContext(

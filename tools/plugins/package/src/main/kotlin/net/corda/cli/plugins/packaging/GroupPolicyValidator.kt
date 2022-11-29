@@ -17,7 +17,8 @@ internal object GroupPolicyValidator {
         membershipSchemaValidator.validateGroupPolicy(
             MembershipSchema.GroupPolicySchema.Default,
             Version(fileFormatVersion, 0),
-            groupPolicyString
+            groupPolicyString,
+            null,
         )
     }
 }

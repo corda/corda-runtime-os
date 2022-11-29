@@ -7,6 +7,7 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
@@ -37,6 +38,7 @@ class CpiValidatorImpl(
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
     private val clock: Clock,
+    private val gatewayConfig: SmartConfig,
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
@@ -65,7 +67,8 @@ class CpiValidatorImpl(
             membershipSchemaValidator.validateGroupPolicy(
                 GroupPolicySchema.Default,
                 Version(cpi.validateAndGetGroupPolicyFileVersion(), 0),
-                cpi.metadata.groupPolicy!!
+                cpi.metadata.groupPolicy!!,
+                gatewayConfig,
             )
         } catch (ex: MembershipSchemaValidationException) {
             throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)

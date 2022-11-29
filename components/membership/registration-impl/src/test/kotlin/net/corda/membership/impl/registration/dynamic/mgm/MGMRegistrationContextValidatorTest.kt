@@ -5,6 +5,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.p2p.helpers.TlsType
 import net.corda.schema.membership.MembershipSchema
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -28,7 +29,8 @@ class MGMRegistrationContextValidatorTest {
     }
 
     private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        TlsType.ONE_WAY,
     )
 
     companion object {

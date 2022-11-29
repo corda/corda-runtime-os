@@ -7,7 +7,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -21,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -95,7 +95,8 @@ class ChunkReadServiceImpl @Activate constructor(
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         BOOT_CONFIG,
-                        MESSAGING_CONFIG
+                        MESSAGING_CONFIG,
+                        P2P_GATEWAY_CONFIG,
                     )
                 )
         } else {
@@ -105,11 +106,9 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
+            .create(event.config, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }
 
         coordinator.updateStatus(LifecycleStatus.UP)

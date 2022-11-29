@@ -20,9 +20,13 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -59,11 +63,14 @@ class ChunkDbWriterFactoryImpl(
     }
 
     override fun create(
-        messagingConfig: SmartConfig,
-        bootConfig: SmartConfig,
+        configurations: Map<String, SmartConfig>,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
+        val messagingConfig = configurations[MESSAGING_CONFIG] ?: throw CordaRuntimeException("Missing messaging configuration")
+        val bootConfig = configurations[BOOT_CONFIG] ?: throw CordaRuntimeException("Missing boot configuration")
+        val gatewayConfig = configurations[P2P_GATEWAY_CONFIG] ?: throw CordaRuntimeException("Missing gateway configuration")
+
         // Could be reused
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
         val statusTopic = Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC
@@ -76,7 +83,8 @@ class ChunkDbWriterFactoryImpl(
             bootConfig,
             entityManagerFactory,
             statusTopic,
-            cpiInfoWriteService
+            cpiInfoWriteService,
+            gatewayConfig,
         )
 
         return ChunkDbWriterImpl(subscription, publisher)
@@ -100,7 +108,8 @@ class ChunkDbWriterFactoryImpl(
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
-        cpiInfoWriteService: CpiInfoWriteService
+        cpiInfoWriteService: CpiInfoWriteService,
+        gatewayConfig: SmartConfig,
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
         val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
@@ -118,7 +127,8 @@ class ChunkDbWriterFactoryImpl(
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,
-            UTCClock()
+            UTCClock(),
+            gatewayConfig,
         )
         val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
