@@ -63,6 +63,7 @@ class MemberOpsServiceImpl @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<MemberOpsService>(::eventHandler)
 
+    @Volatile
     private var subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
