@@ -195,22 +195,6 @@
             "properties": {},
             "examples": [{}]
         },
-        "podSecurityContext": {
-            "type": "object",
-            "default": {},
-            "title": "security context for pod assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/",
-            "required": [],
-            "properties": {},
-            "examples": [{}]
-        },
-        "securityContext": {
-            "type": "object",
-            "default": {},
-            "title": "security context for container assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/",
-            "required": [],
-            "properties": {},
-            "examples": [{}]
-        },
         "serviceAccount": {
             "type": "object",
             "default": {},
@@ -810,14 +794,6 @@
                     "type": "object",
                     "default": {},
                     "title": "node selector for the bootstrap containers",
-                    "required": [],
-                    "properties": {},
-                    "examples": [{}]
-                },
-                "securityContext": {
-                    "type": "object",
-                    "default": {},
-                    "title": "security context for the bootstrap containers",
                     "required": [],
                     "properties": {},
                     "examples": [{}]

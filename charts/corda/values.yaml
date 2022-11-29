@@ -49,12 +49,6 @@ heapDumpOnOutOfMemoryError: false
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
-# -- security context for pod assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/
-podSecurityContext: {}
-
-# -- security context for container assignment, see https://kubernetes.io/docs/concepts/security/pod-security-standards/
-securityContext: {}
-
 # -- service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 serviceAccount:
   name: ""
@@ -251,9 +245,6 @@ bootstrap:
 
   # node selector for the bootstrap containers
   nodeSelector: { }
-
-  # security context for the bootstrap containers
-  securityContext: { }
 
   # service account for the bootstrap containers
   serviceAccount:

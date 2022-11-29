@@ -111,29 +111,23 @@ Worker image
 {{- end }}
 
 {{/*
-Worker pod security context
+Pod security context
 */}}
-{{- define "corda.workerPodSecurityContext" -}}
+{{- define "corda.podSecurityContext" -}}
 {{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
-{{- with .Values.podSecurityContext }}
-  {{- toYaml . | nindent 2 }}
-{{- end }}
 {{- end }}
 {{- end }}
 
 {{/*
-Worker container security context
+Container security context
 */}}
-{{- define "corda.workerContainerSecurityContext" -}}
+{{- define "corda.containerSecurityContext" -}}
 securityContext:
   allowPrivilegeEscalation: false
-{{- with .Values.securityContext }}
-  {{- toYaml . | nindent 2 }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -187,17 +181,6 @@ Node selector for the bootstrapper
 {{- define "corda.bootstrapNodeSelector" }}
 {{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
 nodeSelector:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
-{{- end }}
-
-{{/*
-Security context for the bootstrapper
-*/}}
-{{- define "corda.bootstrapSecurityContext" }}
-securityContext:
-  allowPrivilegeEscalation: false
-{{- with .Values.bootstrap.securityContext | default .Values.securityContext }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
@@ -563,6 +546,7 @@ Kafka SASL init container
   env:
   {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
   {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  {{- include "corda.containerSecurityContext" . | nindent 2 }}
   command:
   - /bin/bash
   - -c

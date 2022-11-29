@@ -23,10 +23,8 @@ spec:
         - name: create-topics
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-          securityContext:
-            allowPrivilegeEscalation: false
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
           args: [
             'topic',
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
@@ -56,10 +54,8 @@ spec:
         - name: create-trust-store
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-          securityContext:
-            allowPrivilegeEscalation: false
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.bootstrapSecurityContext" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
           {{- include "corda.kafkaSaslPassword" . | nindent 12 }}
           {{- include "corda.kafkaSaslUsername" . | nindent 12 }}

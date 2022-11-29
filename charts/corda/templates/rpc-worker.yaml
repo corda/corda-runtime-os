@@ -43,7 +43,7 @@ spec:
       labels:
         {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.workerPodSecurityContext" . | nindent 6 }}
+      {{- include "corda.podSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.serviceAccount" . | nindent 6 }}
       affinity:
@@ -62,7 +62,7 @@ spec:
       - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-        {{- include "corda.workerContainerSecurityContext" . | nindent 8 }}
+        {{- include "corda.containerSecurityContext" . | nindent 8 }}
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
