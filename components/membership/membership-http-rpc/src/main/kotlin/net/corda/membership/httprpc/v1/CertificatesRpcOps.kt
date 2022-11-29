@@ -52,7 +52,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server " +
+                "TLS certificate to be used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -105,7 +106,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be " +
+                "used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -147,7 +149,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate " +
+                "to be used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -178,7 +181,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateAliases(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be " +
+                "used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -210,7 +214,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate " +
+                "to be used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -247,7 +252,8 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun getCertificateChain(
         @HttpRpcPathParameter(
-            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to be used in P2P communication, " +
+            description = "The certificate usage. Can be either 'p2p-server-tls' for a server TLS certificate to " +
+                "be used in P2P communication, " +
                 "'p2p-client-tls' for a client TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
