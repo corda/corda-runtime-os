@@ -131,7 +131,6 @@ After QA, CorDapp developers will want to release sign their files. This command
     --key "signing key 1"
 ```
 
-
 ### Check signatures using jarsigner
 ```shell
 jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpi

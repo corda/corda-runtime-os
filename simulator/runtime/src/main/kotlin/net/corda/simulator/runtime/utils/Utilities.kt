@@ -13,6 +13,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.consensual.ConsensualLedgerService
 
 /**
  * If a field of the given class is present, creates the given value and sets it on this flow.
@@ -67,5 +68,6 @@ val availableAPIs = setOf(
     DigitalSignatureVerificationService::class.java,
     PersistenceService::class.java,
     SignatureSpecService::class.java,
-    SerializationService::class.java
+    SerializationService::class.java,
+    ConsensualLedgerService::class.java
 )

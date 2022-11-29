@@ -2,6 +2,8 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Test Utilities'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
@@ -13,4 +15,13 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 }
 
-description 'Test Utilities'
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Import-Package: \
+    net.corda.*;resolution:=optional,\
+    org.mockito.*;resolution:=optional,\
+    *
+'''
+    }
+}

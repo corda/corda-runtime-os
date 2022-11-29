@@ -57,6 +57,8 @@ class HttpRpcServerImpl(
         DeferredWebSocketCloserService()
     )
 
+    override val port: Int
+        get() = httpRpcServerInternal.port
 
     override fun start() {
         startStopLock.write {
