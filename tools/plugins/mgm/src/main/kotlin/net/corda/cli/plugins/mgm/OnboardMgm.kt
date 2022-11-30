@@ -107,6 +107,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",
+            "corda.group.tls.type" to if (mutualTls) "MUTUAL" else "ONE_WAY",
             "corda.endpoints.0.connectionURL" to p2pUrl,
             "corda.endpoints.0.protocolVersion" to "1",
             "corda.group.truststore.tls.0" to tlsTrustRoot,
