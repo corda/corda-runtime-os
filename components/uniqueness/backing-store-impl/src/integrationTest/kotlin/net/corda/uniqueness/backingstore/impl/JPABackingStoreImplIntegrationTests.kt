@@ -35,6 +35,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.Session
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Nested
@@ -51,6 +52,8 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.never
 import java.time.Instant
@@ -586,11 +589,11 @@ class JPABackingStoreImplIntegrationTests {
             val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
-            val queryName = "UniquenessTransactionDetailEntity.select"
-            val resultClass = UniquenessTransactionDetailEntity::class.java
-            // Actual execution of the query happens at invoking resultList of the query.
-            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic (e.g. Hibernate).
-            Mockito.doThrow(EntityExistsException()).whenever(spyEm).createNamedQuery(queryName, resultClass)
+            val mockSession = mock<Session> {
+                on { byMultipleIds(eq(UniquenessTransactionDetailEntity::class.java)) } doThrow EntityExistsException()
+            }
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+            Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
@@ -601,7 +604,6 @@ class JPABackingStoreImplIntegrationTests {
                     session.getTransactionDetails(txIds)
                 }
             }
-            Mockito.verify(spyEm, times(1)).createNamedQuery(queryName, resultClass)
         }
 
         // Review with CORE-4983 for different types of exceptions such as PersistenceException.

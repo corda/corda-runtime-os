@@ -79,7 +79,7 @@ object DbUtils {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
-        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb&reWriteBatchedInserts=true"
+        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb?reWriteBatchedInserts=true"
 
         val factory = PostgresDataSourceFactory()
 
@@ -90,7 +90,7 @@ object DbUtils {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
-            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+            jdbcUrl = "$jdbcUrl&currentSchema=$schemaName"
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing

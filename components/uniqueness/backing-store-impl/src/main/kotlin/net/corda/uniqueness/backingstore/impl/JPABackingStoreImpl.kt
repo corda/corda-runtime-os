@@ -205,7 +205,10 @@ open class JPABackingStoreImpl @Activate constructor(
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
             val multiLoadAccess =
                 hibernateSession.byMultipleIds(UniquenessStateDetailEntity::class.java)
-            val existing = multiLoadAccess.multiLoad(statePks)
+
+            // multiLoad will return [null] for each ID that was not found in the DB.
+            // However, we don't want to keep those.
+            val existing = multiLoadAccess.multiLoad(statePks).filterNotNull()
 
             existing.forEach { stateEntity ->
                 val consumingTxId =
@@ -232,7 +235,10 @@ open class JPABackingStoreImpl @Activate constructor(
             // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
             val multiLoadAccess =
                 hibernateSession.byMultipleIds(UniquenessTransactionDetailEntity::class.java)
-            val existing = multiLoadAccess.multiLoad(txPks)
+
+            // multiLoad will return [null] for each ID that was not found in the DB.
+            // However, we don't want to keep those.
+            val existing = multiLoadAccess.multiLoad(txPks).filterNotNull()
 
             val results = existing.map { txEntity ->
                 val result = when (txEntity.result) {
