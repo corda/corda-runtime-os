@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 @Component(
-    service = [ DigitalSignatureVerificationService::class, UsedByFlow::class ],
+    service = [DigitalSignatureVerificationService::class, UsedByFlow::class],
     scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(

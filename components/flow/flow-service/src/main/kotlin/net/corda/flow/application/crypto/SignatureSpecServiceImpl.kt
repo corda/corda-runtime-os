@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [SignatureSpecService::class, UsedByFlow::class ],
+    service = [SignatureSpecService::class, UsedByFlow::class],
     scope = PROTOTYPE
 )
 class SignatureSpecServiceImpl @Activate constructor(
