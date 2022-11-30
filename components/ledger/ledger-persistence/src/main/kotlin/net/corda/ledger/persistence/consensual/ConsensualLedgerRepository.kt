@@ -1,24 +1,24 @@
 package net.corda.ledger.persistence.consensual
 
+import java.time.Instant
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.Tuple
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapTuples
 import net.corda.sandbox.type.UsedByPersistence
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.time.Instant
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.Tuple
 
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
@@ -32,10 +32,8 @@ import javax.persistence.Tuple
     scope = PROTOTYPE
 )
 class ConsensualLedgerRepository @Activate constructor(
-    // TODO This is only used to hash with SHA-256 so not sure. Would we want to use custom digests in here?
-    //  Also this component seems not to be used from anywhere at the moment
     @Reference
-    private val digestService: PlatformDigestService,
+    private val digestService: DigestService,
     @Reference
     private val serializationService: SerializationService,
     @Reference
