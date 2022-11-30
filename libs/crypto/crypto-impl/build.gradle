@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-library'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Common crypto implementation'
 
 dependencies {
