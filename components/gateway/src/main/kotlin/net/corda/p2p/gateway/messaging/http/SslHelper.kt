@@ -23,15 +23,24 @@ const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
 val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
-
-fun createClientSslHandler(targetServerName: String,
-                           target: URI,
-                           targetX500Name: X500Name?,
-                           trustManagerFactory: TrustManagerFactory): SslHandler {
+fun createClientSslHandler(
+    targetServerName: String,
+    target: URI,
+    targetX500Name: X500Name?,
+    trustManagerFactory: TrustManagerFactory,
+    clientCertificatesStore: KeyStoreWithPassword?
+): SslHandler {
+    val keyManagers = if (clientCertificatesStore == null) {
+        null
+    } else {
+        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
+            it.init(clientCertificatesStore.keyStore, clientCertificatesStore.password.toCharArray())
+        }.keyManagers
+    }
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
         .map { IdentityCheckingTrustManager(it, targetX500Name) }.toTypedArray()
-    sslContext.init(null, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
+    sslContext.init(keyManagers, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
         it.useClientMode = true
@@ -53,7 +62,7 @@ fun createClientSslHandler(targetServerName: String,
     return sslHandler
 }
 
-fun createServerSslHandler(keyStore: KeyStoreWithPassword, trustManager: X509ExtendedTrustManager?): SslHandler {
+fun createServerSslHandler(keyStore: KeyStoreWithPassword, trustManagers: Collection<X509ExtendedTrustManager>): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
 
     val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
@@ -67,11 +76,11 @@ fun createServerSslHandler(keyStore: KeyStoreWithPassword, trustManager: X509Ext
      */
     val keyManagers = keyManagerFactory.keyManagers
     // May need to use secure random from crypto-api module
-    sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), arrayOf(trustManager), SecureRandom())
+    sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), trustManagers.toTypedArray(), SecureRandom())
 
     val sslEngine = sslContext.createSSLEngine().also {
         it.useClientMode = false
-        it.needClientAuth = false
+        it.needClientAuth = trustManagers.isNotEmpty()
         it.enabledProtocols = arrayOf(TLS_VERSION)
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true

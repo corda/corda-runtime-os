@@ -11,7 +11,6 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SigningMode
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -72,9 +71,6 @@ class ReconfigurableHttpServerTest {
         lifecycleCoordinatorFactory,
         configurationReaderService,
         listener,
-        mock(),
-        mock(),
-        SigningMode.STUB,
         mock(),
         mock(),
     )
@@ -148,12 +144,5 @@ class ReconfigurableHttpServerTest {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         verify(resourcesHolder).keep(serverMock.constructed().last())
-    }
-
-    @Test
-    fun `applyNewConfiguration creates new key store`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-
-        verify(dynamicKeyStore.constructed().first()).keyStore
     }
 }

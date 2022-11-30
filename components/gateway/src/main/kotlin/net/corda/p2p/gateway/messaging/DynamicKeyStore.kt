@@ -18,9 +18,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import java.io.ByteArrayInputStream
@@ -48,8 +50,30 @@ internal class DynamicKeyStore(
 
     private val publicKeyToTenantId = ConcurrentHashMap<PublicKey, String>()
 
+    private val clientCertificates = ConcurrentHashMap<String, ClientCertificates>()
+
     val keyStore by lazy {
         KeyStoreFactory(this, this).createDelegatedKeyStore()
+    }
+
+    private inner class ClientCertificates(
+        certificates: CertificateChain,
+        private val tenantId: String
+    ) : DelegatedCertificateStore, DelegatedSigner {
+        override val aliasToCertificates: Map<Alias, CertificateChain> = mapOf(
+            "client-certificate" to certificates
+        )
+
+        override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
+            return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+        }
+
+        val keyStoreWithPassword by lazy {
+            KeyStoreFactory(
+                this,
+                this,
+            ).createDelegatedKeyStore()
+        }
     }
 
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES)
@@ -59,6 +83,10 @@ internal class DynamicKeyStore(
             Processor(),
             messagingConfiguration
         )
+    }
+
+    fun createKeyStoreForClient(sourceX500Name: MemberX500Name, destinationGroupId: String) : KeyStoreWithPassword? {
+        return clientCertificates["$sourceX500Name-$destinationGroupId"]?.keyStoreWithPassword
     }
 
     private val subscriptionTile = SubscriptionDominoTile(
@@ -126,6 +154,16 @@ internal class DynamicKeyStore(
                     }
                 }
             )
+            currentData.forEach { (alias, value) ->
+                value.clientTlsCertificates?.map { pemCertificate ->
+                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                }?.also { certificates ->
+                    clientCertificates[alias] = ClientCertificates(certificates, value.tenantId)
+                }
+            }
+
             logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
             ready.complete(Unit)
         }
@@ -142,6 +180,7 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
+                clientCertificates.remove(newRecord.key)
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
                 aliasToCertificates[newRecord.key] = chain.serverTlsCertificates.map { pemCertificate ->
@@ -153,6 +192,16 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
                 }
+
+                val certificates = chain.clientTlsCertificates?.map { pemCertificate ->
+                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                }
+                if (certificates != null) {
+                    clientCertificates[newRecord.key] = ClientCertificates(certificates, chain.tenantId)
+                }
+
                 logger.info("TLS certificate updated for the following identities: ${currentData.keys}")
             }
         }

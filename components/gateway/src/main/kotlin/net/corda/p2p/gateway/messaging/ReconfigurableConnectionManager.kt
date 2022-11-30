@@ -12,7 +12,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
-class ReconfigurableConnectionManager(
+internal class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =

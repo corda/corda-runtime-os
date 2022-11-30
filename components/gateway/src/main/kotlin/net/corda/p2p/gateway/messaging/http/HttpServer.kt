@@ -100,14 +100,16 @@ internal class HttpServer(
         eventListener.onRequest(request)
     }
 
-    private val trustManager by lazy {
+    private val trustManagers by lazy {
         if (configuration.sslConfig.tlsType == TlsType.MUTUAL) {
-            DynamicX509ExtendedTrustManager(
-                trustStoresMap,
-                configuration.sslConfig.revocationCheck,
+            listOf(
+                DynamicX509ExtendedTrustManager(
+                    trustStoresMap,
+                    configuration.sslConfig.revocationCheck,
+                )
             )
         } else {
-            null
+            emptyList()
         }
     }
 
@@ -115,7 +117,7 @@ internal class HttpServer(
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, trustManager))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, trustManagers))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))

@@ -14,7 +14,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
@@ -42,6 +44,7 @@ internal class OutboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     private val trustStoresMap: TrustStoresMap,
+    private val dynamicKeyStore: DynamicKeyStore,
     retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
@@ -109,17 +112,26 @@ internal class OutboundMessageHandler(
                     } else {
                         null
                     }
+                    val keyStore = if (connectionConfigReader.sslConfiguration?.tlsType == TlsType.MUTUAL) {
+                        dynamicKeyStore.createKeyStoreForClient(
+                            sourceX500Name = MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
+                            destinationGroupId = peerMessage.header.destinationIdentity.groupId
+                        )
+                    } else {
+                        null
+                    }
                     val destinationInfo = DestinationInfo(
                         URI.create(peerMessage.header.address),
                         sni,
                         expectedX500Name,
                         trustStore,
+                        keyStore,
                     )
                     val responseFuture = sendMessage(destinationInfo, gatewayMessage)
                         .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
                     responseFuture.whenCompleteAsync({ response, error ->
                         handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
-                    }, retryThreadPool).thenApply { Unit }
+                    }, retryThreadPool).thenApply { }
                 } catch (e: IllegalArgumentException) {
                     logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                     CompletableFuture.completedFuture(Unit)

@@ -47,7 +47,7 @@ import kotlin.concurrent.withLock
  * @param listener an (optional) listener that can be used to be informed when connection is established/closed.
  */
 @Suppress("LongParameterList")
-class HttpClient(
+internal class HttpClient(
     private val destinationInfo: DestinationInfo,
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
@@ -252,7 +252,8 @@ class HttpClient(
                     destinationInfo.sni,
                     destinationInfo.uri,
                     destinationInfo.legalName,
-                    trustManagerFactory
+                    trustManagerFactory,
+                    destinationInfo.clientCertificateStore,
                 )
             )
             pipeline.addLast(HttpClientCodec())
@@ -273,6 +274,7 @@ data class DestinationInfo(
     val sni: String,
     val legalName: X500Name?,
     val trustStore: KeyStore,
+    val clientCertificateStore: KeyStoreWithPassword?
 )
 
 typealias HttpRequestPayload = ByteArray

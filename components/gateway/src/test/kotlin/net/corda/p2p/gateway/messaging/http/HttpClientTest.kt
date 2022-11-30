@@ -51,7 +51,8 @@ class HttpClientTest {
         uri = URI("http://www.r3.com:3023"),
         sni = "sni",
         legalName = null,
-        trustStore
+        trustStore,
+        null,
     )
     private val sslConfiguration = mock<SslConfiguration> {
         on { revocationCheck } doReturn RevocationConfig(RevocationConfigMode.OFF)

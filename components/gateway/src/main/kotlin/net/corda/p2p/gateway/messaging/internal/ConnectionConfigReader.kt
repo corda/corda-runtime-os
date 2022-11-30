@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
@@ -22,7 +23,13 @@ internal class ConnectionConfigReader(
         private val logger = LoggerFactory.getLogger(ConnectionConfigReader::class.java)
     }
 
-    var connectionConfig = ConnectionConfiguration()
+    val connectionConfig: ConnectionConfiguration
+        get() = configuration?.connectionConfig ?: ConnectionConfiguration()
+
+    val sslConfiguration: SslConfiguration?
+        get() = configuration?.sslConfig
+
+    private var configuration: GatewayConfiguration? = null
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -40,12 +47,11 @@ internal class ConnectionConfigReader(
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder
         ): CompletableFuture<Unit> {
-            if (newConfiguration.connectionConfig != oldConfiguration?.connectionConfig) {
+            if (newConfiguration != oldConfiguration) {
                 logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")
-                connectionConfig = newConfiguration.connectionConfig
+                configuration = newConfiguration
             }
             return CompletableFuture.completedFuture(Unit)
         }
-
     }
 }

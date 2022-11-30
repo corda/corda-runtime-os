@@ -10,6 +10,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.certificates.RevocationChecker
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
@@ -43,15 +44,21 @@ class Gateway(
         subscriptionFactory,
         messagingConfiguration
     )
+    private val dynamicKeyStore = DynamicKeyStore(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration,
+        signingMode,
+        cryptoOpsClient
+    )
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
-        signingMode,
-        cryptoOpsClient,
         trustStoresMap,
+        dynamicKeyStore,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -59,6 +66,7 @@ class Gateway(
         subscriptionFactory,
         messagingConfiguration,
         trustStoresMap,
+        dynamicKeyStore,
     )
     private val revocationChecker = RevocationChecker(
         subscriptionFactory,
@@ -73,6 +81,7 @@ class Gateway(
             outboundMessageProcessor.dominoTile,
             revocationChecker.dominoTile,
             trustStoresMap.dominoTile,
+            dynamicKeyStore.dominoTile,
         )
 
     override val dominoTile = ComplexDominoTile(

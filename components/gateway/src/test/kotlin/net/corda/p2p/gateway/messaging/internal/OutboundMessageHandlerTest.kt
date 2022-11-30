@@ -135,6 +135,7 @@ class OutboundMessageHandlerTest {
         subscriptionFactory,
         SmartConfigImpl.empty(),
         trustStores,
+        mock(),
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
@@ -153,6 +154,7 @@ class OutboundMessageHandlerTest {
             configurationReaderService,
             subscriptionFactory,
             SmartConfigImpl.empty(),
+            mock(),
             mock(),
         ) { mockExecutorService }
         onClose!!.invoke()
@@ -248,7 +250,8 @@ class OutboundMessageHandlerTest {
                     URI.create("https://r3.com/"),
                     "r3.com",
                     null,
-                    truststore
+                    truststore,
+                    null,
                 )
             )
     }
@@ -284,7 +287,8 @@ class OutboundMessageHandlerTest {
                     URI.create("https://r3.com/"),
                     "e7aa0d5c6b562cc528e490d58b7040fe.p2p.corda.net",
                     X500Name("O=PartyB, L=London, C=GB"),
-                    truststore
+                    truststore,
+                    null,
                 )
             )
     }

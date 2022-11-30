@@ -2,17 +2,13 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
@@ -27,10 +23,7 @@ internal class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
-    subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
-    signingMode: SigningMode,
-    cryptoOpsClient: CryptoOpsClient,
+    private val dynamicKeyStore: DynamicKeyStore,
     private val trustStoresMap: TrustStoresMap,
 ) : LifecycleWithDominoTile {
 
@@ -38,20 +31,10 @@ internal class ReconfigurableHttpServer(
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    private val dynamicKeyStore = DynamicKeyStore(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        nodeConfiguration,
-        signingMode,
-        cryptoOpsClient
-    )
-
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
-        dependentChildren = listOf(dynamicKeyStore.dominoTile.coordinatorName),
-        managedChildren = listOf(dynamicKeyStore.dominoTile.toNamedLifecycle()),
     )
 
     companion object {

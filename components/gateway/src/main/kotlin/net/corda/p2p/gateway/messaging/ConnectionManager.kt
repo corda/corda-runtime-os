@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
  * or to drop a request for one.
  *
  */
-class ConnectionManager(
+internal class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
     private val connectionConfiguration: ConnectionConfiguration,
     nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
