@@ -723,6 +723,139 @@ class GatewayIntegrationTest : TestBase() {
         }
     }
 
+    @Nested
+    inner class MutualTlsTests {
+        private val certificatesAuthority = CertificateAuthorityFactory
+            .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())
+        private val mutualTlsSslConfiguration = SslConfiguration(
+            revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+            tlsType = TlsType.MUTUAL,
+        )
+        private fun Node.createMutualTlsGateway(
+            name: String,
+            host: String,
+        ): Pair<URI, Gateway> {
+            val serverCertificate = certificatesAuthority.generateKeyAndCertificate(host)
+            val clientCertificate = certificatesAuthority.generateKeyAndCertificate("www.nop.com")
+            this.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
+            this.publish(
+                Record(
+                    GATEWAY_TLS_TRUSTSTORES,
+                    "$name-$GROUP_ID",
+                    certificatesAuthority.toGatewayTrustStore(name)
+                )
+            )
+            publishKeyStoreCertificatesAndKeys(
+                this.publisher,
+                "$name-$GROUP_ID",
+                serverCertificate.toKeyStoreAndPassword(),
+                clientCertificate.toKeyStoreAndPassword(),
+            )
+            val gatewayAddress = URI.create("http://$host:${getOpenPort()}")
+
+            return gatewayAddress to Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        gatewayAddress.host,
+                        gatewayAddress.port,
+                        "/",
+                        mutualTlsSslConfiguration,
+                        MAX_REQUEST_SIZE
+                    ),
+                    this.lifecycleCoordinatorFactory
+                ),
+                this.subscriptionFactory,
+                this.publisherFactory,
+                this.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                SigningMode.STUB,
+                mock()
+            ).also {
+                it.startAndWaitForStarted()
+            }
+        }
+
+        private fun Node.receiveMessages(block: (LinkInMessage) -> Unit): AutoCloseable {
+            return this.subscriptionFactory.createEventLogSubscription(
+                subscriptionConfig = SubscriptionConfig("node.ingest", LINK_IN_TOPIC),
+                processor = object : EventLogProcessor<String, LinkInMessage> {
+                    override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+                        events.mapNotNull {
+                            it.value
+                        }.forEach(block)
+                        return emptyList()
+                    }
+
+                    override val keyClass = String::class.java
+                    override val valueClass = LinkInMessage::class.java
+                },
+                messagingConfig = messagingConfig.withValue(
+                    INSTANCE_ID,
+                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
+                ),
+                partitionAssignmentListener = null
+            ).also {
+                it.start()
+            }
+        }
+
+        private fun Node.send(
+            from: String,
+            to: String,
+            uri: URI,
+            content: String,
+        ) {
+            val msg = LinkOutMessage.newBuilder().apply {
+                header = LinkOutHeader(
+                    HoldingIdentity(to, GROUP_ID),
+                    HoldingIdentity(from, GROUP_ID),
+                    NetworkType.CORDA_5,
+                    uri.toString()
+                )
+                payload = authenticatedP2PMessage(content)
+            }.build()
+            this.publish(
+                Record(LINK_OUT_TOPIC, "key", msg)
+            )
+        }
+
+        @Test
+        @Timeout(60)
+        fun `mutual TLS tests`() {
+            val (aliceGatewayAddress, aliceGateway) = alice.createMutualTlsGateway(
+                aliceX500name,
+                "www.alice.net",
+            )
+            val (bobGatewayAddress, bobGateway) = bob.createMutualTlsGateway(
+                bobX500Name,
+                "www.bob.net",
+            )
+
+            val messageCount = 100
+            val receivedLatch = CountDownLatch(messageCount * 2)
+
+            val bobListener = bob.receiveMessages {
+                receivedLatch.countDown()
+            }
+            val aliceListener = alice.receiveMessages {
+                receivedLatch.countDown()
+            }
+
+            (1..messageCount).map {
+                alice.send(aliceX500name, bobX500Name, bobGatewayAddress, "to bob $it")
+                bob.send(bobX500Name, aliceX500name, aliceGatewayAddress, "to alice $it")
+            }
+            receivedLatch.await(10, TimeUnit.SECONDS)
+
+            assertThat(receivedLatch.count).isEqualTo(0)
+
+            bobListener.close()
+            aliceListener.close()
+            bobGateway.stop()
+            aliceGateway.stop()
+        }
+    }
+
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
         header = CommonHeader(MessageType.DATA, 0, sessionId, 1L, Instant.now().toEpochMilli())
         payload = ByteBuffer.wrap(content.toByteArray())
@@ -838,22 +971,6 @@ class GatewayIntegrationTest : TestBase() {
                 val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
                 assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
             }
-        }
-
-        private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String): GatewayTruststore {
-            return GatewayTruststore(
-                HoldingIdentity(sourceX500Name, GROUP_ID),
-                listOf(
-                    this.caCertificate.toPem()
-                )
-            )
-        }
-
-        fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
-            return KeyStoreWithPassword(
-                this.toKeyStore(),
-                CertificateAuthority.PASSWORD
-            )
         }
 
         @Test
@@ -1008,5 +1125,20 @@ class GatewayIntegrationTest : TestBase() {
                 }
             }
         }
+    }
+    private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String): GatewayTruststore {
+        return GatewayTruststore(
+            HoldingIdentity(sourceX500Name, GROUP_ID),
+            listOf(
+                this.caCertificate.toPem()
+            )
+        )
+    }
+
+    fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        return KeyStoreWithPassword(
+            this.toKeyStore(),
+            CertificateAuthority.PASSWORD
+        )
     }
 }

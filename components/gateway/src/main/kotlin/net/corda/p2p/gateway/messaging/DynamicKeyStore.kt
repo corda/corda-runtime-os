@@ -65,7 +65,7 @@ internal class DynamicKeyStore(
         )
 
         override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
-            return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+            return signer.sign(tenantId, publicKey, spec, data)
         }
 
         val keyStoreWithPassword by lazy {

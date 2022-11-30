@@ -265,4 +265,82 @@ open class TestBase {
             it.join()
         }
     }
+    protected fun publishKeyStoreCertificatesAndKeys(
+        publisher: Publisher,
+        key: String,
+        serverKeyStoreWithPassword: KeyStoreWithPassword,
+        clientKeyStoreWithPassword: KeyStoreWithPassword,
+    ) {
+        val tenantId = "tenantId"
+        val serverAlias = serverKeyStoreWithPassword.keyStore.aliases().toList().first()
+        val serverCertificateChain = serverKeyStoreWithPassword.keyStore.getCertificateChain(serverAlias)
+        val serverPems = serverCertificateChain.map { certificate ->
+            StringWriter().use { str ->
+                JcaPEMWriter(str).use { writer ->
+                    writer.writeObject(certificate)
+                }
+                str.toString()
+            }
+        }
+
+        val clientAlias = clientKeyStoreWithPassword.keyStore.aliases().toList().first()
+        val clientCertificateChain = serverKeyStoreWithPassword.keyStore.getCertificateChain(clientAlias)
+        val clientPems = clientCertificateChain.map { certificate ->
+            StringWriter().use { str ->
+                JcaPEMWriter(str).use { writer ->
+                    writer.writeObject(certificate)
+                }
+                str.toString()
+            }
+        }
+        val certificateRecord = Record(
+            Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
+            key,
+            GatewayTlsCertificates(tenantId, serverPems, clientPems)
+        )
+
+        val serverPrivateKey = serverKeyStoreWithPassword
+            .keyStore
+            .getKey(serverAlias,
+                serverKeyStoreWithPassword.password.toCharArray())
+            .toPem()
+
+        val serverKeyPair = KeyPairEntry(
+            serverPrivateKey,
+        )
+        val serverKeysRecord = Record(
+            CRYPTO_KEYS_TOPIC,
+            UUID.randomUUID().toString(),
+            TenantKeys(
+                tenantId,
+                serverKeyPair
+            )
+        )
+        val clientPrivateKey = clientKeyStoreWithPassword
+            .keyStore
+            .getKey(clientAlias,
+                clientKeyStoreWithPassword.password.toCharArray())
+            .toPem()
+
+        val clientKeyPair = KeyPairEntry(
+            clientPrivateKey,
+        )
+        val clientKeysRecord = Record(
+            CRYPTO_KEYS_TOPIC,
+            UUID.randomUUID().toString(),
+            TenantKeys(
+                tenantId,
+                clientKeyPair,
+            )
+        )
+        publisher.publish(
+            listOf(
+                certificateRecord,
+                clientKeysRecord,
+                serverKeysRecord,
+            )
+        ).forEach {
+            it.join()
+        }
+    }
 }

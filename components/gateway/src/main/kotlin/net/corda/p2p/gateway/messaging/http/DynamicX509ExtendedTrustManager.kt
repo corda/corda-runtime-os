@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.net.Socket
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
@@ -16,7 +17,9 @@ internal class DynamicX509ExtendedTrustManager(
             .asSequence()
             .mapNotNull {
                 it.trustManagers(revocationCheck)
-            }.filterIsInstance<X509ExtendedTrustManager>()
+            }
+            .flatten()
+            .filterIsInstance<X509ExtendedTrustManager>()
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
         for (manager in allManagers) {
@@ -55,39 +58,15 @@ internal class DynamicX509ExtendedTrustManager(
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        for (manager in allManagers) {
-            try {
-                manager.checkServerTrusted(chain, authType, socket)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
-            }
-        }
-        throw CertificateException("Can not find manager")
+        throw CordaRuntimeException("The DynamicX509ExtendedTrustManager should only be used in server side")
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        for (manager in allManagers) {
-            try {
-                manager.checkServerTrusted(chain, authType, engine)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
-            }
-        }
-        throw CertificateException("Can not find manager")
+        throw CordaRuntimeException("The DynamicX509ExtendedTrustManager should only be used in server side")
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        for (manager in allManagers) {
-            try {
-                manager.checkServerTrusted(chain, authType)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
-            }
-        }
-        throw CertificateException("Can not find manager")
+        throw CordaRuntimeException("The DynamicX509ExtendedTrustManager should only be used in server side")
     }
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
