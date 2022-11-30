@@ -99,6 +99,6 @@ interface PermissionEndpoint : RpcOps {
     fun createAndAssignPermissions(
         @HttpRpcRequestBodyParameter(description = "The details of the permissions to be created along with existing role " +
                 "identifiers newly created permissions should be associated with.")
-        permissionsToCreate: BulkCreatePermissionsRequestType
+        request: BulkCreatePermissionsRequestType
     ): ResponseEntity<BulkCreatePermissionsResponseType>
 }
