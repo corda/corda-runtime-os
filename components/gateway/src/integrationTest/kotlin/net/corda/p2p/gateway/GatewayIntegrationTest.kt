@@ -177,6 +177,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `gateway response to invalid request`() {
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, aliceKeyStore)
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
 
@@ -204,8 +205,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB,
-                mock()
+                SigningMode.REAL,
+                testCryptoOpsClient
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
