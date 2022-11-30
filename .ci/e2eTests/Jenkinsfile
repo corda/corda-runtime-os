@@ -110,6 +110,7 @@ pipeline {
                     kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
                     kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
                     kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
                 '''.stripIndent()
             }
         }

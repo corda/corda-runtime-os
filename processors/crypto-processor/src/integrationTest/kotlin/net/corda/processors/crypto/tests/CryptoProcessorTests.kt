@@ -1,16 +1,22 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.hes.HybridEncryptionParams
-import net.corda.crypto.hes.EphemeralKeyPairEncryptor
-import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -18,6 +24,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -37,6 +44,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -52,6 +61,7 @@ import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.processors.crypto.tests.infra.startAndWait
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -83,12 +93,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -151,6 +155,7 @@ class CryptoProcessorTests {
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
+        private lateinit var flowOpsResponsesSub: Subscription<String, FlowEvent>
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
@@ -193,8 +198,8 @@ class CryptoProcessorTests {
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            if (::flowOpsResponses.isInitialized) {
-                flowOpsResponses.close()
+            if (::flowOpsResponsesSub.isInitialized) {
+                flowOpsResponsesSub.close()
             }
             cryptoProcessor.stop()
             eventually { assertFalse(cryptoProcessor.isRunning) }
@@ -230,11 +235,20 @@ class CryptoProcessorTests {
                     )
                 )
             )
+
             flowOpsResponses = FlowOpsResponses(
-                messagingConfig,
-                subscriptionFactory,
                 cordaAvroSerializationFactory.createAvroDeserializer({}, FlowOpsResponse::class.java)
             )
+            flowOpsResponsesSub = subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(
+                    groupName = "TEST",
+                    eventTopic = Schemas.Flow.FLOW_EVENT_TOPIC
+                ),
+                processor = flowOpsResponses,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            ).also { it.start() }
+
             transformer = cryptoFlowOpsTransformerFactory.create(
                 requestingComponent = "test",
                 responseTopic = RESPONSE_TOPIC

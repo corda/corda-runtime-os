@@ -49,6 +49,10 @@ heapDumpOnOutOfMemoryError: false
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
+# -- service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+serviceAccount:
+  name: ""
+
 # Database configuration
 db:
   # Cluster database configuration
@@ -241,6 +245,10 @@ bootstrap:
 
   # node selector for the bootstrap containers
   nodeSelector: { }
+
+  # service account for the bootstrap containers
+  serviceAccount:
+    name: ""
 
 # worker configuration
 workers:

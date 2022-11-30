@@ -10,7 +10,6 @@ import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.messaging.SimFiberBase
-import net.corda.simulator.runtime.signing.BaseSimKeyStore
 import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
@@ -86,7 +85,7 @@ class SimulatorDelegateBase  (
     ): SimulatedVirtualNode {
         log.info("Creating virtual node for \"${responder.member}\", flow instance provided for protocol $protocol")
         fiber.registerResponderInstance(responder.member, protocol, responderFlow)
-        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory, BaseSimKeyStore())
+        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory)
     }
 
     override fun close() {

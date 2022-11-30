@@ -65,7 +65,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -80,7 +84,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForB
+        )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
@@ -146,7 +154,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -161,7 +173,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForB
+        )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
@@ -233,7 +249,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -248,7 +268,11 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForB
+        )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
