@@ -112,20 +112,20 @@ class PermissionEndpointImpl @Activate constructor(
         return permissions.map { it.convertToEndpointType() }
     }
 
-    override fun createAndAssignPermissions(permissionsToCreate: BulkCreatePermissionsRequestType):
+    override fun createAndAssignPermissions(request: BulkCreatePermissionsRequestType):
             ResponseEntity<BulkCreatePermissionsResponseType> {
 
         // Validate non-empty set of permissions requested
-        if(permissionsToCreate.permissionsToCreate.isEmpty()) {
+        if(request.permissionsToCreate.isEmpty()) {
             throw InvalidInputDataException("No permissions requested to be created")
         }
 
         // Validate RoleIds passed in
-        if (permissionsToCreate.roleIds.isNotEmpty()) {
+        if (request.roleIds.isNotEmpty()) {
             val allRoleIds = permissionManagementService.permissionManager.getRoles().map { it.id }
-            val intersection = allRoleIds.intersect(permissionsToCreate.roleIds)
-            if (intersection != permissionsToCreate.roleIds) {
-                val notFoundRoles = permissionsToCreate.roleIds.subtract(intersection)
+            val intersection = allRoleIds.intersect(request.roleIds)
+            if (intersection != request.roleIds) {
+                val notFoundRoles = request.roleIds.subtract(intersection)
                 throw InvalidInputDataException("Roles with the following ids cannot be found: $notFoundRoles")
             }
         }
@@ -135,7 +135,7 @@ class PermissionEndpointImpl @Activate constructor(
 
         // Construct and send Kafka message and wait for the response
         val createPermissionsResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            createPermissions(permissionsToCreate.convertToDto(principal))
+            createPermissions(request.convertToDto(principal))
         }
 
         return ResponseEntity.created(createPermissionsResult.convertToEndpointType())
