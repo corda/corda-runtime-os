@@ -4,6 +4,10 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Corda Sandbox'
 
 dependencies {
