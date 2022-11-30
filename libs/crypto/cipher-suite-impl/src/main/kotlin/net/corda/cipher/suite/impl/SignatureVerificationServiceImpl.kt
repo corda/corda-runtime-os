@@ -25,9 +25,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 import javax.crypto.Cipher
 
-// TODO We also have `DigitalSignatureVerificationService` which is sandbox singleton and delegates to this one.
-//  Should this one be platform?
-//  _Seems we are calling `getSigningData` further below which makes use of `customDigestName` so maybe should stay sandbox.
 @Component(
     service = [ SignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
