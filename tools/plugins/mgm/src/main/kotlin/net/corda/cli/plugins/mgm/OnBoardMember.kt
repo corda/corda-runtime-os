@@ -215,11 +215,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         setupClient()
 
+        disableClrChecks()
+
         createTlsKeyIdNeeded()
 
         setupNetwork()
-
-        disableClrChecks()
 
         register()
 
