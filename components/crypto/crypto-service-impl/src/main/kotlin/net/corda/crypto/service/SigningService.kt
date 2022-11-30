@@ -75,7 +75,7 @@ interface SigningService {
      * @param hsmId the HSM's id which the key is generated in.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
      * the provided alias or return normally without overriding the key.
-     * @param context the optional key/value operation context.
+     * @param context the key/value operation context. The key `tenantId` must be specified.
      */
     fun createWrappingKey(
         hsmId: String,
@@ -90,7 +90,7 @@ interface SigningService {
      * @param tenantId the tenant's id which the key pair is generated for.
      * @param category The HSM category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
+     * @param scheme the key'sSS scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * The [tenantId] and [category] are used to find which HSM is being used to persist the actual key. After the key
