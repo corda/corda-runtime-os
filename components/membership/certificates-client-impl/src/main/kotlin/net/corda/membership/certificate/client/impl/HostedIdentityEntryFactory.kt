@@ -195,6 +195,7 @@ internal class HostedIdentityEntryFactory(
         return sessionCertificate
     }
 
+    @Suppress("LongParameterList")
     private fun getAndValidateTlsCertificate(
         tlsCertificateHoldingId: ShortHash?,
         tlsCertificateChainAlias: String,
