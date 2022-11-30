@@ -1,6 +1,5 @@
 package net.corda.crypto.merkle.impl
 
-import java.security.SecureRandom
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.security.SecureRandom
 
 class MerkleTreeProviderImplTest {
     companion object {

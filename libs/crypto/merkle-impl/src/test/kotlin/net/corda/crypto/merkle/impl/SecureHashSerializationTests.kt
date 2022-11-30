@@ -1,6 +1,5 @@
 package net.corda.crypto.merkle.impl
 
-import java.security.MessageDigest
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.security.MessageDigest
 
 class SecureHashSerializationTests {
     companion object {
