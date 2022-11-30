@@ -1,6 +1,8 @@
 package net.corda.crypto.merkle.impl
 
+import java.security.SecureRandom
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
@@ -15,13 +17,11 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
-import java.security.SecureRandom
-import net.corda.cipher.suite.impl.DigestServiceImpl
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 
 class MerkleTreeProviderImplTest {
     companion object {
