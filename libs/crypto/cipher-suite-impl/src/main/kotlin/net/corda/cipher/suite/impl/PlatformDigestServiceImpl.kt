@@ -1,5 +1,10 @@
 package net.corda.cipher.suite.impl
 
+import java.io.InputStream
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.security.Provider
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.PlatformDigestService
@@ -7,24 +12,18 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.InputStream
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.security.Provider
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A digest service singleton for everyone not inside a sandbox to share.
  */
-@Component(service = [PlatformDigestService::class, SingletonSerializeAsToken::class])
+@Component(service = [PlatformDigestService::class])
 class PlatformDigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
-) : PlatformDigestService, SingletonSerializeAsToken {
+) : PlatformDigestService {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
         val factory = DoubleSHA256DigestFactory()
         it[factory.algorithm] = factory
