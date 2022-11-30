@@ -112,7 +112,6 @@ internal class OutboundMessageHandler(
                     } else {
                         null
                     }
-                    println("QQQ Sending to peerMessage.header.address, tls type is ${connectionConfigReader.sslConfiguration?.tlsType}")
                     val keyStore = if (connectionConfigReader.sslConfiguration?.tlsType == TlsType.MUTUAL) {
                         dynamicKeyStore.createKeyStoreForClient(
                             sourceX500Name = MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),

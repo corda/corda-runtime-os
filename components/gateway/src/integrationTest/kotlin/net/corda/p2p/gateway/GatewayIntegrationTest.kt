@@ -747,7 +747,7 @@ class GatewayIntegrationTest : TestBase() {
             )
             publishKeyStoreCertificatesAndKeys(
                 this.publisher,
-                "$name-$GROUP_ID",
+                "$GROUP_ID-$name",
                 serverCertificate.toKeyStoreAndPassword(),
                 clientCertificate.toKeyStoreAndPassword(),
             )

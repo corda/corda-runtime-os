@@ -69,14 +69,6 @@ internal class DynamicKeyStore(
         }
 
         val keyStoreWithPassword by lazy {
-            println("QQQ Creating key store for $tenantId")
-            aliasToCertificates.entries.forEach {
-                println("QQQ \t We have ${it.key} -> ")
-                it.value.forEach {
-                    println("QQQ \t\t certificate ${it.type}")
-                }
-            }
-            println("QQQ Creating key store for $tenantId")
             KeyStoreFactory(
                 this,
                 this,
@@ -94,11 +86,7 @@ internal class DynamicKeyStore(
     }
 
     fun createKeyStoreForClient(sourceX500Name: MemberX500Name, destinationGroupId: String): KeyStoreWithPassword? {
-        println("QQQ Looking for key store of $sourceX500Name-$destinationGroupId")
-        clientCertificates.keys.forEach {
-            println("QQQ \t we have a key: $it")
-        }
-        return clientCertificates["$sourceX500Name-$destinationGroupId"]?.keyStoreWithPassword
+        return clientCertificates["$destinationGroupId-$sourceX500Name"]?.keyStoreWithPassword
     }
 
     private val subscriptionTile = SubscriptionDominoTile(
