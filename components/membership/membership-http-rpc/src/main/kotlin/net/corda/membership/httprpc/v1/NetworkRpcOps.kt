@@ -45,7 +45,8 @@ interface NetworkRpcOps : RpcOps {
         @HttpRpcRequestBodyParameter(
             description = """
                 Request object which contains properties for P2P messaging including:
-                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias
+                p2pServerTlsCertificateChainAlias: the P2P Server TLS certificate chain alias
+                p2pClientTlsCertificateChainAlias: the P2P Client TLS certificate chain alias (for mutual TLS)
                 useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be 
                 used or the virtual node certificate and key.
                 useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type 

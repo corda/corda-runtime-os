@@ -21,6 +21,7 @@ abstract class BaseOnboard : Runnable {
     private companion object {
         const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
         const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
+        const val P2P_TLS_CLIENT_CERTIFICATE_ALIAS = "p2p-tls-cert-client"
     }
 
     @Parameters(
@@ -41,6 +42,12 @@ abstract class BaseOnboard : Runnable {
         description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
     )
     var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+
+    @Option(
+        names = ["--mutual-tls", "-m"],
+        description = ["Set up mutual TLS member"]
+    )
+    var mutualTls: Boolean = false
 
     protected val json by lazy {
         ObjectMapper()
@@ -182,6 +189,7 @@ abstract class BaseOnboard : Runnable {
             ).also { it.save() }
     }
 
+    @Suppress("ComplexMethod")
     protected fun createTlsKeyIdNeeded() {
         val keys = Unirest.get("/keys/p2p?category=TLS")
             .asJson()
@@ -212,20 +220,46 @@ abstract class BaseOnboard : Runnable {
                 .asJson()
                 .bodyOrThrow()
         }
+
+        if (mutualTls) {
+            val generateClientCsrResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
+                .body(
+                    mapOf(
+                        "x500Name" to x500Name,
+                        "subjectAlternativeNames" to listOf("www.nop.org")
+                    )
+                ).asString()
+            val clientCsr = generateClientCsrResponse.bodyOrThrow().reader().use { reader ->
+                PEMParser(reader).use { parser ->
+                    parser.readObject()
+                }
+            } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: ${generateClientCsrResponse.body}")
+            ca.signCsr(clientCsr).toPem().byteInputStream().use { certificate ->
+                Unirest.put("/certificates/cluster/p2p-client-tls")
+                    .field("certificate", certificate, "certificate.pem")
+                    .field("alias", P2P_TLS_CLIENT_CERTIFICATE_ALIAS)
+                    .asJson()
+                    .bodyOrThrow()
+            }
+        }
     }
 
     protected fun setupNetwork() {
+        val baseRequest = mapOf(
+            "p2pServerTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
+            "useClusterLevelTlsCertificateAndKey" to true,
+            "sessionKeyTenantId" to null,
+            "sessionKeyId" to sessionKeyId
+        )
+        val request = if (mutualTls) {
+            baseRequest + ("p2pClientTlsCertificateChainAlias" to P2P_TLS_CLIENT_CERTIFICATE_ALIAS)
+        } else {
+            baseRequest
+        }
+        P2P_TLS_CLIENT_CERTIFICATE_ALIAS
         Unirest.put("/network/setup/$holdingId")
-            .body(
-                mapOf(
-                    "request" to mapOf(
-                        "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
-                        "useClusterLevelTlsCertificateAndKey" to true,
-                        "sessionKeyTenantId" to null,
-                        "sessionKeyId" to sessionKeyId
-                    )
-                )
-            ).asJson()
+            .body(request)
+            .asJson()
             .bodyOrThrow()
     }
 
@@ -272,7 +306,8 @@ abstract class BaseOnboard : Runnable {
                 "sslConfig" to mapOf(
                     "revocationCheck" to mapOf(
                         "mode" to "OFF"
-                    )
+                    ),
+                    "tlsType" to if (mutualTls) "MUTUAL" else "ONE_WAY"
                 )
             )
             Unirest.put("/config")
