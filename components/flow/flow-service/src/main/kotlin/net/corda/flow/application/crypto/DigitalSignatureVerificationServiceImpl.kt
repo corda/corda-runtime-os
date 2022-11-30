@@ -1,5 +1,6 @@
 package net.corda.flow.application.crypto
 
+import java.security.PublicKey
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -12,10 +13,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.PublicKey
 
 @Component(
-    service = [ DigitalSignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    service = [DigitalSignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
