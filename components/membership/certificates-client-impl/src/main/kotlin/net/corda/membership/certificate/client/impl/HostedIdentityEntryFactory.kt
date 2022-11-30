@@ -129,6 +129,7 @@ internal class HostedIdentityEntryFactory(
             tlsKeyTenantId,
             nodeInfo,
             policy,
+            CertificateUsage.P2P_SERVER_TLS,
         )
         val tlsClientCertificates = tlsClientCertificateChainAlias?.let {
             getAndValidateTlsCertificate(
@@ -137,6 +138,7 @@ internal class HostedIdentityEntryFactory(
                 tlsKeyTenantId,
                 nodeInfo,
                 policy,
+                CertificateUsage.P2P_CLIENT_TLS,
             )
         }
         val sessionCertificate = getAndValidateSessionCertificate(
@@ -198,11 +200,12 @@ internal class HostedIdentityEntryFactory(
         tlsCertificateChainAlias: String,
         tlsKeyTenantId: String,
         nodeInfo: VirtualNodeInfo,
-        policy: GroupPolicy
+        policy: GroupPolicy,
+        usage: CertificateUsage,
     ): List<String> {
         val tlsCertificates = getCertificates(
             tlsCertificateHoldingId,
-            CertificateUsage.P2P_SERVER_TLS,
+            usage,
             tlsCertificateChainAlias,
         )
         validateCertificates(
