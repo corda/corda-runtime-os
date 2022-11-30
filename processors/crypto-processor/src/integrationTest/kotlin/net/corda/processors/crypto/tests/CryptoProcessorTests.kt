@@ -1,6 +1,12 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -87,12 +93,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {

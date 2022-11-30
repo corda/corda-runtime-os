@@ -1,5 +1,9 @@
 package net.corda.processors.crypto.tests.infra
 
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.flow.event.FlowEvent
@@ -7,10 +11,6 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.concurrent.getOrThrow
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Future
 
 class FlowOpsResponses(
     private val deserializer: CordaAvroDeserializer<FlowOpsResponse>
