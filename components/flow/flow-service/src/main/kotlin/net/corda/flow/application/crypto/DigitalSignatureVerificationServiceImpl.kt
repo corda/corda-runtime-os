@@ -1,6 +1,9 @@
 package net.corda.flow.application.crypto
 
+import java.security.PublicKey
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.SignatureVerificationService
@@ -10,16 +13,15 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.PublicKey
 
 @Component(
-    service = [DigitalSignatureVerificationService::class, UsedByFlow::class],
+    service = [DigitalSignatureVerificationService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService
-) : DigitalSignatureVerificationService, UsedByFlow, SingletonSerializeAsToken {
+) : DigitalSignatureVerificationService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     @Suspendable
     override fun verify(
