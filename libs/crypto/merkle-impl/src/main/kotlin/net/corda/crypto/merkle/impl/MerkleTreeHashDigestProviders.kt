@@ -13,8 +13,6 @@ import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 
-// TODO Confirm if all DigestService references in this file should be indeed sandbox.
-
 private fun createNonce(random: SecureRandom): ByteArray {
     val nonce = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH)
     random.nextBytes(nonce)
