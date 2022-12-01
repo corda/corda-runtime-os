@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.data.transaction
 
-import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TimeWindow
