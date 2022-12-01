@@ -1,6 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import java.io.InputStream
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.io.InputStream
 
 // DigestServiceImpl is basically a wrapper around `PlatformDigestServiceImpl` so main hashing functionality
 // is tested in `PlatformDigestServiceImplTest`. Here we will only assert wrapping behavior

@@ -1,6 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import java.io.InputStream
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -17,6 +16,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
+import java.io.InputStream
 
 @Component(
     service = [DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
