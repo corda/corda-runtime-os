@@ -34,9 +34,10 @@
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
+        <Logger name="com.zaxxer.hikari" level="warn" />
+        <Logger name="io.javalin.Javalin" level="warn" />
         <Logger name="org.apache.aries.spifly" level="warn" />
         <Logger name="org.apache.kafka" level="warn" />
-        <Logger name="io.javalin.Javalin" level="warn" />
         <Logger name="org.eclipse.jetty" level="warn" />
         <Logger name="org.hibernate" level="warn" />
 
