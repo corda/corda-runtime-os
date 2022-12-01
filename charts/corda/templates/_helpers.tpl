@@ -550,8 +550,13 @@ DB SALT environment variable
 - name: SALT
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | default (printf "%s-db-worker" (include "corda.fullname" .)) }}
-      key: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.key | default "salt"}}
+      {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote}}
+      key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{  (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "salt"
+      {{- end }}
 {{- end}}  
 
 {{/*
@@ -561,6 +566,11 @@ DB PASSPHRASE environment variable
 - name: PASSPHRASE
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | default (printf "%s-db-worker" (include "corda.fullname" .)) }}
-      key: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | default "passphrase"}}
+      {{- if .Values.workers.db.passphrase.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote}}
+      key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{  (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "passphrase" 
+      {{- end }}
 {{- end}}  
