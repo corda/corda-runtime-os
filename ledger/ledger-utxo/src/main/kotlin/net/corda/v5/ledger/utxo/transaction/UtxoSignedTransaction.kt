@@ -3,6 +3,13 @@ package net.corda.v5.ledger.utxo.transaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
+import java.security.PublicKey
 
 /**
  * Defines a signed UTXO transaction.
@@ -33,6 +40,46 @@ interface UtxoSignedTransaction {
      * @property signatures The signatures that have been applied to the transaction.
      */
     val signatures: List<DigitalSignatureAndMetadata>
+
+    /**
+     * @property inputStateRefs The stateRefs of the inputs to this transaction
+     */
+    val inputStateRefs: List<StateRef>
+
+    /**
+     * @property referenceStateRefs The state refs of any reference states used by this transaction
+     */
+    val referenceStateRefs: List<StateRef>
+
+    /**
+     * @property outputStateAndRefs The state and ref of the ouputs of this transaction
+     */
+    val outputStateAndRefs: List<StateAndRef<*>>
+
+    /**
+     * @property notary The notary used for notarising this transaction
+     */
+    val notary: Party
+
+    /**
+     * @property timeWindow The validity time window for completing/notarising this transaction
+     */
+    val timeWindow: TimeWindow
+
+    /**
+     * @property metadata The metadata for this transaction
+     */
+    val metadata: TransactionMetadata
+
+    /**
+     * @property commands The list of commands for this transaction
+     */
+    val commands: List<Command>
+
+    /**
+     * @property signatories The list of keys that need to sign this transaction
+     */
+    val signatories: List<PublicKey>
 
     /**
      * Converts the current [UtxoSignedTransaction] into a [UtxoLedgerTransaction].
