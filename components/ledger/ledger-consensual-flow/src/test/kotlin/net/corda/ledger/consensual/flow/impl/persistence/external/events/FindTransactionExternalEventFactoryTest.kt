@@ -6,6 +6,7 @@ import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.ledger.common.flow.transaction.TransactionStatus
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,7 +46,7 @@ class FindTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.CONSENSUAL,
-                FindTransaction(transactionId),
+                FindTransaction(transactionId, TransactionStatus.VERIFIED.value),
                 externalEventContext
             ),
             externalEventRecord.payload

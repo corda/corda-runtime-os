@@ -27,6 +27,12 @@ interface UtxoRepository {
         transactionId: String
     ): List<DigitalSignatureAndMetadata>
 
+    /** Retrieves a transaction's status */
+    fun findTransactionStatus(
+        entityManager: EntityManager,
+        id: String,
+    ): String?
+
     /** Persists transaction (operation is idempotent) */
     fun persistTransaction(
         entityManager: EntityManager,
@@ -120,4 +126,6 @@ interface UtxoRepository {
         status: TransactionStatus,
         timestamp: Instant
     )
+
+    fun updateTransactionStatus(entityManager: EntityManager, id: String, status: String)
 }

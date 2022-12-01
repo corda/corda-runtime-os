@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.flow.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -57,6 +58,7 @@ import java.security.MessageDigest
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
@@ -104,7 +106,7 @@ class UtxoPersistenceServiceImplTest {
             digestService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            val repository = UtxoRepositoryImpl(serializationService, wireTransactionFactory, digestService)
+            val repository = UtxoRepositoryImpl(digestService, serializationService, wireTransactionFactory)
             persistenceService = UtxoPersistenceServiceImpl(
                 ctx,
                 repository,
@@ -121,59 +123,66 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `can read signed transaction`() {
-        val account = "Account"
-        val createdTs = TEST_CLOCK.instant()
-        val signedTransaction = createSignedTransaction(createdTs)
+    fun `find signed transaction that matches input status`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        entityManagerFactory.transaction { em ->
-            entityFactory.createUtxoTransactionEntity(
-                signedTransaction.id.toString(),
-                signedTransaction.wireTransaction.privacySalt.bytes,
-                account,
-                createdTs
-            ).also { transaction ->
-                transaction.field<MutableCollection<Any>>("components").addAll(
-                    signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
-                        componentGroup.mapIndexed { leafIndex: Int, component ->
-                            entityFactory.createUtxoTransactionComponentEntity(
-                                transaction,
-                                groupIndex,
-                                leafIndex,
-                                component,
-                                digest("SHA-256", component).toString(),
-                                createdTs
-                            )
-                        }
-                    }
-                )
-                transaction.field<MutableCollection<Any>>("signatures").addAll(
-                    signedTransaction.signatures.mapIndexed { index, signature ->
-                        entityFactory.createUtxoTransactionSignatureEntity(
-                            transaction,
-                            index,
-                            serializationService.serialize(signature).bytes,
-                            digest("SHA-256", signature.by.encoded).toString(),
-                            createdTs
-                        )
-                    }
-                )
-                transaction.field<MutableCollection<Any>>("statuses").addAll(
-                    listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, "V", createdTs)
-                    )
-                )
-                em.persist(transaction)
-            }
-        }
+        val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(signedTransaction.id.toString())
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), TransactionStatus.UNVERIFIED.value)
 
-        assertThat(dbSignedTransaction).isEqualTo(signedTransaction)
+        assertThat(dbSignedTransaction).isEqualTo(transaction)
     }
 
     @Test
-    fun `can persist signed transaction`() {
+    fun `find signed transaction with different status returns null`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+
+        assertThat(dbSignedTransaction).isNull()
+    }
+
+    @Test
+    fun `update transaction status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+
+        persistenceService.updateStatus(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+
+        assertTransactionStatus(transaction.id.toString(), TransactionStatus.VERIFIED, entityFactory)
+    }
+
+    @Test
+    fun `update transaction status does not affect other transactions`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = persistTransactionViaEntity(entityFactory)
+        val transaction2 = persistTransactionViaEntity(entityFactory)
+
+        assertTransactionStatus(transaction1.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+
+        persistenceService.updateStatus(transaction1.id.toString(), TransactionStatus.VERIFIED.value)
+
+        assertTransactionStatus(transaction1.id.toString(), TransactionStatus.VERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+    }
+
+    @Test
+    fun `updating transaction status for transaction that does not exist does not error`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+
+        persistenceService.updateStatus(UUID.randomUUID().toString(), TransactionStatus.VERIFIED.value)
+
+        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+    }
+
+    @Test
+    fun `persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         val transactionStatus = TransactionStatus.VERIFIED
@@ -255,6 +264,64 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
+    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory): SignedTransactionContainer {
+        val account = "Account"
+        val createdTs = TEST_CLOCK.instant()
+        val signedTransaction = createSignedTransaction(createdTs)
+        entityManagerFactory.transaction { em ->
+            entityFactory.createUtxoTransactionEntity(
+                signedTransaction.id.toString(),
+                signedTransaction.wireTransaction.privacySalt.bytes,
+                account,
+                createdTs
+            ).also { transaction ->
+                transaction.field<MutableCollection<Any>>("components").addAll(
+                    signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
+                        componentGroup.mapIndexed { leafIndex: Int, component ->
+                            entityFactory.createUtxoTransactionComponentEntity(
+                                transaction,
+                                groupIndex,
+                                leafIndex,
+                                component,
+                                digest("SHA-256", component).toString(),
+                                createdTs
+                            )
+                        }
+                    }
+                )
+                transaction.field<MutableCollection<Any>>("signatures").addAll(
+                    signedTransaction.signatures.mapIndexed { index, signature ->
+                        entityFactory.createUtxoTransactionSignatureEntity(
+                            transaction,
+                            index,
+                            serializationService.serialize(signature).bytes,
+                            digest("SHA-256", signature.by.encoded).toString(),
+                            createdTs
+                        )
+                    }
+                )
+                transaction.field<MutableCollection<Any>>("statuses").addAll(
+                    listOf(
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, TransactionStatus.UNVERIFIED.value, createdTs)
+                    )
+                )
+                em.persist(transaction)
+            }
+        }
+        return signedTransaction
+    }
+
+    private fun assertTransactionStatus(transactionId: String, status: TransactionStatus, entityFactory: UtxoEntityFactory) {
+        entityManagerFactory.transaction { em ->
+            val dbTransaction = em.find(entityFactory.utxoTransaction, transactionId)
+            val statuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(statuses)
+                .isNotNull
+                .hasSize(1)
+            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status.value)
+        }
+    }
+
     private fun createSignedTransaction(
         createdTs: Instant,
         seed: String = seedSequence.incrementAndGet().toString()
@@ -313,7 +380,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private class TestUtxoTransactionReader(
-        val transactionContainer:  SignedTransactionContainer,
+        val transactionContainer: SignedTransactionContainer,
         override val account: String,
         override val status: TransactionStatus
     ): UtxoTransactionReader {
@@ -327,9 +394,11 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.signatures
         override val cpkMetadata: List<CordaPackageSummary>
             get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
+
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
         }
+
         override fun getConsumedStates(): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
         }
