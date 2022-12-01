@@ -2,10 +2,11 @@ package net.corda.crypto.merkle.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.merkle.impl.mocks.getZeroHash
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
@@ -13,10 +14,10 @@ import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -40,7 +41,8 @@ class MerkleTreeTest {
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
+            digestService =
+                DigestServiceImpl(PlatformDigestServiceImpl(schemeMetadata), null)
             secureRandom = schemeMetadata.secureRandom
 
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)

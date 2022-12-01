@@ -5,7 +5,7 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -23,7 +23,7 @@ import javax.crypto.Cipher
 abstract class AbstractHSM(
     userName: String,
     protected val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService
+    private val digestService: PlatformDigestService
 ) {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 

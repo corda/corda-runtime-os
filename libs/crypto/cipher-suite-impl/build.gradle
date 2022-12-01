@@ -16,6 +16,7 @@ dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-application'
 
     api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'

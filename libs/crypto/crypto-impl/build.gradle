@@ -21,6 +21,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':libs:layered-property-map')
 
+    implementation 'net.corda:corda-application'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-serialization"

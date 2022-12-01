@@ -12,10 +12,10 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningSpec
@@ -41,7 +41,7 @@ class SoftCryptoService(
     private val keyMap: SoftKeyMap,
     private val wrappingKeyMap: SoftWrappingKeyMap,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService
+    private val digestService: PlatformDigestService
 ) : CryptoService {
     companion object {
         private val logger = contextLogger()

@@ -5,10 +5,10 @@ import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningSpec
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 class AllAliasedKeysHSM(
     config: AllAliasedKeysHSMConfiguration,
     schemeMetadata: CipherSchemeMetadata,
-    digestService: DigestService
+    digestService: PlatformDigestService
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
     private val keyPairs = ConcurrentHashMap<String, KeyPair>()
 

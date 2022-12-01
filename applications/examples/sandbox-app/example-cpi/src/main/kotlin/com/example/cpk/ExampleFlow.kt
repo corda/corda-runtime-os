@@ -1,5 +1,6 @@
 package com.example.cpk
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -7,7 +8,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 

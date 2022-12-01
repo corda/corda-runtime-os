@@ -6,11 +6,11 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningSpec
@@ -24,7 +24,7 @@ import java.security.PrivateKey
 class AllWrappedKeysHSM(
     config: AllWrappedKeysHSMConfiguration,
     schemeMetadata: CipherSchemeMetadata,
-    digestService: DigestService
+    digestService: PlatformDigestService
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
 
     override val extensions: List<CryptoServiceExtensions> = listOf(

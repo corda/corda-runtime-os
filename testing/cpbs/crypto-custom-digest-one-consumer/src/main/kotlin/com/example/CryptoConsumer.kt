@@ -1,8 +1,8 @@
 package com.example
 
 import com.example.crypto.TripleSha256Digest
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
