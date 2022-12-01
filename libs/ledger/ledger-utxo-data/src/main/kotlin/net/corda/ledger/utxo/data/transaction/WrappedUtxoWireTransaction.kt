@@ -19,16 +19,20 @@ class WrappedUtxoWireTransaction(
     private val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
 ) {
+    companion object {
+        private const val notaryIndex: Int = 0
+        private const val timeWindowIndex: Int = 1
+    }
     val id: SecureHash
         get() = wireTransaction.id
 
     val notary: Party by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val notaryBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[0]
+        val notaryBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[notaryIndex]
         serializationService.deserialize(notaryBytes)
     }
 
     val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[1]
+        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[timeWindowIndex]
         serializationService.deserialize(timeWindowBytes)
     }
 
