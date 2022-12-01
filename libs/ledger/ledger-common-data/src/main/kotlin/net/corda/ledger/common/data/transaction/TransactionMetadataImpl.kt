@@ -2,6 +2,7 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
@@ -22,6 +23,7 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
+        const val COMPONENT_GROUP_INDEXES = "componentGroupIndexes"
         const val SCHEMA_VERSION_KEY = "schemaVersion"
     }
 
@@ -56,6 +58,15 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
             is List<*> -> data.map { CordaPackageSummaryImpl.from(it) }
             else -> throw CordaRuntimeException(
                 "Transaction metadata representation error: expected list of Corda package metadata but found [$data]")
+        }
+    }
+
+    override fun getComponentGroupIndexes(): List<Int> {
+        return when (val data = this[COMPONENT_GROUP_INDEXES]) {
+            null -> emptyList()
+            is List<*> -> uncheckedCast(data)
+            else -> throw CordaRuntimeException(
+                "Transaction metadata representation error: expected list of component group indexes but found [$data]")
         }
     }
 

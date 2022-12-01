@@ -60,7 +60,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val metadata = transactionMetadataFactory.create(utxoMetadata())
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+        val wireTransaction = wireTransactionFactory.create(componentGroups)
         val signaturesWithMetadata = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
@@ -87,7 +87,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
-        TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL
+        TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+        TransactionMetadataImpl.COMPONENT_GROUP_INDEXES to UtxoComponentGroup.values().sorted().map { it.ordinal }
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

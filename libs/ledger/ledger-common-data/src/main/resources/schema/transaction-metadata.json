@@ -126,6 +126,15 @@
         "$ref": "#/definitions/package_metadata"
       }
     },
+    "componentGroupIndexes": {
+      "title": "Component group indexes",
+      "description": "The component groups contained in the transaction, to its 0-based index within the top-level Merkle tree",
+      "type": "array",
+      "default": [],
+      "items":{
+        "type": "integer"
+      }
+    },
     "schemaVersion": {
       "title": "Metadata schema version",
       "type": "integer",

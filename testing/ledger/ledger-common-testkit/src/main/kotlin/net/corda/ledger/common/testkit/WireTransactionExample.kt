@@ -19,7 +19,7 @@ fun WireTransactionFactory.createExample(
     val allGroupLists = listOf(
         listOf(canonicalJson.toByteArray()),
     ) + defaultComponentGroups
-    return create(allGroupLists, metadata)
+    return create(allGroupLists)
 }
 
 @Suppress("LongParameterList")
