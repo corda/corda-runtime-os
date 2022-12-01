@@ -2,25 +2,26 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 
 @CordaSerializable
-data class CordaPackageSummary(
-    val name: String,
-    val version: String,
-    val signerSummaryHash: String?,
-    val fileChecksum: String,
-) {
+data class CordaPackageSummaryImpl(
+    override val name: String,
+    override val version: String,
+    override val signerSummaryHash: String?,
+    override val fileChecksum: String,
+) : CordaPackageSummary {
 
     companion object {
-        fun from(data: Any?): CordaPackageSummary {
+        fun from(data: Any?): CordaPackageSummaryImpl {
             return when (data) {
-                is CordaPackageSummary -> data
+                is CordaPackageSummaryImpl -> data
                 else -> {
                     try {
                         @Suppress("UNCHECKED_CAST")
                         val packageSummary = data as Map<String, Any?>
 
-                        CordaPackageSummary(
+                        CordaPackageSummaryImpl(
                             packageSummary["name"] as String,
                             packageSummary["version"] as String,
                             packageSummary["signerSummaryHash"] as? String,

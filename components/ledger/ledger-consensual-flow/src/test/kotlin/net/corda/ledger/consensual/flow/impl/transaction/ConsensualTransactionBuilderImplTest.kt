@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
@@ -60,7 +60,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = CordaPackageSummary(
+        val expectedCpiMetadata = CordaPackageSummaryImpl(
             "CPI name",
             "CPI version",
             "46616B652D76616C7565",
@@ -69,13 +69,13 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
         assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
 
         val expectedCpkMetadata = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
                 "",
                 "0101010101010101010101010101010101010101010101010101010101010101"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
                 "",
