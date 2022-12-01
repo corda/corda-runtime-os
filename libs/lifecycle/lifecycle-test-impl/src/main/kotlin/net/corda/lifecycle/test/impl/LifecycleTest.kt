@@ -19,7 +19,7 @@ class LifecycleTest<T : Lifecycle>(
 ) {
 
     private val dependencies = ConcurrentHashMap.newKeySet<LifecycleCoordinatorName>()
-    val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
+    private val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
     private val configCoordinator = argumentCaptor<LifecycleCoordinator>()
     private val configKeys = argumentCaptor<Set<String>>()
 
@@ -46,7 +46,7 @@ class LifecycleTest<T : Lifecycle>(
         }
     }
 
-    val registry
+    private val registry
         get() = coordinatorFactory.registry
 
     // Must go after all the initialization above as those classes may be used by the lambda
@@ -243,17 +243,34 @@ class LifecycleTest<T : Lifecycle>(
     }
 
     /**
-     * Send a configuration update to the [testClass].  This configuration update must _exactly_ match
+     * Send a configuration update to the component. This configuration update must _exactly_ match
      * what the coordinator for the class registers or an [IllegalArgumentException] will be thrown.
      *
      * @param config the new configuration update
      * @throws IllegalArgumentException if the keys in [config] don't match what the coordinator registered
-     * for [testClass].
+     * for the component.
      */
     inline fun <reified D> sendConfigUpdate(
         config: Map<String, SmartConfig>
     ) {
-        val coordinator = registry.getCoordinator(LifecycleCoordinatorName.forComponent<D>())
+        sendConfigUpdate(LifecycleCoordinatorName.forComponent<D>(), config)
+    }
+
+    /**
+     * Send a configuration update to the component. This configuration update must _exactly_ match
+     * what the coordinator for the class registers or an [IllegalArgumentException] will be thrown.
+     *
+     * @param coordinatorName the component's lifecycle coordinator name
+     * @param config the new configuration update
+     * @throws IllegalArgumentException if the keys in [config] don't match what the coordinator registered
+     * for the component.
+     */
+    fun sendConfigUpdate(
+        coordinatorName: LifecycleCoordinatorName,
+        config: Map<String, SmartConfig>
+    ) {
+
+        val coordinator = registry.getCoordinator(coordinatorName)
         // assert that the config contains exactly the keys from required keys set
         // during registration
         val configKeys = coordinatorToConfigKeys[coordinator]

@@ -40,7 +40,7 @@ class MemberOpsServiceTest {
 
     private val messagingConfig: SmartConfig = mock()
     private val bootConfig: SmartConfig = mock {
-        on(it.withFallback(messagingConfig)).thenReturn(messagingConfig)
+        on { withFallback(messagingConfig) } doReturn messagingConfig
     }
 
     private val configs = mapOf(

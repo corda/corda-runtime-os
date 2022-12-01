@@ -63,9 +63,6 @@ class MemberOpsServiceImpl @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<MemberOpsService>(::eventHandler)
 
-    @Volatile
-    private var subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>? = null
-
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
     override fun start() {
@@ -151,15 +148,13 @@ class MemberOpsServiceImpl @Activate constructor(
 
     private fun handleConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
-        if (coordinator.status != LifecycleStatus.UP) {
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig) {
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
             logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
-            subscription = subscriptionFactory.createRPCSubscription(
+            val subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
                     clientName = CLIENT_NAME,
@@ -175,8 +170,8 @@ class MemberOpsServiceImpl @Activate constructor(
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }
-            val handle = coordinator.followStatusChangesByName(setOf(subscription!!.subscriptionName))
-            MembershipSubscriptionAndRegistration(subscription!!, handle)
+            val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
+            MembershipSubscriptionAndRegistration(subscription, handle)
         }
     }
 

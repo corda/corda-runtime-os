@@ -49,12 +49,10 @@ class LedgerPersistenceServiceTest {
 
     @Test
     fun `on configuration event creates and starts subscription`() {
-        val context = getTokenCacheComponentTestContext()
-
         val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
         whenever(persistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
 
-        context.run {
+        getTokenCacheComponentTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
@@ -67,9 +65,7 @@ class LedgerPersistenceServiceTest {
 
     @Test
     fun `on configuration event closes existing subscription`() {
-        val context = getTokenCacheComponentTestContext()
-
-        context.run {
+        getTokenCacheComponentTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
@@ -86,9 +82,7 @@ class LedgerPersistenceServiceTest {
 
     @Test
     fun `on all dependents up persistence service should not be up`() {
-        val context = getTokenCacheComponentTestContext()
-
-        context.run {
+        getTokenCacheComponentTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
@@ -99,9 +93,7 @@ class LedgerPersistenceServiceTest {
     @ParameterizedTest(name = "on component {0} going down the persistence service should go down")
     @MethodSource("dependants")
     fun `on any dependent going down the persistence service should go down`(name: LifecycleCoordinatorName) {
-        val context = getTokenCacheComponentTestContext()
-
-        context.run {
+        getTokenCacheComponentTestContext().run {
             testClass.start()
 
             bringDependenciesUp()
@@ -119,9 +111,7 @@ class LedgerPersistenceServiceTest {
     fun `on any dependent going to error the token persistence service should go to down`(
         name: LifecycleCoordinatorName
     ) {
-        val context = getTokenCacheComponentTestContext()
-
-        context.run {
+        getTokenCacheComponentTestContext().run {
             testClass.start()
 
             bringDependenciesUp()
