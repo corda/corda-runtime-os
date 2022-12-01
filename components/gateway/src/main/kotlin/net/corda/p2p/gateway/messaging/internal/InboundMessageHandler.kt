@@ -110,15 +110,18 @@ internal class InboundMessageHandler(
             server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
+        println("QQQ Got message from ${request.source}")
 
         logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
         val response = GatewayResponse(gatewayMessage.id)
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
+                println("QQQ UnauthenticatedMessage -> ${(p2pMessage.payload as? UnauthenticatedMessage)?.header?.source}")
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
                 server.writeResponse(HttpResponseStatus.OK, request.source, response.toByteBuffer().array())
             }
             else -> {
+                println("QQQ nop -> ${p2pMessage.payload?.javaClass}")
                 val statusCode = processSessionMessage(p2pMessage)
                 server.writeResponse(statusCode, request.source, response.toByteBuffer().array())
             }

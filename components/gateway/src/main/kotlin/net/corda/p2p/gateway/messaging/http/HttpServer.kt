@@ -106,6 +106,7 @@ class HttpServer(
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))
+            println("QQQ Getting connection from ${ch.remoteAddress()}")
         }
     }
 

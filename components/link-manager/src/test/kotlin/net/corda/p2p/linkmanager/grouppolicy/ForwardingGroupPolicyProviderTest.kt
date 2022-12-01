@@ -153,7 +153,8 @@ class ForwardingGroupPolicyProviderTest {
 
     private fun createForwardingGroupPolicyProvider(): ForwardingGroupPolicyProvider {
         return ForwardingGroupPolicyProvider(
-            mock(), realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient
+            mock(), realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient,
+            mock()
         )
     }
 
