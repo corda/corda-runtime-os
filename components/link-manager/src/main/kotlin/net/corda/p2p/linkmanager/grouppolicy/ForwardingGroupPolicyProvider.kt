@@ -65,28 +65,31 @@ internal class ForwardingGroupPolicyProvider(
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
             toGroupInfo(holdingIdentity, groupPolicy)?.let { groupInfo ->
-                println("QQQ Got group in link manager ${holdingIdentity.groupId}")
+                println("QQQ Got group in link manager ${holdingIdentity.groupId} with ${holdingIdentity.x500Name}")
                 val parameters = groupParametersReaderService.get(holdingIdentity)
                 if (parameters == null) {
                     println("QQQ No parameters for ${holdingIdentity.groupId}")
+                    thread {
+                        println("QQQ Trying in another thread...")
+                        repeat(100) {
+                            Thread.sleep(10000)
+                            println("QQQ Woke up $it")
+                            val parameters2 = groupParametersReaderService.get(holdingIdentity)
+                            if (parameters2 == null) {
+                                println("QQQ still no parameters for ${holdingIdentity.groupId}")
+                            } else {
+                                println("QQQ now I have parameters for ${holdingIdentity.groupId}")
+                                parameters2.entries.forEach {
+                                    println("QQQ \t ${it.key} -> ${it.value}")
+                                }
+                                return@thread
+                            }
+                        }
+                    }
                 } else {
                     println("QQQ I have parameters for ${holdingIdentity.groupId}")
                     parameters.entries.forEach {
                         println("QQQ \t ${it.key} -> ${it.value}")
-                    }
-                }
-                thread {
-                    println("QQQ Trying in another thread...")
-                    Thread.sleep(10000)
-                    println("QQQ Woke up!")
-                    val parameters2 = groupParametersReaderService.get(holdingIdentity)
-                    if (parameters2 == null) {
-                        println("QQQ still no parameters for ${holdingIdentity.groupId}")
-                    } else {
-                        println("QQQ now I have parameters for ${holdingIdentity.groupId}")
-                        parameters2.entries.forEach {
-                            println("QQQ \t ${it.key} -> ${it.value}")
-                        }
                     }
                 }
                 groupPolicyListener.groupAdded(groupInfo)
