@@ -20,6 +20,7 @@ class TruancySubFlow(
     override fun call(): String {
         val session = flowMessaging.initiateFlow(truancyOffice)
         session.send(truancyRecord)
+        session.receive(Unit::class.java)
         return ""
     }
 }
