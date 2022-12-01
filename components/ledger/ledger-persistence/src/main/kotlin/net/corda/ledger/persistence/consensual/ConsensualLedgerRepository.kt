@@ -1,9 +1,5 @@
 package net.corda.ledger.persistence.consensual
 
-import java.time.Instant
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.Tuple
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -19,6 +15,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.time.Instant
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.Tuple
 
 /**
  * Reads and writes ledger transaction data to and from the virtual node vault database.
