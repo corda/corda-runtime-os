@@ -9,8 +9,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
-import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.TenantKeys
 import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
 import net.corda.p2p.test.stub.crypto.processor.CouldNotReadKey
 import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
@@ -32,6 +30,12 @@ class TestCryptoOpsClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
     keyStoreWithPassword: KeyStoreWithPassword,
 ) : CryptoOpsClient {
+
+    private val tenantIdToKeys = ConcurrentHashMap<String, TenantKeyMap>()
+    init {
+        createTenantKeys(keyStoreWithPassword)
+    }
+
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoOpsClient>{ event, coordinator ->
         if(event is StartEvent) { coordinator.updateStatus(LifecycleStatus.UP) }
     }
@@ -105,7 +109,6 @@ class TestCryptoOpsClient(
     private class TenantKeyMap {
         val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
     }
-    private val tenantIdToKeys = ConcurrentHashMap<String, TenantKeyMap>()
 
     //fixed coordinator not found
     //now get CouldNotFindPrivateKey: Could not find private key
@@ -131,25 +134,16 @@ class TestCryptoOpsClient(
     private fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword) {
         val records = keyStoreWithPassword.keyStore.aliases().toList()
         for ((i, _) in records.withIndex()) {
-            val tenantId = "tenantId-$i"
+            val tenantId = "tenantId"
             val privateKey = keyStoreWithPassword
                 .keyStore
                 .getKey(records[i], keyStoreWithPassword.password.toCharArray())
                 .toPem()
 
-            val keyPair = KeyPairEntry(
-                privateKey
-            )
-
-            val tenantKeys = TenantKeys(
-                tenantId,
-                keyPair
-            )
-
-            val tenantKeyMap = tenantIdToKeys.computeIfAbsent(tenantKeys.tenantId) {
+            val tenantKeyMap = tenantIdToKeys.computeIfAbsent(tenantId) {
                 TenantKeyMap()
             }
-            val pair = toKeyPair(tenantKeys.keys.keyPair)
+            val pair = toKeyPair(privateKey)
             tenantKeyMap.publicKeyToPrivateKey[pair.public] = pair.private
         }
     }
