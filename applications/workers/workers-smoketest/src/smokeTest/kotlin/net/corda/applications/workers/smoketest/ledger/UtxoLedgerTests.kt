@@ -10,7 +10,6 @@ import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.registerNotary
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -71,9 +70,7 @@ class UtxoLedgerTests {
         registerMember(bobHoldingId)
         registerMember(charlieHoldingId)
 
-        // TODO CORE-8271 until NotaryLookup is not useful.
-        //registerNotary(notaryHoldingId)
-        registerMember(notaryHoldingId)
+        registerMember(notaryHoldingId, true)
     }
 
     @Test
