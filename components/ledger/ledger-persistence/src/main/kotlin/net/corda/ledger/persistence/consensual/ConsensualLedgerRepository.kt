@@ -169,7 +169,9 @@ class ConsensualLedgerRepository @Activate constructor(
             """
             INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
             VALUES (:id, :status, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, created = EXCLUDED.created
+                WHERE EXCLUDED.status != 'U'"""
         )
             .setParameter("id", transactionId)
             .setParameter("status", status)

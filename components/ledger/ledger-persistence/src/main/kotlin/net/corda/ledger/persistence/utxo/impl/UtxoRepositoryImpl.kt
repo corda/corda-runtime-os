@@ -277,7 +277,9 @@ class UtxoRepositoryImpl(
             """
             INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
             VALUES (:transactionId, :status, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, created = EXCLUDED.created
+                WHERE EXCLUDED.status != 'U'"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("status", status)
