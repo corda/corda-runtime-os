@@ -17,7 +17,6 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.zip.ZipInputStream;
 
 public class AbstractMockTestHarness {
@@ -48,7 +47,6 @@ public class AbstractMockTestHarness {
     protected final Set<PublicKey> setOfKeys = Set.of(aliceKey, bobKey);
     protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
     protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
-    protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
     protected final List<DigitalSignatureAndMetadata> signatures = List.of(aliceSignature);
     protected final Command createCommand = new Create();
     protected final Command updateCommand = new Update();
@@ -64,6 +62,8 @@ public class AbstractMockTestHarness {
     protected final UtxoLedgerTransaction utxoLedgerTransaction = Mockito.mock(UtxoLedgerTransaction.class);
     protected final UtxoSignedTransaction utxoSignedTransaction = Mockito.mock(UtxoSignedTransaction.class);
     protected final UtxoTransactionBuilder utxoTransactionBuilder = Mockito.mock(UtxoTransactionBuilder.class);
+
+    protected final Map<Integer, List<ContractState>> encumbranceGroups = Map.of(0, List.of(contractState));
 
     public AbstractMockTestHarness() {
         initializeContract();
@@ -177,7 +177,9 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addOutputState(contractState, 0)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(contractState, contractState)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.getEncumbranceGroups()).thenReturn(encumbranceGroups);
         Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.toSignedTransaction()).thenReturn(utxoSignedTransaction);

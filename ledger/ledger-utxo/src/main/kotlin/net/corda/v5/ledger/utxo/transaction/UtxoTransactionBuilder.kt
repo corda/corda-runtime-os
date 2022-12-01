@@ -73,13 +73,27 @@ interface UtxoTransactionBuilder {
     fun addOutputState(contractState: ContractState): UtxoTransactionBuilder
 
     /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as an encumbrance group.
      *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param encumbrance The index of an associated, encumbered state, or null if no encumbrance applies to the associated transaction state.
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the encumbered output states.
      */
-    fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder
+    fun addEncumberedOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as an encumbrance group.
+     *
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the encumbered output states.
+     */
+    fun addEncumberedOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder
+
+    /**
+     * Gets a map of encumbrance group indexes and the associated encumbered [ContractState] instances.
+     *
+     * @return Returns map of encumbrance group indexes and the associated encumbered [ContractState] instances.
+     */
+    fun getEncumbranceGroups(): Map<Int, List<ContractState>>
 
     /**
      * Sets the [Party] as a notary to the current [UtxoTransactionBuilder].
