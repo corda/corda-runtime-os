@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
@@ -19,6 +19,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -84,9 +85,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     }
 
     private fun utxoMetadata() = linkedMapOf(
-        TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetadata.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
-        TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL
+        TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
+        TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+        TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
@@ -17,6 +17,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -57,7 +58,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
-        val metadata = transactionMetadataFactory.create(consensualMetadata())
+        val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         ConsensualTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
@@ -93,8 +94,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     }
 
     private fun consensualMetadata() = linkedMapOf(
-        TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+        TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+        TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

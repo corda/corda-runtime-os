@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
@@ -56,8 +56,8 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        val expectedObj = mock<CordaPackageSummary>()
-        whenever(serializationService.deserialize<CordaPackageSummary>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        val expectedObj = mock<CordaPackageSummaryImpl>()
+        whenever(serializationService.deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
@@ -70,7 +70,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         ).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
-        verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 

@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
@@ -91,7 +91,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
                 ComponentGroupFilterParameters.AuditProof(3, Any::class.java),
@@ -125,7 +125,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
                 ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
             )
@@ -165,7 +165,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
                 ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
             )
@@ -205,7 +205,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
             )
         ) { it is MyClassA || it is MyClassC }
@@ -238,7 +238,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.SizeProof(2),
             )
@@ -274,7 +274,7 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         ) { it is MyClassA || it is MyClassC }

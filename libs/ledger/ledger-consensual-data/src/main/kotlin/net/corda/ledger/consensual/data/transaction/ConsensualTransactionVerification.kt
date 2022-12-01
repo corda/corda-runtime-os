@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.data.transaction
 
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 

@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.v5.crypto.merkle.MerkleProofType
@@ -15,6 +15,7 @@ import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -91,7 +92,7 @@ class FilteredTransactionFactoryImplTest {
 
         assertThat(filteredTransaction.getComponentGroupContent(0)?.single()?.second)
             .isEqualTo(wireTransaction.componentGroupLists.first().single())
-        verify(serializationService, never()).deserialize(any<ByteArray>(), eq(TransactionMetadata::class.java))
+        verify(serializationService, never()).deserialize(any<ByteArray>(), eq(TransactionMetadataImpl::class.java))
     }
 
     @Test
