@@ -5,17 +5,17 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -38,9 +38,9 @@ class FilteredTransactionImplTest {
     private companion object {
         val digestAlgorithmName = DigestAlgorithmName.SHA2_256D.name
         const val metadataJson = "{}"
-        val metadata = TransactionMetadata(
+        val metadata = TransactionMetadataImpl(
             linkedMapOf(
-                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+                TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
             )
         )
     }
@@ -67,7 +67,7 @@ class FilteredTransactionImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(jsonMarshallingService.parse(metadataJson, TransactionMetadata::class.java)).thenReturn(metadata)
+        whenever(jsonMarshallingService.parse(metadataJson, TransactionMetadataImpl::class.java)).thenReturn(metadata)
         whenever(componentGroupMerkleProof.proofType).thenReturn(MerkleProofType.AUDIT)
         whenever(filteredComponentGroup0Proof.proofType).thenReturn(MerkleProofType.AUDIT)
         whenever(filteredComponentGroup1AuditProof.proofType).thenReturn(MerkleProofType.AUDIT)

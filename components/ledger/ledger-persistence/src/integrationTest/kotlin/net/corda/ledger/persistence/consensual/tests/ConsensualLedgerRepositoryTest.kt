@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.consensual.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -24,6 +24,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -339,19 +340,19 @@ class ConsensualLedgerRepositoryTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val cpks = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk1",
                 "signerSummaryHash1",
                 "1.0",
                 "$seed-fileChecksum1"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk2",
                 "signerSummaryHash2",
                 "2.0",
                 "$seed-fileChecksum2"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk3",
                 "signerSummaryHash3",
                 "3.0",

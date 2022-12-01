@@ -12,6 +12,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Objects
