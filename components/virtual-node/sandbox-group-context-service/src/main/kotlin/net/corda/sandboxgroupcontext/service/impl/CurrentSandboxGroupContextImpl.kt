@@ -12,8 +12,9 @@ import org.osgi.service.component.annotations.Component
 class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow {
 
     private companion object {
+        @JvmField
         val log = contextLogger()
-
+        @JvmField
         val currentSandboxGroupContext = ThreadLocal<SandboxGroupContext?>()
     }
 
