@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction.filtered.factory
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
@@ -33,7 +34,8 @@ class FilteredTransactionFactoryImplTest {
         val COMPONENT_3 = "Component 3".toByteArray()
     }
 
-    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
+    private val digestService =
+        DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
