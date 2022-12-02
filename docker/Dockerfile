@@ -21,4 +21,4 @@ ENV CONSOLE_LOG_LEVEL="INFO"
 ADD --chown=corda:corda ${BUILD_PATH} ${JAR_LOCATION}
 ADD --chown=corda:corda ${JDBC_PATH} ${JDBC_DRIVER_LOCATION} 
 
-ENTRYPOINT ["bin/sh","-c","${IMAGE_ENTRYPOINT_ENV} $@","$@"]
+ENTRYPOINT ["/bin/sh","-c","${IMAGE_ENTRYPOINT_ENV} $@","$@"]
