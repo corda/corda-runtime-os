@@ -174,10 +174,6 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addCommand(createCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addCommand(updateCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addSignatories(keys)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(createCommand, keys)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(updateCommand, keys)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(createCommand, aliceKey, bobKey)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(updateCommand, aliceKey, bobKey)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addInputState(contractStateAndRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateAndRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);

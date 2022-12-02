@@ -39,30 +39,6 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     }
 
     @Test
-    public void addCommandAndSignatoriesOfTypeCreateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(createCommand, keys);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
-    public void addCommandAndSignatoriesOfTypeUpdateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(updateCommand, keys);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
-    public void addCommandAndSignatoriesOfTypeCreateWithVarargKeysShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(createCommand, aliceKey, bobKey);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
-    public void addCommandAndSignatoriesOfTypeUpdateWithVarargKeysShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(updateCommand, aliceKey, bobKey);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
     public void addInputStateShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.addInputState(contractStateAndRef);
         Assertions.assertEquals(utxoTransactionBuilder, value);
