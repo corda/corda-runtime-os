@@ -37,18 +37,18 @@ class UtxoLedgerTests {
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+    //private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
     private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
-    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, GROUP_ID)
+    //private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, GROUP_ID)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, GROUP_ID)
 
     private val staticMemberList = listOf(
         aliceX500,
         bobX500,
-        charlieX500,
+        //charlieX500,
         notaryX500
     )
 
@@ -58,17 +58,17 @@ class UtxoLedgerTests {
 
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
+        //val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
         val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, cpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+        //assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
         registerMember(aliceHoldingId)
         registerMember(bobHoldingId)
-        registerMember(charlieHoldingId)
+        //registerMember(charlieHoldingId)
 
         registerMember(notaryHoldingId, true)
     }
@@ -78,14 +78,14 @@ class UtxoLedgerTests {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to input, "members" to listOf(bobX500/*, charlieX500*/), "notary" to notaryX500),
             "net.cordapp.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
 
-        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
+        for (holdingId in listOf(aliceHoldingId, bobHoldingId/*, charlieHoldingId*/)) {
             val findTransactionFlowRequestId = startRpcFlow(
                 holdingId,
                 mapOf("transactionId" to utxoFlowResult.flowResult!!),
@@ -103,7 +103,7 @@ class UtxoLedgerTests {
             }.isNotNull
             assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
-            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
+            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(2)
             //assertThat(parsedResult.transaction.participants).hasSize(3) // TODO broken due to CORE-7270
         }
     }
@@ -112,7 +112,7 @@ class UtxoLedgerTests {
     fun `Utxo Ledger - creating a transaction that fails custom verification causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to "fail", "members" to listOf(bobX500/*, charlieX500*/), "notary" to notaryX500),
             "net.cordapp.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
