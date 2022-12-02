@@ -47,7 +47,7 @@ internal class InboundMessageHandler(
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     init {
-        // Setting max limits for variable-length fields to avoid malicious clients attempting to trigger large memory allocations.
+        // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
         System.setProperty("org.apache.avro.limits.bytes.maxLength", AVRO_LIMIT.toString())
         System.setProperty("org.apache.avro.limits.string.maxLength", AVRO_LIMIT.toString())
     }
