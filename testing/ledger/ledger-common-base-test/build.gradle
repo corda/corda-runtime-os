@@ -7,16 +7,21 @@ description 'Corda ledger common abstract test class with dependencies made avai
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    compileOnly 'org.osgi:osgi.core'
+
     api project(':testing:ledger:ledger-common-testkit')
     api project(':components:ledger:ledger-common-flow')
     api project(':libs:ledger:ledger-common-data')
 
     api project(':libs:crypto:cipher-suite-impl')
     api project(':libs:crypto:merkle-impl')
+    api project(':libs:virtual-node:sandbox-group-context')
     api project(':testing:test-serialization')
     api project(':components:flow:flow-service')
 
     implementation project(":libs:serialization:json-validator")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
+
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

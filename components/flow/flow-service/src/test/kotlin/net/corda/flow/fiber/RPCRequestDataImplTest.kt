@@ -74,7 +74,7 @@ class RPCRequestDataImplTest {
         }
         whenever(checkpoint.flowStartContext).thenReturn(startContext)
         val holdingIdentity = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "12345")
-        val executionContext = FlowFiberExecutionContext(checkpoint, mock(), holdingIdentity, mock(), emptyMap())
+        val executionContext = FlowFiberExecutionContext(checkpoint, mock(), holdingIdentity, mock(), mock(), emptyMap())
         whenever(fiber.getExecutionContext()).thenReturn(executionContext)
         whenever(fiberService.getExecutingFiber()).thenReturn(fiber)
         return fiberService

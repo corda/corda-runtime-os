@@ -11,6 +11,7 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -27,11 +28,13 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
     private val flowFiberExecutionContextFactory = FlowFiberExecutionContextFactoryImpl(
         flowSandboxService,
-        membershipGroupReaderProvider
+        membershipGroupReaderProvider,
+        currentSandboxGroupContext
     )
 
     val mdcMock = Mockito.mockStatic(MDC::class.java).also {
@@ -70,6 +73,7 @@ class FlowFiberExecutionContextFactoryImplTest {
         assertThat(result.sandboxGroupContext).isSameAs(sandboxGroupContext)
         assertThat(result.membershipGroupReader).isSameAs(membershipGroupReader)
         assertThat(result.memberX500Name).isEqualTo(BOB_X500_NAME)
+        assertThat(result.currentSandboxGroupContext).isEqualTo(currentSandboxGroupContext)
 
     }
 }
