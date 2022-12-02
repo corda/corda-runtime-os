@@ -551,7 +551,7 @@ DB SALT environment variable
   valueFrom:
     secretKeyRef:
       {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote}}
+      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
