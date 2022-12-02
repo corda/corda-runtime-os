@@ -930,20 +930,10 @@
                                     }
                                 },
                                 "salt": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker salt, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 },
                                 "passphrase": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker passphrase, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{

@@ -321,10 +321,31 @@ workers:
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
-    # -- DB worker salt, defaults to a value randomly-generated on install
-    salt: ""
-    # -- DB worker passphrase, defaults to a value randomly-generated on install
-    passphrase: ""
+    # the salt configuration 
+    salt: 
+      # -- the salt, defaults to a value randomly-generated on install
+      value: ""
+      # the salt secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the salt secret key reference
+        secretKeyRef:
+          # -- the salt secret name
+          name: ""
+          # -- the salt secret key
+          key: ""
+    # passphrase configuration
+    passphrase: 
+      # -- the passphrase, defaults to a value randomly-generated on install
+      value: ""
+      # the passphrase secret configuration
+      valueFrom:
+        # the passphrase secret key reference
+        secretKeyRef:
+          # -- the passphrase secret name
+          name: ""
+          # -- the passphrase secret key
+          key: ""
+
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
