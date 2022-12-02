@@ -1,7 +1,10 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
@@ -9,19 +12,21 @@ import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.transaction.FilteredEntry
+import net.corda.v5.ledger.utxo.transaction.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
 import java.security.PublicKey
 
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
-    val filteredTransaction: FilteredTransaction) : UtxoFilteredTransaction {
+    val filteredTransaction: FilteredTransaction
+) : UtxoFilteredTransaction {
     override val commands: UtxoFilteredData<Command>
-        get() = fetchFilteredData<Command>(UtxoComponentGroup.COMMANDS.ordinal)
+        get() = fetchFilteredData(UtxoComponentGroup.COMMANDS.ordinal)
     override val id: SecureHash
         get() = filteredTransaction.id
     override val inputStateRefs: UtxoFilteredData<StateRef>
@@ -35,7 +40,37 @@ class UtxoFilteredTransactionImpl(
             ?.let { serializationService.deserialize(it.second, Party::class.java) }
 
     override val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
-        get() = fetchFilteredData(UtxoComponentGroup.OUTPUTS.ordinal)
+        get() = fetchFilteredData<ContractState>(UtxoComponentGroup.OUTPUTS.ordinal).let {
+            when (it) {
+                is UtxoFilteredData.UtxoFilteredDataRemoved<ContractState> -> FilteredDataRemovedImpl()
+                is UtxoFilteredData.UtxoFilteredDataSizeOnly -> FilteredDataSizeImpl(it.size)
+                is UtxoFilteredData.UtxoFilteredDataAudit -> {
+                    when (val stateInfos = fetchFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
+                        is UtxoFilteredData.UtxoFilteredDataAudit -> {
+                            val values = it.values.entries.associateBy(
+                                keySelector = { entry -> entry.key },
+                                valueTransform = { entry ->
+                                    val info = stateInfos.values.getOrDefault(entry.key, null)
+                                        ?: throw FilteredDataInconsistencyException("Missing output info")
+                                    val txState =
+                                        TransactionStateImpl(entry.value, info.notary, info.encumbrance)
+                                    StateAndRefImpl(txState, StateRef(id, entry.key))
+                                }
+                            )
+                            FilteredDataAuditImpl(it.size, values)
+                        }
+
+                        is UtxoFilteredData.UtxoFilteredDataRemoved ->
+                            throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
+
+                        is UtxoFilteredData.UtxoFilteredDataSizeOnly ->
+                            throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
+                    }
+                }
+            }
+        }
+
+
     override val referenceInputStateRefs: UtxoFilteredData<StateRef>
         get() = fetchFilteredData(UtxoComponentGroup.REFERENCES.ordinal)
     override val signatories: UtxoFilteredData<PublicKey>
@@ -50,15 +85,15 @@ class UtxoFilteredTransactionImpl(
         filteredTransaction.verify()
     }
 
-    private class FilteredDataRemovedImpl<T>: UtxoFilteredData.UtxoFilteredDataRemoved<T>
+    private class FilteredDataRemovedImpl<T> : UtxoFilteredData.UtxoFilteredDataRemoved<T>
 
-    private class FilteredDataSizeImpl<T>( override val size: Int ): UtxoFilteredData.UtxoFilteredDataSizeOnly<T>
+    private class FilteredDataSizeImpl<T>(override val size: Int) : UtxoFilteredData.UtxoFilteredDataSizeOnly<T>
 
     private class FilteredDataAuditImpl<T>(
         override val size: Int,
-        override val values: List<FilteredEntry<T>>) : UtxoFilteredData.UtxoFilteredDataAudit<T>
+        override val values: Map<Int, T>
+    ) : UtxoFilteredData.UtxoFilteredDataAudit<T>
 
-    private class FilteredEntryImpl<T>(override val index: Int, override val value: T) : FilteredEntry<T>
 
     private inline fun <reified T : Any> fetchFilteredData(index: Int): UtxoFilteredData<T> {
         return filteredTransaction.filteredComponentGroups.getOrDefault(index, null)
@@ -67,17 +102,13 @@ class UtxoFilteredTransactionImpl(
                     MerkleProofType.SIZE -> return FilteredDataSizeImpl(it.merkleProof.treeSize)
                     MerkleProofType.AUDIT -> return FilteredDataAuditImpl(
                         it.merkleProof.treeSize,
-                        it.merkleProof.leaves.map { leaf ->
-                            FilteredEntryImpl(
-                                leaf.index,
-                                serializationService.deserialize(leaf.leafData, T::class.java)
-                            )
-                        }
+                        it.merkleProof.leaves.associateBy(
+                            { leaf -> leaf.index },
+                            { leaf -> serializationService.deserialize(leaf.leafData, T::class.java) })
                     )
-
                 }
             }
-            ?: return FilteredDataRemovedImpl<T>()
+            ?: return FilteredDataRemovedImpl()
     }
 
 }
