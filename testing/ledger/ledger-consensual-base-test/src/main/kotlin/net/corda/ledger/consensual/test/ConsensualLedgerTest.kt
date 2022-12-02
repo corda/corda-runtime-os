@@ -16,7 +16,7 @@ abstract class ConsensualLedgerTest : CommonLedgerTest() {
         mockTransactionSignatureService(),
         transactionMetadataFactory,
         wireTransactionFactory,
-        flowFiberService,
+        currentSandboxGroupContext,
         jsonMarshallingService,
         jsonValidator
     )

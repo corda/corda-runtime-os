@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -15,6 +14,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -34,6 +34,12 @@ import java.security.PublicKey
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = JsonMarshallingService::class)
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureService::class)
@@ -42,12 +48,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService,
-    @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = JsonValidator::class)
-    private val jsonValidator: JsonValidator,
 ) : UtxoSignedTransactionFactory,
     UsedByFlow,
     SingletonSerializeAsToken {
@@ -101,9 +101,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         metadataBytes: ByteArray
     ): List<List<ByteArray>> {
 
-        // TODO CORE-7101 use CurrentSandboxService when it gets available
-        val currentSandboxGroup =
-            flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup
+        val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val notaryGroup = listOf(
             utxoTransactionBuilder.notary,
