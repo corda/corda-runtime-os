@@ -29,6 +29,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.p2p.gateway.messaging.http.ClientCertificatesAllowList
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -69,6 +70,12 @@ class InboundMessageHandlerTest {
         }
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
+    private val clientCertificatesAllowList = mockConstruction(ClientCertificatesAllowList::class.java) {mock, _ ->
+            val mockDominoTile = mock<ComplexDominoTile> {
+                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+            }
+            whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java) { mock, _ ->
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -103,6 +110,7 @@ class InboundMessageHandlerTest {
         sessionPartitionMapper.close()
         p2pInPublisher.close()
         dominoTile.close()
+        clientCertificatesAllowList.close()
     }
 
     @Test
