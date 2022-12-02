@@ -13,18 +13,16 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
-import static net.corda.httprpc.test.utils.TestUtilsKt.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase {
-    static int port = -1;
 
     @BeforeAll
     static void setUpBeforeClass() {
-        port = findFreePort();
-        HttpRpcSettings httpRpcSettings = new HttpRpcSettings(new NetworkHostAndPort("localhost", port),
+        HttpRpcSettings httpRpcSettings = new HttpRpcSettings(new NetworkHostAndPort("localhost", 0),
             HttpRpcIntegrationTestBase.Companion.getContext(),
             null,
             null,
@@ -51,18 +49,18 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
     @Test
     void start_connection_aware_client_from_java_against_server_with_accepted_protocol_version_succeeds() {
         HttpRpcClient<TestHealthCheckAPI> client = new HttpRpcClient<>(
-            "http://localhost:" + port + "/api/v1/",
+            "http://localhost:" + HttpRpcIntegrationTestBase.Companion.getServer().getPort() + "/api/v1/",
             TestHealthCheckAPI.class,
             new HttpRpcClientConfig().enableSSL(false).minimumServerProtocolVersion(1)
                 .username(HttpRpcIntegrationTestBase.Companion.getUserAlice().getUsername())
-                .password(HttpRpcIntegrationTestBase.Companion.getUserAlice().getPassword())
+                .password(Objects.requireNonNull(HttpRpcIntegrationTestBase.Companion.getUserAlice().getPassword()))
         );
 
         try (client) {
             HttpRpcConnection<TestHealthCheckAPI> connection = client.start();
             TestHealthCheckAPI proxy = connection.getProxy();
             assertEquals(3, proxy.plus(2L));
-            assertDoesNotThrow(() -> proxy.voidResponse());
+            assertDoesNotThrow(proxy::voidResponse);
             assertEquals("Pong for str = value", proxy.ping(new TestHealthCheckAPI.PingPongData("value")));
             assertEquals(List.of(2.0, 3.0, 4.0), proxy.plusOne(List.of("1", "2", "3")));
         }

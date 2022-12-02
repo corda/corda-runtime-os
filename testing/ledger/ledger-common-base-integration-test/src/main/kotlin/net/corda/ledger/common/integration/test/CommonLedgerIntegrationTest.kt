@@ -67,10 +67,12 @@ abstract class CommonLedgerIntegrationTest {
     }
 
     open fun initialize(setup: SandboxSetup) {
-        flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
-
+        // Load VirtualNodeService before FlowSandboxService so that
+        // FlowSandboxService can use the correct VirtualNodeInfoReadService.
         val virtualNode = setup.fetchService<VirtualNodeService>(TIMEOUT_MILLIS)
         val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
+
+        flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
         sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
         setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
 

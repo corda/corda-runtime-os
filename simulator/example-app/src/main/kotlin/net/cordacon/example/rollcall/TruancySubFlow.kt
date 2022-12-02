@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
@@ -20,6 +20,7 @@ class TruancySubFlow(
     override fun call(): String {
         val session = flowMessaging.initiateFlow(truancyOffice)
         session.send(truancyRecord)
+        session.receive(Unit::class.java)
         return ""
     }
 }

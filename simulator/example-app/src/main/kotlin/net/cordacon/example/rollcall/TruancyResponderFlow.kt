@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -43,6 +43,8 @@ class TruancyResponderFlow : ResponderFlow {
             serializationService.serialize(record.absentees).bytes)
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
+
+        session.send(Unit)
 
         log.info("Records persisted")
     }

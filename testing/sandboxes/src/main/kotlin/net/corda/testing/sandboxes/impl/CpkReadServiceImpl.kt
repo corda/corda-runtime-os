@@ -8,6 +8,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.BundleContext
@@ -28,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap
     service = [ CpkReadService::class, CpiLoader::class ],
     configurationPolicy = REQUIRE
 )
-@ServiceRanking(Int.MAX_VALUE)
+@ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class CpkReadServiceImpl @Activate constructor(
     bundleContext: BundleContext,
     properties: Map<String, Any?>

@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -8,8 +8,8 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@InitiatedBy("roll-call")
-class RollCallResponderFlow: ResponderFlow {
+@InitiatedBy("absence-call")
+class AbsenceCallResponderFlow: ResponderFlow {
 
     private companion object {
         val log = contextLogger()
