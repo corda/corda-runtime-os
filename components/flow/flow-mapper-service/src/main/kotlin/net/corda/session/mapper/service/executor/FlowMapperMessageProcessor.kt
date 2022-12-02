@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -38,13 +39,23 @@ class FlowMapperMessageProcessor(
         logger.trace { "Received event: key: $key event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
-        return if (isExpiredSessionEvent(value)) {
+        return if (isExpiredSessionEvent(value) && isValidState(state)) {
             val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
             val result = executor.execute()
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
         } else {
             StateAndEventProcessor.Response(state, emptyList())
         }
+    }
+
+    /**
+     * Only allow messages to be processed when the messages are for a new state
+     * or if it is an existing state that is set to [FlowMapperStateType.OPEN]
+     * @param state the current state for this mapper event
+     * @return true if mapper state is valid for message processing. False otherwise.
+     */
+    private fun isValidState(state: FlowMapperState?): Boolean {
+        return state == null || state.status == FlowMapperStateType.OPEN
     }
 
     /**
