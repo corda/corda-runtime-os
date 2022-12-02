@@ -14,7 +14,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -53,7 +53,7 @@ class MembershipPackageFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
-    private val cipherSchemeMetadata = mock<CipherSchemeMetadata> {
+    private val cipherSchemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
         on { encodeAsByteArray(any()) } doAnswer {
             val pk = it.arguments[0] as PublicKey
             pk.encoded

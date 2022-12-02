@@ -1,16 +1,19 @@
 package net.corda.cipher.suite.impl
 
-import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.cipher.suite.impl.infra.generateKeyPair
 import net.corda.cipher.suite.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.cipher.suite.impl.infra.signData
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
+import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.impl.CompositeKeyImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.impl.CordaSecureRandomService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -19,9 +22,6 @@ import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
-import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.ASN1EncodableVector
@@ -155,7 +155,7 @@ class CipherSchemeMetadataTests {
     fun `Should not contain banned digest algorithms`() {
         schemeMetadata.digests.forEach {
             assertFalse(
-                CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName },
+                _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName },
                 "Should not contain $it digest."
             )
         }

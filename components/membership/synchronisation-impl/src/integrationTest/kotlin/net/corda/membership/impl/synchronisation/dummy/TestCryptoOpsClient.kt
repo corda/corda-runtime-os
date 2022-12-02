@@ -9,7 +9,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -35,8 +35,8 @@ interface TestCryptoOpsClient : CryptoOpsClient
 class TestCryptoOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
+    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
 ) : TestCryptoOpsClient {
     companion object {
         val logger = contextLogger()

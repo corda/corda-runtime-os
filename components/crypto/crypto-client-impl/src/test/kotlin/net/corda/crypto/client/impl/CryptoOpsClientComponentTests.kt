@@ -48,7 +48,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -91,7 +91,7 @@ class CryptoOpsClientComponentTests {
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
     private lateinit var knownRawOperationContext: KeyValuePairList
-    private lateinit var schemeMetadata: CipherSchemeMetadata
+    private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
     private lateinit var sender: TestRPCSender<RpcOpsRequest, RpcOpsResponse>
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var configurationReadService: TestConfigurationReadService

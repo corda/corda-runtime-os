@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.serialization
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock

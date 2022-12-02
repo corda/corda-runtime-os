@@ -6,7 +6,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -20,8 +20,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class SignatureSpecServiceImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata
+    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
+    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
 ) : SignatureSpecService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     @Suspendable

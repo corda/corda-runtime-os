@@ -18,7 +18,7 @@ import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
@@ -38,8 +38,8 @@ import org.slf4j.Logger
 open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
+    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
     @Reference(service = WrappingKeyStore::class)
@@ -70,7 +70,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
     class Impl(
-        private val schemeMetadata: CipherSchemeMetadata,
+        private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
         private val digestService: PlatformDigestService,
         private val store: WrappingKeyStore
     ) : AbstractImpl {

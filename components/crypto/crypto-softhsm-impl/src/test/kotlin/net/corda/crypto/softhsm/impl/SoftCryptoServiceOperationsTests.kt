@@ -16,7 +16,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -62,7 +62,7 @@ class SoftCryptoServiceOperationsTests {
         private val zeroBytes = ByteArray(100)
         private val UNSUPPORTED_KEY_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
         private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
         private lateinit var platformDigestService: PlatformDigestService
         private lateinit var tenantId: String
         private lateinit var category: String

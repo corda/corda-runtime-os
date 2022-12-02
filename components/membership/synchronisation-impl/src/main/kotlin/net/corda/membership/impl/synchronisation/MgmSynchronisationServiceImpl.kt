@@ -43,7 +43,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
@@ -75,7 +75,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         merkleTreeGenerator: MerkleTreeGenerator,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         signerFactory: SignerFactory,
-        cipherSchemeMetadata: CipherSchemeMetadata,
+        cipherSchemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
         p2pRecordsFactory: P2pRecordsFactory,
     ) : this(
         publisherFactory,
@@ -106,8 +106,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = CipherSchemeMetadata::class)
-        cipherSchemeMetadata: CipherSchemeMetadata,
+        @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
+        cipherSchemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
         @Reference(service = CryptoOpsClient::class)
         cryptoOpsClient: CryptoOpsClient,
         @Reference(service = MembershipQueryClient::class)

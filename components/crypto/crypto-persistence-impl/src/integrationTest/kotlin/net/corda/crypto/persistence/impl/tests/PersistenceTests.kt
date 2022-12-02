@@ -44,7 +44,7 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -82,7 +82,7 @@ class PersistenceTests {
         private val CLIENT_ID = "${PersistenceTests::class.java}-integration-test"
 
         @InjectService(timeout = 5000)
-        lateinit var schemeMetadata: CipherSchemeMetadata
+        lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
 
         @InjectService(timeout = 5000L)
         lateinit var publisherFactory: PublisherFactory

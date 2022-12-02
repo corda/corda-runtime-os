@@ -31,7 +31,7 @@ import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAG
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -98,7 +98,7 @@ class DistributeMembershipPackageHandlerTest {
             signatures
         )
     }
-    private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
+    private val cipherSchemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata>()
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()

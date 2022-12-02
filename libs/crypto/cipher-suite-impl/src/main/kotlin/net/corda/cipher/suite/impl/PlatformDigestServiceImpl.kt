@@ -1,8 +1,8 @@
 package net.corda.cipher.suite.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -51,7 +51,7 @@ class PlatformDigestServiceImpl @Activate constructor(
         }.getInstance()
 
     private class SpiDigestAlgorithmFactory(
-        schemeMetadata: CipherSchemeMetadata,
+        schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
         override val algorithm: String,
     ) : DigestAlgorithmFactory {
         companion object {

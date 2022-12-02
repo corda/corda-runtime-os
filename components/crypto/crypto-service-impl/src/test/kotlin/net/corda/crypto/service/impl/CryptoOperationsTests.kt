@@ -18,7 +18,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -71,7 +71,7 @@ class CryptoOperationsTests {
             val signingService: SigningService
         )
 
-        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
         private lateinit var verifier: SignatureVerificationService
         private lateinit var tenantId: String
         private lateinit var category: String

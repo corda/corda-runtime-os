@@ -27,7 +27,7 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -38,7 +38,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class DistributeMembershipPackageHandler(
     private val membershipQueryClient: MembershipQueryClient,
-    cipherSchemeMetadata: CipherSchemeMetadata,
+    cipherSchemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
     clock: Clock,
     cryptoOpsClient: CryptoOpsClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,

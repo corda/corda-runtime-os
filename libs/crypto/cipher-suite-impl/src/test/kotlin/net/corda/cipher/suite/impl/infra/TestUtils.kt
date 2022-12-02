@@ -1,6 +1,6 @@
 package net.corda.cipher.suite.impl.infra
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
@@ -16,7 +16,7 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.Signature
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, keySchemeCodeName: String): KeyPair {
+fun generateKeyPair(schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata, keySchemeCodeName: String): KeyPair {
     val scheme = schemeMetadata.findKeyScheme(keySchemeCodeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
@@ -32,7 +32,7 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, keySchemeCodeName: Str
 
 // we are not expected to deal with hash pre-calculation in the tests in this module
 fun signData(
-    schemeMetadata: CipherSchemeMetadata,
+    schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
     signatureSpec: SignatureSpec,
     keyPair: KeyPair,
     data: ByteArray
@@ -48,7 +48,7 @@ fun signData(
     return signature.sign()
 }
 
-fun CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec {
+fun _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec {
     val inferred = inferSignatureSpec(publicKey, digest)
     if(inferred != null) {
         return inferred

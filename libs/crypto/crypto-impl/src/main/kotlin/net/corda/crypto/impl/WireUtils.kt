@@ -7,7 +7,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
+import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -59,7 +59,7 @@ fun List<KeyValuePair>.toMap(): Map<String, String> {
     return map
 }
 
-fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
+fun CryptoSignatureSpec.toSignatureSpec(serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService): SignatureSpec {
     val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
@@ -79,7 +79,7 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
     }
 }
 
-fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
+fun SignatureSpec.toWire(serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
     when(this) {
         is CustomSignatureSpec -> CryptoSignatureSpec(
             signatureName,
@@ -95,7 +95,7 @@ fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): Cry
     }
 
 private fun AlgorithmParameterSpec.serialize(
-    serializer: AlgorithmParameterSpecEncodingService
+    serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 ): CryptoSignatureParameterSpec {
     val params = serializer.serialize(this)
     return CryptoSignatureParameterSpec(params.clazz, ByteBuffer.wrap(params.bytes))

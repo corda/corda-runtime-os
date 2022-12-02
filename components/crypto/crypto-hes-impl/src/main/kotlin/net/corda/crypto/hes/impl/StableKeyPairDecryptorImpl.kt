@@ -7,7 +7,7 @@ import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,8 +17,8 @@ import java.security.PublicKey
 class StableKeyPairDecryptorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
+    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient
 ) : AbstractComponent<StableKeyPairDecryptorImpl.Impl>(
@@ -44,7 +44,7 @@ class StableKeyPairDecryptorImpl @Activate constructor(
         impl.decrypt(tenantId, salt, publicKey, otherPublicKey, cipherText, aad)
 
     class Impl(
-        private val schemeMetadata: CipherSchemeMetadata,
+        private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
         private val cryptoOpsClient: CryptoOpsClient
     ) : AbstractImpl {
         @Suppress("LongParameterList")

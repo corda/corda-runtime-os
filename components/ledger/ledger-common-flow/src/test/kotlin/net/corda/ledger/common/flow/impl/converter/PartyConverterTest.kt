@@ -7,7 +7,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.ledger.common.Party
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -18,7 +18,7 @@ import java.security.PublicKey
 
 class PartyConverterTest {
     companion object {
-        private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
+        private val keyEncodingService = Mockito.mock(_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class.java)
         private const val PARTY = "corda"
         private const val partyName = "O=Alice,L=London,C=GB"
         private const val notaryName = "O=Notary,L=London,C=GB"

@@ -39,7 +39,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -76,7 +76,7 @@ class CryptoOpsBusProcessorTests {
 
     private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
-    private lateinit var schemeMetadata: CipherSchemeMetadata
+    private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
     private lateinit var signingFactory: SigningServiceFactory
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsBusProcessor

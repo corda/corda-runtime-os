@@ -4,7 +4,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.Logger
@@ -45,7 +45,7 @@ data class SendActResult<RESPONSE>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
+fun generateKeyPair(schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata, schemeName: String): KeyPair {
     val scheme = schemeMetadata.findKeyScheme(schemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
@@ -60,7 +60,7 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): K
 }
 
 fun signData(
-    schemeMetadata: CipherSchemeMetadata,
+    schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
     signatureSpec: SignatureSpec,
     keyPair: KeyPair,
     data: ByteArray

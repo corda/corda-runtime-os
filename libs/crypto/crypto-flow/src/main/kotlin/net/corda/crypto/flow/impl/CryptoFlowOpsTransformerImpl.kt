@@ -18,7 +18,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
+import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -42,7 +42,7 @@ import java.util.UUID
  */
 @Suppress("TooManyFunctions")
 class CryptoFlowOpsTransformerImpl(
-    private val serializer: AlgorithmParameterSpecEncodingService,
+    private val serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService,
     private val requestingComponent: String,
     private val responseTopic: String,
     private val keyEncodingService: KeyEncodingService,

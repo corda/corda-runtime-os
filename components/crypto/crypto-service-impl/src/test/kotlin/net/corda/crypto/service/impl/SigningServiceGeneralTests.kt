@@ -17,7 +17,7 @@ import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -43,7 +43,7 @@ import kotlin.test.assertSame
 
 class SigningServiceGeneralTests {
     companion object {
-        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
 
         @BeforeAll
         @JvmStatic

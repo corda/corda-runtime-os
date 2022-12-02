@@ -27,7 +27,7 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -45,7 +45,7 @@ import java.time.Instant
 class MemberListProcessorTest {
     companion object {
         private val clock = TestClock(Instant.ofEpochSecond(100))
-        private val keyEncodingService: CipherSchemeMetadata = mock()
+        private val keyEncodingService: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
         private val modifiedTime = clock.instant()

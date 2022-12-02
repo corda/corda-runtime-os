@@ -5,7 +5,7 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 class TransientSoftWrappingKeyMapTests {
     companion object {
-        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
 
         @JvmStatic
         @BeforeAll
