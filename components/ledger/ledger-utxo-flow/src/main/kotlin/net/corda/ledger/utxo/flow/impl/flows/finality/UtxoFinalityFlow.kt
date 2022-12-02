@@ -62,7 +62,7 @@ class UtxoFinalityFlow(
             }
         }
 
-        // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
+        // TODO [CORE-8655] Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
         val missingSignatories = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
         require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
