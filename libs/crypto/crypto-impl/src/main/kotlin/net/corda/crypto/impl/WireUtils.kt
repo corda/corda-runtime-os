@@ -2,14 +2,14 @@
 
 package net.corda.crypto.impl
 
+import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
@@ -59,7 +59,7 @@ fun List<KeyValuePair>.toMap(): Map<String, String> {
     return map
 }
 
-fun CryptoSignatureSpec.toSignatureSpec(serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService): SignatureSpec {
+fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
     val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
@@ -79,7 +79,7 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: net.corda.crypto.cipher.suit
     }
 }
 
-fun SignatureSpec.toWire(serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
+fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
     when(this) {
         is CustomSignatureSpec -> CryptoSignatureSpec(
             signatureName,
@@ -95,7 +95,7 @@ fun SignatureSpec.toWire(serializer: net.corda.crypto.cipher.suite.AlgorithmPara
     }
 
 private fun AlgorithmParameterSpec.serialize(
-    serializer: net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
+    serializer: AlgorithmParameterSpecEncodingService
 ): CryptoSignatureParameterSpec {
     val params = serializer.serialize(this)
     return CryptoSignatureParameterSpec(params.clazz, ByteBuffer.wrap(params.bytes))
