@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import java.time.Duration
 import java.time.temporal.ChronoUnit
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Instant
 import java.util.UUID
 
 const val CODESIGNER_CERT = "/cordadevcodesign.pem"
@@ -373,10 +371,8 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            // Note CPI/CPK timestamp
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            // Perform force upload of the CPI
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -386,9 +382,6 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            // Check that timestamp for CPK been updated
-            // Cannot use `assertWithRetry` as there is a strict type `Instant`
-            // Allow ample time for CPI upload to be propagated through the system
             eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
@@ -520,10 +513,6 @@ class VirtualNodeRpcTest {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
         return cpiJson["cpiFileFullChecksum"].toString()
-    }
-
-    private fun JsonNode.toInstant(): Instant {
-        return Instant.parse(this.asText())
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
