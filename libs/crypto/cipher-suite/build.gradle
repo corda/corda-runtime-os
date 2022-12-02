@@ -1,18 +1,17 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'org.jetbrains.kotlin.jvm'
 }
 
 description 'Corda Cipher Suite'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
-    compileOnly 'org.osgi:osgi.annotation'
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-crypto'
     api 'net.corda:corda-crypto-extensions'
 
@@ -20,6 +19,8 @@ dependencies {
     api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
