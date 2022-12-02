@@ -2,7 +2,7 @@ package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
 import kotlin.text.Typography.quote
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
@@ -30,6 +30,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
@@ -95,6 +96,8 @@ class FlowTests {
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
+
+        val jacksonObjectMapper = jacksonObjectMapper()
 
         @BeforeAll
         @JvmStatic
@@ -751,20 +754,21 @@ class FlowTests {
     }
 
     @Test
-    @Suppress("unchecked_cast")
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
-            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
 
-            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
-            assertThat(issuedStateRefs).hasSize(3)
+            @Suppress("unchecked_cast")
+            assertThat((flowResultMap["issuedStateRefs"] as List<String>)).hasSize(3)
 
             // 2. Make sure no extra states were consumed
-            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
-            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
         }
     }
 
@@ -775,15 +779,16 @@ class FlowTests {
             timeWindowLowerBoundOffsetMs = -2000,
             timeWindowUpperBoundOffsetMs = -1000
         ) { issuanceResult ->
-            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(issuanceResult.flowError?.message).contains("Unable to notarise transaction")
-            assertThat(issuanceResult.flowError?.message).contains("NotaryErrorTimeWindowOutOfBounds")
+            assertAll({
+                assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                assertThat(issuanceResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(issuanceResult.flowError?.message).contains("NotaryErrorTimeWindowOutOfBounds")
+            })
         }
     }
 
     @Test
     @Disabled
-    @Suppress("unchecked_cast")
     // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
@@ -791,16 +796,20 @@ class FlowTests {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
 
+            @Suppress("unchecked_cast")
             val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+
             assertThat(issuedStateRefs).hasSize(1)
 
             issuedStates.addAll(issuedStateRefs)
 
-            // 3. Make sure no extra states were consumed
-            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
-            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+            // 3. Make sure no states were consumed
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
         }
 
         // 4. Consume one of the issued states as an input state
@@ -811,17 +820,23 @@ class FlowTests {
             assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
             // 5. Make sure only one input state was consumed, and nothing was issued
-            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(consumeResult.flowResult!!)
+            val flowResultMap = consumeResult.mapFlowJsonResult()
 
-            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(1)
-            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
-            assertThat(flowResultMap["issuedStateRefs"] as List<String>).hasSize(0)
+            @Suppress("unchecked_cast")
+            assertAll({
+                // Make sure we consumed the state we issued before
+                val consumedInputs = flowResultMap["consumedInputStateRefs"] as List<String>
+                assertThat(consumedInputs).hasSize(1)
+                assertThat(consumedInputs.first()).isEqualTo(issuedStates.first())
+
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["issuedStateRefs"] as List<*>).hasSize(0)
+            })
         }
     }
 
     @Test
     @Disabled
-    @Suppress("unchecked_cast")
     // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin returns error when using reference state that is spent in same tx`() {
         // 1. Issue 1 state
@@ -829,19 +844,23 @@ class FlowTests {
         issueStatesAndValidateResult(1) { issuanceResult ->
             // 2. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            val flowResultMap = ObjectMapper().readValue<Map<String, Any>>(issuanceResult.flowResult!!)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
 
+            @Suppress("unchecked_cast")
             val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+
             assertThat(issuedStateRefs).hasSize(1)
 
             issuedStates.addAll(issuedStateRefs)
 
-            // 3. Make sure no extra states were consumed
-            assertThat(flowResultMap["consumedInputStateRefs"] as List<String>).hasSize(0)
-            assertThat(flowResultMap["consumedReferenceStateRefs"] as List<String>).hasSize(0)
+            // 3. Make sure no states were consumed
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
         }
 
-        // 4. Consume one of the issued states twice in the same TX (as input and as ref)
+        // 4. Include one of the issued states twice in the same TX (as input and as ref)
         val toConsume = issuedStates.first()
 
         consumeStatesAndValidateResult(
@@ -849,9 +868,11 @@ class FlowTests {
             refStates = listOf(toConsume)
         ) { consumeResult ->
             // 5. Make sure the request failed due to double spend error
-            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-            assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+            })
         }
     }
 
@@ -865,9 +886,11 @@ class FlowTests {
             ),
             refStates = emptyList()
         ) { consumeResult ->
-            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-            assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+            })
         }
     }
 
@@ -881,9 +904,11 @@ class FlowTests {
                 "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
             )
         ) { consumeResult ->
-            assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-            assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+            })
         }
     }
 
@@ -1021,4 +1046,6 @@ class FlowTests {
 
         validateResult(consumeResult)
     }
+
+    private fun FlowStatus.mapFlowJsonResult() = jacksonObjectMapper.readValue<Map<String, Any>>(this.flowResult!!)
 }

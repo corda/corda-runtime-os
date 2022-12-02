@@ -8,6 +8,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parseList
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
@@ -19,14 +20,10 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 import java.time.Instant
-
-data class NonValidatingNotaryTestFlowResult(
-    val issuedStateRefs: List<String>,
-    val consumedInputStateRefs: List<String>,
-    val consumedReferenceStateRefs: List<String>
-)
 
 /**
  * This flow is used to call the `NonValidatingNotaryClientFlowImpl`. Since `NonValidatingNotaryClientFlowImpl` is not
@@ -65,15 +62,19 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         val log = loggerFor<NonValidatingNotaryTestFlow>()
     }
 
-    @Suppress("unchecked_cast", "deprecation", "ComplexMethod")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
         val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0
 
-        val inputStateRefs = requestMessage["inputStateRefs"] as? List<String> ?: emptyList()
-        val referenceStateRefs = requestMessage["referenceStateRefs"] as? List<String> ?: emptyList()
+        val inputStateRefs = requestMessage["inputStateRefs"]?.let {
+            jsonMarshallingService.parseList<String>(it)
+        } ?: emptyList()
+
+        val referenceStateRefs = requestMessage["referenceStateRefs"]?.let {
+            jsonMarshallingService.parseList<String>(it)
+        } ?: emptyList()
 
         require(outputStateCount > 0 || inputStateRefs.isNotEmpty()) {
             "The transaction must have at least one input OR output state"
@@ -97,8 +98,47 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val notaryParty = Party(notary.name, notary.sessionInitiationKey)
 
-        val stx = utxoLedgerService.getTransactionBuilder()
-            .setNotary(notaryParty)
+        val stx = buildSignedTransaction(
+            notaryParty,
+            myInfo,
+            inputStateRefs,
+            referenceStateRefs,
+            outputStateCount,
+            timeWindowLowerBoundOffsetMs,
+            timeWindowUpperBoundOffsetMs,
+        )
+
+        flowEngine.subFlow(
+            NonValidatingNotaryClientFlowImpl(
+                stx,
+                notaryParty
+            )
+        )
+
+        val result = NonValidatingNotaryTestFlowResult(
+            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
+        )
+
+        return jsonMarshallingService.format(result)
+    }
+
+    @Suppress(
+        "deprecation", // Can be removed once the new `sign` function on the TX builder is added
+    )
+    @Suspendable
+    private fun buildSignedTransaction(
+        notaryServerParty: Party,
+        notaryClientInfo: MemberInfo,
+        inputStateRefs: List<String>,
+        referenceStateRefs: List<String>,
+        outputStateCount: Int,
+        timeWindowLowerBoundOffsetMs: Long?,
+        timeWindowUpperBoundOffsetMs: Long
+    ): UtxoSignedTransaction {
+        return utxoLedgerService.getTransactionBuilder()
+            .setNotary(notaryServerParty)
             .addCommand(TestCommand())
             .run {
                 // Since the builder will always be copied with the new attributes, we always need to re-assign it
@@ -112,7 +152,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                         Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
                     )
                 }
-                
+
                 repeat(outputStateCount) {
                     builder = builder.addOutputState(
                         TestContract.TestState(emptyList())
@@ -131,24 +171,8 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                     )
                 }
                 builder
-            }.toSignedTransaction(myInfo.sessionInitiationKey)
-
-        flowEngine.subFlow(
-            NonValidatingNotaryClientFlowImpl(
-                stx,
-                notaryParty
-            )
-        )
-
-        val result = NonValidatingNotaryTestFlowResult(
-            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
-        )
-
-        return jsonMarshallingService.format(result)
+            }.toSignedTransaction(notaryClientInfo.sessionInitiationKey)
     }
-
     /**
      * The contract and command classes are needed to build a signed UTXO transaction. Unfortunately, we cannot reuse
      * any internal contract/command as this flow belongs to an "external" CorDapp (CPB) so we can't introduce internal
@@ -160,4 +184,10 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         override fun verify(transaction: UtxoLedgerTransaction) {}
     }
     class TestCommand : Command
+
+    data class NonValidatingNotaryTestFlowResult(
+        val issuedStateRefs: List<String>,
+        val consumedInputStateRefs: List<String>,
+        val consumedReferenceStateRefs: List<String>
+    )
 }
