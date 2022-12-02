@@ -46,6 +46,11 @@ internal class InboundMessageHandler(
     cryptoOpsClient: CryptoOpsClient
 ) : HttpServerListener, LifecycleWithDominoTile {
 
+    init {
+        System.setProperty("org.apache.avro.limits.bytes.maxLength", "100")
+        System.setProperty("org.apache.avro.limits.string.maxLength", "100")
+    }
+
     companion object {
         private val logger = contextLogger()
     }
@@ -105,8 +110,7 @@ internal class InboundMessageHandler(
             val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
-            logger.warn("Invalid message received. Cannot deserialize")
-            logger.debug(e.stackTraceToString())
+            logger.warn("Received invalid message, which could not be deserialized", e)
             server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
