@@ -382,6 +382,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
+            // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
             eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
