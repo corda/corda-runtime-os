@@ -88,8 +88,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 1.hours.toMillis()
             }
 
-        val myInfo = memberLookup.myInfo()
-
         // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
         //  need to find the notary instead of the first whose common name contains "Notary".
         val notary = memberLookup.lookup().first {
@@ -100,7 +98,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         val stx = buildSignedTransaction(
             notaryParty,
-            myInfo,
             inputStateRefs,
             referenceStateRefs,
             outputStateCount,
@@ -130,7 +127,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     @Suspendable
     private fun buildSignedTransaction(
         notaryServerParty: Party,
-        notaryClientInfo: MemberInfo,
         inputStateRefs: List<String>,
         referenceStateRefs: List<String>,
         outputStateCount: Int,
@@ -171,7 +167,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                     )
                 }
                 builder
-            }.toSignedTransaction(notaryClientInfo.sessionInitiationKey)
+            }.toSignedTransaction(memberLookup.myInfo().sessionInitiationKey)
     }
     /**
      * The contract and command classes are needed to build a signed UTXO transaction. Unfortunately, we cannot reuse
