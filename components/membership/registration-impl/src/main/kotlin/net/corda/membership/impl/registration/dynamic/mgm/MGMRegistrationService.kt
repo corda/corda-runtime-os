@@ -220,6 +220,7 @@ class MGMRegistrationService @Activate constructor(
                 val recordWithAllowedClient = Record(
                     GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE,
                     "${member.x500Name}-${member.groupId}",
+                    @Suppress("UNCHECKED_CAST")
                     GatewayAllowedClientCertificates(
                         member.toAvro(),
                         context[CLIENT_ALLOWED_CERTIFICATES] as? List<String> ?: emptyList(),

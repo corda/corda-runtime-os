@@ -152,11 +152,14 @@ class MemberOpsServiceTest {
             MemberOpsServiceImpl(
                 coordinatorFactory,
                 subscriptionFactory,
+                mock(),
                 configReadService,
                 registrationProxy,
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
-                membershipQueryClient
+                membershipQueryClient,
+                mock(),
+                mock(),
             )
         }
     }
