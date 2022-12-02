@@ -9,8 +9,8 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
+import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -45,7 +45,8 @@ class FlowFinishedRequestHandler @Activate constructor(
 
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
 
-        val expiryTime = Instant.now().plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
+        val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
+        val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         val records = listOf(
             flowRecordFactory.createFlowStatusRecord(status),
             flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))

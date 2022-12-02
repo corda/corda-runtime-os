@@ -10,7 +10,7 @@ import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAIL
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
-import net.corda.v5.base.util.minutes
+import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,8 +38,8 @@ class FlowFailedRequestHandler @Activate constructor(
             FLOW_FAILED,
             request.exception.message ?: request.exception.javaClass.name
         )
-
-        val expiryTime = Instant.now().plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
+        val flowCleanupTime = context.config.getLong(PROCESSING_FLOW_CLEANUP_TIME)
+        val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         val records = listOf(
             flowRecordFactory.createFlowStatusRecord(status),
             flowRecordFactory.createFlowMapperEventRecord(checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime))
