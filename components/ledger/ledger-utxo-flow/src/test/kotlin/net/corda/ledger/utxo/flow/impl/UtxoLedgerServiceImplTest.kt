@@ -14,6 +14,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.security.PublicKey
 import kotlin.test.assertIs
 
 @Suppress("DEPRECATION")
@@ -39,6 +40,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addOutputState(utxoStateExample)
             .addInputState(inputStateAndRef)
             .addReferenceInputState(referenceStateAndRef)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
             .toSignedTransaction(publicKeyExample)
@@ -56,5 +58,10 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         Assertions.assertEquals(1, ledgerTransaction.outputContractStates.size)
         Assertions.assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
+
+        assertIs<List<PublicKey>>(ledgerTransaction.signatories)
+        Assertions.assertEquals(1, ledgerTransaction.signatories.size)
+        Assertions.assertEquals(publicKeyExample, ledgerTransaction.signatories.first())
+        assertIs<PublicKey>(ledgerTransaction.signatories.first())
     }
 }

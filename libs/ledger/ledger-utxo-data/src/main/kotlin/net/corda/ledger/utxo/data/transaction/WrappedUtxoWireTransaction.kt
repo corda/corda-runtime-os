@@ -54,8 +54,9 @@ class WrappedUtxoWireTransaction(
     }
 
     val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.SIGNATORIES.ordinal)
+            .map { serializationService.deserialize(it) }
     }
 
     val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {

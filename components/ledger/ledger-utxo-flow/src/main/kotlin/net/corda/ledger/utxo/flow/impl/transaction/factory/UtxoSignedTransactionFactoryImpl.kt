@@ -125,7 +125,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         }
         val commandsInfo = utxoTransactionBuilder.commands.map {
             listOf(
-                "", // TODO signers
                 currentSandboxGroup.getEvolvableTag(it.javaClass),
             )
         }
@@ -140,6 +139,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
                     UtxoComponentGroup.NOTARY ->
                         notaryGroup.map { serializationService.serialize(it!!).bytes }
+
+                    UtxoComponentGroup.SIGNATORIES ->
+                        utxoTransactionBuilder.signatories.map { serializationService.serialize(it).bytes }
 
                     UtxoComponentGroup.OUTPUTS_INFO ->
                         outputsInfo.map { serializationService.serialize(it).bytes }

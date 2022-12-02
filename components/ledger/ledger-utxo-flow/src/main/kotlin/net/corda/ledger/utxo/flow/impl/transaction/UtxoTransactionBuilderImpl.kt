@@ -24,7 +24,7 @@ data class UtxoTransactionBuilderImpl(
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
-    private val signatories: Set<PublicKey> = emptySet(),
+    override val signatories: List<PublicKey> = emptyList(),
     override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
 
