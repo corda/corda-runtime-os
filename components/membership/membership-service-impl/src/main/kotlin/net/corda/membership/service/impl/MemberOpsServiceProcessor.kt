@@ -30,6 +30,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.CLIENT_ALLOWED_CERTIFICATES
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -455,7 +456,7 @@ class MemberOpsServiceProcessor(
                     TLS_PKI to tlsPkiMode,
                     TLS_TYPE to tlsType,
                     TLS_VERSION to tlsVersion,
-                    TLS_TRUST_ROOTS to clientAllowedCertificates,
+                    CLIENT_ALLOWED_CERTIFICATES to clientAllowedCertificates,
                     PROTOCOL_MODE to p2pMode
                 ).apply {
                     sessionTrustroots?.let {
