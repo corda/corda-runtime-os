@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.serialization.SerializationService
@@ -13,13 +12,14 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoFilteredTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>() {
+) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>(),
+    UsedByFlow{
     override fun toProxy(obj: UtxoFilteredTransactionImpl): UtxoFilteredTransactionProxy {
         return UtxoFilteredTransactionProxy(obj.filteredTransaction)
     }
