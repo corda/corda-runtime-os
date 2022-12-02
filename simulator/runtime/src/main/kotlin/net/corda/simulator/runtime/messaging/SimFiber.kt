@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.simulator.crypto.HsmCategory
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.persistence.PersistenceService
@@ -64,6 +66,14 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService
 
     /**
+     * Gets the existing signing service for the given member, or creates one if it does not exist.
+     *
+     * @param member The member for whom to create the persistence service.
+     * @return The [SigningService] for the given member.
+     */
+    fun createSigningService(member: MemberX500Name): SigningService
+
+    /**
      * Creates a member lookup as it exists at the time of calling.
      *
      * @param member The member for whom to create a member lookup.
@@ -72,10 +82,13 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun createMemberLookup(member: MemberX500Name): MemberLookup
 
     /**
+     * @param alias The alias to use for the key.
+     * @param hsmCategory The HSM category for the key.
+     * @param scheme The scheme for the key.
      * @param member The member for whom to register a key.
-     * @param publicKey The key to register.
+     * @return A generated key that is also registered with the member.
      */
-    fun registerKey(member: MemberX500Name, publicKey: PublicKey)
+    fun generateAndStoreKey(alias: String, hsmCategory: HsmCategory, scheme: String, member: MemberX500Name): PublicKey
 }
 
 /**

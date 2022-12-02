@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData

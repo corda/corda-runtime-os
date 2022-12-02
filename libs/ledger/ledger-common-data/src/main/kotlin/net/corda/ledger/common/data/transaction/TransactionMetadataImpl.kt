@@ -2,9 +2,11 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 @CordaSerializable
-class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
+class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any>) : TransactionMetadata {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -24,16 +26,16 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is TransactionMetadata) return false
+        if (other == null || other !is TransactionMetadataImpl) return false
         if (this === other) return true
         return properties == other.properties
     }
 
     override fun hashCode(): Int = properties.hashCode()
 
-    fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
+    override fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
 
-    fun getLedgerVersion(): Int {
+    override fun getLedgerVersion(): Int {
         val version = this[LEDGER_VERSION_KEY].toString()
 
         return try {
@@ -44,25 +46,25 @@ class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
         }
     }
 
-    fun getTransactionSubtype(): String? = this[TRANSACTION_SUBTYPE_KEY]?.toString()
+    override fun getTransactionSubtype(): String? = this[TRANSACTION_SUBTYPE_KEY]?.toString()
 
-    fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummary.from(it) }
+    override fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummaryImpl.from(it) }
 
-    fun getCpkMetadata(): List<CordaPackageSummary> {
+    override fun getCpkMetadata(): List<CordaPackageSummary> {
         return when (val data = this[CPK_METADATA_KEY]) {
             null -> emptyList()
-            is List<*> -> data.map { CordaPackageSummary.from(it) }
+            is List<*> -> data.map { CordaPackageSummaryImpl.from(it) }
             else -> throw CordaRuntimeException(
                 "Transaction metadata representation error: expected list of Corda package metadata but found [$data]")
         }
     }
 
-    fun getDigestSettings(): LinkedHashMap<String, Any> {
+    override fun getDigestSettings(): LinkedHashMap<String, Any> {
         @Suppress("UNCHECKED_CAST")
         return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
     }
 
-    fun getSchemaVersion(): Int {
+    override fun getSchemaVersion(): Int {
         val version = this[SCHEMA_VERSION_KEY].toString()
 
         return try {

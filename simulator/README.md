@@ -47,6 +47,17 @@ To release resources used by Simulator, including any database connections, call
   simulator.close()
 ```
 
+## Logging
+
+Simulator uses SLF4j for its logging. To turn logging on, either add a dependency to a logging framework bridge of your
+choice, for instance:
+
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
+
+or turn on SLF4J's simple logging:
+
+    testImplementation `org.slf4j:slf4j-simple:2.0.4`
+
 ## Configuration
 
 Simulator configuration can be set using the `SimulatorConfigurationBuilder`. You can configure:
@@ -207,11 +218,3 @@ Simulator has some components which can also be used independently:
 - A `FlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
   `JsonMarshallingServiceFactory`.
-
-## TODO:
-
-- Check for @CordaSerializable on messages
-- Handle errors for unmatched sends / receives
-- Implement FlowMessaging send / receive methods
-- Allow upload and invocation of InitiatingFlow instances
-- Timeouts

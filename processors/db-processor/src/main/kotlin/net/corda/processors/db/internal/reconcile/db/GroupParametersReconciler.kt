@@ -9,6 +9,10 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.datamodel.getCurrentGroupParameters
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.reconciliation.Reconciler
+import net.corda.reconciliation.ReconcilerFactory
+import net.corda.reconciliation.ReconcilerReader
+import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -17,7 +21,9 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
+import kotlin.concurrent.withLock
 
 /**
  * Reconciler for handling reconciliation between each vnode vault database on the cluster
@@ -30,7 +36,10 @@ class GroupParametersReconciler(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    private val groupParametersFactory: GroupParametersFactory
+    private val groupParametersFactory: GroupParametersFactory,
+    private val reconcilerFactory: ReconcilerFactory,
+    private val kafkaReconcilerWriter: ReconcilerWriter<HoldingIdentity, GroupParameters>,
+    private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
         val logger = contextLogger()
@@ -40,6 +49,8 @@ class GroupParametersReconciler(
         )
         const val FAILED_DESERIALIZATION = "Could not deserialize group parameters from the database entity."
     }
+
+    private val lock = ReentrantLock()
 
     private val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
         { logger.warn(FAILED_DESERIALIZATION) },
@@ -53,25 +64,48 @@ class GroupParametersReconciler(
             )
 
     @VisibleForTesting
-    internal var dbReconciler: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    @VisibleForTesting
+    internal var reconciler: Reconciler? = null
 
     override fun close() {
-        dbReconciler?.stop()
+        lock.withLock {
+            dbReconcilerReader?.stop()
+            dbReconcilerReader = null
+            reconciler?.stop()
+            reconciler = null
+        }
     }
 
     override fun updateInterval(intervalMillis: Long) {
         logger.debug { "Group parameters reconciliation interval set to $intervalMillis ms" }
 
-        if (dbReconciler == null) {
-            dbReconciler = DbReconcilerReader(
-                coordinatorFactory,
-                HoldingIdentity::class.java,
-                GroupParameters::class.java,
-                dependencies,
-                reconciliationContextFactory,
-                ::getAllGroupParametersDBVersionedRecords
-            ).also {
-                it.start()
+        lock.withLock {
+            if (dbReconcilerReader == null) {
+                dbReconcilerReader = DbReconcilerReader(
+                    coordinatorFactory,
+                    HoldingIdentity::class.java,
+                    GroupParameters::class.java,
+                    dependencies,
+                    reconciliationContextFactory,
+                    ::getAllGroupParametersDBVersionedRecords
+                ).also {
+                    it.start()
+                }
+            }
+
+            if (reconciler == null) {
+                reconciler = reconcilerFactory.create(
+                    dbReader = dbReconcilerReader!!,
+                    kafkaReader = kafkaReconcilerReader,
+                    writer = kafkaReconcilerWriter,
+                    keyClass = HoldingIdentity::class.java,
+                    valueClass = GroupParameters::class.java,
+                    reconciliationIntervalMs = intervalMillis
+                ).also { it.start() }
+            } else {
+                logger.info("Updating Group Parameters ${Reconciler::class.java.name}")
+                reconciler!!.updateInterval(intervalMillis)
             }
         }
     }

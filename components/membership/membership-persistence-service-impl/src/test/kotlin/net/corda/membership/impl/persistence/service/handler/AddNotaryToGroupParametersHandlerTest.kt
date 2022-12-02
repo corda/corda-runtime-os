@@ -88,9 +88,15 @@ class AddNotaryToGroupParametersHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
-    private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-        on { setMaxResults(1) } doReturn mock
+    private val resultList: List<GroupParametersEntity> = mock {
+        on { isEmpty() } doReturn false
+    }
+    private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+        on { resultList } doReturn resultList
         on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray())
+    }
+    private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
+        on { setMaxResults(1) } doReturn previousEntry
     }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
@@ -414,5 +420,44 @@ class AddNotaryToGroupParametersHandlerTest {
 
         val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
         assertThat(ex.message).contains("plugin types do not match")
+    }
+
+    @Test
+    fun `exception is thrown when there is no group parameters data in the database`() {
+        val requestContext = mock<MembershipRequestContext> {
+            on { holdingIdentity } doReturn knownIdentity
+        }
+        val request: AddNotaryToGroupParameters = mock()
+        val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+            on { resultList } doReturn emptyList()
+        }
+        val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
+            on { setMaxResults(1) } doReturn previousEntry
+        }
+        whenever(entityManager.createQuery(eq(query))).doReturn(groupParametersQuery)
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("no group parameters found")
+    }
+
+    @Test
+    fun `exception is thrown when no notary details were provided`() {
+        val requestContext = mock<MembershipRequestContext> {
+            on { holdingIdentity } doReturn knownIdentity
+        }
+        val persistentNotaryInfo: PersistentMemberInfo = mock()
+        val request = mock<AddNotaryToGroupParameters> {
+            on { notary } doReturn persistentNotaryInfo
+        }
+        val notaryInfo: MemberInfo = mock {
+            on { memberProvidedContext } doReturn mock()
+        }
+        val memberInfoFactory = mock<MemberInfoFactory> {
+            on { create(any()) } doReturn notaryInfo
+        }
+        whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(KeyValuePairList(emptyList()))
+        whenever(persistenceHandlerServices.memberInfoFactory).doReturn(memberInfoFactory)
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("notary details not found")
     }
 }

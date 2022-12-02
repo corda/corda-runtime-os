@@ -1,6 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.sandbox.type.UsedByFlow
@@ -13,6 +13,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -90,7 +91,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
  * TODO [CORE-7126] Fake values until we can get CPI information properly
  */
 private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummary(
+    CordaPackageSummaryImpl(
         name = "CPI name",
         version = "CPI version",
         signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
