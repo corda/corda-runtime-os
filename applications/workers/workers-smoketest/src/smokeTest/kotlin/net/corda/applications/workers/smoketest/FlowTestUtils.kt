@@ -159,12 +159,12 @@ fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     }
 }
 
-fun registerMember(holdingIdentityShortHash: String) {
+fun registerMember(holdingIdentityShortHash: String, isNotary: Boolean = false) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
         val membershipJson = assertWithRetry {
-            command { registerMember(holdingIdentityShortHash) }
+            command { registerMember(holdingIdentityShortHash, isNotary) }
             condition { it.code == 200 }
             failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
         }.toJson()
@@ -184,21 +184,6 @@ fun registerMember(holdingIdentityShortHash: String) {
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
-    }
-}
-
-fun registerNotary(holdingIdentityId: String) {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-        val membershipJson = assertWithRetry {
-            command { registerNotary(holdingIdentityId) }
-            condition { it.code == 200 }
-            failMessage("Failed to register the notary to the network '$holdingIdentityId'")
-        }.toJson()
-
-        val registrationStatus = membershipJson["registrationStatus"].textValue()
-        assertThat(registrationStatus).isEqualTo("SUBMITTED")
     }
 }
 

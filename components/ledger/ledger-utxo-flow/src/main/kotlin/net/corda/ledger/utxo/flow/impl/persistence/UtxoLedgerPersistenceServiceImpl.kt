@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -15,6 +14,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate

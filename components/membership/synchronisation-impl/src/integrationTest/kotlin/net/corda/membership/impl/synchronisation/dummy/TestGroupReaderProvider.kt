@@ -1,9 +1,15 @@
 package net.corda.membership.impl.synchronisation.dummy
 
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -18,6 +24,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.time.Instant
 
 /**
  * Created for mocking and simplifying group reader functionalities used by the membership services.
@@ -30,7 +37,9 @@ interface TestGroupReaderProvider : MembershipGroupReaderProvider {
 @Component(service = [MembershipGroupReaderProvider::class, TestGroupReaderProvider::class])
 class TestGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory
 ) : TestGroupReaderProvider {
     companion object {
         val logger = contextLogger()
@@ -44,7 +53,7 @@ class TestGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    private val groupReader = TestGroupReader()
+    private val groupReader = TestGroupReader(groupParametersFactory)
 
     override fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>) {
         val reader = getGroupReader(holdingIdentity) as TestGroupReader
@@ -57,20 +66,22 @@ class TestGroupReaderProviderImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("${TestGroupReaderProvider::class.java.simpleName} starting.")
+        logger.info("${this::class.java.simpleName} starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("TestGroupReaderProvider starting.")
+        logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
 }
 
-class TestGroupReader : MembershipGroupReader {
+class TestGroupReader(private val groupParametersFactory: GroupParametersFactory) : MembershipGroupReader {
     companion object {
         val logger = contextLogger()
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
+        private const val EPOCH = "5"
+        private const val PLATFORM_VERSION = "5000"
     }
 
     override val groupId: String
@@ -78,8 +89,15 @@ class TestGroupReader : MembershipGroupReader {
     override val owningMember: MemberX500Name
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val groupParameters: GroupParameters
-        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-
+        get() = groupParametersFactory.create(
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, EPOCH),
+                    KeyValuePair(MPV_KEY, PLATFORM_VERSION),
+                    KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
+                )
+            )
+        )
     private var members = emptyList<MemberInfo>()
 
     fun loadMembers(memberList: List<MemberInfo>) {

@@ -64,6 +64,7 @@ pipeline {
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
+        booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
     }
 
     environment {
@@ -109,6 +110,7 @@ pipeline {
                     kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
                     kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
                     kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
                 '''.stripIndent()
             }
         }
@@ -165,6 +167,15 @@ pipeline {
             }
         }
         stage('Forward port and run tests') {
+            environment {
+                E2E_CLUSTER_A_RPC_PASSWORD = "${getInitialAdminPassword('alice')}"
+                E2E_CLUSTER_B_RPC_PASSWORD = "${getInitialAdminPassword('bob')}"
+                E2E_CLUSTER_C_RPC_PASSWORD = "${getInitialAdminPassword('caroline')}"
+
+                // Bob's cluster is used as a primary access point by Smoke and E2E tests
+                INITIAL_ADMIN_USER_PASSWORD = "${E2E_CLUSTER_B_RPC_PASSWORD}"
+            }
+
             steps {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
@@ -208,8 +219,10 @@ pipeline {
                 createSummary("yellow.png").appendText("<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/namespace_details?form.namespace=${NAMESPACE}&form.cluster_name=eks-e2e&form.period.earliest=0&form.period.latest=&form.span=5m&form.pod=*&form.event_message=*'>Splunk K8s E2E Dashboard</a>", false)
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
+                if (!params.KEEP_NS) {
+                    sh 'kubectl delete ns "${NAMESPACE}"'
+                }
             }
-             sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
 }
@@ -244,4 +257,9 @@ def deployCorda(def name, def namespace, def base_image){
 
 def getBaseImage(def buildRev, def architectureTag) {
     return buildRev ? "preTest-${architectureTag}${buildRev}" : "${architectureTag}unstable"
+}
+
+def getInitialAdminPassword(def name) {
+    def cmd = "kubectl get secret corda-${name}-initial-admin-user -n ${NAMESPACE} -o go-template='{{ .data.password | base64decode }}'"
+    return sh(script: cmd, returnStdout: true)
 }

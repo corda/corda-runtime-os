@@ -2,9 +2,6 @@ imagePullSecrets:
   - "docker-registry-cred"
 
 bootstrap:
-  initialAdminUser:
-    password:
-      value: "admin"
   db:
     clientImage:
       registry: docker-remotes.software.r3.com

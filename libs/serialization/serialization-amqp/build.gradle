@@ -6,6 +6,11 @@ plugins {
     id 'corda.common-library'
 }
 
+
+ext {
+    releasable = true
+}
+
 description 'Corda AMQP serialization library'
 
 configurations {

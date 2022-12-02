@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.consensual.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -24,8 +24,10 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -168,6 +170,7 @@ class ConsensualLedgerRepositoryTest {
 
     @Test
     fun `can persist signed transaction`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         val transactionStatus = "V"
         val signedTransaction = createSignedTransaction(Instant.now())
@@ -247,6 +250,7 @@ class ConsensualLedgerRepositoryTest {
 
     @Test
     fun `can persist links between signed transaction and existing CPKs`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
         val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)
@@ -336,19 +340,19 @@ class ConsensualLedgerRepositoryTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val cpks = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk1",
                 "signerSummaryHash1",
                 "1.0",
                 "$seed-fileChecksum1"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk2",
                 "signerSummaryHash2",
                 "2.0",
                 "$seed-fileChecksum2"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk3",
                 "signerSummaryHash3",
                 "3.0",

@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
@@ -23,18 +23,20 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.time.Clock
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -170,6 +172,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `can persist signed transaction`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         val transactionStatus = "V"
         val signedTransaction = createSignedTransaction(Instant.now())
@@ -255,19 +258,19 @@ class UtxoPersistenceServiceImplTest {
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val cpks = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk1",
                 "signerSummaryHash1",
                 "1.0",
                 "$seed-fileChecksum1"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk2",
                 "signerSummaryHash2",
                 "2.0",
                 "$seed-fileChecksum2"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "$seed-cpk3",
                 "signerSummaryHash3",
                 "3.0",

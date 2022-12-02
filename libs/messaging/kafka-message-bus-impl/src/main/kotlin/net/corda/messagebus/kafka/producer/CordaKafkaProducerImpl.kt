@@ -9,8 +9,8 @@ import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.v5.base.util.contextLogger
-import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -56,51 +56,81 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
-        val prefixedRecord =
-            ProducerRecord(topicPrefix + record.topic, record.key, record.value)
-        producer.send(prefixedRecord, callback?.toKafkaCallback())
+        tryWithCleanupOnFailure("send single record, no partition") {
+            val prefixedRecord =
+                ProducerRecord(topicPrefix + record.topic, record.key, record.value)
+            producer.send(prefixedRecord, callback?.toKafkaCallback())
+        }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
-        val prefixedRecord =
-            ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)
-        producer.send(prefixedRecord, callback?.toKafkaCallback())
+        tryWithCleanupOnFailure("send single record, with partition") {
+            val prefixedRecord =
+                ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)
+            producer.send(prefixedRecord, callback?.toKafkaCallback())
+        }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
-        for (record in records) {
-            producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+        tryWithCleanupOnFailure("send multiple records, no partition") {
+            for (record in records) {
+                producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+            }
         }
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
-        for ((partition, record) in recordsWithPartitions) {
-            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
+        tryWithCleanupOnFailure("send multiple records, with partitions") {
+            for ((partition, record) in recordsWithPartitions) {
+                producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
+            }
         }
     }
 
     override fun beginTransaction() {
-        try {
+        tryWithCleanupOnFailure("beginning transaction", abortTransactionOnFailure = false) {
             producer.beginTransaction()
-        } catch (ex: Exception) {
-            handleException(ex, "beginning transaction")
         }
     }
 
     override fun abortTransaction() {
-        try {
+        tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
             producer.abortTransaction()
-        } catch (ex: Exception) {
-            handleException(ex, "aborting transaction")
         }
     }
 
     override fun commitTransaction() {
-        try {
-            producer.commitTransaction()
-        } catch (ex: Exception) {
-            handleException(ex, "committing transaction", true)
+        var failedDueToRetryable = false
+        tryWithCleanupOnFailure("committing transaction") {
+            if (!commitTransactionAndCatchRetryable()) {
+                // We can/should retry this kind of failure under the contract of the Kafka producer, abort is neither
+                // required nor allowed. We allow a single retry only.
+                failedDueToRetryable = !commitTransactionAndCatchRetryable()
+            }
         }
+
+        if (failedDueToRetryable) {
+            // We have retired once, we are not retrying again, so the only other option compatible with the producer
+            // contract is to close the producer without aborting. That is the responsibility of the client, which we
+            // notify by throwing the relevant exception.
+            throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred committing transaction")
+        }
+    }
+
+    /**
+     * The contract of the Kafka producer is that certain types of errors have their own process for handling.
+     * If a commit is interrupted or timed out, we cannot abort, but it is safe to retry the commit if we want.
+     * This method catches those exceptions and returns whether that happened or not.
+     *
+     * @return true if successful, false if not and can be retried, otherwise throws whatever the producer throws
+     */
+    private fun commitTransactionAndCatchRetryable() = try {
+        producer.commitTransaction()
+        true
+    } catch (ex: TimeoutException) {
+        false
+    } catch (ex: InterruptException) {
+        false
     }
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
@@ -114,18 +144,15 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, records.toKafkaRecords())
     }
 
-    @Suppress("ThrowsCount")
     private fun trySendOffsetsToTransaction(
         consumer: CordaConsumer<*, *>,
         records: List<ConsumerRecord<*, *>>? = null
     ) {
-        try {
+        tryWithCleanupOnFailure("sending offset for transaction") {
             producer.sendOffsetsToTransaction(
                 consumerOffsets(consumer, records),
                 (consumer as CordaKafkaConsumerImpl).groupMetadata()
             )
-        } catch (ex: Exception) {
-            handleException(ex, "sending offset for transaction", true)
         }
     }
 
@@ -136,7 +163,8 @@ class CordaKafkaProducerImpl(
         try {
             producer.close()
         } catch (ex: Exception) {
-            log.error("CordaKafkaProducer failed to close producer safely. ClientId: ${config.clientId}", ex)
+            log.info("CordaKafkaProducer failed to close producer safely. This can be observed when there are " +
+                    "no reachable brokers. ClientId: ${config.clientId}", ex)
         }
     }
 
@@ -175,19 +203,27 @@ class CordaKafkaProducerImpl(
      */
     @Suppress("ThrowsCount")
     private fun initTransactionForProducer() {
-        try {
+        tryWithCleanupOnFailure("initializing producer for transactions", abortTransactionOnFailure = false) {
             producer.initTransactions()
+        }
+    }
+
+    private fun tryWithCleanupOnFailure(
+        operation: String,
+        abortTransactionOnFailure: Boolean = transactional,
+        block: () -> Unit
+    ) {
+        try {
+            block()
         } catch (ex: Exception) {
-            val message = "initializing producer for transactions"
-            handleException(ex, message)
+            handleException(ex, operation, abortTransactionOnFailure)
         }
     }
 
     @Suppress("ThrowsCount")
-    private fun handleException(ex: Exception, operation: String, canAbort: Boolean = false) {
+    private fun handleException(ex: Exception, operation: String, abortTransaction: Boolean) {
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
         when (ex) {
-            is IllegalStateException,
             is ProducerFencedException,
             is UnsupportedVersionException,
             is UnsupportedForMessageFormatException,
@@ -195,23 +231,33 @@ class CordaKafkaProducerImpl(
             is FencedInstanceIdException -> {
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
+
+            is IllegalStateException -> {
+                // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
+                // and let the client know to create a new one.
+                throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
+            }
+
             is TimeoutException,
             is InterruptException,
                 // Failure to commit here might be due to consumer kicked from group.
                 // Return as intermittent to trigger retry
-            is CommitFailedException,
             is InvalidProducerEpochException,
                 // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
                 // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
                 // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             is KafkaException -> {
-                if (canAbort) {
+                if (abortTransaction) {
                     abortTransaction()
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
+
             else -> {
-                throw CordaMessageAPIFatalException("Unexpected error occurred $errorString", ex)
+                // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
+                // must close down, nor has it told us we can abort and retry. In this instance the most sensible thing
+                // for the client to do would be to close this producer and create a new one.
+                throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred $errorString", ex)
             }
         }
     }

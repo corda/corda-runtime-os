@@ -2,9 +2,8 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
 import net.corda.sandbox.SandboxCreationService
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.BASE_DIRECTORY_KEY
-import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.TEST_BUNDLE_KEY
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
@@ -51,7 +50,6 @@ class SandboxSetupImpl @Activate constructor(
             "jcl.over.slf4j",
             "net.corda.application",
             "net.corda.base",
-            "net.corda.cipher-suite",
             "net.corda.crypto",
             "net.corda.crypto-extensions",
             "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
@@ -82,10 +80,10 @@ class SandboxSetupImpl @Activate constructor(
         val testBundle = bundleContext.bundle
         logger.info("Configuring sandboxes for [{}]", testBundle.symbolicName)
 
-        configAdmin.getConfiguration(CpkReadServiceImpl::class.java.name)?.also { config ->
+        configAdmin.getConfiguration(CpiLoader.COMPONENT_NAME)?.also { config ->
             val properties = Hashtable<String, Any?>()
-            properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
-            properties[TEST_BUNDLE_KEY] = testBundle.location
+            properties[CpiLoader.BASE_DIRECTORY_KEY] = baseDirectory.toString()
+            properties[CpiLoader.TEST_BUNDLE_KEY] = testBundle.location
             config.update(properties)
         }
 
@@ -100,7 +98,7 @@ class SandboxSetupImpl @Activate constructor(
      * the framework to create new instances of it.
      */
     override fun start() {
-        componentContext.enableComponent(CpkReadServiceImpl::class.java.name)
+        componentContext.enableComponent(CpiLoader.COMPONENT_NAME)
     }
 
     /**
@@ -120,7 +118,7 @@ class SandboxSetupImpl @Activate constructor(
          * for the framework to unregister it.
          */
         with(componentContext) {
-            disableComponent(CpkReadServiceImpl::class.java.name)
+            disableComponent(CpiLoader.COMPONENT_NAME)
             while (locateService<CpkReadService>(INSTALLER_NAME) != null) {
                 Thread.sleep(WAIT_MILLIS)
             }

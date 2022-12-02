@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -28,6 +29,7 @@ import kotlin.test.assertFailsWith
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "1234567890ab"
+        private const val INVALID_HOLDING_IDENTITY_ID = "${HOLDING_IDENTITY_ID}00"
         private val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
         private const val ACTION = "requestJoin"
         private val clock = TestClock(Instant.ofEpochSecond(100))
@@ -93,6 +95,19 @@ class MemberRegistrationRpcOpsTest {
     }
 
     @Test
+    fun `startRegistration throws bad request if short hash is invalid`() {
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertFailsWith<BadRequestException> {
+            memberRegistrationRpcOps.startRegistration(INVALID_HOLDING_IDENTITY_ID, registrationRequest)
+        }
+
+        memberRegistrationRpcOps.deactivate("")
+        memberRegistrationRpcOps.stop()
+    }
+
+    @Test
     fun `checkRegistrationProgress fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
             memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
@@ -128,6 +143,7 @@ class MemberRegistrationRpcOpsTest {
             .hasSize(data.size)
             .containsAnyElementsOf(data.map { it.fromDto() })
     }
+
     @Test
     fun `checkSpecificRegistrationProgress returns the correct data`() {
         val data = RegistrationRequestStatusDto(
@@ -147,6 +163,7 @@ class MemberRegistrationRpcOpsTest {
         assertThat(status)
             .isEqualTo(data.fromDto())
     }
+
     @Test
     fun `checkSpecificRegistrationProgress returns null when no data is returned`() {
         whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(null)
@@ -157,5 +174,16 @@ class MemberRegistrationRpcOpsTest {
 
         assertThat(status)
             .isNull()
+    }
+
+
+    @Test
+    fun `checkSpecificRegistrationProgress throws bad request if short hash is invalid`() {
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertFailsWith<BadRequestException> {
+            memberRegistrationRpcOps.checkSpecificRegistrationProgress(INVALID_HOLDING_IDENTITY_ID, "id")
+        }
     }
 }

@@ -21,6 +21,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
+import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -31,6 +32,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -498,13 +500,18 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `persistGroupParametersInitialSnapshot returns the correct epoch`() {
             postConfigChangedEvent()
+            val mockGroupParameters = KeyValuePairList(
+                listOf(
+                    KeyValuePair(EPOCH_KEY, "1"),
+                )
+            )
             mockPersistenceResponse(
-                PersistGroupParametersResponse(15),
+                PersistGroupParametersResponse(mockGroupParameters),
             )
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(mockGroupParameters))
         }
 
         @Test
@@ -516,7 +523,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
 
         @Test
@@ -528,7 +535,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
         }
     }
 
@@ -536,15 +543,17 @@ class MembershipPersistenceClientImplTest {
     inner class PersistGroupParametersTests {
         @Test
         fun `persistGroupParameters returns the correct epoch`() {
-            val groupParameters = mock<GroupParameters>()
+            val groupParameters = mock<GroupParameters> {
+                on { entries } doReturn mapOf(EPOCH_KEY to "5").entries
+            }
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistGroupParametersResponse(5),
+                PersistGroupParametersResponse(groupParameters.toAvro()),
             )
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(5))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(groupParameters.toAvro()))
         }
 
         @Test
@@ -557,7 +566,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
 
         @Test
@@ -570,7 +579,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
         }
 
         @Test
@@ -598,14 +607,15 @@ class MembershipPersistenceClientImplTest {
         @Test
         fun `addNotaryToGroupParameters returns the correct epoch`() {
             val notary = ourMemberInfo
+            val mockGroupParameters = mock<KeyValuePairList>()
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistGroupParametersResponse(10),
+                PersistGroupParametersResponse(mockGroupParameters),
             )
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(10))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(mockGroupParameters))
         }
 
         @Test
@@ -618,7 +628,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
         }
 
         @Test
@@ -631,7 +641,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
         }
 
         @Test

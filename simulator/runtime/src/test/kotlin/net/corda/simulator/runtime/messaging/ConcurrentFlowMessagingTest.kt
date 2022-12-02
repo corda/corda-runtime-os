@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -79,8 +78,7 @@ class ConcurrentFlowMessagingTest {
             eq(responderFlow),
             eq(receiverX500),
             eq(fiber),
-            eq(flowFactory),
-            any()
+            eq(flowFactory)
         )
 
         // When we send and receive the message
@@ -126,8 +124,7 @@ class ConcurrentFlowMessagingTest {
             eq(responderFlow),
             eq(receiverX500),
             eq(flowAndServiceLookUp),
-            eq(flowFactory),
-            any()
+            eq(flowFactory)
         )
 
         // When we send and receive the message

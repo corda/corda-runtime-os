@@ -47,12 +47,26 @@ To release resources used by Simulator, including any database connections, call
   simulator.close()
 ```
 
+## Logging
+
+Simulator uses SLF4j for its logging. To turn logging on, either add a dependency to a logging framework bridge of your
+choice, for instance:
+
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
+
+or turn on SLF4J's simple logging:
+
+    testImplementation `org.slf4j:slf4j-simple:2.0.4`
+
 ## Configuration
 
 Simulator configuration can be set using the `SimulatorConfigurationBuilder`. You can configure:
 - the clock (defaults to system default clock)
 - timeouts for flows (defaults to 1 minute)
 - polling interval (defaults to 100 ms)
+- service overrides
+
+### Time-based Configuration
 
 The default timeout should be suitable for most tests. For demos, showcasing proofs of concept etc. you may want
 to make it longer.
@@ -60,11 +74,33 @@ to make it longer.
 The polling interval is used to check for any exceptions thrown by responder flows.
 
 ```kotlin
-val simulator = Simulator(SimulatorConfigurationBuilder.create()
-    .withTimeout(Duration.ofMinutes(2))
-    .withPollInterval(Duration.ofMillis(50))
-    .build()
-)
+val config = SimulatorConfigurationBuilder.create()
+  .withTimeout(Duration.ofMinutes(2))
+  .withPollInterval(Duration.ofMillis(50))
+  .build()
+val simulator = Simulator(config)
+```
+
+### Service Overrides
+
+Simulator provides implementations of various services which Corda injects into flows. You can override or decorate
+these by providing your own `ServiceOverrideBuilder`; a SAM interface which takes three parameters:
+
+- the member whose flow is being constructed,
+- the flowClass for which the service is being constructed,
+- Simulator's implementation of the service.
+
+If Simulator doesn't support an implementation of the given service (for instance, if using a version that is out of
+sync with your version of Corda) then the service provided by Simulator will be null. You can still provide your own
+implementation in this instance.
+
+```kotlin
+val serviceBuilder = ServiceOverrideBuilder<JsonMarshallingService> {
+    member, flowClass, service -> MyJsonMarshallingService(member, flowClass, service)
+}
+val config = SimulatorConfigurationBuilder.create()
+  .withServiceOverride(JsonMarshallingService::class.java, serviceBuilder)
+  .build()
 ```
 
 ## RequestData
@@ -182,11 +218,3 @@ Simulator has some components which can also be used independently:
 - A `FlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
   `JsonMarshallingServiceFactory`.
-
-## TODO:
-
-- Check for @CordaSerializable on messages
-- Handle errors for unmatched sends / receives
-- Implement FlowMessaging send / receive methods
-- Allow upload and invocation of InitiatingFlow instances
-- Timeouts

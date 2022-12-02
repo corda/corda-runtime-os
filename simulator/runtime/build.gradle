@@ -9,28 +9,42 @@ ext {
 }
 
 dependencies {
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-application:$cordaApiVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-application:$cordaApiVersion"
+    implementation "net.corda:corda-ledger-consensual"
 
     implementation project(':simulator:api')
 
-    // NOTE: references to modules internal to corda-runtime-os to be reviewed
+    // Used by Simulator JsonMarshallingService
     implementation project(":libs:serialization:json-serializers")
+
+    // Used by Simulator PersistenceService
     implementation project(":libs:db:db-admin-impl")
 
-    implementation "org.hibernate:hibernate-core:$hibernateVersion"
-    implementation "org.hsqldb:hsqldb:$hsqldbVersion"
-    
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    // Used by Simulator SerializationService
+    compileOnly "org.osgi:osgi.core"
+    implementation project(":libs:sandbox")
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-serialization-impl")
+    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 tasks.named('jar', Jar) {

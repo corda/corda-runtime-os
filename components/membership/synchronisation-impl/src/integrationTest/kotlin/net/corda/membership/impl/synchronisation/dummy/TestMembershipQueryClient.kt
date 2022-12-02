@@ -108,12 +108,12 @@ class TestMembershipQueryClientImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        TestCryptoOpsClientImpl.logger.info("TestCryptoOpsClient starting.")
+        logger.info("${this::class.java.simpleName} starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        TestCryptoOpsClientImpl.logger.info("TestCryptoOpsClient starting.")
+        logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
 }

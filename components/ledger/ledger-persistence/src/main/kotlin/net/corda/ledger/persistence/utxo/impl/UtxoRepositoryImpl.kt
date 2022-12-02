@@ -5,11 +5,12 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapTuples
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
+import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -97,7 +98,8 @@ class UtxoRepositoryImpl(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created)
-            VALUES (:id, :privacySalt, :accountId, :createdAt)"""
+            VALUES (:id, :privacySalt, :accountId, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
@@ -118,13 +120,98 @@ class UtxoRepositoryImpl(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
-            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
+            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
             .setParameter("hash", hash)
+            .setParameter("createdAt", timestamp)
+            .executeUpdate()
+    }
+
+    override fun persistTransactionCpk(
+        entityManager: EntityManager,
+        transactionId: String,
+        fileChecksums: Collection<String>
+    ) {
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_cpk
+            SELECT :transactionId, file_checksum
+            FROM {h-schema}utxo_cpk
+            WHERE file_checksum in (:fileChecksums)
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("fileChecksums", fileChecksums)
+            .executeUpdate()
+    }
+
+    override fun persistTransactionOutput(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        type: String,
+        tokenType: String,
+        tokenIssuerHash: String,
+        tokenNotaryX500Name: String,
+        tokenSymbol: String,
+        tokenTag: String,
+        tokenOwnerHash: String,
+        tokenAmount: BigDecimal,
+        timestamp: Instant
+    ) {
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_output(
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                token_symbol, token_tag, token_owner_hash, token_amount, created)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
+                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("type", type)
+            .setParameter("tokenType", tokenType)
+            .setParameter("tokenIssuerHash", tokenIssuerHash)
+            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
+            .setParameter("tokenSymbol", tokenSymbol)
+            .setParameter("tokenTag", tokenTag)
+            .setParameter("tokenOwnerHash", tokenOwnerHash)
+            .setParameter("tokenAmount", tokenAmount)
+            .setParameter("createdAt", timestamp)
+            .executeUpdate()
+    }
+
+    override fun persistTransactionRelevancy(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        relevant: Boolean,
+        consumed: Boolean,
+        timestamp: Instant
+    ) {
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_output(
+                transaction_id, group_idx, leaf_idx, is_relevant, consumed, created)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :relevant, :consumed, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("relevant", relevant)
+            .setParameter("consumed", consumed)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -138,13 +225,44 @@ class UtxoRepositoryImpl(
     ) {
         entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)"""
+            INSERT INTO {h-schema}utxo_transaction_signature(
+                transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES (
+                :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
             .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
+            .setParameter("createdAt", timestamp)
+            .executeUpdate()
+    }
+
+    override fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        refTransactionId: String,
+        refLeafIndex: Int,
+        isRefInput: Boolean,
+        timestamp: Instant
+    ) {
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_sources(
+                transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :refTransactionId, :refLeafIndex, :isRefInput, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("refTransactionId", refTransactionId)
+            .setParameter("refLeafIndex", refLeafIndex)
+            .setParameter("isRefInput", isRefInput)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -158,7 +276,8 @@ class UtxoRepositoryImpl(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
-            VALUES (:transactionId, :status, :createdAt)"""
+            VALUES (:transactionId, :status, :createdAt)
+            ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("status", status)

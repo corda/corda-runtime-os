@@ -29,8 +29,9 @@ internal class PersistGroupParametersHandler(
         context: MembershipRequestContext,
         request: PersistGroupParameters
     ): PersistGroupParametersResponse {
-        val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val epochFromRequest = request.groupParameters.toMap()[EPOCH_KEY]?.toInt()
+        val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+            val groupParameters = request.groupParameters
+            val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
                 ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
@@ -38,24 +39,25 @@ internal class PersistGroupParametersHandler(
             val query = queryBuilder
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
-            em.createQuery(query)
-                .setMaxResults(1)
-                .singleResult
-                ?.epoch?.let {
-                require(epochFromRequest > it) {
-                    throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
+            // if there is any data in the db, updated group parameters epoch should always be
+            // larger than the existing group parameters epoch
+            with(em.createQuery(query).setMaxResults(1).resultList) {
+                singleOrNull()?.epoch?.let {
+                    require(epochFromRequest > it) {
+                        throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
+                    }
                 }
             }
             
             val entity = GroupParametersEntity(
                 epoch = epochFromRequest,
-                parameters = serializeProperties(request.groupParameters),
+                parameters = serializeProperties(groupParameters),
             )
             em.persist(entity)
 
-            entity.epoch
+            groupParameters
         }
 
-        return PersistGroupParametersResponse(epoch)
+        return PersistGroupParametersResponse(persistedGroupParameters)
     }
 }

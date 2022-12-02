@@ -29,6 +29,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(":testing:test-utilities")
+    testImplementation project(':libs:lifecycle:lifecycle-test-impl')
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation ("net.corda:corda-serialization")
