@@ -29,11 +29,11 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
-        assertEquals(tx.inputStateRefs.single(), getUtxoInvalidStateAndRef().ref)
-        assertEquals(tx.referenceStateRefs.single(), getUtxoInvalidStateAndRef().ref)
-        assertEquals(tx.outputStateAndRefs.single().state.contractState, utxoStateExample)
-        assertEquals(tx.notary, utxoNotaryExample)
-        assertEquals(tx.timeWindow, utxoTimeWindowExample)
+        assertEquals(getUtxoInvalidStateAndRef().ref, tx.inputStateRefs.single())
+        assertEquals(getUtxoInvalidStateAndRef().ref, tx.referenceStateRefs.single())
+        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(utxoTimeWindowExample, tx.timeWindow)
     }
 
     @Test
@@ -47,9 +47,9 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
         assertIs<SecureHash>(tx.id)
         assertThat(tx.inputStateRefs).isEmpty()
         assertThat(tx.referenceStateRefs).isEmpty()
-        assertEquals(tx.outputStateAndRefs.single().state.contractState, utxoStateExample)
-        assertEquals(tx.notary, utxoNotaryExample)
-        assertEquals(tx.timeWindow, utxoTimeWindowExample)
+        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(utxoTimeWindowExample, tx.timeWindow, )
     }
 
     // TODO Add tests for verification failures.
