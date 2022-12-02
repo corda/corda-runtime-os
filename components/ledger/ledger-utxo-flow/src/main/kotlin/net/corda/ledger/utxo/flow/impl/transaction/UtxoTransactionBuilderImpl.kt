@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory

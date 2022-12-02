@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionVerification
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal

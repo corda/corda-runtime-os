@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.data.transaction
+package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState

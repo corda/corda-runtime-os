@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.data.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
