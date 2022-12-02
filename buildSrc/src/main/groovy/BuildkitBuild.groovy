@@ -21,8 +21,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 /**
- *  Task to publish worker images to artifactory using buildkit image builder
- *  Requires buildctl client installed and a working buildkit pod from aws cluster (TBD)
+ *  Task to publish worker images to artifactory using buildkit
  *  https://r3-cev.atlassian.net/wiki/spaces/CB/pages/4063035406/BuildKit
  */
 
@@ -40,6 +39,7 @@ abstract class BuildkitBuild extends Exec {
     @Inject
     protected abstract ProviderFactory getProviderFactory()
 
+    // Credentials used for authentication to docker and artifactory
     @Input
     @Optional
     final Property<String> registryUsername = getObjects().property(String).
@@ -56,6 +56,7 @@ abstract class BuildkitBuild extends Exec {
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.password"))
             )
 
+    // Handles to determind build type
     @Input
     final Property<Boolean> releaseCandidate =
             getObjects().property(Boolean).convention(false)
@@ -68,17 +69,31 @@ abstract class BuildkitBuild extends Exec {
     final Property<Boolean> preTest =
             getObjects().property(Boolean).convention(false)
 
+    // Handle to set the build tool used to create an image
+    // Currently supported tools are docker buildx and native builkit 
+    // NOTE: native buidkit requires port forwarding to the aws buildkit cluster
     @Input
 <<<<<<< HEAD
     final Property<Boolean> isBuildx =
-            getObjects().property(Boolean).convention(false)
+            getObjects().property(Boolean).convention(true)
 
+    // Handle for loading images into docker
     @Input
 =======
 >>>>>>> ba73a313a (NOTICK: add BuildKit changes pt 2)
     final Property<Boolean> useShortName =
             getObjects().property(Boolean).convention(false)
 
+    // Handles to set the output image's name:tag
+    @Input
+    final Property<String> containerTag =
+            getObjects().property(String).convention('')
+
+    @Input
+    final Property<String> containerName =
+            getObjects().property(String).convention('')
+
+    // Handles to set the base image's name:tag
     @Input
     final Property<String> baseImageName =
             getObjects().property(String).convention('azul/zulu-openjdk')
@@ -86,10 +101,14 @@ abstract class BuildkitBuild extends Exec {
     @Input
     final Property<String> baseImageTag =
             getObjects().property(String).convention('11')
+    
+    // Arguments passed to the image entrypoint
     @Input
     final ListProperty<String> arguments =
             getObjects().listProperty(String)
 
+
+    // Files generated in the build that need to be inside the container
     @PathSensitive(RELATIVE)
     @SkipWhenEmpty
     @InputFiles
@@ -106,18 +125,12 @@ abstract class BuildkitBuild extends Exec {
     final ConfigurableFileCollection jdbcDriverFiles =
             getObjects().fileCollection()
 
+    // Used to create a folder for plugins in tools:plugins task
     @Input
     final Property<String> subDir =
             getObjects().property(String).convention('')
 
-    @Input
-    final Property<String> containerTag =
-            getObjects().property(String).convention('')
-
-    @Input
-    final Property<String> containerName =
-            getObjects().property(String).convention('')
-
+    // Overrides name of the jar file being executed at the entrypoint
     @Input
     final Property<String> overrideEntryName =
             getObjects().property(String).convention('')
@@ -125,14 +138,16 @@ abstract class BuildkitBuild extends Exec {
     BuildkitBuild() {
         group = 'publishing'
 
-        try {
+        if(!isBuildx){
+            try {
             (new Socket('127.0.0.1', 3476)).close();
             logger.quiet("Buildkit daemon found")
+            }
+            catch (SocketException e) {
+                throw new GradleException("No daemon found. Please connect to available buildkit daemon (and port forward it to 3476) and start again")
+            }
         }
-        catch (SocketException e) {
-            throw new GradleException("No daemon found. Please connect to available buildkit daemon (and port forward it to 3476) and start again")
-        }
-
+        
         gitTask = project.tasks.register("gitVersion", GetLatestGitRevision.class)
         super.dependsOn(gitTask)
 
