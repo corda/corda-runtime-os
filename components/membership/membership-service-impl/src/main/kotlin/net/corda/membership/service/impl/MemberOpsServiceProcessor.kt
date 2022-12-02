@@ -424,6 +424,12 @@ class MemberOpsServiceProcessor(
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
             val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
+            // YIFT: This should only be the MGM certificate!
+            val clientAllowedCertificates = if (tlsType == "MUTUAL") {
+                certificatesClient.listAllowedCertificates(holdingIdentity.shortHash)
+            } else {
+                emptyList()
+            }
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)
@@ -449,6 +455,7 @@ class MemberOpsServiceProcessor(
                     TLS_PKI to tlsPkiMode,
                     TLS_TYPE to tlsType,
                     TLS_VERSION to tlsVersion,
+                    TLS_TRUST_ROOTS to clientAllowedCertificates,
                     PROTOCOL_MODE to p2pMode
                 ).apply {
                     sessionTrustroots?.let {

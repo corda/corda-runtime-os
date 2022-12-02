@@ -21,6 +21,7 @@ import net.corda.membership.groupparams.writer.service.GroupParametersWriterServ
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.CLIENT_ALLOWED_CERTIFICATES
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.p2p.helpers.TlsType.Companion.tlsType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -31,6 +32,9 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.GatewayAllowedClientCertificates
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -40,6 +44,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -210,6 +215,17 @@ class MGMRegistrationService @Activate constructor(
                 groupParametersWriterService.put(member, groupParameters)
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
+
+                // YIFT: Move to somewhere else
+                val recordWithAllowedClient = Record(
+                    GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE,
+                    "${member.x500Name}-${member.groupId}",
+                    GatewayAllowedClientCertificates(
+                        member.toAvro(),
+                        context[CLIENT_ALLOWED_CERTIFICATES] as? List<String> ?: emptyList(),
+                    )
+                )
+                publisher.publish(listOf(recordWithAllowedClient)).forEach { it.join() }
 
                 MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
             } catch (ex: MGMRegistrationContextValidationException) {

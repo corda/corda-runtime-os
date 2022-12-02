@@ -122,6 +122,9 @@ interface GroupPolicy {
         @get:Throws(BadGroupPolicyException::class)
         val tlsTrustRoots: Collection<String>
 
+        @get:Throws(BadGroupPolicyException::class)
+        val clientAllowedCertificates: Collection<String>
+
         /**
          * The session PKI mode.
          *

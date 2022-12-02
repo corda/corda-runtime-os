@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.CLIENT_ALLOWED_CERTIFICATES
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -139,6 +140,13 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
                     throw BadGroupPolicyException(getMissingCertError(TLS_TRUST_ROOTS))
                 }
             }.onEachIndexed { index, pemCert -> validatePemCert(pemCert, TLS_TRUST_ROOTS, index) }
+
+        override val clientAllowedCertificates: Collection<String> =
+            p2pParameters.getMandatoryStringList(CLIENT_ALLOWED_CERTIFICATES).apply {
+                if (isEmpty()) {
+                    throw BadGroupPolicyException(getMissingCertError(CLIENT_ALLOWED_CERTIFICATES))
+                }
+            }
 
 
         override val tlsPki = p2pParameters.getMandatoryEnum(TLS_PKI) {

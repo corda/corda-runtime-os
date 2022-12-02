@@ -43,6 +43,7 @@ object GroupPolicyUtils {
                 "sessionPki" to "Standard",
                 "tlsPki" to "Standard",
                 "tlsType" to "ONE_WAY",
+                "clientAllowedCertificates" to emptyList<String>(),
                 "tlsVersion" to "1.3",
                 "protocolMode" to "Authenticated_Encryption"
             ),

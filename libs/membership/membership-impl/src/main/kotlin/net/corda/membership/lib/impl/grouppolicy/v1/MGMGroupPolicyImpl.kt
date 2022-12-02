@@ -110,6 +110,14 @@ class MGMGroupPolicyImpl(
             }
         }
 
+        override val clientAllowedCertificates by lazy {
+            if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.P2P_TLS_CLIENT_ALLOWED_CERTIFICATES) }) {
+                emptyList()
+            } else {
+                persistedProperties.parseList(PropertyKeys.P2P_TLS_CLIENT_ALLOWED_CERTIFICATES, String::class.java)
+            }
+        }
+
         override val tlsPki by lazy {
             TlsPkiMode.fromString(
                 getPersistedString(PropertyKeys.TLS_PKI_MODE)

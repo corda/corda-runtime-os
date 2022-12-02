@@ -54,6 +54,8 @@ class GroupPolicyConstants {
 
             const val TLS_TRUST_ROOTS = "tlsTrustRoots"
 
+            const val CLIENT_ALLOWED_CERTIFICATES = "clientAllowedCertificates"
+
             const val SESSION_PKI = "sessionPki"
 
             const val TLS_PKI = "tlsPki"
@@ -212,5 +214,6 @@ class GroupPolicyConstants {
         const val TLS_TRUST_ROOTS = "truststore.tls"
         const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
         const val P2P_TLS_TYPE = "tls.type"
+        const val P2P_TLS_CLIENT_ALLOWED_CERTIFICATES = "tls.clientAllowedCertificates"
     }
 }
