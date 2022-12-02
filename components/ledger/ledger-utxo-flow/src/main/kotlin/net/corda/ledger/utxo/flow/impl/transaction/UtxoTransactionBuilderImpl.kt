@@ -49,10 +49,6 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
-    override fun addCommandAndSignatories(command: Command, signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
-        return addCommand(command).addSignatories(signatories)
-    }
-
     override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
         return copy(inputStateAndRefs = inputStateAndRefs + stateAndRef)
     }
