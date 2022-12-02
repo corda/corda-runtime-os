@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class StableKeyPairDecryptorTests {
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-    private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+    private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var cryptoOpsClient: TestCryptoOpsClient
     private lateinit var component: StableKeyPairDecryptorImpl
 

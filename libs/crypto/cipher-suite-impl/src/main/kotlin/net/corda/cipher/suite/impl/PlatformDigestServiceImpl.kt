@@ -51,7 +51,7 @@ class PlatformDigestServiceImpl @Activate constructor(
         }.getInstance()
 
     private class SpiDigestAlgorithmFactory(
-        schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+        schemeMetadata: CipherSchemeMetadata,
         override val algorithm: String,
     ) : DigestAlgorithmFactory {
         companion object {

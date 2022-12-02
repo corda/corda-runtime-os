@@ -19,7 +19,7 @@ interface SigningService {
     /**
      * Return an instance of the [CipherSchemeMetadata] which is used by the current instance of [SigningService]
      */
-    val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+    val schemeMetadata: CipherSchemeMetadata
 
     /**
      * Returns the list of schemes codes which are supported by the associated HSM integration.

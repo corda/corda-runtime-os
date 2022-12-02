@@ -85,7 +85,7 @@ class MemberLookupRpcOpsTest {
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
 
-    private val keyEncodingService: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata = mock {
+    private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
         on { encodeAsString(knownKey) } doReturn KNOWN_KEY
     }

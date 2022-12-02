@@ -41,7 +41,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `verify should throw IllegalArgumentException when key scheme is not supported`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn emptyList()
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -61,7 +61,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `verify should throw IllegalArgumentException when key signature data is empty`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn listOf(ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"))
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -81,7 +81,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `verify should throw IllegalArgumentException when key clear data is empty`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn listOf(ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"))
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -101,7 +101,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `isValid should throw IllegalArgumentException when in cannot infer signature spec`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { inferSignatureSpec(any(), any()) } doReturn null
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -120,7 +120,7 @@ class SignatureVerificationServiceGeneralTests {
     }
     @Test
     fun `isValid should throw IllegalArgumentException when key scheme is not supported`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn emptyList()
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -140,7 +140,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `isValid should throw IllegalArgumentException when key signature data is empty`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn listOf(ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"))
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }
@@ -160,7 +160,7 @@ class SignatureVerificationServiceGeneralTests {
 
     @Test
     fun `isValid should throw IllegalArgumentException when key clear data is empty`() {
-        val schemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+        val schemeMetadata = mock<CipherSchemeMetadata> {
             on { schemes } doReturn listOf(ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"))
             on { findKeyScheme(publicKey)} doReturn ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         }

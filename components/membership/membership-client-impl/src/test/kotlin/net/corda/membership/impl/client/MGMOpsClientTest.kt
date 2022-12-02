@@ -111,7 +111,7 @@ class MGMOpsClientTest {
         endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
-    private val keyEncodingService: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata = mock {
+    private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
         on { encodeAsString(knownKey) } doReturn KNOWN_KEY
     }

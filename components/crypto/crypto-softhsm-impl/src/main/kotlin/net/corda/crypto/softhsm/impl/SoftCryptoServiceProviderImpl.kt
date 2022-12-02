@@ -1,5 +1,10 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceProvider
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
@@ -18,11 +23,6 @@ import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.PlatformDigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,8 +38,8 @@ import org.slf4j.Logger
 open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
-    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
     @Reference(service = WrappingKeyStore::class)
@@ -70,7 +70,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
     class Impl(
-        private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+        private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: PlatformDigestService,
         private val store: WrappingKeyStore
     ) : AbstractImpl {

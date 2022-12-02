@@ -12,8 +12,8 @@ import java.security.PublicKey
 
 @Component(service = [EphemeralKeyPairEncryptor::class])
 class EphemeralKeyPairEncryptorImpl @Activate constructor(
-    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
-    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata
 ) : EphemeralKeyPairEncryptor {
     override fun encrypt(
         otherPublicKey: PublicKey,

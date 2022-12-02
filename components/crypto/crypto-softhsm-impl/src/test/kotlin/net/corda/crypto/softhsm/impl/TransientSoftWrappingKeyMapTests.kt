@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 class TransientSoftWrappingKeyMapTests {
     companion object {
-        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+        private lateinit var schemeMetadata: CipherSchemeMetadata
 
         @JvmStatic
         @BeforeAll

@@ -155,7 +155,7 @@ class CipherSchemeMetadataTests {
     fun `Should not contain banned digest algorithms`() {
         schemeMetadata.digests.forEach {
             assertFalse(
-                _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName },
+                CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName },
                 "Should not contain $it digest."
             )
         }

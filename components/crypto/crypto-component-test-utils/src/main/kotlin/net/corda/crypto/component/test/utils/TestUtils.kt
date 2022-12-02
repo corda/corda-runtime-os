@@ -45,7 +45,7 @@ data class SendActResult<RESPONSE>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
-fun generateKeyPair(schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata, schemeName: String): KeyPair {
+fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
     val scheme = schemeMetadata.findKeyScheme(schemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
@@ -60,7 +60,7 @@ fun generateKeyPair(schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.s
 }
 
 fun signData(
-    schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+    schemeMetadata: CipherSchemeMetadata,
     signatureSpec: SignatureSpec,
     keyPair: KeyPair,
     data: ByteArray

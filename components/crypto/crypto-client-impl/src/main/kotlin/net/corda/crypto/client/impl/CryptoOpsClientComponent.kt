@@ -178,7 +178,7 @@ class CryptoOpsClientComponent @Activate constructor(
 
     class Impl(
         publisherFactory: PublisherFactory,
-        schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+        schemeMetadata: CipherSchemeMetadata,
         event: ConfigChangedEvent
     ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(

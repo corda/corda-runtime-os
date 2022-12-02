@@ -1,8 +1,8 @@
 package net.corda.cipher.suite.impl
 
-import net.corda.crypto.impl.DoubleSHA256Digest
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.DigestScheme
+import net.corda.crypto.cipher.suite.schemes.DigestScheme
+import net.corda.crypto.impl.DoubleSHA256Digest
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -30,7 +30,7 @@ class PlatformDigestServiceImplTest {
         private val CUSTOM_DIGEST = DigestAlgorithmName(DoubleSHA256Digest.ALGORITHM)
 
         private lateinit var digestService: PlatformDigestServiceImpl
-        private lateinit var schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+        private lateinit var schemeMetadata: CipherSchemeMetadata
 
         @JvmStatic
         @BeforeAll
@@ -49,7 +49,7 @@ class PlatformDigestServiceImplTest {
         fun digests() = schemeMetadata.digests
 
         @JvmStatic
-        fun bannedDigests() = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata.BANNED_DIGESTS.map { DigestAlgorithmName(it) }
+        fun bannedDigests() = CipherSchemeMetadata.BANNED_DIGESTS.map { DigestAlgorithmName(it) }
     }
 
     @ParameterizedTest

@@ -53,7 +53,7 @@ class MembershipPackageFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
-    private val cipherSchemeMetadata = mock<_root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata> {
+    private val cipherSchemeMetadata = mock<CipherSchemeMetadata> {
         on { encodeAsByteArray(any()) } doAnswer {
             val pk = it.arguments[0] as PublicKey
             pk.encoded

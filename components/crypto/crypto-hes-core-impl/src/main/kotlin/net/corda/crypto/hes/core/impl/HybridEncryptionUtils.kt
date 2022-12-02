@@ -88,7 +88,7 @@ fun encryptWithEphemeralKeyPair(
 
 @Suppress("LongParameterList")
 fun decryptWithStableKeyPair(
-    schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+    schemeMetadata: CipherSchemeMetadata,
     salt: ByteArray,
     publicKey: PublicKey,
     otherPublicKey: PublicKey,

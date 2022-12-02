@@ -19,8 +19,8 @@ import org.osgi.service.component.annotations.Reference
 class SigningServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
-    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = SigningKeyStore::class)
     private val store: SigningKeyStore,
     @Reference(service = CryptoServiceFactory::class)
@@ -45,7 +45,7 @@ class SigningServiceFactoryImpl @Activate constructor(
         impl.getInstance()
 
     class Impl(
-        private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata,
+        private val schemeMetadata: CipherSchemeMetadata,
         private val store: SigningKeyStore,
         private val cryptoServiceFactory: CryptoServiceFactory
     ) : AbstractImpl {

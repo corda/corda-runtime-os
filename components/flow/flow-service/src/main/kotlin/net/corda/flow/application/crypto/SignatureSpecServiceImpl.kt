@@ -20,8 +20,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class SignatureSpecServiceImpl @Activate constructor(
-    @Reference(service = _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata::class)
-    private val schemeMetadata: _root_ide_package_.net.corda.crypto.cipher.suite.CipherSchemeMetadata
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata
 ) : SignatureSpecService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
     @Suspendable
