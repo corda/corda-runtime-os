@@ -10,7 +10,6 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
 }
 
