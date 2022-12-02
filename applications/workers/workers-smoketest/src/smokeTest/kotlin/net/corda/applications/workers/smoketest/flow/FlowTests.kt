@@ -896,7 +896,7 @@ class FlowTests {
 
     @Test
     @Disabled
-    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
+    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution.
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
         consumeStatesAndValidateResult(
             inputStates = emptyList(),
