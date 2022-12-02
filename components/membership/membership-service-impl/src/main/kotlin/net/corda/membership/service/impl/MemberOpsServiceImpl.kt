@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,11 +13,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.Resource
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -53,19 +54,14 @@ class MemberOpsServiceImpl @Activate constructor(
         private val logger = contextLogger()
         const val GROUP_NAME = "membership.ops.rpc"
         const val CLIENT_NAME = "membership.ops.rpc"
+
+        const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
+        const val CONFIG_HANDLE = "MemberOpsService.CONFIG_HANDLE"
+        const val COMPONENT_HANDLE = "MemberOpsService.COMPONENT_HANDLE"
     }
 
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<MemberOpsService>(::eventHandler)
-
-    @Volatile
-    private var configHandle: AutoCloseable? = null
-
-    @Volatile
-    private var registrationHandle: RegistrationHandle? = null
-
-    @Volatile
-    private var subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
@@ -82,78 +78,118 @@ class MemberOpsServiceImpl @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
-            is StartEvent -> {
-                logger.info("Received start event, starting wait for UP event from dependencies.")
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<RegistrationProxy>(),
-                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
-                    )
+            is StartEvent -> handleStartEvent(coordinator)
+            is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> handleConfigChangeEvent(event, coordinator)
+            else -> { logger.warn("Unexpected event $event!") }
+        }
+    }
+
+    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Received start event, waiting for dependencies.")
+        coordinator.createManagedResource(COMPONENT_HANDLE) {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<RegistrationProxy>(),
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                    LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                 )
-            }
-            is StopEvent -> {
-                registrationHandle?.close()
-                registrationHandle = null
-                configHandle?.close()
-                configHandle = null
-                deleteResources()
-            }
-            is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
+            )
+        }
+    }
+
+    private fun handleDependencyRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        when (event.status) {
+            LifecycleStatus.UP -> {
+                coordinator.createManagedResource(CONFIG_HANDLE) {
                     logger.info("Registering for configuration updates.")
-                    configHandle = configurationReadService.registerComponentForUpdates(
+                    configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                } else {
-                    configHandle?.close()
-                    configHandle = null
-                    deleteResources()
-                    logger.info("Setting status DOWN.")
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
-            is ConfigChangedEvent -> {
-                createResources(event)
-                logger.info("Setting status UP.")
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
             else -> {
-                logger.warn("Unexpected event $event!")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE))
             }
         }
     }
 
-    private fun deleteResources() {
-        val current = subscription
-        subscription = null
-        current?.close()
+    private fun handleSubscriptionRegistrationChange(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        logger.info("Handling subscription registration change.")
+        when (event.status) {
+            LifecycleStatus.UP -> coordinator.updateStatus(LifecycleStatus.UP)
+            else -> coordinator.updateStatus(LifecycleStatus.DOWN, "Subscription is DOWN.")
+        }
     }
 
-    private fun createResources(event: ConfigChangedEvent) {
-        logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = MemberOpsServiceProcessor(
-            registrationProxy,
-            virtualNodeInfoReadService,
-            membershipGroupReaderProvider,
-            membershipQueryClient
-        )
-        subscription?.close()
-        subscription = subscriptionFactory.createRPCSubscription(
-            rpcConfig = RPCConfig(
-                groupName = GROUP_NAME,
-                clientName = CLIENT_NAME,
-                requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
-                requestType = MembershipRpcRequest::class.java,
-                responseType = MembershipRpcResponse::class.java
-            ),
-            responderProcessor = processor,
-            messagingConfig = messagingConfig
-        ).also { it.start() }
+    private fun handleRegistrationChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        val subHandle = coordinator.getManagedResource<MembershipSubscriptionAndRegistration>(
+            SUBSCRIPTION_RESOURCE
+        )?.registrationHandle
+        if (event.registration == subHandle) {
+            handleSubscriptionRegistrationChange(event, coordinator)
+        } else {
+            handleDependencyRegistrationChange(event, coordinator)
+        }
+    }
+
+    private fun handleConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig) {
+        coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
+            logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
+            val subscription = subscriptionFactory.createRPCSubscription(
+                rpcConfig = RPCConfig(
+                    groupName = GROUP_NAME,
+                    clientName = CLIENT_NAME,
+                    requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
+                    requestType = MembershipRpcRequest::class.java,
+                    responseType = MembershipRpcResponse::class.java
+                ),
+                responderProcessor = MemberOpsServiceProcessor(
+                    registrationProxy,
+                    virtualNodeInfoReadService,
+                    membershipGroupReaderProvider,
+                    membershipQueryClient
+                ),
+                messagingConfig = messagingConfig
+            ).also { it.start() }
+            val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
+            MembershipSubscriptionAndRegistration(subscription, handle)
+        }
+    }
+
+    /**
+     * Pair up the subscription and the registration handle to that subscription.
+     *
+     * This allows us to enforce the close order on these two resources, which prevents an accidental extra DOWN event
+     * from propagating when we're recreating the subscription.
+     */
+    private class MembershipSubscriptionAndRegistration(
+        val subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>,
+        val registrationHandle: RegistrationHandle
+    ) : Resource {
+        override fun close() {
+            // The close order here is important - closing the subscription first can result in spurious lifecycle
+            // events being posted.
+            registrationHandle.close()
+            subscription.close()
+        }
     }
 }

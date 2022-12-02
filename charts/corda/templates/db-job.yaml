@@ -68,16 +68,8 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            - name: SALT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: salt
-            - name: PASSPHRASE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: passphrase
+            {{ include "corda.dbSaltEnv" . | nindent 12 }}
+            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
           image: {{ include "corda.dbClientImage" . }}
@@ -102,16 +94,8 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            - name: SALT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: salt
-            - name: PASSPHRASE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: passphrase
+            {{ include "corda.dbSaltEnv" . | nindent 12 }}
+            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
           image: {{ include "corda.dbClientImage" . }}
@@ -189,16 +173,8 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            - name: SALT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: salt
-            - name: PASSPHRASE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: passphrase
+            {{ include "corda.dbSaltEnv" . | nindent 12 }}
+            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.dbClientImage" . }}
