@@ -44,6 +44,8 @@ class TruancyResponderFlow : ResponderFlow {
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
 
+        session.send(Unit)
+
         log.info("Records persisted")
     }
 

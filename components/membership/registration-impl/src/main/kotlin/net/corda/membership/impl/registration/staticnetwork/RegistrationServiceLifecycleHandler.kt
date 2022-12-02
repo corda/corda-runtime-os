@@ -146,10 +146,7 @@ class RegistrationServiceLifecycleHandler(
         _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
 
         recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
-
-        if (coordinator.status != LifecycleStatus.UP) {
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     /**

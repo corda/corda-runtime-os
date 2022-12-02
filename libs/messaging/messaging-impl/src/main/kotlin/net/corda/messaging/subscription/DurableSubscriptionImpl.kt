@@ -11,7 +11,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import org.slf4j.LoggerFactory
 
 /**
  * Implementation of a DurableSubscription.
@@ -42,8 +41,6 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
-
-    private val log = LoggerFactory.getLogger(config.loggerName)
 
     private val subscription = EventLogSubscriptionImpl(config, cordaConsumerBuilder, cordaProducerBuilder,
         ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)

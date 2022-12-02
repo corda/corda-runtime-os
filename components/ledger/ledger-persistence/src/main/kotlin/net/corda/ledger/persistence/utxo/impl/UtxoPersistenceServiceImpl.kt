@@ -8,7 +8,7 @@ import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.time.Clock
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 
 class UtxoPersistenceServiceImpl constructor(

@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import java.time.Duration
 import java.time.temporal.ChronoUnit
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Instant
 import java.util.UUID
 
 const val CODESIGNER_CERT = "/cordadevcodesign.pem"
@@ -373,10 +371,8 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            // Note CPI/CPK timestamp
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            // Perform force upload of the CPI
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -386,11 +382,9 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            // Check that timestamp for CPK been updated
-            // Cannot use `assertWithRetry` as there is a strict type `Instant`
-            // Allow ample time for CPI upload to be propagated through the system
+            // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
@@ -421,7 +415,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -433,7 +427,7 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
@@ -466,7 +460,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -478,7 +472,7 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
 
             runReturnAStringFlow("original-cpi")
@@ -516,15 +510,10 @@ class VirtualNodeRpcTest {
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
-    private fun ClusterBuilder.getCpkTimestamp(cpiName: String): Instant {
+    private fun ClusterBuilder.getCpiFileChecksum(cpiName: String): String {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        val cpksJson = cpiJson["cpks"].toList()
-        return cpksJson.first()["timestamp"].toInstant()
-    }
-
-    private fun JsonNode.toInstant(): Instant {
-        return Instant.parse(this.asText())
+        return cpiJson["cpiFileFullChecksum"].toString()
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
