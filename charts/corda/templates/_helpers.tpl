@@ -570,7 +570,7 @@ DB PASSPHRASE environment variable
       name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote}}
       key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{  (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
       key: "passphrase" 
       {{- end }}
 {{- end}}  
