@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -26,7 +27,6 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

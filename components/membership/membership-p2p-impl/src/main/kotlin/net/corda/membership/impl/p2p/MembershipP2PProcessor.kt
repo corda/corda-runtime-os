@@ -1,5 +1,6 @@
 package net.corda.membership.impl.p2p
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
@@ -11,9 +12,9 @@ import net.corda.membership.impl.p2p.handler.MembershipPackageHandler
 import net.corda.membership.impl.p2p.handler.MembershipSyncRequestHandler
 import net.corda.membership.impl.p2p.handler.MessageHandler
 import net.corda.membership.impl.p2p.handler.RegistrationRequestHandler
-import net.corda.membership.impl.p2p.handler.VerificationResponseHandler
-import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
 import net.corda.membership.impl.p2p.handler.SetOwnRegistrationStatusHandler
+import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
+import net.corda.membership.impl.p2p.handler.VerificationResponseHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -23,7 +24,6 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import java.nio.ByteBuffer
 
 class MembershipP2PProcessor(
