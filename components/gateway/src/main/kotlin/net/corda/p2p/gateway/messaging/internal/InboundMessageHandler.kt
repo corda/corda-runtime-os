@@ -47,11 +47,12 @@ internal class InboundMessageHandler(
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     init {
-        System.setProperty("org.apache.avro.limits.bytes.maxLength", "100")
-        System.setProperty("org.apache.avro.limits.string.maxLength", "100")
+        System.setProperty("org.apache.avro.limits.bytes.maxLength", AVRO_LIMIT.toString())
+        System.setProperty("org.apache.avro.limits.string.maxLength", AVRO_LIMIT.toString())
     }
 
     companion object {
+        const val AVRO_LIMIT = 5_000_000
         private val logger = contextLogger()
     }
 
