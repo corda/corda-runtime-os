@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapTuples
 import net.corda.ledger.persistence.utxo.UtxoRepository
@@ -21,9 +22,8 @@ class UtxoRepositoryImpl(
     private val wireTransactionFactory: WireTransactionFactory,
     private val digestService: DigestService
 ) : UtxoRepository {
-
     private companion object {
-        private const val UNVERIFIED = "U"
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.stringValue
     }
 
     override fun findTransaction(
@@ -274,7 +274,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: String,
+        status: TransactionStatus,
         timestamp: Instant
     ) {
         val rowsUpdated = entityManager.createNativeQuery(
@@ -286,11 +286,11 @@ class UtxoRepositoryImpl(
                 WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status)
+            .setParameter("status", status.stringValue)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 
-        check(rowsUpdated == 1 || status == UNVERIFIED) {
+        check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
             "Failed to upsert transaction status $status for transaction with ID $transactionId"
         }

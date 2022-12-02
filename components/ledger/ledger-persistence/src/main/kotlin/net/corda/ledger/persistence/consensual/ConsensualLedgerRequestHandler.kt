@@ -5,6 +5,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -46,7 +47,8 @@ class ConsensualLedgerRequestHandler(
             when (val req = request.request) {
                 is PersistTransaction -> {
                     val transaction = serializationService.deserialize(req)
-                    repository.persistTransaction(em, transaction, req.status, request.account())
+                    val status = req.status.toTransactionStatus()
+                    repository.persistTransaction(em, transaction, status, request.account())
                     val cpkMetadata = transaction.cpkMetadata()
 
                     // needs review as part of

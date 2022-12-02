@@ -3,6 +3,8 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
@@ -35,8 +37,8 @@ class UtxoTransactionReaderImpl(
         get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
             ?: throw NullParameterException("Flow external event context property '${CORDA_ACCOUNT}' not set")
 
-    override val status: String
-        get() = transaction.status
+    override val status: TransactionStatus
+        get() = transaction.status.toTransactionStatus()
 
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt

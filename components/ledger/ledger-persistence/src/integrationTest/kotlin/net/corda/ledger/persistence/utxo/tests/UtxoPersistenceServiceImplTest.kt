@@ -6,6 +6,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
@@ -174,7 +175,7 @@ class UtxoPersistenceServiceImplTest {
     fun `can persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
-        val transactionStatus = "V"
+        val transactionStatus = TransactionStatus.VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
@@ -248,7 +249,7 @@ class UtxoPersistenceServiceImplTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.stringValue)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
     }
@@ -310,7 +311,7 @@ class UtxoPersistenceServiceImplTest {
     private class TestUtxoTransactionReader(
         val transactionContainer:  SignedTransactionContainer,
         override val account: String,
-        override val status: String
+        override val status: TransactionStatus
     ): UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id

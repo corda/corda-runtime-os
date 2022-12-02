@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
@@ -172,7 +173,7 @@ class ConsensualLedgerRepositoryTest {
     fun `can persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
-        val transactionStatus = "V"
+        val transactionStatus = TransactionStatus.VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
@@ -222,7 +223,7 @@ class ConsensualLedgerRepositoryTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.stringValue)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
 
             val signatures = signedTransaction.signatures

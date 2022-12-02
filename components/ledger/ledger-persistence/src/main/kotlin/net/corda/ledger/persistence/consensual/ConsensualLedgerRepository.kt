@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.consensual
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapTuples
@@ -40,7 +41,7 @@ class ConsensualLedgerRepository @Activate constructor(
     private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
     private companion object {
-        private const val UNVERIFIED = "U"
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.stringValue
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
@@ -94,7 +95,7 @@ class ConsensualLedgerRepository @Activate constructor(
     fun persistTransaction(
         entityManager: EntityManager,
         signedTransaction: SignedTransactionContainer,
-        status: String,
+        status: TransactionStatus,
         account: String
     ) {
         val transactionId = signedTransaction.id.toString()
@@ -164,7 +165,7 @@ class ConsensualLedgerRepository @Activate constructor(
         entityManager: EntityManager,
         timestamp: Instant,
         transactionId: String,
-        status: String
+        status: TransactionStatus
     ): Int {
         val rowsUpdated = entityManager.createNativeQuery(
             """
@@ -175,11 +176,11 @@ class ConsensualLedgerRepository @Activate constructor(
                 WHERE consensual_transaction_status.status = EXCLUDED.status OR consensual_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("id", transactionId)
-            .setParameter("status", status)
+            .setParameter("status", status.stringValue)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 
-        check(rowsUpdated == 1 || status == UNVERIFIED) {
+        check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
             "Failed to upsert transaction status $status for transaction with ID $transactionId"
         }

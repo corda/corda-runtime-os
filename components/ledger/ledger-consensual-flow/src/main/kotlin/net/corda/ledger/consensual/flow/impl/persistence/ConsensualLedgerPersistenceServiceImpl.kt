@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionParameters
@@ -57,7 +58,7 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.stringValue)
             )
         }.map { serializationService.deserialize(it.array()) }
     }

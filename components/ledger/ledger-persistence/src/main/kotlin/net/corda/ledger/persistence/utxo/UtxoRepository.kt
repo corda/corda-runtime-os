@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import java.math.BigDecimal
 import java.time.Instant
@@ -99,7 +100,7 @@ interface UtxoRepository {
     fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: String,
+        status: TransactionStatus,
         timestamp: Instant
     )
 }
