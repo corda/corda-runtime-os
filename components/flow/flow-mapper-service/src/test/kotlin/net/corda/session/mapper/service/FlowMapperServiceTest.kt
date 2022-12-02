@@ -42,7 +42,7 @@ internal class FlowMapperServiceTest {
             doAnswer { mock<StateAndEventSubscription<String, String, String>>() }
                 .whenever(it).createStateAndEventSubscription<String, String, String>(any(), any(), any(), any())
         }
-        LifecycleTest<FlowMapperService>{
+        LifecycleTest {
             addDependency<ConfigurationReadService>()
 
             FlowMapperService(
@@ -59,7 +59,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             verifyIsUp<FlowMapperService>()
 
@@ -89,7 +89,7 @@ internal class FlowMapperServiceTest {
                 .thenReturn(subscription)
         }
 
-        LifecycleTest<FlowMapperService> {
+        LifecycleTest {
             addDependency<ConfigurationReadService>()
             addDependency(subName)
 
@@ -106,7 +106,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Create and start the subscription (using the message config)
             verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
@@ -118,7 +118,7 @@ internal class FlowMapperServiceTest {
             verify(subscription).start()
             verifyIsUp<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Close, recreate and start the subscription (using the message config)
             verify(subscription).close()
@@ -141,7 +141,7 @@ internal class FlowMapperServiceTest {
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
 
-        LifecycleTest<FlowMapperService> {
+        LifecycleTest {
             addDependency<ConfigurationReadService>()
             addDependency(subName)
 
@@ -158,7 +158,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Create and start the subscription (using the message config)
             verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
