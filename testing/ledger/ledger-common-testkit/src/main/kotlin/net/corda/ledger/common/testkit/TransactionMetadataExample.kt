@@ -7,7 +7,8 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 fun transactionMetadataExample(
     cpiMetadata: CordaPackageSummaryImpl = cpiPackageSummaryExample,
-    cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample
+    cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample,
+    numberOfComponentGroups: Int
 ): TransactionMetadata {
     return TransactionMetadataImpl(
         linkedMapOf(
@@ -17,7 +18,8 @@ fun transactionMetadataExample(
             TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
             TransactionMetadataImpl.CPI_METADATA_KEY to cpiMetadata,
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkMetadata,
-            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION
+            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+            TransactionMetadataImpl.COMPONENT_GROUP_INDEXES to (0 until numberOfComponentGroups).toList()
         )
     )
 }
