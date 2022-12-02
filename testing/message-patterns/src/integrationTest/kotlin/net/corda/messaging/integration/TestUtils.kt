@@ -3,6 +3,7 @@ package net.corda.messaging.integration
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.demo.DemoRecord
+import net.corda.data.flow.event.Wakeup
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
@@ -23,6 +24,17 @@ fun getDemoRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<
         val key = "key$i"
         for (j in 1..recordCount) {
             records.add(Record(topic, key, DemoRecord(j)))
+        }
+    }
+    return records
+}
+
+fun getDummyRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
+    val records = mutableListOf<Record<*, *>>()
+    for (i in 1..keyCount) {
+        val key = "key$i"
+        for (j in 1..recordCount) {
+            records.add(Record(topic, key, Wakeup()))
         }
     }
     return records
