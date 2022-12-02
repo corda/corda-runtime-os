@@ -8,6 +8,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -45,6 +46,7 @@ class DistributeMembershipPackageHandler(
     merkleTreeProvider: MerkleTreeProvider,
     private val membershipConfig: SmartConfig,
     private val groupReaderProvider: MembershipGroupReaderProvider,
+    private val certificatesClient: CertificatesClient,
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeProvider,
@@ -164,6 +166,7 @@ class DistributeMembershipPackageHandler(
                 membersToSend,
                 membersTree.root,
                 groupParameters,
+                certificatesClient.listAllowedCertificates(mgm.holdingIdentity.shortHash)
             )
         }
     }

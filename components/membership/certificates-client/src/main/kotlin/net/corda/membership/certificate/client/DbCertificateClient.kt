@@ -48,4 +48,18 @@ interface DbCertificateClient {
         usage: CertificateUsage,
         alias: String,
     ): String?
+
+    fun allowCertificate(
+        holdingIdentityId: ShortHash,
+        subject: String,
+    )
+
+    fun disallowCertificate(
+        holdingIdentityId: ShortHash,
+        subject: String,
+    )
+
+    fun listAllowedCertificates(
+        holdingIdentityId: ShortHash,
+    ): Collection<String>
 }

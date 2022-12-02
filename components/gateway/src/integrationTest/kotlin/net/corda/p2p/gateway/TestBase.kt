@@ -284,7 +284,7 @@ open class TestBase {
         }
 
         val clientAlias = clientKeyStoreWithPassword.keyStore.aliases().toList().first()
-        val clientCertificateChain = serverKeyStoreWithPassword.keyStore.getCertificateChain(clientAlias)
+        val clientCertificateChain = clientKeyStoreWithPassword.keyStore.getCertificateChain(clientAlias)
         val clientPems = clientCertificateChain.map { certificate ->
             StringWriter().use { str ->
                 JcaPEMWriter(str).use { writer ->

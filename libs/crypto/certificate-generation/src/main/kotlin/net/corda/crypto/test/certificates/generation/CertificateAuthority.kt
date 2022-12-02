@@ -35,6 +35,13 @@ interface CertificateAuthority {
      * @return A private key and certificate.
      */
     fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate
+    /**
+     * Generate a keypair and a certificate with a subject name.
+     *
+     * @param subject - the certificate subject.
+     * @return A private key and certificate.
+     */
+    fun generateClientKeyAndCertificate(subject: String): PrivateKeyWithCertificate
 
     /**
      * Generate a certificate from a [publicKey] with a list of hosts names.

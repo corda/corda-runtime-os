@@ -135,6 +135,7 @@ class DistributeMembershipPackageHandlerTest {
                 any(),
                 any(),
                 any(),
+                anyOrNull(),
             )
         } doReturn membershipPackage
     }
@@ -160,6 +161,7 @@ class DistributeMembershipPackageHandlerTest {
         merkleTreeProvider,
         config,
         groupReaderProvider,
+        mock(),
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,
@@ -171,11 +173,12 @@ class DistributeMembershipPackageHandlerTest {
         val allMembershipPackage = mock<MembershipPackage>()
         whenever(
             membershipPackageFactory.createMembershipPackage(
-                signer,
-                signatures,
-                activeMembersWithoutMgm,
-                checkHash,
-                groupParameters,
+                eq(signer),
+                eq(signatures),
+                eq(activeMembersWithoutMgm),
+                eq(checkHash),
+                eq(groupParameters),
+                anyOrNull(),
             )
         ).doReturn(allMembershipPackage)
         val allMemberPackage = mock<Record<String, AppMessage>>()
@@ -206,6 +209,7 @@ class DistributeMembershipPackageHandlerTest {
                 },
                 eq(checkHash),
                 eq(groupParameters),
+                anyOrNull(),
             )
         ).doReturn(memberPackage)
         val membersRecord = (activeMembersWithoutMgm - memberInfo).map {

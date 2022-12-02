@@ -5,6 +5,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
+import net.corda.membership.certificates.datamodel.AllowedCertificate
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.CertificateEntity
 import net.corda.membership.certificates.datamodel.ClusterCertificate
@@ -21,7 +22,7 @@ internal class DbClientImpl(
 ) : DbCertificateClient {
     internal abstract class CertificateProcessor<E : CertificateEntity>(
         usage: CertificateUsage,
-        private val factory: EntityManagerFactory,
+        val factory: EntityManagerFactory,
     ) {
         private val usageName = usage.publicName
 
@@ -76,6 +77,32 @@ internal class DbClientImpl(
         override val entityClass = Certificate::class.java
 
         override fun createEntity(usage: String, alias: String, certificates: String) = Certificate(alias, usage, certificates)
+        fun allowCertificate(
+            subject: String,
+        ) : Unit = factory.transaction { em ->
+            em.merge(AllowedCertificate(subject))
+        }
+
+        fun disallowCertificate(
+            subject: String,
+        )= factory.transaction { em ->
+            val certificate = em.find(AllowedCertificate::class.java, subject)
+            if (certificate != null) {
+                em.remove(certificate)
+            }
+        }
+
+        fun listAllowedCertificates(): Collection<String> = factory.transaction { em ->
+            val criteriaBuilder = em.criteriaBuilder
+            val queryBuilder = criteriaBuilder.createQuery(AllowedCertificate::class.java)
+            val root = queryBuilder.from(AllowedCertificate::class.java)
+            val query = queryBuilder
+                .select(root)
+                .orderBy(criteriaBuilder.asc(root.get<String>("subject")))
+            em.createQuery(query)
+                .resultList
+                .map { it.subject }
+        }
     }
 
     private fun <T> useCertificateProcessor(
@@ -93,7 +120,7 @@ internal class DbClientImpl(
     private fun <T> useVirtualNodeCertificateProcessor(
         holdingIdentityId: ShortHash,
         usage: CertificateUsage,
-        block: (CertificateProcessor<*>) -> T,
+        block: (NodeCertificateProcessor) -> T,
     ): T {
         val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityId)
             ?: throw NoSuchNode(holdingIdentityId)
@@ -141,4 +168,20 @@ internal class DbClientImpl(
             processor.readCertificates(alias)
         }
     }
+
+    override fun allowCertificate(holdingIdentityId: ShortHash, subject: String) =
+        useVirtualNodeCertificateProcessor(holdingIdentityId, CertificateUsage.P2P_CLIENT_TLS) {
+            it.allowCertificate(subject)
+        }
+
+    override fun disallowCertificate(holdingIdentityId: ShortHash, subject: String) =
+        useVirtualNodeCertificateProcessor(holdingIdentityId, CertificateUsage.P2P_CLIENT_TLS) {
+            it.disallowCertificate(subject)
+        }
+
+    override fun listAllowedCertificates(holdingIdentityId: ShortHash): Collection<String> =
+        useVirtualNodeCertificateProcessor(holdingIdentityId, CertificateUsage.P2P_CLIENT_TLS) {
+            it.listAllowedCertificates()
+        }
+
 }

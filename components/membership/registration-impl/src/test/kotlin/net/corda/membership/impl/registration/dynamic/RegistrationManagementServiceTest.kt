@@ -109,6 +109,7 @@ class RegistrationManagementServiceTest {
             mock(),
             mock(),
             mock(),
+            mock(),
         )
     }
 

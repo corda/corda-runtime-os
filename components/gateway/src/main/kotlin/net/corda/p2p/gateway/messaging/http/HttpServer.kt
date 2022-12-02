@@ -36,6 +36,7 @@ internal class HttpServer(
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
     private val trustStoresMap: TrustStoresMap,
+    private val clientCertificatesAllowList: ClientCertificatesAllowList,
 ) : Resource,
     HttpServerListener {
 
@@ -106,6 +107,7 @@ internal class HttpServer(
                 DynamicX509ExtendedTrustManager(
                     trustStoresMap,
                     configuration.sslConfig.revocationCheck,
+                    clientCertificatesAllowList,
                 )
             )
         } else {

@@ -34,6 +34,12 @@ class MGMRpcOpsImpl @Activate constructor(
 
     private interface InnerMGMRpcOps {
         fun generateGroupPolicy(holdingIdentityShortHash: String): String
+
+        fun allowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String)
+
+        fun disallowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String)
+
+        fun listClientCertificate(holdingIdentityShortHash: String): List<String>
     }
 
     override val protocolVersion = 1
@@ -68,6 +74,15 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun generateGroupPolicy(holdingIdentityShortHash: String) =
         impl.generateGroupPolicy(holdingIdentityShortHash)
 
+    override fun allowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) =
+        impl.allowClientCertificate(holdingIdentityShortHash, clientCertificateSubject)
+
+    override fun disallowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) =
+        impl.disallowClientCertificate(holdingIdentityShortHash, clientCertificateSubject)
+
+    override fun listClientCertificate(holdingIdentityShortHash: String): List<String> =
+        impl.listClientCertificate(holdingIdentityShortHash)
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -83,12 +98,75 @@ class MGMRpcOpsImpl @Activate constructor(
             throw ServiceUnavailableException(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
+
+        override fun allowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
+
+        override fun disallowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
+
+        override fun listClientCertificate(holdingIdentityShortHash: String): List<String> {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
             return try {
                 mgmOpsClient.generateGroupPolicy(ShortHash.parseOrThrow(holdingIdentityShortHash))
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun allowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) {
+            return try {
+                mgmOpsClient.allowClientCertificate(ShortHash.parseOrThrow(holdingIdentityShortHash), clientCertificateSubject)
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun disallowClientCertificate(holdingIdentityShortHash: String, clientCertificateSubject: String) {
+            return try {
+                mgmOpsClient.disallowClientCertificate(ShortHash.parseOrThrow(holdingIdentityShortHash), clientCertificateSubject)
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun listClientCertificate(holdingIdentityShortHash: String): List<String> {
+            return try {
+                mgmOpsClient.listClientCertificate(ShortHash.parseOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {

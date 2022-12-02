@@ -173,6 +173,10 @@ abstract class BaseOnboard : Runnable {
                         holdingIdentity.get("shortHash").toString()
                     }
                 }
+            }.also {
+                println("Created id $it, going to sleep...")
+                Thread.sleep(5000)
+                println("slept")
             }
     }
 

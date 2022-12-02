@@ -207,6 +207,10 @@ internal class TinyCertCertificatesAuthority(
         return PrivateKeyWithCertificate(key, certificate)
     }
 
+    override fun generateClientKeyAndCertificate(subject: String): PrivateKeyWithCertificate {
+        throw UnsupportedOperationException("Nop")
+    }
+
     override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
         throw CertificateAuthorityException("TinyCert does not support generating a certificate with a specified public key.")
     }

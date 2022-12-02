@@ -20,6 +20,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -61,6 +62,7 @@ class MgmSynchronisationServiceImpl internal constructor(
     private val configurationReadService: ConfigurationReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val certificatesClient: CertificatesClient,
     private val merkleTreeGenerator: MerkleTreeGenerator,
     private val membershipPackageFactory: MembershipPackageFactory,
     private val signerFactory: SignerFactory,
@@ -72,6 +74,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         configurationReadService: ConfigurationReadService,
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         membershipQueryClient: MembershipQueryClient,
+        certificatesClient: CertificatesClient,
         merkleTreeGenerator: MerkleTreeGenerator,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         signerFactory: SignerFactory,
@@ -83,6 +86,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         configurationReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        certificatesClient,
         merkleTreeGenerator,
         MembershipPackageFactory(
             clock,
@@ -114,6 +118,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         membershipQueryClient: MembershipQueryClient,
         @Reference(service = MerkleTreeProvider::class)
         merkleTreeProvider: MerkleTreeProvider,
+        @Reference(service = CertificatesClient::class)
+        certificatesClient: CertificatesClient,
     ) :
             this(
                 publisherFactory,
@@ -121,6 +127,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 configurationReadService,
                 membershipGroupReaderProvider,
                 membershipQueryClient,
+                certificatesClient,
                 MerkleTreeGenerator(
                     merkleTreeProvider,
                     cordaAvroSerializationFactory
@@ -284,6 +291,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 members,
                 membersTree.root,
                 groupParameters,
+                certificatesClient.listAllowedCertificates(mgm.holdingIdentity.shortHash)
             )
         }
     }

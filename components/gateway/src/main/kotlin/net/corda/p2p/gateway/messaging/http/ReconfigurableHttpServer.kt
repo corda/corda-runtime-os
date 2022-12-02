@@ -25,6 +25,7 @@ internal class ReconfigurableHttpServer(
     private val listener: HttpServerListener,
     private val dynamicKeyStore: DynamicKeyStore,
     private val trustStoresMap: TrustStoresMap,
+    private val clientCertificatesAllowList: ClientCertificatesAllowList,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -75,6 +76,7 @@ internal class ReconfigurableHttpServer(
                             newConfiguration,
                             dynamicKeyStore.keyStore,
                             trustStoresMap,
+                            clientCertificatesAllowList,
                         )
                         newServer.start()
                         resources.keep(newServer)
@@ -90,6 +92,7 @@ internal class ReconfigurableHttpServer(
                         newConfiguration,
                         dynamicKeyStore.keyStore,
                         trustStoresMap,
+                        clientCertificatesAllowList,
                     )
                     newServer.start()
                     resources.keep(newServer)

@@ -60,6 +60,7 @@ class MembershipPackageFactory(
         membersToSend: Collection<MemberInfo>,
         hashCheck: SecureHash,
         groupParameters: GroupParameters,
+        allowedClientCertificates: Collection<String>?
     ): MembershipPackage {
         val signedMembers = membersToSend.map {
             val memberTree = merkleTreeGenerator.generateTree(listOf(it))
@@ -89,6 +90,7 @@ class MembershipPackageFactory(
             .setPageCount(1)
             .setCpiAllowList(null)
             .setGroupParameters(wireGroupParameters)
+            .setAllowedClientCertificates(allowedClientCertificates?.toList())
             .setMemberships(
                 membership
             )

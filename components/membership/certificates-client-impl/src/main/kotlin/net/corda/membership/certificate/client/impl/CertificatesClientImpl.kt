@@ -4,13 +4,19 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.CertificateUsage
+import net.corda.data.certificates.rpc.request.AllowClientCertificate
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.request.DisallowClientCertificate
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.ListAllowedCertificates
 import net.corda.data.certificates.rpc.request.ListCertificateAliasesRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateAllowedRpcResponse
+import net.corda.data.certificates.rpc.response.CertificateDisallowedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.response.ListAllowedCertificatesRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -43,7 +49,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [CertificatesClient::class])
 class CertificatesClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -98,6 +104,22 @@ class CertificatesClientImpl @Activate constructor(
 
     override fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage, alias: String): String? {
         return send<CertificateRetrievalRpcResponse>(holdingIdentityId, usage, RetrieveCertificateRpcRequest(alias))?.certificates
+    }
+
+    override fun allowCertificate(holdingIdentityId: ShortHash, subject: String) {
+        send<CertificateAllowedRpcResponse>(holdingIdentityId, CertificateUsage.P2P_CLIENT_TLS, AllowClientCertificate(subject))
+    }
+
+    override fun disallowCertificate(holdingIdentityId: ShortHash, subject: String) {
+        send<CertificateDisallowedRpcResponse>(holdingIdentityId, CertificateUsage.P2P_CLIENT_TLS, DisallowClientCertificate(subject))
+    }
+
+    override fun listAllowedCertificates(holdingIdentityId: ShortHash): Collection<String> {
+        return send<ListAllowedCertificatesRpcResponse>(
+            holdingIdentityId,
+            CertificateUsage.P2P_CLIENT_TLS,
+            ListAllowedCertificates()
+        )?.subjects ?: emptyList()
     }
 
     override fun setupLocallyHostedIdentity(

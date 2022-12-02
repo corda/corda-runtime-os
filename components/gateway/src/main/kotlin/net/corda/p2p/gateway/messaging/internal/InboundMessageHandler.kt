@@ -24,6 +24,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
+import net.corda.p2p.gateway.messaging.http.ClientCertificatesAllowList
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -61,6 +62,9 @@ internal class InboundMessageHandler(
         subscriptionFactory,
         messagingConfiguration
     )
+    private val clientCertificatesAllowList = ClientCertificatesAllowList(
+        lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
+    )
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
@@ -68,6 +72,7 @@ internal class InboundMessageHandler(
         this,
         dynamicKeyStore,
         trustStoresMap,
+        clientCertificatesAllowList
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -76,11 +81,13 @@ internal class InboundMessageHandler(
             sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,
             server.dominoTile.coordinatorName,
+            clientCertificatesAllowList.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             sessionPartitionMapper.dominoTile.toNamedLifecycle(),
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
+            clientCertificatesAllowList.dominoTile.toNamedLifecycle(),
         )
     )
 

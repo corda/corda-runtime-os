@@ -24,6 +24,8 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":components:membership:registration")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(':components:membership:certificates-client')
+    implementation project(':components:membership:membership-p2p')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

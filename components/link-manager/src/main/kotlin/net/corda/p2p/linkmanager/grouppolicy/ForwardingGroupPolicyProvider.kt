@@ -15,16 +15,14 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.security.cert.CertificateFactory
 
 @Suppress("LongParameterList")
-internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
-                                             private val groupPolicyProvider: GroupPolicyProvider,
-                                             virtualNodeInfoReadService: VirtualNodeInfoReadService,
-                                             cpiInfoReadService: CpiInfoReadService,
-                                             membershipQueryClient: MembershipQueryClient,
-                                             private val certificateFactory: CertificateFactory
-                                                = CertificateFactory.getInstance("X.509"),
+internal class ForwardingGroupPolicyProvider(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val groupPolicyProvider: GroupPolicyProvider,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    cpiInfoReadService: CpiInfoReadService,
+    membershipQueryClient: MembershipQueryClient,
 ): LinkManagerGroupPolicyProvider {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"

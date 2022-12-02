@@ -2,6 +2,7 @@ package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,8 +18,11 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -38,6 +42,8 @@ class MemberOpsServiceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = RegistrationProxy::class)
@@ -48,6 +54,10 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -141,7 +151,12 @@ class MemberOpsServiceImpl @Activate constructor(
             registrationProxy,
             virtualNodeInfoReadService,
             membershipGroupReaderProvider,
-            membershipQueryClient
+            membershipQueryClient,
+            certificatesClient,
+            cordaAvroSerializationFactory,
+            {
+                publisherFactory.createPublisher(PublisherConfig("publish allowed certificates"), messagingConfig)
+            }
         )
         subscription?.close()
         subscription = subscriptionFactory.createRPCSubscription(

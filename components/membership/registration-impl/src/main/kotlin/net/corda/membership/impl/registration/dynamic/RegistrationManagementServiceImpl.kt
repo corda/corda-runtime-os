@@ -17,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
@@ -69,6 +70,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
 ) : RegistrationManagementService {
 
     companion object {
@@ -173,6 +176,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipConfig,
                         groupParametersWriterService,
                         groupParametersFactory,
+                        certificatesClient,
                     ),
                     messagingConfig
                 ).also {

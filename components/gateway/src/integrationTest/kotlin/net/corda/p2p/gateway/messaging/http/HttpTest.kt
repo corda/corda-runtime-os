@@ -80,6 +80,7 @@ class HttpTest : TestBase() {
             ),
             aliceKeyStore,
             mock(),
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -120,6 +121,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
+            mock(),
             mock(),
         )
         val threadPool = NioEventLoopGroup(threadNo)
@@ -186,6 +188,7 @@ class HttpTest : TestBase() {
             ),
             aliceKeyStore,
             mock(),
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -224,6 +227,7 @@ class HttpTest : TestBase() {
             ),
             bobKeyStore,
             mock(),
+            mock(),
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -260,6 +264,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             c4sslKeyStore,
+            mock(),
             mock(),
         ).use { server ->
             listener.server = server
@@ -361,6 +366,7 @@ class HttpTest : TestBase() {
             ),
             aliceKeyStore,
             mock(),
+            mock(),
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
@@ -406,6 +412,7 @@ class HttpTest : TestBase() {
                 MAX_REQUEST_SIZE
             ),
             bobKeyStore,
+            mock(),
             mock(),
         ).use { server ->
             server.startAndWaitForStarted()

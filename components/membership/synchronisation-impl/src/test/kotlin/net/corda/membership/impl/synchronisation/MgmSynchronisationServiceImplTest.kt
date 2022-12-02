@@ -69,6 +69,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -228,6 +229,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(memberInfosWithoutMgm),
                 any(),
                 any(),
+                anyOrNull(),
             )
         } doReturn membershipPackage1
         on {
@@ -237,6 +239,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(listOf(bobInfo)),
                 any(),
                 any(),
+                anyOrNull(),
             )
         } doReturn membershipPackage2
     }
@@ -270,10 +273,11 @@ class MgmSynchronisationServiceImplTest {
         configurationReadService,
         groupReaderProvider,
         membershipQueryClient,
+        mock(),
         merkleTreeGenerator,
         membershipPackageFactory,
         signerFactory,
-        p2pRecordsFactory
+        p2pRecordsFactory,
     )
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
@@ -475,7 +479,9 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(),
+            any(), capturedList.capture(), any(), eq(groupParameters), anyOrNull()
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
@@ -490,7 +496,9 @@ class MgmSynchronisationServiceImplTest {
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
         synchronisationService.processSyncRequest(request)
-        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any(), eq(groupParameters))
+        verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(),
+            capturedList.capture(), any(), eq(groupParameters), anyOrNull()
+        )
         verify(mockPublisher, times(1)).publish(eq(listOf(record2)))
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)

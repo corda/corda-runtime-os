@@ -155,7 +155,11 @@ class MemberOpsServiceProcessorTest {
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        mock(),
+        mock(),
+        { mock() },
         clock,
+        mock()
     )
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {

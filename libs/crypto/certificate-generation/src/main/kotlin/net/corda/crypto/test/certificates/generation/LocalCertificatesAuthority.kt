@@ -60,9 +60,11 @@ internal open class LocalCertificatesAuthority(
         defaultPrivateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
 
+    private val issuer = X500Name("C=UK, CN=r3.com")
+
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificate {
         val caKeyPair = generateKeyPair()
-        val certBuilder = certificateBuilder("C=UK CN=r3.com", caKeyPair.public)
+        val certBuilder = certificateBuilder(issuer.toString(), caKeyPair.public)
 
         val basicConstraints = BasicConstraints(true)
 
@@ -101,7 +103,7 @@ internal open class LocalCertificatesAuthority(
         val dnName = X500Name(name)
         val certSerialNumber = nextSerialNumber()
         val endDate = Date(now + validDuration.toMillis())
-        return JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, key)
+        return JcaX509v3CertificateBuilder(issuer, certSerialNumber, startDate, endDate, dnName, key)
     }
 
     internal fun asKeyStore(alias: String): KeyStore {
@@ -125,7 +127,16 @@ internal open class LocalCertificatesAuthority(
         return PrivateKeyWithCertificate(keys.private, certificate)
     }
 
+    override fun generateClientKeyAndCertificate(subject: String): PrivateKeyWithCertificate {
+        val keys = generateKeyPair()
+        val certificate = generateCertificate(emptyList(), keys.public, subject)
+        return PrivateKeyWithCertificate(keys.private, certificate)
+    }
+
     override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
+        return generateCertificate(hosts, publicKey, "C=UK, CN=${hosts.first()}")
+    }
+    private fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey, subject: String): Certificate {
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
                 "RSA" -> SignatureSpec.RSA_SHA256.signatureName
@@ -142,7 +153,7 @@ internal open class LocalCertificatesAuthority(
         }.build(parameter)
 
         val certificateBuilder = certificateBuilder(
-            "C=UK CN=${hosts.first()}",
+            subject,
             publicKey
         )
         hosts.forEach { host ->
@@ -186,7 +197,7 @@ internal open class LocalCertificatesAuthority(
         val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(csr.subjectPublicKeyInfo.encoded))
 
         val certificateGenerator = JcaX509v3CertificateBuilder(
-            X500Name("C=UK CN=r3.com"),
+            X500Name("C=UK, CN=r3.com"),
             certSerialNumber,
             startDate,
             endDate,

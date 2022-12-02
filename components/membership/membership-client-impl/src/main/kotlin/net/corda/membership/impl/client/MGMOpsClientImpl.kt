@@ -5,8 +5,14 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
+import net.corda.data.membership.rpc.request.MgmAllowClientCertificateRequest
+import net.corda.data.membership.rpc.request.MgmDisallowClientCertificateRequest
+import net.corda.data.membership.rpc.request.MgmListClientCertificateRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
+import net.corda.data.membership.rpc.response.MgmAllowClientCertificatesResponse
+import net.corda.data.membership.rpc.response.MgmDisallowClientCertificatesResponse
+import net.corda.data.membership.rpc.response.MgmListAllowedClientCertificatesResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
@@ -69,6 +76,12 @@ class MGMOpsClientImpl @Activate constructor(
 
     private interface InnerMGMOpsClient : AutoCloseable {
         fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
+
+        fun allowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String)
+
+        fun disallowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String)
+
+        fun listClientCertificate(holdingIdentityShortHash: ShortHash): List<String>
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -80,8 +93,6 @@ class MGMOpsClientImpl @Activate constructor(
     private var componentHandle: AutoCloseable? = null
 
     private val coordinator = coordinatorFactory.createCoordinator<MGMOpsClient>(::processEvent)
-
-    private val className = this::class.java.simpleName
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -96,6 +107,17 @@ class MGMOpsClientImpl @Activate constructor(
 
     override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
         impl.generateGroupPolicy(holdingIdentityShortHash)
+
+    override fun allowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) {
+        impl.allowClientCertificate(holdingIdentityShortHash, clientCertificateSubject)
+    }
+
+    override fun disallowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) {
+        impl.disallowClientCertificate(holdingIdentityShortHash, clientCertificateSubject)
+    }
+
+    override fun listClientCertificate(holdingIdentityShortHash: ShortHash): List<String> =
+        impl.listClientCertificate(holdingIdentityShortHash)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -161,14 +183,23 @@ class MGMOpsClientImpl @Activate constructor(
         override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
+        override fun allowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) =
+            throw IllegalStateException(ERROR_MSG)
+
+        override fun disallowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) =
+            throw IllegalStateException(ERROR_MSG)
+
+        override fun listClientCertificate(holdingIdentityShortHash: ShortHash): List<String> =
+            throw IllegalStateException(ERROR_MSG)
+
         override fun close() = Unit
     }
 
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String {
-
+        @Suppress("ThrowsCount")
+        private fun verifyMgm(holdingIdentityShortHash: ShortHash) {
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                     ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
@@ -179,21 +210,72 @@ class MGMOpsClientImpl @Activate constructor(
                 reader.lookup(holdingIdentity.x500Name)
                     ?:throw CouldNotFindMemberException(holdingIdentityShortHash)
 
-            if(filteredMembers.isMgm) {
-
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        UUID.randomUUID().toString(),
-                        clock.instant()
-                    ),
-                    MGMGroupPolicyRequest(holdingIdentityShortHash.toString())
-                )
-
-                return generateGroupPolicyResponse(request.sendRequest())
+            if (!filteredMembers.isMgm) {
+                throw MemberNotAnMgmException(holdingIdentityShortHash)
             }
+        }
+        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String {
+            verifyMgm(holdingIdentityShortHash)
 
-            else throw MemberNotAnMgmException(holdingIdentityShortHash)
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                MGMGroupPolicyRequest(holdingIdentityShortHash.toString())
+            )
 
+            return generateGroupPolicyResponse(request.sendRequest())
+        }
+
+        override fun allowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) {
+            verifyMgm(holdingIdentityShortHash)
+            val subject = MemberX500Name.parse(clientCertificateSubject)
+
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                MgmAllowClientCertificateRequest(
+                    holdingIdentityShortHash.toString(),
+                    subject.toString(),
+                )
+            )
+            request.sendRequest<MgmAllowClientCertificatesResponse>()
+        }
+
+        override fun disallowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String) {
+            verifyMgm(holdingIdentityShortHash)
+
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                MgmDisallowClientCertificateRequest(
+                    holdingIdentityShortHash.toString(),
+                    clientCertificateSubject,
+                )
+            )
+            request.sendRequest<MgmDisallowClientCertificatesResponse>()
+        }
+
+        override fun listClientCertificate(holdingIdentityShortHash: ShortHash): List<String> {
+            verifyMgm(holdingIdentityShortHash)
+
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                MgmListClientCertificateRequest(
+                    holdingIdentityShortHash.toString(),
+                )
+            )
+
+            return request.sendRequest<MgmListAllowedClientCertificatesResponse>()
+                .subjects
         }
 
         override fun close() = rpcSender.close()

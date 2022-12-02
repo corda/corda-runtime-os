@@ -7,54 +7,63 @@ import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.X509ExtendedTrustManager
+import javax.net.ssl.X509TrustManager
 
 internal class DynamicX509ExtendedTrustManager(
     private val trustStoresMap: TrustStoresMap,
     private val revocationCheck: RevocationConfig,
+    private val clientCertificatesAllowList: ClientCertificatesAllowList,
 ) : X509ExtendedTrustManager() {
-    private val allManagers: Sequence<X509ExtendedTrustManager>
-        get() = trustStoresMap.allTrustedCertificates
-            .asSequence()
-            .mapNotNull {
-                it.trustManagers(revocationCheck)
-            }
-            .flatten()
-            .filterIsInstance<X509ExtendedTrustManager>()
 
-    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        for (manager in allManagers) {
-            try {
-                manager.checkClientTrusted(chain, authType, socket)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
+    @Suppress("NestedBlockDepth", "ThrowsCount")
+    private fun checkClientTrusted(chain: Array<out X509Certificate>?, check: (X509TrustManager)->Unit) {
+        if(chain == null) {
+            throw CertificateException("Null client certificates")
+        }
+        if(chain.isEmpty()) {
+            throw CertificateException("Empty client certificates")
+        }
+        val subjects = chain.map { it.subjectX500Principal }
+        for (managersToGroupId in trustStoresMap.getTrustManagersToGroupId(revocationCheck)) {
+            val managers = managersToGroupId.key.filterIsInstance<X509TrustManager>()
+            if(clientCertificatesAllowList.allowCertificates(managersToGroupId.value, subjects)) {
+                for (manager in managers) {
+                    try {
+                        check(manager)
+                        return
+                    } catch (e: CertificateException) {
+                        // Try the next manager
+                    }
+                }
             }
         }
         throw CertificateException("Can not find manager")
+    }
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
+        checkClientTrusted(chain) { manager ->
+            if(manager is X509ExtendedTrustManager) {
+                manager.checkClientTrusted(chain, authType, socket)
+            } else {
+                manager.checkClientTrusted(chain, authType)
+            }
+        }
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        for (manager in allManagers) {
-            try {
+        checkClientTrusted(chain) { manager ->
+            if(manager is X509ExtendedTrustManager) {
                 manager.checkClientTrusted(chain, authType, engine)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
+            } else {
+                manager.checkClientTrusted(chain, authType)
             }
         }
-        throw CertificateException("Can not find manager")
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        for (manager in allManagers) {
-            try {
-                manager.checkClientTrusted(chain, authType)
-                return
-            } catch (e: CertificateException) {
-                // Try the next manager
-            }
+        checkClientTrusted(chain) { manager ->
+            manager.checkClientTrusted(chain, authType)
         }
-        throw CertificateException("Can not find manager")
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
@@ -70,6 +79,13 @@ internal class DynamicX509ExtendedTrustManager(
     }
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
-        return allManagers.flatMap { it.acceptedIssuers.toList() }.toList().toTypedArray()
+        return trustStoresMap
+            .getTrustManagersToGroupId(revocationCheck)
+            .keys
+            .flatten()
+            .filterIsInstance<X509TrustManager>()
+            .map { it.acceptedIssuers.toList() }
+            .flatten()
+            .toTypedArray()
     }
 }

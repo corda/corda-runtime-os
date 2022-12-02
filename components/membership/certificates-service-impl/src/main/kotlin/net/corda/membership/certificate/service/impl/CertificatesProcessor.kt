@@ -1,12 +1,18 @@
 package net.corda.membership.certificate.service.impl
 
+import net.corda.data.certificates.rpc.request.AllowClientCertificate
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.request.DisallowClientCertificate
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.ListAllowedCertificates
 import net.corda.data.certificates.rpc.request.ListCertificateAliasesRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateAllowedRpcResponse
+import net.corda.data.certificates.rpc.response.CertificateDisallowedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.response.ListAllowedCertificatesRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -18,6 +24,7 @@ internal class CertificatesProcessor(
 ) :
     RPCResponderProcessor<CertificateRpcRequest, CertificateRpcResponse> {
 
+    @Suppress("ComplexMethod")
     override fun onNext(request: CertificateRpcRequest, respFuture: CompletableFuture<CertificateRpcResponse>) {
         try {
             val holdingIdentity = if (request.holdingIdentity == null) {
@@ -49,6 +56,26 @@ internal class CertificatesProcessor(
                         holdingIdentity
                     ).toList()
                     ListCertificateAliasRpcResponse(aliases)
+                }
+                is AllowClientCertificate -> {
+                    client.allowCertificate(
+                        holdingIdentity!!,
+                        requestPayload.subject
+                    )
+                    CertificateAllowedRpcResponse()
+                }
+                is DisallowClientCertificate -> {
+                    client.disallowCertificate(
+                        holdingIdentity!!,
+                        requestPayload.subject
+                    )
+                    CertificateDisallowedRpcResponse()
+                }
+                is ListAllowedCertificates -> {
+                    val subjects = client.listAllowedCertificates(
+                        holdingIdentity!!,
+                    )
+                    ListAllowedCertificatesRpcResponse(subjects.toList())
                 }
                 else -> {
                     throw CertificatesServiceException("Unknown request: $request")

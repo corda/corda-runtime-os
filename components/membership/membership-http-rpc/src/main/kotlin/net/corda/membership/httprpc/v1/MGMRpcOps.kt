@@ -1,7 +1,9 @@
 package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
@@ -42,4 +44,38 @@ interface MGMRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
         holdingIdentityShortHash: String
     ): String
+
+    @HttpRpcPUT(
+        path = "{holdingIdentityShortHash}/allow-client/{clientCertificateSubject}",
+        description = "Allow a client certificate with a given subject to interact with the group (mutual TLS only).",
+    )
+    fun allowClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(
+            description = "The client certificate subject to allow"
+        )
+        clientCertificateSubject: String,
+    )
+
+    @HttpRpcDELETE(
+        path = "{holdingIdentityShortHash}/allow-client/{clientCertificateSubject}",
+        description = "Disallow a client certificate with a given subject to interact with the group (mutual TLS only).",
+    )
+    fun disallowClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(
+            description = "The client certificate subject to allow"
+        )
+        clientCertificateSubject: String,
+    )
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}/allow-client",
+        description = "List of allowed client certificate with a given subject to interact with the group (mutual TLS only).",
+    )
+    fun listClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
+        holdingIdentityShortHash: String,
+    ): List<String>
 }

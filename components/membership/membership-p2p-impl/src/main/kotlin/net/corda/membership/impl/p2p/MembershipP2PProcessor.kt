@@ -1,12 +1,14 @@
 package net.corda.membership.impl.p2p
 
 import net.corda.crypto.hes.StableKeyPairDecryptor
+import net.corda.data.membership.p2p.DistributeAllowedClientCertificates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.membership.impl.p2p.handler.DistributeAllowedClientCertificatesHandler
 import net.corda.membership.impl.p2p.handler.MembershipPackageHandler
 import net.corda.membership.impl.p2p.handler.MembershipSyncRequestHandler
 import net.corda.membership.impl.p2p.handler.MessageHandler
@@ -54,6 +56,7 @@ class MembershipP2PProcessor(
         VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) },
         MembershipPackage::class.java to { MembershipPackageHandler(avroSchemaRegistry) },
         MembershipSyncRequest::class.java to { MembershipSyncRequestHandler(avroSchemaRegistry) },
+        DistributeAllowedClientCertificates::class.java to { DistributeAllowedClientCertificatesHandler(avroSchemaRegistry) },
         SetOwnRegistrationStatus::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) }
     )
 

@@ -46,8 +46,17 @@ internal class TrustStoresMap(
             messagingConfiguration
         )
     }
-    val allTrustedCertificates: Collection<TrustedCertificates>
-        get() = trustRootsPerHoldingIdentity.values
+
+    fun getTrustManagersToGroupId(revocationCheck: RevocationConfig) : Map<Collection<TrustManager>, Collection<String>> {
+        return trustRootsPerHoldingIdentity
+            .entries
+            .groupBy({
+                it.value.trustManagers(revocationCheck)!!
+            }, {
+                it.key.destinationGroupId
+            })
+
+    }
 
     private val entriesPerKey = ConcurrentHashMap<String, TruststoreKey>()
     private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()

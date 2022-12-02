@@ -1,22 +1,32 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatusDetails
+import net.corda.data.membership.p2p.DistributeAllowedClientCertificates
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
+import net.corda.data.membership.rpc.request.MgmAllowClientCertificateRequest
+import net.corda.data.membership.rpc.request.MgmDisallowClientCertificateRequest
+import net.corda.data.membership.rpc.request.MgmListClientCertificateRequest
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
+import net.corda.data.membership.rpc.response.MgmAllowClientCertificatesResponse
+import net.corda.data.membership.rpc.response.MgmDisallowClientCertificatesResponse
+import net.corda.data.membership.rpc.response.MgmListAllowedClientCertificatesResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
@@ -39,6 +49,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -46,13 +57,17 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
 import org.slf4j.Logger
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -63,11 +78,22 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val certificatesClient: CertificatesClient,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    publisherFactory: ()-> Publisher,
     private val clock: Clock = UTCClock(),
-) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    ),
+    ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
     interface RpcHandler<REQUEST> {
         fun handle(context: MembershipRpcRequestContext, request: REQUEST): Any
+    }
+
+    private val publisher by lazy {
+        publisherFactory.invoke()
     }
 
     companion object {
@@ -78,6 +104,9 @@ class MemberOpsServiceProcessor(
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
             RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
+            MgmAllowClientCertificateRequest::class.java to { it.MgmAllowClientCertificateRequestHandler() },
+            MgmDisallowClientCertificateRequest::class.java to { it.MgmDisallowClientCertificateRequestHandler() },
+            MgmListClientCertificateRequest::class.java to { it.MgmListClientCertificateRequestHandler() },
         )
 
         /**
@@ -202,6 +231,160 @@ class MemberOpsServiceProcessor(
                 }
             )
         }
+    }
+
+    private inner class MgmAllowClientCertificateRequestHandler: RpcHandler<MgmAllowClientCertificateRequest> {
+        override fun handle(
+            context: MembershipRpcRequestContext,
+            request: MgmAllowClientCertificateRequest
+        ): MgmAllowClientCertificatesResponse {
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+            val holdingIdentity = virtualNodeInfoReadService
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                ?: throw GroupPolicyGenerationException(
+                    "Could not find holding identity associated with ${request.holdingIdentityId}"
+                )
+
+            membershipGroupReaderProvider
+                .getGroupReader(holdingIdentity)
+                .lookup(
+                    holdingIdentity.x500Name
+                )?.also {
+                    if (!it.isMgm) {
+                        throw GroupPolicyGenerationException(
+                            "${request.holdingIdentityId} is not the holding identity of an MGM."
+                        )
+                    }
+                } ?: throw GroupPolicyGenerationException(
+                "Could not find holding identity associated with ${request.holdingIdentityId}"
+            )
+
+            val persistedGroupPolicyProperties = membershipQueryClient
+                .queryGroupPolicy(holdingIdentity)
+                .getOrThrow()
+
+            val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
+            if (tlsType != "MUTUAL") {
+               throw CordaRuntimeException("Only mutual TLS can have allowed client certificates")
+            }
+
+            certificatesClient.allowCertificate(
+                holdingIdentityShortHash, request.certificateSubject
+            )
+
+            updatePackageOfAllMembers(holdingIdentity)
+
+            return MgmAllowClientCertificatesResponse()
+        }
+
+    }
+
+    private inner class MgmDisallowClientCertificateRequestHandler: RpcHandler<MgmDisallowClientCertificateRequest> {
+        override fun handle(
+            context: MembershipRpcRequestContext,
+            request: MgmDisallowClientCertificateRequest
+        ): MgmDisallowClientCertificatesResponse {
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+            val holdingIdentity = virtualNodeInfoReadService
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                ?: throw GroupPolicyGenerationException(
+                    "Could not find holding identity associated with ${request.holdingIdentityId}"
+                )
+
+            membershipGroupReaderProvider
+                .getGroupReader(holdingIdentity)
+                .lookup(
+                    holdingIdentity.x500Name
+                )?.also {
+                    if (!it.isMgm) {
+                        throw GroupPolicyGenerationException(
+                            "${request.holdingIdentityId} is not the holding identity of an MGM."
+                        )
+                    }
+                } ?: throw GroupPolicyGenerationException(
+                "Could not find holding identity associated with ${request.holdingIdentityId}"
+            )
+
+            val persistedGroupPolicyProperties = membershipQueryClient
+                .queryGroupPolicy(holdingIdentity)
+                .getOrThrow()
+
+            val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
+            if (tlsType != "MUTUAL") {
+                throw CordaRuntimeException("Only mutual TLS can have allowed client certificates")
+            }
+
+            certificatesClient.disallowCertificate(
+                holdingIdentityShortHash, request.certificateSubject
+            )
+
+            updatePackageOfAllMembers(holdingIdentity)
+
+            return MgmDisallowClientCertificatesResponse()
+        }
+
+    }
+
+    private fun updatePackageOfAllMembers(mgmHoldingIdentity: HoldingIdentity) {
+        // TODO, publish to members, to publish to link manager, to publish to gateway...
+        val message = DistributeAllowedClientCertificates(certificatesClient.listAllowedCertificates(
+            mgmHoldingIdentity.shortHash
+        ).toList())
+        val records = membershipGroupReaderProvider.getGroupReader(mgmHoldingIdentity).lookup().map { member ->
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
+                source = mgmHoldingIdentity.toAvro(),
+                destination = member.holdingIdentity.toAvro(),
+                content = message,
+            )
+        }
+
+        publisher.publish(records).forEach { it.join() }
+    }
+
+    private inner class MgmListClientCertificateRequestHandler: RpcHandler<MgmListClientCertificateRequest> {
+        override fun handle(
+            context: MembershipRpcRequestContext,
+            request: MgmListClientCertificateRequest
+        ): MgmListAllowedClientCertificatesResponse {
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+            val holdingIdentity = virtualNodeInfoReadService
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                ?: throw GroupPolicyGenerationException(
+                    "Could not find holding identity associated with ${request.holdingIdentityId}"
+                )
+
+            membershipGroupReaderProvider
+                .getGroupReader(holdingIdentity)
+                .lookup(
+                    holdingIdentity.x500Name
+                )?.also {
+                    if (!it.isMgm) {
+                        throw GroupPolicyGenerationException(
+                            "${request.holdingIdentityId} is not the holding identity of an MGM."
+                        )
+                    }
+                } ?: throw GroupPolicyGenerationException(
+                "Could not find holding identity associated with ${request.holdingIdentityId}"
+            )
+
+            val persistedGroupPolicyProperties = membershipQueryClient
+                .queryGroupPolicy(holdingIdentity)
+                .getOrThrow()
+
+            val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
+            if (tlsType != "MUTUAL") {
+                throw CordaRuntimeException("Only mutual TLS can have allowed client certificates")
+            }
+
+            val subjects = certificatesClient.listAllowedCertificates(
+                holdingIdentityShortHash
+            )
+
+            return MgmListAllowedClientCertificatesResponse(
+                subjects.toList()
+            )
+        }
+
     }
 
     @Suppress("MaxLineLength")

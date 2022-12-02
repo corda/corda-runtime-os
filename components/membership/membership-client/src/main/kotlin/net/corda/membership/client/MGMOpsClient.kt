@@ -19,4 +19,11 @@ interface MGMOpsClient : Lifecycle {
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
     fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
+
+    fun allowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String)
+
+    fun disallowClientCertificate(holdingIdentityShortHash: ShortHash, clientCertificateSubject: String)
+
+    fun listClientCertificate(holdingIdentityShortHash: ShortHash): List<String>
+
 }

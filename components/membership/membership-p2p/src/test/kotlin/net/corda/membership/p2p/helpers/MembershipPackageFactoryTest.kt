@@ -127,6 +127,7 @@ class MembershipPackageFactoryTest {
             members,
             checkHash,
             groupParameters,
+            null,
         )
 
         assertSoftly {
@@ -161,6 +162,7 @@ class MembershipPackageFactoryTest {
             members,
             checkHash,
             groupParameters,
+            null,
         ).memberships.hashCheck
 
         assertSoftly {
@@ -177,6 +179,7 @@ class MembershipPackageFactoryTest {
             members,
             checkHash,
             groupParameters,
+            null,
         ).memberships.memberships
 
         val expectedMembers = (1..membersCount).map { index ->
@@ -219,6 +222,7 @@ class MembershipPackageFactoryTest {
                 members,
                 checkHash,
                 groupParameters,
+                null,
             )
         }
     }
