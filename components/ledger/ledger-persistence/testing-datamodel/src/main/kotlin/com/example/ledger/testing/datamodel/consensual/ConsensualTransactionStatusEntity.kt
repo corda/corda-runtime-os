@@ -26,8 +26,8 @@ data class ConsensualTransactionStatusEntity(
     @Column(name = "status", nullable = false)
     val status: String,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant
+    @Column(name = "updated", nullable = false)
+    val updated: Instant
 )
 
 @Embeddable

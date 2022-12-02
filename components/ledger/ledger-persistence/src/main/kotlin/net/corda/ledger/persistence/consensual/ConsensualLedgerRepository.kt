@@ -39,7 +39,8 @@ class ConsensualLedgerRepository @Activate constructor(
     @Reference
     private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
-    companion object {
+    private companion object {
+        private const val UNVERIFIED = "U"
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
@@ -165,18 +166,25 @@ class ConsensualLedgerRepository @Activate constructor(
         transactionId: String,
         status: String
     ): Int {
-        return entityManager.createNativeQuery(
+        val rowsUpdated = entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
-            VALUES (:id, :status, :createdAt)
+            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, updated)
+            VALUES (:id, :status, :updatedAt)
             ON CONFLICT(transaction_id) DO
-                UPDATE SET status = EXCLUDED.status, created = EXCLUDED.created
-                WHERE EXCLUDED.status != 'U'"""
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE consensual_transaction_status.status = EXCLUDED.status OR consensual_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("id", transactionId)
             .setParameter("status", status)
-            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
+
+        check(rowsUpdated == 1 || status == UNVERIFIED) {
+            // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
+            "Failed to upsert transaction status $status for transaction with ID $transactionId"
+        }
+
+        return rowsUpdated
     }
 
     /** Persists transaction's [signature] to database. */

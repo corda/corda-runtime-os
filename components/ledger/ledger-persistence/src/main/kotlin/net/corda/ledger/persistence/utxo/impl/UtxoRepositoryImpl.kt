@@ -22,6 +22,10 @@ class UtxoRepositoryImpl(
     private val digestService: DigestService
 ) : UtxoRepository {
 
+    private companion object {
+        private const val UNVERIFIED = "U"
+    }
+
     override fun findTransaction(
         entityManager: EntityManager,
         id: String
@@ -273,18 +277,23 @@ class UtxoRepositoryImpl(
         status: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
+        val rowsUpdated = entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
-            VALUES (:transactionId, :status, :createdAt)
+            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
+            VALUES (:transactionId, :status, :updatedAt)
             ON CONFLICT(transaction_id) DO
-                UPDATE SET status = EXCLUDED.status, created = EXCLUDED.created
-                WHERE EXCLUDED.status != 'U'"""
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("status", status)
-            .setParameter("createdAt", timestamp)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
+
+        check(rowsUpdated == 1 || status == UNVERIFIED) {
+            // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
+            "Failed to upsert transaction status $status for transaction with ID $transactionId"
+        }
     }
 
     private fun ByteArray.hashAsString() =
