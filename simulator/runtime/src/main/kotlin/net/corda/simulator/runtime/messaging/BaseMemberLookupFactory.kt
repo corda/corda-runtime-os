@@ -15,7 +15,9 @@ class BaseMemberLookupFactory : MemberLookupFactory {
         return object : MemberLookup {
             override fun lookup(): List<MemberInfo> = memberRegistry.members.values.toList()
 
-            override fun lookup(key: PublicKey): MemberInfo? = TODO()
+            override fun lookup(key: PublicKey): MemberInfo? = memberRegistry.members.values.firstOrNull {
+                it.ledgerKeys.contains(key)
+            }
 
             override fun lookup(name: MemberX500Name): MemberInfo = memberRegistry.members[name]
                 ?: throw NoSuchMemberException(name)

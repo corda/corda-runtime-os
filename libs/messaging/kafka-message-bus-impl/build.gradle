@@ -8,8 +8,7 @@ description 'Kafka Message Bus Impl'
 dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-
-    implementation project(":libs:lifecycle:lifecycle")
+    
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:schema-registry:schema-registry")

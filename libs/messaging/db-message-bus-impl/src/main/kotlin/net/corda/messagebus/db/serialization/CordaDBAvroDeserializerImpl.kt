@@ -20,16 +20,24 @@ class CordaDBAvroDeserializerImpl<T : Any>(
         @Suppress("unchecked_cast")
         return when (expectedClass) {
             String::class.java -> {
-                data.decodeToString()
+                data.decodeToString() as T?
             }
+
             ByteArray::class.java -> {
-                data
+                data as T?
             }
+
             else -> {
                 try {
                     val dataBuffer = ByteBuffer.wrap(data)
-                    val classType = schemaRegistry.getClassType(dataBuffer)
-                    schemaRegistry.deserialize(dataBuffer, classType, null)
+                    // If they explicitly created a deserializer for Any then they should be able to handle
+                    // the class they get back
+                    val clazz = if (expectedClass != Any::class.java) {
+                        expectedClass
+                    } else {
+                        schemaRegistry.getClassType(dataBuffer)
+                    }
+                    schemaRegistry.deserialize(dataBuffer, clazz, null) as T?
                 } catch (ex: Throwable) {
                     log.warn("Failed to deserialise to expected class $expectedClass", ex)
                     // We don't want to throw back as that would mean the entire poll (with possibly
@@ -39,6 +47,6 @@ class CordaDBAvroDeserializerImpl<T : Any>(
                     null
                 }
             }
-        } as? T?
+        }
     }
 }

@@ -186,7 +186,6 @@
                 false,
                 true
             ]
-            
         },
         "nodeSelector": {
             "type": "object",
@@ -194,6 +193,24 @@
             "title": "node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/",
             "required": [],
             "properties": {},
+            "examples": [{}]
+        },
+        "serviceAccount": {
+            "type": "object",
+            "default": {},
+            "title": "service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "default": "",
+                    "title": "name of the service account",
+                    "examples": [""]
+                }
+            },
             "examples": [{}]
         },
         "db": {
@@ -781,6 +798,24 @@
                     "properties": {},
                     "examples": [{}]
                 },
+                "serviceAccount": {
+                    "type": "object",
+                    "default": "",
+                    "title": "service account for the bootstrap containers",
+                    "additionalProperties": false,
+                    "required": [
+                        "name"
+                    ],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "",
+                            "title": "name of the service account",
+                            "examples": [""]
+                        }
+                    },
+                    "examples": [{}]
+                },
                 "rbac": {
                     "type": "object",
                     "default": {},
@@ -895,20 +930,10 @@
                                     }
                                 },
                                 "salt": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker salt, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 },
                                 "passphrase": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker passphrase, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{

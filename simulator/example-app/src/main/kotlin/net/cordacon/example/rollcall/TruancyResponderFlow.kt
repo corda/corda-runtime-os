@@ -1,12 +1,12 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -31,7 +31,7 @@ class TruancyResponderFlow : ResponderFlow {
     lateinit var verificationService: DigitalSignatureVerificationService
 
     @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
+    lateinit var serializationService: SerializationService
 
     @Suspendable
     override fun call(session: FlowSession) {
@@ -40,9 +40,11 @@ class TruancyResponderFlow : ResponderFlow {
         val record = session.receive(TruancyRecord::class.java)
 
         verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
-            jsonMarshallingService.format(record.absentees).toByteArray())
+            serializationService.serialize(record.absentees).bytes)
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
+
+        session.send(Unit)
 
         log.info("Records persisted")
     }

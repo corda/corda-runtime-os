@@ -134,6 +134,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         } else {
             coordinator.updateStatus(event.status)
             configSubscription?.close()
+            configSubscription = null
         }
     }
 
@@ -143,6 +144,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
      */
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         log.debug { "Creating resources" }
+        coordinator.updateStatus(LifecycleStatus.DOWN)
         createPublisher(event)
         coordinator.updateStatus(LifecycleStatus.UP)
     }

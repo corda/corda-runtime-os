@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -25,9 +24,11 @@ import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.publisher.waitOnPublisherFutures
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
@@ -71,8 +72,11 @@ class FlowRPCOpsImpl @Activate constructor(
     override val protocolVersion: Int = 1
 
     private var publisher: Publisher? = null
+    private var fatalErrorOccurred = false
+    private lateinit var onFatalError:() -> Unit
 
-    override fun initialise(config: SmartConfig) {
+    override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
+        this.onFatalError = onFatalError
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config)
     }
@@ -84,6 +88,14 @@ class FlowRPCOpsImpl @Activate constructor(
     ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
+        }
+        if (fatalErrorOccurred) {
+            // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
+            // replaced by another worker and have been "fenced". In that case it would be unsafe to create another
+            // producer, because we'd attempt to replace our replacement. Most likely service orchestration has already
+            // replaced us - nothing else should lead to us being fenced - and therefore should be responsible for
+            // closing us down soon. There are other fatal error types, but none are recoverable by definition.
+            throw FlowRPCOpsServiceException("Fatal error occurred, can no longer start flows from this worker")
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
@@ -137,16 +149,32 @@ class FlowRPCOpsImpl @Activate constructor(
             Record(FLOW_STATUS_TOPIC, status.key, status),
         )
 
-        try {
-            val recordFutures = publisher!!.publish(records)
-            CompletableFuture.allOf(*recordFutures.toTypedArray())
-                .get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        } catch (e: Exception) {
-            throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", e)
+        val recordFutures = try {
+            publisher!!.publish(records)
+        } catch (ex: CordaMessageAPIFatalException) {
+            throw markFatalAndReturnFailureException(ex)
+        } catch (ex: Exception) {
+            throw failureException(ex)
         }
-
+        waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
+            if (failureIsTerminal) {
+                throw markFatalAndReturnFailureException(ex)
+            } else {
+                throw failureException(ex)
+            }
+        }
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
+
+    private fun markFatalAndReturnFailureException(exception: Exception): Exception {
+        fatalErrorOccurred = true
+        log.error("Fatal error occurred, FlowRPCOps can no longer start flows, worker expected to terminate.", exception)
+        onFatalError()
+        return failureException(exception)
+    }
+
+    private fun failureException(cause: Exception): Exception =
+        FlowRPCOpsServiceException("Failed to publish the Start Flow event.", cause)
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))

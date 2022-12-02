@@ -38,9 +38,9 @@ dependencies {
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
-    implementation project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:crypto:merkle-impl')
 
+    implementation 'net.corda:corda-cipher-suite'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-ledger-common'

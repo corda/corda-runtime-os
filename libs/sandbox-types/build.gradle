@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-publishing'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Corda Sandbox Types'
 
 dependencies {

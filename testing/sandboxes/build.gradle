@@ -24,7 +24,9 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
-    implementation project(":testing:packaging-test-utilities")
+    implementation(project(":testing:packaging-test-utilities")) {
+        exclude group: 'org.mockito'
+    }
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')

@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -10,14 +10,15 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.cordacon.example.utils.createScript
-import net.cordacon.example.utils.findStudents
+import net.cordacon.example.rollcall.utils.createScript
+import net.cordacon.example.rollcall.utils.findStudents
 
 
 @InitiatingFlow("roll-call")
@@ -33,6 +34,9 @@ class RollCallFlow: RPCStartableFlow {
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -91,9 +95,9 @@ class RollCallFlow: RPCStartableFlow {
     @Suspendable
     private fun sendTruancyRecord(truancyOffice : MemberX500Name, truants: List<MemberX500Name>) {
         if (truants.isNotEmpty()) {
-            val unsignedTruants = jsonMarshallingService.format(truants)
+            val unsignedTruants = serializationService.serialize(truants)
             val signedTruants = signingService.sign(
-                unsignedTruants.toByteArray(),
+                unsignedTruants.bytes,
                 memberLookup.myInfo().ledgerKeys[0],
                 SignatureSpec.ECDSA_SHA256
             )
