@@ -22,6 +22,7 @@ import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import picocli.CommandLine
+import java.nio.file.StandardOpenOption
 
 /**
  * Filename of group policy within jar file
@@ -53,7 +54,7 @@ private const val READ_FROM_STDIN = "-"
 )
 class CreateCpiV2 : Runnable {
 
-    @Option(names = ["--cpb", "-c"], required = true, description = ["CPB file to convert into CPI"])
+    @Option(names = ["--cpb", "-c"], required = false, description = ["CPB file to convert into CPI"])
     lateinit var cpbFileName: String
 
     @Option(
@@ -62,6 +63,8 @@ class CreateCpiV2 : Runnable {
         description = ["Group policy to include in CPI", "Use \"-\" to read group policy from standard input"]
     )
     lateinit var groupPolicyFileName: String
+
+    var groupPolicyByteArray: ByteArray? = null
 
     @Option(names = ["--cpi-name"], required = true, description = ["CPI name (manifest attribute)"])
     lateinit var cpiName: String
@@ -85,26 +88,39 @@ class CreateCpiV2 : Runnable {
      * Check user supplied options, then start the process of building and signing the CPI
      */
     override fun run() {
-
         // Check input files exist
-        val cpbPath = requireFileExists(cpbFileName)
-        requireFileExists(signingOptions.keyStoreFileName)
+        if (signingOptions.keyStoreFileName != "") {
+            requireFileExists(signingOptions.keyStoreFileName)
+        }
 
         val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
-            File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
+            if (groupPolicyByteArray != null) {
+                (groupPolicyByteArray as ByteArray).decodeToString()
+            } else {
+                File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
+            }
 
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         // Check input Cpb file is indeed a Cpb
-        verifyIsValidCpbV2(cpbPath)
+        var cpbPath: Path? = null
+        if (cpbFileName != "") {
+            cpbPath = requireFileExists(cpbFileName)
+            verifyIsValidCpbV2(cpbPath)
+        }
+
         // Create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
-            val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
-            val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
-            outputName = Path.of(cpbDirectory, cpiFilename).toString()
+            if (cpbPath != null) {
+                val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
+                val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
+                outputName = Path.of(cpbDirectory, cpiFilename).toString()
+            } else {
+                outputName = ""
+            }
         }
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
@@ -135,22 +151,30 @@ class CreateCpiV2 : Runnable {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: String) {
+    private fun buildAndSignCpi(cpbPath: Path?, outputFilePath: Path, groupPolicy: String) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            SigningHelpers.sign(
-                unsignedCpi,
-                outputFilePath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
-            )
+            if (signingOptions.keyStoreFileName != "") {
+                SigningHelpers.sign(
+                    unsignedCpi,
+                    outputFilePath,
+                    signingOptions.keyStoreFileName,
+                    signingOptions.keyStorePass,
+                    signingOptions.keyAlias,
+                    signingOptions.sigFile,
+                    signingOptions.tsaUrl
+                )
+            } else {
+                Files.newOutputStream(
+                    outputFilePath,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE_NEW
+                ).write(Files.readAllBytes(unsignedCpi))
+            }
         } finally {
             // Delete temp file
             Files.deleteIfExists(unsignedCpi)
@@ -162,7 +186,7 @@ class CreateCpiV2 : Runnable {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: String) {
+    private fun buildUnsignedCpi(cpbPath: Path?, unsignedCpi: Path, groupPolicy: String) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
@@ -172,11 +196,12 @@ class CreateCpiV2 : Runnable {
         manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiUpgrade.toString()
 
         JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), manifest).use { cpiJar ->
-
-            // Copy the CPB contents
-            cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
-            Files.newInputStream(cpbPath, READ).use {
-                it.copyTo(cpiJar)
+            if (cpbPath != null){
+                // Copy the CPB contents
+                cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
+                Files.newInputStream(cpbPath, READ).use {
+                    it.copyTo(cpiJar)
+                }
             }
 
             // Add group policy

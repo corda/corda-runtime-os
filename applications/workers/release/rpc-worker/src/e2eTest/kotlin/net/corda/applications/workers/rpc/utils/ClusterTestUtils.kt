@@ -1,6 +1,8 @@
 package net.corda.applications.workers.rpc.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
@@ -27,6 +29,9 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val P2P_TENANT_ID = "p2p"
@@ -39,6 +44,7 @@ private data class TestJsonObject(override val escapedJson: String = "") : JsonO
 
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
+    @TempDir tempDir: Path,
     isMgm: Boolean = false
 ): String {
     return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
@@ -52,7 +58,22 @@ fun E2eCluster.uploadCpi(
                 }
             }
 
-            val jar = createEmptyJarWithManifest(groupPolicy)
+            val cpiFileName = Path.of(tempDir.toString(), "test.cpi")
+            CreateCpiV2().apply {
+                cpbFileName = ""
+                outputFileName = cpiFileName.toString()
+                cpiName = "test-cpi"
+                cpiVersion = "1.0.0.0-SNAPSHOT"
+                cpiUpgrade = false
+                groupPolicyFileName = ""
+                groupPolicyByteArray = groupPolicy
+                signingOptions = SigningOptions().apply {
+                    keyStoreFileName = ""
+                }
+            }.run()
+
+            val jar = Files.readAllBytes(cpiFileName)
+
             val upload = HttpFileUpload(
                 content = jar.inputStream(),
                 contentType = "application/java-archive",
@@ -250,10 +271,11 @@ fun E2eCluster.disableCLRChecks() {
  */
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
-    memberGroupPolicy: String
+    memberGroupPolicy: String,
+    @TempDir tempDir: Path
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
-    val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray())
+    val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
     members.forEach { member ->
         createVirtualNode(member, memberCpiChecksum)
 
@@ -294,9 +316,10 @@ fun E2eCluster.onboardMembers(
 }
 
 fun E2eCluster.onboardMgm(
-    mgm: E2eClusterMember
+    mgm: E2eClusterMember,
+    @TempDir tempDir: Path
 ) {
-    val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), true)
+    val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
     createVirtualNode(mgm, cpiChecksum)
     assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
     assignSoftHsm(mgm.holdingId, HSM_CAT_PRE_AUTH)
@@ -326,8 +349,8 @@ fun E2eCluster.onboardMgm(
     setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
 }
 
-fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray) {
-    val cpiCheckSum = uploadCpi(groupPolicy)
+fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, @TempDir tempDir: Path) {
+    val cpiCheckSum = uploadCpi(groupPolicy, tempDir)
 
     members.forEach { member ->
         createVirtualNode(member, cpiCheckSum)

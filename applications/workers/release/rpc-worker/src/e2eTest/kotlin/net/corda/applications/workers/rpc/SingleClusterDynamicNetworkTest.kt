@@ -11,8 +11,13 @@ import net.corda.applications.workers.rpc.utils.onboardMgm
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 class SingleClusterDynamicNetworkTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..5).map {
@@ -52,11 +57,11 @@ class SingleClusterDynamicNetworkTest {
      * Onboard group and return group ID
      */
     private fun onboardSingleClusterGroup(): String {
-        cordaCluster.onboardMgm(mgm)
+        cordaCluster.onboardMgm(mgm, tempDir)
 
         val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgm.holdingId)
 
-        cordaCluster.onboardMembers(mgm, memberGroupPolicy)
+        cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir)
 
         // Assert all members can see each other in their member lists
         val allMembers = cordaCluster.members + mgm
