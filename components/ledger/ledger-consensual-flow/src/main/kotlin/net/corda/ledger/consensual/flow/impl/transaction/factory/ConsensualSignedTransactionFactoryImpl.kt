@@ -127,7 +127,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                     ConsensualComponentGroup.TIMESTAMP ->
                         listOf(serializationService.serialize(Instant.now()).bytes)
 
-                    ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
+                    ConsensualComponentGroup.SIGNATORIES ->
                         requiredSigningKeys.map { serializationService.serialize(it).bytes }
 
                     ConsensualComponentGroup.OUTPUT_STATES ->
