@@ -111,14 +111,31 @@ Worker image
 {{- end }}
 
 {{/*
-Worker security context
+Pod security context
 */}}
-{{- define "corda.workerSecurityContext" -}}
+{{- define "corda.podSecurityContext" -}}
 {{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
+Container security context
+*/}}
+{{- define "corda.containerSecurityContext" -}}
+securityContext:
+  allowPrivilegeEscalation: false
+{{- end }}
+
+{{/*
+Worker service account
+*/}}
+{{- define "corda.serviceAccount" }}
+{{- if .Values.serviceAccount.name  }}
+serviceAccountName: {{ .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -140,7 +157,6 @@ DB client image
 Resources for the bootstrapper
 */}}
 {{- define "corda.bootstrapResources" }}
-
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
@@ -166,6 +182,15 @@ Node selector for the bootstrapper
 {{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
 nodeSelector:
   {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Service account for the bootstrapper
+*/}}
+{{- define "corda.bootstrapServiceAccount" }}
+{{- if or .Values.bootstrap.serviceAccount.name .Values.serviceAccount.name }}
+serviceAccountName: {{ default .Values.serviceAccount.name .Values.bootstrap.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -251,6 +276,8 @@ Corda CLI environment variables
   value: {{ .Values.logging.format }}
 - name: CONSOLE_LOG_LEVEL
   value: {{ .Values.logging.level }}
+- name: CORDA_CLI_HOME_DIR
+  value: "/tmp"
 {{- end }}
 
 {{/*
@@ -520,6 +547,7 @@ Kafka SASL init container
   env:
   {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
   {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  {{- include "corda.containerSecurityContext" . | nindent 2 }}
   command:
   - /bin/bash
   - -c
@@ -542,3 +570,35 @@ Kafka SASL init container
     readOnly: false
 {{- end}}    
 {{- end}}
+
+{{/*
+DB SALT environment variable
+*/}}
+{{- define "corda.dbSaltEnv" -}}
+- name: SALT
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "salt"
+      {{- end }}
+{{- end}}  
+
+{{/*
+DB PASSPHRASE environment variable
+*/}}
+{{- define "corda.dbPassphraseEnv" -}}
+- name: PASSPHRASE
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.passphrase.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "passphrase" 
+      {{- end }}
+{{- end}}  
