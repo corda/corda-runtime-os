@@ -4,6 +4,10 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Corda Notary Plugin Common Library'
 
 group 'com.r3.corda.notary.plugin.common'
