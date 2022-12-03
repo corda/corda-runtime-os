@@ -1,12 +1,13 @@
 package net.corda.flow.mapper.impl.executor
 
+import java.util.Collections.emptyList
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.v5.base.util.contextLogger
-import java.util.Collections.emptyList
+import net.corda.v5.base.util.debug
 
 class ScheduleCleanupEventExecutor(
     private val eventKey: String,
@@ -20,7 +21,7 @@ class ScheduleCleanupEventExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (state == null) {
-            log.warn("Tried to cleanup mapper state which was already null on key $eventKey")
+            log.debug { "Tried to cleanup mapper state which was already null on key $eventKey" }
             FlowMapperResult(state, emptyList())
         } else {
             state.status = FlowMapperStateType.CLOSING
