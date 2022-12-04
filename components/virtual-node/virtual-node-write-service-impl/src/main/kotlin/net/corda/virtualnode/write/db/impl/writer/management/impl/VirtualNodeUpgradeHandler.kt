@@ -46,10 +46,10 @@ internal class VirtualNodeUpgradeHandler(
 
             // todo work out which of these operations can be condensed into one transaction
 
-            val currentVirtualNode = findCurrentVirtualNode(request.virtualNodeShortId)
+            val currentVirtualNode = findCurrentVirtualNode(request.virtualNodeShortHash)
 
             val upgradeCpiMetadata = findUpgradeCpi(request.cpiFileChecksum)
-            val (holdingId, connections) = findHoldingIdentityAndConnections(request.virtualNodeShortId)
+            val (holdingId, connections) = findHoldingIdentityAndConnections(request.virtualNodeShortHash)
 
             val originalCpiMetadata = findCurrentCpiMetadata(currentVirtualNode.cpiName, currentVirtualNode.cpiVersion)
 
@@ -112,7 +112,7 @@ internal class VirtualNodeUpgradeHandler(
     }
 
     private fun VirtualNodeUpgradeRequest.validateFields() {
-        requireNotNull(virtualNodeShortId) {
+        requireNotNull(virtualNodeShortHash) {
             "Virtual node identifier is missing"
         }
         requireNotNull(cpiFileChecksum) {

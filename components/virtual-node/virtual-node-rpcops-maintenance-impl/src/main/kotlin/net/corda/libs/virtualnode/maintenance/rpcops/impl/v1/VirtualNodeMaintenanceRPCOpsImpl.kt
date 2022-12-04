@@ -42,6 +42,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.lang.Exception
 import java.time.Duration
+import net.corda.messaging.api.publisher.config.PublisherConfig
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
@@ -63,6 +64,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
@@ -119,7 +121,11 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeSenderFactory.createSender(
+                            duration,
+                            messagingConfig,
+                            PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID),
+                        )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }

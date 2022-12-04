@@ -27,6 +27,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.operation.read.VirtualNodeOperationStatusReadService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -70,6 +71,8 @@ class RPCProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = VirtualNodeOperationStatusReadService::class)
+    private val virtualNodeOperationStatusReadService: VirtualNodeOperationStatusReadService,
 ) : RPCProcessor {
 
     private companion object {
@@ -93,6 +96,7 @@ class RPCProcessorImpl @Activate constructor(
         ::certificatesClient,
         ::groupPolicyProvider,
         ::membershipQueryClient,
+        ::virtualNodeOperationStatusReadService
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(dependentComponents, ::eventHandler)
 

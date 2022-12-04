@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Virtual Node Request Status Interfaces"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:virtual-node:virtual-node-operation-status-reader')
+    api project(":libs:messaging:messaging")
+    implementation 'net.corda:corda-base'
+
+    implementation "com.google.guava:guava:$guavaVersion"
+    api "net.corda:corda-avro-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

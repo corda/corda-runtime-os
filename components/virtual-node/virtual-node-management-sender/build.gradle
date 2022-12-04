@@ -15,12 +15,12 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(':libs:messaging:messaging')
+    api project(':libs:messaging:messaging')
     implementation project(":libs:utilities")
 
     // API
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-avro-schema'
+    api 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'

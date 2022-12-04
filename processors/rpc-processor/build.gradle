@@ -29,6 +29,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:membership:group-policy')
+    implementation project(':components:virtual-node:virtual-node-operation-status-read-service')
     implementation project(":libs:utilities")
 
     implementation project(':libs:configuration:configuration-core')
@@ -51,6 +52,7 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-rpcops-maintenance-impl')
     runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(':components:virtual-node:virtual-node-operation-status-read-service-impl')
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
@@ -63,6 +65,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-management-cache-impl')
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
+    runtimeOnly project(':libs:virtual-node:virtual-node-operation-status-reader-impl')
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rpcops-service')

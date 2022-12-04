@@ -2,17 +2,30 @@ package net.corda.virtualnode.rpcops.impl.v1
 
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.AsynchronousOperationState
+import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
+import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
+import net.corda.data.virtualnode.VirtualNodeCpiUpgradeRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.data.virtualnode.VirtualNodeOperationType
+import net.corda.data.virtualnode.VirtualNodeUpgradeStatus
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.asynchronous.v1.AsyncError
+import net.corda.httprpc.asynchronous.v1.AsyncOperationState
+import net.corda.httprpc.asynchronous.v1.AsyncOperationStatus
+import net.corda.httprpc.asynchronous.v1.AsyncResponse
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
@@ -44,11 +57,14 @@ import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.transl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.virtualnode.operation.read.VirtualNodeOperationStatusReadService
+import net.corda.virtualnode.rpcops.impl.v1.types.VirtualNodeUpgradeOperationStatus
 import net.corda.virtualnode.rpcops.impl.validation.VirtualNodeValidationService
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRPCOps::class])
-// Primary constructor is for test. This is until a clock service is available
 internal class VirtualNodeRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -62,6 +78,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     private var clockFactory: ClockFactory,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = VirtualNodeOperationStatusReadService::class)
+    private val virtualNodeOperationStatusReadService: VirtualNodeOperationStatusReadService,
 ) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
 
     private companion object {
@@ -71,6 +91,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
     }
 
     private val clock = clockFactory.createUTCClock()
@@ -79,7 +100,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
 
-    private val virtualNodeValidationService = VirtualNodeValidationService(virtualNodeInfoReadService, cpiInfoReadService)
+    private val virtualNodeValidationService = VirtualNodeValidationService(
+        virtualNodeInfoReadService,
+        cpiInfoReadService
+    )
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(::virtualNodeInfoReadService)
@@ -129,8 +153,16 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeSenderFactory.createSender(
+                            duration,
+                            messagingConfig,
+                            PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID),
+                        )
                     }
+//                    publisherFactory.createPublisher(
+//                        PublisherConfig(VIRTUAL_NODE_UPGRADE_CLIENT_ID),
+//                        messagingConfig
+//                    )
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
             }
@@ -158,6 +190,17 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return sender.sendAndReceive(request)
     }
 
+    private fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
+            ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
+
+        return sender.sendAsync(key, request)
+    }
+
     /**
      * Retrieves the list of virtual nodes stored on the message bus
      *
@@ -174,7 +217,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
-    override fun upgradeVirtualNodeCpi(virtualNodeShortId: String, cpiFileChecksum: String): VirtualNodeInfo {
+    override fun upgradeCpi(virtualNodeShortId: String, cpiFileChecksum: String): ResponseEntity<AsyncResponse> {
         virtualNodeValidationService.validateVirtualNodeExists(virtualNodeShortId)
         val upgradeCpi = virtualNodeValidationService.validateAndGetUpgradeCpi(cpiFileChecksum)
         val currentCpi = checkNotNull(cpiInfoReadService.get(upgradeCpi.cpiId)) {
@@ -182,39 +225,87 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         }
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, upgradeCpi)
 
-        val response = sendAndReceive(
-            VirtualNodeManagementRequest(
-                Instant.now(),
-                VirtualNodeUpgradeRequest(
-                    virtualNodeShortId, cpiFileChecksum, CURRENT_RPC_CONTEXT.get().principal
-                )
+        val requestId = sendAsynchronousRequest(Instant.now(), virtualNodeShortId, cpiFileChecksum, CURRENT_RPC_CONTEXT.get().principal)
+
+        return ResponseEntity.accepted(AsyncResponse(requestId))
+    }
+
+    override fun operationStatus(requestId: String): ResponseEntity<AsyncOperationStatus> {
+        val avroStatus = virtualNodeOperationStatusReadService.getByRequestId(requestId)
+            ?: throw ResourceNotFoundException("Virtual Node Operation Status", requestId)
+        return createAsyncOperationResponse(avroStatus)
+    }
+
+    private fun createAsyncOperationResponse(avroStatus: AvroVirtualNodeOperationStatus): ResponseEntity<AsyncOperationStatus> {
+        val status = when (avroStatus.operationType) {
+            VirtualNodeOperationType.VIRTUAL_NODE_UPGRADE_CPI -> {
+                val opData = avroStatus.operationData as VirtualNodeUpgradeOperationStatus
+                AsyncOperationStatus.ok(
+                    "UPGRADE_VIRTUAL_NODE",
+                    VirtualNodeUpgradeOperationStatus(
+                        opData.requestId,
+                        opData.originalCpiFileChecksum,
+                        opData.targetCpiFileChecksum,
+                        opData.virtualNodeShortHash,
+                        opData.actor,
+                        opData.stage
+                    ),
+                    avroStatus.state.toEndpointType(),
+                    avroStatus.requestTimestamp,
+                    avroStatus.completedTimestamp,
+                    avroStatus.errors.map{it.toEndpointType()},
+                    )
+            }
+            VirtualNodeOperationType.VIRTUAL_NODE_CREATION -> {
+                throw CordaRuntimeException("Virtual node async operation type not recognized: ${avroStatus.operationType}")
+            }
+            else -> {
+                throw CordaRuntimeException("Virtual node async operation type not recognized: ${avroStatus.operationType}")
+            }
+        }
+        return ResponseEntity.ok(status)
+    }
+
+    private fun AsynchronousOperationState.toEndpointType(): AsyncOperationState {
+        return when (this) {
+            AsynchronousOperationState.IN_PROGRESS -> AsyncOperationState.IN_PROGRESS
+            AsynchronousOperationState.COMPLETED -> AsyncOperationState.COMPLETED
+            AsynchronousOperationState.ABORTED -> AsyncOperationState.ABORTED
+            else -> throw CordaRuntimeException("Asynchronous operation state not recognized: ${this.name}")
+        }
+    }
+
+    private fun ExceptionEnvelope.toEndpointType(): AsyncError {
+        return AsyncError(
+            errorMessage,
+            mapOf("type" to errorType)
+        )
+    }
+
+    private fun sendAsynchronousRequest(
+        requestTime: Instant,
+        virtualNodeShortId: String,
+        cpiFileChecksum: String,
+        actor: String
+    ): String {
+        val requestId = UUID.randomUUID().toString()
+        val request = VirtualNodeCpiUpgradeRequest(
+            requestId,
+            virtualNodeShortId,
+            cpiFileChecksum,
+            actor,
+        )
+
+        sendAsync(
+            virtualNodeShortId,
+            VirtualNodeAsynchronousRequest(
+                requestTime,
+                requestId,
+                request
             )
         )
 
-        return when (val resolvedResponse = response.responseType) {
-            is VirtualNodeCreateResponse -> {
-                // Convert response into expected type
-                resolvedResponse.run {
-                    VirtualNodeInfo(
-                        HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
-                        CpiIdentifier.fromAvro(cpiIdentifier),
-                        vaultDdlConnectionId,
-                        vaultDmlConnectionId,
-                        cryptoDdlConnectionId,
-                        cryptoDmlConnectionId,
-                        uniquenessDdlConnectionId,
-                        uniquenessDmlConnectionId,
-                        hsmConnectionId,
-                        flowP2pOperationalStatus,
-                        flowStartOperationalStatus,
-                        flowOperationalStatus,
-                        vaultDbOperationalStatus
-                    )
-                }
-            }
-            is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
-            else -> throw UnknownResponseTypeException(response.responseType::class.java.name)
-        }
+        return requestId
     }
 
     /**

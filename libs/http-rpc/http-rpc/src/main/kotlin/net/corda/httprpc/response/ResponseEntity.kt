@@ -22,7 +22,7 @@ import net.corda.httprpc.RpcOps
  * @param responseCode the status code of the response.
  * @param responseBody the payload of the response. If null, the response payload will be "null".
  */
-class ResponseEntity<T : Any?>(
+open class ResponseEntity<T : Any?>(
     val responseCode: ResponseCode,
     val responseBody: T,
 ) {

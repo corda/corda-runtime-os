@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Virtual node operation status read service implementation"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    api project(':libs:lifecycle:lifecycle')
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:virtual-node-operation-status-read-service')
+
+    api project(':libs:virtual-node:virtual-node-operation-status-reader')
+
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

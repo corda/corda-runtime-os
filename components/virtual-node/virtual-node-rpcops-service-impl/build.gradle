@@ -14,6 +14,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-management-sender')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:virtual-node-operation-status-read-service')
     implementation project(':libs:virtual-node:virtual-node-common')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:virtual-node:virtual-node-info')
