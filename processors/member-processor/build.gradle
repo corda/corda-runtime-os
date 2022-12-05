@@ -30,6 +30,7 @@ dependencies {
     implementation project(':components:membership:synchronisation')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:membership:certificates-client')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
