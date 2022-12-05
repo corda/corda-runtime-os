@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayAllowedClientCertificates
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import javax.security.auth.x500.X500Principal
@@ -55,14 +56,16 @@ internal class ClientCertificatesAllowList(
         managedChildren = listOf(subscriptionTile.toNamedLifecycle(), blockingDominoTile.toNamedLifecycle()),
     )
 
-    private val allowedClientCertificates = ConcurrentHashMap<String, MutableMap<String, Collection<X500Principal>>>()
+    private val allowedClientCertificates = ConcurrentHashMap<String, MutableMap<String, Collection<MemberX500Name>>>()
 
     fun allowCertificates(groupIds: Collection<String>, subjects: Collection<X500Principal>) : Boolean {
         return groupIds.any { groupId ->
-            allowedClientCertificates[groupId]?.values?.any {allowed ->
-                subjects.any { subject ->
-                    allowed.contains(subject)
-                }
+            allowedClientCertificates[groupId]?.values?.any { allowed ->
+                subjects.asSequence()
+                    .map { MemberX500Name.build(it) }
+                    .any { subject ->
+                        allowed.contains(subject)
+                    }
             } ?: false
         }
     }
@@ -97,7 +100,7 @@ internal class ClientCertificatesAllowList(
         fun addGroup(record: GatewayAllowedClientCertificates) {
             allowedClientCertificates.computeIfAbsent(record.sourceIdentity.groupId) {
                 ConcurrentHashMap()
-            }[record.sourceIdentity.x500Name] = record.allowedClientCertificates.map { X500Principal(it) }
+            }[record.sourceIdentity.x500Name] = record.allowedClientCertificates.map { MemberX500Name.parse(it) }
         }
     }
 }

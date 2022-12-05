@@ -45,6 +45,7 @@
     "tlsPki" : "Standard",
     "tlsVersion" : "1.3",
     "tlsType": "ONE_WAY",
+    "clientAllowedCertificates": [],
     "protocolMode" : "Authenticated_Encryption"
   },
   "cipherSuite" : {

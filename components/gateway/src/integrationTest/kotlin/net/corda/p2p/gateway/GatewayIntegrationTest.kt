@@ -829,13 +829,25 @@ class GatewayIntegrationTest : TestBase() {
             tlsType = TlsType.MUTUAL,
         )
         private fun Node.allowClientCertificates(
-            name: String
+            name: String,
+            myName: String,
         ) {
             this.publish(
                 Record(
-                    GATEWAY_TLS_TRUSTSTORES,
+                    GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE,
                     "$name-$GROUP_ID",
-                    certificatesAuthority.toGatewayTrustStore(name)
+                    GatewayAllowedClientCertificates(
+                        HoldingIdentity(
+                            myName,
+                            GROUP_ID,
+                        ),
+                        listOf(name)
+                    )
+                ),
+                Record(
+                    GATEWAY_TLS_TRUSTSTORES,
+                    "$myName-$GROUP_ID",
+                    certificatesAuthority.toGatewayTrustStore(myName),
                 )
             )
         }
@@ -924,6 +936,9 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `mutual TLS tests`() {
+            bob.allowClientCertificates(aliceX500name, bobX500Name)
+            alice.allowClientCertificates(bobX500Name, aliceX500name)
+
             val (aliceGatewayAddress, aliceGateway) = alice.createMutualTlsGateway(
                 aliceX500name,
                 "www.alice.net",
@@ -932,9 +947,6 @@ class GatewayIntegrationTest : TestBase() {
                 bobX500Name,
                 "www.bob.net",
             )
-
-            bob.allowClientCertificates(aliceX500name)
-            alice.allowClientCertificates(bobX500Name)
 
             val messageCount = 100
             val receivedLatch = CountDownLatch(messageCount * 2)

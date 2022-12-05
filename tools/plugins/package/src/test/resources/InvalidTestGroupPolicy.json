@@ -44,6 +44,7 @@
     "sessionPki" : "Standard",
     "tlsPki" : "Standard",
     "tlsType": "ONE_WAY",
+    "clientAllowedCertificates": [],
     "tlsVersion" : "1.3",
     "protocolMode" : "Authenticated_Encryption"
   },
