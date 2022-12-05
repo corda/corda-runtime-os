@@ -18,7 +18,6 @@ quasar {
         'io.micrometer.**',
         'kotlin**',
         'org.apache.**',
-        'org.hibernate.**',
         'org.objectweb.asm',
         'org.objenesis**',
         'org.osgi.**'
