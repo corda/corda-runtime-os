@@ -31,7 +31,7 @@ interface SimulatedCordaNetwork : Closeable {
      *
      * @param holdingIdentity The holding identity which will call/respond to this flow.
      * @param protocol The protocol for which this responder instance should be run.
-     * @param instanceFlow An instance of a initiator/ responder flow.
+     * @param instanceFlow An instance of an initiator/ responder flow.
      * @return A simulated virtual node which can run this instance of a initiator/responder flow.
      */
     fun createVirtualNode(

@@ -7,23 +7,23 @@ import net.corda.v5.base.types.MemberX500Name
 
 class BaseFlowRegistry: FlowRegistry {
     private val nodeInitiatorInstances = HashMap<MemberX500Name, HashMap<RPCStartableFlow, String>>()
-    private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
-    private val nodeInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
+    private val nodeResponderClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
+    private val nodeResponderInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
 
     override fun registerResponderClass(
         responder: MemberX500Name,
         protocol: String,
         flowClass: Class<out ResponderFlow>
     ) {
-        if(nodeInstances[responder]?.get(protocol) != null) {
+        if(nodeResponderInstances[responder]?.get(protocol) != null) {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow instance for protocol \"$protocol\"")
         }
 
-        if(nodeClasses[responder] == null) {
-            nodeClasses[responder] = hashMapOf(protocol to flowClass)
-        } else if (nodeClasses[responder]!![protocol] == null) {
-            nodeClasses[responder]!![protocol] = flowClass
+        if(nodeResponderClasses[responder] == null) {
+            nodeResponderClasses[responder] = hashMapOf(protocol to flowClass)
+        } else if (nodeResponderClasses[responder]!![protocol] == null) {
+            nodeResponderClasses[responder]!![protocol] = flowClass
         } else {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow class for protocol \"$protocol\"")
@@ -59,15 +59,15 @@ class BaseFlowRegistry: FlowRegistry {
 
     private fun registerResponderInstance(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
 
-        if(nodeClasses[responder]?.get(protocol) != null) {
+        if(nodeResponderClasses[responder]?.get(protocol) != null) {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow class for protocol \"$protocol\"")
         }
 
-        if(nodeInstances[responder] == null) {
-            nodeInstances[responder] = hashMapOf(protocol to responderFlow)
-        } else if (nodeInstances[responder]!![protocol] == null) {
-            nodeInstances[responder]!![protocol] = responderFlow
+        if(nodeResponderInstances[responder] == null) {
+            nodeResponderInstances[responder] = hashMapOf(protocol to responderFlow)
+        } else if (nodeResponderInstances[responder]!![protocol] == null) {
+            nodeResponderInstances[responder]!![protocol] = responderFlow
         } else {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow instance for protocol \"$protocol\"")
@@ -75,7 +75,7 @@ class BaseFlowRegistry: FlowRegistry {
     }
 
     override fun lookUpResponderClass(member: MemberX500Name, protocol: String): Class<out ResponderFlow>? {
-        return nodeClasses[member]?.get(protocol)
+        return nodeResponderClasses[member]?.get(protocol)
     }
 
     override fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>? {
@@ -83,6 +83,6 @@ class BaseFlowRegistry: FlowRegistry {
     }
 
     override fun lookUpResponderInstance(member: MemberX500Name, protocol: String): ResponderFlow? {
-        return nodeInstances[member]?.get(protocol)
+        return nodeResponderInstances[member]?.get(protocol)
     }
 }

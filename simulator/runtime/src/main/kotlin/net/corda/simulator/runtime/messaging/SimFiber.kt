@@ -55,7 +55,6 @@ interface SimFiber : Closeable, HasMemberInfos {
 
     /**
      * @param member The member for whom to look up the initiator instance.
-     * @param protocol The protocol for the initiator flow.
      *
      * @return A [Map] of previously registered instance initiating flows with protocols
      */
