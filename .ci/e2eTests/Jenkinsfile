@@ -64,7 +64,7 @@ pipeline {
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
-        booleanParam(name: 'KEEP_NS', defaultValue: true, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
+        booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
     }
 
     environment {
@@ -81,7 +81,7 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        NAMESPACE = "e2e-test"
+        NAMESPACE = "$k8sNamespace"
         CLUSTER_NAME = "corda-dev-ocp-cluster.openshift.corda.cloud"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
@@ -103,6 +103,71 @@ pipeline {
     }
 
     stages {
+        stage ('Create namespace') {
+            steps {
+                sh '''\
+                    kubectl create ns "${NAMESPACE}"
+                    kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
+                    kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
+                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred-prereqs --docker-server=docker-remotes.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
+                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred --docker-server=corda-os-docker.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
+                '''.stripIndent()
+            }
+        }
+        stage('Install kafka as prereqs') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
+                    sh '''
+                        echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
+                        helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
+                            -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
+                    '''
+                }
+            }
+            post {
+                always {
+                    sh '''\
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
+                        kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
+                    '''.stripIndent()
+                    archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
+                    sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
+                }
+            }
+        }
+        stage('Deploy clusters') {
+           parallel {
+               stage("Deploy Alice cluster") {
+                  steps {
+                      deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
+               }
+               stage("Deploy Bob cluster") {
+                  steps {
+                      deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
+               }
+               stage("Deploy Caroline cluster") {
+                  steps {
+                      deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
+               }
+           }
+            post {
+                unsuccessful {
+                    sh '''\
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''.stripIndent()
+                    archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
+                }
+            }
+        }
         stage('Forward port and run tests') {
             environment {
                 E2E_CLUSTER_A_RPC_PASSWORD = "${getInitialAdminPassword('alice')}"
@@ -117,6 +182,8 @@ pipeline {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
                     def clusters = ['alice','bob','caroline']
+
+                    portForwarding("prereqs-kafka-0", 9092,9092)
 
                     clusters.eachWithIndex {c, index  ->
                        portForwarding("deployment/corda-$c-rpc-worker", 8887 + index, 8888)
@@ -173,6 +240,19 @@ def portForwarding(def name, def port, def portMapping = null){
     sh "nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh ${NAMESPACE} $name $port $portMapping >> forward.txt 2>&1 &"
 }
 
+def deployCorda(def name, def namespace, def base_image){
+    sh """\
+       helm install corda-$name ./charts/corda \
+           -f .ci/e2eTests/corda.yaml \
+           --set image.tag=$base_image \
+           --set nameOverride=$name \
+           --set kafka.topicPrefix=$name \
+           --set db.cluster.host=$name-db-postgresql \
+           --set db.cluster.password.valueFrom.secretKeyRef.name=$name-db-postgresql \
+           --set db.cluster.database=$name
+           -n $namespace --wait --timeout 600s
+    """.stripIndent()
+}
 
 def getBaseImage(def buildRev, def architectureTag) {
     return buildRev ? "preTest-${architectureTag}${buildRev}" : "${architectureTag}unstable"

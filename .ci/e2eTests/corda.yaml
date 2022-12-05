@@ -1,23 +1,18 @@
 imagePullSecrets:
-  - "docker-registry-cred"
-
-bootstrap:
-  db:
-    clientImage:
-      registry: docker-remotes.software.r3.com
-
-
+  - docker-registry-cred
+imagePullPolicy: Always
+serviceAccount:
+  name: "corda-privileged" 
 logging:
   format: "text"
 
-db:
-  cluster:
-    username:
-      value: "user"
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
+resources:
+  requests:
+    memory: "620Mi"
+    cpu: "500m"
+  limits:
+    memory: "1250Mi"
+    cpu: "1000m"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
@@ -37,11 +32,21 @@ kafka:
         secretKeyRef:
           name: "prereqs-kafka-jaas"
           key: "client-passwords"
+          
+db:
+  cluster:
+    username: 
+      valueFrom:
+        secretKeyRef:
+          name: "postgresql"
+          key: "username"
+    password: 
+      valueFrom:
+        secretKeyRef:
+          name: "postgresql"
+          key: "password"
+    host: prereqs-rds-aurora-postgresql
 
-resources:
-  requests:
-    memory: "620Mi"
-    cpu: "500m"
-  limits:
-    memory: "1250Mi"
-    cpu: "1000m"
+bootstrap:
+  serviceAccount:
+    name: "corda-privileged"
