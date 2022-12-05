@@ -21,6 +21,7 @@ quasar {
     excludeLocations = [ 'PERSISTENCE/*', 'VERIFICATION/*' ]
     excludePackages.addAll([
             'org.eclipse.jetty**',
+            'org.hibernate.**',
             'net.corda.membership**'
     ])
 }
