@@ -43,15 +43,16 @@ foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.
   if ($podName -match '.*-worker-.*')
   {
     Write-Output "Collecting status for pod ${podName}"
-    $job=Start-Job -ScriptBlock {kubectl port-forward "${podName}" 7000:7000}
+    $job=Start-Job -ScriptBlock {kubectl port-forward --namespace "${namespace}" "${podName}" 7000:7000}
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri http://localhost:7000/status -OutFile (Join-Path $podDir "status.json")
     Stop-Job $job
   }
 }
 
-$bundle="${namespace}-support-bundle-$(date +"%Y-%m-%dT%H_%M_%S").tgz"
+$date=Get-Date -UFormat "%Y-%m-%dT%H_%M_%S"
+$bundle="${namespace}-support-bundle-${date}.tgz"
 tar -C "${workDir}" -czvf "${bundle}" "${namespace}"
 Write-Output "Created support bundle ${bundle}"
 
-rm -rf "$workDir"
+Remove-Item -Recurse -Force -Path "$workDir"

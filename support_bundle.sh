@@ -39,7 +39,7 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   fi
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"
-    kubectl port-forward "${podName}" 7000:7000  >/dev/null 2>&1 &
+    kubectl port-forward --namespace "${namespace}" "${podName}" 7000:7000  >/dev/null 2>&1 &
     pid=$!
     curl -s localhost:7000/status -o "${podDir}/status.json"
     disown $pid
