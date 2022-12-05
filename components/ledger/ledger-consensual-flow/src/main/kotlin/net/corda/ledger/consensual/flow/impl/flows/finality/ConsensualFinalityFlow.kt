@@ -69,7 +69,7 @@ class ConsensualFinalityFlow(
             "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
-        // TODO [CORE-7029] Record unfinalised transaction
+        persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
 

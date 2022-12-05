@@ -51,7 +51,7 @@ class UtxoReceiveFinalityFlow(
 
         // TODO [CORE-5982] Verify already added signatures.
         val signaturesPayload = if (verify(signedTransaction)) {
-            // TODO [CORE-7029] Record unfinalised transaction
+            persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
             // We check which of our keys are required.
             val myExpectedSigningKeys = signedTransaction
