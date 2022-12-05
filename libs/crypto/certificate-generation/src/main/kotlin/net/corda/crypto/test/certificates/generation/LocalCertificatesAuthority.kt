@@ -154,7 +154,7 @@ internal open class LocalCertificatesAuthority(
 
         val certificateBuilder = certificateBuilder(
             subject,
-            publicKey
+            publicKey,
         )
         hosts.forEach { host ->
             val altName = GeneralName(GeneralName.dNSName, host)
@@ -197,7 +197,7 @@ internal open class LocalCertificatesAuthority(
         val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(csr.subjectPublicKeyInfo.encoded))
 
         val certificateGenerator = JcaX509v3CertificateBuilder(
-            X500Name("C=UK, CN=r3.com"),
+            issuer,
             certSerialNumber,
             startDate,
             endDate,
