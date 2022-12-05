@@ -58,6 +58,7 @@ import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
@@ -594,6 +595,21 @@ class P2PLayerEndToEndTest {
             ).use { publisher ->
                 publisher.start()
                 publisher.publish(records).forEach { it.get() }
+                publisher.publish(
+                    listOf(
+                        Record(
+                            GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE,
+                            "",
+                            GatewayAllowedClientCertificates(
+                                HoldingIdentity(
+                                    GROUP_ID,
+                                    this.ourIdentities.first().x500Name
+                                ),
+                                emptyList()
+                            ),
+                        )
+                    )
+                ).forEach { it.get() }
             }
         }
 

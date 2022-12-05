@@ -2038,6 +2038,129 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/allow-client" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "List of allowed client certificate with a given subject to interact with the group (mutual TLS only).",
+        "operationId" : "get_mgm__holdingidentityshorthash__allow_client",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group to be joined",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group to be joined",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/allow-client/{clientcertificatesubject}" : {
+      "put" : {
+        "tags" : [ "MGM API" ],
+        "description" : "Allow a client certificate with a given subject to interact with the group (mutual TLS only).",
+        "operationId" : "put_mgm__holdingidentityshorthash__allow_client__clientcertificatesubject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group to be joined",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group to be joined",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientcertificatesubject",
+          "in" : "path",
+          "description" : "The client certificate subject to allow",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The client certificate subject to allow",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "Disallow a client certificate with a given subject to interact with the group (mutual TLS only).",
+        "operationId" : "delete_mgm__holdingidentityshorthash__allow_client__clientcertificatesubject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group to be joined",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group to be joined",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientcertificatesubject",
+          "in" : "path",
+          "description" : "The client certificate subject to allow",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The client certificate subject to allow",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],

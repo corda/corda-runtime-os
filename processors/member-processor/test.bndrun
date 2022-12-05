@@ -21,6 +21,7 @@
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
     bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
+    bnd.identity;id='net.corda.certificates-client-impl',\
     bnd.identity;id='net.corda.membership-impl',\
     bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\
