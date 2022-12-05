@@ -96,7 +96,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private fun consensualMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-        TransactionMetadataImpl.COMPONENT_GROUP_INDEXES to ConsensualComponentGroup.values().sorted().map { it.ordinal }
+        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

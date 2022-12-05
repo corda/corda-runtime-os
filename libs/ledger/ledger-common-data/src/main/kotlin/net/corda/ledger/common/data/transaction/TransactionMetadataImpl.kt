@@ -23,7 +23,7 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
-        const val COMPONENT_GROUP_INDEXES = "componentGroupIndexes"
+        const val NUMBER_OF_COMPONENT_GROUPS = "numberOfComponentGroups"
         const val SCHEMA_VERSION_KEY = "schemaVersion"
     }
 
@@ -61,13 +61,11 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
         }
     }
 
-    override fun getComponentGroupIndexes(): List<Int> {
-        return when (val data = this[COMPONENT_GROUP_INDEXES]) {
-            null -> emptyList()
-            is List<*> -> uncheckedCast(data)
-            else -> throw CordaRuntimeException(
-                "Transaction metadata representation error: expected list of component group indexes but found [$data]")
-        }
+    override fun getNumberOfComponentGroups(): Int {
+        val value = this[NUMBER_OF_COMPONENT_GROUPS]
+        return value?.let { uncheckedCast(it) } ?: throw CordaRuntimeException(
+            "Transaction metadata representation error: expected int representing the number of component groups but found [$value]"
+        )
     }
 
     override fun getDigestSettings(): LinkedHashMap<String, Any> {

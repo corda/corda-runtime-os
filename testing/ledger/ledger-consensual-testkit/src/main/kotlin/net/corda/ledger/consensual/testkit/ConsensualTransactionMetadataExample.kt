@@ -16,5 +16,5 @@ val consensualTransactionMetadataExample = TransactionMetadataImpl(linkedMapOf(
     TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
     TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample,
     TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-    TransactionMetadataImpl.COMPONENT_GROUP_INDEXES to ConsensualComponentGroup.values().sorted().map { it.ordinal }
+    TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
 ))

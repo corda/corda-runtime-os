@@ -19,7 +19,7 @@ fun transactionMetadataExample(
             TransactionMetadataImpl.CPI_METADATA_KEY to cpiMetadata,
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkMetadata,
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-            TransactionMetadataImpl.COMPONENT_GROUP_INDEXES to (0 until numberOfComponentGroups).toList()
+            TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to numberOfComponentGroups
         )
     )
 }

@@ -40,8 +40,7 @@ fun getWireTransactionExample(
         listOf(canonicalJson.toByteArray()),
     ) + componentGroupLists
 
-    val completeComponentGroupLists = metadata
-        .getComponentGroupIndexes()
+    val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups())
         .map { index -> groups.getOrElse(index) { arrayListOf() } }
 
     return WireTransaction(

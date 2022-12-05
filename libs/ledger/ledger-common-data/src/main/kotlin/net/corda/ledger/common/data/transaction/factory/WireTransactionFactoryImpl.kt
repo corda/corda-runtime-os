@@ -52,9 +52,9 @@ class WireTransactionFactoryImpl @Activate constructor(
         checkComponentGroups(componentGroupLists)
         val metadata = parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
-        val completeComponentGroupLists = metadata
-            .getComponentGroupIndexes()
-            .map { index -> componentGroupLists.getOrElse(index) { arrayListOf() } }
+        val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
+            componentGroupLists.getOrElse(index) { arrayListOf() }
+        }
 
         return WireTransaction(
             merkleTreeProvider,
@@ -76,9 +76,9 @@ class WireTransactionFactoryImpl @Activate constructor(
             }
         )
 
-        val completeComponentGroupLists = metadata
-            .getComponentGroupIndexes()
-            .map { index -> componentGroupLists[index] ?: arrayListOf() }
+        val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
+            componentGroupLists.getOrElse(index) { arrayListOf() }
+        }
 
         return WireTransaction(
             merkleTreeProvider,
