@@ -85,7 +85,7 @@ class CheckClusterRolesE2eTest {
                 val permProxy = permClient.start().proxy
                 val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
                 assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(1)
-                assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/maintenance/virtualnode")
+                assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/maintenance/virtualnode/forcecpiupload")
             }
         }
     }

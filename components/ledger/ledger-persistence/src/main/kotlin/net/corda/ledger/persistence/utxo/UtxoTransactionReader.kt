@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -13,7 +14,7 @@ interface UtxoTransactionReader {
 
     val account: String
 
-    val status: String
+    val status: TransactionStatus
 
     val privacySalt: PrivacySalt
 
