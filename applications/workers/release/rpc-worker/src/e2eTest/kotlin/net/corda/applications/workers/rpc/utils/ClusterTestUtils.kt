@@ -23,6 +23,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -360,7 +361,7 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     ) {
         val groupId = getGroupId(member.holdingId)
         lookupMembers(member.holdingId).also { result ->
-            contextLogger().info("Lookup from $member gives: $result")
+            loggerFor<E2eCluster>().info("Lookup from $member gives: $result")
             val expectedList = allMembers.map { member -> member.name }
             assertThat(result)
                 .hasSize(allMembers.size)
