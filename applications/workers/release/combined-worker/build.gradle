@@ -7,6 +7,13 @@ plugins {
 
 ext {
     releasable = true
+
+    // Use db message bus emulation by default, but allow switching to kafka without manually updating the build file
+    if (!project.hasProperty('busImpl')) {
+        busImplementation = 'db-message-bus-impl'
+    } else {
+        busImplementation = "${busImpl}-message-bus-impl"
+    }
 }
 
 description 'Combined Worker'
@@ -79,9 +86,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
-//  swap these around in order to use a "real" Kafka message bus rather than the emulation.
-    runtimeOnly project(':libs:messaging:db-message-bus-impl')
-//    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    runtimeOnly project(":libs:messaging:${busImplementation}")
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
