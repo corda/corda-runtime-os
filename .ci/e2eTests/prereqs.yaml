@@ -1,8 +1,8 @@
 global:
   imageRegistry: docker-remotes.software.r3.com
   imagePullSecrets:
-    - docker-registry-cred
-  storageClass: corda-sc
+    - docker-registry-cred-prereqs
+  #storageClass: corda-sc
 
 kafka:
   auth:
@@ -18,8 +18,15 @@ kafka:
       cpu: 1000m
   zookeeper:
     replicaCount: 3
+    serviceAccount:
+      create: false
+      name: "corda-privileged"
   offsetsTopicReplicationFactor: 3
   transactionStateLogReplicationFactor: 3
+  serviceAccount:
+    create: false
+    name: "corda-privileged"
+
 
 postgresql:
   primary:
