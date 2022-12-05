@@ -42,11 +42,11 @@ class UtxoFilteredTransactionImpl(
     override val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
         get() = fetchFilteredData<ContractState>(UtxoComponentGroup.OUTPUTS.ordinal).let {
             when (it) {
-                is UtxoFilteredData.UtxoFilteredDataRemoved<ContractState> -> FilteredDataRemovedImpl()
-                is UtxoFilteredData.UtxoFilteredDataSizeOnly -> FilteredDataSizeImpl(it.size)
-                is UtxoFilteredData.UtxoFilteredDataAudit -> {
+                is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
+                is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(it.size)
+                is UtxoFilteredData.Audit -> {
                     when (val stateInfos = fetchFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
-                        is UtxoFilteredData.UtxoFilteredDataAudit -> {
+                        is UtxoFilteredData.Audit -> {
                             val values = it.values.entries.associateBy(
                                 keySelector = { entry -> entry.key },
                                 valueTransform = { entry ->
@@ -59,14 +59,12 @@ class UtxoFilteredTransactionImpl(
                             )
                             FilteredDataAuditImpl(it.size, values)
                         }
-
-                        is UtxoFilteredData.UtxoFilteredDataRemoved ->
-                            throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
-
-                        is UtxoFilteredData.UtxoFilteredDataSizeOnly ->
+                        else ->
                             throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
                     }
                 }
+                else ->
+                    throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
 
@@ -85,14 +83,14 @@ class UtxoFilteredTransactionImpl(
         filteredTransaction.verify()
     }
 
-    private class FilteredDataRemovedImpl<T> : UtxoFilteredData.UtxoFilteredDataRemoved<T>
+    private class FilteredDataRemovedImpl<T> : UtxoFilteredData.Removed<T>
 
-    private class FilteredDataSizeImpl<T>(override val size: Int) : UtxoFilteredData.UtxoFilteredDataSizeOnly<T>
+    private class FilteredDataSizeImpl<T>(override val size: Int) : UtxoFilteredData.SizeOnly<T>
 
     private class FilteredDataAuditImpl<T>(
         override val size: Int,
         override val values: Map<Int, T>
-    ) : UtxoFilteredData.UtxoFilteredDataAudit<T>
+    ) : UtxoFilteredData.Audit<T>
 
 
     private inline fun <reified T : Any> fetchFilteredData(index: Int): UtxoFilteredData<T> {
