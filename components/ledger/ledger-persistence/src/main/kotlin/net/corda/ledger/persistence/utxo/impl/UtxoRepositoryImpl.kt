@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.mapTuples
+import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -57,7 +57,7 @@ class UtxoRepositoryImpl(
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
-    ): List<List<ByteArray>> {
+    ): Map<Int, List<ByteArray>> {
         return entityManager.createNativeQuery(
             """
                 SELECT group_idx, leaf_idx, data
@@ -68,7 +68,7 @@ class UtxoRepositoryImpl(
         )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .mapTuples(ComponentGroupListsTuplesMapper(transactionId))
+            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
     override fun findTransactionSignatures(

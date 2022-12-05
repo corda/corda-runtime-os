@@ -21,6 +21,7 @@ import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -143,7 +144,7 @@ class ConsensualLedgerMessageProcessorTests {
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
-        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
     }
 
@@ -153,7 +154,7 @@ class ConsensualLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            transactionMetadataExample()
+            metadata = transactionMetadataExample(numberOfComponentGroups = ConsensualComponentGroup.values().size),
         )
         return SignedTransactionContainer(
             wireTransaction,
