@@ -7,10 +7,10 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.ledger.common.data.transaction.TransactionStatus.*
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.flow.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
@@ -127,7 +127,7 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), TransactionStatus.UNVERIFIED.value)
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
 
         assertThat(dbSignedTransaction).isEqualTo(transaction)
     }
@@ -137,55 +137,58 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(dbSignedTransaction).isNull()
     }
 
     @Test
     fun `update transaction status`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
 
-        persistenceService.updateStatus(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        persistenceService.updateStatus(transaction.id.toString(), VERIFIED)
 
-        assertTransactionStatus(transaction.id.toString(), TransactionStatus.VERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), VERIFIED, entityFactory)
     }
 
     @Test
     fun `update transaction status does not affect other transactions`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = persistTransactionViaEntity(entityFactory)
         val transaction2 = persistTransactionViaEntity(entityFactory)
 
-        assertTransactionStatus(transaction1.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
-        assertTransactionStatus(transaction2.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction1.id.toString(), UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
 
-        persistenceService.updateStatus(transaction1.id.toString(), TransactionStatus.VERIFIED.value)
+        persistenceService.updateStatus(transaction1.id.toString(), VERIFIED)
 
-        assertTransactionStatus(transaction1.id.toString(), TransactionStatus.VERIFIED, entityFactory)
-        assertTransactionStatus(transaction2.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction1.id.toString(), VERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
     }
 
     @Test
     fun `updating transaction status for transaction that does not exist does not error`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
 
-        persistenceService.updateStatus(UUID.randomUUID().toString(), TransactionStatus.VERIFIED.value)
+        persistenceService.updateStatus(UUID.randomUUID().toString(), VERIFIED)
 
-        assertTransactionStatus(transaction.id.toString(), TransactionStatus.UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
     }
 
     @Test
     fun `persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
-        val transactionStatus = TransactionStatus.VERIFIED
+        val transactionStatus = VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
@@ -259,7 +262,7 @@ class UtxoPersistenceServiceImplTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
     }
@@ -302,7 +305,7 @@ class UtxoPersistenceServiceImplTest {
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(
                     listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, TransactionStatus.UNVERIFIED.value, createdTs)
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, UNVERIFIED.value, createdTs)
                     )
                 )
                 em.persist(transaction)
@@ -318,7 +321,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(statuses)
                 .isNotNull
                 .hasSize(1)
-            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status.value)
+            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status)
         }
     }
 

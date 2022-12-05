@@ -308,7 +308,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: TransactionStatus,
+        transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
@@ -321,31 +321,14 @@ class UtxoRepositoryImpl(
                 WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status.value)
+            .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 
-        check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
+        check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
-            "Existing status for transaction with ID $transactionId can't be updated to $status (illegal state that shouldn't happen)"
+            "Existing status for transaction with ID $transactionId can't be updated to $transactionStatus"
         }
-    }
-
-    override fun updateTransactionStatus(
-        entityManager: EntityManager,
-        id: String,
-        status: String
-    ) {
-        entityManager.createNativeQuery(
-            """
-            UPDATE {h-schema}utxo_transaction_status
-            SET status = :status
-            WHERE transaction_id = :transactionId
-            """
-        )
-            .setParameter("transactionId", id)
-            .setParameter("status", status)
-            .executeUpdate()
     }
 
     private fun ByteArray.hashAsString() =

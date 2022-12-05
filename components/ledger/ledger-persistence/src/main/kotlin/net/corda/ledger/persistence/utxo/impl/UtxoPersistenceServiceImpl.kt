@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -77,7 +78,7 @@ class UtxoPersistenceServiceImpl constructor(
 
     override fun persistTransactionIfDoesNotExist(
         transaction: SignedTransactionContainer,
-        transactionStatus: String,
+        transactionStatus: TransactionStatus,
         account: String
     ): Pair<String?, List<CordaPackageSummary>> {
         val entityManger = sandbox.getEntityManagerFactory().createEntityManager()
@@ -143,16 +144,16 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    override fun updateStatus(id: String, transactionStatus: String) {
+    override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         sandbox.getEntityManagerFactory().createEntityManager().transaction { em ->
-            repository.updateTransactionStatus(em, id, transactionStatus)
+            repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
         }
     }
 
-    override fun findTransaction(id: String, transactionStatus: String): SignedTransactionContainer? {
+    override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
         return sandbox.getEntityManagerFactory().createEntityManager().transaction { em ->
             val status = repository.findTransactionStatus(em, id)
-            if (status == transactionStatus) {
+            if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
             } else {
                 null

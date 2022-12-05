@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.flow.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService

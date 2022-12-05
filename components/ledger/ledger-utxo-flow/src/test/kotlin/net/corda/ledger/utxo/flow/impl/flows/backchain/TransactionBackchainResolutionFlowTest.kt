@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
-import net.corda.ledger.common.flow.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession

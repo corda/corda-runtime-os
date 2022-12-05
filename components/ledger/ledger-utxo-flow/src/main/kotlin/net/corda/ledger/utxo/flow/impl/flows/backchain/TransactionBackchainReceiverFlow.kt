@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
-import net.corda.ledger.common.flow.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow

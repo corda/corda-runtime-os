@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -60,7 +61,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         // TODO resolve, etc
-        return persistenceService.find(id)?.toLedgerTransaction()
+        return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
     }
 
     @Suspendable

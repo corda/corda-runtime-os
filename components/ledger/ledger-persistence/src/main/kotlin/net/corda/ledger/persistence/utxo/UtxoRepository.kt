@@ -114,7 +114,7 @@ interface UtxoRepository {
     )
 
     /**
-     * Persists or updates transaction [status]. There is only one status per transaction. In case that status already
+     * Persists or updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
      * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
      * - UNVERIFIED -> *
      * - VERIFIED -> VERIFIED
@@ -123,9 +123,7 @@ interface UtxoRepository {
     fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: TransactionStatus,
+        transactionStatus: TransactionStatus,
         timestamp: Instant
     )
-
-    fun updateTransactionStatus(entityManager: EntityManager, id: String, status: String)
 }

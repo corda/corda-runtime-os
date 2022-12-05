@@ -4,7 +4,6 @@ import java.security.PublicKey
 import java.time.Instant
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.common.flow.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal

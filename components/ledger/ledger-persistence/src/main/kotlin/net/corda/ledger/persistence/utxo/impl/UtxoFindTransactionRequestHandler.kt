@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -18,7 +19,10 @@ class UtxoFindTransactionRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         // Find the transaction
-        val transactionContainer = persistenceService.findTransaction(findTransaction.id, findTransaction.transactionStatus)
+        val transactionContainer = persistenceService.findTransaction(
+            findTransaction.id,
+            findTransaction.transactionStatus.toTransactionStatus()
+        )
 
         // return output records
         return listOf(

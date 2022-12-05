@@ -55,5 +55,5 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun find(id: SecureHash, transactionStatus: TransactionStatus = VERIFIED): UtxoSignedTransaction?
+    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 }
