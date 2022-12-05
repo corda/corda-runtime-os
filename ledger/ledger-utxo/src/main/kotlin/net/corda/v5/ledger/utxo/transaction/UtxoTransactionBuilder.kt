@@ -49,26 +49,6 @@ interface UtxoTransactionBuilder {
     fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder
 
     /**
-     * Adds a command and associated signatories to the current [UtxoTransactionBuilder].
-     *
-     * @param command The command to add to the current [UtxoTransactionBuilder].
-     * @param signatories The associated signatories to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional command and associated signatories.
-     */
-    fun addCommandAndSignatories(command: Command, signatories: Iterable<PublicKey>): UtxoTransactionBuilder
-
-    /**
-     * Adds a command and associated signatories to the current [UtxoTransactionBuilder].
-     *
-     * @param command The command to add to the current [UtxoTransactionBuilder].
-     * @param signatories The associated signatories to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional command and associated signatories.
-     */
-    fun addCommandAndSignatories(command: Command, vararg signatories: PublicKey): UtxoTransactionBuilder {
-        return addCommandAndSignatories(command, signatories.toSet())
-    }
-
-    /**
      * Adds an input state to the current [UtxoTransactionBuilder].
      *
      * @param stateAndRef The [StateAndRef] of the input state to add to the current [UtxoTransactionBuilder].
