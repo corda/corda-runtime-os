@@ -37,7 +37,7 @@ fun getConsensualSignedTransactionExample(
         merkleTreeProvider,
         jsonMarshallingService,
         jsonValidator,
-        consensualTransactionMetadataExample
+        metadata = consensualTransactionMetadataExample
     )
     return ConsensualSignedTransactionImpl(
         serializationService,

@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.utils.toRecord
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
@@ -46,6 +47,12 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
             "topic ${config.topic}."
+
+    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "PubSub")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .build()
 
     override val isRunning: Boolean
         get() = threadLooper.isRunning
@@ -149,7 +156,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
         val futures = cordaConsumerRecords.mapNotNull {
             try {
-                processor.onNext(it.toRecord())
+                processorMeter.recordCallable { processor.onNext(it.toRecord()) }
             } catch (except: Exception) {
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
                 null
