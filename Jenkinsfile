@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@feature/ronanb/set-time-stamp') _
+@Library('corda-shared-build-pipeline-steps@ronanb/set-time-stamp') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/3 * * *',
