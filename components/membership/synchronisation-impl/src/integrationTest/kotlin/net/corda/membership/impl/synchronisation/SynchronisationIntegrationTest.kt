@@ -36,6 +36,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.MemberTestGroupPolicy
@@ -171,6 +172,9 @@ class SynchronisationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var groupParametersWriterService: GroupParametersWriterService
 
+        @InjectService(timeout = 5000)
+        lateinit var certificatesClient: CertificatesClient
+
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
                 merkleTreeProvider,
@@ -299,6 +303,7 @@ class SynchronisationIntegrationTest {
                                 LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                                 LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                                 LifecycleCoordinatorName.forComponent<GroupParametersWriterService>(),
+                                LifecycleCoordinatorName.forComponent<CertificatesClient>(),
                             )
                         )
                     } else if (e is RegistrationStatusChangeEvent) {
@@ -318,6 +323,7 @@ class SynchronisationIntegrationTest {
             membershipPersistenceClient.start()
             virtualNodeInfoReadService.start()
             groupParametersWriterService.start()
+            certificatesClient.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
             eventually {
@@ -552,6 +558,7 @@ class SynchronisationIntegrationTest {
             .setMemberships(
                 membership
             )
+            .setAllowedClientCertificates(emptyList())
             .setDistributionMetaData(
                 DistributionMetaData(
                     "id",
