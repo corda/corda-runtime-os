@@ -105,7 +105,7 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: UtxoSignedTransaction): Boolean {
         return try {
-            validator.checkTransaction(signedTransaction.toLedgerTransaction()) // TODO not suspendable...
+            validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
