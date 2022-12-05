@@ -129,7 +129,7 @@
     "numberOfComponentGroups": {
       "title": "Number of component groups",
       "description": "The number of component groups contained in the transaction",
-      "type": "int",
+      "type": "integer",
       "default": 0
     },
     "schemaVersion": {
