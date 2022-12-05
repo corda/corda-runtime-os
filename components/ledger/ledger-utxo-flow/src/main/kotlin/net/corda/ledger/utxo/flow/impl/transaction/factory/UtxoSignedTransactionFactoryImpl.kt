@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.type.UsedByFlow
@@ -58,6 +59,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
         val metadata = transactionMetadataFactory.create(utxoMetadata())
+        UtxoTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)

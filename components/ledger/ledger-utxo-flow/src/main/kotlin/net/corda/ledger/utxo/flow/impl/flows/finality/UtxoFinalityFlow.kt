@@ -1,10 +1,10 @@
-package net.corda.ledger.consensual.flow.impl.flows.finality
+package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -17,14 +17,14 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
 @CordaSystemFlow
-class ConsensualFinalityFlow(
-    private val signedTransaction: ConsensualSignedTransactionInternal,
+class UtxoFinalityFlow(
+    private val signedTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>
-) : SubFlow<ConsensualSignedTransaction> {
+) : SubFlow<UtxoSignedTransaction> {
 
     private companion object {
         val log = contextLogger()
@@ -37,13 +37,13 @@ class ConsensualFinalityFlow(
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
-    lateinit var persistenceService: ConsensualLedgerPersistenceService
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
 
     @Suspendable
-    override fun call(): ConsensualSignedTransaction {
+    override fun call(): UtxoSignedTransaction {
 
         // TODO Check there is at least one state
 
