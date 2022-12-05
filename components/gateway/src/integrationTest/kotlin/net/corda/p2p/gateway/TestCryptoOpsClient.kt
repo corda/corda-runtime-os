@@ -28,12 +28,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 class TestCryptoOpsClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    keyStoreWithPassword: KeyStoreWithPassword,
+    keyStoreWithPasswordList: List<KeyStoreWithPassword>,
 ) : CryptoOpsClient {
 
     private val tenantIdToKeys = ConcurrentHashMap<String, TenantKeyMap>()
     init {
-        createTenantKeys(keyStoreWithPassword)
+        keyStoreWithPasswordList.forEach { createTenantKeys(it) }
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoOpsClient>{ event, coordinator ->
@@ -131,7 +131,7 @@ class TestCryptoOpsClient(
         } ?: throw CouldNotReadKey(pem)
     }
 
-    private fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword) {
+    fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword) {
         val records = keyStoreWithPassword.keyStore.aliases().toList()
         for ((i, _) in records.withIndex()) {
             val tenantId = "tenantId"
@@ -146,6 +146,10 @@ class TestCryptoOpsClient(
             val pair = toKeyPair(privateKey)
             tenantKeyMap.publicKeyToPrivateKey[pair.public] = pair.private
         }
+    }
+
+    fun removeTenantKeys() {
+        tenantIdToKeys.clear()
     }
 
     override fun sign(
