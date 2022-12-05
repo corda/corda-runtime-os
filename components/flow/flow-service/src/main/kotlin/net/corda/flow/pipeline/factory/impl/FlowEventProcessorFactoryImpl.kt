@@ -22,7 +22,6 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     @Reference(service = FlowEventContextConverter::class)
     private val flowEventContextConverter: FlowEventContextConverter
-
 ) : FlowEventProcessorFactory {
 
     override fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent> {

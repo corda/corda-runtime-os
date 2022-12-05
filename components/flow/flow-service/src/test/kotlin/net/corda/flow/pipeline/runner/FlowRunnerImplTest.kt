@@ -76,6 +76,7 @@ class FlowRunnerImplTest {
             sandboxGroupContext,
             BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock(),
+            mock(),
             emptyMap()
         )
     }

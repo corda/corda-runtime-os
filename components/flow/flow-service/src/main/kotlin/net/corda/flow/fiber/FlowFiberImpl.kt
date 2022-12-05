@@ -19,6 +19,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
+@Suppress("TooManyFunctions")
 class FlowFiberImpl(
     override val flowId: UUID,
     override val flowLogic: FlowLogicAndArgs,
@@ -54,28 +55,33 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun run() {
-        // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
-        // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
-        // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
-        // of critical error handling for free, only undefined behaviour.
         try {
-            runFlow()
-        } catch (e: FlowContinuationErrorException) {
-            // This exception happened because the flow fiber discovered it had failed for some already handled reason
-            // outside user code. For example an IO request handler detected some error, but the fiber was being
-            // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
-            // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
-            // gone wrong, so we shouldn't log that it has.
-            log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
-            failTopLevelSubFlow(e.cause!!)
-        } catch (t: Throwable) {
-            log.warn("FlowFiber failed due to Throwable being thrown", t)
-            failTopLevelSubFlow(t)
-        }
+            setCurrentSandboxGroupContext()
+            // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
+            // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
+            // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
+            // of critical error handling for free, only undefined behaviour.
+            try {
+                runFlow()
+            } catch (e: FlowContinuationErrorException) {
+                // This exception happened because the flow fiber discovered it had failed for some already handled reason
+                // outside user code. For example an IO request handler detected some error, but the fiber was being
+                // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
+                // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
+                // gone wrong, so we shouldn't log that it has.
+                log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
+                failTopLevelSubFlow(e.cause!!)
+            } catch (t: Throwable) {
+                log.warn("FlowFiber failed due to Throwable being thrown", t)
+                failTopLevelSubFlow(t)
+            }
 
-        if (!flowCompletion.isDone) {
-            log.warn("runFlow failed to complete normally, forcing a failure")
-            failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
+            if (!flowCompletion.isDone) {
+                log.warn("runFlow failed to complete normally, forcing a failure")
+                failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
+            }
+        } finally {
+            removeCurrentSandboxGroupContext()
         }
     }
 
@@ -121,6 +127,7 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
+        removeCurrentSandboxGroupContext()
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
@@ -129,6 +136,7 @@ class FlowFiberImpl(
         })
 
         resetLoggingContext()
+        setCurrentSandboxGroupContext()
 
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
@@ -207,6 +215,15 @@ class FlowFiberImpl(
                 }
             }
         }
+    }
+
+    private fun setCurrentSandboxGroupContext() {
+        val context = getExecutionContext()
+        context.currentSandboxGroupContext.set(context.sandboxGroupContext)
+    }
+
+    private fun removeCurrentSandboxGroupContext() {
+        getExecutionContext().currentSandboxGroupContext.remove()
     }
 
     private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError

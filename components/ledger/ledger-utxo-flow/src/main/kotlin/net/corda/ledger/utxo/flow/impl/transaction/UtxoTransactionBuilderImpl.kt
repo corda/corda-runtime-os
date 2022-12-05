@@ -24,7 +24,7 @@ data class UtxoTransactionBuilderImpl(
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
-    private val signatories: Set<PublicKey> = emptySet(),
+    override val signatories: List<PublicKey> = emptyList(),
     override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
 
@@ -47,10 +47,6 @@ data class UtxoTransactionBuilderImpl(
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
         return copy(signatories = this.signatories + signatories)
-    }
-
-    override fun addCommandAndSignatories(command: Command, signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
-        return addCommand(command).addSignatories(signatories)
     }
 
     override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
