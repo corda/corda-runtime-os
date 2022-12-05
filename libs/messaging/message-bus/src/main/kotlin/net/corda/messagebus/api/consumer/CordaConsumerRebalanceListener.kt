@@ -12,10 +12,6 @@ interface CordaConsumerRebalanceListener {
      * This method will be called during a rebalance operation when the consumer has to give up some partitions.
      * It can also be called when consumer is being closed or is unsubscribing.
      * It is recommended that offsets should be committed in this callback to prevent duplicate data.
-     * <p>
-     * In eager rebalancing, it will always be called at the start of a rebalance and after the consumer stops fetching
-     * data. In cooperative rebalancing, it will be called at the end of a rebalance on the set of partitions being
-     * revoked if the set is non-empty.
      *
      * @param partitions The list of partitions that were assigned to the consumer and now need to be revoked (may not
      *                   include all currently assigned partitions, i.e. there may still be some partitions left)
