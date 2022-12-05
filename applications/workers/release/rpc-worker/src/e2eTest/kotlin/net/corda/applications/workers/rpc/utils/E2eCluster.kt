@@ -43,7 +43,7 @@ private class E2eClusterImpl(
         clusterConfig.rpcPort
     )
 
-    override val p2pUrl get() = "https://${clusterConfig.p2pHost}:${clusterConfig.p2pPort}/gateway"
+    override val p2pUrl get() = "https://${clusterConfig.p2pHost}:${clusterConfig.p2pPort}"
 
     override val kafkaTestToolkit: KafkaTestToolKit by lazy {
         KafkaTestToolKit(testToolkit)
