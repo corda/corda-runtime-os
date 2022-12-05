@@ -18,11 +18,16 @@ import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.AuthenticationException
+import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
+import org.apache.kafka.common.errors.InconsistentGroupProtocolException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -99,8 +104,13 @@ class CordaKafkaConsumerImplTest {
         verify(consumer, times(1)).poll(Duration.ZERO)
     }
 
-    @Test
-    fun testPollFatal() {
+    @ParameterizedTest(name = "[{index}]: {0}")
+    @ValueSource(classes = [
+        ArithmeticException::class, AuthorizationException::class, AuthenticationException::class,
+        IllegalArgumentException::class, IllegalStateException::class,
+        FencedInstanceIdException::class, InconsistentGroupProtocolException::class,
+    ])
+    fun testPollFatal(exceptionClass: Class<out Throwable>) {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             consumerConfig,
@@ -108,7 +118,9 @@ class CordaKafkaConsumerImplTest {
             listener
         )
 
-        doThrow(FencedInstanceIdException("")).whenever(consumer).poll(Mockito.any(Duration::class.java))
+        doThrow(exceptionClass.getDeclaredConstructor(String::class.java).newInstance("mock"))
+            .whenever(consumer)
+            .poll(Mockito.any(Duration::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         }
@@ -454,7 +466,6 @@ class CordaKafkaConsumerImplTest {
         }
         verify(consumer, times(1)).groupMetadata()
     }
-
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {
         val positionBeforePoll = consumer.position(partition)
