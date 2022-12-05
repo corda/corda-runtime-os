@@ -16,10 +16,10 @@ import org.osgi.service.component.annotations.Component
 class FlowMDCServiceImpl : FlowMDCService {
     
     private companion object {
-        const val FLOW_ID = "flow_id"
+        const val MDC_FLOW_ID = "flow_id"
         const val MDC_CLIENT_ID = "client_id"
         const val MDC_VNODE_ID = "vnode_id"
-        const val SESSION_EVENT_ID = "session_event_id"
+        const val MDC_SESSION_EVENT_ID = "session_event_id"
         const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
         private val logger = contextLogger()
     }
@@ -44,7 +44,7 @@ class FlowMDCServiceImpl : FlowMDCService {
                 mapOf(
                     MDC_VNODE_ID to holdingIdentityShortHash,
                     MDC_CLIENT_ID to startContext.requestId,
-                    FLOW_ID to startKey.id
+                    MDC_FLOW_ID to startKey.id
                 )
             }
             is SessionEvent -> {
@@ -52,8 +52,8 @@ class FlowMDCServiceImpl : FlowMDCService {
                 val holdingIdentityShortHash = payload.initiatedIdentity.toCorda().shortHash.toString()
                 mapOf(MDC_VNODE_ID to holdingIdentityShortHash,
                     MDC_CLIENT_ID to payload.sessionId,
-                    SESSION_EVENT_ID to payload.sessionId,
-                    FLOW_ID to flowId
+                    MDC_SESSION_EVENT_ID to payload.sessionId,
+                    MDC_FLOW_ID to flowId
                 )
             }
             else -> {
@@ -61,7 +61,7 @@ class FlowMDCServiceImpl : FlowMDCService {
                 val payloadType = if (payload != null) payload::class else null
                 logger.warn("Failed to set MDC. Flow event (id: $flowId) with null state " +
                         "where event payload is of type $payloadType. Payload: $payload")
-                mapOf(FLOW_ID to flowId)
+                mapOf(MDC_FLOW_ID to flowId)
             }
         }
     }
@@ -76,7 +76,7 @@ class FlowMDCServiceImpl : FlowMDCService {
         val mdcLogging = mutableMapOf(
             MDC_VNODE_ID to vNodeShortHash,
             MDC_CLIENT_ID to startContext.requestId,
-            FLOW_ID to flowId
+            MDC_FLOW_ID to flowId
         )
         setExternalEventIdIfNotComplete(flowState, mdcLogging)
         setSessionMDCFromEvent(event, mdcLogging)
@@ -86,7 +86,7 @@ class FlowMDCServiceImpl : FlowMDCService {
     private fun setSessionMDCFromEvent(event: FlowEvent?, mdcLogging: MutableMap<String, String>) {
         val payload = event?.payload ?: return
         if (payload is SessionEvent) {
-            mdcLogging[SESSION_EVENT_ID] = payload.sessionId
+            mdcLogging[MDC_SESSION_EVENT_ID] = payload.sessionId
         }
     }
 

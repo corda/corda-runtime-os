@@ -4,6 +4,9 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.checkpoint.Checkpoint
 
+/**
+ * Service to handle any logic around setting MDC data in the flow pipeline.
+ */
 interface FlowMDCService {
 
     /**

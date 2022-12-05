@@ -235,43 +235,6 @@ class FlowEventProcessorImplTest {
         assertThat(response).isEqualTo(outputResponse)
     }
 
-   /* @Test
-    fun `Execute flow pipeline and verify MDC from checkpoint with no external event`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-        whenever(flowState.externalEventState).thenReturn(null)
-
-        val response = processor.onNext(checkpoint, inputEvent)
-
-        assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
-
-        verify(checkpoint).flowState
-        verify(flowState).flowStartContext
-        verify(flowStartContext).requestId
-        verify(flowStartContext).identity
-        //this line is only executed for mdc when external events are present
-        verify(externalEventState, times(0)).requestId
-
-    }
-
-    @Test
-    fun `Execute flow pipeline and verify MDC with external event from checkpoint`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-
-        whenever(externalEventState.status).thenReturn(ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope()))
-        val response = processor.onNext(checkpoint, inputEvent)
-
-        assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
-
-        verify(checkpoint).flowState
-        verify(flowState).flowStartContext
-        verify(flowStartContext).requestId
-        verify(flowStartContext).identity
-        //this line is only executed for mdc when external events are present
-        verify(externalEventState).requestId
-    }
-*/
     @Test
     fun `Execute flow pipeline from null checkpoint and start flow event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
