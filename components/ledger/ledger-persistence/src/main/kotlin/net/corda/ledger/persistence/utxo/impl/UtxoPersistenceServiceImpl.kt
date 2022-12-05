@@ -56,6 +56,18 @@ class UtxoPersistenceServiceImpl constructor(
                 }
             }
 
+            // Insert relevancy information
+            transaction.relevantStateIndexes.forEach { componentPosition ->
+                repository.persistTransactionRelevancy(
+                    em,
+                    transactionIdString,
+                    componentPosition.groupIndex,
+                    componentPosition.leafIndex,
+                    consumed = false,
+                    nowUtc
+                )
+            }
+
             // Insert the Transactions signatures
             transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
                 repository.persistTransactionSignature(

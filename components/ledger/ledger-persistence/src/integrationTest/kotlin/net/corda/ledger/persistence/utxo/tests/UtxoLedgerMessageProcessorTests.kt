@@ -7,6 +7,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -18,6 +19,7 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
@@ -114,8 +116,9 @@ class UtxoLedgerMessageProcessorTests {
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
-        val transactionStatus = "V"
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val transactionStatus = TransactionStatus.VERIFIED.value
+        val relevantStates = listOf(ComponentPosition(0, 0))
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStates)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor

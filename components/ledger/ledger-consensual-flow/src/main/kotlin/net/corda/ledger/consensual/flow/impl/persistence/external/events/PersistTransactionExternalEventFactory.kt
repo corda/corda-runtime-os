@@ -15,7 +15,7 @@ class PersistTransactionExternalEventFactory :
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction, parameters.transactionStatus)
+        return PersistTransaction(parameters.transaction, parameters.transactionStatus, null)
     }
 }
 

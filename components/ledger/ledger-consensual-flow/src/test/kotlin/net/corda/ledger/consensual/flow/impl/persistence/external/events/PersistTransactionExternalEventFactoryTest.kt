@@ -48,7 +48,7 @@ class PersistTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.CONSENSUAL,
-                PersistTransaction(transaction, transactionStatus),
+                PersistTransaction(transaction, transactionStatus, null),
                 externalEventContext
             ),
             externalEventRecord.payload

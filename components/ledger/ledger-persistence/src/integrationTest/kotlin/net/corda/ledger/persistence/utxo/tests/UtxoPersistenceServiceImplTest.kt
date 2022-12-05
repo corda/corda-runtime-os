@@ -1,15 +1,16 @@
 package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
@@ -178,12 +179,14 @@ class UtxoPersistenceServiceImplTest {
         val account = "Account"
         val transactionStatus = TransactionStatus.VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
+        val relevantStateIndexes = listOf<ComponentPosition>(ComponentPosition(0, 0))
 
         // Persist transaction
         val transactionReader = TestUtxoTransactionReader(
             signedTransaction,
             account,
-            transactionStatus
+            transactionStatus,
+            relevantStateIndexes
         )
         persistenceService.persistTransaction(transactionReader)
 
@@ -222,6 +225,19 @@ class UtxoPersistenceServiceImplTest {
                             )
                             assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
+                }
+
+            val dbRelevancyData = em.createNamedQuery("UtxoTransactionRelevancyEntity.findByTransactionId", entityFactory.utxoTransactionRelevancy)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbRelevancyData).isNotNull
+                .hasSameSizeAs(relevantStateIndexes)
+            dbRelevancyData
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(relevantStateIndexes)
+                .forEach { (dbRelevancy, componentPosition) ->
+                    assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(componentPosition.groupIndex)
+                    assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(componentPosition.leafIndex)
                 }
 
             val signatures = signedTransaction.signatures
@@ -315,7 +331,8 @@ class UtxoPersistenceServiceImplTest {
     private class TestUtxoTransactionReader(
         val transactionContainer:  SignedTransactionContainer,
         override val account: String,
-        override val status: TransactionStatus
+        override val status: TransactionStatus,
+        override val relevantStateIndexes: List<ComponentPosition>
     ): UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
@@ -17,13 +18,18 @@ interface UtxoLedgerPersistenceService {
      *
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
+     * @param relevantStates Positions or transaction components related to relevant states.
      *
      * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
     @Suspendable
-    fun persist(transaction: UtxoSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummary>
+    fun persist(
+        transaction: UtxoSignedTransaction,
+        transactionStatus: TransactionStatus,
+        relevantStates: List<ComponentPosition> = emptyList()
+    ): List<CordaPackageSummary>
 
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id].

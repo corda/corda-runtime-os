@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -53,12 +54,13 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun persist(
         transaction: UtxoSignedTransaction,
-        transactionStatus: TransactionStatus
+        transactionStatus: TransactionStatus,
+        relevantStates: List<ComponentPosition>
     ): List<CordaPackageSummary> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value, relevantStates)
             )
         }.map { serializationService.deserialize(it.array()) }
     }

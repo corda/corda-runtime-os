@@ -80,7 +80,6 @@ interface UtxoRepository {
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        relevant: Boolean,
         consumed: Boolean,
         timestamp: Instant
     )

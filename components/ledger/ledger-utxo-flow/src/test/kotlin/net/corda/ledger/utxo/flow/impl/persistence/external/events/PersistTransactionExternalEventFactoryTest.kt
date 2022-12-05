@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
@@ -35,11 +36,12 @@ class PersistTransactionExternalEventFactoryTest {
 
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
         val transactionStatus = TransactionStatus.VERIFIED.value
+        val relevantStates = listOf(ComponentPosition(0, 1))
 
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistTransactionParameters(transaction, transactionStatus)
+            PersistTransactionParameters(transaction, transactionStatus, relevantStates)
         )
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
@@ -48,7 +50,7 @@ class PersistTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.UTXO,
-                PersistTransaction(transaction, transactionStatus),
+                PersistTransaction(transaction, transactionStatus, relevantStates),
                 externalEventContext
             ),
             externalEventRecord.payload
