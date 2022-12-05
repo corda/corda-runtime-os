@@ -12,6 +12,10 @@ quasar {
     excludePackages = [
         'co.paralleluniverse**',
         'com.esotericsoftware.**',
+        'com.fasterxml.jackson.**',
+        'com.github.benmanes.caffeine**',
+        'com.typesafe.**',
+        'io.micrometer.**',
         'kotlin**',
         'org.apache.**',
         'org.objectweb.asm',

@@ -4,11 +4,12 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
@@ -199,7 +200,7 @@ class ConsensualLedgerRepositoryTest {
             val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
             val txComponents = dbTransaction.field<Collection<Any>?>("components")
             assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists)
+                .hasSameSizeAs(componentGroupLists.filter { it.isNotEmpty() })
             txComponents!!
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .groupBy { it.field<Int>("groupIndex") }.values
@@ -361,7 +362,10 @@ class ConsensualLedgerRepositoryTest {
             )
         )
 
-        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
+        val transactionMetadata = transactionMetadataExample(
+            cpkMetadata = cpks,
+            numberOfComponentGroups = ConsensualComponentGroup.values().size
+        )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),

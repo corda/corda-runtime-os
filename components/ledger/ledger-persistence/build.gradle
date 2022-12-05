@@ -50,6 +50,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 

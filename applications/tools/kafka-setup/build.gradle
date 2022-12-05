@@ -37,6 +37,7 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-topic-admin-impl')
     runtimeOnly project(":libs:messaging:messaging")
     runtimeOnly project(":libs:messaging:messaging-impl")
+
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

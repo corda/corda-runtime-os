@@ -19,7 +19,7 @@ interface UtxoRepository {
     fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
-    ): List<List<ByteArray>>
+    ): Map<Int, List<ByteArray>>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(

@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.mapTuples
+import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -40,9 +40,9 @@ class ConsensualLedgerRepository @Activate constructor(
     @Reference
     private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
-    private companion object {
+    companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-        private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
+        private val consensualComponentGroupMapper = ConsensualComponentGroupMapper()
     }
 
     /** Reads [SignedTransactionContainer] with given [id] from database. */
@@ -63,7 +63,7 @@ class ConsensualLedgerRepository @Activate constructor(
         if (rows.isEmpty()) return null
 
         val wireTransaction = wireTransactionFactory.create(
-            rows.mapTuples(componentGroupListsTuplesMapper),
+            rows.mapToComponentGroups(consensualComponentGroupMapper),
             PrivacySaltImpl(rows.first()[1] as ByteArray)
         )
 

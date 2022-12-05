@@ -15,6 +15,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -204,7 +205,7 @@ class UtxoPersistenceServiceImplTest {
             val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
             val txComponents = dbTransaction.field<Collection<Any>?>("components")
             assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists)
+                .hasSameSizeAs(componentGroupLists.filter { it.isNotEmpty() })
             txComponents!!
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .groupBy { it.field<Int>("groupIndex") }.values
@@ -278,7 +279,10 @@ class UtxoPersistenceServiceImplTest {
                 "$seed-fileChecksum3"
             )
         )
-        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
+        val transactionMetadata = transactionMetadataExample(
+            cpkMetadata = cpks,
+            numberOfComponentGroups = UtxoComponentGroup.values().size
+        )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
