@@ -42,6 +42,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -71,6 +72,7 @@ class CertificatesClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.db.certificates.client.group"
         const val CLIENT_NAME = "membership.db.certificates.client"
         const val PUBLISHER_NAME = "membership.certificates.publisher"
+        val logger = contextLogger()
     }
 
     private var sender: RPCSender<CertificateRpcRequest, CertificateRpcResponse>? = null
@@ -191,6 +193,7 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun handleStartEvent() {
+        logger.warn("QQQ handleStartEvent")
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -200,9 +203,11 @@ class CertificatesClientImpl @Activate constructor(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             )
         )
+        logger.warn("QQQ -> registrationHandle = $registrationHandle")
     }
 
     private fun handleStopEvent() {
+        logger.warn("QQQ handleStartEvent")
         coordinator.updateStatus(
             LifecycleStatus.DOWN,
             "Component received stop event."
@@ -217,9 +222,11 @@ class CertificatesClientImpl @Activate constructor(
         sender = null
         publisher?.close()
         publisher = null
+        logger.warn("QQQ -> registrationHandle = $registrationHandle")
     }
 
     private fun handleRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        logger.warn("QQQ handleRegistrationStatusChangeEvent -> ${event.status}")
         if (event.status == LifecycleStatus.UP) {
             if (event.registration == registrationHandle) {
                 configHandle?.close()
@@ -227,7 +234,9 @@ class CertificatesClientImpl @Activate constructor(
                     coordinator,
                     setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.P2P_GATEWAY_CONFIG)
                 )
+                logger.warn("QQQ \t configHandle -> $configHandle")
             } else if (event.registration == senderRegistrationHandle) {
+                logger.warn("QQQ \t Going up")
                 coordinator.updateStatus(
                     LifecycleStatus.UP,
                     "Received config and started RPC topic subscription."
@@ -235,12 +244,14 @@ class CertificatesClientImpl @Activate constructor(
             }
         } else {
             if (event.registration == registrationHandle) {
+                logger.warn("QQQ \t Going Down once")
                 configHandle?.close()
                 coordinator.updateStatus(
                     event.status,
                     "Configuration read service went down"
                 )
             } else if (event.registration == senderRegistrationHandle) {
+                logger.warn("QQQ \t Going Down twice")
                 coordinator.updateStatus(
                     event.status,
                     "Sender went down"
@@ -250,11 +261,14 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent) {
+        logger.warn("QQQ handleConfigChangedEvent - $event")
         senderRegistrationHandle?.close()
         sender?.close()
         senderRegistrationHandle = null
 
+        logger.warn("QQQ \t keys -> ${event.keys}")
         tlsType = event.tlsType()
+        logger.warn("QQQ \t tlsType -> $tlsType")
 
         sender = publisherFactory.createRPCSender(
             rpcConfig = RPCConfig(
@@ -273,6 +287,7 @@ class CertificatesClientImpl @Activate constructor(
             )
             it.start()
         }
+        logger.warn("QQQ \t sender -> $sender")
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             publisherConfig = PublisherConfig(
@@ -283,9 +298,11 @@ class CertificatesClientImpl @Activate constructor(
         ).also {
             it.start()
         }
+        logger.warn("QQQ \t publisher -> $publisher")
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.warn("QQQ Got event $event...")
         when (event) {
             is StartEvent -> {
                 handleStartEvent()
@@ -300,5 +317,6 @@ class CertificatesClientImpl @Activate constructor(
                 handleConfigChangedEvent(event)
             }
         }
+        logger.warn("QQQ Done event handle")
     }
 }
