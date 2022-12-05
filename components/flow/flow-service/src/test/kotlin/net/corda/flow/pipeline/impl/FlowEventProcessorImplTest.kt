@@ -40,6 +40,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FlowEventProcessorImplTest {
@@ -150,6 +152,7 @@ class FlowEventProcessorImplTest {
 
         assertThat(response.updatedState).isSameAs(checkpoint)
         assertThat(response.responseEvents).isEmpty()
+        verify(flowMDCService, times(0)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -160,6 +163,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -243,6 +247,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -253,6 +258,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
