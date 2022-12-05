@@ -25,7 +25,7 @@ import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 interface KeysRpcOps : RpcOps {
     /**
      * The [listSchemes] method enables you to retrieve a list of supported key schemes for a specified tenant and HSM
-     * category. Some examples of schemes are 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519',
+     * category. Some examples of schemes are 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519',
      * 'CORDA.SPHINCS-256'.
      *
      * Example usage:
@@ -88,7 +88,7 @@ interface KeysRpcOps : RpcOps {
      * @param category Optional. Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
      * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
      * @param schemeCodeName Optional. The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1',
-     * 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
+     * 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
      * @param alias Optional. The alias under which the key pair is stored.
      * @param masterKeyAlias Optional. The alias of the wrapping key.
      * @param createdAfter Optional. Only include key pairs which were created on or after the specified time. Must be a
@@ -140,7 +140,7 @@ interface KeysRpcOps : RpcOps {
         category: String?,
         @HttpRpcQueryParameter(
             description = "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1'," +
-                    " 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+                    " 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             required = false,
         )
         schemeCodeName: String?,
@@ -192,7 +192,7 @@ interface KeysRpcOps : RpcOps {
      * @param hsmCategory Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
      * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
      * @param scheme The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA',
-     * 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
+     * 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
      *
      * @return The ID of the newly generated key pair in the form of [KeyPairIdentifier].
      */
@@ -216,7 +216,7 @@ interface KeysRpcOps : RpcOps {
         hsmCategory: String,
         @HttpRpcPathParameter(
             description = "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA'," +
-                    " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
+                    " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
         )
         scheme: String
     ): KeyPairIdentifier

@@ -15,25 +15,37 @@ import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadata
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 
 abstract class CommonLedgerTest {
+
+    val currentSandboxGroupContext: CurrentSandboxGroupContext = mockCurrentSandboxGroupContext()
+
     val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+
     val digestService = DigestServiceImpl(PlatformDigestServiceImpl(cipherSchemeMetadata), null)
+
     val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+
     val jsonMarshallingService = JsonMarshallingServiceImpl()
+
     val jsonValidator = JsonValidatorImpl()
+
     val wireTransactionFactory = WireTransactionFactoryImpl(
         merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator, cipherSchemeMetadata
     )
-    val flowFiberService = TestFlowFiberServiceWithSerialization()
+
+    val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+
     val flowEngine = FlowEngineImpl(flowFiberService)
+
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-    val transactionMetadataFactory =
-        TransactionMetadataFactoryImpl(flowFiberService, mockPlatformInfoProvider())
-    val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
-        wireTransactionFactory
-    )
+    val transactionMetadataFactory = TransactionMetadataFactoryImpl(currentSandboxGroupContext, mockPlatformInfoProvider())
+
+    val wireTransactionKryoSerializer = WireTransactionKryoSerializer(wireTransactionFactory)
+
     val wireTransactionAMQPSerializer = WireTransactionSerializer(wireTransactionFactory)
+
     val serializationServiceWithWireTx = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
     }, cipherSchemeMetadata)

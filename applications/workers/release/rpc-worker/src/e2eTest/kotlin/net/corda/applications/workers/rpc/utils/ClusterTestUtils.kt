@@ -236,7 +236,7 @@ fun E2eCluster.disableCLRChecks() {
                 UpdateConfigParameters(
                     GATEWAY_CONFIG,
                     configResponse.version,
-                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  }  }"),
+                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  } }"),
                     ConfigSchemaVersion(1, 0)
                 )
             )
