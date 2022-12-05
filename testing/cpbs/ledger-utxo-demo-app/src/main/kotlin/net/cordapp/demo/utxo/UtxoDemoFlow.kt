@@ -97,6 +97,7 @@ class UtxoDemoFlow : RPCStartableFlow {
                 .setTimeWindowBetween(Instant.MIN, Instant.MAX)
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
+                .addSignatories(testUtxoState.participants)
                 .toSignedTransaction(myInfo.ledgerKeys.first())
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
