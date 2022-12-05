@@ -78,8 +78,8 @@ internal class ClientCertificatesAllowList(
         override fun onSnapshot(currentData: Map<String, GatewayAllowedClientCertificates>) {
             currentData.values.forEach {
                 addGroup(it)
-                ready.complete(Unit)
             }
+            ready.complete(Unit)
         }
 
         override fun onNext(
