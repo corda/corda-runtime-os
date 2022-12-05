@@ -293,7 +293,7 @@ class UtxoRepositoryImpl(
 
         check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
-            "Failed to upsert transaction status $status for transaction with ID $transactionId"
+            "Existing status for transaction with ID $transactionId can't be updated to $status (illegal state that shouldn't happen)"
         }
     }
 
