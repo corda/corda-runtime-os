@@ -21,7 +21,6 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 import java.time.Instant
 
@@ -63,6 +62,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
+    @Suppress("ComplexMethod")
     override fun call(requestBody: RPCRequestData): String {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
@@ -123,6 +123,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
     @Suppress(
         "deprecation", // Can be removed once the new `sign` function on the TX builder is added
+        "LongParameterList"
     )
     @Suspendable
     private fun buildSignedTransaction(
