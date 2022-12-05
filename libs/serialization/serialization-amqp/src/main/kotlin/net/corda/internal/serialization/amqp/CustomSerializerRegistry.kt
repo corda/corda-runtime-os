@@ -99,25 +99,22 @@ interface CustomSerializerRegistry {
 class CachingCustomSerializerRegistry private constructor(
     private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
     private val allowedFor: Set<Class<*>>,
-    sandboxGroupSecurityDomain: String,
     private val externalCustomSerializerAllowed: (Class<*>) -> Boolean = {
         val bundle = FrameworkUtil.getBundle(it)
         // Allow custom serializers for types in CPKs (within main bundles and within libraries).
         // Disallow custom serializers for Corda platform types and JDK types.
-        bundle != null && bundle.location.startsWith(sandboxGroupSecurityDomain)
+        bundle != null && bundle.location.startsWith("FLOW/")
     }
 ) : CustomSerializerRegistry {
     constructor(
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        sandboxGroupSecurityDomain: String
-    ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroupSecurityDomain)
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry
+    ) : this(descriptorBasedSerializerRegistry, emptySet())
 
-    // To be used by non OSGi tests
     @VisibleForTesting
     constructor(
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
         externalCustomSerializerAllowed: (Class<*>) -> Boolean = { true }
-    ) : this(descriptorBasedSerializerRegistry, emptySet(), "", externalCustomSerializerAllowed)
+    ) : this(descriptorBasedSerializerRegistry, emptySet(), externalCustomSerializerAllowed)
 
     companion object {
         val logger = contextLogger()

@@ -89,19 +89,14 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(
-        sandboxGroup: SandboxGroup,
-        sandboxGroupSecurityDomain: String = "FLOW"
-    ): SerializerFactory {
+    fun build(sandboxGroup: SandboxGroup): SerializerFactory {
         return makeFactory(
             sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution = true,
             overrideFingerPrinter = null,
             onlyCustomSerializers = false,
-            mustPreserveDataWhenEvolving = false,
-            sandboxGroupSecurityDomain = sandboxGroupSecurityDomain,
-            externalCustomSerializerAllowed = null
+            mustPreserveDataWhenEvolving = false
         )
     }
 
@@ -109,64 +104,35 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
         sandboxGroup: SandboxGroup,
-        sandboxGroupSecurityDomain: String = "FLOW",
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+                    DefaultDescriptorBasedSerializerRegistry(),
         allowEvolution: Boolean = true,
         overrideFingerPrinter: FingerPrinter? = null,
         onlyCustomSerializers: Boolean = false,
-        mustPreserveDataWhenEvolving: Boolean = false
-    ): SerializerFactory {
+        mustPreserveDataWhenEvolving: Boolean = false,
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
         return makeFactory(
-            sandboxGroup,
-            descriptorBasedSerializerRegistry,
-            sandboxGroupSecurityDomain,
-            allowEvolution,
-            overrideFingerPrinter,
-            onlyCustomSerializers,
-            mustPreserveDataWhenEvolving,
-            null
-        )
-    }
-
-    // The following function should be used by non OSGi tests.
-    @Suppress("LongParameterList")
-    @JvmStatic
-    @JvmOverloads
-    fun build(
-        sandboxGroup: SandboxGroup,
-        externalCustomSerializerAllowed: (Class<*>) -> Boolean,
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
-        allowEvolution: Boolean = true,
-        overrideFingerPrinter: FingerPrinter? = null,
-        onlyCustomSerializers: Boolean = false,
-        mustPreserveDataWhenEvolving: Boolean = false
-    ): SerializerFactory {
-        return makeFactory(
-            sandboxGroup,
-            descriptorBasedSerializerRegistry,
-            "",
-            allowEvolution,
-            overrideFingerPrinter,
-            onlyCustomSerializers,
-            mustPreserveDataWhenEvolving,
-            externalCustomSerializerAllowed
-        )
+                sandboxGroup,
+                descriptorBasedSerializerRegistry,
+                allowEvolution,
+                overrideFingerPrinter,
+                onlyCustomSerializers,
+                mustPreserveDataWhenEvolving,
+                externalCustomSerializerAllowed)
     }
 
     @Suppress("LongParameterList")
     private fun makeFactory(
         sandboxGroup: SandboxGroup,
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        sandboxGroupSecurityDomain: String,
         allowEvolution: Boolean,
         overrideFingerPrinter: FingerPrinter?,
         onlyCustomSerializers: Boolean,
         mustPreserveDataWhenEvolving: Boolean,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)?
-    ): SerializerFactory {
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
         val customSerializerRegistry = externalCustomSerializerAllowed?.let {
             CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, it)
-        } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroupSecurityDomain)
+        } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)

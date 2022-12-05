@@ -72,7 +72,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
-        SerializerFactoryBuilder.build(sandboxGroup, sandboxGroupSecurityDomain = "FLOW", allowEvolution = true)
+        SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true)
 
     @Throws(NotSerializableException::class)
     inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
