@@ -23,7 +23,7 @@ class UtxoRepositoryImpl(
     private val digestService: DigestService
 ) : UtxoRepository {
     private companion object {
-        private val UNVERIFIED = TransactionStatus.UNVERIFIED.stringValue
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
     }
 
     override fun findTransaction(
@@ -277,6 +277,7 @@ class UtxoRepositoryImpl(
         status: TransactionStatus,
         timestamp: Instant
     ) {
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
         val rowsUpdated = entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
@@ -286,7 +287,7 @@ class UtxoRepositoryImpl(
                 WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status.stringValue)
+            .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 

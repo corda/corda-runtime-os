@@ -34,7 +34,7 @@ class PersistTransactionExternalEventFactoryTest {
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
-        val transactionStatus = TransactionStatus.VERIFIED.stringValue
+        val transactionStatus = TransactionStatus.VERIFIED.value
 
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,

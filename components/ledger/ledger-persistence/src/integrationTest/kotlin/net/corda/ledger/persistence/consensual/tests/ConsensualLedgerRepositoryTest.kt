@@ -223,7 +223,7 @@ class ConsensualLedgerRepositoryTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.stringValue)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
 
             val signatures = signedTransaction.signatures

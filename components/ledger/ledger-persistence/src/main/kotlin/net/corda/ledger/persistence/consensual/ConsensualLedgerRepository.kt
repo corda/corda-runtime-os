@@ -41,7 +41,7 @@ class ConsensualLedgerRepository @Activate constructor(
     private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
     private companion object {
-        private val UNVERIFIED = TransactionStatus.UNVERIFIED.stringValue
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
@@ -160,13 +160,20 @@ class ConsensualLedgerRepository @Activate constructor(
             .executeUpdate()
     }
 
-    /** Persists transaction's [status] to database. */
+    /**
+     * Persists or updates transaction [status]. There is only one status per transaction. In case that status already
+     * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
+     * - UNVERIFIED -> *
+     * - VERIFIED -> VERIFIED
+     * - INVALID -> INVALID
+     */
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
         transactionId: String,
         status: TransactionStatus
     ): Int {
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
         val rowsUpdated = entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, updated)
@@ -176,7 +183,7 @@ class ConsensualLedgerRepository @Activate constructor(
                 WHERE consensual_transaction_status.status = EXCLUDED.status OR consensual_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("id", transactionId)
-            .setParameter("status", status.stringValue)
+            .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 
