@@ -61,7 +61,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', 'rbac_user', '-p', 'rbac_password', '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', '$(RBAC_USERNAME)', '-p', $(RBAC_PASSWORD), '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           workingDir: /tmp/working_dir
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -71,6 +71,7 @@ spec:
             {{ include "corda.dbSaltEnv" . | nindent 12 }}
             {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
+            {{ include "corda.bootstrapRbacUser" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -87,7 +88,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', 'crypto_user', '-p', 'crypto_password', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', '$(CRYPTO_WORKER_USERNAME)', '-p', '$(CRYPTO_WORKER_PASSWORD)', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           workingDir: /tmp/working_dir
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -97,6 +98,7 @@ spec:
             {{ include "corda.dbSaltEnv" . | nindent 12 }}
             {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
+            {{ include "corda.bootstrapCryptoWorker" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -150,17 +152,20 @@ spec:
           command: [ '/bin/sh', '-e', '-c' ]
           args:
             - |
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} -c "CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password'" || echo "User rbac_user already existed - skipping"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't perform usage grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't DML perform grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password'" || echo "User crypto_user already existed - skipping"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA CRYPTO to crypto_user;" || echo "Couldn't perform usage grant"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;" || echo "Couldn't DML perform grant"
+              echo "CREATE USER $RBAC_USERNAME WITH ENCRYPTED PASSWORD '$RBAC_PASSWORD';"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} -c "CREATE USER $RBAC_USERNAME WITH ENCRYPTED PASSWORD '$RBAC_PASSWORD';" || echo "User $RBAC_USERNAME already existed - skipping"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA RPC_RBAC to $RBAC_USERNAME;" || echo "Couldn't perform usage grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to $RBAC_USERNAME;" || echo "Couldn't DML perform grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER $CRYPTO_WORKER_USERNAME WITH ENCRYPTED PASSWORD '$CRYPTO_WORKER_PASSWORD';" || echo "User $CRYPTO_WORKER_USERNAME already existed - skipping"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA CRYPTO to $CRYPTO_WORKER_USERNAME;" || echo "Couldn't perform usage grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to $CRYPTO_WORKER_USERNAME;" || echo "Couldn't DML perform grant"
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
+          {{ include "corda.bootstrapRbacUser" . | nindent 12 }}
+          {{ include "corda.bootstrapCryptoWorker" . | nindent 12 }}          
         - name: create-initial-crypto-worker-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}

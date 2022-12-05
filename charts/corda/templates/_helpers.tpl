@@ -449,7 +449,7 @@ Cluster DB name
 {{- end -}}
 
 {{/*
-Cluster DB credentials environment variables
+Cluster DB secret name
 */}}
 {{- define "corda.clusterDbDefaultSecretName" -}}
 {{ printf "%s-cluster-db" (include "corda.fullname" .) }}
@@ -585,7 +585,7 @@ DB SALT environment variable
       name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
       key: "salt"
       {{- end }}
-{{- end}}  
+{{- end }}  
 
 {{/*
 DB PASSPHRASE environment variable
@@ -602,3 +602,70 @@ DB PASSPHRASE environment variable
       key: "passphrase" 
       {{- end }}
 {{- end}}  
+{{/*
+Bootstrap RBAC User secret name 
+*/}}
+{{- define "corda.bootstrapRbacUserSecretName" -}}
+{{ printf "%s-rbac-user" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+RBAC User environment variable
+*/}}
+{{- define "corda.bootstrapRbacUser" -}}
+- name: RBAC_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-rbac-user" (include "corda.fullname" .)) | quote }}
+      key: "username" 
+      {{- end }}
+- name: RBAC_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify Must .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-rbac-user" (include "corda.fullname" .)) | quote }}
+      key: "password" 
+      {{- end }}
+{{- end -}}
+
+{{/*
+Bootstrap crypto Worker secret name 
+*/}}
+{{- define "corda.bootstrapCryptoWorkerSecretName" -}}
+{{ printf "%s-crypto-worker" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+Crypto worker environment variable
+*/}}
+{{- define "corda.bootstrapCryptoWorker" -}}
+- name: CRYPTO_WORKER_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-crypto-worker" (include "corda.fullname" .)) | quote }}
+      key: "username" 
+      {{- end }}
+- name: CRYPTO_WORKER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify Must .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-crypto-worker" (include "corda.fullname" .)) | quote }}
+      key: "password" 
+      {{- end }}
+{{- end -}}
+
+
