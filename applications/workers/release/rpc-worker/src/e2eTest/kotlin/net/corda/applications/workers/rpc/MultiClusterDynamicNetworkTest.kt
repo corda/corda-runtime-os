@@ -11,6 +11,7 @@ import net.corda.applications.workers.rpc.utils.generateGroupPolicy
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.onboardMembers
 import net.corda.applications.workers.rpc.utils.onboardMgm
+import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -69,6 +70,7 @@ class MultiClusterDynamicNetworkTest {
         clusterC.onboardMgm(mgm)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
+        contextLogger().info("Group policy: $memberGroupPolicy")
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.disableCLRChecks()
