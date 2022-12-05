@@ -10,6 +10,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.HoldingIdentity
 import org.mockito.kotlin.mock
@@ -21,6 +22,7 @@ class MockFlowFiberService : FlowFiberService {
     val flowCheckpoint = mock<FlowCheckpoint>()
     val flowStack = mock<FlowStack>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     val holdingIdentity = HoldingIdentity(BOB_X500_NAME, "group1")
     private val membershipGroupReader = mock<MembershipGroupReader>()
@@ -45,12 +47,14 @@ class MockFlowFiberService : FlowFiberService {
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
         whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
         whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
 
         flowFiberExecutionContext = FlowFiberExecutionContext(
             flowCheckpoint,
             sandboxGroupContext,
             holdingIdentity,
             membershipGroupReader,
+            currentSandboxGroupContext,
             emptyMap()
         )
 

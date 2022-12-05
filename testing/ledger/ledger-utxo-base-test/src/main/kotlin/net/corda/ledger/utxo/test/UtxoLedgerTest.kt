@@ -11,13 +11,13 @@ import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
+        currentSandboxGroupContext,
+        jsonMarshallingService,
+        jsonValidator,
         serializationServiceNullCfg,
         mockTransactionSignatureService(),
         transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService,
-        jsonValidator
+        wireTransactionFactory
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(

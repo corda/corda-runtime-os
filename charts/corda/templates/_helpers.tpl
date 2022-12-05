@@ -570,3 +570,35 @@ Kafka SASL init container
     readOnly: false
 {{- end}}    
 {{- end}}
+
+{{/*
+DB SALT environment variable
+*/}}
+{{- define "corda.dbSaltEnv" -}}
+- name: SALT
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "salt"
+      {{- end }}
+{{- end}}  
+
+{{/*
+DB PASSPHRASE environment variable
+*/}}
+{{- define "corda.dbPassphraseEnv" -}}
+- name: PASSPHRASE
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.passphrase.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "passphrase" 
+      {{- end }}
+{{- end}}  

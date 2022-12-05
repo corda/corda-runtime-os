@@ -28,7 +28,6 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
-    implementation project(':components:flow:flow-service')
     implementation project(':libs:sandbox')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-checkpoint-api')
