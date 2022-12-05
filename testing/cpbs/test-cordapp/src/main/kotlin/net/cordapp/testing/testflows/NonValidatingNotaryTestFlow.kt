@@ -62,7 +62,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    @Suppress("ComplexMethod")
     override fun call(requestBody: RPCRequestData): String {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
@@ -88,21 +87,14 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 1.hours.toMillis()
             }
 
-        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
-        //  need to find the notary instead of the first whose common name contains "Notary".
-        val notary = memberLookup.lookup().first {
-            it.name.commonName?.contains("notary", ignoreCase = true) ?: false
-        }
-
-        val notaryParty = Party(notary.name, notary.sessionInitiationKey)
+        val notaryParty = findNotaryParty()
 
         val stx = buildSignedTransaction(
             notaryParty,
             inputStateRefs,
             referenceStateRefs,
             outputStateCount,
-            timeWindowLowerBoundOffsetMs,
-            timeWindowUpperBoundOffsetMs,
+            Pair(timeWindowLowerBoundOffsetMs, timeWindowUpperBoundOffsetMs)
         )
 
         flowEngine.subFlow(
@@ -112,18 +104,26 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             )
         )
 
-        val result = NonValidatingNotaryTestFlowResult(
+        return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
             stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
             stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
             stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
-        )
+        ))
+    }
 
-        return jsonMarshallingService.format(result)
+    @Suspendable
+    private fun findNotaryParty(): Party {
+        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
+        //  need to find the notary instead of the first whose common name contains "Notary".
+        val notary = memberLookup.lookup().first {
+            it.name.commonName?.contains("notary", ignoreCase = true) ?: false
+        }
+
+        return Party(notary.name, notary.sessionInitiationKey)
     }
 
     @Suppress(
         "deprecation", // Can be removed once the new `sign` function on the TX builder is added
-        "LongParameterList"
     )
     @Suspendable
     private fun buildSignedTransaction(
@@ -131,22 +131,21 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         inputStateRefs: List<String>,
         referenceStateRefs: List<String>,
         outputStateCount: Int,
-        timeWindowLowerBoundOffsetMs: Long?,
-        timeWindowUpperBoundOffsetMs: Long
+        timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
         return utxoLedgerService.getTransactionBuilder()
             .setNotary(notaryServerParty)
             .addCommand(TestCommand())
             .run {
                 // Since the builder will always be copied with the new attributes, we always need to re-assign it
-                var builder = if (timeWindowLowerBoundOffsetMs != null) {
+                var builder = if (timeWindowBounds.first != null) {
                     setTimeWindowBetween(
-                        Instant.now().plusMillis(timeWindowLowerBoundOffsetMs),
-                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                        Instant.now().plusMillis(timeWindowBounds.first!!),
+                        Instant.now().plusMillis(timeWindowBounds.second)
                     )
                 } else {
                     setTimeWindowUntil(
-                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                        Instant.now().plusMillis(timeWindowBounds.second)
                     )
                 }
 
