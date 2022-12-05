@@ -17,7 +17,6 @@ dependencies {
 
     api ("io.micrometer:micrometer-core:$micrometerVersion") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
-        exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
 
