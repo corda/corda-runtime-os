@@ -142,11 +142,7 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
             }.onEachIndexed { index, pemCert -> validatePemCert(pemCert, TLS_TRUST_ROOTS, index) }
 
         override val clientAllowedCertificates: Collection<String> =
-            p2pParameters.getMandatoryStringList(CLIENT_ALLOWED_CERTIFICATES).apply {
-                if (isEmpty()) {
-                    throw BadGroupPolicyException(getMissingCertError(CLIENT_ALLOWED_CERTIFICATES))
-                }
-            }
+            p2pParameters.getOptionalStringList(CLIENT_ALLOWED_CERTIFICATES) ?: emptyList()
 
 
         override val tlsPki = p2pParameters.getMandatoryEnum(TLS_PKI) {

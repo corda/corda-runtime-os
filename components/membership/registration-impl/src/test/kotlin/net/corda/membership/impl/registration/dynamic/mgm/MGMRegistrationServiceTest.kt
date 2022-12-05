@@ -317,7 +317,7 @@ class MGMRegistrationServiceTest {
 
             val result = registrationService.register(registrationRequest, mgm, properties)
 
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+            verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
             val publishedList = capturedPublishedList.firstValue
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
