@@ -480,7 +480,7 @@ Cluster DB credentials environment variables
     secretKeyRef:
       {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
@@ -490,7 +490,7 @@ Cluster DB credentials environment variables
     secretKeyRef:
       {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "password"
@@ -530,8 +530,6 @@ Kafka SASL username and password environment variable
 - name: SASL_USERNAME
   value: {{ required "Must specify kafka.sasl.username.value or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value | quote }}
   {{- end }}
-{{- end }}
-{{- if .Values.kafka.sasl.enabled }}
   {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
 - name: SASL_PASSWORD
   valueFrom:
@@ -608,32 +606,32 @@ DB SALT and Passphrase environment variable
 {{/*
 Bootstrap RBAC User secret name 
 */}}
-{{- define "corda.RbacDbUserSecretName" -}}
+{{- define "corda.rbacDbUserSecretName" -}}
 {{ printf "%s-rbac-db-user" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
 RBAC User environment variable
 */}}
-{{- define "corda.RbacDbUserEnv" -}}
-- name: RBAC_USERNAME
+{{- define "corda.rbacDbUserEnv" -}}
+- name: RBAC_DB_USER_USERNAME
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.RbacDbUserSecretName" . | quote }}
+      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
       key: "username" 
       {{- end }}
-- name: RBAC_PASSWORD
+- name: RBAC_DB_USER_PASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.RbacDbUserSecretName" . | quote }}
+      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
       key: "password" 
       {{- end }}
 {{- end -}}
@@ -641,32 +639,32 @@ RBAC User environment variable
 {{/*
 Bootstrap crypto Worker secret name 
 */}}
-{{- define "corda.CryptoDbUserSecretName" -}}
+{{- define "corda.cryptoDbUserSecretName" -}}
 {{ printf "%s-crypto-db-user" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
 Crypto worker environment variable
 */}}
-{{- define "corda.CryptoDbUserEnv" -}}
-- name: CRYPTO_WORKER_USERNAME
+{{- define "corda.cryptoDbUserEnv" -}}
+- name: CRYPTO_DB_USER_USERNAME
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.CryptoDbUserSecretName" . | quote }}
+      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
       key: "username" 
       {{- end }}
-- name: CRYPTO_WORKER_PASSWORD
+- name: CRYPTO_DB_USER_PASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.CryptoDbUserSecretName" . | quote }}
+      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
       key: "password" 
       {{- end }}
 {{- end -}}
