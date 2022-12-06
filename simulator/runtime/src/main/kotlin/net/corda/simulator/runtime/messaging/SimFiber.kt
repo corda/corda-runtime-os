@@ -3,7 +3,6 @@ package net.corda.simulator.runtime.messaging
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ResponderFlow
@@ -58,7 +57,7 @@ interface SimFiber : Closeable, HasMemberInfos {
      *
      * @return A [Map] of previously registered instance initiating flows with protocols
      */
-    fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>?
+    fun lookupFlowInstance(member: MemberX500Name): Map<Flow, String>?
 
     /**
      * @param member The member for whom to look up the responder instance.

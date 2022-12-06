@@ -94,7 +94,7 @@ class SimFiberBase(
         member: MemberX500Name,
         injector: FlowServicesInjector
     ): FlowMessaging {
-        val instanceFlowMap = lookUpInitiatorInstance(member)
+        val instanceFlowMap = lookupFlowInstance(member)
         val protocol: String
 
         if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {

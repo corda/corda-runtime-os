@@ -146,6 +146,8 @@ class DefaultServicesInjectorTest {
         // When we create a instance responder flow
         val responder = object : ResponderFlow {
             @CordaInject
+            lateinit var flowMessaging: FlowMessaging
+            @CordaInject
             lateinit var jsonMarshallingService: JsonMarshallingService
             @CordaInject
             lateinit var signatureSpecService: SignatureSpecService
@@ -176,6 +178,7 @@ class DefaultServicesInjectorTest {
             DefaultServicesInjector(mock()).injectServices(responder, member, it)
 
             // Then it should have constructed useful things for us
+            assertNotNull(responder.flowMessaging)
             assertNotNull(responder.flowEngine)
             assertNotNull(responder.jsonMarshallingService)
             assertNotNull(responder.persistenceService)

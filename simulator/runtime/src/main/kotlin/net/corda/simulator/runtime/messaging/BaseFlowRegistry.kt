@@ -6,7 +6,7 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 
 class BaseFlowRegistry: FlowRegistry {
-    private val nodeInitiatorInstances = HashMap<MemberX500Name, HashMap<RPCStartableFlow, String>>()
+    private val nodeFlowInstances = HashMap<MemberX500Name, HashMap<Flow, String>>()
     private val nodeResponderClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
     private val nodeResponderInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
 
@@ -30,30 +30,34 @@ class BaseFlowRegistry: FlowRegistry {
         }
     }
 
-    private fun registerInitiatorInstance(
+    private fun doRegisterFlowInstance(
         initiator: MemberX500Name,
         protocol: String,
-        initiatingFlow: RPCStartableFlow
+        instanceFlow: Flow
     ) {
-        if(!nodeInitiatorInstances.contains(initiator)) {
-            nodeInitiatorInstances[initiator] = hashMapOf(initiatingFlow to protocol)
-        }else if(nodeInitiatorInstances[initiator]!![initiatingFlow] == null){
-            nodeInitiatorInstances[initiator]!![initiatingFlow] = protocol
+        if(!nodeFlowInstances.contains(initiator)) {
+            nodeFlowInstances[initiator] = hashMapOf(instanceFlow to protocol)
+        }else if(nodeFlowInstances[initiator]!![instanceFlow] == null){
+            nodeFlowInstances[initiator]!![instanceFlow] = protocol
         }else{
             throw IllegalStateException("Member \"$initiator\" has already registered " +
                     "flow instance for protocol \"$protocol\"")
         }
     }
 
+
     override fun registerFlowInstance(member: MemberX500Name, protocol: String, instanceFlow: Flow) {
-        if(instanceFlow is ResponderFlow) {
-            registerResponderInstance(member, protocol, instanceFlow)
-        }else if(instanceFlow is RPCStartableFlow){
-            registerInitiatorInstance(member, protocol, instanceFlow)
-        }else {
-            "$instanceFlow is neither a  ${RPCStartableFlow::class.java}" +
-                    "nor a ${ResponderFlow::class.java}"
+
+        if(!(instanceFlow is ResponderFlow) && !(instanceFlow is RPCStartableFlow)){
+            throw IllegalArgumentException("$instanceFlow is neither a  ${RPCStartableFlow::class.java}" +
+                    "nor a ${ResponderFlow::class.java}")
         }
+
+        doRegisterFlowInstance(member, protocol, instanceFlow)
+
+        if(instanceFlow is ResponderFlow)
+            registerResponderInstance(member, protocol, instanceFlow)
+
     }
 
 
@@ -78,8 +82,8 @@ class BaseFlowRegistry: FlowRegistry {
         return nodeResponderClasses[member]?.get(protocol)
     }
 
-    override fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>? {
-        return nodeInitiatorInstances[member]
+    override fun lookupFlowInstance(member: MemberX500Name): Map<Flow, String>? {
+        return nodeFlowInstances[member]
     }
 
     override fun lookUpResponderInstance(member: MemberX500Name, protocol: String): ResponderFlow? {

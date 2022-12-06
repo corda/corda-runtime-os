@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 
@@ -40,7 +39,7 @@ interface FlowRegistry{
      *
      * @return A [Map] of previously registered instance initiating flows with protocols
      */
-    fun lookUpInitiatorInstance(member: MemberX500Name): Map<RPCStartableFlow, String>?
+    fun lookupFlowInstance(member: MemberX500Name): Map<Flow, String>?
 
     /**
      * @param member The member for whom to look up the responder instance.

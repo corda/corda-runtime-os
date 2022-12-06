@@ -1,6 +1,8 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
@@ -14,18 +16,27 @@ class BaseFlowRegistryTest {
     private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
 
     @Test
-    fun `should look up instance initiating flows for a given member`() {
+    fun `should look up instance flows for a given member`() {
         // Given a fiber with a concrete implementation registered for a protocol
         val flowRegistry = BaseFlowRegistry()
         val flow = mock<RPCStartableFlow>()
+        val responder = mock<ResponderFlow>()
+        val nonFlow = DummyFlow()
         val protocol = "protocol-1"
         flowRegistry.registerFlowInstance(memberA, protocol, flow)
+        flowRegistry.registerFlowInstance(memberB, protocol, responder)
+
+        assertThrows<IllegalArgumentException>{
+            flowRegistry.registerFlowInstance(memberA, protocol, nonFlow)
+        }
 
         // When we look up an instance of a flow
-        val result = flowRegistry.lookUpInitiatorInstance(memberA)
+        val result = flowRegistry.lookupFlowInstance(memberA)
+        val result1 = flowRegistry.lookupFlowInstance(memberB)
 
         // Then it should successfully return it
         MatcherAssert.assertThat(result, Matchers.`is`(hashMapOf(flow to protocol)))
+        MatcherAssert.assertThat(result1, Matchers.`is`(hashMapOf(responder to protocol)))
     }
 
     @Test
@@ -98,3 +109,5 @@ class BaseFlowRegistryTest {
         }
     }
 }
+
+class DummyFlow: Flow
