@@ -29,11 +29,11 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
-import net.corda.libs.virtualnode.datamodel.HoldingIdentityRepository
-import net.corda.libs.virtualnode.datamodel.HoldingIdentityRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeRepository
-import net.corda.libs.virtualnode.datamodel.VirtualNodeRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
