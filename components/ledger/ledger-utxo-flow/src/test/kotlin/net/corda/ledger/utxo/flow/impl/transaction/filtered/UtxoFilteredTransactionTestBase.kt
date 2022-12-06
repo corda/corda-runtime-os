@@ -25,9 +25,12 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 
 open class UtxoFilteredTransactionTestBase {
     companion object {
+        val SIGNATORY_1 = "signatory 1".toByteArray()
+        val SIGNATORY_2 = "signatory 2".toByteArray()
         val STATE_REF_1 = "state ref 1".toByteArray()
         val STATE_REF_2 = "state ref 2".toByteArray()
         val STATE_REF_3 = "state ref 3".toByteArray()
@@ -43,6 +46,9 @@ open class UtxoFilteredTransactionTestBase {
         val inputId = SecureHash.parse("SHA-256:1234567890")
         val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), mock())
         val timeWindow = mock<TimeWindow>()
+
+        val signerKey1 = mock<PublicKey>()
+        val signerKey2 = mock<PublicKey>()
 
         val outputInfo1 = UtxoOutputInfoComponent(null, notary, "", "")
         val outputInfo2 = UtxoOutputInfoComponent(3, notary, "", "")
@@ -68,6 +74,8 @@ open class UtxoFilteredTransactionTestBase {
     fun beforeEach() {
         whenever(serializationService.deserialize(NOTARY, Party::class.java)).thenReturn(notary)
         whenever(serializationService.deserialize(NOTARY, Any::class.java)).thenReturn(notary)
+        whenever(serializationService.deserialize(SIGNATORY_1, PublicKey::class.java)).thenReturn(signerKey1)
+        whenever(serializationService.deserialize(SIGNATORY_2, PublicKey::class.java)).thenReturn(signerKey2)
         whenever(serializationService.deserialize(TIME_WINDOW, TimeWindow::class.java)).thenReturn(timeWindow)
         whenever(serializationService.deserialize(TIME_WINDOW, Any::class.java)).thenReturn(timeWindow)
         whenever(serializationService.deserialize(OUTPUT_INFO_1, UtxoOutputInfoComponent::class.java)).thenReturn(
@@ -91,6 +99,7 @@ open class UtxoFilteredTransactionTestBase {
             jsonValidator,
             componentGroupLists = listOf(
                 listOf(NOTARY, TIME_WINDOW),
+                listOf(SIGNATORY_1, SIGNATORY_2),
                 listOf(OUTPUT_INFO_1, OUTPUT_INFO_2),
                 listOf(COMMAND_INFO),
                 emptyList(),
