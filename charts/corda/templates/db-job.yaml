@@ -122,16 +122,7 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            - name: INITIAL_ADMIN_USER_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
-            - name: INITIAL_ADMIN_USER_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
-                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+            {{ include "corda.initialAdminUserSecretEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-rpc-admin
           image: {{ include "corda.dbClientImage" . }}

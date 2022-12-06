@@ -330,6 +330,22 @@ password
 {{- end -}}
 {{- end -}}
 
+{{/*
+Initial admin secret environment variable
+*/}}
+{{- define "corda.initialAdminUserSecretEnv" -}}
+- name: INITIAL_ADMIN_USER_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
+      key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+- name: INITIAL_ADMIN_USER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
+      key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+{{- end -}}
+
 
 {{/*
 Worker Kafka arguments
