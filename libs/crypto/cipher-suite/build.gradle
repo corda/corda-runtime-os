@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
+    id 'corda.javadoc-generation'
 }
 
 ext {
