@@ -47,28 +47,6 @@ class UtxoFinalityFlow(
 
         // TODO Check there is at least one state
 
-        // Check if the sessions' counterparties are all available and have keys.
-        val sessionPublicKeys = sessions.map { session ->
-            val member = memberLookup.lookup(session.counterparty)
-                ?: throw CordaRuntimeException(
-                    "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
-                )
-            session to member
-        }.associate { (session, memberInfo) ->
-            session to memberInfo.ledgerKeys.ifEmpty {
-                throw CordaRuntimeException(
-                    "A session with ${session.counterparty} exists but the member does not have any active ledger keys"
-                )
-            }
-        }
-
-        // TODO [CORE-8655] Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSignatories = signedTransaction.getMissingSignatories()
-        // Check if all missing signing keys are covered by the sessions.
-        require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
-            "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
-        }
-
         persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
@@ -96,13 +74,6 @@ class UtxoFinalityFlow(
 
             log.debug { "Received signatures from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
-            requireCorrectReceivedSigningKeys(
-                signatures,
-                missingSignatories,
-                ledgerKeys = sessionPublicKeys[session]!!,
-                session
-            )
-
             signatures.forEach { signature ->
                 try {
                     transactionSignatureService.verifySignature(signedTransaction.id, signature)
@@ -123,7 +94,7 @@ class UtxoFinalityFlow(
                 log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }
-
+        signedByParticipantsTransaction.verifySignatures()
         persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
@@ -144,21 +115,5 @@ class UtxoFinalityFlow(
         }
 
         return signedByParticipantsTransaction
-    }
-
-    private fun requireCorrectReceivedSigningKeys(
-        signatures: List<DigitalSignatureAndMetadata>,
-        missingSignatories: Set<PublicKey>,
-        ledgerKeys: List<PublicKey>,
-        session: FlowSession
-    ) {
-        val receivedSigningKeys = signatures.map { it.by }
-        val expectedSigningKeys = missingSignatories.intersect(ledgerKeys.toSet())
-        if (receivedSigningKeys.toSet() != expectedSigningKeys) {
-            throw CordaRuntimeException(
-                "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                        "Expected: $expectedSigningKeys But received: $receivedSigningKeys"
-            )
-        }
     }
 }
