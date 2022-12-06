@@ -15,7 +15,6 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-ledger-consensual'
     cordaProvided 'net.corda:corda-ledger-utxo'
     cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-notary-plugin'

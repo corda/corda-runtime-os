@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
