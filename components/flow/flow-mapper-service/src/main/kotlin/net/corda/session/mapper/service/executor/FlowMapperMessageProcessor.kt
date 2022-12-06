@@ -55,8 +55,8 @@ class FlowMapperMessageProcessor(
     /**
      * Only allow events to be processed when one of the following criteria is met:
      * - the messages are for a new state.
-     * - if it is an existing state that is set to [FlowMapperStateType.OPEN],
-     * - it is not a [FlowEvent]
+     * - the state is set to [FlowMapperStateType.OPEN],
+     * - it is not a [FlowEvent] i.e it is a cleanup event
      * @param state the current state for this mapper event
      * @param mapperEvent the mapper event
      * @return true if mapper state is valid for flow event processing. False if the state is not valid for a flow event or if it is not
