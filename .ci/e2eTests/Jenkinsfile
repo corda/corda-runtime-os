@@ -76,8 +76,8 @@ pipeline {
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         AURORA_DB_CREDENTIALS = credentials('openshift-test-aurora-db-credentials')
-        AURORA_DB_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
-        AURORA_DB_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
+        AURORA_DB_USERNAME = "${env.AURORA_DB_CREDENTIALS_USR}"
+        AURORA_DB_PASSWORD = "${env.AURORA_DB_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("openshift-test-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"

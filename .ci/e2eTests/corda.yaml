@@ -55,6 +55,21 @@ db:
           key: "password"
     host: prereqs-rds-aurora-postgresql
 
+db:
+  cluster:
+    username: 
+      valueFrom:
+        secretKeyRef:
+          name: "postgresql"
+          key: "username"
+    password: 
+      valueFrom:
+        secretKeyRef:
+          name: "postgresql"
+          key: "password"
+    database: alice
+    host: prereqs-rds-aurora-postgresql
+
 bootstrap:
   serviceAccount:
     name: "corda-privileged"
