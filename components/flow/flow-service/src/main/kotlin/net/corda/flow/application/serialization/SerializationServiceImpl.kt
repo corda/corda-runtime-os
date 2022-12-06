@@ -1,7 +1,8 @@
 package net.corda.flow.application.serialization
 
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
@@ -19,8 +20,8 @@ import java.io.NotSerializableException
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext
 ) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -29,9 +30,7 @@ class SerializationServiceImpl @Activate constructor(
 
     private val serializationService
         get(): SerializationService {
-            return flowFiberService.getExecutingFiber().getExecutionContext().run {
-                sandboxGroupContext.amqpSerializer
-            }
+            return currentSandboxGroupContext.get().get(AMQP_SERIALIZATION_SERVICE, SerializationService::class.java )!!
         }
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
