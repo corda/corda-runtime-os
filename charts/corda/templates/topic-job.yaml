@@ -57,8 +57,7 @@ spec:
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
-          {{- include "corda.kafkaSaslPassword" . | nindent 12 }}
-          {{- include "corda.kafkaSaslUsername" . | nindent 12 }}
+          {{- include "corda.kafkaSaslUsernameAndPasswordEnv" . | nindent 12 }}
           {{- include "corda.kafkaTlsPassword" . | nindent 12 }}
           command:
             - /bin/bash
