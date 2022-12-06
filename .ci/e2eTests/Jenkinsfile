@@ -113,6 +113,7 @@ pipeline {
                     kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
                     kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred-prereqs --docker-server=docker-remotes.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
                     kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred --docker-server=corda-os-docker.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
+                    kubectl -n "${NAMESPACE}" create -f .ci/e2eTests/ocp-prereqs.yaml
                 '''.stripIndent()
             }
         }
@@ -242,7 +243,9 @@ def portForwarding(def name, def port, def portMapping = null){
 
 def deployCorda(def name, def namespace, def base_image){
     sh """\
-       helm install corda-$name ./charts/corda \
+        helm install $name-db oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
+           -f .ci/e2eTests/prereqs.yaml --set kafka.enabled=false -n $namespace --wait --timeout 600s
+        helm install corda-$name ./charts/corda \
            -f .ci/e2eTests/corda.yaml \
            --set image.tag=$base_image \
            --set nameOverride=$name \
