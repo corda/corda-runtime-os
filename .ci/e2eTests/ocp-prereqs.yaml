@@ -2,13 +2,11 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: corda-privileged
-  namespace: e2e-test
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: corda-privileged
-  namespace: e2e-test
 rules:
   - verbs:
       - use
@@ -23,11 +21,9 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: corda-privileged
-  namespace: e2e-test
 subjects:
   - kind: ServiceAccount
     name: corda-privileged
-    namespace: e2e-test
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
