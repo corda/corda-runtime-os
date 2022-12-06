@@ -45,7 +45,8 @@ class UtxoFilteredTransactionImpl(
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
                 is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(it.size)
                 is UtxoFilteredData.Audit -> {
-                    when (val stateInfos = fetchFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
+                    when (val stateInfos =
+                        fetchFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
                         is UtxoFilteredData.Audit -> {
                             val values = it.values.entries.associateBy(
                                 keySelector = { entry -> entry.key },
@@ -59,20 +60,21 @@ class UtxoFilteredTransactionImpl(
                             )
                             FilteredDataAuditImpl(it.size, values)
                         }
+
                         else ->
                             throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
                     }
                 }
+
                 else ->
                     throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
 
-
     override val referenceInputStateRefs: UtxoFilteredData<StateRef>
         get() = fetchFilteredData(UtxoComponentGroup.REFERENCES.ordinal)
     override val signatories: UtxoFilteredData<PublicKey>
-        get() = TODO("Not yet implemented")
+        get() = fetchFilteredData(UtxoComponentGroup.SIGNATORIES.ordinal)
     override val timeWindow: TimeWindow?
         get() = filteredTransaction
             .getComponentGroupContent(UtxoComponentGroup.NOTARY.ordinal)
