@@ -13,6 +13,7 @@ import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
@@ -31,6 +32,13 @@ class MemberOpsServiceTest {
                 any(), any(), any<RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse>>()
             )
         } doReturn subscription
+        on {
+            createCompactedSubscription<String, HostedIdentityEntry>(
+                any(),
+                any(),
+                any()
+            )
+        } doReturn mock()
     }
 
     private val registrationProxy: RegistrationProxy = mock()

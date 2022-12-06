@@ -74,12 +74,13 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
-class MemberOpsServiceProcessor(
+internal class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
     private val certificatesClient: CertificatesClient,
+    private val allowedClientCertificates: AllowMgmClientCertificates,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     publisherFactory: ()-> Publisher,
     private val clock: Clock = UTCClock(),
@@ -427,7 +428,8 @@ class MemberOpsServiceProcessor(
             val tlsType: String = persistedGroupPolicyProperties.parse(PropertyKeys.P2P_TLS_TYPE)
             // YIFT: This should only be the MGM certificate!
             val clientAllowedCertificates = if (tlsType == "MUTUAL") {
-                certificatesClient.listAllowedCertificates(holdingIdentity.shortHash)
+                val mgmCertificates = allowedClientCertificates.getMgmCertificates(mgm.holdingIdentity)
+                certificatesClient.listAllowedCertificates(holdingIdentity.shortHash) + mgmCertificates
             } else {
                 emptyList()
             }

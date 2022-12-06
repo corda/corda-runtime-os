@@ -45,7 +45,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "fileFormatVersion" to 1,
             "groupId" to "CREATE_ID",
             "registrationProtocol" to "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
+            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl",
         ).let { groupPolicyMap ->
             ByteArrayOutputStream().use { outputStream ->
                 json.writeValue(outputStream, groupPolicyMap)

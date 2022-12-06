@@ -157,6 +157,7 @@ class MemberOpsServiceProcessorTest {
         membershipQueryClient,
         mock(),
         mock(),
+        mock(),
         { mock() },
         clock,
         mock()

@@ -66,6 +66,7 @@ class MemberOpsServiceImpl @Activate constructor(
         const val CLIENT_NAME = "membership.ops.rpc"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
+        const val ALLOWED_RESOURCE = "MemberOpsService.ALLOWED_RESOURCE"
         const val CONFIG_HANDLE = "MemberOpsService.CONFIG_HANDLE"
         const val COMPONENT_HANDLE = "MemberOpsService.COMPONENT_HANDLE"
     }
@@ -126,7 +127,7 @@ class MemberOpsServiceImpl @Activate constructor(
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
-                coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE))
+                coordinator.closeManagedResources(setOf(SUBSCRIPTION_RESOURCE, CONFIG_HANDLE, ALLOWED_RESOURCE))
             }
         }
     }
@@ -164,6 +165,14 @@ class MemberOpsServiceImpl @Activate constructor(
     private fun recreateSubscription(coordinator: LifecycleCoordinator, messagingConfig: SmartConfig) {
         coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
             logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
+            val allowed = AllowMgmClientCertificates(
+                subscriptionFactory,
+                messagingConfig
+            )
+            allowed.start()
+            coordinator.createManagedResource(ALLOWED_RESOURCE) {
+                allowed
+            }
             val subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -178,6 +187,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     membershipGroupReaderProvider,
                     membershipQueryClient,
                     certificatesClient,
+                    allowed,
                     cordaAvroSerializationFactory,
                     {
                         publisherFactory.createPublisher(PublisherConfig("publish allowed certificates"), messagingConfig)
