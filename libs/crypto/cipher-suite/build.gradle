@@ -8,7 +8,6 @@ ext {
     releasable = true
 }
 
-
 description 'Corda Cipher Suite'
 
 dependencies {
