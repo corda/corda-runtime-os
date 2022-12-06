@@ -1,12 +1,15 @@
 package net.corda.cli.plugins.mgm
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import kong.unirest.Config
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
+import kong.unirest.UnirestInstance
 import kong.unirest.json.JSONObject
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -15,13 +18,66 @@ import picocli.CommandLine.Parameters
 import java.io.File
 import java.io.InputStream
 import java.net.ServerSocket
+import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 abstract class BaseOnboard : Runnable {
-    private companion object {
-        const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
-        const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
-        const val P2P_TLS_CLIENT_CERTIFICATE_ALIAS = "p2p-tls-cert-client"
+    companion object {
+        private const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
+        private const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
+        private const val P2P_TLS_CLIENT_CERTIFICATE_ALIAS = "p2p-tls-cert-client"
+
+        @JvmStatic
+        protected fun getUrl(clusterName: String?, rpcWorkerDeploymentName: String) : String {
+            val rpcPort = if (clusterName != null) {
+                val port = ServerSocket(0).use {
+                    it.localPort
+                }
+                ProcessBuilder().command(
+                    "kubectl",
+                    "port-forward",
+                    "--namespace",
+                    clusterName,
+                    "deployment/$rpcWorkerDeploymentName",
+                    "$port:8888"
+                )
+                    .inheritIO()
+                    .start().also { process ->
+                        Runtime.getRuntime().addShutdownHook(
+                            thread(false) {
+                                process.destroy()
+                            }
+                        )
+                    }
+                Thread.sleep(2000)
+                port
+            } else {
+                8888
+            }
+
+            return "https://localhost:$rpcPort/api/v1"
+        }
+
+        @JvmStatic
+        protected fun getPassword(clusterName: String?) : String {
+            if(clusterName == null) {
+                return "admin"
+            }
+            val getSecret = ProcessBuilder().command(
+                "kubectl",
+                "get",
+                "secret",
+                "corda-initial-admin-user",
+                "--namespace",
+                clusterName,
+                "-o",
+                "go-template={{ .data.password | base64decode }}"
+            ).start()
+            if (getSecret.waitFor() != 0) {
+                throw OnboardException("Can not get admin password. ${getSecret.errorStream.reader().readText()}")
+            }
+            return getSecret.inputStream.reader().readText()
+        }
     }
 
     @Parameters(
@@ -54,54 +110,26 @@ abstract class BaseOnboard : Runnable {
     }
 
     private val rpcPassword by lazy {
-        if (cordaClusterName != null) {
-            val getSecret = ProcessBuilder().command(
-                "kubectl",
-                "get",
-                "secret",
-                "corda-initial-admin-user",
-                "--namespace",
-                cordaClusterName,
-                "-o",
-                "go-template={{ .data.password | base64decode }}"
-            ).start()
-            if (getSecret.waitFor() != 0) {
-                throw OnboardException("Can not get admin password. ${getSecret.errorStream.reader().readText()}")
-            }
-            getSecret.inputStream.reader().readText()
-        } else {
-            "admin"
-        }
+        getPassword(cordaClusterName)
     }
 
-    private val url by lazy {
-        val rpcPort = if (cordaClusterName != null) {
-            val port = ServerSocket(0).use {
-                it.localPort
-            }
-            ProcessBuilder().command(
-                "kubectl",
-                "port-forward",
-                "--namespace",
-                cordaClusterName,
-                "deployment/$rpcWorkerDeploymentName",
-                "$port:8888"
-            )
-                .inheritIO()
-                .start().also { process ->
-                    Runtime.getRuntime().addShutdownHook(
-                        thread(false) {
-                            process.destroy()
-                        }
-                    )
-                }
-            Thread.sleep(2000)
-            port
-        } else {
-            8888
-        }
+    protected fun groupPolicyCache(groupPolicyFile: File): File =
+            File(
+                File(
+                    File(
+                        File(
+                            System.getProperty(
+                                "user.home"
+                            )
+                        ),
+                        ".corda"
+                    ),
+                    "mgm-cluster-names"
+                ),
+                "${listOf(groupPolicyFile).hashCode()}.json")
 
-        "https://localhost:$rpcPort/api/v1"
+    private val url by lazy {
+        getUrl(cordaClusterName, rpcWorkerDeploymentName)
     }
 
     protected fun setupClient() {
@@ -180,6 +208,19 @@ abstract class BaseOnboard : Runnable {
             }
     }
 
+    protected fun Collection<File>.hash(): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        this.forEach { file ->
+            digest.update(file.readBytes())
+        }
+        return digest
+            .digest()
+            .toBase64()
+            .replace('/', '.')
+            .replace('+', '-')
+            .replace('=', '_')
+    }
+
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
         Unirest.post("/hsm/soft/$holdingId/$category").asJson().bodyOrThrow()
         val response = Unirest
@@ -215,7 +256,7 @@ abstract class BaseOnboard : Runnable {
     }
 
     @Suppress("ComplexMethod")
-    protected fun createTlsKeyIdNeeded() {
+    protected fun createTlsKeyIdNeeded(mgmUrlGetter: () -> Triple<String, String, String>?) {
         val keys = Unirest.get("/keys/p2p?category=TLS")
             .asJson()
         if (!keys.bodyOrThrow().`object`.isEmpty) {
@@ -247,11 +288,24 @@ abstract class BaseOnboard : Runnable {
         }
 
         if (mutualTls) {
+            val mgmUrlAndPassword = mgmUrlGetter()
+            if (mgmUrlAndPassword != null) {
+                val (url, password, mgmHolding) = mgmUrlAndPassword
+                val mgmUnirest = UnirestInstance(
+                    Config()
+                        .verifySsl(false)
+                        .setDefaultBasicAuth("admin", password)
+                        .defaultBaseUrl(url)
+                )
+                mgmUnirest.put("/mgm/$mgmHolding/allow-client/$x500Name")
+                    .asJson()
+                    .bodyOrThrow()
+            }
+
             val generateClientCsrResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
                 .body(
                     mapOf(
                         "x500Name" to x500Name,
-                        "subjectAlternativeNames" to listOf("www.nop.org")
                     )
                 ).asString()
             val clientCsr = generateClientCsrResponse.bodyOrThrow().reader().use { reader ->

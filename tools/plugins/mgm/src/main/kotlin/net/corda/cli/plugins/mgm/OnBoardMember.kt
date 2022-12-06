@@ -1,14 +1,13 @@
 package net.corda.cli.plugins.mgm
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import kong.unirest.Unirest
 import kong.unirest.json.JSONArray
 import kong.unirest.json.JSONObject
-import net.corda.v5.base.util.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.security.MessageDigest
 import java.util.UUID
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
@@ -60,6 +59,45 @@ class OnBoardMember : Runnable, BaseOnboard() {
         description = ["The X500 name of the member. Default to a random member name"]
     )
     override var x500Name: String = "O=${UUID.randomUUID()}, L=London, C=GB"
+
+    @Option(
+        names = ["--mgm-cluster-name"],
+        description = ["The MGM cluster name. Default to a cached value. Valid only in mutual TLS"]
+    )
+    var mgmClusterName: String? = null
+
+    @Option(
+        names = ["--mgm-holding-id"],
+        description = ["The MGM Holding ID. Default to a cached value. Valid only in mutual TLS"]
+    )
+    var mgmHoldingId: String? = null
+
+    private fun extractMgmClusterNameAndDeploymentName(): Triple<String?, String, String> {
+        val mgmClusterNameCache = groupPolicyCache(groupPolicyFile)
+        if (!mgmClusterNameCache.canRead()) {
+            throw OnboardException("Can not find cache MGM cluster name. Please use --mgm-cluster-name")
+        }
+        val cache = json.readValue<Map<String, Any?>>(mgmClusterNameCache)
+        val clusterName = cache["cordaClusterName"] as? String
+        val deploymentName = cache["rpcWorkerDeploymentName"] as? String ?: "corda-rpc-worker"
+        val mgmHoldingId = mgmHoldingId ?:
+            cache["holdingId"] as? String ?:
+            throw OnboardException("Can not find mgm Holding ID. Please set --mgm-holding-id")
+        return Triple(clusterName, deploymentName, mgmHoldingId)
+    }
+
+    private val mgmUrlAndPassword by lazy {
+        val (clusterName, deploymentName, holdingId) = mgmClusterName?.let {
+            Triple(
+                it,
+                rpcWorkerDeploymentName,
+                mgmHoldingId ?: throw OnboardException("Can not find mgm Holding ID. Please set --mgm-holding-id")
+            )
+        } ?: extractMgmClusterNameAndDeploymentName()
+        val url = getUrl(clusterName, deploymentName)
+        val password = getPassword(clusterName)
+        Triple(url, password, holdingId)
+    }
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
@@ -161,19 +199,6 @@ class OnBoardMember : Runnable, BaseOnboard() {
         }
     }
 
-    private fun Collection<File>.hash(): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        this.forEach { file ->
-            digest.update(file.readBytes())
-        }
-        return digest
-            .digest()
-            .toBase64()
-            .replace('/', '.')
-            .replace('+', '-')
-            .replace('=', '_')
-    }
-
     private fun copyJar(source: JarInputStream, target: JarOutputStream) {
         while (true) {
             val entry = source.nextJarEntry ?: return
@@ -213,11 +238,17 @@ class OnBoardMember : Runnable, BaseOnboard() {
         println("This sub command should only be used in for internal development")
         println("On-boarding member $x500Name")
 
+        if (mutualTls) {
+            println("Whitelist certificate")
+        }
+
         setupClient()
 
         disableClrChecks()
 
-        createTlsKeyIdNeeded()
+        createTlsKeyIdNeeded {
+            mgmUrlAndPassword
+        }
 
         setupNetwork()
 

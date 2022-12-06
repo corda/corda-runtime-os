@@ -88,6 +88,19 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 json.readTree(response.bodyOrThrow())
             )
         println("Group policy file created at $groupPolicyFile")
+        if (mutualTls) {
+            val mgmClusterNameCache = groupPolicyCache(groupPolicyFile)
+            mgmClusterNameCache.parentFile.mkdirs()
+            json.writerWithDefaultPrettyPrinter()
+                .writeValue(
+                    mgmClusterNameCache,
+                    mapOf(
+                        "cordaClusterName" to cordaClusterName,
+                        "rpcWorkerDeploymentName" to rpcWorkerDeploymentName,
+                        "holdingId" to holdingId,
+                    )
+                )
+        }
     }
 
     private val tlsTrustRoot by lazy {
@@ -136,7 +149,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
         setupClient()
 
-        createTlsKeyIdNeeded()
+        createTlsKeyIdNeeded {
+            null
+        }
 
         disableClrChecks()
 
