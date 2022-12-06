@@ -576,8 +576,8 @@ Kafka SASL init container
   - mountPath: "/etc/config"
     name: "jaas-conf"
     readOnly: false
-{{- end}}    
-{{- end}}
+{{- end }}    
+{{- end }}
 
 {{/*
 DB SALT and Passphrase environment variable
