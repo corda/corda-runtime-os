@@ -111,8 +111,8 @@ pipeline {
                     kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
                     kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
                     kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
-                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred-prereqs --docker-server=docker-remotes.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
-                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred --docker-server=corda-os-docker.software.r3.com --docker-username=${env.CORDA_ARTIFACTORY_USERNAME} --docker-password=${env.CORDA_ARTIFACTORY_PASSWORD}
+                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred-prereqs --docker-server=docker-remotes.software.r3.com --docker-username=${CORDA_ARTIFACTORY_USERNAME} --docker-password=${CORDA_ARTIFACTORY_PASSWORD}
+                    kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred --docker-server=corda-os-docker.software.r3.com --docker-username=${CORDA_ARTIFACTORY_USERNAME} --docker-password=${CORDA_ARTIFACTORY_PASSWORD}
                     kubectl -n "${NAMESPACE}" create -f .ci/e2eTests/ocp-prereqs.yaml
                 '''.stripIndent()
             }
