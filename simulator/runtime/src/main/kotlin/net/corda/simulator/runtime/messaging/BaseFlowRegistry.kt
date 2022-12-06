@@ -33,12 +33,12 @@ class BaseFlowRegistry: FlowRegistry {
     private fun registerInitiatorInstance(
         initiator: MemberX500Name,
         protocol: String,
-        initatingFlow: RPCStartableFlow
+        initiatingFlow: RPCStartableFlow
     ) {
         if(!nodeInitiatorInstances.contains(initiator)) {
-            nodeInitiatorInstances[initiator] = hashMapOf(initatingFlow to protocol)
-        }else if(nodeInitiatorInstances[initiator]!![initatingFlow] == null){
-            nodeInitiatorInstances[initiator]!![initatingFlow] = protocol
+            nodeInitiatorInstances[initiator] = hashMapOf(initiatingFlow to protocol)
+        }else if(nodeInitiatorInstances[initiator]!![initiatingFlow] == null){
+            nodeInitiatorInstances[initiator]!![initiatingFlow] = protocol
         }else{
             throw IllegalStateException("Member \"$initiator\" has already registered " +
                     "flow instance for protocol \"$protocol\"")

@@ -78,7 +78,7 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService
 
     /**
-     * Gets the existing signing service for the given member, or creates one if it does not exist.
+     * Creates a signing service for the member
      *
      * @param member The member for whom to create the persistence service.
      * @return The [SigningService] for the given member.
