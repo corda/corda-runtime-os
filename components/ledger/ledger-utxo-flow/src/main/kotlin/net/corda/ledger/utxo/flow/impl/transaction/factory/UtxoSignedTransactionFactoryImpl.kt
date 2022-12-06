@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
@@ -61,6 +62,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
+
+        verifyTransaction(wireTransaction)
+
+        // Everything is OK, we can sign the transaction.
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
         return UtxoSignedTransactionImpl(
@@ -153,6 +158,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                     serializationService.serialize(it).bytes
                 }
             }
-        }
+    }
+
+    private fun verifyTransaction(wireTransaction: WireTransaction){
+        val ledgerTransactionToCheck = UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+        UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }
