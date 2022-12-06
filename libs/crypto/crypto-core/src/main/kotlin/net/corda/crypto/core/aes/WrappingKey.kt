@@ -1,7 +1,7 @@
 package net.corda.crypto.core.aes
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.ManagedKey
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec

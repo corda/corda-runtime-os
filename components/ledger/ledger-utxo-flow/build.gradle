@@ -20,8 +20,8 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation 'net.corda:corda-ledger-utxo'
-    implementation 'net.corda:corda-cipher-suite'
     implementation 'net.corda:corda-topic-schema'
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')

@@ -15,7 +15,6 @@ dependencies {
 
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-base'
-    implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-db-schema'
     implementation "net.corda:corda-topic-schema"
@@ -33,6 +32,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(":libs:configuration:configuration-datamodel")
     implementation project(':libs:configuration:configuration-merger')
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')

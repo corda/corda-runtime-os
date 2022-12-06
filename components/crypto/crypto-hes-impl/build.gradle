@@ -12,9 +12,9 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "net.corda:corda-cipher-suite"
     api project(":components:crypto:crypto-hes-core-impl")
     api project(":components:crypto:crypto-hes")
+    api project(':libs:crypto:cipher-suite')
 
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-component-core-impl")

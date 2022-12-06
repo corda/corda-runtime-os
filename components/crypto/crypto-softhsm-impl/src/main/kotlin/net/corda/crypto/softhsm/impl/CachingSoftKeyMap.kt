@@ -3,11 +3,11 @@ package net.corda.crypto.softhsm.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.softhsm.PrivateKeyMaterial
 import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
-import net.corda.v5.cipher.suite.KeyMaterialSpec
 import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey
