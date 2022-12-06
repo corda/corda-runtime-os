@@ -2,8 +2,8 @@ package net.corda.session.mapper.service.executor
 
 import com.typesafe.config.ConfigValueFactory
 import java.time.Instant
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -25,7 +25,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class FlowMapperProcessorTest {
+class FlowMapperMessageProcessorTest {
 
     private val flowMapperEventExecutor: FlowMapperEventExecutor = mock<FlowMapperEventExecutor>().apply {
         whenever(execute()).thenReturn(FlowMapperResult(null, emptyList()))
@@ -51,11 +51,8 @@ class FlowMapperProcessorTest {
         )
     }
 
-    private fun buildSessionEvent(timestamp: Instant = Instant.now().plusSeconds(600) ) : FlowEvent {
-        return FlowEvent.newBuilder()
-            .setPayload(buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionInit(), 0, listOf(), timestamp))
-            .setFlowId("flowId")
-            .build()
+    private fun buildSessionEvent(timestamp: Instant = Instant.now().plusSeconds(600) ) : SessionEvent {
+        return buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionInit(), 0, listOf(), timestamp)
     }
 
     @Test
@@ -65,13 +62,13 @@ class FlowMapperProcessorTest {
     }
 
     @Test
-    fun `when state is null new flow events are processed`() {
+    fun `when state is null new session events are processed`() {
         flowMapperMessageProcessor.onNext(null, buildMapperEvent(buildSessionEvent()))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
     }
 
     @Test
-    fun `when state is OPEN new flow events are processed`() {
+    fun `when state is OPEN new session events are processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent()))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
     }
@@ -90,7 +87,7 @@ class FlowMapperProcessorTest {
     }
 
     @Test
-    fun `when state is CLOSING new flow events are not processed`() {
+    fun `when state is CLOSING new session events are not processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.CLOSING), buildMapperEvent(buildSessionEvent()))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
     }

@@ -2,9 +2,10 @@ package net.corda.session.mapper.service.executor
 
 import java.time.Instant
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -56,14 +57,15 @@ class FlowMapperMessageProcessor(
      * Only allow events to be processed when one of the following criteria is met:
      * - the messages are for a new state.
      * - the state is set to [FlowMapperStateType.OPEN],
-     * - it is not a [FlowEvent] i.e it is a cleanup event
+     * - it is a cleanup event
      * @param state the current state for this mapper event
      * @param mapperEvent the mapper event
-     * @return true if mapper state is valid for flow event processing. False if the state is not valid for a flow event or if it is not
-     * a [FlowEvent]
+     * @return true if mapper state is valid for processing flow events or if it is a cleanup event. False otherwise.
+     * a [SessionEvent]
      */
     private fun isValidState(state: FlowMapperState?, mapperEvent: FlowMapperEvent): Boolean {
-        return state == null || state.status == FlowMapperStateType.OPEN || mapperEvent.payload !is FlowEvent
+        return state == null || state.status == FlowMapperStateType.OPEN
+                || mapperEvent.payload is ExecuteCleanup || mapperEvent.payload is ScheduleCleanup
     }
 
     /**
@@ -74,14 +76,11 @@ class FlowMapperMessageProcessor(
      */
     private fun isExpiredSessionEvent(event: FlowMapperEvent): Boolean {
         val payload = event.payload
-        if (payload is FlowEvent) {
-            val flowEventPayload = payload.payload
-            if (flowEventPayload is SessionEvent) {
-                val sessionEventExpiryTime = flowEventPayload.timestamp.toEpochMilli() + sessionP2PTtl
-                val currentTime = Instant.now().toEpochMilli()
-                if (currentTime > sessionEventExpiryTime) {
-                    return true
-                }
+        if (payload is SessionEvent) {
+            val sessionEventExpiryTime = payload.timestamp.toEpochMilli() + sessionP2PTtl
+            val currentTime = Instant.now().toEpochMilli()
+            if (currentTime > sessionEventExpiryTime) {
+                return true
             }
         }
 
