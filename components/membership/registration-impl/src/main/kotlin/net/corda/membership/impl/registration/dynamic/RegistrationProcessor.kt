@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -35,8 +37,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(

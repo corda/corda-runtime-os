@@ -1,6 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.v5.cipher.suite.schemes.AlgorithmParameterSpecSerializer
+import net.corda.crypto.cipher.suite.schemes.AlgorithmParameterSpecSerializer
 import java.nio.ByteBuffer
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec

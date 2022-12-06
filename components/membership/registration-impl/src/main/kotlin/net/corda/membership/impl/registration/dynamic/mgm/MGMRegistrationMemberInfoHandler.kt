@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
@@ -32,14 +33,13 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(

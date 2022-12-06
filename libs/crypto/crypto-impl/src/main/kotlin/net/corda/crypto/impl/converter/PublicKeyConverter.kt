@@ -1,13 +1,13 @@
 package net.corda.crypto.impl.converter
 
-import java.security.PublicKey
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.PublicKey
 
 /**
  * Converter class, converting from String to [PublicKey] object.

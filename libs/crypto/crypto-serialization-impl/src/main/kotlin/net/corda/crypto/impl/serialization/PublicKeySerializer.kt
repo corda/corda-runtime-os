@@ -1,10 +1,10 @@
 package net.corda.crypto.impl.serialization
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
-import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

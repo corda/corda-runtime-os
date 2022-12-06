@@ -200,6 +200,7 @@ include 'libs:configuration:configuration-endpoints'
 include 'libs:configuration:configuration-merger'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
+include 'libs:crypto:cipher-suite'
 include 'libs:crypto:cipher-suite-impl'
 include 'libs:crypto:crypto-config-impl'
 include 'libs:crypto:crypto-core'
@@ -433,7 +434,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
             substitute module('net.corda:corda-base') using project(':base')
-            substitute module('net.corda:corda-cipher-suite') using project(':cipher-suite')
             substitute module('net.corda:corda-api') using project(':corda-api')
             substitute module('net.corda:corda-crypto') using project(':crypto')
             substitute module('net.corda:corda-crypto-extensions') using project(':crypto-extensions')
