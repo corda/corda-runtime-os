@@ -6,6 +6,8 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
@@ -36,6 +38,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithEmptyStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDistinctKeys
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
@@ -87,7 +90,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -297,11 +299,13 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             val registrationResult = registrationService.register(registrationId, alice, mockContext)
-            Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
-            CryptoConsts.Categories.all.forEach {
-                Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
-                Mockito.verify(hsmRegistrationClient, times(1))
-                    .assignSoftHSM(aliceId.value, it)
+            verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
+            verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
+            verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
+
+            (CryptoConsts.Categories.all - listOf(LEDGER)).forEach {
+                verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
+                verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
             }
             registrationService.stop()
 
@@ -348,6 +352,25 @@ class StaticMemberRegistrationServiceTest {
             assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
 
             assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
+        }
+
+        @Test
+        fun `during registration, distinct keys are generated for session and ledger if configured that way in the group policy`() {
+            whenever(groupPolicyProvider.getGroupPolicy(eq(alice)))
+                .doReturn(groupPolicyWithStaticNetworkAndDistinctKeys)
+            setUpPublisher()
+            registrationService.start()
+            registrationService.register(registrationId, alice, mockContext)
+            verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
+            verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, SESSION_INIT)
+            verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
+            verify(cryptoOpsClient).generateKeyPair(any(), eq(SESSION_INIT), any(), any(), any<Map<String, String>>())
+
+            (CryptoConsts.Categories.all - listOf(SESSION_INIT, LEDGER)).forEach {
+                verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
+                verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
+            }
+            registrationService.stop()
         }
 
         @Test
