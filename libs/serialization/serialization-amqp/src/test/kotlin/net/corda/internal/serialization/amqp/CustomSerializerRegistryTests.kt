@@ -13,7 +13,7 @@ import kotlin.test.assertFailsWith
 class CustomSerializerRegistryTests {
 
     private val descriptorBasedRegistry = DefaultDescriptorBasedSerializerRegistry()
-    private val unit = CachingCustomSerializerRegistry(descriptorBasedRegistry)
+    private val unit = CachingCustomSerializerRegistry(descriptorBasedRegistry, mock())
 
     @Test
     fun `a custom serializer cannot register to serialize a type already annotated with CordaSerializable`() {

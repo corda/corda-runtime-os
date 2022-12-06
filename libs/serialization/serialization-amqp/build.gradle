@@ -63,6 +63,7 @@ dependencies {
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-newer', configuration: 'cordaCPB')
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-older', configuration: 'cordaCPB')
 
+    integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
@@ -71,6 +72,9 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

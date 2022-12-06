@@ -103,36 +103,31 @@ object SerializerFactoryBuilder {
     @Suppress("LongParameterList")
     @JvmStatic
     fun build(
-        sandboxGroup: SandboxGroup,
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+            sandboxGroup: SandboxGroup,
+            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
-        allowEvolution: Boolean = true,
-        overrideFingerPrinter: FingerPrinter? = null,
-        onlyCustomSerializers: Boolean = false,
-        mustPreserveDataWhenEvolving: Boolean = false,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
+            allowEvolution: Boolean = true,
+            overrideFingerPrinter: FingerPrinter? = null,
+            onlyCustomSerializers: Boolean = false,
+            mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
                 sandboxGroup,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
                 overrideFingerPrinter,
                 onlyCustomSerializers,
-                mustPreserveDataWhenEvolving,
-                externalCustomSerializerAllowed)
+                mustPreserveDataWhenEvolving)
     }
 
     @Suppress("LongParameterList")
     private fun makeFactory(
-        sandboxGroup: SandboxGroup,
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        allowEvolution: Boolean,
-        overrideFingerPrinter: FingerPrinter?,
-        onlyCustomSerializers: Boolean,
-        mustPreserveDataWhenEvolving: Boolean,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
-        val customSerializerRegistry = externalCustomSerializerAllowed?.let {
-            CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, it)
-        } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
+                            sandboxGroup: SandboxGroup,
+                            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+                            allowEvolution: Boolean,
+                            overrideFingerPrinter: FingerPrinter?,
+                            onlyCustomSerializers: Boolean,
+                            mustPreserveDataWhenEvolving: Boolean): SerializerFactory {
+        val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroup)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)

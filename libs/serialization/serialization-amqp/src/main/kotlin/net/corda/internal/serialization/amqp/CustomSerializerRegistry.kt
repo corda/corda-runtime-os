@@ -4,6 +4,7 @@ import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalProxySerializer
@@ -14,27 +15,30 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.framework.FrameworkUtil
 import java.io.NotSerializableException
 import java.lang.reflect.Type
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.security.BasicPermission
 import java.security.PrivateKey
-import net.corda.v5.base.annotations.VisibleForTesting
-import org.osgi.framework.FrameworkUtil
 
 /**
  * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
  * it should be handled by standard serialisation methods (or not serialised at all) and there is no valid use case for
  * a custom method.
  */
-class IllegalCustomSerializerException private constructor(customSerializerQualifiedName: String?, clazz: Class<*>) :
-    Exception(
-        "Custom serializer $customSerializerQualifiedName " +
-                "to serialize non-custom-serializable type $clazz"
-    ) {
+class IllegalCustomSerializerException
+private constructor(customSerializerQualifiedName: String?, clazz: Class<*>, cause: Exception?) : Exception(
+    "Custom serializer $customSerializerQualifiedName " +
+            "to serialize non-custom-serializable type $clazz",
+    cause
+) {
     constructor(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
-            this(customSerializer::class.qualifiedName, clazz)
+            this(customSerializer::class.qualifiedName, clazz, null)
 
-    constructor(customSerializer: SerializationCustomSerializer<*, *>, clazz: Class<*>) :
-            this(customSerializer::class.qualifiedName, clazz)
+    constructor(customSerializer: SerializationCustomSerializer<*, *>, clazz: Class<*>, cause: Exception) :
+            this(customSerializer::class.qualifiedName, clazz, cause)
 }
 
 /**
@@ -96,25 +100,15 @@ interface CustomSerializerRegistry {
     fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>?
 }
 
-class CachingCustomSerializerRegistry private constructor(
-    private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-    private val allowedFor: Set<Class<*>>,
-    private val externalCustomSerializerAllowed: (Class<*>) -> Boolean = {
-        val bundle = FrameworkUtil.getBundle(it)
-        // Allow custom serializers for types in CPKs (within main bundles and within libraries).
-        // Disallow custom serializers for Corda platform types and JDK types.
-        bundle != null && bundle.location.startsWith("FLOW/")
-    }
+class CachingCustomSerializerRegistry(
+        private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+        private val allowedFor: Set<Class<*>>,
+        private val sandboxGroup: SandboxGroup
 ) : CustomSerializerRegistry {
     constructor(
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry
-    ) : this(descriptorBasedSerializerRegistry, emptySet())
-
-    @VisibleForTesting
-    constructor(
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        externalCustomSerializerAllowed: (Class<*>) -> Boolean = { true }
-    ) : this(descriptorBasedSerializerRegistry, emptySet(), externalCustomSerializerAllowed)
+        sandboxGroup: SandboxGroup
+    ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
 
     companion object {
         val logger = contextLogger()
@@ -157,10 +151,26 @@ class CachingCustomSerializerRegistry private constructor(
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
         val customSerializer = CorDappCustomSerializer(serializer, factory)
-        val clazz = customSerializer.type.asClass()
-        if (!externalCustomSerializerAllowed(clazz)) {
-            logger.warn("Illegal custom serializer external registration for $clazz: ${serializer::class.qualifiedName}")
-            throw IllegalCustomSerializerException(serializer, clazz)
+
+        val sm = System.getSecurityManager()
+        if (sm != null) {
+            val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
+            val customSerializerBundle = FrameworkUtil.getBundle(customSerializer::class.java)
+            val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
+            var permission: BasicPermission? = null
+            try {
+                permission = CustomSerializerPermission(customSerializerBundle.location ?: "")
+                sm.checkPermission(permission, accessControlContext)
+                permission = CustomSerializerTargetPermission(customSerializerTargetBundle.location ?: "")
+                sm.checkPermission(permission, accessControlContext)
+            } catch (ace: AccessControlException) {
+                // TODO I believe it should be warn, but check if it should be done info
+                logger.warn(
+                    "Illegal custom serializer detected for class ${customSerializer.type}" +
+                            "Might be missing permission $permission"
+                )
+                throw IllegalCustomSerializerException(serializer, serializer::class.java, ace)
+            }
         }
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
@@ -254,3 +264,7 @@ class CachingCustomSerializerRegistry private constructor(
         else -> false
     }
 }
+
+class CustomSerializerPermission(bundleLocation: String) : BasicPermission(bundleLocation)
+
+class CustomSerializerTargetPermission(bundleLocation: String) : BasicPermission(bundleLocation)

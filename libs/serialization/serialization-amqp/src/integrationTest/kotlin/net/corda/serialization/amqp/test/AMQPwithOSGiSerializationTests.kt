@@ -43,7 +43,9 @@ import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
+import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.serialization.SerializationCustomSerializer
+import org.junit.jupiter.api.fail
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -55,6 +57,9 @@ class AMQPwithOSGiSerializationTests {
     private val lifecycle = EachTestLifecycle()
 
     private lateinit var sandboxFactory: SandboxFactory
+
+    @InjectService(timeout = 1000)
+    lateinit var securityManagerService: SecurityManagerService
 
     @BeforeAll
     fun setUp(
@@ -206,6 +211,7 @@ class AMQPwithOSGiSerializationTests {
 
     @Test
     fun `custom serializers for platform types are blocked`() {
+        applyPolicyFile("security-deny-platform-serializers.policy")
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
             // Corda platform type custom serializer
@@ -226,6 +232,12 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
+    }
+
+    private fun applyPolicyFile(fileName: String) {
+        val url = this::class.java.classLoader.getResource(fileName) ?: fail("Resource $fileName not found")
+        val policy = securityManagerService.readPolicy(url.openConnection().getInputStream())
+        securityManagerService.updatePermissions(policy, clear = false)
     }
 
     @CordaSerializable

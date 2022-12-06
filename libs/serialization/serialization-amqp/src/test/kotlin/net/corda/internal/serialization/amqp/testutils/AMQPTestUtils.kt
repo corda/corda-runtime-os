@@ -52,7 +52,6 @@ fun testDefaultFactory(
 ) =
     SerializerFactoryBuilder.build(
         testSerializationContext.currentSandboxGroup(),
-        externalCustomSerializerAllowed = { true },
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry
     )
 

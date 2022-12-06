@@ -1,0 +1,7 @@
+ALLOW {
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "FLOW/*" "")
+} "allow custom serializers defined in flow sandboxes"
+
+ALLOW {
+(net.corda.internal.serialization.amqp.CustomSerializerTargetPermission "FLOW/*" "")
+} "allow custom serializers' target classes defined in flow sandboxes"
