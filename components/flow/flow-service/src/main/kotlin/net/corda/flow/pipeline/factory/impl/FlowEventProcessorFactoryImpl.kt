@@ -25,7 +25,6 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     private val flowEventContextConverter: FlowEventContextConverter,
     @Reference(service = FlowMDCService::class)
     private val flowMDCService: FlowMDCService
-
 ) : FlowEventProcessorFactory {
 
     override fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent> {

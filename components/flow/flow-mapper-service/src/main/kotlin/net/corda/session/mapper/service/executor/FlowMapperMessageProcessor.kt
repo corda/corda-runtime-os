@@ -13,6 +13,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 
 /**
@@ -40,17 +41,19 @@ class FlowMapperMessageProcessor(
         logger.trace { "Received event: key: $key event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
-        return if (isExpiredSessionEvent(value) || !isValidState(state, value)) {
-            StateAndEventProcessor.Response(state, emptyList())
-        } else {
+        return if (!isExpiredSessionEvent(value) && isValidState(state, value)) {
             val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
             val result = executor.execute()
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
+        } else {
+            logger.debug { "Ignoring event (isExpiredSessionEvent: ${isExpiredSessionEvent(value)}, " +
+                    "isValidState: ${isValidState(state, value)})" }
+            StateAndEventProcessor.Response(state, emptyList())
         }
     }
 
     /**
-     * Only allow flow events to be processed when:
+     * Only allow events to be processed when one of the following criteria is met:
      * - the messages are for a new state.
      * - if it is an existing state that is set to [FlowMapperStateType.OPEN],
      * - it is not a [FlowEvent]
