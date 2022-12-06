@@ -11,7 +11,7 @@ class HoldingIdentityRepositoryImpl: HoldingIdentityRepository {
      * Find [HoldingIdentity] for given [ShortHash].
      */
     override fun find(entityManager: EntityManager, shortHash: ShortHash): HoldingIdentity? {
-        return entityManager.find(HoldingIdentityEntity::class.java, shortHash.value)?.toDTO()
+        return entityManager.find(HoldingIdentityEntity::class.java, shortHash.value)?.toHoldingIdentity()
     }
 
     /**

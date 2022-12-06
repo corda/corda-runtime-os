@@ -2,10 +2,6 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
@@ -13,11 +9,10 @@ import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManagerFactory
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
-// TODO - remove this when moving to repository pattern for everything
+// TODO - remove this when moving to repository pattern for everything.
+//  This will likely be done as part of CORE-8744
 internal class VirtualNodeEntityRepository(
-    val entityManagerFactory: EntityManagerFactory,
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl()
+    val entityManagerFactory: EntityManagerFactory
     ) {
 
     private companion object {

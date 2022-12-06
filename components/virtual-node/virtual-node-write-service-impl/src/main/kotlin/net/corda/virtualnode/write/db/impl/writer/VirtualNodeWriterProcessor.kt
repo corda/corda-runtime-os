@@ -247,7 +247,7 @@ internal class VirtualNodeWriterProcessor(
                 //  another database.
                 it.transaction { tx ->
                     // Retrieve virtual node info
-                    val virtualNodeInfo = virtualNodeRepository.find(em, shortHash)
+                    val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
                     if(null == virtualNodeInfo) {
                             logger.warn("Could not find the virtual node: $shortHashString")
                             respFuture.complete(

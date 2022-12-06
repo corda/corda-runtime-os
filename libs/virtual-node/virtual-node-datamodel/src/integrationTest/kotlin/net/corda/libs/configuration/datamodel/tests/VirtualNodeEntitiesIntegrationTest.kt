@@ -11,7 +11,7 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom

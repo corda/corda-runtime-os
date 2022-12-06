@@ -145,7 +145,7 @@ class VirtualNodeRepositoryTest {
         val hash = TestRandom.secureHash()
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
 
-        val hi = vnode.holdingIdentity.toDTO()
+        val hi = vnode.holdingIdentity.toHoldingIdentity()
         val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
 
         entityManagerFactory.createEntityManager().transaction {

@@ -32,7 +32,7 @@ class VirtualNodeSenderImpl(
         return try {
             sender.sendRequest(request).getOrThrow(timeout)
         } catch (e: Exception) {
-            logger.error("Could not complete virtual node creation request.", e)
+            logger.warn("Could not complete virtual node creation request.", e)
             throw CordaRuntimeException("Could not complete virtual node creation request.", e)
         }
     }

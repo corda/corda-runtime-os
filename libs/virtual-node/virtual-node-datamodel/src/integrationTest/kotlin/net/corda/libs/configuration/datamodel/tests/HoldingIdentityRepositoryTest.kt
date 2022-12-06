@@ -79,7 +79,7 @@ class HoldingIdentityRepositoryTest {
         }
 
         assertThat(foundEntity).isNotNull
-        assertThat(foundEntity).isEqualTo(holdingIdentity.toDTO())
+        assertThat(foundEntity).isEqualTo(holdingIdentity.toHoldingIdentity())
     }
 
     @Test
@@ -119,7 +119,7 @@ class HoldingIdentityRepositoryTest {
         entityManagerFactory.createEntityManager().transaction {
             HoldingIdentityRepositoryImpl().put(
                 it,
-                hi.toDTO(),
+                hi.toHoldingIdentity(),
                 hi.vaultDDLConnectionId,
                 hi.vaultDMLConnectionId!!,
                 hi.cryptoDDLConnectionId,

@@ -67,7 +67,7 @@ internal class HoldingIdentityEntity(
         this.uniquenessDMLConnectionId = uniquenessDMLConnectionId
     }
 
-    fun toDTO(): HoldingIdentity {
+    fun toHoldingIdentity(): HoldingIdentity {
         return HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId)
     }
 

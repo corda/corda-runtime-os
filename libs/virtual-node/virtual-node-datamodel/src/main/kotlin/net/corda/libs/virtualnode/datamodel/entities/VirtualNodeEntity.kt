@@ -35,7 +35,7 @@ import javax.persistence.Version
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
     @ManyToOne(
-        fetch = FetchType.LAZY,
+        fetch = FetchType.EAGER,
         cascade = [CascadeType.PERSIST, CascadeType.MERGE]
     )
     @JoinColumn(name = "holding_identity_id")
@@ -88,27 +88,21 @@ internal class VirtualNodeEntity(
     }
 
     fun toVirtualNodeInfo(): VirtualNodeInfo {
-        val cpiId = try {
-            CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash))
-        } catch (e: IllegalArgumentException) {
-            println("Failed to parse: $cpiSignerSummaryHash ")
-            throw e
-        }
         return VirtualNodeInfo(
-                    holdingIdentity.toDTO(),
-                    cpiId,
-                    holdingIdentity.vaultDDLConnectionId,
-                    holdingIdentity.vaultDMLConnectionId!!,
-                    holdingIdentity.cryptoDDLConnectionId,
-                    holdingIdentity.cryptoDMLConnectionId!!,
-                    holdingIdentity.uniquenessDDLConnectionId,
-                    holdingIdentity.uniquenessDMLConnectionId!!,
-                    holdingIdentity.hsmConnectionId,
-                    VirtualNodeState.valueOf(virtualNodeState),
-                    entityVersion,
-                    insertTimestamp!!,
-                    isDeleted
-                )
+            holdingIdentity.toHoldingIdentity(),
+            CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)),
+            holdingIdentity.vaultDDLConnectionId,
+            holdingIdentity.vaultDMLConnectionId!!,
+            holdingIdentity.cryptoDDLConnectionId,
+            holdingIdentity.cryptoDMLConnectionId!!,
+            holdingIdentity.uniquenessDDLConnectionId,
+            holdingIdentity.uniquenessDMLConnectionId!!,
+            holdingIdentity.hsmConnectionId,
+            VirtualNodeState.valueOf(virtualNodeState),
+            entityVersion,
+            insertTimestamp!!,
+            isDeleted
+        )
     }
 }
 
