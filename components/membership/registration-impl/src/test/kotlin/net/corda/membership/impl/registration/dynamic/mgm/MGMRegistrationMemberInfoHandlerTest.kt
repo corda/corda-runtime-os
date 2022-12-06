@@ -11,7 +11,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.registration.TEST_CPI_NAME
 import net.corda.membership.impl.registration.TEST_CPI_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -292,7 +292,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         assertThat(mgmContext)
-            .containsOnlyKeys(CREATED_TIME, MODIFIED_TIME, STATUS, IS_MGM)
+            .containsOnlyKeys(CREATION_TIME, MODIFIED_TIME, STATUS, IS_MGM)
             .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
             .containsEntry(IS_MGM, true.toString())
     }
