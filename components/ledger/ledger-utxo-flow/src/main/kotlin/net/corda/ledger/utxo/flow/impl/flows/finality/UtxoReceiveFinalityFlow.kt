@@ -1,10 +1,10 @@
-package net.corda.ledger.consensual.flow.impl.flows.finality
+package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
-import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionVerification
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -17,14 +17,14 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 
 @CordaSystemFlow
-class ConsensualReceiveFinalityFlow(
+class UtxoReceiveFinalityFlow(
     private val session: FlowSession,
-    private val validator: ConsensualTransactionValidator
-) : SubFlow<ConsensualSignedTransaction> {
+    private val validator: UtxoTransactionValidator
+) : SubFlow<UtxoSignedTransaction> {
 
     private companion object {
         val log = contextLogger()
@@ -34,14 +34,14 @@ class ConsensualReceiveFinalityFlow(
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
-    lateinit var persistenceService: ConsensualLedgerPersistenceService
+    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
 
     @Suspendable
-    override fun call(): ConsensualSignedTransaction {
-        val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
+    override fun call(): UtxoSignedTransaction {
+        val signedTransaction = session.receive<UtxoSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
         // TODO [CORE-5982] Verify Ledger Transaction
@@ -83,7 +83,7 @@ class ConsensualReceiveFinalityFlow(
             throw CordaRuntimeException(signaturesPayload.message)
         }
 
-        val signedTransactionToFinalize = session.receive<ConsensualSignedTransactionInternal>()
+        val signedTransactionToFinalize = session.receive<UtxoSignedTransactionInternal>()
 
         // A [require] block isn't the correct option if we want to do something with the error on the peer side
         require(signedTransactionToFinalize.id == transactionId) {
@@ -103,7 +103,7 @@ class ConsensualReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
+    private fun verify(signedTransaction: UtxoSignedTransaction): Boolean {
         return try {
             validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
@@ -119,8 +119,8 @@ class ConsensualReceiveFinalityFlow(
         }
     }
 
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction){
+    private fun verifyTransaction(signedTransaction: UtxoSignedTransaction){
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }
