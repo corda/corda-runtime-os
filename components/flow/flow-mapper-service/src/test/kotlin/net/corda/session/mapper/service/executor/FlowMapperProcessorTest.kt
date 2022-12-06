@@ -6,6 +6,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -72,6 +73,12 @@ class FlowMapperProcessorTest {
     @Test
     fun `when state is OPEN new flow events are processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent()))
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when state is OPEN new cleanup events are processed`() {
+        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(ScheduleCleanup()))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
     }
 
