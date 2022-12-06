@@ -15,7 +15,7 @@ private const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 class CordaDeveloperSubcommand : HttpRpcCommand(), Callable<Int> {
 
     private val permissionsToCreate: Map<String, String> = listOf(
-        "Force CPI upload" to "POST:/api/v1/maintenance/virtualnode"
+        "Force CPI upload" to "POST:/api/v1/maintenance/virtualnode/forcecpiupload"
     ).toMap()
 
     override fun call(): Int {

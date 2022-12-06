@@ -1,8 +1,16 @@
-package net.corda.ledger.consensual.data.transaction
+package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+
+/**
+ * Centralized place for transactions verifications.
+ * They are supposed to be called
+ *  - at the transaction's creation time from [ConsensualTransactionBuilder] or [ConsensualSignedTransactionFactory]
+ *  - or later on the receiving side of the Finality flow. ([ConsensualReceiveFinalityFlow])
+ *
+ */
 
 class ConsensualTransactionVerification {
     companion object {

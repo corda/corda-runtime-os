@@ -1,9 +1,9 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
@@ -44,14 +44,14 @@ class ConsensualReceiveFinalityFlow(
         val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = signedTransaction.id
 
-        // TODO [CORE-5982] Verify Ledger Transaction (ConsensualLedgerTransactionImpl.verify() ?)
+        // TODO [CORE-5982] Verify Ledger Transaction
 
         // Verify the transaction.
         verifyTransaction(signedTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
         val signaturesPayload = if (verify(signedTransaction)) {
-            // TODO [CORE-7029] Record unfinalised transaction
+            persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
             // We check which of our keys are required.
             val myExpectedSigningKeys = signedTransaction
@@ -105,7 +105,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
-            validator.checkTransaction(signedTransaction.toLedgerTransaction()) // TODO not suspendable...
+            validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.

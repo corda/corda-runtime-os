@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.consensual
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
@@ -40,6 +41,7 @@ class ConsensualLedgerRepository @Activate constructor(
     private val wireTransactionFactory: WireTransactionFactory
 ) : UsedByPersistence {
     companion object {
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val consensualComponentGroupMapper = ConsensualComponentGroupMapper()
     }
 
@@ -93,7 +95,7 @@ class ConsensualLedgerRepository @Activate constructor(
     fun persistTransaction(
         entityManager: EntityManager,
         signedTransaction: SignedTransactionContainer,
-        status: String,
+        status: TransactionStatus,
         account: String
     ) {
         val transactionId = signedTransaction.id.toString()
@@ -158,23 +160,39 @@ class ConsensualLedgerRepository @Activate constructor(
             .executeUpdate()
     }
 
-    /** Persists transaction's [status] to database. */
+    /**
+     * Persists or updates transaction [status]. There is only one status per transaction. In case that status already
+     * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
+     * - UNVERIFIED -> *
+     * - VERIFIED -> VERIFIED
+     * - INVALID -> INVALID
+     */
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
         transactionId: String,
-        status: String
+        status: TransactionStatus
     ): Int {
-        return entityManager.createNativeQuery(
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        val rowsUpdated = entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
-            VALUES (:id, :status, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, updated)
+            VALUES (:id, :status, :updatedAt)
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE consensual_transaction_status.status = EXCLUDED.status OR consensual_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("id", transactionId)
-            .setParameter("status", status)
-            .setParameter("createdAt", timestamp)
+            .setParameter("status", status.value)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
+
+        check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
+            // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
+            "Existing status for transaction with ID $transactionId can't be updated to $status (illegal state that shouldn't happen)"
+        }
+
+        return rowsUpdated
     }
 
     /** Persists transaction's [signature] to database. */

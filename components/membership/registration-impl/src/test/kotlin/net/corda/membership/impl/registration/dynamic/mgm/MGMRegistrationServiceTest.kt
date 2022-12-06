@@ -37,7 +37,7 @@ import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -355,7 +355,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
-                            CREATED_TIME,
+                            CREATION_TIME,
                             MODIFIED_TIME,
                             STATUS,
                             IS_MGM
