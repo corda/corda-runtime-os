@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Instant
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -96,7 +97,7 @@ class VirtualNodeEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Virtual Node entity and holding identity in one transaction`() {
-        val name = "Test CPI"
+        val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
@@ -129,12 +130,12 @@ class VirtualNodeEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Virtual Node entity with holding identity in two transactions`() {
-        val name = "Test CPI"
+        val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
-        val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test")
+        val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.cryptoDDLConnectionId!!, DbPrivilege.DDL))
