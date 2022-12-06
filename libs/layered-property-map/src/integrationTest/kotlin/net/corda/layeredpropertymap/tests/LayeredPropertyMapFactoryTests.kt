@@ -30,7 +30,7 @@ class LayeredPropertyMapFactoryTests {
         )
 
     @Test
-    fun `Should be able to create instance of LayredPropertyMap with custom converters`() {
+    fun `Should be able to create instance of LayeredPropertyMap with custom converters`() {
         val layeredPropertyMap = facttory.createMap(createMap())
         assertEquals(42, layeredPropertyMap.parse("number"))
         val complexList = layeredPropertyMap.parseList<IntegrationDummyEndpointInfo>("corda.endpoints")

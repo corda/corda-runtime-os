@@ -1,7 +1,6 @@
 package net.corda.membership.lib.impl.grouppolicy
 
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
@@ -63,7 +62,7 @@ class GroupPolicyParserImplTest {
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(any<String>()) } doReturn defaultKey
     }
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(
         listOf(
             EndpointInfoConverter(),
             MemberNotaryDetailsConverter(keyEncodingService),
