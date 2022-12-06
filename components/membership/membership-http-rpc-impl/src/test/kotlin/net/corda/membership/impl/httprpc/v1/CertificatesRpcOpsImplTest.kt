@@ -202,7 +202,7 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                listOf("www.alice.net", "alice.net"),
+                listOf("www.alice.net", "alice.net", "10.101.100.65"),
                 null,
             )
 
@@ -219,6 +219,7 @@ class CertificatesRpcOpsImplTest {
                             arrayOf(
                                 GeneralName(GeneralName.dNSName, "www.alice.net"),
                                 GeneralName(GeneralName.dNSName, "alice.net"),
+                                GeneralName(GeneralName.iPAddress, "10.101.100.65")
                             )
                         )
                     )

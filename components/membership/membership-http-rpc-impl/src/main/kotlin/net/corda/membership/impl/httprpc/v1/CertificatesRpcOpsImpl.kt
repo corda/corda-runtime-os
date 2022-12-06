@@ -37,17 +37,21 @@ import org.bouncycastle.asn1.x509.Extension.subjectAlternativeName
 import org.bouncycastle.asn1.x509.ExtensionsGenerator
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralName.dNSName
+import org.bouncycastle.asn1.x509.GeneralName.iPAddress
 import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.jce.X509KeyUsage.digitalSignature
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
+import org.bouncycastle.util.IPAddress
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
+import java.net.InetAddress
+import java.net.URI
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import javax.security.auth.x500.X500Principal
@@ -108,9 +112,15 @@ class CertificatesRpcOpsImpl @Activate constructor(
             Extension.keyUsage, true, KeyUsage(digitalSignature)
         )
         subjectAlternativeNames?.forEach { name ->
-            val altName = GeneralName(dNSName, name)
-            val subjectAltName = GeneralNames(altName)
-            extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            if (IPAddress.isValid(name)) {
+                val altName = GeneralName(iPAddress, name)
+                val subjectAltName = GeneralNames(altName)
+                extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            } else {
+                val altName = GeneralName(dNSName, name)
+                val subjectAltName = GeneralNames(altName)
+                extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            }
         }
         val signatureSpec = contextMap?.get(SIGNATURE_SPEC)
 
