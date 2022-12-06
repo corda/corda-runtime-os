@@ -11,15 +11,16 @@ import java.time.Instant
 
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    jsonValidator: JsonValidator
+    jsonValidator: JsonValidator,
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
-    val metadata = transactionMetadataExample(numberOfComponentGroups = defaultComponentGroups.size + 1)
+    val metadata = transactionMetadataExample(numberOfComponentGroups = componentGroups.size + 1)
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val allGroupLists = listOf(
         listOf(canonicalJson.toByteArray()),
-    ) + defaultComponentGroups
+    ) + componentGroups
     return create(allGroupLists)
 }
 
