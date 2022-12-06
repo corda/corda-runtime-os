@@ -75,6 +75,9 @@ pipeline {
         BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        AURORA_DB_CREDENTIALS = credentials('openshift-test-aurora-db-credentials')
+        AURORA_DB_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
+        AURORA_DB_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("openshift-test-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
@@ -114,6 +117,8 @@ pipeline {
                     kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred-prereqs --docker-server=docker-remotes.software.r3.com --docker-username=${CORDA_ARTIFACTORY_USERNAME} --docker-password=${CORDA_ARTIFACTORY_PASSWORD}
                     kubectl -n "${NAMESPACE}" create secret docker-registry docker-registry-cred --docker-server=corda-os-docker.software.r3.com --docker-username=${CORDA_ARTIFACTORY_USERNAME} --docker-password=${CORDA_ARTIFACTORY_PASSWORD}
                     kubectl -n "${NAMESPACE}" create -f .ci/e2eTests/ocp-prereqs.yaml
+                    kubectl -n "${NAMESPACE}" create secret generic postgresql --from-literal="username"=${AURORA_DB_USERNAME} --from-literal="password"=${AURORA_DB_PASSWORD}
+                    kubectl -n "${NAMESPACE}" create service externalname prereqs-rds-aurora-postgresql --external-name corda-dev1-rds-aurora-corda.cluster-ckztu5lthwmu.eu-west-1.rds.amazonaws.com
                 '''.stripIndent()
             }
         }
@@ -243,15 +248,11 @@ def portForwarding(def name, def port, def portMapping = null){
 
 def deployCorda(def name, def namespace, def base_image){
     sh """\
-        helm install $name-db oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
-           -f .ci/e2eTests/prereqs.yaml --set kafka.enabled=false -n $namespace --wait --timeout 600s
         helm install corda-$name ./charts/corda \
            -f .ci/e2eTests/corda.yaml \
            --set image.tag=$base_image \
            --set nameOverride=$name \
            --set kafka.topicPrefix=$name \
-           --set db.cluster.host=$name-db-postgresql \
-           --set db.cluster.password.valueFrom.secretKeyRef.name=$name-db-postgresql \
            --set db.cluster.database=$name
            -n $namespace --wait --timeout 600s
     """.stripIndent()

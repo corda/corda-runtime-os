@@ -32,7 +32,15 @@ postgresql:
   serviceAccount:
     create: false
     name: "corda-privileged"
+  volumePermissions:
+    enabled: false
+  shmVolume:
+    enabled: false
   primary:
+    securityContext:
+      enabled: false
+    containerSecurityContext:
+      allowPrivilegeEscalation: true
     resources:
       requests:
         memory: 256Mi
