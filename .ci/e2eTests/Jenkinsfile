@@ -253,7 +253,7 @@ def deployCorda(def name, def namespace, def base_image){
            --set image.tag=$base_image \
            --set nameOverride=$name \
            --set kafka.topicPrefix=$name \
-           --set db.cluster.database=$name
+           --set db.cluster.database=$name \
            -n $namespace --wait --timeout 600s
     """.stripIndent()
 }
