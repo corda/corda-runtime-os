@@ -27,7 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 open class UtxoFilteredTransactionTestBase {
-    protected companion object {
+    companion object {
         val STATE_REF_1 = "state ref 1".toByteArray()
         val STATE_REF_2 = "state ref 2".toByteArray()
         val STATE_REF_3 = "state ref 3".toByteArray()
@@ -48,15 +48,15 @@ open class UtxoFilteredTransactionTestBase {
         val outputInfo2 = UtxoOutputInfoComponent(3, notary, "", "")
     }
 
-    protected lateinit var wireTransaction: WireTransaction
-    protected lateinit var filteredTransaction: FilteredTransaction
+    lateinit var wireTransaction: WireTransaction
+    lateinit var filteredTransaction: FilteredTransaction
 
-    protected val digestService =
+    val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     protected val jsonMarshallingService = JsonMarshallingServiceImpl()
     protected val jsonValidator = JsonValidatorImpl()
     protected val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    protected val serializationService = mock<SerializationService>()
+    val serializationService = mock<SerializationService>()
 
     protected val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
