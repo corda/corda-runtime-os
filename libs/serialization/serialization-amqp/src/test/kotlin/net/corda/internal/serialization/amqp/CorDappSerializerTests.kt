@@ -4,6 +4,7 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
+import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Timeout
 import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
-import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class CorDappSerializerTests {
