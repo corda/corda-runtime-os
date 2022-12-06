@@ -172,19 +172,6 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `updating transaction status for transaction that does not exist does not error`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
-        val transaction = persistTransactionViaEntity(entityFactory)
-
-        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
-
-        persistenceService.updateStatus(UUID.randomUUID().toString(), VERIFIED)
-
-        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
-    }
-
-    @Test
     fun `persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
@@ -262,7 +249,7 @@ class UtxoPersistenceServiceImplTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
             assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
     }
@@ -321,7 +308,7 @@ class UtxoPersistenceServiceImplTest {
             assertThat(statuses)
                 .isNotNull
                 .hasSize(1)
-            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status)
+            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status.value)
         }
     }
 
