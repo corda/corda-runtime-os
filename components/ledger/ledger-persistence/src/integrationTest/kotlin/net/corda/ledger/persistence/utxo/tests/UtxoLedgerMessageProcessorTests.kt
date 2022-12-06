@@ -18,7 +18,7 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.common.flow.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
