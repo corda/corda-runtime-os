@@ -93,7 +93,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
+            "net.cordapp.testing.testflows.NotarisationTestFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -139,7 +139,7 @@ class FlowTests {
             !char.isWhitespace() || isInQuotes
         }
     }
-
+/*
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
@@ -741,7 +741,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(dataToSerialize)
         assertThat(flowResult.command).isEqualTo("serialization")
     }
-
+*/
     @Test
     fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
         val requestID = startRpcFlow(
@@ -754,7 +754,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
+    fun `Notary - Non-validating plugin is loaded and executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
             assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -913,6 +913,31 @@ class FlowTests {
     }
 
     @Test
+    fun `Notary - Plugin that is not present on the network cannot be loaded`() {
+        issueStatesAndValidateResult(1, pluginType = "non-existing-plugin") { issuanceResult ->
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(issuanceResult.flowError?.message)
+                .contains("Notary flow provider not found for type: non-existing-plugin")
+        }
+    }
+
+    @Test
+    fun `Notary - Plugin that cannot be instantiated will throw exception`() {
+        issueStatesAndValidateResult(1, pluginType = "invalid-notary-plugin") { issuanceResult ->
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(issuanceResult.flowError?.message)
+                .contains("Invalid plugin, cannot be loaded!")
+        }
+    }
+
+    @Test
+    fun `Notary - Valid plugin can be loaded and will be executed`() {
+        issueStatesAndValidateResult(1, pluginType = "valid-notary-plugin") { issuanceResult ->
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        }
+    }
+/*
+    @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
@@ -992,7 +1017,7 @@ class FlowTests {
 
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
-
+*/
     /**
      * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
      * then runs the given [validateResult] block on the flow result.
@@ -1001,6 +1026,7 @@ class FlowTests {
         outputStateCount: Int,
         timeWindowLowerBoundOffsetMs: Long? = null,
         timeWindowUpperBoundOffsetMs: Long? = null,
+        pluginType: String? = null,
         validateResult: (flowResult: FlowStatus) -> Unit
     ) {
         val paramMap = mutableMapOf("outputStateCount" to "$outputStateCount")
@@ -1010,11 +1036,14 @@ class FlowTests {
         timeWindowUpperBoundOffsetMs?.let {
             paramMap.put("timeWindowUpperBoundOffsetMs", "$it")
         }
+        pluginType?.let {
+            paramMap.put("pluginType", it)
+        }
 
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "net.cordapp.testing.testflows.NotarisationTestFlow"
         )
 
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
@@ -1037,7 +1066,7 @@ class FlowTests {
                 "inputStateRefs" to inputStates,
                 "referenceStateRefs" to refStates
             ),
-            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
+            "net.cordapp.testing.testflows.NotarisationTestFlow"
         )
 
         val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)
