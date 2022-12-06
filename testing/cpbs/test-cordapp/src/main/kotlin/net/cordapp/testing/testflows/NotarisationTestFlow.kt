@@ -71,6 +71,10 @@ class NotarisationTestFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         val params = extractParameters(requestBody)
 
+        require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
+            "The transaction must have at least one input OR output state"
+        }
+
         val notaryParty = findNotaryParty()
 
         val stx = buildSignedTransaction(
@@ -101,6 +105,7 @@ class NotarisationTestFlow : RPCStartableFlow {
      * [NotarisationTestFlowParameters] object so it is easily accessible and this way the parsing
      * logic is separated from the main flow logic in [call].
      */
+    @Suppress("ComplexMethod")
     @Suspendable
     private fun extractParameters(requestBody: RPCRequestData): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
@@ -110,10 +115,6 @@ class NotarisationTestFlow : RPCStartableFlow {
         val inputStateRefs = requestMessage["inputStateRefs"]?.let {
             jsonMarshallingService.parseList<String>(it)
         } ?: emptyList()
-
-        require(outputStateCount > 0 || inputStateRefs.isNotEmpty()) {
-            "The transaction must have at least one input OR output state"
-        }
 
         val referenceStateRefs = requestMessage["referenceStateRefs"]?.let {
             jsonMarshallingService.parseList<String>(it)
@@ -219,6 +220,7 @@ class NotarisationTestFlow : RPCStartableFlow {
 
         override fun verify(transaction: UtxoLedgerTransaction) {}
     }
+
     class TestCommand : Command
 
     /**
