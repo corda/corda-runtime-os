@@ -50,3 +50,5 @@ db:
 bootstrap:
   serviceAccount:
     name: "corda-privileged"
+  kafka:
+    cleanup: true
