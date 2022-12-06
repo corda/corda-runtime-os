@@ -68,10 +68,9 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltEnv" . | nindent 12 }}
-            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.dbSaltPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapRbacUser" . | nindent 12 }}
+            {{ include "corda.bootstrapRbacUserEnv" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -95,10 +94,9 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltEnv" . | nindent 12 }}
-            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.dbSaltPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCryptoWorker" . | nindent 12 }}
+            {{ include "corda.bootstrapCryptoWorkerEnv" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -155,8 +153,8 @@ spec:
               name: working-volume
           env:
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-          {{ include "corda.bootstrapRbacUser" . | nindent 12 }}
-          {{ include "corda.bootstrapCryptoWorker" . | nindent 12 }}          
+          {{ include "corda.bootstrapRbacUserEnv" . | nindent 12 }}
+          {{ include "corda.bootstrapCryptoWorkerEnv" . | nindent 12 }}          
         - name: create-initial-crypto-worker-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -169,8 +167,7 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltEnv" . | nindent 12 }}
-            {{ include "corda.dbPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.dbSaltPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.dbClientImage" . }}

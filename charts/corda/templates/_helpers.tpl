@@ -516,40 +516,33 @@ Kafka TLS truststore password
 {{- end -}}
 
 {{/*
-Kafka SASL username environment variable
+Kafka SASL username and password environment variable
 */}}
-{{- define "corda.kafkaSaslUsername" -}}
-{{- if .Values.kafka.sasl.enabled -}}
-  {{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
+{{- define "corda.kafkaSaslUsernameAndPasswordEnv" -}}
+{{- if .Values.kafka.sasl.enabled }}
+  {{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
 - name: SASL_USERNAME
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
-  {{- else -}}
+  {{- else }}
 - name: SASL_USERNAME
   value: {{ required "Must specify kafka.sasl.username.value or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value | quote }}
-  {{- end -}}
-{{- end -}}
-{{- end -}}
-
-
-{{/*
-Kafka SASL password environment variable
-*/}}
-{{- define "corda.kafkaSaslPassword" -}}
-{{- if and .Values.kafka.sasl.enabled -}}
-  {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
+  {{- end }}
+{{- end }}
+{{- if and .Values.kafka.sasl.enabled }}
+  {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
 - name: SASL_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
-  {{- else -}}
+  {{- else }}
 - name: SASL_PASSWORD
   value: {{ required "Must specify kafka.sasl.password.value or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value | quote }}
-  {{- end -}}
-{{- end -}}
+  {{- end }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -561,8 +554,7 @@ Kafka SASL init container
   image: {{ include "corda.workerImage" . }}
   imagePullPolicy:  {{ .Values.imagePullPolicy }}
   env:
-  {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
-  {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  {{- include "corda.kafkaSaslUsernameAndPasswordEnv" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
   command:
   - /bin/bash
@@ -588,9 +580,9 @@ Kafka SASL init container
 {{- end}}
 
 {{/*
-DB SALT environment variable
+DB SALT and Passphrase environment variable
 */}}
-{{- define "corda.dbSaltEnv" -}}
+{{- define "corda.dbSaltPassphraseEnv" -}}
 - name: SALT
   valueFrom:
     secretKeyRef:
@@ -601,12 +593,6 @@ DB SALT environment variable
       name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
       key: "salt"
       {{- end }}
-{{- end }}  
-
-{{/*
-DB PASSPHRASE environment variable
-*/}}
-{{- define "corda.dbPassphraseEnv" -}}
 - name: PASSPHRASE
   valueFrom:
     secretKeyRef:
@@ -628,7 +614,7 @@ Bootstrap RBAC User secret name
 {{/*
 RBAC User environment variable
 */}}
-{{- define "corda.bootstrapRbacUser" -}}
+{{- define "corda.bootstrapRbacUserEnv" -}}
 - name: RBAC_USERNAME
   valueFrom:
     secretKeyRef:
@@ -661,7 +647,7 @@ Bootstrap crypto Worker secret name
 {{/*
 Crypto worker environment variable
 */}}
-{{- define "corda.bootstrapCryptoWorker" -}}
+{{- define "corda.bootstrapCryptoWorkerEnv" -}}
 - name: CRYPTO_WORKER_USERNAME
   valueFrom:
     secretKeyRef:
