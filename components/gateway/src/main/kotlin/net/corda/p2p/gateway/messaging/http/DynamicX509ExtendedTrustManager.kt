@@ -24,8 +24,10 @@ internal class DynamicX509ExtendedTrustManager(
             throw CertificateException("Empty client certificates")
         }
         val subjects = chain.map { it.subjectX500Principal }
+        println("QQQ subjects -> $subjects")
         for (managersToGroupId in trustStoresMap.getTrustManagersToGroupId(revocationCheck)) {
             val managers = managersToGroupId.key.filterIsInstance<X509TrustManager>()
+            println("QQQ managers -> $managers")
             if(clientCertificatesAllowList.allowCertificates(managersToGroupId.value, subjects)) {
                 for (manager in managers) {
                     try {
