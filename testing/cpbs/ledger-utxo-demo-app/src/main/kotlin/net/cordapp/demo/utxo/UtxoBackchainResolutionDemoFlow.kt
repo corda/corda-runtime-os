@@ -27,12 +27,6 @@ import java.security.PublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-/**
- * Example consensual flow. Currently, does almost nothing other than verify that
- * we can inject the ledger service. Eventually it should do a two-party IOUState
- * agreement.
- */
-
 @InitiatingFlow("utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
