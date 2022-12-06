@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.impl.CompositeKeyImpl.Companion.KEY_ALGORITHM
-import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

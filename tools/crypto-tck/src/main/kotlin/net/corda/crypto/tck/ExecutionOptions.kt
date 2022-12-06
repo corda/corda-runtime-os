@@ -1,7 +1,7 @@
 package net.corda.crypto.tck
 
-import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
 import java.time.Duration

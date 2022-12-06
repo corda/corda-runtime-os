@@ -4,7 +4,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.Logger
