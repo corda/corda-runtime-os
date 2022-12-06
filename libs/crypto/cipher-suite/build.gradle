@@ -3,6 +3,11 @@ plugins {
     id 'corda.common-publishing'
 }
 
+ext {
+    releasable = true
+}
+
+
 description 'Corda Cipher Suite'
 
 dependencies {
