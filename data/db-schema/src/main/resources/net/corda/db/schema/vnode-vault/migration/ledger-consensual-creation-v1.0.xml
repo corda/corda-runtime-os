@@ -22,12 +22,12 @@
 
         <createTable tableName="consensual_transaction_status">
             <column name="transaction_id" type="VARCHAR(160)">
-                <constraints nullable="false" foreignKeyName="fk_transaction_status" references="consensual_transaction(id)"/>
+                <constraints nullable="false" primaryKey="true" foreignKeyName="fk_transaction_status" references="consensual_transaction(id)"/>
             </column>
             <column name="status" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="created" type="TIMESTAMP">
+            <column name="updated" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
