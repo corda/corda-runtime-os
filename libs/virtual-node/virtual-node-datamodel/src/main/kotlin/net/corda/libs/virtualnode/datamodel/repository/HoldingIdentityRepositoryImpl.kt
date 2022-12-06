@@ -1,6 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
+import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import java.util.*

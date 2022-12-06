@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.datamodel
+package net.corda.libs.virtualnode.datamodel.entities
 
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE

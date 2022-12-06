@@ -1,10 +1,10 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
-import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
-import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
+import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -17,7 +17,7 @@ import javax.persistence.EntityManager
 class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     /**
      * If you change this function ensure that you check the generated SQL from
-     * hibnernate in the "findAll test" in
+     * hibernate in the "findAll test" in
      */
     override fun findAll(entityManager: EntityManager): Stream<VirtualNodeInfo> {
         val query = entityManager.criteriaBuilder!!.createQuery(VirtualNodeEntity::class.java)!!
