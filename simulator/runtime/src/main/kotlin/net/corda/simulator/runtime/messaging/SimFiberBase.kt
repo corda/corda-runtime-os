@@ -2,7 +2,6 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.crypto.HsmCategory
-import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
@@ -12,10 +11,9 @@ import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.keystoreFactoryBase
 import net.corda.simulator.runtime.signing.signingServiceFactoryBase
+import net.corda.simulator.runtime.utils.getProtocol
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
@@ -100,11 +98,7 @@ class SimFiberBase(
         val protocol: String
 
         if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
-            val flowClass = flow.javaClass
-            protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
-                ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
-                        ?: throw NoProtocolAnnotationException(flowClass)
-
+            protocol = flow.getProtocol()
         }else{
             protocol = instanceFlowMap[flow]!!
         }
