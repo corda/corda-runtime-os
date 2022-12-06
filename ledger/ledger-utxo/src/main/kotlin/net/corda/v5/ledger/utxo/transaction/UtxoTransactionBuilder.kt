@@ -73,27 +73,38 @@ interface UtxoTransactionBuilder {
     fun addOutputState(contractState: ContractState): UtxoTransactionBuilder
 
     /**
-     * Adds the specified output states to the current [UtxoTransactionBuilder] as an encumbrance group.
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as a tagged encumbrance group.
      *
+     * @param tag The tag of the encumbrance group which the specified [ContractState] instances will belong to.
      * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
      * @return Returns a [UtxoTransactionBuilder] including the encumbered output states.
      */
-    fun addEncumberedOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder
+    fun addEncumberedOutputStates(tag: String, contractStates: Iterable<ContractState>): UtxoTransactionBuilder
 
     /**
-     * Adds the specified output states to the current [UtxoTransactionBuilder] as an encumbrance group.
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as a tagged encumbrance group.
      *
+     * @param tag The tag of the encumbrance group which the specified [ContractState] instances will belong to.
      * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
      * @return Returns a [UtxoTransactionBuilder] including the encumbered output states.
      */
-    fun addEncumberedOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder
+    fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState): UtxoTransactionBuilder
 
     /**
-     * Gets a map of encumbrance group indexes and the associated encumbered [ContractState] instances.
+     * Gets a list of encumbered [ContractState] instances from the specified encumbrance group tag.
      *
-     * @return Returns map of encumbrance group indexes and the associated encumbered [ContractState] instances.
+     * @param tag The encumbrance group tag for which to obtain the associated list of [ContractState] instances.
+     * @return Returns a list of encumbered [ContractState] instances from the specified encumbrance group tag.
+     * @throws IllegalArgumentException if the encumbrance group tag does not exist.
      */
-    fun getEncumbranceGroups(): Map<Int, List<ContractState>>
+    fun getEncumbranceGroup(tag: String): List<ContractState>
+
+    /**
+     * Gets a map of encumbrance group tags and the associated encumbered [ContractState] instances.
+     *
+     * @return Returns map of encumbrance group tags and the associated encumbered [ContractState] instances.
+     */
+    fun getEncumbranceGroups(): Map<String, List<ContractState>>
 
     /**
      * Sets the [Party] as a notary to the current [UtxoTransactionBuilder].

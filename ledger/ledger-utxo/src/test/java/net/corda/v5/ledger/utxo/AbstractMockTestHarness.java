@@ -53,6 +53,9 @@ public class AbstractMockTestHarness {
     protected final List<Command> commands = List.of(command, createCommand, updateCommand);
     protected final StateRef stateRef = new StateRef(hash, 0);
     protected final Party notaryParty = new Party(notaryName, notaryKey);
+    protected final String encumbranceTag1 = "ENCUMBRANCE_TAG_1";
+    protected final String encumbranceTag2 = "ENCUMBRANCE_TAG_2";
+
     protected final StateAndRef<ContractState> contractStateAndRef = createStateAndRef(Mockito.mock(ContractState.class));
     protected final StateRef contractStateRef = createStateAndRef(Mockito.mock(ContractState.class)).getRef();
     protected final TransactionState<ContractState> contractTransactionState = contractStateAndRef.getState();
@@ -63,7 +66,10 @@ public class AbstractMockTestHarness {
     protected final UtxoSignedTransaction utxoSignedTransaction = Mockito.mock(UtxoSignedTransaction.class);
     protected final UtxoTransactionBuilder utxoTransactionBuilder = Mockito.mock(UtxoTransactionBuilder.class);
 
-    protected final Map<Integer, List<ContractState>> encumbranceGroups = Map.of(0, List.of(contractState));
+    protected final Map<String, List<ContractState>> encumbranceGroups = Map.of(
+            encumbranceTag1, List.of(contractState, contractState),
+            encumbranceTag2, List.of(contractState, contractState)
+    );
 
     public AbstractMockTestHarness() {
         initializeContract();
@@ -82,7 +88,7 @@ public class AbstractMockTestHarness {
         Mockito.when(result.getContractState()).thenReturn(contractState);
         Mockito.when(result.getContractType()).thenReturn((Class) contract.getClass());
         Mockito.when(result.getNotary()).thenReturn(new Party(notaryName, notaryKey));
-        Mockito.when(result.getEncumbrance()).thenReturn(0);
+        Mockito.when(result.getEncumbrance()).thenReturn(encumbranceTag1);
 
         return result;
     }
@@ -177,8 +183,12 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(contractState, contractState)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, contractState, contractState)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag2, List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag2, contractState, contractState)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.getEncumbranceGroup(encumbranceTag1)).thenReturn(List.of(contractState, contractState));
+        Mockito.when(utxoTransactionBuilder.getEncumbranceGroup(encumbranceTag2)).thenReturn(List.of(contractState, contractState));
         Mockito.when(utxoTransactionBuilder.getEncumbranceGroups()).thenReturn(encumbranceGroups);
         Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant)).thenReturn(utxoTransactionBuilder);

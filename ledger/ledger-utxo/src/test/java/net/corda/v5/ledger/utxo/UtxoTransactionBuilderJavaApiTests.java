@@ -61,19 +61,25 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
 
     @Test
     public void addEncumberedOutputStatesOfListOfContractStatesShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addEncumberedOutputStates(List.of(contractState, contractState));
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, List.of(contractState, contractState));
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void addEncumberedOutputStatesOfVarargContractStatesShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addEncumberedOutputStates(contractState, contractState);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, contractState, contractState);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
+    public void getEncumbranceGroupShouldReturnTheExpectedValue() {
+        List<ContractState> value = utxoTransactionBuilder.getEncumbranceGroup(encumbranceTag1);
+        Assertions.assertEquals(List.of(contractState, contractState), value);
+    }
+
+    @Test
     public void getEncumbranceGroupsShouldReturnTheExpectedValue() {
-        Map<Integer, List<ContractState>> value = utxoTransactionBuilder.getEncumbranceGroups();
+        Map<String, List<ContractState>> value = utxoTransactionBuilder.getEncumbranceGroups();
         Assertions.assertEquals(encumbranceGroups, value);
     }
 
