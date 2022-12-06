@@ -26,11 +26,11 @@ interface SimulatedCordaNetwork : Closeable {
     ): SimulatedVirtualNode
 
     /**
-     * Creates a simulated virtual node holding a concrete instance of a responder flow. Note that this bypasses all
-     * checks for constructor and annotations on the flow.
+     * Creates a simulated virtual node holding a concrete instance of an initiator/ responder flow.
+     * Note that this bypasses all checks for constructor and annotations on the flow.
      *
      * @param holdingIdentity The holding identity which will call/respond to this flow.
-     * @param protocol The protocol for which this responder instance should be run.
+     * @param protocol The protocol for which this instance should be run.
      * @param instanceFlow An instance of an initiator/ responder flow.
      * @return A simulated virtual node which can run this instance of a initiator/responder flow.
      */
