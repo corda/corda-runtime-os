@@ -11,7 +11,6 @@ import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.keystoreFactoryBase
 import net.corda.simulator.runtime.signing.signingServiceFactoryBase
-import net.corda.simulator.runtime.utils.getProtocol
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.membership.MemberLookup
@@ -94,17 +93,8 @@ class SimFiberBase(
         member: MemberX500Name,
         injector: FlowServicesInjector
     ): FlowMessaging {
-        val instanceFlowMap = lookupFlowInstance(member)
-        val protocol: String
-
-        if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
-            protocol = flow.getProtocol()
-        }else{
-            protocol = instanceFlowMap[flow]!!
-        }
-
         return flowMessagingFactory
-            .createFlowMessaging( FlowContext(configuration, member, protocol), this, injector)
+            .createFlowMessaging(configuration, member, this, injector, flow)
     }
     override fun close() {
         persistenceServices.values.forEach { it.close() }
