@@ -29,6 +29,9 @@ kafka:
 
 
 postgresql:
+  serviceAccount:
+    create: false
+    name: "corda-privileged"
   primary:
     resources:
       requests:

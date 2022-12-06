@@ -32,20 +32,28 @@ kafka:
         secretKeyRef:
           name: "prereqs-kafka-jaas"
           key: "client-passwords"
-          
+
 db:
   cluster:
-    username: 
+    username:
+      value: "user"
+    password:
       valueFrom:
         secretKeyRef:
-          name: "postgresql"
-          key: "username"
-    password: 
-      valueFrom:
-        secretKeyRef:
-          name: "postgresql"
           key: "password"
-    host: prereqs-rds-aurora-postgresql
+#db:
+#  cluster:
+#    username: 
+#      valueFrom:
+#        secretKeyRef:
+#          name: "postgresql"
+#          key: "username"
+#    password: 
+#      valueFrom:
+#        secretKeyRef:
+#          name: "postgresql"
+#          key: "password"
+#    host: prereqs-rds-aurora-postgresql
 
 bootstrap:
   serviceAccount:
