@@ -87,7 +87,6 @@ rootProject.name = "corda-api"
 includeBuild 'cordapp-configuration'
 include 'application'
 include 'base'
-include 'cipher-suite'
 include 'corda-api'
 include 'cordapp-configuration-publish'
 include 'crypto'
