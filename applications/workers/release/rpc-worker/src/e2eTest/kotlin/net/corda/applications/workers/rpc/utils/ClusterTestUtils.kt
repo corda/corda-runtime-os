@@ -13,6 +13,7 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
+import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.MGMRpcOps
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val P2P_TENANT_ID = "p2p"
@@ -58,6 +60,26 @@ fun E2eCluster.uploadCpi(
                 }
             }
 
+
+//            val jarr = createEmptyJarWithManifest(groupPolicy)
+
+            val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy.json")
+
+            Files.newOutputStream(
+                groupPolicyFilePath,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW
+            ).write(groupPolicy)
+
+            val keystore = TestUtils::class.java.classLoader.getResourceAsStream("alice.p12")
+            val keyStoreFilePath = Path.of(tempDir.toString(), "alice.p12")
+
+            Files.newOutputStream(
+                keyStoreFilePath,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW
+            ).write(keystore.readAllBytes())
+
             val cpiFileName = Path.of(tempDir.toString(), "test.cpi")
             CreateCpiV2().apply {
                 cpbFileName = ""
@@ -65,10 +87,11 @@ fun E2eCluster.uploadCpi(
                 cpiName = "test-cpi"
                 cpiVersion = "1.0.0.0-SNAPSHOT"
                 cpiUpgrade = false
-                groupPolicyFileName = ""
-                groupPolicyByteArray = groupPolicy
+                groupPolicyFileName = groupPolicyFilePath.toString()
                 signingOptions = SigningOptions().apply {
-                    keyStoreFileName = ""
+                    keyStoreFileName = keyStoreFilePath.toString()
+                    keyStorePass = "cordadevpass"
+                    keyAlias = "alice"
                 }
             }.run()
 
@@ -88,8 +111,8 @@ fun E2eCluster.uploadCpi(
                     // must catch any errors expected due to asynchronicity here and fail them, so the eventually loop
                     // can retry rather than stop the test with an unexpected exception at this point.
                     status(id)
-                } catch(_: RequestErrorException) {
-                    fail()
+                } catch(requestErrorException: RequestErrorException) {
+                    fail(requestErrorException)
                 }
                 assertThat(status.status).isEqualTo("OK")
                 status.cpiFileChecksum

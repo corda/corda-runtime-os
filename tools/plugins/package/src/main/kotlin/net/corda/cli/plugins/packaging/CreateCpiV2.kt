@@ -64,8 +64,6 @@ class CreateCpiV2 : Runnable {
     )
     lateinit var groupPolicyFileName: String
 
-    var groupPolicyByteArray: ByteArray? = null
-
     @Option(names = ["--cpi-name"], required = true, description = ["CPI name (manifest attribute)"])
     lateinit var cpiName: String
 
@@ -89,18 +87,13 @@ class CreateCpiV2 : Runnable {
      */
     override fun run() {
         // Check input files exist
-        if (signingOptions.keyStoreFileName != "") {
-            requireFileExists(signingOptions.keyStoreFileName)
-        }
+        requireFileExists(signingOptions.keyStoreFileName)
 
         val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
-        else
-            if (groupPolicyByteArray != null) {
-                (groupPolicyByteArray as ByteArray).decodeToString()
-            } else {
-                File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
-            }
+        else {
+            File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
+        }
 
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
@@ -114,12 +107,12 @@ class CreateCpiV2 : Runnable {
         // Create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
+            val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
             if (cpbPath != null) {
                 val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
-                val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
                 outputName = Path.of(cpbDirectory, cpiFilename).toString()
             } else {
-                outputName = ""
+                throw IllegalArgumentException("Must specify an Output File if no CPB is provided.")
             }
         }
         // Check output Cpi file does not exist
@@ -158,23 +151,15 @@ class CreateCpiV2 : Runnable {
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            if (signingOptions.keyStoreFileName != "") {
-                SigningHelpers.sign(
-                    unsignedCpi,
-                    outputFilePath,
-                    signingOptions.keyStoreFileName,
-                    signingOptions.keyStorePass,
-                    signingOptions.keyAlias,
-                    signingOptions.sigFile,
-                    signingOptions.tsaUrl
-                )
-            } else {
-                Files.newOutputStream(
-                    outputFilePath,
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.CREATE_NEW
-                ).write(Files.readAllBytes(unsignedCpi))
-            }
+            SigningHelpers.sign(
+                unsignedCpi,
+                outputFilePath,
+                signingOptions.keyStoreFileName,
+                signingOptions.keyStorePass,
+                signingOptions.keyAlias,
+                signingOptions.sigFile,
+                signingOptions.tsaUrl
+            )
         } finally {
             // Delete temp file
             Files.deleteIfExists(unsignedCpi)
