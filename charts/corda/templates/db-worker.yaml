@@ -41,7 +41,7 @@ spec:
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
         {{- include "corda.clusterDbEnv" . | nindent 10 }}
-        {{- include "corda.dbSaltPassphraseEnv" . | nindent 10 }}
+        {{- include "corda.dbSaltAndPassphraseEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
           - -spassphrase=$(PASSPHRASE)
