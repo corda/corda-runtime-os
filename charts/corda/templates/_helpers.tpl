@@ -601,7 +601,7 @@ DB SALT and Passphrase environment variable
       name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
       key: "passphrase" 
       {{- end }}
-{{- end}}
+{{- end }}
 
 {{/*
 Bootstrap RBAC User secret name 
