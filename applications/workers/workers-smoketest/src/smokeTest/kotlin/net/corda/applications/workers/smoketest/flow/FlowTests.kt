@@ -761,8 +761,7 @@ class FlowTests {
 
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
-            @Suppress("unchecked_cast")
-            assertThat((flowResultMap["issuedStateRefs"] as List<String>)).hasSize(3)
+            assertThat((flowResultMap["issuedStateRefs"] as List<*>)).hasSize(3)
 
             // 2. Make sure no extra states were consumed
             assertAll({
@@ -822,10 +821,11 @@ class FlowTests {
             // 5. Make sure only one input state was consumed, and nothing was issued
             val flowResultMap = consumeResult.mapFlowJsonResult()
 
-            @Suppress("unchecked_cast")
             assertAll({
                 // Make sure we consumed the state we issued before
+                @Suppress("unchecked_cast")
                 val consumedInputs = flowResultMap["consumedInputStateRefs"] as List<String>
+
                 assertThat(consumedInputs).hasSize(1)
                 assertThat(consumedInputs.first()).isEqualTo(issuedStates.first())
 
@@ -997,7 +997,6 @@ class FlowTests {
      * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
      * then runs the given [validateResult] block on the flow result.
      */
-    @Suppress("unchecked_cast")
     private fun issueStatesAndValidateResult(
         outputStateCount: Int,
         timeWindowLowerBoundOffsetMs: Long? = null,
@@ -1027,7 +1026,6 @@ class FlowTests {
      * Consumes the provided states as either input or ref states, and runs it through the notarisation flow,
      * then runs the given [validateResult] block on the flow result.
      */
-    @Suppress("unchecked_cast")
     private fun consumeStatesAndValidateResult(
         inputStates: List<String>,
         refStates: List<String>,
