@@ -60,9 +60,7 @@ internal class ClientCertificatesAllowList(
 
     fun allowCertificates(groupIds: Collection<String>, subjects: Collection<X500Principal>) : Boolean {
         return groupIds.any { groupId ->
-            println("QQQ looking at $groupId")
             allowedClientCertificates[groupId]?.values?.any { allowed ->
-                println("QQQ allowed -> $allowed; subjects -> $subjects")
                 subjects.asSequence()
                     .map { MemberX500Name.build(it) }
                     .any { subject ->
@@ -100,7 +98,6 @@ internal class ClientCertificatesAllowList(
         }
 
         fun addGroup(record: GatewayAllowedClientCertificates) {
-            println("QQQ adding group - ${record.sourceIdentity.groupId} -> ${record.allowedClientCertificates}")
             allowedClientCertificates.computeIfAbsent(record.sourceIdentity.groupId) {
                 ConcurrentHashMap()
             }[record.sourceIdentity.x500Name] = record.allowedClientCertificates.map { MemberX500Name.parse(it) }
