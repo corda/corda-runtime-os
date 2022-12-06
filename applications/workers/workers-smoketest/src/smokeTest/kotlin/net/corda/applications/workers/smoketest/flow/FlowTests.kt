@@ -761,10 +761,10 @@ class FlowTests {
 
             val flowResultMap = issuanceResult.mapFlowJsonResult()
 
-            assertThat((flowResultMap["issuedStateRefs"] as List<*>)).hasSize(3)
-
-            // 2. Make sure no extra states were consumed
             assertAll({
+                assertThat((flowResultMap["issuedStateRefs"] as List<*>)).hasSize(3)
+
+                // 2. Make sure no extra states were consumed
                 assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
                 assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
             })
