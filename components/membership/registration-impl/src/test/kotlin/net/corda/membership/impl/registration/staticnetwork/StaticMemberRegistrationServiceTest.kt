@@ -13,8 +13,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -215,7 +214,7 @@ class StaticMemberRegistrationServiceTest {
         }
     }
 
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(
         listOf(
             EndpointInfoConverter(),
             MemberNotaryDetailsConverter(keyEncodingService),
