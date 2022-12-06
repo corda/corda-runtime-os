@@ -15,45 +15,23 @@ resources:
     cpu: "1000m"
 
 kafka:
-  bootstrapServers: "prereqs-kafka:9092"
-  tls:
-    enabled: true
-    truststore:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-kafka-0-tls"
-          key: "ca.crt"
   sasl:
     enabled: true
-    username:
-      value: "user"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-kafka-jaas"
-          key: "client-passwords"
-
-#db:
-#  cluster:
-#    username:
-#      value: "user"
-#    password:
-#      valueFrom:
-#        secretKeyRef:
-#          key: "password"
-db:
-  cluster:
     username: 
       valueFrom:
         secretKeyRef:
-          name: "postgresql"
+          name: "kafka-sasl"
           key: "username"
     password: 
       valueFrom:
         secretKeyRef:
-          name: "postgresql"
+          name: "kafka-sasl"
           key: "password"
-    host: prereqs-rds-aurora-postgresql
+    mechanism: "SCRAM-SHA-512"
+  tls:
+    enabled: true
+  bootstrapServers: "b-1.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096,b-2.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096,b-3.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096,b-4.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096,b-5.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096,b-6.cordadev1mskcluster.1m7lw8.c8.kafka.eu-west-1.amazonaws.com:9096"
+
 
 db:
   cluster:
@@ -67,7 +45,6 @@ db:
         secretKeyRef:
           name: "postgresql"
           key: "password"
-    database: alice
     host: prereqs-rds-aurora-postgresql
 
 bootstrap:

@@ -78,6 +78,9 @@ pipeline {
         AURORA_DB_CREDENTIALS = credentials('openshift-test-aurora-db-credentials')
         AURORA_DB_USERNAME = "${env.AURORA_DB_CREDENTIALS_USR}"
         AURORA_DB_PASSWORD = "${env.AURORA_DB_CREDENTIALS_PSW}"
+        MSK_KAFKA_CREDENTIALS = credentials('openshift-test-msk-kafka-credentials')
+        MSK_KAFKA_USERNAME = "${env.MSK_KAFKA_CREDENTIALS_USR}"
+        MSK_KAFKA_PASSWORD = "${env.MSK_KAFKA_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("openshift-test-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
@@ -119,30 +122,31 @@ pipeline {
                     kubectl -n "${NAMESPACE}" create -f .ci/e2eTests/ocp-prereqs.yaml
                     kubectl -n "${NAMESPACE}" create secret generic postgresql --from-literal="username"=${AURORA_DB_USERNAME} --from-literal="password"=${AURORA_DB_PASSWORD}
                     kubectl -n "${NAMESPACE}" create service externalname prereqs-rds-aurora-postgresql --external-name corda-dev1-rds-aurora-corda.cluster-ckztu5lthwmu.eu-west-1.rds.amazonaws.com
+                    kubectl -n "${NAMESPACE}" create secret generic kafka-sasl --from-literal="username"=${MSK_KAFKA_USERNAME} --from-literal="password"=${MSK_KAFKA_PASSWORD}
                 '''.stripIndent()
             }
         }
-        stage('Install kafka as prereqs') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
-                    sh '''
-                        echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
-                        helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
-                            -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
-                    '''
-                }
-            }
-            post {
-                always {
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
-                        kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
-                    sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
-                }
-            }
-        }
+        //stage('Install kafka as prereqs') {
+        //    steps {
+        //        withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
+        //            sh '''
+        //               echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
+        //                helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
+        //                    -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
+        //            '''
+        //        }
+        //    }
+        //    post {
+        //        always {
+        //            sh '''\
+        //                kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
+        //                kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
+        //            '''.stripIndent()
+        //            archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
+        //            sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
+        //        }
+        //    }
+        //}
         stage('Deploy clusters') {
            parallel {
                stage("Deploy Alice cluster") {
@@ -189,7 +193,7 @@ pipeline {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
                     def clusters = ['alice','bob','caroline']
 
-                    portForwarding("prereqs-kafka-0", 9092,9092)
+                    //portForwarding("prereqs-kafka-0", 9092,9092)
 
                     clusters.eachWithIndex {c, index  ->
                        portForwarding("deployment/corda-$c-rpc-worker", 8887 + index, 8888)
