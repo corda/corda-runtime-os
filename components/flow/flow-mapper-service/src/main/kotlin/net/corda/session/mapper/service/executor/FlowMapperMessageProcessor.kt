@@ -2,6 +2,7 @@ package net.corda.session.mapper.service.executor
 
 import java.time.Instant
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -39,23 +40,27 @@ class FlowMapperMessageProcessor(
         logger.trace { "Received event: key: $key event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
-        return if (isExpiredSessionEvent(value) && isValidState(state)) {
+        return if (isExpiredSessionEvent(value) || !isValidState(state, value)) {
+            StateAndEventProcessor.Response(state, emptyList())
+        } else {
             val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
             val result = executor.execute()
             StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
-        } else {
-            StateAndEventProcessor.Response(state, emptyList())
         }
     }
 
     /**
-     * Only allow messages to be processed when the messages are for a new state
-     * or if it is an existing state that is set to [FlowMapperStateType.OPEN]
+     * Only allow flow events to be processed when:
+     * - the messages are for a new state.
+     * - if it is an existing state that is set to [FlowMapperStateType.OPEN],
+     * - it is not a [FlowEvent]
      * @param state the current state for this mapper event
-     * @return true if mapper state is valid for message processing. False otherwise.
+     * @param mapperEvent the mapper event
+     * @return true if mapper state is valid for flow event processing. False if the state is not valid for a flow event or if it is not
+     * a [FlowEvent]
      */
-    private fun isValidState(state: FlowMapperState?): Boolean {
-        return state == null || state.status == FlowMapperStateType.OPEN
+    private fun isValidState(state: FlowMapperState?, mapperEvent: FlowMapperEvent): Boolean {
+        return state == null || state.status == FlowMapperStateType.OPEN || mapperEvent.payload !is FlowEvent
     }
 
     /**
@@ -64,7 +69,7 @@ class FlowMapperMessageProcessor(
      * @param event Any flow mapper event
      * @return True if it is an expired [SessionEvent], false otherwise
      */
-    private fun isExpiredSessionEvent(event: FlowMapperEvent) : Boolean {
+    private fun isExpiredSessionEvent(event: FlowMapperEvent): Boolean {
         val payload = event.payload
         if (payload is SessionEvent) {
             val sessionEventExpiryTime = payload.timestamp.toEpochMilli() + sessionP2PTtl
@@ -74,7 +79,7 @@ class FlowMapperMessageProcessor(
             }
         }
 
-        return true
+        return false
     }
 
     override val keyClass = String::class.java
