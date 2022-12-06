@@ -65,7 +65,8 @@ fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroup
                     setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
                     emptyList(),
                     GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-                    null
+                    null,
+                    emptyList(),
                 )
             } else {
                 null

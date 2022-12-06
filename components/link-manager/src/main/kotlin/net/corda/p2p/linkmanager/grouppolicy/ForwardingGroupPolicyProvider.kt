@@ -87,7 +87,8 @@ internal class ForwardingGroupPolicyProvider(
             protocolModes,
             trustedCertificates,
             sessionPkiMode,
-            sessionTrustStorePem
+            sessionTrustStorePem,
+            groupPolicy.p2pParameters.clientAllowedCertificates.toList(),
         )
     }
 

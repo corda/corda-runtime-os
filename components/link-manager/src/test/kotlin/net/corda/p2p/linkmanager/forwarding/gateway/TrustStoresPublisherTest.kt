@@ -80,7 +80,8 @@ class TrustStoresPublisherTest {
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         certificates,
         GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-        null
+        null,
+        emptyList(),
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(

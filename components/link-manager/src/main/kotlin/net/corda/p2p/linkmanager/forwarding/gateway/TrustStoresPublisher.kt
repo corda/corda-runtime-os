@@ -14,8 +14,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.GatewayAllowedClientCertificates
 import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
@@ -125,7 +127,23 @@ internal class TrustStoresPublisher(
             val groupInfo = toPublish.poll() ?: return
             val certificates = groupInfo.trustedCertificates
             publishGroupIfNeeded(groupInfo.holdingIdentity, certificates)
+            publishDefaultCertificates(groupInfo.holdingIdentity, groupInfo.certificatesAllowedClientSubject)
         }
+    }
+
+    private fun publishDefaultCertificates(holdingIdentity: HoldingIdentity, certificatesAllowedClientSubject: List<String>) {
+        if(certificatesAllowedClientSubject.isEmpty()) {
+            return
+        }
+        val record = Record(
+            GATEWAY_TLS_ALLOWED_CLIENT_CERTIFICATE,
+            "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+            GatewayAllowedClientCertificates(
+                holdingIdentity.toAvro(),
+                certificatesAllowedClientSubject,
+            )
+        )
+        publisher.publish(listOf(record)).forEach { it.join() }
     }
 
     private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificate>) {

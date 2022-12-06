@@ -68,7 +68,8 @@ class PendingSessionMessageQueuesImplTest {
             emptySet(),
             emptyList(),
             GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-            null
+            null,
+            emptyList(),
         )
     }
 

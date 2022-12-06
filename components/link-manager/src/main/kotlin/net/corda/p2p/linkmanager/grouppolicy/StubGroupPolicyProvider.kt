@@ -30,7 +30,8 @@ internal class StubGroupPolicyProvider(
                 this.protocolModes.toSet(),
                 this.trustedCertificates,
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-                null
+                null,
+                emptyList(),
             )
         }
     }
