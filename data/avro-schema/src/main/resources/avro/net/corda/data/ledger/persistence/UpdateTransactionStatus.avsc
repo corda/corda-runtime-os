@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "FindTransaction",
-  "doc": "Retrieve the specified signed transaction, specified by id. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "name": "UpdateTransactionStatus",
+  "doc": "Updates a transaction's status. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
   "namespace": "net.corda.data.ledger.persistence",
   "fields": [
     {
@@ -12,7 +12,7 @@
     {
       "name": "transactionStatus",
       "type": "string",
-      "doc": "The status of the transaction"
+      "doc": "The new status of the transaction"
     }
   ]
 }

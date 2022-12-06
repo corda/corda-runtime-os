@@ -7,6 +7,7 @@ import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.TransactionState
 import java.security.PublicKey
@@ -41,10 +42,12 @@ interface UtxoLedgerTransaction {
     val commands: List<Command>
     val signatories: List<PublicKey>
 
+    val inputStateRefs: List<StateRef>
     val inputStateAndRefs: List<StateAndRef<*>>
     val inputTransactionStates: List<TransactionState<*>> get() = inputStateAndRefs.map { it.state }
     val inputContractStates: List<ContractState> get() = inputStateAndRefs.map { it.state.contractState }
 
+    val referenceInputStateRefs: List<StateRef>
     val referenceInputStateAndRefs: List<StateAndRef<*>>
     val referenceInputTransactionStates: List<TransactionState<*>> get() = referenceInputStateAndRefs.map { it.state }
     val referenceInputContractStates: List<ContractState> get() = referenceInputTransactionStates.map { it.contractState }

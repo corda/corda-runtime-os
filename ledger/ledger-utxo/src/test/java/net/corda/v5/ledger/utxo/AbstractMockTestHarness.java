@@ -45,7 +45,7 @@ public class AbstractMockTestHarness {
     protected final Instant midpoint = Instant.EPOCH;
     protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
     protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
-    protected final Set<PublicKey> setOfKeys = Set.of(aliceKey,bobKey);
+    protected final Set<PublicKey> setOfKeys = Set.of(aliceKey, bobKey);
     protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
     protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
     protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
@@ -55,8 +55,8 @@ public class AbstractMockTestHarness {
     protected final List<Command> commands = List.of(command, createCommand, updateCommand);
     protected final StateRef stateRef = new StateRef(hash, 0);
     protected final Party notaryParty = new Party(notaryName, notaryKey);
-
     protected final StateAndRef<ContractState> contractStateAndRef = createStateAndRef(Mockito.mock(ContractState.class));
+    protected final StateRef contractStateRef = createStateAndRef(Mockito.mock(ContractState.class)).getRef();
     protected final TransactionState<ContractState> contractTransactionState = contractStateAndRef.getState();
     protected final ContractState contractState = contractTransactionState.getContractState();
 
@@ -174,8 +174,8 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addCommand(createCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addCommand(updateCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addSignatories(keys)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addInputState(contractStateAndRef)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateAndRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState, 0)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);

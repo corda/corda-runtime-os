@@ -42,9 +42,9 @@ interface TransactionMetadata {
     fun getCpkMetadata(): List<CordaPackageSummary>
 
     /**
-     * Gets the indexes of the component groups included in the transaction.
+     * Gets the number of the component groups included in the transaction.
      *
-     * @return A list of component group indexes.
+     * @return The number of component groups.
      */
     fun getNumberOfComponentGroups(): Int
 
