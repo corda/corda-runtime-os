@@ -126,7 +126,7 @@ abstract class BaseOnboard : Runnable {
                     ),
                     "mgm-cluster-names"
                 ),
-                "${listOf(groupPolicyFile).hashCode()}.json")
+                "${listOf(groupPolicyFile).hash()}.json")
 
     private val url by lazy {
         getUrl(cordaClusterName, rpcWorkerDeploymentName)
