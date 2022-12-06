@@ -71,11 +71,14 @@ class FlowMapperMessageProcessor(
      */
     private fun isExpiredSessionEvent(event: FlowMapperEvent): Boolean {
         val payload = event.payload
-        if (payload is SessionEvent) {
-            val sessionEventExpiryTime = payload.timestamp.toEpochMilli() + sessionP2PTtl
-            val currentTime = Instant.now().toEpochMilli()
-            if (currentTime > sessionEventExpiryTime) {
-                return true
+        if (payload is FlowEvent) {
+            val flowEventPayload = payload.payload
+            if (flowEventPayload is SessionEvent) {
+                val sessionEventExpiryTime = flowEventPayload.timestamp.toEpochMilli() + sessionP2PTtl
+                val currentTime = Instant.now().toEpochMilli()
+                if (currentTime > sessionEventExpiryTime) {
+                    return true
+                }
             }
         }
 
