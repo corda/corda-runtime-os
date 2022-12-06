@@ -155,7 +155,7 @@ class CachingCustomSerializerRegistry(
         val sm = System.getSecurityManager()
         if (sm != null) {
             val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
-            val customSerializerBundle = FrameworkUtil.getBundle(customSerializer::class.java)
+            val customSerializerBundle = FrameworkUtil.getBundle(serializer::class.java)
             val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
             var permission: BasicPermission? = null
             try {
