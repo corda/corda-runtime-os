@@ -6,14 +6,13 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -31,27 +30,17 @@ import java.security.PublicKey
 
 @Suppress("LongParameterList")
 @Component(
-    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class],
-    scope = ServiceScope.PROTOTYPE
+    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
 )
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = JsonValidator::class)
-    private val jsonValidator: JsonValidator,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService,
-    @Reference(service = TransactionMetadataFactory::class)
-    private val transactionMetadataFactory: TransactionMetadataFactory,
-    @Reference(service = WireTransactionFactory::class)
-    private val wireTransactionFactory: WireTransactionFactory,
-) : UtxoSignedTransactionFactory,
-    UsedByFlow,
-    SingletonSerializeAsToken {
+    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class) private val jsonValidator: JsonValidator,
+    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
+    @Reference(service = TransactionSignatureService::class) private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = TransactionMetadataFactory::class) private val transactionMetadataFactory: TransactionMetadataFactory,
+    @Reference(service = WireTransactionFactory::class) private val wireTransactionFactory: WireTransactionFactory,
+) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun create(
@@ -59,13 +48,14 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
         val metadata = transactionMetadataFactory.create(utxoMetadata())
-        UtxoTransactionVerification.verifyMetadata(metadata)
+
+        UtxoTransactionMetadataVerifier(metadata).verify()
+
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
-        val signaturesWithMetadata = signatories.map {
-            transactionSignatureService.sign(wireTransaction.id, it)
-        }
+        val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
+
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
@@ -77,14 +67,12 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
-    ): UtxoSignedTransaction {
-        return UtxoSignedTransactionImpl(
-            serializationService,
-            transactionSignatureService,
-            wireTransaction,
-            signaturesWithMetaData
-        )
-    }
+    ): UtxoSignedTransaction = UtxoSignedTransactionImpl(
+        serializationService,
+        transactionSignatureService,
+        wireTransaction,
+        signaturesWithMetaData
+    )
 
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
@@ -93,17 +81,15 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to UtxoComponentGroup.values().size
     )
 
-    private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =
-        jsonValidator
-            .canonicalize(jsonMarshallingService.format(metadata))
-            .toByteArray()
+    private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
+        return jsonValidator.canonicalize(jsonMarshallingService.format(metadata)).toByteArray()
+    }
 
     @Suppress("ComplexMethod")
     private fun calculateComponentGroups(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
         metadataBytes: ByteArray
     ): List<List<ByteArray>> {
-
         val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val notaryGroup = listOf(
@@ -113,7 +99,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         )
 
         val outputTransactionStates = utxoTransactionBuilder.outputStates.map {
-            TransactionStateImpl(it.first, utxoTransactionBuilder.notary!!, it.second)
+            it.toTransactionState(utxoTransactionBuilder.notary!!)
         }
 
         val outputsInfo = outputTransactionStates.map {
@@ -124,48 +110,51 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 currentSandboxGroup.getEvolvableTag(it.contractType)
             )
         }
+
         val commandsInfo = utxoTransactionBuilder.commands.map {
-            listOf(
-                currentSandboxGroup.getEvolvableTag(it.javaClass),
-            )
+            listOf(currentSandboxGroup.getEvolvableTag(it.javaClass))
         }
 
-        return UtxoComponentGroup
-            .values()
-            .sorted()
-            .map { componentGroupIndex ->
-                when (componentGroupIndex) {
-                    UtxoComponentGroup.METADATA -> {
-                        listOf(metadataBytes)
-                    }
-                    UtxoComponentGroup.NOTARY -> {
-                        notaryGroup.map { serializationService.serialize(it!!).bytes }
-                    }
-                    UtxoComponentGroup.SIGNATORIES -> {
-                        utxoTransactionBuilder.signatories.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.OUTPUTS_INFO -> {
-                        outputsInfo.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.COMMANDS_INFO -> {
-                        commandsInfo.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.DATA_ATTACHMENTS -> {
-                        utxoTransactionBuilder.attachments.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.INPUTS -> {
-                        utxoTransactionBuilder.inputStateRefs.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.OUTPUTS -> {
-                        outputTransactionStates.map { serializationService.serialize(it.contractState).bytes }
-                    }
-                    UtxoComponentGroup.COMMANDS -> {
-                        utxoTransactionBuilder.commands.map { serializationService.serialize(it).bytes }
-                    }
-                    UtxoComponentGroup.REFERENCES -> {
-                        utxoTransactionBuilder.referenceInputStateRefs.map { serializationService.serialize(it).bytes }
-                    }
+        return UtxoComponentGroup.values().sorted().map { componentGroupIndex ->
+            when (componentGroupIndex) {
+                UtxoComponentGroup.METADATA -> listOf(metadataBytes)
+
+                UtxoComponentGroup.NOTARY -> notaryGroup.map {
+                    serializationService.serialize(it!!).bytes
+                }
+
+                UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories.map {
+                    serializationService.serialize(it).bytes
+                }
+
+                UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo.map {
+                    serializationService.serialize(it).bytes
+                }
+
+                UtxoComponentGroup.COMMANDS_INFO -> commandsInfo.map {
+                    serializationService.serialize(it).bytes
+                }
+
+                UtxoComponentGroup.DATA_ATTACHMENTS -> utxoTransactionBuilder.attachments.map {
+                    serializationService.serialize(it).bytes
+                }
+
+                UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateAndRefs.map {
+                    serializationService.serialize(it.ref).bytes
+                }
+
+                UtxoComponentGroup.OUTPUTS -> outputTransactionStates.map {
+                    serializationService.serialize(it.contractState).bytes
+                }
+
+                UtxoComponentGroup.COMMANDS -> utxoTransactionBuilder.commands.map {
+                    serializationService.serialize(it).bytes
+                }
+
+                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceInputStateAndRefs.map {
+                    serializationService.serialize(it.ref).bytes
                 }
             }
+        }
     }
 }

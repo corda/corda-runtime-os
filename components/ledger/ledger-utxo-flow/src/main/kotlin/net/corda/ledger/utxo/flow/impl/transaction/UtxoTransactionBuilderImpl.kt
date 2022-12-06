@@ -14,12 +14,11 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
-import java.util.Objects
+import java.util.*
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     override val notary: Party? = null,
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
@@ -29,12 +28,10 @@ data class UtxoTransactionBuilderImpl(
     override val referenceInputStateRefs: List<StateRef> = emptyList(),
     // We cannot use TransactionStates without notary which may be available only later
     override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
+    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
-
-    private var alreadySigned = false
-    override fun setNotary(notary: Party): UtxoTransactionBuilder {
-        return copy(notary = notary)
-    }
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
@@ -48,8 +45,8 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
-    override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
-        return copy(inputStateRefs = inputStateRefs + stateRef)
+    override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
+        return copy(inputStateAndRefs = inputStateAndRefs + stateAndRef)
     }
 
     override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
@@ -57,11 +54,34 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        return addOutputState(contractState, null)
+        return copy(outputStates = outputStates + ContractStateAndEncumbranceTag(contractState, null))
     }
 
-    override fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + Pair(contractState, encumbrance))
+    override fun addEncumberedOutputStates(tag: String, contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
+        return copy(outputStates = outputStates + contractStates.map { ContractStateAndEncumbranceTag(it, tag) })
+    }
+
+    override fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState): UtxoTransactionBuilder {
+        return addEncumberedOutputStates(tag, contractStates.toList())
+    }
+
+    override fun getEncumbranceGroup(tag: String): List<ContractState> {
+        return getEncumbranceGroups().let {
+            require(it.containsKey(tag)) { "Encumbrance group with the specified tag does not exist: $tag." }
+            it.getValue(tag)
+        }
+    }
+
+    override fun getEncumbranceGroups(): Map<String, List<ContractState>> {
+        return outputStates
+            .filter { outputState -> outputState.encumbranceTag != null }
+            .groupBy { outputState -> outputState.encumbranceTag }
+            .map { entry -> entry.key!! to entry.value.map { items -> items.contractState } }
+            .toMap()
+    }
+
+    override fun setNotary(notary: Party): UtxoTransactionBuilder {
+        return copy(notary = notary)
     }
 
     override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
@@ -73,47 +93,28 @@ data class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
+    @Deprecated("Temporary function until the parameterless version gets available")
+    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction {
+        UtxoTransactionBuilderVerifier(this).verify()
+        return utxoSignedTransactionFactory.create(this, signatories)
+    }
+
+    @Suspendable
     override fun toSignedTransaction(): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 
-    @Suspendable
-    @Deprecated("Temporary function until the argumentless version gets available")
-    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction =
-        sign(listOf(signatory))
-
-    @Suspendable
-    fun sign(): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    fun sign(vararg signatories: PublicKey): UtxoSignedTransaction =
-        sign(signatories.toList())
-
-    @Suspendable
-    fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
-        require(signatories.toList().isNotEmpty()) {
-            "At least one key needs to be provided in order to create a signed Transaction!"
-        }
-        verifyIfReady()
-        val tx = utxoSignedTransactionFactory.create(this, signatories)
-        alreadySigned = true
-        return tx
-    }
-
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is UtxoTransactionBuilderImpl) return false
-        if (other.notary != notary) return false
-        if (other.attachments != attachments) return false
-        if (other.commands != commands) return false
-        if (other.inputStateRefs != inputStateRefs) return false
-        if (other.referenceInputStateRefs != referenceInputStateRefs) return false
-        if (other.outputStates != outputStates) return false
-        if (other.signatories != signatories) return false
-        return true
+        return this === other
+                || other is UtxoTransactionBuilderImpl
+                && other.notary == notary
+                && other.attachments == attachments
+                && other.commands == commands
+                && other.inputStateAndRefs == inputStateAndRefs
+                && other.referenceInputStateAndRefs == referenceInputStateAndRefs
+                && other.outputStates == outputStates
+                && other.signatories == signatories
     }
 
     override fun hashCode(): Int = Objects.hash(
@@ -126,10 +127,4 @@ data class UtxoTransactionBuilderImpl(
         referenceInputStateRefs,
         outputStates,
     )
-
-    private fun verifyIfReady() {
-        check(!alreadySigned) { "A transaction cannot be signed twice." }
-        UtxoTransactionVerification.verifyNotary(notary)
-        UtxoTransactionVerification.verifyStructures(timeWindow, inputStateRefs, outputStates.map { it.first })
-    }
 }
