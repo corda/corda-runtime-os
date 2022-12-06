@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence
 
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 
 interface SigningKeySaveContext {
     val alias: String?

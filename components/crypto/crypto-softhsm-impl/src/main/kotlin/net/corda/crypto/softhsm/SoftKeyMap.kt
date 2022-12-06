@@ -1,6 +1,6 @@
 package net.corda.crypto.softhsm
 
-import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey

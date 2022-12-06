@@ -18,7 +18,7 @@ dependencies {
     api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
 
-    testImplementation "net.corda:corda-cipher-suite"
+    testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

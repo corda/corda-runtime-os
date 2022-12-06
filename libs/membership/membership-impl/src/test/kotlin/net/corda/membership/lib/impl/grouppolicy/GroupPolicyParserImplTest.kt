@@ -1,7 +1,14 @@
 package net.corda.membership.lib.impl.grouppolicy
 
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.membership.lib.MemberInfoExtension.Companion.certificate
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
@@ -9,24 +16,16 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
-import net.corda.membership.lib.MemberInfoExtension.Companion.certificate
-import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
-import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID
 import net.corda.membership.lib.impl.grouppolicy.v1.buildPersistedProperties
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -63,7 +62,7 @@ class GroupPolicyParserImplTest {
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(any<String>()) } doReturn defaultKey
     }
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(
         listOf(
             EndpointInfoConverter(),
             MemberNotaryDetailsConverter(keyEncodingService),

@@ -1,17 +1,15 @@
 package net.corda.membership.impl.registration.dynamic.member
 
-import java.nio.ByteBuffer
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.toByteArray
-import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -83,7 +81,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
@@ -93,6 +90,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.ByteBuffer
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])

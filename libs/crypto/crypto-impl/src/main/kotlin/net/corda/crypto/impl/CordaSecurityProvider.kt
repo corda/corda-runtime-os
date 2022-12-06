@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.crypto.core.OID_COMPOSITE_SIGNATURE_IDENTIFIER
-import net.corda.v5.cipher.suite.KeyEncodingService
 import java.security.Provider
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap

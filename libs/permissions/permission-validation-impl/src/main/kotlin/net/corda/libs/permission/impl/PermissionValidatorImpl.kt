@@ -48,11 +48,6 @@ class PermissionValidatorImpl(
             return false
         }
 
-        if (!permissionSummary.enabled) {
-            logger.debug { "User $loginName is disabled" }
-            return false
-        }
-
         logger.debug { "Permission summary found for user $loginName with permissions: ${permissionSummary.permissions.joinToString()}." }
 
         return findPermissionMatch(permissionSummary, operation)

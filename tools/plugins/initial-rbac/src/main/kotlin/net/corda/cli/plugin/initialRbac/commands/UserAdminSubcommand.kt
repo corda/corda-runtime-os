@@ -23,7 +23,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
     private val permissionsToCreate: Map<String, String> = listOf(
         // User manipulation permissions
         "CreateUsers" to "POST:/api/v1/user",
-        "GetUsers" to "GET:/api/v1/user?loginName=$USER_URL_REGEX",
+        "GetUsers" to "GET:/api/v1/user\\?loginName=$USER_URL_REGEX",
         "AddRoleToUser" to "PUT:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "DeleteRoleFromUser" to "DELETE:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "GetPermissionsSummary" to "GET:/api/v1/user/$USER_URL_REGEX/permissionSummary",
@@ -31,7 +31,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
         // Permission manipulation permissions ;-)
         "CreatePermission" to "POST:/api/v1/permission",
         "BulkCreatePermissions" to "POST:/api/v1/permission/bulk",
-        "QueryPermissions" to "GET:/api/v1/permission?.*",
+        "QueryPermissions" to "GET:/api/v1/permission\\?.*",
         "GetPermission" to "GET:/api/v1/permission/$UUID_REGEX",
 
         // Role manipulation permissions
