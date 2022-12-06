@@ -24,7 +24,7 @@ data class UtxoTransactionBuilderImpl(
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
-    private val signatories: Set<PublicKey> = emptySet(),
+    override val signatories: List<PublicKey> = emptyList(),
     override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
 
@@ -47,10 +47,6 @@ data class UtxoTransactionBuilderImpl(
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
         return copy(signatories = this.signatories + signatories)
-    }
-
-    override fun addCommandAndSignatories(command: Command, signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
-        return addCommand(command).addSignatories(signatories)
     }
 
     override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
@@ -133,28 +129,8 @@ data class UtxoTransactionBuilderImpl(
     )
 
     private fun verifyIfReady() {
-        // TODO(CORE-7116 more verifications)
-        // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
-
         check(!alreadySigned) { "A transaction cannot be signed twice." }
-
-        // Notary is not null
-        checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }
-
-        // TODO Input notaries same (and later or rotated) as notary
-
-        // timeWindow is not null
-        checkNotNull(timeWindow)
-
-        // At least one input, or one output
-        require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
-            "At least one input or output state is required"
-        }
-
-        // TODO At least one required signer
-
-        // TODO At least one command
-
-        // TODO probably some more stuff we have to go look at C4 to remember
+        UtxoTransactionVerification.verifyNotary(notary)
+        UtxoTransactionVerification.verifyStructures(timeWindow, inputStateAndRefs, outputStates.map { it.first })
     }
 }

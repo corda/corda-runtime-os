@@ -9,14 +9,14 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     compileOnly 'org.osgi:osgi.core'
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
     api ("io.micrometer:micrometer-core:$micrometerVersion") {
         // we don't need these in classpath, so excluding them to reduce dependencies.
-        exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
 

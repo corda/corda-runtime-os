@@ -23,7 +23,7 @@ class ConsensualLedgerTransactionImpl(
     }
     override val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroup.REQUIRED_SIGNING_KEYS.ordinal)
+            .getComponentGroupList(ConsensualComponentGroup.SIGNATORIES.ordinal)
             .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {

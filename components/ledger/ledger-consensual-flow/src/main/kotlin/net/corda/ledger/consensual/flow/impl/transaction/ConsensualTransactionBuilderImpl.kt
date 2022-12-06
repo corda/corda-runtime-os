@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -21,7 +20,6 @@ class ConsensualTransactionBuilderImpl(
         copy(states = this.states + states)
 
     @Suspendable
-
     override fun toSignedTransaction(): ConsensualSignedTransaction {
         TODO("Not yet implemented")
     }

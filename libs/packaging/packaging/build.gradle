@@ -36,6 +36,7 @@ configurations {
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 

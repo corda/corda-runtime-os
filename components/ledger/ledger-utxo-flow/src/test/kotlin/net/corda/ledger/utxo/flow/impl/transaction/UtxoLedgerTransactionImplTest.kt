@@ -12,6 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.security.PublicKey
 import kotlin.test.assertIs
 
 @Suppress("DEPRECATION")
@@ -32,6 +33,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .addOutputState(utxoStateExample)
             .addInputState(inputStateAndRef)
             .addReferenceInputState(referenceStateAndRef)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
             .toSignedTransaction(publicKeyExample)
@@ -45,6 +47,11 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         assertEquals(1, ledgerTransaction.outputContractStates.size)
         assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
+
+        assertIs<List<PublicKey>>(ledgerTransaction.signatories)
+        assertEquals(1, ledgerTransaction.signatories.size)
+        assertEquals(publicKeyExample, ledgerTransaction.signatories.first())
+        assertIs<PublicKey>(ledgerTransaction.signatories.first())
 
         /** TODO When inputStateAndRefs or referenceInputStateAndRefs will get available
         assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.inputStateAndRefs)

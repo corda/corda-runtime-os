@@ -23,6 +23,7 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
+import org.apache.kafka.common.errors.InconsistentGroupProtocolException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
@@ -63,6 +64,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is IllegalStateException,
                 is ArithmeticException,
                 is FencedInstanceIdException,
+                is InconsistentGroupProtocolException,
                 is InvalidOffsetException -> {
                     logErrorAndThrowFatalException("Error attempting to poll.", ex)
                 }

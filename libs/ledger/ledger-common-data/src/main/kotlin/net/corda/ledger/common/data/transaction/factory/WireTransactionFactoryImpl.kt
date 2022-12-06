@@ -13,7 +13,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.PrivacySalt
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,6 +41,10 @@ class WireTransactionFactoryImpl @Activate constructor(
         jsonValidator.parseSchema(getSchema(TransactionMetadataImpl.SCHEMA_PATH))
     }
 
+    override fun create(componentGroupLists: List<List<ByteArray>>): WireTransaction {
+        return create(componentGroupLists, generatePrivacySalt())
+    }
+
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
@@ -49,32 +52,44 @@ class WireTransactionFactoryImpl @Activate constructor(
         checkComponentGroups(componentGroupLists)
         val metadata = parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
+        val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
+            componentGroupLists.getOrElse(index) { arrayListOf() }
+        }
+
         return WireTransaction(
             merkleTreeProvider,
             digestService,
             privacySalt,
-            componentGroupLists,
+            completeComponentGroupLists,
             metadata
         )
     }
 
     override fun create(
-        componentGroupLists: List<List<ByteArray>>,
-        metadata: TransactionMetadata
+        componentGroupLists: Map<Int, List<ByteArray>>,
+        privacySalt: PrivacySalt
     ): WireTransaction {
-        checkComponentGroups(componentGroupLists)
-        val parsedMetadata = parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        checkComponentGroups(componentGroupLists.values)
+        val metadata = parseMetadata(
+            requireNotNull(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]?.first()) {
+                "There must be a metadata component group at index 0 with a single leaf"
+            }
+        )
+
+        val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
+            componentGroupLists.getOrElse(index) { arrayListOf() }
+        }
 
         return WireTransaction(
             merkleTreeProvider,
             digestService,
-            generatePrivacySalt(),
-            componentGroupLists,
-            parsedMetadata
+            privacySalt,
+            completeComponentGroupLists,
+            metadata
         )
     }
 
-    private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
+    private fun checkComponentGroups(componentGroupLists: Collection<List<ByteArray>>) {
         check(componentGroupLists.isNotEmpty()) { "Wire transactions cannot be created without at least one component group." }
     }
 

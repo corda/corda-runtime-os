@@ -6,6 +6,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
@@ -14,6 +15,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -174,7 +176,7 @@ class UtxoPersistenceServiceImplTest {
     fun `can persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
-        val transactionStatus = "V"
+        val transactionStatus = TransactionStatus.VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
@@ -203,7 +205,7 @@ class UtxoPersistenceServiceImplTest {
             val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
             val txComponents = dbTransaction.field<Collection<Any>?>("components")
             assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists)
+                .hasSameSizeAs(componentGroupLists.filter { it.isNotEmpty() })
             txComponents!!
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .groupBy { it.field<Int>("groupIndex") }.values
@@ -248,8 +250,8 @@ class UtxoPersistenceServiceImplTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
-            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
+            assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
     }
 
@@ -277,7 +279,10 @@ class UtxoPersistenceServiceImplTest {
                 "$seed-fileChecksum3"
             )
         )
-        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
+        val transactionMetadata = transactionMetadataExample(
+            cpkMetadata = cpks,
+            numberOfComponentGroups = UtxoComponentGroup.values().size
+        )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
@@ -310,7 +315,7 @@ class UtxoPersistenceServiceImplTest {
     private class TestUtxoTransactionReader(
         val transactionContainer:  SignedTransactionContainer,
         override val account: String,
-        override val status: String
+        override val status: TransactionStatus
     ): UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id
