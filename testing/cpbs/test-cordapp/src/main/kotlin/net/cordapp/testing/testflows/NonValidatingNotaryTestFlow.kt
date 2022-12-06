@@ -137,7 +137,8 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             .setNotary(notaryServerParty)
             .addCommand(TestCommand())
             .run {
-                // Since the builder will always be copied with the new attributes, we always need to re-assign it
+                // TODO CORE-8726 Since the builder will always be copied with the new attributes,
+                //  we always need to re-assign it
                 var builder = if (timeWindowBounds.first != null) {
                     setTimeWindowBetween(
                         Instant.now().plusMillis(timeWindowBounds.first!!),
