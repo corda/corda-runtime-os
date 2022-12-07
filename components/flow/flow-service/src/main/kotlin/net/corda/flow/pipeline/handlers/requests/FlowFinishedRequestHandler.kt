@@ -11,7 +11,6 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -40,7 +39,7 @@ class FlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.FlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        log.trace { "Flow [${checkpoint.flowId}] completed successfully" }
+        log.info("Flow [${checkpoint.flowId}] completed successfully")
         recordFlowRuntimeMetric(checkpoint, FlowStates.COMPLETED.toString())
 
         val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
