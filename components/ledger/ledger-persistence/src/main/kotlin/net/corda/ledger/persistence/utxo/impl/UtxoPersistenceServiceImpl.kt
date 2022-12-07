@@ -19,12 +19,6 @@ class UtxoPersistenceServiceImpl constructor(
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
-    override fun findTransaction(id: String): SignedTransactionContainer? {
-        return entityManager.transaction { em ->
-            repository.findTransaction(em, id)
-        }
-    }
-
     override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
         return entityManager.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
@@ -37,8 +31,6 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {
-        val entityManger = sandbox.getEntityManagerFactory().createEntityManager()
-
         val nowUtc = utcClock.instant()
 
         entityManager.transaction { em ->

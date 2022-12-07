@@ -8,7 +8,6 @@ import net.corda.ledger.persistence.consensual.ConsensualPersistenceService
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
 
 class ConsensualPersistTransactionRequestHandler(

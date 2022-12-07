@@ -334,7 +334,7 @@ class UtxoRepositoryImpl(
             .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
-            .logResult("transaction status [$transactionId, ${status.value}]")
+            .logResult("transaction status [$transactionId, ${transactionStatus.value}]")
 
         check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
