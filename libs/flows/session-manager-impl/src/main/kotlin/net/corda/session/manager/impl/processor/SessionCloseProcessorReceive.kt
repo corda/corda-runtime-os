@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -11,7 +12,6 @@ import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessStat
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import java.time.Instant
 
 
 /**
@@ -38,7 +38,7 @@ class SessionCloseProcessorReceive(
     override fun execute(): SessionState {
         return if (sessionState == null) {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId  with null state"
-            logger.warn(errorMessage)
+            logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionClose-NullSessionState", instant)
         } else {
             val seqNum = sessionEvent.sequenceNum
