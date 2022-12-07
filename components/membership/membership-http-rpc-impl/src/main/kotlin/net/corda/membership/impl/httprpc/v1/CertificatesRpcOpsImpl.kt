@@ -50,8 +50,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
-import java.net.InetAddress
-import java.net.URI
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import javax.security.auth.x500.X500Principal
