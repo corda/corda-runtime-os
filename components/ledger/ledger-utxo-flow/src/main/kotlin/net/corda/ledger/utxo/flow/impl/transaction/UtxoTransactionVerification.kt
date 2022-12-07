@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
@@ -30,7 +30,7 @@ class UtxoTransactionVerification {
 
         fun verifyStructures(
             timeWindow: TimeWindow?,
-            inputStateAndRefs: List<StateAndRef<*>>,
+            inputStateRefs: List<StateRef>,
             outputStates: List<ContractState>
         ) {
 
@@ -40,7 +40,7 @@ class UtxoTransactionVerification {
             checkNotNull(timeWindow)
 
             // At least one input, or one output
-            require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
+            require(inputStateRefs.isNotEmpty() || outputStates.isNotEmpty()) {
                 "At least one input or output state is required"
             }
 
@@ -55,7 +55,7 @@ class UtxoTransactionVerification {
          * WIP CORE-5982
          */
         fun verifyLedgerTransaction(tx: UtxoLedgerTransaction) {
-            verifyStructures(tx.timeWindow, tx.inputStateAndRefs, tx.outputContractStates)
+            verifyStructures(tx.timeWindow, tx.inputStateRefs, tx.outputContractStates)
             verifyContractStates(tx)
         }
 

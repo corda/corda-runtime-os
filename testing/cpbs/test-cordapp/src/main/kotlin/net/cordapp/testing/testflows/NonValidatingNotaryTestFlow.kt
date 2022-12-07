@@ -157,15 +157,11 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 }
 
                 inputStateRefs.forEach {
-                    builder = builder.addInputState(
-                        utxoLedgerService.resolve<TestContract.TestState>(StateRef.parse(it))
-                    )
+                    builder = builder.addInputState(StateRef.parse(it))
                 }
 
                 referenceStateRefs.forEach {
-                    builder = builder.addReferenceInputState(
-                        utxoLedgerService.resolve<TestContract.TestState>(StateRef.parse(it))
-                    )
+                    builder = builder.addReferenceInputState(StateRef.parse(it))
                 }
                 builder
             }.toSignedTransaction(memberLookup.myInfo().sessionInitiationKey)
