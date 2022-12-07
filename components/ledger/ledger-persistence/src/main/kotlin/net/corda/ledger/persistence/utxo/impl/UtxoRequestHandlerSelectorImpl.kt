@@ -3,6 +3,9 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.PersistTransaction
+import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
+import net.corda.data.ledger.persistence.UpdateTransactionStatus
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
@@ -17,6 +20,8 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 @Component(service = [UtxoRequestHandlerSelector::class])
 class UtxoRequestHandlerSelectorImpl @Activate constructor(
+    @Reference(service = ExternalEventResponseFactory::class)
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
     private val responseFactory: ResponseFactory
 ): UtxoRequestHandlerSelector {
@@ -33,7 +38,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
-        when (val req = request.request) {
+        return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(
                     req,
@@ -44,12 +49,29 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             is PersistTransaction -> {
-                return UtxoPersistTransactionRequestHandler(
+                UtxoPersistTransactionRequestHandler(
                     UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,
                     persistenceService,
                     UtxoOutputRecordFactoryImpl(responseFactory)
+                )
+            }
+            is PersistTransactionIfDoesNotExist -> {
+                UtxoPersistTransactionIfDoesNotExistRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    externalEventResponseFactory,
+                    sandbox.getSandboxSingletonService(),
+                    persistenceService
+                )
+            }
+            is UpdateTransactionStatus -> {
+                UtxoUpdateTransactionStatusRequestHandler(
+                    req,
+                    request.flowExternalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService
                 )
             }
             else -> {

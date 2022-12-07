@@ -20,8 +20,8 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
 
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = getUtxoInvalidStateAndRef().ref
+        val referenceStateRef = getUtxoInvalidStateAndRef().ref
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
@@ -31,8 +31,8 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(inputStateAndRef)
-            .addReferenceInputState(referenceStateAndRef)
+            .addInputState(inputStateRef)
+            .addReferenceInputState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
