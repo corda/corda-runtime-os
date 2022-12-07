@@ -135,4 +135,34 @@ class SandboxGroupContextCacheTest {
 
         assertThat(retrievedContext).isSameAs(sandboxContext1)
     }
+
+    @Test
+    fun `sandboxes of different types do not trigger eviction of other sandbox types`() {
+        val cache = SandboxGroupContextCacheImpl(2)
+
+        val vncFlow = VirtualNodeContext(
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
+            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            SandboxGroupType.FLOW,
+            "filter")
+        val vncPersistence = VirtualNodeContext(
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
+            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            SandboxGroupType.PERSISTENCE,
+            "filter")
+        val vncVerification = VirtualNodeContext(
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
+            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
+            SandboxGroupType.VERIFICATION,
+            "filter")
+        val sandboxContextFlow = mock<CloseableSandboxGroupContext>()
+        val sandboxContextPersistence = mock<CloseableSandboxGroupContext>()
+        val sandboxContextVerification = mock<CloseableSandboxGroupContext>()
+
+        cache.get(vncFlow) { sandboxContextFlow }
+        cache.get(vncPersistence) { sandboxContextPersistence }
+        cache.get(vncVerification) { sandboxContextVerification }
+        val retrievedContext = cache.get(vncFlow) { mock() }
+        assertThat(retrievedContext).isSameAs(sandboxContextFlow)
+    }
 }
