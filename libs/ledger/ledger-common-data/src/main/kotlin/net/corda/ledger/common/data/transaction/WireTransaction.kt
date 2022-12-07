@@ -142,4 +142,8 @@ class WireTransaction(
     }
 
     override fun hashCode(): Int = Objects.hash(privacySalt, componentGroupLists)
+
+    override fun toString(): String {
+        return "WireTransaction(id=$id, privacySalt=$privacySalt, metadata=$metadata, componentGroupLists=$componentGroupLists)"
+    }
 }

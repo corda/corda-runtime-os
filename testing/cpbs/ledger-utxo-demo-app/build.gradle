@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Utxo Ledger demo app"
+        name "UTXO Ledger demo app"
         versionId 1
         vendor "R3"
     }

@@ -1,5 +1,8 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -28,14 +31,14 @@ import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
-@Component(service = [ UtxoLedgerService::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
-    @Reference(service = UtxoSignedTransactionFactory::class)
-    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine,
+    @Reference(service = UtxoSignedTransactionFactory::class)
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     @Reference(service = UtxoLedgerPersistenceService::class)
-    private val persistenceService: UtxoLedgerPersistenceService
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -52,13 +55,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
-        return persistenceService.find(id)
+        return utxoLedgerPersistenceService.find(id, TransactionStatus.VERIFIED)
     }
 
     @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         // TODO resolve, etc
-        return persistenceService.find(id)?.toLedgerTransaction()
+        return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
     }
 
     @Suspendable
@@ -93,5 +96,23 @@ class UtxoLedgerServiceImpl @Activate constructor(
             throw e.exception
         }
         return flowEngine.subFlow(utxoReceiveFinalityFlow)
+    }
+
+    @Deprecated("Temporary until finality flow is completed")
+    @Suspendable
+    override fun persistTransaction(signedTransaction: UtxoSignedTransaction) {
+        utxoLedgerPersistenceService.persist(signedTransaction, TransactionStatus.VERIFIED)
+    }
+
+    @Deprecated("Temporary until finality flow is completed")
+    @Suspendable
+    override fun resolveBackchain(signedTransaction: UtxoSignedTransaction, session: FlowSession) {
+        flowEngine.subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+    }
+
+    @Deprecated("Temporary until finality flow is completed")
+    @Suspendable
+    override fun sendBackchain(session: FlowSession) {
+        flowEngine.subFlow(TransactionBackchainSenderFlow(session))
     }
 }
