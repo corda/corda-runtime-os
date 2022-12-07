@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:flows:flow-api')
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
     implementation project(':libs:sandbox')
@@ -46,6 +47,8 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:sandboxes-testkit')
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

@@ -134,9 +134,11 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        )
+        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent

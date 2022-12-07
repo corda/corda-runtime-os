@@ -4,13 +4,16 @@ import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionParameters
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -35,16 +38,16 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    @Reference(service = UtxoSignedTransactionFactory::class)
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun find(id: SecureHash): UtxoSignedTransaction? {
+    override fun find(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
-                FindTransactionParameters(id.toString())
+                FindTransactionParameters(id.toString(), transactionStatus)
             )
         }.firstOrNull()?.let {
             serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
@@ -65,13 +68,40 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }.map { serializationService.deserialize(it.array()) }
     }
 
-    private fun SignedTransactionContainer.toSignedTransaction() =
-        UtxoSignedTransactionImpl(
-            serializationService,
-            transactionSignatureService,
-            wireTransaction,
-            signatures
-        )
+    @Suspendable
+    override fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus) {
+        wrapWithPersistenceException {
+            externalEventExecutor.execute(
+                UpdateTransactionStatusExternalEventFactory::class.java,
+                UpdateTransactionStatusParameters(id.toString(), transactionStatus)
+            )
+        }
+    }
+
+    @Suspendable
+    override fun persistIfDoesNotExist(
+        transaction: UtxoSignedTransaction,
+        transactionStatus: TransactionStatus
+    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>> {
+        return wrapWithPersistenceException {
+            externalEventExecutor.execute(
+                PersistTransactionIfDoesNotExistExternalEventFactory::class.java,
+                PersistTransactionIfDoesNotExistParameters(serialize(transaction.toContainer()), transactionStatus)
+            )
+        }.first().let {
+            val (status, summaries) = serializationService.deserialize<Pair<String?, List<CordaPackageSummary>>>(it.array())
+            when (status) {
+                null -> TransactionExistenceStatus.DOES_NOT_EXIST
+                "U" -> TransactionExistenceStatus.UNVERIFIED
+                "V" -> TransactionExistenceStatus.VERIFIED
+                else -> throw IllegalStateException("Invalid status $status")
+            } to summaries
+        }
+    }
+
+    private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {
+        return utxoSignedTransactionFactory.create(wireTransaction, signatures)
+    }
 
     private fun UtxoSignedTransaction.toContainer() =
         (this as UtxoSignedTransactionInternal).run {

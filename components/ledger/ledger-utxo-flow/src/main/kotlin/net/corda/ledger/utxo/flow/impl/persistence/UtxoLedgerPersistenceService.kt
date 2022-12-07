@@ -16,6 +16,7 @@ interface UtxoLedgerPersistenceService {
     /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
+     * @param transaction Consensual signed transaction to persist.
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
      * @param relevantStates Positions or transaction components related to relevant states.
@@ -31,6 +32,25 @@ interface UtxoLedgerPersistenceService {
         relevantStates: List<ComponentPosition> = emptyList()
     ): List<CordaPackageSummary>
 
+    @Suspendable
+    fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus)
+
+    /**
+     * Persist a [UtxoSignedTransaction] to the store.
+     *
+     * @param transaction UTXO signed transaction to persist.
+     * @param transactionStatus Transaction's status
+     *
+     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     *
+     * @throws CordaPersistenceException if an error happens during persist operation.
+     */
+    @Suspendable
+    fun persistIfDoesNotExist(
+        transaction: UtxoSignedTransaction,
+        transactionStatus: TransactionStatus
+    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id].
      *
@@ -41,5 +61,5 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun find(id: SecureHash): UtxoSignedTransaction?
+    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 }
