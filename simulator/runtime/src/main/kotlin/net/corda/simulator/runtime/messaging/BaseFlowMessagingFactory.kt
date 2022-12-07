@@ -5,6 +5,7 @@ import net.corda.simulator.runtime.flows.BaseFlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.utils.getProtocol
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 
@@ -15,7 +16,8 @@ class BaseFlowMessagingFactory: FlowMessagingFactory {
         member: MemberX500Name,
         fiber: SimFiber,
         injector: FlowServicesInjector,
-        flow: Flow
+        flow: Flow,
+        contextProperties: FlowContextProperties
     ): FlowMessaging {
 
         val instanceFlowMap = fiber.lookupFlowInstance(member)
@@ -30,7 +32,8 @@ class BaseFlowMessagingFactory: FlowMessagingFactory {
             FlowContext(configuration, member, protocol),
             fiber,
             injector,
-            BaseFlowFactory()
+            BaseFlowFactory(),
+            contextProperties
         )
     }
 }
