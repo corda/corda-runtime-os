@@ -29,8 +29,8 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = getUtxoInvalidStateAndRef().ref
+        val referenceStateRef = getUtxoInvalidStateAndRef().ref
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
@@ -38,8 +38,8 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(inputStateAndRef)
-            .addReferenceInputState(referenceStateAndRef)
+            .addInputState(inputStateRef)
+            .addReferenceInputState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)

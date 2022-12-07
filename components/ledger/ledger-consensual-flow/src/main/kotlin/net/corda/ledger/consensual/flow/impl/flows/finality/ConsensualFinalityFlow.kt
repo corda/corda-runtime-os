@@ -118,8 +118,7 @@ class ConsensualFinalityFlow(
 
                     throw e
                 }
-                signedByParticipantsTransaction =
-                    signedByParticipantsTransaction.addSignature(signature)
+                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
                 log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }

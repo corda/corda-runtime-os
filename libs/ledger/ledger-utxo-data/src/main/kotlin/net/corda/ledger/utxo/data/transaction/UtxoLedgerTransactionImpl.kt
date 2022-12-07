@@ -37,7 +37,7 @@ class UtxoLedgerTransactionImpl(
     override val signatories: List<PublicKey>
         get() = wrappedWireTransaction.signatories
 
-    val inputStateRefs: List<StateRef>
+    override val inputStateRefs: List<StateRef>
         get() = wrappedWireTransaction.inputStateRefs
 
     override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -45,7 +45,7 @@ class UtxoLedgerTransactionImpl(
         emptyList()
     }
 
-    val referenceInputStateRefs: List<StateRef>
+    override val referenceInputStateRefs: List<StateRef>
         get() = wrappedWireTransaction.referenceInputStateRefs
 
     override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
