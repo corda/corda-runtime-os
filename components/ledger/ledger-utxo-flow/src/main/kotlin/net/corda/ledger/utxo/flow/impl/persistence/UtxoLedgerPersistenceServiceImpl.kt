@@ -63,7 +63,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value, relevantStates)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, relevantStates)
             )
         }.map { serializationService.deserialize(it.array()) }
     }
