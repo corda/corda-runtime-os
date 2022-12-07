@@ -10,7 +10,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 
@@ -32,30 +32,28 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTx: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTx.id).isEqualTo(wireTransaction.id)
-        Assertions.assertThat(utxoFilteredTx.metadata.getLedgerModel())
+        assertThat(utxoFilteredTx.id).isEqualTo(wireTransaction.id)
+        assertThat(utxoFilteredTx.metadata.getLedgerModel())
             .isEqualTo(wireTransaction.metadata.getLedgerModel())
 
     }
 
     @Test
     fun `Can reconstruct filtered output`() {
-        Assertions.assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.OUTPUTS_INFO.ordinal))
-            .hasSize(2)
-        Assertions.assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.OUTPUTS.ordinal))
-            .hasSize(2)
+        assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.OUTPUTS_INFO.ordinal)).hasSize(2)
+        assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.OUTPUTS.ordinal)).hasSize(2)
 
         val utxoFilteredTx: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTx.outputStateAndRefs)
+        assertThat(utxoFilteredTx.outputStateAndRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         val outputs = utxoFilteredTx.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>
 
-        Assertions.assertThat(outputs.size).isEqualTo(2)
-        Assertions.assertThat(outputs.values.size).isEqualTo(2)
-        Assertions.assertThat(outputs.values[0]?.state?.contractState).isInstanceOf(OutputState1::class.java)
-        Assertions.assertThat(outputs.values[1]?.state?.contractState).isInstanceOf(OutputState2::class.java)
+        assertThat(outputs.size).isEqualTo(2)
+        assertThat(outputs.values.size).isEqualTo(2)
+        assertThat(outputs.values[0]?.state?.contractState).isInstanceOf(OutputState1::class.java)
+        assertThat(outputs.values[1]?.state?.contractState).isInstanceOf(OutputState2::class.java)
     }
 
     @Test
@@ -63,15 +61,15 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTx: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTx.inputStateRefs)
+        assertThat(utxoFilteredTx.inputStateRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         val inputStateRefs = utxoFilteredTx.inputStateRefs as UtxoFilteredData.Audit<StateRef>
-        Assertions.assertThat(inputStateRefs.size).isEqualTo(2)
-        Assertions.assertThat(inputStateRefs.values.keys.first()).isEqualTo(0)
-        Assertions.assertThat(inputStateRefs.values[0]?.transactionHash).isEqualTo(inputId)
-        Assertions.assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
-        Assertions.assertThat(inputStateRefs.values[0]?.index).isEqualTo(0)
-        Assertions.assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
+        assertThat(inputStateRefs.size).isEqualTo(2)
+        assertThat(inputStateRefs.values.keys.first()).isEqualTo(0)
+        assertThat(inputStateRefs.values[0]?.transactionHash).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[0]?.index).isEqualTo(0)
+        assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
 
     @Test
@@ -104,20 +102,20 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
             }
         }
 
-        Assertions.assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.INPUTS.ordinal))
+        assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.INPUTS.ordinal))
             .hasSize(1)
 
         val utxoFilteredTx: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTx.inputStateRefs)
+        assertThat(utxoFilteredTx.inputStateRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         val inputStateRefs = utxoFilteredTx.inputStateRefs as UtxoFilteredData.Audit<StateRef>
-        Assertions.assertThat(inputStateRefs.size).isEqualTo(2)
-        Assertions.assertThat(inputStateRefs.values.size).isEqualTo(1)
-        Assertions.assertThat(inputStateRefs.values.keys.first()).isEqualTo(1)
-        Assertions.assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
-        Assertions.assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
+        assertThat(inputStateRefs.size).isEqualTo(2)
+        assertThat(inputStateRefs.values.size).isEqualTo(1)
+        assertThat(inputStateRefs.values.keys.first()).isEqualTo(1)
+        assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
 
 
@@ -126,8 +124,8 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTransaction.notary).isEqualTo(notary)
-        Assertions.assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
+        assertThat(utxoFilteredTransaction.notary).isEqualTo(notary)
+        assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
     }
 
     @Test
@@ -162,8 +160,8 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTransaction.notary).isNull()
-        Assertions.assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
+        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(timeWindow)
     }
 
     @Test
@@ -197,8 +195,8 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTransaction.notary).isNull()
-        Assertions.assertThat(utxoFilteredTransaction.timeWindow).isNull()
+        assertThat(utxoFilteredTransaction.notary).isNull()
+        assertThat(utxoFilteredTransaction.timeWindow).isNull()
     }
 
     @Test
@@ -206,10 +204,10 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTransaction.commands)
+        assertThat(utxoFilteredTransaction.commands)
             .isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
         val commands = utxoFilteredTransaction.commands as UtxoFilteredData.SizeOnly
-        Assertions.assertThat(commands.size).isEqualTo(1)
+        assertThat(commands.size).isEqualTo(1)
     }
 
     @Test
@@ -217,7 +215,7 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        Assertions.assertThat(utxoFilteredTransaction.referenceInputStateRefs)
+        assertThat(utxoFilteredTransaction.referenceInputStateRefs)
             .isInstanceOf(UtxoFilteredData.Removed::class.java)
 
     }

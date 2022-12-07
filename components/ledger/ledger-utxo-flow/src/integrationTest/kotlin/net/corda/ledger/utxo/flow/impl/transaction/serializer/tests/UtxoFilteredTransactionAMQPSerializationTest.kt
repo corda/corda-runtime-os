@@ -9,27 +9,28 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoFilteredTransacti
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.security.PublicKey
 
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
 
-    lateinit var filteredTransactionFactory: FilteredTransactionFactory
-    lateinit var utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory
-
-    companion object {
-        private val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
+    private companion object {
+        val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
     }
 
     @Test
     fun `can serialize and deserialize utxo filtered transaction`() {
-        filteredTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+        val filteredTransactionFactory = sandboxGroupContext.getSandboxSingletonService<FilteredTransactionFactory>()
 
         val wireTx = wireTransactionFactory.createExample(
-            jsonMarshallingService, jsonValidator, listOf(
+            jsonMarshallingService,
+            jsonValidator,
+            listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories
                 emptyList(), // output infos
@@ -40,7 +41,10 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                     serializationService.serialize(StateRef(inputHash, 1)).bytes
                 ), // inputs
                 emptyList(), // references
-                emptyList(), // outputs
+                listOf(
+                    serializationService.serialize(MyState(0)).bytes,
+                    serializationService.serialize(MyState(1)).bytes
+                ), // outputs
                 emptyList(), // commands
             )
         )
@@ -51,11 +55,12 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
                 ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java)
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.OUTPUTS.ordinal)
             )
         ) { true }
 
-        utxoFilteredTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+        val utxoFilteredTransactionFactory = sandboxGroupContext.getSandboxSingletonService<UtxoFilteredTransactionFactory>()
         val utxoFilteredTx = utxoFilteredTransactionFactory.create(filteredTx)
         assertThat(utxoFilteredTx.id).isNotNull
 
@@ -66,11 +71,21 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         // check that the deserialized UtxoFilteredTransaction is fully functional
         assertThat(deserialized).isNotNull
         assertThat(deserialized.id).isEqualTo(wireTx.id)
+
         assertThat(deserialized.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
         assertThat(deserialized.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         val inputs = deserialized.inputStateRefs as UtxoFilteredData.Audit<StateRef>
         assertThat(inputs.size).isEqualTo(2)
         assertThat(inputs.values.size).isEqualTo(2)
-        assertThat(inputs.values.get(0)?.transactionHash).isEqualTo(inputHash)
+        assertThat(inputs.values[0]?.transactionHash).isEqualTo(inputHash)
+
+        assertThat(deserialized.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly
+        assertThat(outputs.size).isEqualTo(2)
+    }
+
+    data class MyState(val value: Int) : ContractState {
+        override val participants: List<PublicKey> = emptyList()
     }
 }
