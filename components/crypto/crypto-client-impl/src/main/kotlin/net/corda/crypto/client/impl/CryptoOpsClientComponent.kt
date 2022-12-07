@@ -2,6 +2,7 @@ package net.corda.crypto.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -23,7 +24,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec

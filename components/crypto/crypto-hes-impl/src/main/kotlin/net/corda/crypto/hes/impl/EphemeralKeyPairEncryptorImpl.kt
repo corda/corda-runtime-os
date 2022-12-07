@@ -4,7 +4,7 @@ import net.corda.crypto.hes.HybridEncryptionParamsProvider
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.core.impl.encryptWithEphemeralKeyPair
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

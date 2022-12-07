@@ -2,6 +2,8 @@ package net.corda.ledger.common.data.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.common.json.validation.WrappedJsonSchema
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -10,8 +12,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate

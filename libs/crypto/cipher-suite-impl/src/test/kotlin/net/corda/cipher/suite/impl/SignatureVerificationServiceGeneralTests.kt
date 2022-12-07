@@ -1,7 +1,7 @@
 package net.corda.cipher.suite.impl
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Test

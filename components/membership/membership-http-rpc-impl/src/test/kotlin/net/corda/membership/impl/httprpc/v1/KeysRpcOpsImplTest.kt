@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -21,7 +22,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested

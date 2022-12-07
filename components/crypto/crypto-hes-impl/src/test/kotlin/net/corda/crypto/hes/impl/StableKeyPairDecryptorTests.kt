@@ -5,7 +5,7 @@ import net.corda.crypto.hes.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

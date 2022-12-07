@@ -1,6 +1,6 @@
 package net.corda.crypto.tck.impl
 
-import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

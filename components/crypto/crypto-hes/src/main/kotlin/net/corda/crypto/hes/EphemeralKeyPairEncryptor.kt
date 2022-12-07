@@ -25,7 +25,7 @@ interface EphemeralKeyPairEncryptor {
      * @param params a [HybridEncryptionParamsProvider] which is used to get the salt and aad.
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme. The key scheme of the
-     * public key must support Diffie–Hellman key agreement, see [net.corda.v5.cipher.suite.schemes.KeyScheme] and
+     * public key must support Diffie–Hellman key agreement, see [net.corda.crypto.cipher.suite.schemes.KeyScheme] and
      * its capabilities' property.
      * @param plainText plain text to be encrypted.
      * with the public keys of the both parties.

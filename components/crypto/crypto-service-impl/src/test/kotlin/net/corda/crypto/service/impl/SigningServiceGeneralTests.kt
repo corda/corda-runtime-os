@@ -1,6 +1,9 @@
 package net.corda.crypto.service.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -17,9 +20,6 @@ import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat

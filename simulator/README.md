@@ -47,6 +47,11 @@ To release resources used by Simulator, including any database connections, call
   simulator.close()
 ```
 
+> **⚠ Warning**
+>
+> Simulator runs the node and flow setup synchronously. It is advised that all node and flow setup should be done
+> synchronously on the same thread, and not use asynchronous code.
+
 ## Logging
 
 Simulator uses SLF4j for its logging. To turn logging on, either add a dependency to a logging framework bridge of your

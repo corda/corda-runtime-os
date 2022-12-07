@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
@@ -30,7 +31,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

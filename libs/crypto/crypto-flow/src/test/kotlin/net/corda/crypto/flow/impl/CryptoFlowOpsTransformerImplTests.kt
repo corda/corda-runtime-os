@@ -1,5 +1,6 @@
 package net.corda.crypto.flow.impl
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
@@ -19,7 +20,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -37,7 +38,6 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
-import net.corda.data.flow.event.external.ExternalEventContext
 import kotlin.random.Random
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull

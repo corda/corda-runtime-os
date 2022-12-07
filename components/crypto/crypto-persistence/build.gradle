@@ -9,7 +9,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     api 'javax.persistence:javax.persistence-api'
-    api "net.corda:corda-cipher-suite"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -17,6 +16,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
+
+    api project(':libs:crypto:cipher-suite')
 
     implementation project(":libs:layered-property-map")
     implementation project(":libs:configuration:configuration-core")

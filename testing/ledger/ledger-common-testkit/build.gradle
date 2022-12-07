@@ -9,8 +9,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-ledger-common'
-    implementation 'net.corda:corda-cipher-suite'
-
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:ledger:ledger-common-data')
     api project(':components:ledger:ledger-common-flow-api')
     api project(':libs:application:application-impl')

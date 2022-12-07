@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -18,12 +19,11 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -38,7 +38,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction

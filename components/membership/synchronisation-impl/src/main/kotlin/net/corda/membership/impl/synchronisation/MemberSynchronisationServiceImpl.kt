@@ -1,12 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
-import java.util.Random
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -58,9 +58,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -69,6 +66,9 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Random
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Component(service = [SynchronisationService::class])
 @Suppress("LongParameterList")
