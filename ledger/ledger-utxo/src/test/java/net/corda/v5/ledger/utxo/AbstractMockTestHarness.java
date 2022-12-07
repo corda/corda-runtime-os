@@ -44,7 +44,6 @@ public class AbstractMockTestHarness {
     protected final Instant midpoint = Instant.EPOCH;
     protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
     protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
-    protected final Set<PublicKey> setOfKeys = Set.of(aliceKey, bobKey);
     protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
     protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
     protected final List<DigitalSignatureAndMetadata> signatures = List.of(aliceSignature);
