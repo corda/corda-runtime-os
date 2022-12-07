@@ -1,10 +1,11 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.persistence.common.RequestHandler
-import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
+import net.corda.ledger.persistence.consensual.ConsensualRepository
+import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -15,20 +16,15 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("Unused")
-@Component(service = [UtxoRequestHandlerSelector::class])
-class UtxoRequestHandlerSelectorImpl @Activate constructor(
+@Component(service = [ConsensualRequestHandlerSelector::class])
+class ConsensualRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory
-): UtxoRequestHandlerSelector {
+    private val responseFactory: ResponseFactory,
+) : ConsensualRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
-        val repository =  UtxoRepositoryImpl(
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService()
-        )
-        val persistenceService = UtxoPersistenceServiceImpl(
+        val repository = sandbox.getSandboxSingletonService<ConsensualRepository>()
+        val persistenceService = ConsensualPersistenceServiceImpl(
             sandbox.getEntityManagerFactory().createEntityManager(),
             repository,
             sandbox.getSandboxSingletonService(),
@@ -36,25 +32,25 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
         )
         when (val req = request.request) {
             is FindTransaction -> {
-                return UtxoFindTransactionRequestHandler(
+                return ConsensualFindTransactionRequestHandler(
                     req,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    responseFactory
                 )
             }
             is PersistTransaction -> {
-                return UtxoPersistTransactionRequestHandler(
-                    UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
-                    UtxoTokenObserverMapImpl(sandbox),
+                return ConsensualPersistTransactionRequestHandler(
+                    req,
+                    sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    responseFactory
                 )
             }
             else -> {
-                throw IllegalStateException("The UTXO request type '${request.request.javaClass}' is not supported.")
+                throw IllegalStateException("The Consensual request type '${request.request.javaClass}' is not supported.")
             }
         }
     }

@@ -10,16 +10,22 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
-import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
+import net.corda.ledger.persistence.consensual.ConsensualPersistenceService
+import net.corda.ledger.persistence.consensual.ConsensualRepository
+import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
+import net.corda.ledger.persistence.consensual.impl.ConsensualPersistenceServiceImpl
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
+import net.corda.test.util.time.TestClock
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.utilities.time.Clock
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -27,6 +33,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -59,16 +66,20 @@ class ConsensualLedgerRepositoryTest {
     private val lifecycle = EachTestLifecycle()
 
     private lateinit var wireTransactionFactory: WireTransactionFactory
+    private lateinit var digestService: DigestService
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
     private lateinit var serializationService: SerializationService
     private lateinit var entityManagerFactory: EntityManagerFactory
-    private lateinit var repository: ConsensualLedgerRepository
+    private lateinit var repository: ConsensualRepository
+    private lateinit var persistenceService: ConsensualPersistenceService
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
+        // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
+        private val TEST_CLOCK: Clock = TestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS))
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
     }
 
@@ -87,11 +98,17 @@ class ConsensualLedgerRepositoryTest {
             val virtualNodeInfo = virtualNode.load(TESTING_DATAMODEL_CPB)
             val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity)
             wireTransactionFactory = ctx.getSandboxSingletonService()
+            digestService = ctx.getSandboxSingletonService()
             jsonMarshallingService = ctx.getSandboxSingletonService()
             jsonValidator = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
+            persistenceService = ConsensualPersistenceServiceImpl(
+                entityManagerFactory.createEntityManager(),
+                repository,
+                digestService,
+                TEST_CLOCK)
         }
     }
 
@@ -163,7 +180,7 @@ class ConsensualLedgerRepositoryTest {
             }
         }
 
-        val dbSignedTransaction = entityManagerFactory.createEntityManager().transaction { em ->
+        val dbSignedTransaction = entityManagerFactory.transaction { em ->
             repository.findTransaction(em, signedTransaction.id.toString())
         }
 
@@ -178,9 +195,8 @@ class ConsensualLedgerRepositoryTest {
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
-        entityManagerFactory.createEntityManager().transaction { em ->
-            repository.persistTransaction(em, signedTransaction, transactionStatus, account)
-        }
+        val transaction = TestConsensualTransactionReader(signedTransaction, account, transactionStatus)
+        persistenceService.persistTransaction(transaction)
 
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
 
@@ -282,7 +298,11 @@ class ConsensualLedgerRepositoryTest {
 
         // Persist transaction CPKs
         val persistedCpkCount = entityManagerFactory.createEntityManager().transaction { em ->
-            repository.persistTransactionCpk(em, signedTransaction)
+            repository.persistTransactionCpk(
+                em,
+                signedTransaction.id.toString(),
+                signedTransaction.wireTransaction.metadata.getCpkMetadata()
+            )
         }
 
         // Verify persisted data
@@ -330,8 +350,11 @@ class ConsensualLedgerRepositoryTest {
             }
         }
 
-        val cpkChecksums = entityManagerFactory.createEntityManager().transaction { em ->
-            repository.findTransactionCpkChecksums(em, signedTransaction)
+        val cpkChecksums = entityManagerFactory.transaction { em ->
+            repository.findTransactionCpkChecksums(
+                em,
+                signedTransaction.wireTransaction.metadata.getCpkMetadata()
+            )
         }
 
         assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::fileChecksum))
@@ -393,6 +416,23 @@ class ConsensualLedgerRepositoryTest {
             )
         )
         return SignedTransactionContainer(wireTransaction, signatures)
+    }
+
+    private class TestConsensualTransactionReader(
+        val transactionContainer:  SignedTransactionContainer,
+        override val account: String,
+        override val status: TransactionStatus
+    ): ConsensualTransactionReader {
+        override val id: SecureHash
+            get() = transactionContainer.id
+        override val privacySalt: PrivacySalt
+            get() = transactionContainer.wireTransaction.privacySalt
+        override val rawGroupLists: List<List<ByteArray>>
+            get() = transactionContainer.wireTransaction.componentGroupLists
+        override val signatures: List<DigitalSignatureAndMetadata>
+            get() = transactionContainer.signatures
+        override val cpkMetadata: List<CordaPackageSummary>
+            get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
     }
 
     private fun digest(algorithm: String, data: ByteArray) =

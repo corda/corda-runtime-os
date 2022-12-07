@@ -1,17 +1,20 @@
-package net.corda.ledger.persistence.consensual
+package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
+import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,25 +31,25 @@ import javax.persistence.Tuple
  * only the [UsedByPersistence] marker interface.
  */
 @Component(
-    service = [ ConsensualLedgerRepository::class, UsedByPersistence::class ],
+    service = [ ConsensualRepositoryImpl::class, UsedByPersistence::class ],
     property = [ "corda.marker.only:Boolean=true" ],
     scope = PROTOTYPE
 )
-class ConsensualLedgerRepository @Activate constructor(
+class ConsensualRepositoryImpl @Activate constructor(
     @Reference
     private val digestService: DigestService,
     @Reference
     private val serializationService: SerializationService,
     @Reference
     private val wireTransactionFactory: WireTransactionFactory
-) : UsedByPersistence {
+) : ConsensualRepository, UsedByPersistence {
     companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val consensualComponentGroupMapper = ConsensualComponentGroupMapper()
+        private val logger = contextLogger()
     }
 
-    /** Reads [SignedTransactionContainer] with given [id] from database. */
-    fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {
+    override fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {
         val rows = entityManager.createNativeQuery(
             """
                 SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data
@@ -69,12 +72,27 @@ class ConsensualLedgerRepository @Activate constructor(
 
         return SignedTransactionContainer(
             wireTransaction,
-            findSignatures(entityManager, id)
+            findTransactionSignatures(entityManager, id)
         )
     }
 
-    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
-    private fun findSignatures(
+    override fun findTransactionCpkChecksums(
+        entityManager: EntityManager,
+        cpkMetadata: List<CordaPackageSummary>
+    ): Set<String> {
+        return entityManager.createNativeQuery(
+            """
+            SELECT file_checksum
+            FROM {h-schema}consensual_transaction_cpk
+            WHERE file_checksum in (:fileChecksums)""",
+            Tuple::class.java
+        )
+            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
+            .resultListAsTuples()
+            .mapTo(HashSet()) { r -> r.get(0) as String }
+    }
+
+    override fun findTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
@@ -91,36 +109,12 @@ class ConsensualLedgerRepository @Activate constructor(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    /** Persists [signedTransaction] data to database and link it to existing CPKs. */
-    fun persistTransaction(
+    override fun persistTransaction(
         entityManager: EntityManager,
-        signedTransaction: SignedTransactionContainer,
-        status: TransactionStatus,
-        account: String
-    ) {
-        val transactionId = signedTransaction.id.toString()
-        val wireTransaction = signedTransaction.wireTransaction
-        val now = Instant.now()
-        persistTransaction(entityManager, now, wireTransaction, account)
-        // Persist component group lists
-        wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
-            leaves.mapIndexed { leafIndex, bytes ->
-                persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
-            }
-        }
-        persistTransactionStatus(entityManager, now, transactionId, status)
-        // Persist signatures
-        signedTransaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
-        }
-    }
-
-    /** Persists [wireTransaction] data to database. */
-    private fun persistTransaction(
-        entityManager: EntityManager,
-        timestamp: Instant,
-        wireTransaction: WireTransaction,
-        account: String
+        id: String,
+        privacySalt: ByteArray,
+        account: String,
+        timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
@@ -128,22 +122,23 @@ class ConsensualLedgerRepository @Activate constructor(
             VALUES (:id, :privacySalt, :accountId, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
-            .setParameter("id", wireTransaction.id.toString())
-            .setParameter("privacySalt", wireTransaction.privacySalt.bytes)
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction [$id]")
     }
 
-    /** Persists component's leaf [data] to database. */
     @Suppress("LongParameterList")
-    private fun persistComponentLeaf(
+    override fun persistTransactionComponentLeaf(
         entityManager: EntityManager,
-        timestamp: Instant,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        data: ByteArray
+        data: ByteArray,
+        hash: String,
+        timestamp: Instant
     ): Int {
         return entityManager.createNativeQuery(
             """
@@ -155,23 +150,17 @@ class ConsensualLedgerRepository @Activate constructor(
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
-            .setParameter("hash", data.hashAsString())
+            .setParameter("hash", hash)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    /**
-     * Persists or updates transaction [status]. There is only one status per transaction. In case that status already
-     * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
-     * - UNVERIFIED -> *
-     * - VERIFIED -> VERIFIED
-     * - INVALID -> INVALID
-     */
-    private fun persistTransactionStatus(
+    override fun persistTransactionStatus(
         entityManager: EntityManager,
-        timestamp: Instant,
         transactionId: String,
-        status: TransactionStatus
+        status: TransactionStatus,
+        timestamp: Instant
     ): Int {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
         val rowsUpdated = entityManager.createNativeQuery(
@@ -186,6 +175,7 @@ class ConsensualLedgerRepository @Activate constructor(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
+            .logResult("transaction status [$transactionId, ${status.value}]")
 
         check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
@@ -195,13 +185,12 @@ class ConsensualLedgerRepository @Activate constructor(
         return rowsUpdated
     }
 
-    /** Persists transaction's [signature] to database. */
-    private fun persistSignature(
+    override fun persistTransactionSignature(
         entityManager: EntityManager,
-        timestamp: Instant,
         transactionId: String,
         index: Int,
-        signature: DigitalSignatureAndMetadata
+        signature: DigitalSignatureAndMetadata,
+        timestamp: Instant
     ): Int {
         return entityManager.createNativeQuery(
             """
@@ -215,14 +204,14 @@ class ConsensualLedgerRepository @Activate constructor(
             .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction signature [$transactionId, $index]")
     }
 
-    /** Persists link between [signedTransaction] and it's CPK data to database. */
-    fun persistTransactionCpk(
+    override fun persistTransactionCpk(
         entityManager: EntityManager,
-        signedTransaction: SignedTransactionContainer
+        transactionId: String,
+        cpkMetadata: List<CordaPackageSummary>
     ): Int {
-        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
         return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_cpk
@@ -231,27 +220,18 @@ class ConsensualLedgerRepository @Activate constructor(
             WHERE file_checksum in (:fileChecksums)
             ON CONFLICT DO NOTHING"""
         )
-            .setParameter("transactionId", signedTransaction.id.toString())
+            .setParameter("transactionId", transactionId)
             .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
             .executeUpdate()
     }
 
-    /** Finds file checksums of CPKs linked to transaction. */
-    fun findTransactionCpkChecksums(
-        entityManager: EntityManager,
-        signedTransaction: SignedTransactionContainer,
-    ): Set<String> {
-        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
-        return entityManager.createNativeQuery(
-            """
-            SELECT file_checksum
-            FROM {h-schema}consensual_transaction_cpk
-            WHERE file_checksum in (:fileChecksums)""",
-            Tuple::class.java
-        )
-            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
-            .resultListAsTuples()
-            .mapTo(HashSet()) { r -> r.get(0) as String }
+    private fun Int.logResult(entity: String): Int {
+        if (this == 0) {
+            logger.trace {
+                "Consensual ledger entity not persisted due to existing row in database: $entity"
+            }
+        }
+        return this
     }
 
     private fun ByteArray.hashAsString() =
