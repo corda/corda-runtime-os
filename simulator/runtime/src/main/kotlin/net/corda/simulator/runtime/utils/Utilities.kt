@@ -1,12 +1,15 @@
 package net.corda.simulator.runtime.utils
 
 import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -58,6 +61,15 @@ fun checkAPIAvailability(flow: Flow, configuration: SimulatorConfiguration){
             throw NotImplementedError("Support for custom services is not implemented; service was ${it.type.name}")
     }
 }
+
+/**
+ * Return the protocol of the flow
+ */
+fun Flow.getProtocol() : String =
+    this.javaClass.getAnnotation(InitiatingFlow::class.java)?.protocol
+        ?: this.javaClass.getAnnotation(InitiatedBy::class.java)?.protocol
+        ?: throw NoProtocolAnnotationException(this.javaClass)
+
 
 val availableAPIs = setOf(
     JsonMarshallingService::class.java,

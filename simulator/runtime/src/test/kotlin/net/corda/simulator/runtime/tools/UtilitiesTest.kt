@@ -1,5 +1,9 @@
 package net.corda.simulator.runtime.tools
 
+import net.corda.simulator.exceptions.NoProtocolAnnotationException
+import net.corda.simulator.runtime.testflows.PingAckFlow
+import net.corda.simulator.runtime.testflows.PingAckResponderFlow
+import net.corda.simulator.runtime.utils.getProtocol
 import net.corda.simulator.runtime.utils.injectIfRequired
 import net.corda.simulator.runtime.utils.sandboxName
 import net.corda.v5.application.flows.CordaInject
@@ -7,6 +11,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -48,6 +53,17 @@ class UtilitiesTest {
     open class A : Flow {
         @CordaInject
         lateinit var inheritedField: String
+    }
+
+    @Test
+    fun `should return protocol from the flow class`(){
+        val initiatorFlow = PingAckFlow()
+        val responderFlow = PingAckResponderFlow()
+        val noProtocolFlow = A()
+
+        assertEquals("ping-ack", initiatorFlow.getProtocol())
+        assertEquals("ping-ack", responderFlow.getProtocol())
+        assertThrows<NoProtocolAnnotationException>{noProtocolFlow.getProtocol()}
     }
 
     class B : A() {
