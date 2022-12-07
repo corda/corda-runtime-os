@@ -12,7 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
@@ -57,20 +57,20 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
 
         utxoFilteredTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
         val utxoFilteredTx = utxoFilteredTransactionFactory.create(filteredTx)
-        Assertions.assertThat(utxoFilteredTx.id).isNotNull
+        assertThat(utxoFilteredTx.id).isNotNull
 
         val bytes = serializationService.serialize(utxoFilteredTx)
-        Assertions.assertThat(bytes).isNotNull
+        assertThat(bytes).isNotNull
         val deserialized = serializationService.deserialize(bytes, UtxoFilteredTransaction::class.java)
 
         // check that the deserialized UtxoFilteredTransaction is fully functional
-        Assertions.assertThat(deserialized).isNotNull
-        Assertions.assertThat(deserialized.id).isEqualTo(wireTx.id)
-        Assertions.assertThat(deserialized.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
-        Assertions.assertThat(deserialized.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat(deserialized).isNotNull
+        assertThat(deserialized.id).isEqualTo(wireTx.id)
+        assertThat(deserialized.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+        assertThat(deserialized.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         val inputs = deserialized.inputStateRefs as UtxoFilteredData.Audit<StateRef>
-        Assertions.assertThat(inputs.size).isEqualTo(2)
-        Assertions.assertThat(inputs.values.size).isEqualTo(2)
-        Assertions.assertThat(inputs.values.get(0)?.transactionHash).isEqualTo(inputHash)
+        assertThat(inputs.size).isEqualTo(2)
+        assertThat(inputs.values.size).isEqualTo(2)
+        assertThat(inputs.values.get(0)?.transactionHash).isEqualTo(inputHash)
     }
 }

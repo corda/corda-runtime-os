@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.Party
@@ -25,14 +26,19 @@ class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
 ) : UtxoFilteredTransaction {
-    override val commands: UtxoFilteredData<Command>
-        get() = fetchFilteredData(UtxoComponentGroup.COMMANDS.ordinal)
+
     override val id: SecureHash
         get() = filteredTransaction.id
+
+    override val commands: UtxoFilteredData<Command>
+        get() = getFilteredData(UtxoComponentGroup.COMMANDS.ordinal)
+
     override val inputStateRefs: UtxoFilteredData<StateRef>
-        get() = fetchFilteredData(UtxoComponentGroup.INPUTS.ordinal)
+        get() = getFilteredData(UtxoComponentGroup.INPUTS.ordinal)
+
     override val metadata: TransactionMetadata
         get() = filteredTransaction.metadata
+
     override val notary: Party?
         get() = filteredTransaction
             .getComponentGroupContent(UtxoComponentGroup.NOTARY.ordinal)
@@ -40,41 +46,40 @@ class UtxoFilteredTransactionImpl(
             ?.let { serializationService.deserialize(it.second, Party::class.java) }
 
     override val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
-        get() = fetchFilteredData<ContractState>(UtxoComponentGroup.OUTPUTS.ordinal).let {
-            when (it) {
+        get() = getFilteredData<ContractState>(UtxoComponentGroup.OUTPUTS.ordinal).let { filteredOutputStates ->
+            when (filteredOutputStates) {
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
-                is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(it.size)
+                is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(filteredOutputStates.size)
                 is UtxoFilteredData.Audit -> {
-                    when (val stateInfos =
-                        fetchFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
+                    when (val filteredStateInfos = getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
                         is UtxoFilteredData.Audit -> {
-                            val values = it.values.entries.associateBy(
-                                keySelector = { entry -> entry.key },
-                                valueTransform = { entry ->
-                                    val info = stateInfos.values.getOrDefault(entry.key, null)
+                            val values = filteredOutputStates.values.entries.associateBy(
+                                keySelector = { (key, _) -> key },
+                                valueTransform = { (key, value) ->
+                                    val info = filteredStateInfos.values[key]
                                         ?: throw FilteredDataInconsistencyException("Missing output info")
-                                    val txState =
-                                        TransactionStateImpl(entry.value, info.notary, info.encumbrance)
-                                    StateAndRefImpl(txState, StateRef(id, entry.key))
+                                    StateAndRefImpl(
+                                        state = TransactionStateImpl(value, info.notary, info.encumbrance),
+                                        ref = StateRef(id, key)
+                                    )
                                 }
                             )
-                            FilteredDataAuditImpl(it.size, values)
+                            FilteredDataAuditImpl(filteredOutputStates.size, values)
                         }
-
-                        else ->
-                            throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
+                        else -> throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
                     }
                 }
 
-                else ->
-                    throw FilteredDataInconsistencyException("Unknown filtered data type.")
+                else -> throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
 
     override val referenceInputStateRefs: UtxoFilteredData<StateRef>
-        get() = fetchFilteredData(UtxoComponentGroup.REFERENCES.ordinal)
+        get() = getFilteredData(UtxoComponentGroup.REFERENCES.ordinal)
+
     override val signatories: UtxoFilteredData<PublicKey>
-        get() = fetchFilteredData(UtxoComponentGroup.SIGNATORIES.ordinal)
+        get() = getFilteredData(UtxoComponentGroup.SIGNATORIES.ordinal)
+
     override val timeWindow: TimeWindow?
         get() = filteredTransaction
             .getComponentGroupContent(UtxoComponentGroup.NOTARY.ordinal)
@@ -95,20 +100,20 @@ class UtxoFilteredTransactionImpl(
     ) : UtxoFilteredData.Audit<T>
 
 
-    private inline fun <reified T : Any> fetchFilteredData(index: Int): UtxoFilteredData<T> {
-        return filteredTransaction.filteredComponentGroups.getOrDefault(index, null)
-            ?.let {
-                when (it.merkleProofType) {
-                    MerkleProofType.SIZE -> return FilteredDataSizeImpl(it.merkleProof.treeSize)
+    private inline fun <reified T : Any> getFilteredData(index: Int): UtxoFilteredData<T> {
+        return filteredTransaction.filteredComponentGroups[index]
+            ?.let { group ->
+                when (group.merkleProofType) {
+                    MerkleProofType.SIZE -> return FilteredDataSizeImpl(group.merkleProof.treeSize)
                     MerkleProofType.AUDIT -> return FilteredDataAuditImpl(
-                        it.merkleProof.treeSize,
-                        it.merkleProof.leaves.associateBy(
+                        group.merkleProof.treeSize,
+                        group.merkleProof.leaves.associateBy(
                             { leaf -> leaf.index },
-                            { leaf -> serializationService.deserialize(leaf.leafData, T::class.java) })
+                            { leaf -> serializationService.deserialize(leaf.leafData) }
+                        )
                     )
                 }
-            }
-            ?: return FilteredDataRemovedImpl()
+            } ?: return FilteredDataRemovedImpl()
     }
 
 }

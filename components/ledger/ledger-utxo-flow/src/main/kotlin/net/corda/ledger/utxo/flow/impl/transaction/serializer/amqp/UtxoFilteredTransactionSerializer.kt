@@ -12,27 +12,27 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
+    service = [InternalCustomSerializer::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoFilteredTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
-) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>(),
-    UsedByFlow{
+    private val serializationService: SerializationService
+) : BaseProxySerializer<UtxoFilteredTransactionImpl, UtxoFilteredTransactionProxy>(), UsedByFlow {
+
     override fun toProxy(obj: UtxoFilteredTransactionImpl): UtxoFilteredTransactionProxy {
         return UtxoFilteredTransactionProxy(obj.filteredTransaction)
     }
 
-    override fun fromProxy(proxy: UtxoFilteredTransactionProxy): UtxoFilteredTransactionImpl
-        = UtxoFilteredTransactionImpl(serializationService, proxy.filteredTransaction)
+    override fun fromProxy(proxy: UtxoFilteredTransactionProxy): UtxoFilteredTransactionImpl {
+        return UtxoFilteredTransactionImpl(serializationService, proxy.filteredTransaction)
+    }
 
-    override val proxyType: Class<UtxoFilteredTransactionProxy>
-        get() = UtxoFilteredTransactionProxy::class.java
-    override val type: Class<UtxoFilteredTransactionImpl>
-        get() = UtxoFilteredTransactionImpl::class.java
-    override val withInheritance: Boolean
-        get() = false
+    override val proxyType = UtxoFilteredTransactionProxy::class.java
+
+    override val type = UtxoFilteredTransactionImpl::class.java
+
+    override val withInheritance = false
 }
 
 

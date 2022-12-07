@@ -17,13 +17,10 @@ import org.osgi.service.component.annotations.ServiceScope
 )
 class UtxoFilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
-
-    ) : UtxoFilteredTransactionFactory, UsedByFlow {
+    private val serializationService: SerializationService
+) : UtxoFilteredTransactionFactory, UsedByFlow {
     @Suspendable
-    override fun create(
-        filteredTransaction: FilteredTransaction
-    ): UtxoFilteredTransaction {
+    override fun create(filteredTransaction: FilteredTransaction): UtxoFilteredTransaction {
         return UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
     }
 }
