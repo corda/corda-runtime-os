@@ -40,13 +40,13 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
 
     @Test
     public void addInputStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addInputState(contractStateAndRef);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addInputState(contractStateRef);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void addReferenceInputStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputState(contractStateAndRef);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputState(contractStateRef);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 

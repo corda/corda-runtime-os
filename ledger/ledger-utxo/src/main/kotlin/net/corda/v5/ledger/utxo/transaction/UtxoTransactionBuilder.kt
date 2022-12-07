@@ -8,7 +8,7 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import java.security.PublicKey
 import java.time.Instant
 
@@ -51,18 +51,18 @@ interface UtxoTransactionBuilder {
     /**
      * Adds an input state to the current [UtxoTransactionBuilder].
      *
-     * @param stateAndRef The [StateAndRef] of the input state to add to the current [UtxoTransactionBuilder].
+     * @param stateRef The [StateRef] of the input state to add to the current [UtxoTransactionBuilder].
      * @return Returns a [UtxoTransactionBuilder] including the additional input state.
      */
-    fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder
+    fun addInputState(stateRef: StateRef): UtxoTransactionBuilder
 
     /**
      * Adds a reference input state to the current [UtxoTransactionBuilder].
      *
-     * @param stateAndRef The [StateAndRef] of the reference input state to add to the current [UtxoTransactionBuilder].
+     * @param stateRef The [StateRef] of the reference input state to add to the current [UtxoTransactionBuilder].
      * @return Returns a [UtxoTransactionBuilder] including the additional reference input state.
      */
-    fun addReferenceInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder
+    fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder
 
     /**
      * Adds an output state to the current [UtxoTransactionBuilder].

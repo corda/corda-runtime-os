@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "PersistTransactionIfDoesNotExist",
+  "doc": "Persist the specified signed transaction if it does not exist. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "transaction",
+      "type": "bytes",
+      "doc": "the serialized transaction"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "doc": "the transaction status"
+    }
+  ]
+}
