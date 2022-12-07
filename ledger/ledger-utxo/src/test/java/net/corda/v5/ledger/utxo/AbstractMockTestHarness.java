@@ -180,8 +180,14 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addCommand(updateCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addSignatories(keys)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addInputStates(List.of(contractStateRef, contractStateRef))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addInputStates(contractStateRef, contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceInputStates(List.of(contractStateRef, contractStateRef))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceInputStates(contractStateRef, contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addOutputStates(List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addOutputStates(contractState, contractState)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag1, contractState, contractState)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addEncumberedOutputStates(encumbranceTag2, List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);

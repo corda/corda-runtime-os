@@ -48,14 +48,50 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     }
 
     @Test
+    public void addInputStatesShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addInputStates(List.of(contractStateRef, contractStateRef));
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addInputStatesVarargShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addInputStates(contractStateRef, contractStateRef);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
     public void addReferenceInputStateShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputState(contractStateRef);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
+    public void addReferenceInputStatesShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputStates(List.of(contractStateRef, contractStateRef));
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addReferenceInputStatesVarargShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputStates(contractStateRef, contractStateRef);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
     public void addOutputStateOfContractStateShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.addOutputState(contractState);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addOutputStatesOfContractStateShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addOutputStates(List.of(contractState, contractState));
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addOutputStatesOfContractStatesVarargShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addOutputStates(contractState, contractState);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
