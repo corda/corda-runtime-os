@@ -5,7 +5,7 @@ import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.mockTransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactoryImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer

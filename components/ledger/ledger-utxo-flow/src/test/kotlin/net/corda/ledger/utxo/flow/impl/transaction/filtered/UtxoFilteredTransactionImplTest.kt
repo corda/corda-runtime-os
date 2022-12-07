@@ -14,7 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 
-class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
+class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 
     @Test
     fun `metada and id are always present`() {

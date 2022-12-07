@@ -6,10 +6,10 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSende
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
