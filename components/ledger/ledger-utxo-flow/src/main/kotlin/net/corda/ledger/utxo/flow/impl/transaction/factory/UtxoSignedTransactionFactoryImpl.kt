@@ -64,15 +64,15 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    override fun create(
-        wireTransaction: WireTransaction,
-        signaturesWithMetaData: List<DigitalSignatureAndMetadata>
-    ): UtxoSignedTransaction = UtxoSignedTransactionImpl(
-        serializationService,
-        transactionSignatureService,
-        wireTransaction,
-        signaturesWithMetaData
-    )
+override fun create(
+    wireTransaction: WireTransaction,
+    signaturesWithMetaData: List<DigitalSignatureAndMetadata>
+): UtxoSignedTransaction = UtxoSignedTransactionImpl(
+    serializationService,
+    transactionSignatureService,
+    wireTransaction,
+    signaturesWithMetaData
+)
 
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,

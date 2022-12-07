@@ -66,9 +66,8 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun getEncumbranceGroup(tag: String): List<ContractState> {
-        return getEncumbranceGroups().let {
-            require(it.containsKey(tag)) { "Encumbrance group with the specified tag does not exist: $tag." }
-            it.getValue(tag)
+        return requireNotNull(getEncumbranceGroups()[tag]) {
+            "Encumbrance group with the specified tag does not exist: $tag."
         }
     }
 
