@@ -28,20 +28,11 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         val log = loggerFor<TransactionBackchainVerifierImpl>()
     }
 
-    // we may want to tidy up transitively verified transactions that have sat around for a while
-    // means we'd need an extra status to know what they are
-    // we could clean up once the flow finishes but could that cause concurrency issues?
-    // this would be needed if we hit an invalid transaction when verifying. All transactions that come depend on it can never verify,
-    // therefore we should discard them from our database, otherwise people can fill up our database with invalid transactions, although
-    // that can still be done by sending long backchains
-
-    // return a boolean or just throw an exception?
     @Suspendable
     override fun verify(resolvingTransactionId: SecureHash, topologicalSort: TopologicalSort): Boolean {
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
-            // Consider moving to separate private method as it might reduce the fiber stack when coming back into the loop
             val transaction = utxoLedgerPersistenceService.find(transactionId, UNVERIFIED)
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
@@ -65,7 +56,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
     }
 }
 
-// temporary to mock verification
+// TODO CORE-8643
 interface TransactionVerifier {
     fun verify(transaction: UtxoSignedTransaction)
 }

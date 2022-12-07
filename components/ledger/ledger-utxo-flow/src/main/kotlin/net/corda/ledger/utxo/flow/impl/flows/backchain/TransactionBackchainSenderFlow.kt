@@ -17,11 +17,8 @@ class TransactionBackchainSenderFlow(private val session: FlowSession) : SubFlow
     @CordaInject
     lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
-    // splitting into two flows where the predicted transactions are returned from the flow would make testing easier
     @Suspendable
     override fun call() {
-        // might want to send transaction ids from resolving flow that were in the dependencies but already verified so that they can be
-        // removed from the predicted collection of transactions
         val predictedTransactions = linkedMapOf<SecureHash, UtxoSignedTransaction>()
         while (true) {
             when (val request = session.receive<TransactionBackchainRequest>()) {
@@ -29,7 +26,6 @@ class TransactionBackchainSenderFlow(private val session: FlowSession) : SubFlow
                     val transactions = request.transactionIds.map { id ->
                         predictedTransactions[id]?.also { predictedTransactions.remove(id) }
                             ?: utxoLedgerPersistenceService.find(id)
-                            // should send a Payload.Failure back for the non-existent transaction
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
                     // sending in batches of 1
@@ -38,8 +34,6 @@ class TransactionBackchainSenderFlow(private val session: FlowSession) : SubFlow
                     transactions
                         .flatMap { it.dependencies }
                         .map {
-                            // should send a Payload.Failure back for the non-existent transaction
-                            // a dependency not existing locally is a FATAL error, something seriously wrong has occurred.
                             utxoLedgerPersistenceService.find(it)
                                 ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                         }

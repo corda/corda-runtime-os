@@ -4,10 +4,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -44,6 +46,7 @@ class TransactionBackchainResolutionFlowTest {
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(transactionBackchainVerifier.verify(any(), any())).thenReturn(true)
     }
 
     @Test
@@ -112,8 +115,31 @@ class TransactionBackchainResolutionFlowTest {
     }
 
     @Test
-    fun `rethrows exception thrown from transaction verification`() {
+    fun `throws exception when verification fails`() {
+        whenever(ledgerTransaction.inputStateRefs).thenReturn(
+            listOf(
+                TX_2_INPUT_DEPENDENCY_STATE_REF_1,
+                TX_3_INPUT_DEPENDENCY_STATE_REF_1,
+                TX_3_INPUT_DEPENDENCY_STATE_REF_2
+            )
+        )
+        whenever(ledgerTransaction.referenceInputStateRefs).thenReturn(
+            listOf(
+                TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1,
+                TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2
+            )
+        )
 
+        whenever(utxoLedgerPersistenceService.find(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
+        whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
+        whenever(transactionBackchainVerifier.verify(eq(TX_ID_1), any())).thenReturn(false)
+
+        whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlow>())).thenReturn(TopologicalSort())
+
+        assertThatThrownBy { callTransactionBackchainResolutionFlow() }.isExactlyInstanceOf(CordaRuntimeException::class.java)
+
+        verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(TX_ID_1, setOf(TX_ID_3), session))
+        verifyNoMoreInteractions(flowEngine)
     }
 
     private fun callTransactionBackchainResolutionFlow() {

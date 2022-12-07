@@ -8,15 +8,12 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
-// need to send stop even if the resolving node doesn't need a backchain since the peer session doesn't know this
-// they'll just be waiting to receive the next sessions
-// can be slightly optimised to only wait to do backchain resolution if the transaction has dependencies, but can't do more than that.
-// If the sessions are made initiating flows then the peer session doesn't need to do any sort of waiting.
 @CordaSystemFlow
 class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTransaction, private val session: FlowSession) : SubFlow<Unit> {
 
@@ -36,8 +33,6 @@ class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTran
     @Suspendable
     override fun call() {
         val dependencies = transaction.dependencies
-        // Needs to be replaced with an optimised/specialised query method
-        // Assuming [find] requires transactions to be verified.
         val alreadyVerifiedTransactions = dependencies.filter { utxoLedgerPersistenceService.find(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = dependencies - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
@@ -57,12 +52,19 @@ class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTran
                         "backchain, beginning verification before storing the transactions locally"
             }
             try {
-                transactionBackchainVerifier.verify(transaction.id, topologicalSort)
+                if (!transactionBackchainVerifier.verify(transaction.id, topologicalSort)) {
+                    log.warn(
+                        "Backchain resolution of ${transaction.id} - Failed due to a transaction in its backchain failing verification"
+                    )
+                    throw CordaRuntimeException(
+                        "Backchain resolution of ${transaction.id} - Failed due to a transaction in its backchain failing verification"
+                    )
+                }
                 log.debug {
                     "Backchain resolution of ${transaction.id} - Completed, resolved ${topologicalSort.size} transactions"
                 }
             } catch (e: Exception) {
-                log.warn("Backchain resolution of ${transaction.id} - Failed due to a transaction in its backchain failing verification.")
+                log.warn("Backchain resolution of ${transaction.id} - Failed due to a transaction in its backchain failing verification")
                 throw e
             }
         } else {
