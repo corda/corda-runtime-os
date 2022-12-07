@@ -16,5 +16,5 @@ interface UtxoTransactionBuilderInternal {
     val signatories: List<PublicKey>
     val inputStateRefs: List<StateRef>
     val referenceInputStateRefs: List<StateRef>
-    val outputStates: List<Pair<ContractState, Int?>>
+    val outputStates: List<ContractStateAndEncumbranceTag>
 }

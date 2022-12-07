@@ -26,10 +26,6 @@ data class UtxoTransactionBuilderImpl(
     override val signatories: List<PublicKey> = emptyList(),
     override val inputStateRefs: List<StateRef> = emptyList(),
     override val referenceInputStateRefs: List<StateRef> = emptyList(),
-    // We cannot use TransactionStates without notary which may be available only later
-    override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
-    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
@@ -45,20 +41,47 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
-    override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
-        return copy(inputStateAndRefs = inputStateAndRefs + stateAndRef)
+    override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(inputStateRefs = inputStateRefs + stateRef)
+    }
+
+    override fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        return copy(inputStateRefs = inputStateRefs + stateRefs)
+    }
+
+    override fun addInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
+        return addInputStates(stateRefs.toList())
     }
 
     override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
         return copy(referenceInputStateRefs = referenceInputStateRefs + stateRef)
     }
 
-    override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + ContractStateAndEncumbranceTag(contractState, null))
+    override fun addReferenceInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRefs)
     }
 
-    override fun addEncumberedOutputStates(tag: String, contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractStates.map { ContractStateAndEncumbranceTag(it, tag) })
+    override fun addReferenceInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
+        return addReferenceInputStates(stateRefs.toList())
+    }
+
+    override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
+        return copy(outputStates = outputStates + contractState.withEncumbrance(null))
+    }
+
+    override fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
+        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(null) })
+    }
+
+    override fun addOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder {
+        return addOutputStates(contractStates.toList())
+    }
+
+    override fun addEncumberedOutputStates(
+        tag: String,
+        contractStates: Iterable<ContractState>
+    ): UtxoTransactionBuilder {
+        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(tag) })
     }
 
     override fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState): UtxoTransactionBuilder {
@@ -110,8 +133,8 @@ data class UtxoTransactionBuilderImpl(
                 && other.notary == notary
                 && other.attachments == attachments
                 && other.commands == commands
-                && other.inputStateAndRefs == inputStateAndRefs
-                && other.referenceInputStateAndRefs == referenceInputStateAndRefs
+                && other.inputStateRefs == inputStateRefs
+                && other.referenceInputStateRefs == referenceInputStateRefs
                 && other.outputStates == outputStates
                 && other.signatories == signatories
     }
@@ -126,4 +149,8 @@ data class UtxoTransactionBuilderImpl(
         referenceInputStateRefs,
         outputStates,
     )
+
+    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
+        return ContractStateAndEncumbranceTag(this, tag)
+    }
 }

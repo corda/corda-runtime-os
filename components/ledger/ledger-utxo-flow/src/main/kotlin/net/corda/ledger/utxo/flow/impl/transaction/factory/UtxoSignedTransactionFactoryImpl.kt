@@ -64,15 +64,15 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-override fun create(
-    wireTransaction: WireTransaction,
-    signaturesWithMetaData: List<DigitalSignatureAndMetadata>
-): UtxoSignedTransaction = UtxoSignedTransactionImpl(
-    serializationService,
-    transactionSignatureService,
-    wireTransaction,
-    signaturesWithMetaData
-)
+    override fun create(
+        wireTransaction: WireTransaction,
+        signaturesWithMetaData: List<DigitalSignatureAndMetadata>
+    ): UtxoSignedTransaction = UtxoSignedTransactionImpl(
+        serializationService,
+        transactionSignatureService,
+        wireTransaction,
+        signaturesWithMetaData
+    )
 
     private fun utxoMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
@@ -139,8 +139,8 @@ override fun create(
                     serializationService.serialize(it).bytes
                 }
 
-                UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateAndRefs.map {
-                    serializationService.serialize(it.ref).bytes
+                UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateRefs.map {
+                    serializationService.serialize(it).bytes
                 }
 
                 UtxoComponentGroup.OUTPUTS -> outputTransactionStates.map {
@@ -151,8 +151,8 @@ override fun create(
                     serializationService.serialize(it).bytes
                 }
 
-                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceInputStateAndRefs.map {
-                    serializationService.serialize(it.ref).bytes
+                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceInputStateRefs.map {
+                    serializationService.serialize(it).bytes
                 }
             }
         }
