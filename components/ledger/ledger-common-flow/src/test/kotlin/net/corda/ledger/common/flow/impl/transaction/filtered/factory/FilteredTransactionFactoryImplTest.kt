@@ -66,11 +66,11 @@ class FilteredTransactionFactoryImplTest {
             filteredTransaction = filteredTransactionFactory.create(
                 wireTransaction,
                 componentGroupFilterParameters = listOf(
-                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
                 )
-            ) { true }
+            )
         }.hasMessageContaining("Unique component group indexes are required when filtering a transaction")
     }
 
@@ -85,10 +85,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { false },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.getComponentGroupContent(0)?.single()?.second)
             .isEqualTo(wireTransaction.componentGroupLists.first().single())
@@ -108,10 +108,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
             )
-        ) { true }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
@@ -133,10 +133,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassB },
             )
-        ) { it is MyClassA || it is MyClassB }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
@@ -168,10 +168,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
@@ -184,29 +184,6 @@ class FilteredTransactionFactoryImplTest {
     }
 
     @Test
-    fun `creating a size proof does not apply filtering`() {
-        var filtered = false
-
-        wireTransaction = wireTransaction(
-            listOf(listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3))
-        )
-
-        filteredTransaction = filteredTransactionFactory.create(
-            wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.SizeProof(1),
-            )
-        ) {
-            filtered = true
-            false
-        }
-
-        assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filtered).isFalse
-    }
-
-    @Test
     fun `creates an audit proof containing a default value instead of a size proof when the component group contains no components`() {
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
@@ -216,17 +193,17 @@ class FilteredTransactionFactoryImplTest {
             listOf(
                 emptyList(),
                 listOf(COMPONENT_1, COMPONENT_2),
-                listOf(COMPONENT_1, COMPONENT_2)
+                emptyList()
             )
         )
 
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
@@ -253,10 +230,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
