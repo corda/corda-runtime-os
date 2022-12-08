@@ -45,6 +45,7 @@ foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.
     Write-Output "Collecting status for pod ${podName}"
     $job=Start-Job -ScriptBlock {kubectl port-forward --namespace $args[0] $args[1] 7000:7000} -ArgumentList $namespace,$podName
     $ProgressPreference = 'SilentlyContinue'
+    # Retry needed as, at least on macOS, the forwarded port is not immediately available
     $count = 0
     do
     {
