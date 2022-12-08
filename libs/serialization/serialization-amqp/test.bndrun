@@ -29,3 +29,9 @@
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
+
+-runsystemcapabilities: \
+    osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active
+
+-runproperties: \
+    org.osgi.framework.security=osgi
