@@ -1,5 +1,7 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.BUNDLE_LOCATION_DELIMITER
+import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.NON_BUNDLE
 import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.model.DefaultCacheProvider
@@ -155,20 +157,21 @@ class CachingCustomSerializerRegistry(
         val sm = System.getSecurityManager()
         if (sm != null) {
             val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
-            val customSerializerBundle = FrameworkUtil.getBundle(serializer::class.java)
             val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
-            var permission: BasicPermission? = null
             try {
-                permission = CustomSerializerPermission(customSerializerBundle.location ?: "")
-                sm.checkPermission(permission, accessControlContext)
-                permission = CustomSerializerTargetPermission(customSerializerTargetBundle.location ?: "")
-                sm.checkPermission(permission, accessControlContext)
+                sm.checkPermission(
+                    CustomSerializerPermission(
+                        customSerializerTargetBundle
+                            ?.location
+                            ?.substringBefore(BUNDLE_LOCATION_DELIMITER)
+                            ?: NON_BUNDLE
+                    ),
+                    accessControlContext
+                )
             } catch (ace: AccessControlException) {
                 // TODO I believe it should be warn, but check if it should be done info
-                logger.warn(
-                    "Illegal custom serializer detected for class ${customSerializer.type}" +
-                            "Might be missing permission $permission"
-                )
+                //  Should we enrich log message? Should it contain the permission?
+                logger.warn("Illegal custom serializer detected for class ${customSerializer.type}")
                 throw IllegalCustomSerializerException(serializer, serializer::class.java, ace)
             }
         }
@@ -265,6 +268,10 @@ class CachingCustomSerializerRegistry(
     }
 }
 
-class CustomSerializerPermission(bundleLocation: String) : BasicPermission(bundleLocation)
-
-class CustomSerializerTargetPermission(bundleLocation: String) : BasicPermission(bundleLocation)
+class CustomSerializerPermission(name: String) : BasicPermission(name) {
+    companion object {
+        // `BasicPermission` doesn't allow an empty name so using "NON_BUNDLE" if class is non bundled
+        const val NON_BUNDLE = "NON_BUNDLE"
+        const val BUNDLE_LOCATION_DELIMITER = '/'
+    }
+}
