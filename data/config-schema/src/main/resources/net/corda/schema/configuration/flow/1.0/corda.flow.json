@@ -54,14 +54,14 @@
           "default": 120000
         },
         "heartbeatTimeout": {
-          "description": "Length of time to wait in milliseconds when no message has been received from a counterparty before causing the session to error, in milliseconds",
+          "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
           "type": "integer",
           "minimum": 600000,
           "maximum": 2147483647,
           "default": 3600000
         },
         "p2pTTL": {
-          "description": "TTL set in milliseconds which is added to the current time set on messages passed to the P2P layer to be sent to a counterparty.",
+          "description": "TTL set in milliseconds, which is added to the current time, and set on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
