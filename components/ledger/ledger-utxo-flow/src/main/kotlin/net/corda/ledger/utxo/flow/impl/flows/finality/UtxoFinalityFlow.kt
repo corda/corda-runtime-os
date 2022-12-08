@@ -8,8 +8,10 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
@@ -17,6 +19,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
@@ -42,48 +45,58 @@ class UtxoFinalityFlow(
     @CordaInject
     lateinit var serializationService: SerializationService
 
+    @CordaInject
+    lateinit var flowMessaging: FlowMessaging
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
-        // TODO Check there is at least one state
-
+        /*REVERT*/log.info( "XXX1" )
         persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        /*REVERT*/log.info( "Recorded transaction with initial signatures ${signedTransaction.id}" )
 
-        // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
+        /*REVERT*/log.info(
+            "Requesting signatures from ${
+                sessions.map { it.counterparty }.joinToString("|")
+            } for transaction ${signedTransaction.id}"
+        )
+        flowMessaging.sendAll(signedTransaction, sessions.toSet())
 
+        /*REVERT*/log.info( "Waiting for other parties signature payloads" )
+        val signaturesPayloads = try {
+            flowMessaging.receiveAllMap<Payload<List<DigitalSignatureAndMetadata>>>(sessions.toSet())
+        } catch (e: CordaRuntimeException) {
+            log.warn(
+                "Failed to receive signatures from ${
+                    sessions.map { it.counterparty }.joinToString("|")
+                } for transaction ${signedTransaction.id}"
+            )
+            throw e
+        }
+
+        /*REVERT*/log.info( "Processing other parties signature payloads" )
         var signedByParticipantsTransaction = signedTransaction
-
-        sessions.forEach { session ->
-            // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
-            session.send(signedTransaction)
-
-            val signaturesPayload = try {
-                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
-            } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}")
-                throw e
-            }
-
-            val signatures = signaturesPayload.getOrThrow { failure ->
-                val message = "Failed to receive signature from ${session.counterparty} for signed transaction " +
+        val signaturesReceivedBySessions: MutableMap<FlowSession, List<DigitalSignatureAndMetadata>> = mutableMapOf()
+        signaturesPayloads.forEach { (session, signaturesPayload) ->
+            signaturesReceivedBySessions[session] = signaturesPayload.getOrThrow { failure ->
+                val message = "Failed to receive signature from ${session.counterparty} for transaction " +
                         "${signedTransaction.id} with message: ${failure.message}"
-                log.debug { message }
+                /*REVERT*/log.info( message )
                 CordaRuntimeException(message)
             }
 
-            log.debug { "Received signatures from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
+            /*REVERT*/log.info( "Received signatures from ${session.counterparty} for transaction ${signedTransaction.id}" )
 
-            signatures.forEach { signature ->
+            signaturesReceivedBySessions[session]!!.forEach { signature ->
                 try {
                     transactionSignatureService.verifySignature(signedTransaction.id, signature)
-                    log.debug {
-                        "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +
+                    /*REVERT*/log.info(
+                        "Successfully verified signature from ${session.counterparty} of $signature for transaction " +
                                 "${signedTransaction.id}"
-                    }
+                    )
                 } catch (e: Exception) {
                     log.warn(
-                        "Failed to verify signature from ${session.counterparty} of $signature for signed transaction " +
+                        "Failed to verify signature from ${session.counterparty} of $signature for transaction " +
                                 "${signedTransaction.id}. Message: ${e.message}"
                     )
 
@@ -91,29 +104,44 @@ class UtxoFinalityFlow(
                 }
                 signedByParticipantsTransaction =
                     signedByParticipantsTransaction.addSignature(signature)
-                log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
+                /*REVERT*/log.info( "Added signature($signature) from ${session.counterparty} for transaction ${signedTransaction.id}" )
             }
         }
+
+        /*REVERT*/log.info( "Verifying all signatures and whether there are any missing ones." )
         signedByParticipantsTransaction.verifySignatures()
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.UNVERIFIED)
+        /*REVERT*/log.info( "Recorded transaction with all other parties's signatures ${signedTransaction.id}" )
+
+        // Distribute new signatures
+        flowMessaging.sendAllMap(sessions.associateWith {session ->
+            signedByParticipantsTransaction.signatures.filter {
+                it !in signedTransaction.signatures &&              // These have already been distributed with the first go
+                it !in signaturesReceivedBySessions[session]!!      // These came from that party
+            }
+        })
+
+        // TODO Notarisation
+        // TODO Verify Notary signature
         persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction ${signedTransaction.id}" }
+        /*REVERT*/log.info( "Recorded verified (notarised) transaction ${signedTransaction.id}" )
 
-        // TODO Consider removing
-        for (session in sessions) {
-            // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            session.send(signedByParticipantsTransaction)
-            // Do we want a situation where a boolean can be received to execute some sort of failure logic?
-            // Or would that always be covered by an exception as it always indicates something wrong occurred.
-            // Returning a context map might be appropriate in case we want to do any sort of handling in the future
-            // without having to worry about backwards compatibility.
-            session.receive<Unit>()
-            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
-        }
+        // Distribute notary signatures  - TODO
+        flowMessaging.sendAll(listOf<List<DigitalSignatureAndMetadata>>(), sessions.toSet())
 
+        // TODO Remove this?
         if (sessions.isNotEmpty()) {
-            log.debug { "All sessions received and acknowledged storage of signed transaction ${signedTransaction.id}" }
+            /*REVERT*/log.info( "All sessions received and acknowledged storage of transaction ${signedTransaction.id}" )
         }
 
         return signedByParticipantsTransaction
     }
+}
+
+// todo: move this
+// receiveAll does not return the sessions, so we cannot use session.counterparty
+// receiveAllMap needs the casts.
+@Suspendable
+inline fun <reified R : Any> FlowMessaging.receiveAllMap(sessions: Set<FlowSession>): Map<FlowSession, R> {
+    return uncheckedCast(receiveAllMap(sessions.associateWith { R::class.java }))
 }

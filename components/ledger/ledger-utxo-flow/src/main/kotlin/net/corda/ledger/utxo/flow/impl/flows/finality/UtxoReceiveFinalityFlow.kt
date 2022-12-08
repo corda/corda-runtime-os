@@ -2,10 +2,12 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -39,22 +41,48 @@ class UtxoReceiveFinalityFlow(
     @CordaInject
     lateinit var serializationService: SerializationService
 
+    @CordaInject
+    lateinit var transactionSignatureService: TransactionSignatureService
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val signedTransaction = session.receive<UtxoSignedTransactionInternal>()
-        val transactionId = signedTransaction.id
+        // Receive the original signed Transaction with the initiator's signature
+        /*REVERT*/log.info( "Waiting for an initially signed transaction" )
+        val incomingTransaction = session.receive<UtxoSignedTransactionInternal>()
+        var signedByUsTransaction = incomingTransaction
+        val transactionId = incomingTransaction.id
+        /*REVERT*/log.info( "Initially signed transaction received: $transactionId" )
 
+        /*REVERT*/log.info( "Verifying incoming transaction: $transactionId" )
+        // Verifications
         // TODO [CORE-5982] Verify Ledger Transaction
-
+        // Verify already added signatures.
+        /*REVERT*/log.info( "Verifying signatures of incoming transaction: $transactionId" )
+        incomingTransaction.signatures.forEach {
+            try {
+                /*REVERT*/log.info( "Verifying signature of incoming transaction: $transactionId, signature: $it" )
+                transactionSignatureService.verifySignature(transactionId, it)
+            } catch (e: Exception) {
+                val payload: Payload.Failure<List<DigitalSignatureAndMetadata>> =
+                    Payload.Failure(
+                        "Failed to verify incoming transactions's signature from ${session.counterparty} of $it for signed transaction " +
+                                "${transactionId}. Message: ${e.message}"
+                    )
+                session.send(payload)
+                log.warn(payload.message)
+                throw CordaRuntimeException(payload.message)
+            }
+        }
         // Verify the transaction.
-        verifyTransaction(signedTransaction)
+        /*REVERT*/log.info( "Verifying transaction: $transactionId" )
+        verifyTransaction(incomingTransaction)
 
-        // TODO [CORE-5982] Verify already added signatures.
-        val signaturesPayload = if (verify(signedTransaction)) {
-            persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
-
+        // Sign the Transaction if we are happy with its content.
+        /*REVERT*/log.info( "Validating if the transaction is acceptable: $transactionId" )
+        val signaturesPayload = if (verify(incomingTransaction)) {
+            /*REVERT*/log.info( "Successfully Validated. transaction is acceptable: $transactionId" )
             // We check which of our keys are required.
-            val myExpectedSigningKeys = signedTransaction
+            val myExpectedSigningKeys = incomingTransaction
                 .getMissingSignatories()
                 .intersect(
                     memberLookup
@@ -62,44 +90,87 @@ class UtxoReceiveFinalityFlow(
                         .ledgerKeys
                         .toSet()
                 )
+            /*REVERT*/log.info( "XXX2: $transactionId" )
 
             if (myExpectedSigningKeys.isEmpty()) {
                 log.debug { "We are not required signer of $transactionId." }
             }
 
             // We sign the transaction with all of our keys which is required.
-            val newSignatures = myExpectedSigningKeys.map {
-                signedTransaction.sign(it).second
+            myExpectedSigningKeys.forEach() {
+                /*REVERT*/log.info( "Signing transaction: $transactionId with $it" )
+                signedByUsTransaction = signedByUsTransaction.sign(it).first
             }
+            // Save the transaction with our signatures appended
+            /*REVERT*/log.info( "Recording transaction with the initial and our signatures: $transactionId" )
+            persistenceService.persist(signedByUsTransaction, TransactionStatus.UNVERIFIED)
+            /*REVERT*/log.info( "Recorded transaction with the initial and our signatures: $transactionId" )
 
-            Payload.Success(newSignatures)
+            Payload.Success(signedByUsTransaction.signatures.filter { it !in incomingTransaction.signatures })
         } else {
+            // Save the incoming transaction as invalid
+            persistenceService.persist(incomingTransaction, TransactionStatus.INVALID)
             Payload.Failure("Transaction verification failed for transaction $transactionId when signature was requested")
         }
 
+        // Send back the new signatures or a Failure.
+        /*REVERT*/log.info( "Sending back our signatures for transaction: $transactionId" )
         session.send(signaturesPayload)
 
         if (signaturesPayload is Payload.Failure) {
             throw CordaRuntimeException(signaturesPayload.message)
         }
 
-        val signedTransactionToFinalize = session.receive<UtxoSignedTransactionInternal>()
+        // Receive the other parties signatures, if there are any
+        /*REVERT*/log.info( "Waiting for other parties's signatures for transaction: $transactionId" )
+        var signedByAllPartiesTransaction = signedByUsTransaction
+        val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        if (otherPartiesSignatures.isNotEmpty()) {
+            otherPartiesSignatures.forEach {
+                signedByAllPartiesTransaction = signedByAllPartiesTransaction.addSignature(it)
+            }
 
-        // A [require] block isn't the correct option if we want to do something with the error on the peer side
-        require(signedTransactionToFinalize.id == transactionId) {
-            "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
-                    "${signedTransactionToFinalize.id} instead"
+            /*REVERT*/log.info( "Verifying signatures of transaction: $transactionId" )
+            signedByAllPartiesTransaction.verifySignatures()
+
+            // Save the transaction with the new signatures.
+            persistenceService.persist(signedByAllPartiesTransaction, TransactionStatus.UNVERIFIED)
+            /*REVERT*/log.info( "Recorded transaction with all parties's signatures $transactionId" )
         }
 
-        signedTransactionToFinalize.verifySignatures()
+        /*REVERT*/log.info( "Waiting for Notary's signature for transaction: $transactionId" )
+        var signedByNotaryTransaction = signedByAllPartiesTransaction
+        val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        if (notarySignatures.isEmpty()) {
+            log.warn( "No notary signature received for transaction: $transactionId" )
+            // TODO error handling
+        }
+        if (notarySignatures.isNotEmpty()) {    // TODO remove this if when notarization is integrated
+            /*REVERT*/log.debug( "Verifying notary signatures for transaction: $transactionId" )
+            notarySignatures.forEach {
+                try {
+                    /*REVERT*/log.debug( "Verifying notary signature($it) for transaction: $transactionId" )
+                    transactionSignatureService.verifySignature(transactionId, it)
+                } catch (e: Exception) {
+                    log.warn(
+                        "Failed to verify notary signature from ${session.counterparty} of $it for signed transaction " +
+                                "${transactionId}. Message: ${e.message}"
+                    )
 
-        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction $transactionId" }
+                    throw e
+                }
+            }
 
-        session.send(Unit)
-        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${signedTransactionToFinalize.id}" }
+            notarySignatures.forEach {
+                signedByNotaryTransaction = signedByNotaryTransaction.addSignature(it)
+            }
 
-        return signedTransactionToFinalize
+            // Save the transaction with the new notary signatures.
+            persistenceService.persist(signedByNotaryTransaction, TransactionStatus.VERIFIED)
+            /*REVERT*/log.debug( "Recorded transaction with all parties's and the notary's signature $transactionId" )
+        }
+
+        return signedByNotaryTransaction
     }
 
     @Suspendable
