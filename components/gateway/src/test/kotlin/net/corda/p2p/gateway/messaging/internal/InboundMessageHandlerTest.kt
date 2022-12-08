@@ -96,7 +96,8 @@ class InboundMessageHandlerTest {
     private val serialisedResponse = "gateway-response".toByteArray()
     private val avroSchemaRegistry = mock<AvroSchemaRegistry> {
         on { serialize(any<GatewayResponse>()) } doReturn ByteBuffer.wrap(serialisedResponse)
-        on { deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage)) } doReturn GatewayMessage(requestId, authenticatedP2PDataMessage(""))
+        on { deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage)) } doReturn
+                GatewayMessage(requestId, authenticatedP2PDataMessage(""))
     }
     private val handler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
