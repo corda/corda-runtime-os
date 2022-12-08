@@ -47,28 +47,28 @@
       "default": {},
       "properties": {
         "messageResendWindow": {
-          "description": "Length of time to wait in milliseconds before resending unacknowledged flow session messages, in milliseconds",
+          "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 120000
         },
         "heartbeatTimeout": {
-          "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
+          "description": "Length of time to wait in milliseconds when no message has been received from a counterparty before causing the session to error, in milliseconds",
           "type": "integer",
           "minimum": 600000,
           "maximum": 2147483647,
           "default": 3600000
         },
         "p2pTTL": {
-          "description": "TTL set on on messages passed to the P2P layer to be sent to a counterparty.",
+          "description": "TTL set in milliseconds which is added to the current time set on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
           "default": 240000
         },
         "cleanupTime": {
-          "description": "The length of time the flow mapper should hold onto its state for a session after the session has finished.",
+          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a session after the session has finished.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
