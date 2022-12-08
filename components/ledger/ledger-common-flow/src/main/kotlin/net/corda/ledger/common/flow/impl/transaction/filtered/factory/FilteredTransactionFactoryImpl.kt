@@ -19,7 +19,9 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.function.Predicate
 
-@Component(service = [FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class], scope = PROTOTYPE)
+@Component(service = [FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class],
+    scope = PROTOTYPE,
+    property = ["corda.system=true"])
 class FilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
