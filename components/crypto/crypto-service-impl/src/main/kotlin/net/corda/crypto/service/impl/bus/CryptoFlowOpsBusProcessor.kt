@@ -7,8 +7,8 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.service.impl.WireProcessor
-import net.corda.crypto.service.impl.WireProcessor.Handler
+import net.corda.crypto.service.impl.ProcessorHandlers
+import net.corda.crypto.service.impl.ProcessorHandlers.Handler
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -48,7 +48,7 @@ class CryptoFlowOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    private val wireProcessor = WireProcessor(handlers)
+    private val processorHandlers = ProcessorHandlers(handlers)
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
@@ -79,7 +79,7 @@ class CryptoFlowOpsBusProcessor(
                 "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                         "{ requestId: $requestId, key: $flowId }"
             )
-            val handler = wireProcessor.getHandler(request.request::class.java, cryptoOpsClient)
+            val handler = processorHandlers.getHandler(request.request::class.java, cryptoOpsClient)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
             }

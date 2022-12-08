@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * @property handlers map of request type to the handler type which handles that request.
  */
-class WireProcessor(
+class ProcessorHandlers(
     private val handlers: Map<Class<*>, Class<out Handler<out Any>>>
 ) {
     /**
