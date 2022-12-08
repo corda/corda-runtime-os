@@ -169,7 +169,7 @@ class UtxoLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("UTXO ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.debug("UTXO ledger persistence request: {} {}", request.javaClass.simpleName, request)
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),

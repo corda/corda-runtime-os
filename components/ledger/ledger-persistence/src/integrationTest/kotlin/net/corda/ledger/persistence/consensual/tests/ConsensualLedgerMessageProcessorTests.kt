@@ -170,7 +170,7 @@ class ConsensualLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.debug("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),

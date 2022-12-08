@@ -11,7 +11,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import java.math.BigDecimal
 import java.time.Instant
@@ -109,24 +109,6 @@ class UtxoRepositoryImpl(
             .resultListAsTuples()
             .map { r -> r.get(0) as String }
             .singleOrNull()
-    }
-
-    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
-    private fun findSignatures(
-        entityManager: EntityManager,
-        transactionId: String
-    ): List<DigitalSignatureAndMetadata> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT signature
-                FROM {h-schema}utxo_transaction_signature
-                WHERE transaction_id = :transactionId
-                ORDER BY signature_idx""",
-            Tuple::class.java
-        )
-            .setParameter("transactionId", transactionId)
-            .resultListAsTuples()
-            .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
     override fun persistTransaction(
@@ -344,7 +326,7 @@ class UtxoRepositoryImpl(
 
     private fun Int.logResult(entity: String): Int {
         if (this == 0) {
-            logger.trace {
+            logger.debug {
                 "UTXO ledger entity not persisted due to existing row in database. Entity: $entity"
             }
         }

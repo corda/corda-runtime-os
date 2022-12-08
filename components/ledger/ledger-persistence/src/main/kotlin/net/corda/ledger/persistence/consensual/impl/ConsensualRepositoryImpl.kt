@@ -12,7 +12,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import org.osgi.service.component.annotations.Activate
@@ -227,7 +227,7 @@ class ConsensualRepositoryImpl @Activate constructor(
 
     private fun Int.logResult(entity: String): Int {
         if (this == 0) {
-            logger.trace {
+            logger.debug {
                 "Consensual ledger entity not persisted due to existing row in database: $entity"
             }
         }
