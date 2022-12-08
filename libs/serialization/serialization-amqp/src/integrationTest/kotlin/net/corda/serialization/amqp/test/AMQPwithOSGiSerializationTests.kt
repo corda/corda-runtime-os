@@ -216,16 +216,22 @@ class AMQPwithOSGiSerializationTests {
         try {
             // Corda platform type custom serializer
             val factory = testDefaultFactory(sandboxGroup)
-            val serializerClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
-            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            val serializer =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
             assertThrows<IllegalCustomSerializerException> {
                 factory.registerExternal(serializer, factory)
             }
 
             // JDK type custom serializer
             val factory1 = testDefaultFactory(sandboxGroup)
-            val serializerClass1 = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
-            val serializer1 = serializerClass1.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            val serializer1 =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
             assertThrows<IllegalCustomSerializerException> {
                 factory1.registerExternal(serializer1, factory1)
             }
