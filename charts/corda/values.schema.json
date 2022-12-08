@@ -213,6 +213,14 @@
             },
             "examples": [{}]
         },
+        "annotations": {
+            "type": "object",
+            "default": {},
+            "title": "custom annotations for all workers",
+            "required": [],
+            "properties": {},
+            "examples": [{}]
+        },
         "db": {
             "type": "object",
             "default": {},
@@ -893,6 +901,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -930,6 +939,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1005,6 +1015,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1061,6 +1072,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1083,6 +1095,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1198,6 +1211,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1259,6 +1273,7 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1611,6 +1626,14 @@
                 },
                 "javaOptions": {
                     "type": "string"
+                },
+                "annotations": {
+                    "type": "object",
+                    "default": {},
+                    "title": "custom annotations for the worker",
+                    "required": [],
+                    "properties": {},
+                    "examples": [{}]
                 },
                 "replicaCount": {
                     "type": "integer",

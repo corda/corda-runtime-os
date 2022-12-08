@@ -53,6 +53,9 @@ nodeSelector: {}
 serviceAccount:
   name: ""
 
+# -- extra annotations for all workers
+annotations: {}
+
 # Database configuration
 db:
   # Cluster database configuration
@@ -155,8 +158,6 @@ kafka:
           name: ""
           # -- the SASL password secret key 
           key: ""
-
-
 
 # Configuration for cluster bootstrap
 bootstrap:
@@ -313,6 +314,8 @@ workers:
       tag: ""
     # -- crypto worker replica count
     replicaCount: 1
+    # -- crypto worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # crypto worker debug configuration
@@ -353,6 +356,8 @@ workers:
       tag: ""
     # -- DB worker replica count
     replicaCount: 1
+    # -- DB worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # DB worker debug configuration
@@ -418,6 +423,8 @@ workers:
       tag: ""
     # -- flow worker replica count
     replicaCount: 1
+    # -- flow worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # flow worker debug configuration
@@ -456,6 +463,8 @@ workers:
       tag: ""
     # -- membership worker replica count
     replicaCount: 1
+    # -- membership worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # membership worker debug configuration
@@ -492,6 +501,8 @@ workers:
       tag: ""
     # -- RPC worker replica count
     replicaCount: 1
+    # -- RPC worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the rpc worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # RPC worker debug configuration
@@ -538,6 +549,8 @@ workers:
       tag: ""
     # -- p2p-link-manager worker replica count
     replicaCount: 1
+    # -- p2p-link-manager worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the p2p-link-manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # -- Use stubbed crypto processor, membership group reader and group policy provider
@@ -576,6 +589,8 @@ workers:
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
+    # -- p2p-gateway worker extra annotations; defaults to workers.annotations if not specified
+    annotations: {}
     # -- additional Java options for the p2p-gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # -- Use stub crypto processor
