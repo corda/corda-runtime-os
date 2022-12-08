@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.BUNDLE_LOCATION_DELIMITER
 import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.NON_BUNDLE
 import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
