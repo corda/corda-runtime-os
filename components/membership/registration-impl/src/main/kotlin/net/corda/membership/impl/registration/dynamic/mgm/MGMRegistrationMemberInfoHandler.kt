@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
@@ -8,7 +9,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -32,14 +33,13 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
@@ -148,7 +148,7 @@ internal class MGMRegistrationMemberInfoHandler(
         return memberInfoFactory.create(
             memberContext = memberContext.toSortedMap(),
             mgmContext = sortedMapOf(
-                CREATED_TIME to now,
+                CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_ACTIVE,
                 IS_MGM to "true"

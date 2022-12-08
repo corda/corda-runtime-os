@@ -18,9 +18,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-application'
 
-    api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'
 
+    api project(':libs:crypto:cipher-suite')
     api project(':libs:crypto:crypto-core')
     api project(':libs:crypto:crypto-impl')
     api project(':libs:sandbox-types')

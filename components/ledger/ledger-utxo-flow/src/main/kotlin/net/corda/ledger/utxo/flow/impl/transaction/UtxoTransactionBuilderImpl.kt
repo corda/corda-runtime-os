@@ -8,7 +8,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -24,10 +24,9 @@ data class UtxoTransactionBuilderImpl(
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
-    private val signatories: Set<PublicKey> = emptySet(),
-    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-
+    override val signatories: List<PublicKey> = emptyList(),
+    override val inputStateRefs: List<StateRef> = emptyList(),
+    override val referenceInputStateRefs: List<StateRef> = emptyList(),
     // We cannot use TransactionStates without notary which may be available only later
     override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
@@ -49,16 +48,12 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
-    override fun addCommandAndSignatories(command: Command, signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
-        return addCommand(command).addSignatories(signatories)
+    override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(inputStateRefs = inputStateRefs + stateRef)
     }
 
-    override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
-        return copy(inputStateAndRefs = inputStateAndRefs + stateAndRef)
-    }
-
-    override fun addReferenceInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
-        return copy(referenceInputStateAndRefs = referenceInputStateAndRefs + stateAndRef)
+    override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRef)
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
@@ -114,8 +109,8 @@ data class UtxoTransactionBuilderImpl(
         if (other.notary != notary) return false
         if (other.attachments != attachments) return false
         if (other.commands != commands) return false
-        if (other.inputStateAndRefs != inputStateAndRefs) return false
-        if (other.referenceInputStateAndRefs != referenceInputStateAndRefs) return false
+        if (other.inputStateRefs != inputStateRefs) return false
+        if (other.referenceInputStateRefs != referenceInputStateRefs) return false
         if (other.outputStates != outputStates) return false
         if (other.signatories != signatories) return false
         return true
@@ -127,34 +122,14 @@ data class UtxoTransactionBuilderImpl(
         attachments,
         commands,
         signatories,
-        inputStateAndRefs,
-        referenceInputStateAndRefs,
+        inputStateRefs,
+        referenceInputStateRefs,
         outputStates,
     )
 
     private fun verifyIfReady() {
-        // TODO(CORE-7116 more verifications)
-        // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
-
         check(!alreadySigned) { "A transaction cannot be signed twice." }
-
-        // Notary is not null
-        checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }
-
-        // TODO Input notaries same (and later or rotated) as notary
-
-        // timeWindow is not null
-        checkNotNull(timeWindow)
-
-        // At least one input, or one output
-        require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
-            "At least one input or output state is required"
-        }
-
-        // TODO At least one required signer
-
-        // TODO At least one command
-
-        // TODO probably some more stuff we have to go look at C4 to remember
+        UtxoTransactionVerification.verifyNotary(notary)
+        UtxoTransactionVerification.verifyStructures(timeWindow, inputStateRefs, outputStates.map { it.first })
     }
 }

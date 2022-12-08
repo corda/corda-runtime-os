@@ -20,8 +20,8 @@ class WrappedUtxoWireTransaction(
     private val serializationService: SerializationService
 ) {
     companion object {
-        private const val notaryIndex: Int = 0
-        private const val timeWindowIndex: Int = 1
+        const val notaryIndex: Int = 0
+        const val timeWindowIndex: Int = 1
     }
     val id: SecureHash
         get() = wireTransaction.id
@@ -54,8 +54,9 @@ class WrappedUtxoWireTransaction(
     }
 
     val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.SIGNATORIES.ordinal)
+            .map { serializationService.deserialize(it) }
     }
 
     val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {

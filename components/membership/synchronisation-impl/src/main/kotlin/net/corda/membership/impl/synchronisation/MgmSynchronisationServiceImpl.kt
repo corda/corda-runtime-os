@@ -1,9 +1,10 @@
 package net.corda.membership.impl.synchronisation
 
-import java.util.UUID
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
@@ -43,8 +44,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -52,6 +51,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [SynchronisationService::class])

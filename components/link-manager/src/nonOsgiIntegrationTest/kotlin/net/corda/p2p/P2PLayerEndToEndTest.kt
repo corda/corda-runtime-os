@@ -5,6 +5,9 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.identity.HoldingIdentity
@@ -19,8 +22,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REVOCATION_CHECK_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -70,9 +73,6 @@ import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter

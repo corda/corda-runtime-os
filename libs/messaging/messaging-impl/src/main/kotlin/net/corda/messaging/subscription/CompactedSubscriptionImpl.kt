@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
@@ -34,6 +35,18 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "compacted subscription thread", ::runConsumeLoop)
 
     private var latestValues: MutableMap<K, V>? = null
+
+    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "Compacted")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .build()
+
+    private val snapshotMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "Compacted")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onSnapshot")
+        .build()
 
     override fun close() = threadLooper.close()
 
@@ -133,7 +146,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
             }
         }
 
-        processor.onSnapshot(currentData)
+        snapshotMeter.recordCallable { processor.onSnapshot(currentData) }
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {
@@ -172,7 +185,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 currentData[it.key] = newValue
             }
 
-            processor.onNext(it.toRecord(), oldValue, currentData)
+            processorMeter.recordCallable { processor.onNext(it.toRecord(), oldValue, currentData) }
         }
     }
 }

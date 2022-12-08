@@ -22,7 +22,7 @@ String dockerLabel = '11'
 String architectureTag = ''
 
 /*
- * architecture for Kuberenetes workers during E2E tests
+ * architecture for Kubernetes workers during E2E tests
  */
 String e2eArchitecture = 'amd64'
 
@@ -125,13 +125,10 @@ pipeline {
                 }
             }
             post {
-                always {
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
-                        kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
-                    sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
+                unsuccessful {
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: '*-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f *-support-bundle-*.tgz'
                 }
             }
         }
@@ -155,14 +152,9 @@ pipeline {
            }
             post {
                 unsuccessful {
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: '*-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f *-support-bundle-*.tgz'
                 }
             }
         }
@@ -198,15 +190,9 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                        pgrep kubectl | xargs kill -9
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'forward.txt, logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: 'forward.txt, *-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f forward.txt *-support-bundle-*.tgz'
                 }
             }
         }

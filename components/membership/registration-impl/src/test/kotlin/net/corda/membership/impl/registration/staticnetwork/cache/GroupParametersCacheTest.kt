@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.staticnetwork.cache
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.staticgroup.StaticGroupDefinition
@@ -16,7 +17,6 @@ import net.corda.membership.lib.toMap
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo

@@ -8,6 +8,7 @@ description 'Caffeine cache utilities'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:metrics")

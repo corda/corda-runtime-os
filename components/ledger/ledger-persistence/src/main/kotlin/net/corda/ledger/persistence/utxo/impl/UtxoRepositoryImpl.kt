@@ -2,8 +2,9 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.mapTuples
+import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -16,11 +17,15 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
+@Suppress("TooManyFunctions")
 class UtxoRepositoryImpl(
+    private val digestService: DigestService,
     private val serializationService: SerializationService,
-    private val wireTransactionFactory: WireTransactionFactory,
-    private val digestService: DigestService
+    private val wireTransactionFactory: WireTransactionFactory
 ) : UtxoRepository {
+    private companion object {
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
+    }
 
     override fun findTransaction(
         entityManager: EntityManager,
@@ -57,7 +62,7 @@ class UtxoRepositoryImpl(
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
-    ): List<List<ByteArray>> {
+    ): Map<Int, List<ByteArray>> {
         return entityManager.createNativeQuery(
             """
                 SELECT group_idx, leaf_idx, data
@@ -68,10 +73,43 @@ class UtxoRepositoryImpl(
         )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .mapTuples(ComponentGroupListsTuplesMapper(transactionId))
+            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
     override fun findTransactionSignatures(
+        entityManager: EntityManager,
+        transactionId: String
+    ): List<DigitalSignatureAndMetadata> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT signature
+                FROM {h-schema}utxo_transaction_signature
+                WHERE transaction_id = :transactionId
+                ORDER BY signature_idx""",
+            Tuple::class.java
+        )
+            .setParameter("transactionId", transactionId)
+            .resultListAsTuples()
+            .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
+    }
+
+    override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(
+            """
+                SELECT status
+                FROM {h-schema}utxo_transaction_status
+                WHERE transaction_id = :transactionId
+                """,
+            Tuple::class.java
+        )
+            .setParameter("transactionId", id)
+            .resultListAsTuples()
+            .map { r -> r.get(0) as String }
+            .singleOrNull()
+    }
+
+    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
+    private fun findSignatures(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
@@ -270,19 +308,27 @@ class UtxoRepositoryImpl(
     override fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: String,
+        transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        val rowsUpdated = entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
-            VALUES (:transactionId, :status, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
+            VALUES (:transactionId, :status, :updatedAt)
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status)
-            .setParameter("createdAt", timestamp)
+            .setParameter("status", transactionStatus.value)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
+
+        check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
+            // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
+            "Existing status for transaction with ID $transactionId can't be updated to $transactionStatus"
+        }
     }
 
     private fun ByteArray.hashAsString() =

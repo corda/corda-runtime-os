@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.common.json.validation.JsonValidator
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -9,10 +8,11 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -42,8 +42,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService,
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = JsonValidator::class)
@@ -62,7 +62,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         ConsensualTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+        val wireTransaction = wireTransactionFactory.create(componentGroups)
 
         verifyTransaction(wireTransaction)
 
@@ -96,6 +96,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private fun consensualMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =
@@ -109,8 +110,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     ): List<List<ByteArray>> {
 
         // TODO CORE-7101 use CurrentSandboxService when it gets available
-        val currentSandboxGroup =
-            flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup
+        val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val requiredSigningKeys = consensualTransactionBuilder
             .states
@@ -128,7 +128,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                     ConsensualComponentGroup.TIMESTAMP ->
                         listOf(serializationService.serialize(Instant.now()).bytes)
 
-                    ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
+                    ConsensualComponentGroup.SIGNATORIES ->
                         requiredSigningKeys.map { serializationService.serialize(it).bytes }
 
                     ConsensualComponentGroup.OUTPUT_STATES ->

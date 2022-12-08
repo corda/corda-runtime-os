@@ -28,7 +28,7 @@ dependencies {
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
-    implementation 'net.corda:corda-cipher-suite'
+    implementation project(':libs:crypto:cipher-suite')
     testImplementation "com.typesafe:config:$typeSafeConfigVersion"
     testRuntimeOnly project(':applications:tools:p2p-test:p2p-setup')
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

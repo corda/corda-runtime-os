@@ -508,6 +508,12 @@
                             ],
                             "additionalProperties": false,
                             "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
                                 "dbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -532,6 +538,12 @@
                                 }
                             },
                             "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                },
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
@@ -545,6 +557,12 @@
                                 "dbConnectionPool"
                             ],
                             "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
                                 "dbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -568,6 +586,12 @@
                                 }
                             },
                             "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                },
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
@@ -930,20 +954,10 @@
                                     }
                                 },
                                 "salt": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker salt, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 },
                                 "passphrase": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker passphrase, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{

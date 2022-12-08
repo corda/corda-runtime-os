@@ -1,9 +1,9 @@
 package net.corda.membership.p2p.helpers
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
 
 class Verifier(

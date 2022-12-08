@@ -3,6 +3,8 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
@@ -64,8 +66,6 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
@@ -88,7 +88,7 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -99,7 +99,6 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlin.concurrent.thread
-import kotlin.random.Random
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
@@ -295,7 +294,6 @@ class GatewayIntegrationTest : TestBase() {
             val port = getOpenPort()
             val serverAddress = URI.create("http://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
-            Random.nextBytes(bigMessage)
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(

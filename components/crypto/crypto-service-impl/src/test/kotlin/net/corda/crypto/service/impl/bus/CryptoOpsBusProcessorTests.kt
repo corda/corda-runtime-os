@@ -1,6 +1,11 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.CryptoConsts
@@ -37,11 +42,6 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
-import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec

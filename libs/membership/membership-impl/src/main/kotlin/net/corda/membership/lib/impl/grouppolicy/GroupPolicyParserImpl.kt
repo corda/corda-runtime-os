@@ -2,7 +2,7 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -111,7 +111,7 @@ class GroupPolicyParserImpl @Activate constructor(
         }
     } ?: throw BadGroupPolicyException("Could not find $GROUP_ID at the root level of the group policy file.")
 
-    @Suppress("UNCHECKED_CAST", "SpreadOperator")
+    @Suppress("SpreadOperator")
     override fun getMgmInfo(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String
@@ -130,7 +130,7 @@ class GroupPolicyParserImpl @Activate constructor(
             memberInfoFactory.create(
                 it.toSortedMap(),
                 sortedMapOf(
-                    CREATED_TIME to now,
+                    CREATION_TIME to now,
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
                     IS_MGM to "true"

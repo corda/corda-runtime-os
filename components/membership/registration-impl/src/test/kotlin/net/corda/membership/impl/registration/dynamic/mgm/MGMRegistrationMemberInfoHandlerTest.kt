@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
@@ -11,7 +12,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.registration.TEST_CPI_NAME
 import net.corda.membership.impl.registration.TEST_CPI_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -34,7 +35,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -58,7 +58,8 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.SortedMap
+import java.util.UUID
 
 class MGMRegistrationMemberInfoHandlerTest {
 
@@ -292,7 +293,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         assertThat(mgmContext)
-            .containsOnlyKeys(CREATED_TIME, MODIFIED_TIME, STATUS, IS_MGM)
+            .containsOnlyKeys(CREATION_TIME, MODIFIED_TIME, STATUS, IS_MGM)
             .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
             .containsEntry(IS_MGM, true.toString())
     }

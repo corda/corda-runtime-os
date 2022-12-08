@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.client.impl
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
@@ -16,7 +17,6 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo

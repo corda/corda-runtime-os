@@ -36,6 +36,7 @@ configurations {
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 
@@ -49,11 +50,11 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation 'org.osgi:osgi.core'
-    testImplementation 'net.corda:corda-cipher-suite'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(':libs:crypto:cipher-suite')
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 

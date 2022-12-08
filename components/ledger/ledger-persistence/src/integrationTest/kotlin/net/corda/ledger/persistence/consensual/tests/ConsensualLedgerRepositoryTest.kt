@@ -4,10 +4,12 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.consensual.ConsensualLedgerRepository
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
@@ -172,7 +174,7 @@ class ConsensualLedgerRepositoryTest {
     fun `can persist signed transaction`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
-        val transactionStatus = "V"
+        val transactionStatus = TransactionStatus.VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
 
         // Persist transaction
@@ -198,7 +200,7 @@ class ConsensualLedgerRepositoryTest {
             val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
             val txComponents = dbTransaction.field<Collection<Any>?>("components")
             assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists)
+                .hasSameSizeAs(componentGroupLists.filter { it.isNotEmpty() })
             txComponents!!
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .groupBy { it.field<Int>("groupIndex") }.values
@@ -222,8 +224,8 @@ class ConsensualLedgerRepositoryTest {
                 .isNotNull
                 .hasSize(1)
             val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
-            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
+            assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
 
             val signatures = signedTransaction.signatures
             val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
@@ -360,7 +362,10 @@ class ConsensualLedgerRepositoryTest {
             )
         )
 
-        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
+        val transactionMetadata = transactionMetadataExample(
+            cpkMetadata = cpks,
+            numberOfComponentGroups = ConsensualComponentGroup.values().size
+        )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),

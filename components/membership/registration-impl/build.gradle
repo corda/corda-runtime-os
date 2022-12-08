@@ -25,6 +25,7 @@ dependencies {
     implementation project(":components:membership:registration")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
@@ -39,7 +40,6 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-topic-schema"

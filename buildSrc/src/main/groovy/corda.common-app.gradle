@@ -355,7 +355,7 @@ class OsgiRun {
     @Inject
     OsgiRun(ObjectFactory objects) {
         javaAgents = objects.domainObjectContainer(JavaAgent)
-        frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<>())
+        frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<String,String>())
         addOpensAttribute = objects.setProperty(String)
     }
 

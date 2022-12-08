@@ -18,11 +18,13 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -132,9 +134,11 @@ class UtxoLedgerMessageProcessorTests {
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        )
+        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent
@@ -142,8 +146,7 @@ class UtxoLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
-        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
     }
 
@@ -153,7 +156,7 @@ class UtxoLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            transactionMetadataExample()
+            metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
         return SignedTransactionContainer(
             wireTransaction,
