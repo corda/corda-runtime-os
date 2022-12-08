@@ -11,8 +11,8 @@ import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl.ProcessorHandlers
-import net.corda.crypto.service.impl.ProcessorHandlers.Handler
+import net.corda.crypto.service.impl.CryptoRequestsHandlers
+import net.corda.crypto.service.impl.CryptoRequestsHandlers.Handler
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -65,13 +65,13 @@ class CryptoOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    private val processorHandlers = ProcessorHandlers(handlers)
+    private val cryptoRequestsHandlers = CryptoRequestsHandlers(handlers)
 
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
             val signingService = signingFactory.getInstance()
-            val handler = processorHandlers.getHandler(request.request::class.java, signingService)
+            val handler = cryptoRequestsHandlers.getHandler(request.request::class.java, signingService)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
             }
