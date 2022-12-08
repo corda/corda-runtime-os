@@ -32,6 +32,7 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-consensual-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
