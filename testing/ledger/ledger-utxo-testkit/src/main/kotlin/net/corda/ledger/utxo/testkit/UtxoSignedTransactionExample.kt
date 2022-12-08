@@ -14,7 +14,6 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import java.time.Instant
 
 fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,

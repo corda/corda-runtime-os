@@ -26,13 +26,12 @@ data class UtxoFilteredTransactionBuilderImpl(
 ) : UtxoFilteredTransactionBuilder, UtxoFilteredTransactionBuilderInternal {
 
     @Suspendable
-    override fun withNotary(): UtxoFilteredTransactionBuilderInternal {
-        // only filters out the notary, adjust the lambda to also filter out time window
+    override fun withNotaryAndTimeWindow(): UtxoFilteredTransactionBuilderInternal {
         return copy(
             notary = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.NOTARY.ordinal,
                 Any::class.java,
-            ) { it is Party }
+            ) { true }
         )
     }
 

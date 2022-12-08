@@ -18,7 +18,7 @@ class UtxoFilteredTransactionBuilderImplTest {
 
     @Test
     fun withNotary() {
-        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withNotary().notary
+        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withNotaryAndTimeWindow().notary
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.NOTARY.ordinal)
         assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Party>).predicate.test(mock()))
@@ -163,7 +163,7 @@ class UtxoFilteredTransactionBuilderImplTest {
     @Test
     fun `set all`() {
         val builder = utxoFilteredTransactionBuilder
-            .withNotary()
+            .withNotaryAndTimeWindow()
             .withSignatoriesSize()
             .withInputStates()
             .withReferenceInputStatesSize()

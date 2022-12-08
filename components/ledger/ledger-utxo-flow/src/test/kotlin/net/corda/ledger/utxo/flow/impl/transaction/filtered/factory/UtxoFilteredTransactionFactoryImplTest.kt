@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
-import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
@@ -34,7 +33,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     @Test
     fun `creates a filtered transaction`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
-            .withNotary()
+            .withNotaryAndTimeWindow()
             .withSignatories()
             .withInputStates()
         utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
@@ -44,7 +43,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     @Test
     fun `includes the component groups set on the filtered transaction builder`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
-            .withNotary()
+            .withNotaryAndTimeWindow()
             .withSignatories()
             .withInputStates()
         utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
