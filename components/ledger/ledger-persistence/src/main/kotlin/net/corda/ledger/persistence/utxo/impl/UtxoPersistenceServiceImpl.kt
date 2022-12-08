@@ -6,25 +6,34 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.orm.utils.transaction
-import net.corda.persistence.common.getEntityManagerFactory
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import javax.persistence.EntityManager
 
 class UtxoPersistenceServiceImpl constructor(
-    private val sandbox: SandboxGroupContext,
+    private val entityManager: EntityManager,
     private val repository: UtxoRepository,
     private val sandboxDigestService: DigestService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
+    override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
+        return entityManager.transaction { em ->
+            val status = repository.findTransactionStatus(em, id)
+            if (status == transactionStatus.value) {
+                repository.findTransaction(em, id)
+            } else {
+                null
+            }
+        }
+    }
+
     override fun persistTransaction(transaction: UtxoTransactionReader) {
-        val entityManger = sandbox.getEntityManagerFactory().createEntityManager()
         val nowUtc = utcClock.instant()
 
-        entityManger.transaction { em ->
+        entityManager.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             // Insert the Transaction
@@ -81,10 +90,9 @@ class UtxoPersistenceServiceImpl constructor(
         transactionStatus: TransactionStatus,
         account: String
     ): Pair<String?, List<CordaPackageSummary>> {
-        val entityManger = sandbox.getEntityManagerFactory().createEntityManager()
         val nowUtc = utcClock.instant()
 
-        return entityManger.transaction { em ->
+        return entityManager.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             val status = repository.findTransactionStatus(em, transactionIdString)
@@ -145,19 +153,8 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
-        sandbox.getEntityManagerFactory().createEntityManager().transaction { em ->
+        entityManager.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
-        }
-    }
-
-    override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
-        return sandbox.getEntityManagerFactory().createEntityManager().transaction { em ->
-            val status = repository.findTransactionStatus(em, id)
-            if (status == transactionStatus.value) {
-                repository.findTransaction(em, id)
-            } else {
-                null
-            }
         }
     }
 }
