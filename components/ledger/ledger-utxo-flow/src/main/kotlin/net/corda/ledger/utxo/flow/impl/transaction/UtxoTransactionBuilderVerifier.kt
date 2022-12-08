@@ -31,7 +31,7 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
     }
 
     private fun verifyInputsAndOutputs() {
-        check(transactionBuilder.inputStateAndRefs.isNotEmpty() || transactionBuilder.outputStates.isNotEmpty()) {
+        check(transactionBuilder.inputStateRefs.isNotEmpty() || transactionBuilder.outputStates.isNotEmpty()) {
             "At least one input state, or one output state must be applied to the current transaction builder."
         }
     }

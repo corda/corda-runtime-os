@@ -29,6 +29,13 @@ data class UtxoTransactionBuilderImpl(
     override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
+    // TODO : Review implementation...
+    // 1. Introduces mutability to what is effectively an immutable builder.
+    // 2. Calling toSignedTransaction is an idempotent call, but results in signed transactions with different privacy salt.
+    // 3. Probably won't be needed if we move to an implementation where the developer passes a transaction builder directly to finality.
+    // 4. Consider the same implementation for the consensual transaction builder.
+    private var alreadySigned = false
+
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
     }
@@ -117,8 +124,11 @@ data class UtxoTransactionBuilderImpl(
     @Suspendable
     @Deprecated("Temporary function until the parameterless version gets available")
     override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction {
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         UtxoTransactionBuilderVerifier(this).verify()
-        return utxoSignedTransactionFactory.create(this, signatories)
+        val signedTransaction = utxoSignedTransactionFactory.create(this, signatories)
+        alreadySigned = true
+        return signedTransaction
     }
 
     @Suspendable
