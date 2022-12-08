@@ -4,6 +4,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -147,9 +148,15 @@ internal object ContextUtils {
 
     fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): List<Any?> {
         val parametersRetrieverContext = ParametersRetrieverContext(ctx)
-        val paramValues = parameters.map {
-            val parameterRetriever = ParameterRetrieverFactory.create(it, this)
-            parameterRetriever.apply(parametersRetrieverContext)
+        val paramValues = parameters.map { parameter ->
+            val parameterRetriever = ParameterRetrieverFactory.create(parameter, this)
+            try {
+                parameterRetriever.apply(parametersRetrieverContext)
+            } catch (ex: Exception) {
+                throw InvalidInputDataException(
+                    "Unable to parse parameter '${parameter.name}'",
+                    listOf("cause" to (ex.javaClass.simpleName + ": " + ex.message)).toMap())
+            }
         }
         return paramValues
     }

@@ -50,7 +50,7 @@ private class PathParameterRetriever(private val parameter: Parameter) : Paramet
                 .also { log.trace { "Cast \"${parameter.name}\" to path parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to path parameter".let {
-                log.error("$it: ${e.message}")
+                log.warn("$it: ${e.message}")
                 throw e
             }
         }
@@ -75,7 +75,7 @@ private class QueryParameterListRetriever(private val parameter: Parameter) : Pa
                 .also { log.trace { "Cast \"${parameter.name}\" to query parameter list completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to query parameter list.".let {
-                log.error("$it: ${e.message}")
+                log.warn("$it: ${e.message}")
                 throw e
             }
         }
@@ -100,7 +100,7 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
                 .also { log.trace { "Cast \"${parameter.name}\" to query parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to query parameter".let {
-                log.error("$it: ${e.message}")
+                log.warn("$it: ${e.message}")
                 throw e
             }
         }
@@ -138,7 +138,7 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to body parameter".let {
-                log.error("$it: ${e.message}")
+                log.warn("$it: ${e.message}")
                 throw e
             }
         }
@@ -193,7 +193,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
             return formParameterAsList.first()
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to multipart form parameter".let {
-                log.error("$it: ${e.message}")
+                log.warn("$it: ${e.message}")
                 throw e
             }
         }

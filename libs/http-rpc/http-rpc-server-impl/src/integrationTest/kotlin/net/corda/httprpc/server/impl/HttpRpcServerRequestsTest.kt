@@ -716,4 +716,18 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
         assertEquals("""{"str":null}""", helloResponse.body)
     }
+
+    @Test
+    fun `pass integer in query that cannot be parsed`() {
+        val response = client.call(GET, WebRequest<Any>("health/hello/world?id=wrongInt"), userName, password)
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.responseStatus)
+        assertThat(response.body).contains("Unable to parse parameter 'id'")
+    }
+
+    @Test
+    fun `pass integer in path that cannot be parsed`() {
+        val response = client.call(POST, WebRequest<Any>("health/plusone/wrongInt"), userName, password)
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.responseStatus)
+        assertThat(response.body).contains("Unable to parse parameter 'number'")
+    }
 }
