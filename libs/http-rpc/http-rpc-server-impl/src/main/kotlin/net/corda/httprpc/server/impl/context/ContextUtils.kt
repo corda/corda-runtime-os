@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.context
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
@@ -13,6 +14,7 @@ import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientRequestContext.Companion.METHOD_SEPARATOR
+import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
 import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
@@ -152,7 +154,15 @@ internal object ContextUtils {
             val parameterRetriever = ParameterRetrieverFactory.create(parameter, this)
             try {
                 parameterRetriever.apply(parametersRetrieverContext)
-            } catch (ex: Exception) {
+            } catch(ex: JsonProcessingException) {
+                // These are handled in `HttpExceptionMapper`
+                throw ex
+            }
+            catch(ex: MissingParameterException) {
+                // These are handled in `HttpExceptionMapper`
+                throw ex
+            }
+            catch (ex: Exception) {
                 throw InvalidInputDataException(
                     "Unable to parse parameter '${parameter.name}'",
                     listOf("cause" to (ex.javaClass.simpleName + ": " + ex.message)).toMap())

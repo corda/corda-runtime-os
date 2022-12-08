@@ -19,15 +19,9 @@ internal object HttpExceptionMapper {
             // the code has already thrown the appropriate Javalin response exception.
             is HttpResponseException -> e
 
-//            is BadRpcStartFlowRequestException -> buildBadRequestResponse("Operation failed due to bad RPC StartFlow request.", e)
             is MissingKotlinParameterException -> buildBadRequestResponse("Missing or invalid field in JSON request body.", e)
             is JsonProcessingException -> buildBadRequestResponse("Error during processing of request JSON.", e)
             is MissingParameterException -> buildBadRequestResponse("Missing parameter in request.", e)
-            // TODO restore these when possible
-            //  is StartFlowPermissionException -> ForbiddenResponse(loggedMessage)
-            //  is FlowNotFoundException -> NotFoundResponse(loggedMessage)
-            //  is InvalidMemberX500NameException -> BadRequestResponse(loggedMessage)
-            //  is MemberNotFoundException -> NotFoundResponse(loggedMessage)
 
             // catch-all for failed login attempts
             is FailedLoginException -> UnauthorizedResponse("User authentication failed.")
