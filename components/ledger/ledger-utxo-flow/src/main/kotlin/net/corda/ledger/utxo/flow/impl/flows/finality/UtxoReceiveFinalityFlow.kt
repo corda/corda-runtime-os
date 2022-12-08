@@ -76,7 +76,6 @@ class UtxoReceiveFinalityFlow(
         // Verify the transaction.
         /*REVERT*/log.info( "Verifying transaction: $transactionId" )
         verifyTransaction(incomingTransaction)
-
         // Sign the Transaction if we are happy with its content.
         /*REVERT*/log.info( "Validating if the transaction is acceptable: $transactionId" )
         val signaturesPayload = if (verify(incomingTransaction)) {
@@ -114,7 +113,7 @@ class UtxoReceiveFinalityFlow(
         }
 
         // Send back the new signatures or a Failure.
-        /*REVERT*/log.info( "Sending back our signatures for transaction: $transactionId" )
+        /*REVERT*/log.info( "Sending back our reply for transaction: $transactionId" )
         session.send(signaturesPayload)
 
         if (signaturesPayload is Payload.Failure) {
