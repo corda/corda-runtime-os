@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -16,12 +15,12 @@ class PersistTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFa
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction, parameters.transactionStatus.value, parameters.relevantStates)
+        return PersistTransaction(parameters.transaction, parameters.transactionStatus.value, parameters.relevantStatesIndexes)
     }
 }
 
 data class PersistTransactionParameters(
     val transaction: ByteBuffer,
     val transactionStatus: TransactionStatus,
-    val relevantStates: List<ComponentPosition>
+    val relevantStatesIndexes: List<Int>
 )

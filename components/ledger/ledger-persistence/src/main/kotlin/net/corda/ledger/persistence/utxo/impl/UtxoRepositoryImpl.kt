@@ -228,7 +228,7 @@ class UtxoRepositoryImpl(
             .executeUpdate()
     }
 
-    override fun persistTransactionRelevancy(
+    override fun persistTransactionRelevantStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
@@ -238,7 +238,7 @@ class UtxoRepositoryImpl(
     ) {
         entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_relevancy(
+            INSERT INTO {h-schema}utxo_relevant_transaction_state(
                 transaction_id, group_idx, leaf_idx, consumed, created)
             VALUES(
                 :transactionId, :groupIndex, :leafIndex, :consumed, :createdAt)

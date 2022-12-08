@@ -79,9 +79,9 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
-    /** Persists transaction relevancy data (operation is idempotent) */
+    /** Persists relevant transaction states (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionRelevancy(
+    fun persistTransactionRelevantStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,

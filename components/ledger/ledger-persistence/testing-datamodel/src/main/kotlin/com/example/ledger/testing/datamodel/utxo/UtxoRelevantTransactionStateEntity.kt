@@ -15,13 +15,13 @@ import javax.persistence.Table
 
 @CordaSerializable
 @NamedQuery(
-    name = "UtxoTransactionRelevancyEntity.findByTransactionId",
-    query = "from UtxoTransactionRelevancyEntity where transaction.id = :transactionId"
+    name = "UtxoRelevantTransactionStateEntity.findByTransactionId",
+    query = "from UtxoRelevantTransactionStateEntity where transaction.id = :transactionId"
 )
 @Entity
-@Table(name = "utxo_transaction_relevancy")
-@IdClass(UtxoTransactionRelevancyEntityId::class)
-data class UtxoTransactionRelevancyEntity(
+@Table(name = "utxo_relevant_transaction_state")
+@IdClass(UtxoRelevantTransactionStateEntityId::class)
+data class UtxoRelevantTransactionStateEntity(
     @Id
     @ManyToOne
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
@@ -43,7 +43,7 @@ data class UtxoTransactionRelevancyEntity(
 )
 
 @Embeddable
-data class UtxoTransactionRelevancyEntityId(
+data class UtxoRelevantTransactionStateEntityId(
     val transaction: UtxoTransactionEntity,
     val groupIndex: Int,
     val leafIndex: Int

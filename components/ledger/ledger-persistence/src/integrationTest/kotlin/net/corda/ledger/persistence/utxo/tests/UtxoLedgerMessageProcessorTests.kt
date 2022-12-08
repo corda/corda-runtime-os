@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -117,8 +116,8 @@ class UtxoLedgerMessageProcessorTests {
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
-        val relevantStates = listOf(ComponentPosition(0, 0))
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStates)
+        val relevantStatesIndexes = listOf(0)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStatesIndexes)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
@@ -158,6 +157,12 @@ class UtxoLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
+            componentGroupLists = listOf(
+                listOf("1".toByteArray()),
+                listOf("2".toByteArray()),
+                listOf("3".toByteArray()),
+                listOf("4".toByteArray())
+            ),
             metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
         return SignedTransactionContainer(

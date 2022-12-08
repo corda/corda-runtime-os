@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.utxo
 
-import net.corda.data.ledger.persistence.ComponentPosition
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
@@ -25,7 +24,7 @@ interface UtxoTransactionReader {
 
     val cpkMetadata: List<CordaPackageSummary>
 
-    val relevantStateIndexes: List<ComponentPosition>
+    val relevantStatesIndexes: List<Int>
 
     fun getProducedStates(): List<StateAndRef<ContractState>>
 
