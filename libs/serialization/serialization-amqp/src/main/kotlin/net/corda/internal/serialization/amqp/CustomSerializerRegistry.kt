@@ -163,7 +163,7 @@ class CachingCustomSerializerRegistry(
                     CustomSerializerPermission(
                         customSerializerTargetBundle
                             ?.location
-                            ?.substringBefore(BUNDLE_LOCATION_DELIMITER)
+                            ?.substringBefore('/')
                             ?: NON_BUNDLE
                     ),
                     accessControlContext
@@ -272,6 +272,5 @@ class CustomSerializerPermission(name: String) : BasicPermission(name) {
     companion object {
         // `BasicPermission` doesn't allow an empty name so using "NON_BUNDLE" if class is non bundled
         const val NON_BUNDLE = "NON_BUNDLE"
-        const val BUNDLE_LOCATION_DELIMITER = '/'
     }
 }
