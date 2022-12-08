@@ -12,7 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.security.PublicKey

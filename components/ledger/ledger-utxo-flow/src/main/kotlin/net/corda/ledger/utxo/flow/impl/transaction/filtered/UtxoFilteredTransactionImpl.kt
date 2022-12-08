@@ -17,9 +17,9 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.transaction.FilteredDataInconsistencyException
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 class UtxoFilteredTransactionImpl(

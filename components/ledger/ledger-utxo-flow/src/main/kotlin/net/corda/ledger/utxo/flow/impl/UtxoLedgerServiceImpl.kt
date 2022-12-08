@@ -20,7 +20,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransactionBuilder
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder

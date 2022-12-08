@@ -5,12 +5,11 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransactionBuilder
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import java.security.PublicKey
 import java.util.function.Predicate
 
