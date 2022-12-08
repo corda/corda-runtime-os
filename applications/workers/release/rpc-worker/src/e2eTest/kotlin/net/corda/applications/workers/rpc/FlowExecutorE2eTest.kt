@@ -42,7 +42,7 @@ class FlowExecutorE2eTest {
             val proxy = client.start().proxy
             eventually(duration = 30.seconds, waitBetween = 1.seconds) {
                 val roleEntity = assertDoesNotThrow { proxy.getRoles().single { it.roleName == roleName } }
-                assertThat(roleEntity.permissions).hasSize(5)
+                assertThat(roleEntity.permissions).hasSize(6)
             }
         }
     }

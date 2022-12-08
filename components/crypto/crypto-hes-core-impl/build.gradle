@@ -13,9 +13,9 @@ dependencies {
 
     implementation project(":libs:crypto:crypto-core")
 
-    api "net.corda:corda-cipher-suite"
 
     api project(":components:crypto:crypto-hes")
+    api project(':libs:crypto:cipher-suite')
     api project(":libs:lifecycle:lifecycle")
 }
 

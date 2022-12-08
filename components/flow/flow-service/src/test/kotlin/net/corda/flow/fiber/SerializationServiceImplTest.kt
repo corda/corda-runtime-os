@@ -2,6 +2,8 @@ package net.corda.flow.fiber
 
 import net.corda.flow.application.serialization.SerializationServiceImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
@@ -18,10 +20,8 @@ import org.mockito.kotlin.whenever
 class SerializationServiceImplTest {
 
     private class TestObject
-    private val flowFiberService : FlowFiberService = mock()
+    private val currentSandboxGroupContext : CurrentSandboxGroupContext = mock()
 
-    private val flowFiber = mock<FlowFiber>()
-    private val executionContext = mock<FlowFiberExecutionContext>()
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val serializationService = mock<SerializationService>()
     private val serializedBytes = mock<SerializedBytes<Any>>()
@@ -29,14 +29,12 @@ class SerializationServiceImplTest {
     private val byteArray = "bytes".toByteArray()
 
 
-    private val flowFiberSerializationService = SerializationServiceImpl(flowFiberService)
+    private val flowFiberSerializationService = SerializationServiceImpl(currentSandboxGroupContext)
 
     @BeforeEach
     fun setup() {
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
-        whenever(flowFiber.getExecutionContext()).thenReturn(executionContext)
-        whenever(executionContext.sandboxGroupContext).thenReturn(sandboxGroupContext)
-        whenever(sandboxGroupContext.amqpSerializer).thenReturn(serializationService)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandboxGroupContext)
+        whenever(sandboxGroupContext.get(AMQP_SERIALIZATION_SERVICE, SerializationService::class.java)).thenReturn(serializationService)
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
     }
 
@@ -49,7 +47,7 @@ class SerializationServiceImplTest {
 
         assertThat(deserialized).isEqualTo(tesObj)
         verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(flowFiberService, times(1)).getExecutingFiber()
+        verify(currentSandboxGroupContext, times(1)).get()
     }
 
     @Test
@@ -61,7 +59,7 @@ class SerializationServiceImplTest {
 
         assertThat(deserialized).isEqualTo(tesObj)
         verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(flowFiberService, times(1)).getExecutingFiber()
+        verify(currentSandboxGroupContext, times(1)).get()
     }
 
     @Test
@@ -71,7 +69,7 @@ class SerializationServiceImplTest {
         assertThrows<CordaRuntimeException> { flowFiberSerializationService.deserializeAndCheckType(byteArray, TestObject::class.java) }
 
         verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
-        verify(flowFiberService, times(1)).getExecutingFiber()
+        verify(currentSandboxGroupContext, times(1)).get()
     }
 
     @Test
@@ -81,6 +79,6 @@ class SerializationServiceImplTest {
 
         assertThat(deserialized).isEqualTo(serializedBytes)
         verify(serializationService, times(1)).serialize(testObj)
-        verify(flowFiberService, times(1)).getExecutingFiber()
+        verify(currentSandboxGroupContext, times(1)).get()
     }
 }

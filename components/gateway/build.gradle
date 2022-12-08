@@ -50,11 +50,11 @@ dependencies {
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-merger")
+    integrationTestImplementation project(':libs:crypto:cipher-suite')
     integrationTestImplementation project(':libs:messaging:message-bus')
     integrationTestImplementation project(':libs:messaging:db-message-bus-impl')
     integrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
     testImplementation project(":testing:p2p:certificates")
-    integrationTestImplementation 'net.corda:corda-cipher-suite'
 }
 
 sourceSets {

@@ -17,10 +17,11 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
@@ -114,7 +115,7 @@ class ConsensualLedgerMessageProcessorTests {
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
-        val transactionStatus = "V"
+        val transactionStatus = TransactionStatus.VERIFIED.value
         val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
@@ -133,9 +134,11 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        )
+        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent

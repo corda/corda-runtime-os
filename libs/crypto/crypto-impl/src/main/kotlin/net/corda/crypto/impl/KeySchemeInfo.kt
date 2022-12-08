@@ -1,15 +1,15 @@
 package net.corda.crypto.impl
 
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.X25519_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.SM2_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.X25519_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider

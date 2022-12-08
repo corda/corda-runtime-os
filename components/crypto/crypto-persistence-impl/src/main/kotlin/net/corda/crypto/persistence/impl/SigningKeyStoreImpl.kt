@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
@@ -12,9 +13,6 @@ import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
-import net.corda.crypto.persistence.db.model.SigningKeyEntity
-import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
-import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
@@ -27,6 +25,9 @@ import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
 import net.corda.crypto.persistence.createdAfter
 import net.corda.crypto.persistence.createdBefore
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
+import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.externalId
 import net.corda.crypto.persistence.masterKeyAlias
 import net.corda.crypto.persistence.schemeCodeName
@@ -37,7 +38,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate

@@ -1,9 +1,9 @@
 package net.corda.crypto.impl.converter
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn

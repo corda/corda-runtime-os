@@ -1,8 +1,8 @@
 package net.corda.crypto.service
 
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.cipher.suite.CryptoService
 
 /**
  * Provides instances of fully configured [CryptoService].

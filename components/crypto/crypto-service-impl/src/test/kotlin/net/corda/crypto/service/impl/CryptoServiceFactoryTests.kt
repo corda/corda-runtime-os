@@ -1,14 +1,14 @@
 package net.corda.crypto.service.impl
 
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceProvider
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

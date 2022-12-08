@@ -41,6 +41,8 @@ dependencies {
     runtimeOnly project(':components:ledger:ledger-consensual-flow')
     runtimeOnly project(':components:ledger:ledger-utxo-flow')
     runtimeOnly project(':libs:ledger:ledger-consensual-data')
+    runtimeOnly project(':components:ledger:ledger-utxo-flow')
+    runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")

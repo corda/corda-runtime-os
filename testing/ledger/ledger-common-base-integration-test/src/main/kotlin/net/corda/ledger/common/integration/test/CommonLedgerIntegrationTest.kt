@@ -11,6 +11,7 @@ import net.corda.internal.serialization.amqp.helper.createSerializerFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
@@ -21,6 +22,7 @@ import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,6 +54,7 @@ abstract class CommonLedgerIntegrationTest {
     lateinit var wireTransaction: WireTransaction
     lateinit var kryoSerializer: CheckpointSerializer
     lateinit var serializationService: SerializationService
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -75,6 +78,8 @@ abstract class CommonLedgerIntegrationTest {
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
         sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
         setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
+        currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
+        currentSandboxGroupContext.set(sandboxGroupContext)
 
         jsonMarshallingService = sandboxGroupContext.getSandboxSingletonService()
         jsonValidator = sandboxGroupContext.getSandboxSingletonService()
@@ -91,5 +96,10 @@ abstract class CommonLedgerIntegrationTest {
 
         wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)
 
+    }
+
+    @AfterAll
+    fun afterAll() {
+        currentSandboxGroupContext.remove()
     }
 }

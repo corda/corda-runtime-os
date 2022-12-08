@@ -17,10 +17,11 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
+@Suppress("TooManyFunctions")
 class UtxoRepositoryImpl(
+    private val digestService: DigestService,
     private val serializationService: SerializationService,
-    private val wireTransactionFactory: WireTransactionFactory,
-    private val digestService: DigestService
+    private val wireTransactionFactory: WireTransactionFactory
 ) : UtxoRepository {
     private companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
@@ -76,6 +77,39 @@ class UtxoRepositoryImpl(
     }
 
     override fun findTransactionSignatures(
+        entityManager: EntityManager,
+        transactionId: String
+    ): List<DigitalSignatureAndMetadata> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT signature
+                FROM {h-schema}utxo_transaction_signature
+                WHERE transaction_id = :transactionId
+                ORDER BY signature_idx""",
+            Tuple::class.java
+        )
+            .setParameter("transactionId", transactionId)
+            .resultListAsTuples()
+            .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
+    }
+
+    override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(
+            """
+                SELECT status
+                FROM {h-schema}utxo_transaction_status
+                WHERE transaction_id = :transactionId
+                """,
+            Tuple::class.java
+        )
+            .setParameter("transactionId", id)
+            .resultListAsTuples()
+            .map { r -> r.get(0) as String }
+            .singleOrNull()
+    }
+
+    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
+    private fun findSignatures(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
@@ -274,7 +308,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: TransactionStatus,
+        transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
@@ -287,13 +321,13 @@ class UtxoRepositoryImpl(
                 WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status.value)
+            .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
 
-        check(rowsUpdated == 1 || status == TransactionStatus.UNVERIFIED) {
+        check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
-            "Existing status for transaction with ID $transactionId can't be updated to $status (illegal state that shouldn't happen)"
+            "Existing status for transaction with ID $transactionId can't be updated to $transactionStatus"
         }
     }
 

@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.serialization
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.SerializationServiceImpl
@@ -16,7 +17,6 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.framework.Bundle
 
 class BaseSerializationService : SerializationService by createSerializationService({}, CipherSchemeMetadataImpl()) {

@@ -1,0 +1,31 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+    id 'corda.javadoc-generation'
+}
+
+ext {
+    releasable = true
+}
+
+description 'Corda Cipher Suite'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-crypto'
+    api 'net.corda:corda-crypto-extensions'
+
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+

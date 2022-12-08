@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence
 
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 
 @Suppress("LongParameterList")
 class SigningPublicKeySaveContext(

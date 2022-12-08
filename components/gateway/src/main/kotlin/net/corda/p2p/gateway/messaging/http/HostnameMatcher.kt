@@ -22,8 +22,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     var matchedAlias: String? = null
         private set
-    var matchedServerName: String? = null
-        private set
 
     /**
      * Verifies the keystore entries against the provided *serverName*. The method will verify C4 and C5 SNI values.
@@ -42,10 +40,10 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
                 val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
                 val c4SniValue = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
                 if (serverNameString == c4SniValue) {
-                    return matched(alias, serverName.asciiName)
+                    return matched(alias)
                 }
             } else if (matchDNS(serverNameString, certificate)){
-                return matched(alias, serverName.asciiName)
+                return matched(alias)
             }
         }
 
@@ -65,9 +63,8 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         return correctSize && correctSuffix && validHashedLegalName
     }
 
-    private fun matched(alias: String, serverName: String): Boolean {
+    private fun matched(alias: String): Boolean {
         matchedAlias = alias
-        matchedServerName = serverName
         return true
     }
 

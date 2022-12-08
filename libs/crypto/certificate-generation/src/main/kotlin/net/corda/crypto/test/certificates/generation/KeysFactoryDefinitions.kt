@@ -1,7 +1,7 @@
 package net.corda.crypto.test.certificates.generation
 
+import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.test.certificates.generation.Algorithm.Companion.toAlgorithm
-import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import java.security.InvalidParameterException
 import java.security.spec.AlgorithmParameterSpec
 
