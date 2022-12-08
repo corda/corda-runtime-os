@@ -70,7 +70,6 @@ import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
@@ -93,7 +92,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.random.Random
 
 class P2PLayerEndToEndTest {
 
