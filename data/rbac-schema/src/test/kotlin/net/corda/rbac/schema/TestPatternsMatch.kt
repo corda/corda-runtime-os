@@ -6,6 +6,7 @@ import net.corda.rbac.schema.RbacKeys.USER_REGEX
 import net.corda.rbac.schema.RbacKeys.USER_URL_REGEX
 import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
+import net.corda.rbac.schema.RbacKeys.VNODE_STATE_REGEX
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -31,6 +32,14 @@ class TestPatternsMatch {
 
         assertTrue(wildcardMatch(validShortHashId, VNODE_SHORT_HASH_REGEX))
         assertFalse(wildcardMatch("invalid", VNODE_SHORT_HASH_REGEX))
+    }
+
+    @Test
+    fun testVNodeState() {
+        val valid = "IN_MAINTENANCE"
+
+        assertTrue(wildcardMatch(valid, VNODE_STATE_REGEX))
+        assertFalse(wildcardMatch("inv@lid", VNODE_STATE_REGEX))
     }
 
     @Test

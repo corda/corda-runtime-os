@@ -28,6 +28,11 @@ object RbacKeys {
     const val VNODE_SHORT_HASH_REGEX = "$UUID_CHARS{12}"
 
     /**
+     * State of the vNode. E.g. ACTIVE or IN_MAINTENANCE.
+     */
+    const val VNODE_STATE_REGEX = "[_a-zA-Z0-9]{3,255}"
+
+    /**
      * RBAC user name regex
      */
     const val USER_REGEX = "[-._@a-zA-Z0-9]{3,255}"
