@@ -13,7 +13,7 @@ import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import org.mockito.kotlin.mock
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
-    val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
+    private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
             merkleTreeProvider,
