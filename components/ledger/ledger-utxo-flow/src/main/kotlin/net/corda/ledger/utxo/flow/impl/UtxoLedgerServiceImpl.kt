@@ -69,6 +69,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
     }
 
+    @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal)
     }
