@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -31,7 +32,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import org.apache.avro.file.DataFileReader

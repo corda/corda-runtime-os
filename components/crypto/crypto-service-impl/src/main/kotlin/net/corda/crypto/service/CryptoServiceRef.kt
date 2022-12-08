@@ -1,13 +1,13 @@
 package net.corda.crypto.service
 
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.schemes.KeyScheme
 
 /**
  * Defines a reference to an instance of [CryptoService] with configuration information per tenant.

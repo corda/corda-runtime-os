@@ -1,10 +1,10 @@
 package net.corda.ledger.common.flow.impl.converter
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.ledger.common.Party
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

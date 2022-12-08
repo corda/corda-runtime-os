@@ -8,7 +8,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -25,9 +25,8 @@ data class UtxoTransactionBuilderImpl(
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
     override val signatories: List<PublicKey> = emptyList(),
-    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-
+    override val inputStateRefs: List<StateRef> = emptyList(),
+    override val referenceInputStateRefs: List<StateRef> = emptyList(),
     // We cannot use TransactionStates without notary which may be available only later
     override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
@@ -49,12 +48,12 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
-    override fun addInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
-        return copy(inputStateAndRefs = inputStateAndRefs + stateAndRef)
+    override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(inputStateRefs = inputStateRefs + stateRef)
     }
 
-    override fun addReferenceInputState(stateAndRef: StateAndRef<*>): UtxoTransactionBuilder {
-        return copy(referenceInputStateAndRefs = referenceInputStateAndRefs + stateAndRef)
+    override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRef)
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
@@ -110,8 +109,8 @@ data class UtxoTransactionBuilderImpl(
         if (other.notary != notary) return false
         if (other.attachments != attachments) return false
         if (other.commands != commands) return false
-        if (other.inputStateAndRefs != inputStateAndRefs) return false
-        if (other.referenceInputStateAndRefs != referenceInputStateAndRefs) return false
+        if (other.inputStateRefs != inputStateRefs) return false
+        if (other.referenceInputStateRefs != referenceInputStateRefs) return false
         if (other.outputStates != outputStates) return false
         if (other.signatories != signatories) return false
         return true
@@ -123,14 +122,14 @@ data class UtxoTransactionBuilderImpl(
         attachments,
         commands,
         signatories,
-        inputStateAndRefs,
-        referenceInputStateAndRefs,
+        inputStateRefs,
+        referenceInputStateRefs,
         outputStates,
     )
 
     private fun verifyIfReady() {
         check(!alreadySigned) { "A transaction cannot be signed twice." }
         UtxoTransactionVerification.verifyNotary(notary)
-        UtxoTransactionVerification.verifyStructures(timeWindow, inputStateAndRefs, outputStates.map { it.first })
+        UtxoTransactionVerification.verifyStructures(timeWindow, inputStateRefs, outputStates.map { it.first })
     }
 }

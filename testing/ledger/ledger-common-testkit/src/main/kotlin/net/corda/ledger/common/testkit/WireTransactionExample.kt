@@ -1,25 +1,26 @@
 package net.corda.ledger.common.testkit
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.time.Instant
 
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    jsonValidator: JsonValidator
+    jsonValidator: JsonValidator,
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
-    val metadata = transactionMetadataExample(numberOfComponentGroups = defaultComponentGroups.size + 1)
+    val metadata = transactionMetadataExample(numberOfComponentGroups = componentGroups.size + 1)
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val allGroupLists = listOf(
         listOf(canonicalJson.toByteArray()),
-    ) + defaultComponentGroups
+    ) + componentGroups
     return create(allGroupLists)
 }
 

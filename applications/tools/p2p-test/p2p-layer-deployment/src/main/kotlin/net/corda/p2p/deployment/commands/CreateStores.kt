@@ -1,11 +1,11 @@
 package net.corda.p2p.deployment.commands
 
+import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.deployment.getAndCheckEnv
-import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import java.io.File
 
 internal class CreateStores(

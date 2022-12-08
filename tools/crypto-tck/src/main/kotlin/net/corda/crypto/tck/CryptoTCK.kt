@@ -1,6 +1,6 @@
 package net.corda.crypto.tck
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 
 /**
  * Crypto Technical Compliance Kit provider. It's an OSGi component.

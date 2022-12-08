@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.utilities.LazyPool
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
 import java.security.Signature

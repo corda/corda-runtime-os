@@ -4,9 +4,9 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.kryoserialization.readBytesWithLength
 import net.corda.kryoserialization.writeBytesWithLength
-import net.corda.v5.cipher.suite.KeyEncodingService
 import java.security.PublicKey
 
 class PublicKeySerializer(
