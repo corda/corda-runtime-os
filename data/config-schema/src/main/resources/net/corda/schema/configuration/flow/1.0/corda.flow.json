@@ -33,7 +33,7 @@
           "default": 60000
         },
         "cleanupTime": {
-          "description": "The length of time the flow mapper should hold onto its state for a flow that has finished.",
+          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a flow that has finished.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
@@ -47,7 +47,7 @@
       "default": {},
       "properties": {
         "messageResendWindow": {
-          "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
+          "description": "Length of time to wait in milliseconds before resending unacknowledged flow session messages, in milliseconds",
           "type": "integer",
           "minimum": 1000,
           "maximum": 2147483647,
