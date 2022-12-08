@@ -4,7 +4,7 @@ import net.corda.v5.base.versioning.Version
 import net.corda.v5.serialization.SerializationCustomSerializer
 
 // No need to implement methods in below testing serializers.
-// We are not really using them to serialize/ deserialize, only assert they can be registered or not.
+// We are not using them to serialize/ deserialize, only to assert they can be registered or not.
 
 // Custom serializer for platform type should be denied.
 class VersionSerializer : SerializationCustomSerializer<Version, VersionProxy> {
