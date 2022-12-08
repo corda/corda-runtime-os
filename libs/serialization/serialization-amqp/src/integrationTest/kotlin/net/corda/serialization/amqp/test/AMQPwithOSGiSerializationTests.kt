@@ -210,7 +210,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @Test
-    fun `sandbox external custom serializers for platform types are denied`() {
+    fun `sandbox external custom serializers targeting platform types are denied`() {
         applyPolicyFile("security-deny-platform-serializers.policy")
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
@@ -235,7 +235,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @Test
-    fun `sandbox external custom serializers for sandbox types are allowed`() {
+    fun `sandbox external custom serializers targeting sandbox types are allowed`() {
         applyPolicyFile("security-deny-platform-serializers.policy")
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
