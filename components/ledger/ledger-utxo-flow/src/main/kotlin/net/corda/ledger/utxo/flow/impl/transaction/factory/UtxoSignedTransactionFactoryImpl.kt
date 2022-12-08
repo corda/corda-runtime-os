@@ -33,13 +33,20 @@ import java.security.PublicKey
     service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
 )
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
-    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = JsonValidator::class) private val jsonValidator: JsonValidator,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
-    @Reference(service = TransactionSignatureService::class) private val transactionSignatureService: TransactionSignatureService,
-    @Reference(service = TransactionMetadataFactory::class) private val transactionMetadataFactory: TransactionMetadataFactory,
-    @Reference(service = WireTransactionFactory::class) private val wireTransactionFactory: WireTransactionFactory,
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = JsonMarshallingService::class)
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService,
+    @Reference(service = TransactionSignatureService::class)
+    private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = TransactionMetadataFactory::class)
+    private val transactionMetadataFactory: TransactionMetadataFactory,
+    @Reference(service = WireTransactionFactory::class)
+    private val wireTransactionFactory: WireTransactionFactory,
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
