@@ -8,7 +8,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import java.io.Serializable
 import java.time.Instant
-import java.util.Objects
+import java.util.*
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable

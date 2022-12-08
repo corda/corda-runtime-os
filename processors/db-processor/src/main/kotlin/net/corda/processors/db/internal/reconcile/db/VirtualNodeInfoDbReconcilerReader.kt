@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.VirtualNodeRepositoryImpl
 import net.corda.reconciliation.VersionedRecord
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo

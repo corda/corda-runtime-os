@@ -2,10 +2,10 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.HoldingIdentityRepository
+import net.corda.libs.virtualnode.datamodel.HoldingIdentityRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.VirtualNodeRepositoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
