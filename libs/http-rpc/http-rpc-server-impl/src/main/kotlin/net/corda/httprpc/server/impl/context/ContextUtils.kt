@@ -148,6 +148,7 @@ internal object ContextUtils {
         }
     }
 
+    @Suppress("ThrowsCount")
     fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): List<Any?> {
         val parametersRetrieverContext = ParametersRetrieverContext(ctx)
         val paramValues = parameters.map { parameter ->
