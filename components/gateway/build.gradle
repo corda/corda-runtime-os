@@ -31,7 +31,7 @@ dependencies {
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "commons-validator:commons-validator:$commonsVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
-
+    implementation project(':libs:schema-registry:schema-registry')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
@@ -40,9 +40,12 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    integrationTestImplementation "net.corda:corda-avro-schema"
 
     // For async logging
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+    integrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(':libs:crypto:certificate-generation')
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")

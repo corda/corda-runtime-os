@@ -16,12 +16,14 @@ dependencies {
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:schema-registry:schema-registry')
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(":libs:crypto:crypto-impl")
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 }
 
 description 'Gateway Processor'

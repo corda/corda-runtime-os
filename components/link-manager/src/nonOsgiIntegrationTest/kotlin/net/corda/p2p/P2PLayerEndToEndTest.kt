@@ -65,10 +65,12 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
@@ -91,6 +93,8 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.random.Random
+
 class P2PLayerEndToEndTest {
 
     companion object {
@@ -452,7 +456,8 @@ class P2PLayerEndToEndTest {
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
                 SigningMode.STUB,
-                mock()
+                mock(),
+                AvroSchemaRegistryImpl()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
