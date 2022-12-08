@@ -9,11 +9,11 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * @property handlers map of request type to the handler type which handles that request.
  */
-abstract class WireProcessor(
+class WireProcessor(
     private val handlers: Map<Class<*>, Class<out Handler<out Any>>>
 ) {
     /**
-     * Interface which must e implemnted by request handlers.
+     * Interface which must be implemented by request handlers.
      */
     interface Handler<REQUEST> {
         fun handle(context: CryptoRequestContext, request: REQUEST): Any
@@ -26,7 +26,7 @@ abstract class WireProcessor(
      * parameter passed here as handlerCtorArg
      */
     @Suppress("UNCHECKED_CAST")
-    protected fun getHandler(request: Class<*>, handlerCtorArg: Any): Handler<Any> {
+    fun getHandler(request: Class<*>, handlerCtorArg: Any): Handler<Any> {
         val constructor = constructors.computeIfAbsent(request) {
             val type = handlers[request] ?: throw IllegalArgumentException(
                 "Unknown request type ${request.name}"

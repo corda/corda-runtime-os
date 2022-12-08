@@ -81,6 +81,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -95,6 +96,7 @@ import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CryptoProcessorTests {
     companion object {
         private val logger = contextLogger()
@@ -184,9 +186,13 @@ class CryptoProcessorTests {
 
         private val cryptoConfig = makeCryptoConfig()
 
+        private var startTime: Long? = null
+        private var endTime: Long? = null
+
         @JvmStatic
         @BeforeAll
         fun setup() {
+            startTime = System.nanoTime()
             setupPrerequisites()
             setupDatabases()
             setupVirtualNodeInfo()
@@ -203,6 +209,9 @@ class CryptoProcessorTests {
             }
             cryptoProcessor.stop()
             eventually { assertFalse(cryptoProcessor.isRunning) }
+            endTime = System.nanoTime()
+            val endTimeSeconds = Duration.ofNanos(endTime!! - startTime!!).toSeconds()
+            logger.info(">>>>>>>>>>>>>>>> CryptoProcessorTests took $endTimeSeconds to run")
         }
 
         private fun setupPrerequisites() {
@@ -380,7 +389,7 @@ class CryptoProcessorTests {
         )
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testCategories")
     fun `Should be able to get supported schemes`(
         category: String,
@@ -390,7 +399,7 @@ class CryptoProcessorTests {
         assertTrue(supportedSchemes.isNotEmpty())
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should not find unknown public key by its id`(
         tenantId: String
@@ -402,7 +411,7 @@ class CryptoProcessorTests {
         assertEquals(0, found.size)
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should return empty collection when lookp filter does not match`(
         tenantId: String
@@ -419,7 +428,7 @@ class CryptoProcessorTests {
         assertEquals(0, found.size)
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should generate a new key pair using alias then find it and use for hybrid encryption`(
         tenantId: String
@@ -442,7 +451,7 @@ class CryptoProcessorTests {
         `Should be able to derive secret and encrypt`(tenantId, original)
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should generate a new a new fresh key pair then find it and use for hybrid encryption`(
         tenantId: String
@@ -461,6 +470,12 @@ class CryptoProcessorTests {
         `Should be able to derive secret and encrypt`(tenantId, original)
     }
 
+    fun measureTime(block: () -> Unit): Long {
+        val before = System.nanoTime()
+        block()
+        return Duration.ofNanos(System.nanoTime() - before).toSeconds()
+    }
+
     @ParameterizedTest
     @MethodSource("testCategories")
     fun `Should generate a new key pair using alias then find it and use for signing`(
@@ -476,22 +491,42 @@ class CryptoProcessorTests {
             scheme = ECDSA_SECP256R1_CODE_NAME
         )
 
-        `Should find existing public key by its id`(tenantId, alias, original, category, null)
+        val time0 = measureTime {
+            `Should find existing public key by its id`(tenantId, alias, original, category, null)
+        }
 
-        `Should find existing public key by its alias`(tenantId, alias, original, category)
+        val time1 = measureTime {
+            `Should find existing public key by its alias`(tenantId, alias, original, category)
+        }
 
-        `Should be able to sign and verify`(tenantId, original)
+        // 3
+        val time2 = measureTime {
+            `Should be able to sign and verify`(tenantId, original)
+        }
 
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
+        // 3
+        val time3 = measureTime {
+            `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
+        }
 
-        `Should be able to sign using custom signature spec`(tenantId, original)
+        val time4 = measureTime {
+            `Should be able to sign using custom signature spec`(tenantId, original)
+        }
 
-        `Should be able to sign by flow ops and verify`(tenantId, original)
+        // 4
+        val time5 = measureTime {
+            `Should be able to sign by flow ops and verify`(tenantId, original)
+        }
 
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
+        // 4
+        val time6 = measureTime {
+            `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
+        }
+
+        println("$time0, $time1, $time2, $time3, $time4, $time5, $time6")
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should generate a new fresh key pair with external id then find it and use for signing`(
         tenantId: String
@@ -525,7 +560,7 @@ class CryptoProcessorTests {
         `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @MethodSource("testTenants")
     fun `Should generate a new fresh key pair without external id then find it and use for signing`(
         tenantId: String

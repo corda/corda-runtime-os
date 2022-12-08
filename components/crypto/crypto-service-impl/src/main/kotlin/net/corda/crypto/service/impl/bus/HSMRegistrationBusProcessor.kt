@@ -8,6 +8,7 @@ import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.WireProcessor
+import net.corda.crypto.service.impl.WireProcessor.Handler
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -26,7 +27,7 @@ import java.util.concurrent.CompletableFuture
 class HSMRegistrationBusProcessor(
     private val hsmService: HSMService,
     event: ConfigChangedEvent
-) : WireProcessor(handlers), RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
+) : RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
     companion object {
         private val logger: Logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
@@ -43,10 +44,12 @@ class HSMRegistrationBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
+    private val wireProcessor = WireProcessor(handlers)
+
     override fun onNext(request: HSMRegistrationRequest, respFuture: CompletableFuture<HSMRegistrationResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            val handler = getHandler(request.request::class.java, hsmService)
+            val handler = wireProcessor.getHandler(request.request::class.java, hsmService)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
             }

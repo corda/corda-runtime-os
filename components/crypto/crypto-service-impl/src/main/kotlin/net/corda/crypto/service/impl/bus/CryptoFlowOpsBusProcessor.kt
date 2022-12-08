@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus
 
-import java.time.Instant
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.flowBusProcessor
@@ -9,6 +8,7 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.impl.WireProcessor
+import net.corda.crypto.service.impl.WireProcessor.Handler
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -22,12 +22,13 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     event: ConfigChangedEvent
-) : WireProcessor(handlers), DurableProcessor<String, FlowOpsRequest> {
+) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
@@ -46,6 +47,8 @@ class CryptoFlowOpsBusProcessor(
         logger,
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
+
+    private val wireProcessor = WireProcessor(handlers)
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
@@ -76,7 +79,7 @@ class CryptoFlowOpsBusProcessor(
                 "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                         "{ requestId: $requestId, key: $flowId }"
             )
-            val handler = getHandler(request.request::class.java, cryptoOpsClient)
+            val handler = wireProcessor.getHandler(request.request::class.java, cryptoOpsClient)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
             }
