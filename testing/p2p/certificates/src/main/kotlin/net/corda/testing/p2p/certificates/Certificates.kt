@@ -15,5 +15,6 @@ class Certificates {
         val senderKeyStoreFile = this::class.java.classLoader.getResource("sender.jks")!!
         val aliceKeyStorePem = this::class.java.classLoader.getResource("certificate_alice.pem")!!
         val bobKeyStorePem = this::class.java.classLoader.getResource("certificate_bob.pem")!!
+        val ipKeyStore = this::class.java.classLoader.getResource("sslkeystore_127.0.0.1.jks")!!
     }
 }

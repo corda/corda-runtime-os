@@ -31,6 +31,16 @@ class HostnameMatcherTest {
     }
 
     @Test
+    fun `C5 SNI match with ip address`() {
+        val ipAddress = "127.0.0.1"
+        val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
+            it.load(Certificates.ipKeyStore.openStream(), "password".toCharArray())
+        }
+        val matcher = HostnameMatcher(keyStore)
+        assertTrue(matcher.matches(SNIHostName(ipAddress + SniCalculator.IP_SNI_SUFFIX)))
+    }
+
+    @Test
     fun `C5 SNI match`() {
         // Because the tool used to create this certificate (tinycert.org) performs validations over subject alt names,
         // only happy paths can be tested using the certificate as input

@@ -48,6 +48,7 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
@@ -252,6 +253,68 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
+                HttpClient(
+                    serverInfo,
+                    bobSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
+                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                    assertThat(httpResponse.payload).isNotNull
+                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                    assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+            assertThatIterable(publishedRecords)
+                .hasSize(1).allSatisfy {
+                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
+                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                            assertThat(it).isEqualTo(linkInMessage.payload)
+                        }
+                    }
+                }
+        }
+
+        @Test
+        @Timeout(30)
+        fun `http client to gateway with ip address`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val port = getOpenPort()
+            val ipAddress = "127.0.0.1"
+            val serverAddress = URI.create("http://$ipAddress:$port")
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
+            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        "/",
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                SigningMode.STUB,
+                mock()
+            ).usingLifecycle {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, ipKeyStore)
+                it.startAndWaitForStarted()
+                val serverInfo = DestinationInfo(
+                    serverAddress,
+                    SniCalculator.calculateSni("", NetworkType.CORDA_5, "http://$ipAddress"),
+                    null,
+                    truststoreKeyStore
+                )
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
