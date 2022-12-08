@@ -31,7 +31,7 @@ import javax.persistence.Tuple
  * only the [UsedByPersistence] marker interface.
  */
 @Component(
-    service = [ ConsensualRepositoryImpl::class, UsedByPersistence::class ],
+    service = [ ConsensualRepository::class, UsedByPersistence::class ],
     property = [ "corda.marker.only:Boolean=true" ],
     scope = PROTOTYPE
 )
@@ -212,6 +212,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         transactionId: String,
         cpkMetadata: List<CordaPackageSummary>
     ): Int {
+        val fileChecksums = cpkMetadata.map { it.fileChecksum }
         return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_cpk
@@ -221,8 +222,9 @@ class ConsensualRepositoryImpl @Activate constructor(
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
+            .setParameter("fileChecksums", fileChecksums)
             .executeUpdate()
+            .logResult("transaction CPK(s) [$transactionId, $fileChecksums]")
     }
 
     private fun Int.logResult(entity: String): Int {

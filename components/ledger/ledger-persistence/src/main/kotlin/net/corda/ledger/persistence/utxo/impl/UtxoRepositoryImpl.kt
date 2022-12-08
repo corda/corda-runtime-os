@@ -294,7 +294,7 @@ class UtxoRepositoryImpl(
             .setParameter("isRefInput", isRefInput)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
-            .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
+            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionStatus(
