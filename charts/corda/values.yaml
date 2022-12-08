@@ -53,7 +53,7 @@ nodeSelector: {}
 serviceAccount:
   name: ""
 
-# -- extra annotations for all workers
+# -- extra annotations (applied to all workers only)
 annotations: {}
 
 # Database configuration
@@ -314,7 +314,7 @@ workers:
       tag: ""
     # -- crypto worker replica count
     replicaCount: 1
-    # -- crypto worker extra annotations; defaults to workers.annotations if not specified
+    # -- crypto worker extra annotations
     annotations: {}
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -356,7 +356,7 @@ workers:
       tag: ""
     # -- DB worker replica count
     replicaCount: 1
-    # -- DB worker extra annotations; defaults to workers.annotations if not specified
+    # -- DB worker extra annotations
     annotations: {}
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -423,7 +423,7 @@ workers:
       tag: ""
     # -- flow worker replica count
     replicaCount: 1
-    # -- flow worker extra annotations; defaults to workers.annotations if not specified
+    # -- flow worker extra annotations
     annotations: {}
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -463,7 +463,7 @@ workers:
       tag: ""
     # -- membership worker replica count
     replicaCount: 1
-    # -- membership worker extra annotations; defaults to workers.annotations if not specified
+    # -- membership worker extra annotations
     annotations: {}
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -501,7 +501,7 @@ workers:
       tag: ""
     # -- RPC worker replica count
     replicaCount: 1
-    # -- RPC worker extra annotations; defaults to workers.annotations if not specified
+    # -- RPC worker extra annotations
     annotations: {}
     # -- additional Java options for the rpc worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -549,7 +549,7 @@ workers:
       tag: ""
     # -- p2p-link-manager worker replica count
     replicaCount: 1
-    # -- p2p-link-manager worker extra annotations; defaults to workers.annotations if not specified
+    # -- p2p-link-manager worker extra annotations
     annotations: {}
     # -- additional Java options for the p2p-link-manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
@@ -589,7 +589,7 @@ workers:
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
-    # -- p2p-gateway worker extra annotations; defaults to workers.annotations if not specified
+    # -- p2p-gateway worker extra annotations
     annotations: {}
     # -- additional Java options for the p2p-gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
