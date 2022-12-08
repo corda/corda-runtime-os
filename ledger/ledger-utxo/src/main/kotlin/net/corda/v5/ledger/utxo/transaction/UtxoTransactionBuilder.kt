@@ -25,64 +25,137 @@ interface UtxoTransactionBuilder {
     val notary: Party?
 
     /**
-     * Adds an [Attachment] to the current [UtxoTransactionBuilder].
+     * Adds the specified [Attachment] to the current [UtxoTransactionBuilder].
      *
      * @param attachmentId The ID of the [Attachment] to add to the current [UtxoTransactionBuilder].
-     * @return Returns a new [UtxoTransactionBuilder] with an added [Attachment].
+     * @return Returns a new [UtxoTransactionBuilder] with the specified [Attachment].
      */
     fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder
 
     /**
-     * Adds a command to the current [UtxoTransactionBuilder].
+     * Adds the specified command to the current [UtxoTransactionBuilder].
      *
      * @param command The command to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional command.
+     * @return Returns a [UtxoTransactionBuilder] including the specified command.
      */
     fun addCommand(command: Command): UtxoTransactionBuilder
 
     /**
-     * Adds signatories to the current [UtxoTransactionBuilder].
+     * Adds the specified signatories to the current [UtxoTransactionBuilder].
      *
      * @param signatories The signatories to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional signatories.
+     * @return Returns a [UtxoTransactionBuilder] including the specified signatories.
      */
     fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder
 
     /**
-     * Adds an input state to the current [UtxoTransactionBuilder].
+     * Adds the specified input state to the current [UtxoTransactionBuilder].
      *
-     * @param stateRef The [StateRef] of the input state to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional input state.
+     * @param stateRef The [StateRef] instance of the input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified input state.
      */
     fun addInputState(stateRef: StateRef): UtxoTransactionBuilder
 
     /**
-     * Adds a reference input state to the current [UtxoTransactionBuilder].
+     * Adds the specified input states to the current [UtxoTransactionBuilder].
      *
-     * @param stateRef The [StateRef] of the reference input state to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional reference input state.
+     * @param stateRefs The [StateRef] instances of the input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified input states.
+     */
+    fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified input states to the current [UtxoTransactionBuilder].
+     *
+     * @param stateRefs The [StateRef] instances of the input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified input states.
+     */
+    fun addInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified reference input state to the current [UtxoTransactionBuilder].
+     *
+     * @param stateRef The [StateRef] instance of the reference input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
      */
     fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder
 
     /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
+     * Adds the specified reference input states to the current [UtxoTransactionBuilder].
      *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
+     * @param stateRefs The [StateRef] instances of the reference input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
+     */
+    fun addReferenceInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified reference input states to the current [UtxoTransactionBuilder].
+     *
+     * @param stateRefs The [StateRef] instances of the reference input state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
+     */
+    fun addReferenceInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified output state to the current [UtxoTransactionBuilder].
+     *
+     * @param contractState The [ContractState] instance to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified output states.
      */
     fun addOutputState(contractState: ContractState): UtxoTransactionBuilder
 
     /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
+     * Adds the specified output states to the current [UtxoTransactionBuilder].
      *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param encumbrance The index of an associated, encumbered state, or null if no encumbrance applies to the associated transaction state.
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified output states.
      */
-    fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder
+    fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder
 
     /**
-     * Sets the [Party] as a notary to the current [UtxoTransactionBuilder].
+     * Adds the specified output states to the current [UtxoTransactionBuilder].
+     *
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified output states.
+     */
+    fun addOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as a tagged encumbrance group.
+     *
+     * @param tag The tag of the encumbrance group which the specified [ContractState] instances will belong to.
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified encumbered output states.
+     */
+    fun addEncumberedOutputStates(tag: String, contractStates: Iterable<ContractState>): UtxoTransactionBuilder
+
+    /**
+     * Adds the specified output states to the current [UtxoTransactionBuilder] as a tagged encumbrance group.
+     *
+     * @param tag The tag of the encumbrance group which the specified [ContractState] instances will belong to.
+     * @param contractStates The [ContractState] instances to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified encumbered output states.
+     */
+    fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState): UtxoTransactionBuilder
+
+    /**
+     * Gets a list of encumbered [ContractState] instances from the specified encumbrance group tag.
+     *
+     * @param tag The encumbrance group tag for which to obtain the associated list of [ContractState] instances.
+     * @return Returns a list of encumbered [ContractState] instances from the specified encumbrance group tag.
+     * @throws IllegalArgumentException if the encumbrance group tag does not exist.
+     */
+    fun getEncumbranceGroup(tag: String): List<ContractState>
+
+    /**
+     * Gets a map of encumbrance group tags and the associated encumbered [ContractState] instances.
+     *
+     * @return Returns map of encumbrance group tags and the associated encumbered [ContractState] instances.
+     */
+    fun getEncumbranceGroups(): Map<String, List<ContractState>>
+
+    /**
+     * Sets the specified [Party] as a notary to the current [UtxoTransactionBuilder].
      *
      * @param notary The [Party] to set as a notary to the current [UtxoTransactionBuilder].
      * @return Returns a new [UtxoTransactionBuilder] with the new notary.
