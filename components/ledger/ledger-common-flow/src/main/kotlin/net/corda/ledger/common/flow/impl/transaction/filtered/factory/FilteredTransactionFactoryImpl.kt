@@ -99,10 +99,11 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
-                        // If the unfiltered component gropup is empty, we return the proof of the marker.
                         if (componentGroup.isEmpty()) {
+                            // If the unfiltered component group is empty, we return the proof of the marker.
                             merkleTree.createAuditProof(listOf(0))
-                        } else {    //If we filter out everything, we return a size proof.
+                        } else {
+                            // If we filter out everything, we return a size proof.
                             componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                         }
                     } else {
@@ -122,6 +123,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
         }
 
-        return FilteredComponentGroup(componentGroupIndex, merkleProof, parameters.merkleProofType)
+        return FilteredComponentGroup(componentGroupIndex, merkleProof)
     }
 }

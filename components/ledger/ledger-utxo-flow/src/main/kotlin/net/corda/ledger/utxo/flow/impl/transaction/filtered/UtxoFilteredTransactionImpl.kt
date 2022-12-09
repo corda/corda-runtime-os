@@ -103,7 +103,7 @@ class UtxoFilteredTransactionImpl(
     private inline fun <reified T : Any> getFilteredData(index: Int): UtxoFilteredData<T> {
         return filteredTransaction.filteredComponentGroups[index]
             ?.let { group ->
-                when (group.merkleProofType) {
+                when (group.merkleProof.proofType) {
                     MerkleProofType.SIZE -> return FilteredDataSizeImpl(group.merkleProof.treeSize)
                     MerkleProofType.AUDIT -> return FilteredDataAuditImpl(
                         group.merkleProof.treeSize,

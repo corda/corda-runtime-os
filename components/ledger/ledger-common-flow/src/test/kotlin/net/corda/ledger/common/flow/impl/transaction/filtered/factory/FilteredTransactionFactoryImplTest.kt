@@ -9,12 +9,12 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -116,8 +116,8 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
     }
 
     @Test
@@ -141,7 +141,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(2)
     }
 
@@ -176,9 +176,9 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
-                componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
+            componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
         )
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
     }
@@ -208,7 +208,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
                 listOf(0)
@@ -238,7 +238,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
     }
 
