@@ -2,11 +2,11 @@ package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
+import net.corda.httprpc.exception.BadRequestException
 import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
-import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.utils.mapTo
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -69,7 +69,7 @@ private class QueryParameterListRetriever(private val parameter: Parameter) : Pa
             val paramValues = ctx.queryParams(parameter.name)
 
             if (parameter.required && paramValues.isEmpty())
-                throw MissingParameterException("Missing query parameter \"${parameter.name}\".")
+                throw BadRequestException("Missing query parameter \"${parameter.name}\".")
 
             return paramValues.map { it.decodeRawString() }
                 .also { log.trace { "Cast \"${parameter.name}\" to query parameter list completed." } }
@@ -93,7 +93,7 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
             log.trace { "Cast \"${parameter.name}\" to query parameter." }
 
             if (parameter.required && ctx.queryParam(parameter.name) == null)
-                throw MissingParameterException("Missing query parameter \"${parameter.name}\".")
+                throw BadRequestException("Missing query parameter \"${parameter.name}\".")
 
             val rawQueryParam: String? = ctx.queryParam(parameter.name, parameter.default)
             return rawQueryParam?.decodeRawString()?.mapTo(parameter.classType)
@@ -131,7 +131,7 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
 
             val node = if (ctx.body().isBlank()) null else retrieveNodeFromBody(ctx)
 
-            if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
+            if (parameter.required && node == null) throw BadRequestException("Missing body parameter \"${parameter.name}\".")
 
             val field = node?.toString() ?: "null"
             return ctx.fromJsonString(field, parameter.classType)
@@ -167,7 +167,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
                 if (uploadedFiles.isEmpty())
-                    throw MissingParameterException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
+                    throw BadRequestException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
 
                 if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles
@@ -182,7 +182,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
             val formParameterAsList = ctx.formParams(parameter.name)
 
             if (!parameter.nullable && formParameterAsList.isEmpty()) {
-                throw MissingParameterException("Missing form parameter \"${parameter.name}\".")
+                throw BadRequestException("Missing form parameter \"${parameter.name}\".")
             }
 
             log.trace { "Cast \"${parameter.name}\" to multipart form parameter completed." }

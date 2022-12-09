@@ -7,7 +7,6 @@ import io.javalin.http.InternalServerErrorResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.concurrent.TimeoutException
 import javax.security.auth.login.FailedLoginException
@@ -21,7 +20,6 @@ internal object HttpExceptionMapper {
 
             is MissingKotlinParameterException -> buildBadRequestResponse("Missing or invalid field in JSON request body.", e)
             is JsonProcessingException -> buildBadRequestResponse("Error during processing of request JSON.", e)
-            is MissingParameterException -> buildBadRequestResponse("Missing parameter in request.", e)
 
             // catch-all for failed login attempts
             is FailedLoginException -> UnauthorizedResponse("User authentication failed.")

@@ -14,7 +14,6 @@ import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientRequestContext.Companion.METHOD_SEPARATOR
-import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
 import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
@@ -156,10 +155,6 @@ internal object ContextUtils {
             try {
                 parameterRetriever.apply(parametersRetrieverContext)
             } catch(ex: JsonProcessingException) {
-                // These are handled in `HttpExceptionMapper`
-                throw ex
-            }
-            catch(ex: MissingParameterException) {
                 // These are handled in `HttpExceptionMapper`
                 throw ex
             }
