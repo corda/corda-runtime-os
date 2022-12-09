@@ -31,6 +31,13 @@
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 60000
+        },
+        "cleanupTime": {
+          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a flow that has finished.",
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 2147483647,
+          "default": 480000
         }
       }
     },
@@ -54,11 +61,18 @@
           "default": 3600000
         },
         "p2pTTL": {
-          "description": "TTL set on on messages passed to the P2P layer to be sent to a counterparty.",
+          "description": "TTL set in milliseconds, which is added to the current time, and set on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,
           "maximum": 2147483647,
           "default": 240000
+        },
+        "cleanupTime": {
+          "description": "The length of time in milliseconds the flow mapper should hold onto its state for a session after the session has finished.",
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 2147483647,
+          "default": 480000
         }
       }
     },
