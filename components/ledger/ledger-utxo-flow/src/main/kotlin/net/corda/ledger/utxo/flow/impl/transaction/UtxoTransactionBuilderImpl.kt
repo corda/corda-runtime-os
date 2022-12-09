@@ -14,7 +14,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.Objects
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
