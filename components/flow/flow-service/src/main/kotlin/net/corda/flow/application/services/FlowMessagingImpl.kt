@@ -10,7 +10,6 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.asFlowContext
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
@@ -56,7 +55,7 @@ class FlowMessagingImpl @Activate constructor(
         requireBoxedType(receiveType)
         val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
-            getSessionInfo(it)
+            it.getSessionInfo()
         }.toSet())
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals)
@@ -71,7 +70,7 @@ class FlowMessagingImpl @Activate constructor(
         }
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
             val flowSessionInternal = it.key
-            getSessionInfo(flowSessionInternal)
+            flowSessionInternal.getSessionInfo()
         }.toSet())
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals.keys)
@@ -84,7 +83,7 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val serializedPayload = serialize(payload)
         val sessionToPayload =
-            flowSessionInternals.associate { getSessionInfo(it) to serializedPayload }
+            flowSessionInternals.associate { it.getSessionInfo() to serializedPayload }
         fiber.suspend(FlowIORequest.Send(sessionToPayload))
         setSessionsAsConfirmed(flowSessionInternals)
     }
@@ -94,7 +93,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
             val flowSessionInternal = (it.key as FlowSessionInternal)
-            getSessionInfo(flowSessionInternal) to serialize(it.value)
+            flowSessionInternal.getSessionInfo() to serialize(it.value)
         }.toMap()
         fiber.suspend(FlowIORequest.Send(sessionPayload))
         setSessionsAsConfirmed(uncheckedCast(payloadsPerSession.keys))
@@ -186,14 +185,4 @@ class FlowMessagingImpl @Activate constructor(
                     "payload: (${e.deserializedObject})"
         )
     }
-
-    private fun getSessionInfo(session: FlowSessionInternal): FlowIORequest.SessionInfo {
-        return FlowIORequest.SessionInfo(
-            session.getSessionId(),
-            session.counterparty,
-            contextUserProperties = session.contextProperties.asFlowContext.flattenUserProperties(),
-            contextPlatformProperties = session.contextProperties.asFlowContext.flattenPlatformProperties()
-        )
-    }
-
 }
