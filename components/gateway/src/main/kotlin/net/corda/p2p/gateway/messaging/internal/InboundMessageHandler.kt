@@ -30,6 +30,8 @@ import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
 
 /**
@@ -43,10 +45,18 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     signingMode: SigningMode,
-    cryptoOpsClient: CryptoOpsClient
+    cryptoOpsClient: CryptoOpsClient,
+    private val avroSchemaRegistry: AvroSchemaRegistry
 ) : HttpServerListener, LifecycleWithDominoTile {
 
+    init {
+        // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
+        System.setProperty("org.apache.avro.limits.bytes.maxLength", AVRO_LIMIT.toString())
+        System.setProperty("org.apache.avro.limits.string.maxLength", AVRO_LIMIT.toString())
+    }
+
     companion object {
+        const val AVRO_LIMIT = 5_000_000
         private val logger = contextLogger()
     }
 
@@ -102,11 +112,10 @@ internal class InboundMessageHandler(
         }
 
         val (gatewayMessage, p2pMessage) = try {
-            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
+            val gatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
-            logger.warn("Invalid message received. Cannot deserialize")
-            logger.debug(e.stackTraceToString())
+            logger.warn("Received invalid message, which could not be deserialized", e)
             server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
@@ -116,11 +125,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.writeResponse(HttpResponseStatus.OK, request.source, response.toByteBuffer().array())
+                server.writeResponse(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(response).array())
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.writeResponse(statusCode, request.source, response.toByteBuffer().array())
+                server.writeResponse(statusCode, request.source, avroSchemaRegistry.serialize(response).array())
             }
         }
     }
