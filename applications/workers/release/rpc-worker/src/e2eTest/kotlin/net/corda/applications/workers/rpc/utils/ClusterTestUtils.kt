@@ -51,8 +51,9 @@ fun E2eCluster.uploadCpi(
     tempDir: Path,
     isMgm: Boolean = false
 ): String {
-    val keyStoreFilePath = Path.of(tempDir.toString(), "rootca.p12")
+    val testRunUniqueId = UUID.randomUUID()
     val keystore = TestUtils::class.java.classLoader.getResourceAsStream("rootca.p12")
+    val keyStoreFilePath = Path.of(tempDir.toString(), "rootca$testRunUniqueId.p12")
 
     Files.newOutputStream(
         keyStoreFilePath,
@@ -89,7 +90,7 @@ fun E2eCluster.uploadCpi(
                 }
             }
 
-            val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy.json")
+            val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy$testRunUniqueId.json")
 
             Files.newOutputStream(
                 groupPolicyFilePath,
@@ -97,14 +98,11 @@ fun E2eCluster.uploadCpi(
                 StandardOpenOption.CREATE_NEW
             ).write(groupPolicy)
 
-            val testRunUniqueId = UUID.randomUUID()
-            val applicationCpiName = "test-cpi_$testRunUniqueId"
-
-            val cpiFileName = Path.of(tempDir.toString(), "test.cpi")
+            val cpiFileName = Path.of(tempDir.toString(), "test$testRunUniqueId.cpi")
             CreateCpiV2().apply {
                 cpbFileName = ""
                 outputFileName = cpiFileName.toString()
-                cpiName = applicationCpiName
+                cpiName = "test-cpi_$testRunUniqueId"
                 cpiVersion = "1.0.0.0-SNAPSHOT"
                 cpiUpgrade = false
                 groupPolicyFileName = groupPolicyFilePath.toString()
@@ -315,7 +313,7 @@ fun E2eCluster.disableCLRChecks() {
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
     memberGroupPolicy: String,
-    @TempDir tempDir: Path
+    tempDir: Path
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
@@ -360,7 +358,7 @@ fun E2eCluster.onboardMembers(
 
 fun E2eCluster.onboardMgm(
     mgm: E2eClusterMember,
-    @TempDir tempDir: Path
+    tempDir: Path
 ) {
     val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
     createVirtualNode(mgm, cpiChecksum)
