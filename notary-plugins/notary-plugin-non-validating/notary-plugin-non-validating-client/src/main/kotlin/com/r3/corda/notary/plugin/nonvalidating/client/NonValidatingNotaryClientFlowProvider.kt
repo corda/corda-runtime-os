@@ -7,7 +7,7 @@ import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryType
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
- * A provider class that will instantiates a [NonValidatingNotaryClientFlowImpl].
+ * A provider class that will instantiate a [NonValidatingNotaryClientFlowImpl].
  * This class is used when installing the notary plugins on startup.
  */
 @PluggableNotaryType("corda.notary.type.non-validating")

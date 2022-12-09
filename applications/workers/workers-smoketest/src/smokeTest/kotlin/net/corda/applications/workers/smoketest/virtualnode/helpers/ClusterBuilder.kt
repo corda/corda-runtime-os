@@ -106,7 +106,7 @@ class ClusterBuilder {
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",
             |    "corda.notary.service.name" : "O=MyNotaryService, L=London, C=GB",
-            |    "corda.notary.service.plugin" : "net.corda.notary.MyNotaryService"
+            |    "corda.notary.service.plugin" : "corda.notary.type.non-validating"
             |   } 
             | }""".trimMargin()
 

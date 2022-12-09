@@ -7,6 +7,7 @@ import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlowProvider
@@ -16,14 +17,17 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
     service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class ],
     scope = ServiceScope.PROTOTYPE
 )
-class PluggableNotaryClientFlowFactoryImpl @Activate constructor()
-    : SingletonSerializeAsToken, PluggableNotaryClientFlowFactory, UsedByFlow, CustomMetadataConsumer {
+class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
+    @Reference(service = NotaryLookup::class)
+    private val notaryLookup: NotaryLookup
+) : SingletonSerializeAsToken, PluggableNotaryClientFlowFactory, UsedByFlow, CustomMetadataConsumer {
 
     private companion object {
         val logger = loggerFor<PluggableNotaryClientFlowFactoryImpl>()
@@ -33,14 +37,19 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor()
 
     @Suspendable
     override fun create(notary: Party, type: String, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
+        val pluginClass = notaryLookup.notaryServices.first {
+            it.name == notary.name
+        }
+
+        logger.error("Plugin class eeeEeeeeeee: $pluginClass")
+
         val provider = pluggableNotaryClientFlowProviders[type]
             ?: throw IllegalStateException("Notary flow provider not found for type: $type")
 
         return try {
             provider.create(notary, stx)
         } catch (e: Exception) {
-            throw CordaRuntimeException("Exception while trying to create notary client with name: $type, " +
-                    "caused by: ${e.message}")
+            throw CordaRuntimeException("Exception while trying to create notary client with name: $type", e)
         }
     }
 
@@ -62,11 +71,29 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor()
             if (notaryProviderTypes.isEmpty()) {
                 logger.warn(
                     "A @PluggableNotaryType annotation must exist on every PluggableNotaryClientFlowProvider " +
-                            "but was not present in ${provider.javaClass.name}."
+                            "but was not present in ${provider.javaClass.name}. Skipping provider."
+                )
+                return@forEach
+            }
+
+            if (notaryProviderTypes.size > 1) {
+                // This should not be possible but having an extra check just in case
+                logger.warn(
+                    "The provider ${provider.javaClass.name} is annotated with multiple @PluggableNotaryType " +
+                            "annotations. Skipping provider."
+                )
+                return@forEach
+            }
+
+            val providerType = notaryProviderTypes.single().type
+            val currentProvider = pluggableNotaryClientFlowProviders[providerType]
+            if (currentProvider != null) {
+                logger.warn(
+                    "A provider is already registered for the type: $providerType, it is not possible to " +
+                            "register multiple providers for a single type. Skipping provider."
                 )
             } else {
-                logger.info("Plugin provider: ${provider.javaClass.name} has been installed.")
-                pluggableNotaryClientFlowProviders[notaryProviderTypes.first().type] = provider
+                pluggableNotaryClientFlowProviders[providerType] = provider
             }
         }
     }

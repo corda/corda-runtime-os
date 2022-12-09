@@ -139,7 +139,7 @@ class FlowTests {
             !char.isWhitespace() || isInQuotes
         }
     }
-
+/*
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
@@ -741,7 +741,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(dataToSerialize)
         assertThat(flowResult.command).isEqualTo("serialization")
     }
-
+*/
     @Test
     fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
         val requestID = startRpcFlow(
@@ -911,32 +911,7 @@ class FlowTests {
             })
         }
     }
-
-    @Test
-    fun `Notary - Plugin that is not present on the network cannot be loaded`() {
-        issueStatesAndValidateResult(1, pluginType = "non-existing-plugin") { issuanceResult ->
-            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(issuanceResult.flowError?.message)
-                .contains("Notary flow provider not found for type: non-existing-plugin")
-        }
-    }
-
-    @Test
-    fun `Notary - Plugin that cannot be instantiated will throw exception`() {
-        issueStatesAndValidateResult(1, pluginType = "invalid-notary-plugin") { issuanceResult ->
-            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(issuanceResult.flowError?.message)
-                .contains("Invalid plugin, cannot be loaded!")
-        }
-    }
-
-    @Test
-    fun `Notary - Valid plugin can be loaded and will be executed`() {
-        issueStatesAndValidateResult(1, pluginType = "valid-notary-plugin") { issuanceResult ->
-            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        }
-    }
-
+/*
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
@@ -1017,7 +992,7 @@ class FlowTests {
 
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
-
+*/
     /**
      * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
      * then runs the given [validateResult] block on the flow result.
