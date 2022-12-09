@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.tools
+package net.corda.simulator.runtime.serialization
 
 import net.corda.simulator.RequestData
 import net.corda.simulator.runtime.testflows.HelloFlow

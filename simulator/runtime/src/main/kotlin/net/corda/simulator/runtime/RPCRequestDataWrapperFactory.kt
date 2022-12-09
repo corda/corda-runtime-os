@@ -2,7 +2,7 @@ package net.corda.simulator.runtime
 
 import net.corda.simulator.RequestData
 import net.corda.simulator.factories.RequestDataFactory
-import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
+import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.flows.Flow
 
 /**

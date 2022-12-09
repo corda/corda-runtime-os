@@ -1,10 +1,10 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.runtime.flows.FlowServicesInjector
-import net.corda.v5.application.flows.Flow
 import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging

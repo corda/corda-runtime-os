@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionVerification
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
@@ -119,8 +119,8 @@ class UtxoReceiveFinalityFlow(
         }
     }
 
-    private fun verifyTransaction(signedTransaction: UtxoSignedTransaction){
+    private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        UtxoLedgerTransactionVerifier(ledgerTransactionToCheck).verify()
     }
 }

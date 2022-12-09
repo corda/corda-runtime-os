@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.tools
+package net.corda.simulator.runtime.serialization
 
 import net.corda.simulator.factories.JsonMarshallingServiceFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
