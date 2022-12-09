@@ -1,6 +1,11 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
+    id 'corda.javadoc-generation'
+}
+
+ext {
+    releasable = true
 }
 
 description 'Corda Cipher Suite'

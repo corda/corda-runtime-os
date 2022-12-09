@@ -34,6 +34,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -170,7 +171,7 @@ class ConsensualLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.debug { "Consensual ledger persistence request: ${request.javaClass.simpleName} $request" }
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),

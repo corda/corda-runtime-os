@@ -19,27 +19,24 @@ class WrappedUtxoWireTransaction(
     private val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
 ) {
+
     companion object {
-        private const val notaryIndex: Int = 0
-        private const val timeWindowIndex: Int = 1
+        const val notaryIndex: Int = 0
+        const val timeWindowIndex: Int = 1
     }
-    val id: SecureHash
-        get() = wireTransaction.id
+
+    val id: SecureHash get() = wireTransaction.id
 
     val notary: Party by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val notaryBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[notaryIndex]
-        serializationService.deserialize(notaryBytes)
+        deserialize(UtxoComponentGroup.NOTARY, notaryIndex)
     }
 
     val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[timeWindowIndex]
-        serializationService.deserialize(timeWindowBytes)
+        deserialize(UtxoComponentGroup.NOTARY, timeWindowIndex)
     }
 
     val attachmentIds: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.DATA_ATTACHMENTS.ordinal)
-            .map { serializationService.deserialize(it) }
+        deserialize(UtxoComponentGroup.DATA_ATTACHMENTS)
     }
 
     val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -48,33 +45,19 @@ class WrappedUtxoWireTransaction(
     }
 
     val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.COMMANDS.ordinal)
-            .map { serializationService.deserialize(it) }
+        deserialize(UtxoComponentGroup.COMMANDS)
     }
 
     val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.SIGNATORIES.ordinal)
-            .map { serializationService.deserialize(it) }
+        deserialize(UtxoComponentGroup.SIGNATORIES)
     }
 
     val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.INPUTS.ordinal)
-            .map { serializationService.deserialize(it) }
+        deserialize(UtxoComponentGroup.INPUTS)
     }
 
     val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.REFERENCES.ordinal)
-            .map { serializationService.deserialize(it) }
-    }
-
-    private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)
-            .map { serializationService.deserialize(it) }
+        deserialize(UtxoComponentGroup.REFERENCES)
     }
 
     val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -87,5 +70,18 @@ class WrappedUtxoWireTransaction(
                 val transactionState = TransactionStateImpl(contractState, outputInfo.notary, outputInfo.encumbrance)
                 StateAndRefImpl(transactionState, stateRef)
             }
+    }
+
+    private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        deserialize(UtxoComponentGroup.OUTPUTS_INFO)
+    }
+
+    private inline fun <reified T> deserialize(group: UtxoComponentGroup): List<T> {
+        return wireTransaction.getComponentGroupList(group.ordinal).map { serializationService.deserialize(it) }
+    }
+
+    private inline fun <reified T> deserialize(group: UtxoComponentGroup, index: Int): T {
+        val serializedBytes = wireTransaction.getComponentGroupList(group.ordinal)[index]
+        return serializationService.deserialize(serializedBytes)
     }
 }
