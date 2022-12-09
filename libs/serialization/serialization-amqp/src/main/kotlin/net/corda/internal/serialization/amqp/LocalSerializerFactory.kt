@@ -116,7 +116,7 @@ class DefaultLocalSerializerFactory(
     : LocalSerializerFactory {
 
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     override val customSerializerNames: List<String>
@@ -128,6 +128,15 @@ class DefaultLocalSerializerFactory(
     private val serializersByTypeId: MutableMap<TypeIdentifier, AMQPSerializer<Any>> = DefaultCacheProvider.createCache()
     private val typesByName = DefaultCacheProvider.createCache<String, Optional<LocalTypeInformation>>()
 
+    private fun rawTypeName(typeName: String): String {
+        val idx = typeName.indexOf('<')
+        return if (idx < 0) {
+            typeName
+        } else {
+            typeName.substring(0, idx)
+        }
+    }
+
     override fun createDescriptor(typeInformation: LocalTypeInformation): Symbol =
             Symbol.valueOf("$DESCRIPTOR_DOMAIN:${fingerPrinter.fingerprint(typeInformation)}")
 
@@ -136,11 +145,11 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                sandboxGroup.loadClassFromMainBundles(typeName)
+                sandboxGroup.loadClassFromMainBundles(rawTypeName(typeName))
             } catch (e: Exception) {
                 null
             }
-            Optional.ofNullable(localType?.run { getTypeInformation(this) })
+            Optional.ofNullable(localType?.run(::getTypeInformation))
         }.orElse(null)
     }
 
@@ -148,12 +157,12 @@ class DefaultLocalSerializerFactory(
         return typesByName.getOrPut(typeName) {
             val localType = try {
                 val serializedClassTag = metadata.getValue(typeName) as String
-                sandboxGroup.getClass(typeName, serializedClassTag)
+                sandboxGroup.getClass(rawTypeName(typeName), serializedClassTag)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null
             }
-            Optional.ofNullable(localType?.run { getTypeInformation(this) })
+            Optional.ofNullable(localType?.run(::getTypeInformation))
         }.orElse(null)
     }
 
@@ -272,8 +281,18 @@ class DefaultLocalSerializerFactory(
     private fun makeActualMap(declaredType: Type, actualClass: Class<*>, typeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
         declaredType.asClass().checkSupportedMapType()
         val resolved = MapSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
+
+        val locallyDeclaredType = object : ParameterizedType {
+            override fun getActualTypeArguments(): Array<Type> = arrayOf(
+                resolved.keyType.observedType.asClass(),
+                resolved.valueType.observedType.asClass()
+            )
+            override fun getRawType(): Type = resolved.observedType.asClass()
+            override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
+        }
+
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
+            MapSerializer(locallyDeclaredType, this)
         }
     }
 

@@ -78,6 +78,12 @@ prometheus.io/scrape: "true"
 prometheus.io/path: /metrics
 prometheus.io/port: "7000"
 {{- end }}
+{{ if .Values.annotations -}}
+{{ .Values.annotations | toYaml }}
+{{- end }}
+{{ if ( get .Values.workers .worker ).annotations -}}
+{{ ( get .Values.workers .worker ).annotations | toYaml }}
+{{- end }}
 {{- end }}
 
 {{/*

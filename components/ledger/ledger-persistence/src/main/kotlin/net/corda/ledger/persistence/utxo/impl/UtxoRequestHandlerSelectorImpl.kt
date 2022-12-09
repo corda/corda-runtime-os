@@ -9,6 +9,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
+import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
@@ -33,7 +34,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService()
         )
         val persistenceService = UtxoPersistenceServiceImpl(
-            sandbox,
+            sandbox.getEntityManagerFactory().createEntityManager(),
             repository,
             sandbox.getSandboxSingletonService(),
             UTCClock()
