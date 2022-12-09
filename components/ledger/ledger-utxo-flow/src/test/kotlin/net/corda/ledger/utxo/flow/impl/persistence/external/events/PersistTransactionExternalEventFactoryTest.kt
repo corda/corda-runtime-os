@@ -35,11 +35,12 @@ class PersistTransactionExternalEventFactoryTest {
 
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
         val transactionStatus = TransactionStatus.VERIFIED
+        val relevantStatesIndexes = listOf(1)
 
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistTransactionParameters(transaction, transactionStatus)
+            PersistTransactionParameters(transaction, transactionStatus, relevantStatesIndexes)
         )
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
@@ -48,7 +49,7 @@ class PersistTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.UTXO,
-                PersistTransaction(transaction, transactionStatus.value),
+                PersistTransaction(transaction, transactionStatus.value, relevantStatesIndexes),
                 externalEventContext
             ),
             externalEventRecord.payload

@@ -116,8 +116,9 @@ class UtxoLedgerMessageProcessorTests {
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
-        val transactionStatus = "V"
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val transactionStatus = TransactionStatus.VERIFIED.value
+        val relevantStatesIndexes = listOf(0)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStatesIndexes)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
@@ -157,6 +158,12 @@ class UtxoLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
+            componentGroupLists = listOf(
+                listOf("1".toByteArray()),
+                listOf("2".toByteArray()),
+                listOf("3".toByteArray()),
+                listOf("4".toByteArray())
+            ),
             metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
         return SignedTransactionContainer(
