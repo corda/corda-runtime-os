@@ -5,7 +5,7 @@ import net.corda.v5.base.util.uncheckedCast
 
 /**
  * Handles crypto requests and returns response. Because requests are coming in as (Avro) [Object]s we grab appropriate handler
- * by request's [Class].
+ * by actual request's [Class].
  */
 interface CryptoRequestHandler<REQUEST, RESPONSE> {
     val requestClass: Class<REQUEST>
