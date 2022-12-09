@@ -12,8 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Implements round-robin selection of notary workers per flow.
- *
- * TODO: Replace with better implementation when integrating with new P2P layer.
  */
 @Component(
     service = [ UsedByFlow::class ],

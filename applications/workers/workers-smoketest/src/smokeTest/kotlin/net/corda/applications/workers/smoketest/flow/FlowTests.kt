@@ -139,7 +139,7 @@ class FlowTests {
             !char.isWhitespace() || isInQuotes
         }
     }
-/*
+
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
@@ -741,7 +741,7 @@ class FlowTests {
         assertThat(flowResult.result).isEqualTo(dataToSerialize)
         assertThat(flowResult.command).isEqualTo("serialization")
     }
-*/
+
     @Test
     fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
         val requestID = startRpcFlow(
@@ -911,7 +911,7 @@ class FlowTests {
             })
         }
     }
-/*
+
     @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
@@ -992,7 +992,7 @@ class FlowTests {
 
         assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
-*/
+
     /**
      * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
      * then runs the given [validateResult] block on the flow result.
@@ -1001,7 +1001,6 @@ class FlowTests {
         outputStateCount: Int,
         timeWindowLowerBoundOffsetMs: Long? = null,
         timeWindowUpperBoundOffsetMs: Long? = null,
-        pluginType: String? = null,
         validateResult: (flowResult: FlowStatus) -> Unit
     ) {
         val paramMap = mutableMapOf("outputStateCount" to "$outputStateCount")
@@ -1010,9 +1009,6 @@ class FlowTests {
         }
         timeWindowUpperBoundOffsetMs?.let {
             paramMap.put("timeWindowUpperBoundOffsetMs", "$it")
-        }
-        pluginType?.let {
-            paramMap.put("pluginType", it)
         }
 
         val issuanceRequestID = startRpcFlow(
