@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.data.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
@@ -11,7 +11,7 @@ import net.corda.v5.ledger.utxo.ContractVerificationFailure
  * @property exceptionClassName The class name of the [Exception] that caused verification failure.
  * @property exceptionMessage The details of the [Exception] that caused verification failure.
  */
-data class ContractVerificationFailureReasonImpl(
+data class ContractVerificationFailureImpl(
     override val contractClassName: String,
     override val contractStateClassNames: List<String>,
     override val exceptionClassName: String,
