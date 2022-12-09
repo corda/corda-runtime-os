@@ -12,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.SoftAssertions
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -36,6 +37,7 @@ class ClusterBootstrapTest {
     private val client = HttpClient.newBuilder().build()
 
     @Test
+    @Disabled
     fun checkCluster() {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()

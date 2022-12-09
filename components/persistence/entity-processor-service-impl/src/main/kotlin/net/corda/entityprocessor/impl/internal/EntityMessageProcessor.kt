@@ -64,8 +64,9 @@ class EntityMessageProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val sandbox = entitySandboxService.get(holdingIdentity)
-                        processRequestWithSandbox(sandbox, request)
+                        entitySandboxService.get(holdingIdentity).use {
+                            processRequestWithSandbox(it, request)
+                        }
                     } catch (e: Exception) {
                         responseFactory.errorResponse(request.flowExternalEventContext, e)
                     }
