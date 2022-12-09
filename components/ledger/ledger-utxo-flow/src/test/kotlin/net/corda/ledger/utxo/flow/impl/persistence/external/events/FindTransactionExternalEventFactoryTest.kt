@@ -6,6 +6,7 @@ import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,7 +36,7 @@ class FindTransactionExternalEventFactoryTest {
         val externalEventRecord = FindTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            FindTransactionParameters(transactionId)
+            FindTransactionParameters(transactionId, TransactionStatus.VERIFIED)
         )
 
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
@@ -45,7 +46,7 @@ class FindTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.UTXO,
-                FindTransaction(transactionId),
+                FindTransaction(transactionId, TransactionStatus.VERIFIED.value),
                 externalEventContext
             ),
             externalEventRecord.payload

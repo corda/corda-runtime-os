@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.config
+package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
 import java.util.Properties
@@ -9,7 +9,6 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
-import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -40,6 +39,7 @@ class MessageBusConfigResolverTest {
         private const val ACKS_PROP = "acks"
 
         @JvmStatic
+        @Suppress("unused", "LongMethod")
         private fun consumerConfigSource(): Stream<Arguments> {
             val arguments = mapOf(
                 ConsumerRoles.PUBSUB to getExpectedConsumerProperties(
@@ -83,6 +83,7 @@ class MessageBusConfigResolverTest {
                 ),
                 ConsumerRoles.RPC_SENDER to getExpectedConsumerProperties(
                     mapOf(
+                        GROUP_ID_PROP to "$GROUP_NAME-sender",
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
                         AUTO_OFFSET_RESET_PROP to "latest"
@@ -90,6 +91,7 @@ class MessageBusConfigResolverTest {
                 ),
                 ConsumerRoles.RPC_RESPONDER to getExpectedConsumerProperties(
                     mapOf(
+                        GROUP_ID_PROP to "$GROUP_NAME-responder",
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
                         AUTO_OFFSET_RESET_PROP to "latest"
@@ -100,6 +102,7 @@ class MessageBusConfigResolverTest {
         }
 
         @JvmStatic
+        @Suppress("unused", "LongMethod")
         private fun producerConfigSource(): Stream<Arguments> {
             val arguments = mapOf(
                 ProducerRoles.PUBLISHER to getExpectedProducerProperties(

@@ -7,7 +7,7 @@ import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

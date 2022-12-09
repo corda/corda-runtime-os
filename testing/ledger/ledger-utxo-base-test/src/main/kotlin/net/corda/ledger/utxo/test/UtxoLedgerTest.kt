@@ -8,18 +8,19 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
+import org.mockito.kotlin.mock
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
+        currentSandboxGroupContext,
+        jsonMarshallingService,
+        jsonValidator,
         serializationServiceNullCfg,
         mockTransactionSignatureService(),
         transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService,
-        jsonValidator
+        wireTransactionFactory
     )
-    val utxoLedgerService = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
+    val utxoLedgerService = UtxoLedgerServiceImpl(flowEngine, utxoSignedTransactionFactory, mock())
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
         mockTransactionSignatureService()

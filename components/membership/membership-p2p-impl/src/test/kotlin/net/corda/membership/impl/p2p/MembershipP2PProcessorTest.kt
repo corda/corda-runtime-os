@@ -1,5 +1,6 @@
 package net.corda.membership.impl.p2p
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -35,7 +36,6 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo

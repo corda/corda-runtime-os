@@ -1,5 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
 
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
@@ -7,7 +8,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProof
 import org.osgi.service.component.annotations.Activate

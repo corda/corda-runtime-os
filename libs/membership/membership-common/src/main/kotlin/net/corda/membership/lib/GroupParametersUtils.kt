@@ -1,11 +1,11 @@
 package net.corda.membership.lib
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.cipher.suite.KeyEncodingService
 import org.slf4j.Logger
 
 const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"

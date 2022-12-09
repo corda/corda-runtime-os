@@ -4,7 +4,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
-import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -100,14 +99,12 @@ class OutboundMessageHandlerTest {
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
-    private val sentMessages = mutableListOf<GatewayMessage>()
+    private val sentMessages = mutableListOf<ByteArray>()
     private val client = mock<HttpClient> {
         on { write(any()) } doAnswer {
-            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
-            sentMessages.add(gatewayMessage)
+            sentMessages.add(it.arguments[0] as ByteArray)
             val httpResponse = mock<HttpResponse> {
                 on { statusCode } doReturn HttpResponseStatus.OK
-                on { payload } doReturn GatewayResponse(gatewayMessage.id).toByteBuffer().array()
             }
             CompletableFuture.completedFuture(httpResponse)
         }
@@ -133,11 +130,15 @@ class OutboundMessageHandlerTest {
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
+    private val serialisedMessage = "gateway-message".toByteArray()
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         SmartConfigImpl.empty(),
+        mock {
+            on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
+        }
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
@@ -157,6 +158,9 @@ class OutboundMessageHandlerTest {
             configurationReaderService,
             subscriptionFactory,
             SmartConfigImpl.empty(),
+            mock {
+                on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap("gateway-message".toByteArray())
+            }
         ) { mockExecutorService }
         onClose!!.invoke()
         verify(mockExecutorService).shutdown()
@@ -184,7 +188,7 @@ class OutboundMessageHandlerTest {
         val future = handler.onNext(Record("", "", message))
 
         assertThat(sentMessages).hasSize(1)
-        assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
+        assertThat(sentMessages.first()).isEqualTo(serialisedMessage)
         assertThat(future).isCompleted
     }
 
@@ -351,8 +355,7 @@ class OutboundMessageHandlerTest {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
-                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
-                sentMessages.add(gatewayMessage)
+                sentMessages.add(it.arguments[0] as ByteArray)
                 CompletableFuture<HttpResponse>()
                 // simulate scenario where no response is received.
             }
@@ -380,7 +383,7 @@ class OutboundMessageHandlerTest {
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
-            assertThat(it.payload).isEqualTo(msgPayload)
+            assertThat(it).isEqualTo(serialisedMessage)
         }
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
@@ -392,8 +395,7 @@ class OutboundMessageHandlerTest {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
-                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
-                sentMessages.add(gatewayMessage)
+                sentMessages.add(it.arguments[0] as ByteArray)
                 CompletableFuture.failedFuture(RuntimeException("some error happened"))
             }
         }
@@ -422,7 +424,7 @@ class OutboundMessageHandlerTest {
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
-            assertThat(it.payload).isEqualTo(msgPayload)
+            assertThat(it).isEqualTo(serialisedMessage)
         }
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
@@ -434,8 +436,7 @@ class OutboundMessageHandlerTest {
         connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
-                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
-                sentMessages.add(gatewayMessage)
+                sentMessages.add(it.arguments[0] as ByteArray)
                 val response = mock<HttpResponse> {
                     on { statusCode } doReturn HttpResponseStatus.INTERNAL_SERVER_ERROR
                 }
@@ -464,7 +465,7 @@ class OutboundMessageHandlerTest {
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
-            assertThat(it.payload).isEqualTo(msgPayload)
+            assertThat(it).isEqualTo(serialisedMessage)
         }
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
@@ -477,8 +478,7 @@ class OutboundMessageHandlerTest {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
-                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
-                sentMessages.add(gatewayMessage)
+                sentMessages.add(it.arguments[0] as ByteArray)
                 val response = mock<HttpResponse> {
                     on { statusCode } doReturn HttpResponseStatus.BAD_REQUEST
                 }
@@ -507,6 +507,6 @@ class OutboundMessageHandlerTest {
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(1)
-        assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
+        assertThat(sentMessages.first()).isEqualTo(serialisedMessage)
     }
 }

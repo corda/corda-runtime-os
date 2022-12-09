@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash

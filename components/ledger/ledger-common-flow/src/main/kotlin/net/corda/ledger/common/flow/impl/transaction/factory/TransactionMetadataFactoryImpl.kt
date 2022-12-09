@@ -1,12 +1,12 @@
 package net.corda.ledger.common.flow.impl.transaction.factory
 
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -21,8 +21,8 @@ import org.osgi.service.component.annotations.ServiceScope
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionMetadataFactoryImpl @Activate constructor(
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
@@ -40,10 +40,8 @@ class TransactionMetadataFactoryImpl @Activate constructor(
 
     // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
     // available.
-    private fun getCpkSummaries() = flowFiberService
-        .getExecutingFiber()
-        .getExecutionContext()
-        .sandboxGroupContext
+    private fun getCpkSummaries() = currentSandboxGroupContext
+        .get()
         .sandboxGroup
         .metadata
         .values

@@ -13,6 +13,7 @@ import net.corda.p2p.gateway.certificates.RevocationChecker
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.VisibleForTesting
 
 /**
@@ -34,7 +35,8 @@ class Gateway(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
     signingMode: SigningMode,
-    cryptoOpsClient: CryptoOpsClient
+    cryptoOpsClient: CryptoOpsClient,
+    avroSchemaRegistry: AvroSchemaRegistry
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -44,13 +46,15 @@ class Gateway(
         subscriptionFactory,
         messagingConfiguration,
         signingMode,
-        cryptoOpsClient
+        cryptoOpsClient,
+        avroSchemaRegistry
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         messagingConfiguration,
+        avroSchemaRegistry
     )
     private val revocationChecker = RevocationChecker(
         subscriptionFactory,

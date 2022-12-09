@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp.helper
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
@@ -11,7 +12,6 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
 class TestSerializationService {
     companion object{

@@ -4,6 +4,10 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Corda Non-Validating Notary Plugin Client'
 
 group 'com.r3.corda.notary.plugin.nonvalidating'
@@ -21,7 +25,6 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-notary-plugin'
     cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided 'org.slf4j:slf4j-api'

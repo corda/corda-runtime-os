@@ -77,9 +77,6 @@ class MemberInfoExtension {
         /** Key name for certificate property. */
         const val CERTIFICATE = "corda.session.certificate"
 
-        /** Key name for created time property. */
-        const val CREATED_TIME = "corda.createdTime"
-
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
 

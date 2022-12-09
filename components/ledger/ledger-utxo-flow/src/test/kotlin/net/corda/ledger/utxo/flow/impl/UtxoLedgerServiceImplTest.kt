@@ -14,6 +14,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.security.PublicKey
 import kotlin.test.assertIs
 
 @Suppress("DEPRECATION")
@@ -28,8 +29,8 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
-        val inputStateAndRef = getUtxoInvalidStateAndRef()
-        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = getUtxoInvalidStateAndRef().ref
+        val referenceStateRef = getUtxoInvalidStateAndRef().ref
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
@@ -37,8 +38,9 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(inputStateAndRef)
-            .addReferenceInputState(referenceStateAndRef)
+            .addInputState(inputStateRef)
+            .addReferenceInputState(referenceStateRef)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
             .toSignedTransaction(publicKeyExample)
@@ -56,5 +58,10 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         Assertions.assertEquals(1, ledgerTransaction.outputContractStates.size)
         Assertions.assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
+
+        assertIs<List<PublicKey>>(ledgerTransaction.signatories)
+        Assertions.assertEquals(1, ledgerTransaction.signatories.size)
+        Assertions.assertEquals(publicKeyExample, ledgerTransaction.signatories.first())
+        assertIs<PublicKey>(ledgerTransaction.signatories.first())
     }
 }

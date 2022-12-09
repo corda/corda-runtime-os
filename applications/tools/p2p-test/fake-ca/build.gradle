@@ -14,11 +14,11 @@ configurations {
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:crypto:cipher-suite')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-crypto'
-    implementation 'net.corda:corda-cipher-suite'
 }
 
 def jar = tasks.named('jar', Jar) {

@@ -16,9 +16,11 @@ import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVER
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
+import org.slf4j.Logger
 
 class TaskContext(
     val startArgs: Args,
+    val log: Logger,
     publisherFactory: PublisherFactory
 ) {
 

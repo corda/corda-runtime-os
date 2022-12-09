@@ -33,6 +33,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Companion.getRPCResponseTopic
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -67,6 +68,12 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         futureTracker,
         threadLooper
     )
+
+    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "RPC")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "rpcSender")
+        .build()
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
@@ -146,44 +153,47 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         cordaConsumerRecords
             .filter { it.value?.sender == config.clientId }
             .forEach {
-                val correlationKey = it.key
-                val partition = it.partition
-                val future = futureTracker.getFuture(correlationKey, partition)
-                val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
+                processorMeter.recordCallable {
+                    val correlationKey = it.key
+                    val partition = it.partition
+                    val future = futureTracker.getFuture(correlationKey, partition)
+                    val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
 
-                val responseStatus = rpcResponse.responseStatus
-                    ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
+                    val responseStatus = rpcResponse.responseStatus
+                        ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
-                if (future != null) {
-                    when (responseStatus) {
-                        ResponseStatus.OK -> {
-                            val responseBytes = rpcResponse.payload
-                            val response = deserializer.deserialize(responseBytes.array())
-                            log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
+                    if (future != null) {
+                        when (responseStatus) {
+                            ResponseStatus.OK -> {
+                                val responseBytes = rpcResponse.payload
+                                val response = deserializer.deserialize(responseBytes.array())
+                                log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
 
-                            future.complete(response)
-                        }
-                        ResponseStatus.FAILED -> {
-                            val responseBytes = rpcResponse.payload
-                            val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
-                            future.completeExceptionally(
-                                CordaRPCAPIResponderException(
-                                    errorType = response.errorType,
-                                    message = response.errorMessage
+                                future.complete(response)
+                            }
+                            ResponseStatus.FAILED -> {
+                                val responseBytes = rpcResponse.payload
+                                val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
+                                future.completeExceptionally(
+                                    CordaRPCAPIResponderException(
+                                        errorType = response.errorType,
+                                        message = response.errorMessage
+                                    )
                                 )
-                            )
-                            log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
+                                log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
+                            }
+                            ResponseStatus.CANCELLED -> {
+                                future.cancel(true)
+                            }
                         }
-                        ResponseStatus.CANCELLED -> {
-                            future.cancel(true)
+                        futureTracker.removeFuture(correlationKey, partition)
+                    } else {
+                        log.debug {
+                            "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
+                                    "There is no future assigned for $correlationKey meaning that this request was either orphaned " +
+                                    "during a repartition event or the client dropped their future. " +
+                                    "The response status for it was $responseStatus"
                         }
-                    }
-                    futureTracker.removeFuture(correlationKey, partition)
-                } else {
-                    log.debug {
-                        "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                                "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                                "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                     }
                 }
             }

@@ -1,10 +1,10 @@
 package net.corda.crypto.tck.impl.compliance
 
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach

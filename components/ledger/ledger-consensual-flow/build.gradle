@@ -20,13 +20,12 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation 'net.corda:corda-ledger-consensual'
-    implementation 'net.corda:corda-cipher-suite'
     implementation 'net.corda:corda-topic-schema'
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-api')
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
-    implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')

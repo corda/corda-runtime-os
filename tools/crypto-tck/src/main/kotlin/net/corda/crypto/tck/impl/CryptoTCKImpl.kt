@@ -1,5 +1,6 @@
 package net.corda.crypto.tck.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.tck.ComplianceTestType
 import net.corda.crypto.tck.CryptoTCK
 import net.corda.crypto.tck.ExecutionBuilder
@@ -7,7 +8,6 @@ import net.corda.crypto.tck.ExecutionOptions
 import net.corda.crypto.tck.impl.compliance.CryptoServiceCompliance
 import net.corda.crypto.tck.impl.compliance.SessionInactivityCompliance
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.engine.JupiterTestEngine
 import org.junit.platform.engine.discovery.DiscoverySelectors

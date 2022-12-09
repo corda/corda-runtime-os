@@ -2,13 +2,16 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.mapTuples
+import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import java.math.BigDecimal
 import java.time.Instant
@@ -16,11 +19,16 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
+@Suppress("TooManyFunctions")
 class UtxoRepositoryImpl(
+    private val digestService: DigestService,
     private val serializationService: SerializationService,
-    private val wireTransactionFactory: WireTransactionFactory,
-    private val digestService: DigestService
+    private val wireTransactionFactory: WireTransactionFactory
 ) : UtxoRepository {
+    private companion object {
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
+        private val logger = contextLogger()
+    }
 
     override fun findTransaction(
         entityManager: EntityManager,
@@ -57,7 +65,7 @@ class UtxoRepositoryImpl(
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
-    ): List<List<ByteArray>> {
+    ): Map<Int, List<ByteArray>> {
         return entityManager.createNativeQuery(
             """
                 SELECT group_idx, leaf_idx, data
@@ -68,7 +76,7 @@ class UtxoRepositoryImpl(
         )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .mapTuples(ComponentGroupListsTuplesMapper(transactionId))
+            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
     override fun findTransactionSignatures(
@@ -86,6 +94,21 @@ class UtxoRepositoryImpl(
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
+    }
+
+    override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(
+            """
+                SELECT status
+                FROM {h-schema}utxo_transaction_status
+                WHERE transaction_id = :transactionId
+                """,
+            Tuple::class.java
+        )
+            .setParameter("transactionId", id)
+            .resultListAsTuples()
+            .map { r -> r.get(0) as String }
+            .singleOrNull()
     }
 
     override fun persistTransaction(
@@ -106,6 +129,7 @@ class UtxoRepositoryImpl(
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction [$id]")
     }
 
     override fun persistTransactionComponentLeaf(
@@ -130,6 +154,7 @@ class UtxoRepositoryImpl(
             .setParameter("hash", hash)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionCpk(
@@ -148,6 +173,7 @@ class UtxoRepositoryImpl(
             .setParameter("transactionId", transactionId)
             .setParameter("fileChecksums", fileChecksums)
             .executeUpdate()
+            .logResult("transaction CPK [$transactionId, $fileChecksums]")
     }
 
     override fun persistTransactionOutput(
@@ -188,32 +214,32 @@ class UtxoRepositoryImpl(
             .setParameter("tokenAmount", tokenAmount)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionRelevancy(
+    override fun persistTransactionRelevantStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        relevant: Boolean,
         consumed: Boolean,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_output(
-                transaction_id, group_idx, leaf_idx, is_relevant, consumed, created)
+            INSERT INTO {h-schema}utxo_relevant_transaction_state(
+                transaction_id, group_idx, leaf_idx, consumed, created)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :relevant, :consumed, :createdAt)
+                :transactionId, :groupIndex, :leafIndex, :consumed, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("relevant", relevant)
             .setParameter("consumed", consumed)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionSignature(
@@ -237,6 +263,7 @@ class UtxoRepositoryImpl(
             .setParameter("publicKeyHash", signature.by.encoded.hashAsString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction signature [$transactionId, $index]")
     }
 
     override fun persistTransactionSource(
@@ -265,24 +292,43 @@ class UtxoRepositoryImpl(
             .setParameter("isRefInput", isRefInput)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
-        status: String,
+        transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        val rowsUpdated = entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, created)
-            VALUES (:transactionId, :status, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
+            VALUES (:transactionId, :status, :updatedAt)
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
         )
             .setParameter("transactionId", transactionId)
-            .setParameter("status", status)
-            .setParameter("createdAt", timestamp)
+            .setParameter("status", transactionStatus.value)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
+            .logResult("transaction status [$transactionId, ${transactionStatus.value}]")
+
+        check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
+            // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
+            "Existing status for transaction with ID $transactionId can't be updated to $transactionStatus"
+        }
+    }
+
+    private fun Int.logResult(entity: String): Int {
+        if (this == 0) {
+            logger.debug {
+                "UTXO ledger entity not persisted due to existing row in database. Entity: $entity"
+            }
+        }
+        return this
     }
 
     private fun ByteArray.hashAsString() =

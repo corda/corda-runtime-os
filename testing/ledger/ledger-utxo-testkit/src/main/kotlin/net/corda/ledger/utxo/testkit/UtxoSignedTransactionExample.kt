@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.testkit
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.createExample
@@ -11,7 +12,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransaction
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 fun UtxoSignedTransactionFactory.createExample(
@@ -37,7 +37,7 @@ fun getUtxoSignedTransactionExample(
         merkleTreeProvider,
         jsonMarshallingService,
         jsonValidator,
-        utxoTransactionMetadataExample
+        metadata = utxoTransactionMetadataExample
     )
     return UtxoSignedTransactionImpl(
         serializationService,

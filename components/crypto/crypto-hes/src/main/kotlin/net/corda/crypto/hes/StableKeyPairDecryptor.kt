@@ -32,7 +32,7 @@ interface StableKeyPairDecryptor : Lifecycle {
      * communicating parties
      * @param publicKey the public key of the receiving party, the private key is managed by the Crypto Library and
      * is not directly accessible. The key scheme of the public key must support Diffie–Hellman key agreement,
-     * see [net.corda.v5.cipher.suite.schemes.KeyScheme] and its capabilities' property.
+     * see [net.corda.crypto.cipher.suite.schemes.KeyScheme] and its capabilities' property.
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme.
      * @param cipherText cipher text to be decrypted.

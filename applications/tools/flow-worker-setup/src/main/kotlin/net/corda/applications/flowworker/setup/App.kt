@@ -29,7 +29,7 @@ class App @Activate constructor(
         CommandLine(parameters).parseArgs(*args)
 
 
-        val context = TaskContext(parameters,  publisherFactory)
+        val context = TaskContext(parameters, log, publisherFactory)
         Tasks(context, log).execute(parameters.tasks)
     }
 

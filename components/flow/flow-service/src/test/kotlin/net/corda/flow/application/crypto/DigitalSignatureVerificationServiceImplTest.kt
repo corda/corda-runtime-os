@@ -1,6 +1,6 @@
 package net.corda.flow.application.crypto
 
-import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test

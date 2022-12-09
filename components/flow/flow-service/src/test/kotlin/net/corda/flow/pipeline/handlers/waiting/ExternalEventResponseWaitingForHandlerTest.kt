@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.flow.state.external.ExternalEventState
@@ -15,7 +16,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.FlowConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -34,7 +35,9 @@ class ExternalEventResponseWaitingForHandlerTest {
     private val externalEventResponse = ExternalEventResponse(REQUEST_ID_1)
 
     private val checkpoint = mock<FlowCheckpoint>()
-    private val config = mock<SmartConfig>()
+    private val config = SmartConfigImpl.empty()
+        .withValue(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES, ConfigValueFactory.fromAnyRef(1))
+
     private val externalEventManager = mock<ExternalEventManager>()
     private val externalEventFactoryMap = mock<ExternalEventFactoryMap>()
     private val externalEventFactory = mock<ExternalEventFactory<Any, Any, *>>()
@@ -84,7 +87,6 @@ class ExternalEventResponseWaitingForHandlerTest {
             ExceptionEnvelope("type", "message")
         )
         externalEventState.retries = 2
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)).thenReturn(1)
         val continuation = externalEventResponseWaitingForHandler.runOrContinue(context, externalEventResponse)
         assertInstanceOf(FlowContinuation.Error::class.java, continuation)
         verify(checkpoint).externalEventState = null
@@ -97,7 +99,6 @@ class ExternalEventResponseWaitingForHandlerTest {
             ExceptionEnvelope("type", "message")
         )
         externalEventState.retries = 1
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)).thenReturn(1)
         val continuation = externalEventResponseWaitingForHandler.runOrContinue(context, externalEventResponse)
         assertInstanceOf(FlowContinuation.Error::class.java, continuation)
         verify(checkpoint).externalEventState = null
@@ -110,7 +111,6 @@ class ExternalEventResponseWaitingForHandlerTest {
             ExceptionEnvelope("type", "message")
         )
         externalEventState.retries = 0
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)).thenReturn(1)
         val continuation = externalEventResponseWaitingForHandler.runOrContinue(context, externalEventResponse)
         assertEquals(1, externalEventState.retries)
         assertEquals(FlowContinuation.Continue, continuation)

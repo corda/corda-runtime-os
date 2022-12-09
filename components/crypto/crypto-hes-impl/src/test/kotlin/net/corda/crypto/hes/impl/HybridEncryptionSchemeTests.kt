@@ -1,6 +1,8 @@
 package net.corda.crypto.hes.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
@@ -9,8 +11,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
