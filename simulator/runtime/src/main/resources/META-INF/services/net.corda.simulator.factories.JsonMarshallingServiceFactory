@@ -1,1 +1,1 @@
-net.corda.simulator.runtime.tools.SimpleJsonMarshallingServiceFactory
+net.corda.simulator.runtime.serialization.SimpleJsonMarshallingServiceFactory

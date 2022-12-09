@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.tools
+package net.corda.simulator.runtime.serialization
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext

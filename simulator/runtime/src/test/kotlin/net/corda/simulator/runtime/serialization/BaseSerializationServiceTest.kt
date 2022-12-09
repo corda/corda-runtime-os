@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.serialization
 
-import net.corda.simulator.runtime.signing.pemEncode
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
@@ -39,7 +38,7 @@ class BaseSerializationServiceTest {
     @Test
     fun `should be able to serialize public keys`() {
         val key = generateKey()
-        assertThat(pemEncode(roundTrip(key, PublicKey::class.java)), `is`(pemEncode(key)))
+        assertThat(roundTrip(key, PublicKey::class.java), `is`(key))
     }
 
     private fun <T: Any> roundTrip(target: T, clazz : Class<T> = target.javaClass): T {

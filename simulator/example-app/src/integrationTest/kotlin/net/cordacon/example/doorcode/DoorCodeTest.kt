@@ -13,6 +13,9 @@ class DoorCodeTest {
 
     @Test
     fun `should get signatures from everyone who needs to sign`() {
+
+        val jsonService = JsonMarshallingServiceFactory.create()
+
         // Given Alice, Bob and Charlie all live in the house
         val simulator = Simulator()
         val alice = HoldingIdentity.create("Alice")
@@ -30,13 +33,29 @@ class DoorCodeTest {
         val requestData = RequestData.create(
             "r1",
             DoorCodeChangeFlow::class.java,
-            DoorCodeChangeRequest(DoorCode("1234"), listOf(bob.member, charlie.member))
+            DoorCodeChangeRequest(DoorCode("1234"), listOf(alice.member, bob.member, charlie.member))
         )
 
         // Then the door code should be changed
-        val jsonService = JsonMarshallingServiceFactory.create()
         val result = jsonService.parse(nodes[0].callFlow(requestData), DoorCodeChangeResult::class.java)
         assertThat(result.newDoorCode, `is`(DoorCode("1234")))
         assertThat(result.signedBy, `is`(setOf(alice.member, bob.member, charlie.member)))
+
+        // And the result should have been persisted for all participants
+        val transactionId = result.txId
+
+        val charlieQueryNode = simulator.createVirtualNode(alice, DoorCodeQueryFlow::class.java)
+        val queryRequestData = RequestData.create(
+            "r1",
+            DoorCodeQueryFlow::class.java,
+            DoorCodeQuery(transactionId)
+        )
+
+        val queryResponse = JsonMarshallingServiceFactory.create().parse(
+            charlieQueryNode.callFlow(queryRequestData),
+            DoorCodeQueryResponse::class.java
+        )
+        assertThat(queryResponse.signatories, `is`(setOf(alice.member, bob.member, charlie.member)))
+        assertThat(queryResponse.doorCode, `is`(DoorCode("1234")))
     }
 }

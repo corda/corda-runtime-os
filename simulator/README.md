@@ -47,10 +47,8 @@ To release resources used by Simulator, including any database connections, call
   simulator.close()
 ```
 
-> **⚠ Warning**
->
-> Simulator runs the node and flow setup synchronously. It is advised that all node and flow setup should be done
-> synchronously on the same thread, and not use asynchronous code.
+Note that Simulator runs the node and flow setup synchronously. It is advised that all node and flow setup should 
+be done synchronously on the same thread, and not use asynchronous code.
 
 ## Logging
 
@@ -144,7 +142,7 @@ val requestBody = RequestData.create(
 - A three-part constructor that is strongly typed:
 
 ```kotlin
-val requestBody = RequestData.create(
+val request = RequestData.create(
     "r1", 
     CalculatorFlow::class.java, 
     InputMessage(6, 7)
@@ -153,7 +151,7 @@ val requestBody = RequestData.create(
 
 ## Instance vs Class upload
 
-Simulator has two methods of creating nodes with responder flows:
+Simulator has two methods of creating nodes with flows:
 - via a flow class, which will be constructed when a response flow is initialized.
 - via a flow instance, which must be uploaded against a protocol.
 
@@ -176,7 +174,7 @@ val node = simulator.createVirtualNode(
 ```
 
 Note that uploading an instance of a flow bypasses all the checks that Simulator would normally carry out on
-the flow class.
+the flow class. All services will be injected into instance flows as normal.
 
 ## Key Management and Signing
 
@@ -190,8 +188,8 @@ In Simulator, keys can be generated via a method on the virtual node:
 val publicKey = node.generateKey("my-alias", HsmCategory.LEDGER, "CORDA.ECDSA.SECP256R1")
 ```
 
-Simulator's `SigningService` mimics the real thing by wrapping the bytes provided in a readable JSON wrapper, using
-the key, alias, HSM category and signature scheme.
+Simulator's `SigningService` and other crypto services that sign mimic the real things by wrapping the bytes provided
+in a readable JSON wrapper, using the key, alias, HSM category and signature scheme.
 
 ```json
 {
@@ -222,4 +220,5 @@ Simulator has some components which can also be used independently:
 
 - A `FlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
-  `JsonMarshallingServiceFactory`.
+  `JsonMarshallingServiceFactory`
+- A `SerializationService` available through a `SerializationServiceFactory`.
