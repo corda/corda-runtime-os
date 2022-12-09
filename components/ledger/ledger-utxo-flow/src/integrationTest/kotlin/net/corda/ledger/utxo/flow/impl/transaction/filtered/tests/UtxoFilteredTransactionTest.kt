@@ -90,7 +90,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withReferenceInputStates()
             .withOutputStates()
             .withCommands()
-            .toFilteredTransaction()
+            .build()
 
         assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransaction.id)
 

@@ -60,7 +60,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withInputStates()
             .withOutputStates()
-            .toFilteredTransaction()
+            .build()
 
         assertThat(utxoFilteredTransaction.id).isNotNull
 
@@ -118,7 +118,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
                 .withInputStates()
                 .withOutputStatesSize()
-                .toFilteredTransaction()
+                .build()
 
         assertThat(utxoFilteredTransaction.id).isNotNull
 

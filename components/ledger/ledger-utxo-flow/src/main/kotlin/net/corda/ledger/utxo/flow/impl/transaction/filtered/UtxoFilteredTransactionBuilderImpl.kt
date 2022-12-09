@@ -142,7 +142,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun toFilteredTransaction(): UtxoFilteredTransaction {
+    override fun build(): UtxoFilteredTransaction {
         return utxoFilteredTransactionFactory.create(signedTransaction, this)
     }
 }
