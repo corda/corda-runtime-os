@@ -85,6 +85,10 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(':libs:messaging:message-bus')
     nonOsgiIntegrationTestImplementation project(":libs:messaging:db-message-bus-impl")
     nonOsgiIntegrationTestImplementation project(":components:crypto:crypto-client")
+    nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
+    nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
+    nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")

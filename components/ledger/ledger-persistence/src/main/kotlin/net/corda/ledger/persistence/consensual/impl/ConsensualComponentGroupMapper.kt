@@ -1,10 +1,10 @@
-package net.corda.ledger.persistence.consensual
+package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.ledger.persistence.common.ComponentGroupMapper
 import javax.persistence.Tuple
 
 /**
- * Used by [ConsensualLedgerRepository.findTransaction] to map DB rows to transaction's components group lists
+ * Used by [ConsensualRepositoryImpl.findTransaction] to map DB rows to transaction's components group lists
  */
 class ConsensualComponentGroupMapper : ComponentGroupMapper {
     override fun map(tuples: List<Tuple>): Map<Int, List<ByteArray>> {

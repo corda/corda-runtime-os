@@ -68,6 +68,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.contextLogger
@@ -453,7 +454,8 @@ class P2PLayerEndToEndTest {
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
                 SigningMode.STUB,
-                mock()
+                mock(),
+                AvroSchemaRegistryImpl()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
