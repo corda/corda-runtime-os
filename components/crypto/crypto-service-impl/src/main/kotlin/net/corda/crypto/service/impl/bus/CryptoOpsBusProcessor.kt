@@ -11,8 +11,7 @@ import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl.CryptoRequestsHandlers
-import net.corda.crypto.service.impl.CryptoRequestsHandlers.Handler
+import net.corda.crypto.service.impl.CryptoRequestHandler
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -35,6 +34,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -46,16 +46,15 @@ class CryptoOpsBusProcessor(
 ) : RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = contextLogger()
-        private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
-            DeriveSharedSecretCommand::class.java to DeriveSharedSecretCommandHandler::class.java,
-            GenerateFreshKeyRpcCommand::class.java to GenerateFreshKeyRpcCommandHandler::class.java,
-            GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
-            GenerateWrappingKeyRpcCommand::class.java to GenerateWrappingKeyRpcCommandHandler::class.java,
-            ByIdsRpcQuery::class.java to ByIdsRpcQueryHandler::class.java,
-            KeysRpcQuery::class.java to KeysRpcQueryHandler::class.java,
-            SupportedSchemesRpcQuery::class.java to SupportedSchemesRpcQueryHandler::class.java,
-            SignRpcCommand::class.java to SignRpcCommandHandler::class.java,
-        )
+
+        private fun Map<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>.getHandlerForRequest(
+            requestType: Class<*>,
+            signingService: SigningService
+        ): CryptoRequestHandler<Any, out Any> {
+            val handlerFactory =
+                this[requestType] ?: throw IllegalArgumentException("Unknown request type ${requestType.name}")
+            return uncheckedCast(handlerFactory(signingService))
+        }
     }
 
     private val config = event.config.toCryptoConfig().opsBusProcessor()
@@ -65,15 +64,27 @@ class CryptoOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    private val cryptoRequestsHandlers = CryptoRequestsHandlers(handlers)
+    private val handlersFactory =
+        mapOf<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>(
+            DeriveSharedSecretCommand::class.java to { DeriveSharedSecretCommandHandler(it) },
+            GenerateFreshKeyRpcCommand::class.java to { GenerateFreshKeyRpcCommandHandler(it) },
+            GenerateKeyPairCommand::class.java to { GenerateKeyPairCommandHandler(it) },
+            GenerateWrappingKeyRpcCommand::class.java to { GenerateWrappingKeyRpcCommandHandler(it) },
+            ByIdsRpcQuery::class.java to { ByIdsRpcQueryHandler(it) },
+            KeysRpcQuery::class.java to { KeysRpcQueryHandler(it) },
+            SupportedSchemesRpcQuery::class.java to { SupportedSchemesRpcQueryHandler(it) },
+            SignRpcCommand::class.java to { SignRpcCommandHandler(it) },
+        )
 
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
+            // TODO Need to check why signingService seems to be changing
             val signingService = signingFactory.getInstance()
-            val handler = cryptoRequestsHandlers.getHandler(request.request::class.java, signingService)
+            val requestType = request.request::class.java
+            val handler = handlersFactory.getHandlerForRequest(requestType, signingService)
             val response = executor.executeWithRetry {
-                handler.handle(request.context, request.request)
+                handler.handle(request.request, request.context)
             }
             val result = RpcOpsResponse(createResponseContext(request), response)
             logger.debug {
@@ -98,8 +109,10 @@ class CryptoOpsBusProcessor(
 
     private class SupportedSchemesRpcQueryHandler(
         private val signingService: SigningService
-    ) : Handler<SupportedSchemesRpcQuery> {
-        override fun handle(context: CryptoRequestContext, request: SupportedSchemesRpcQuery): Any {
+    ) : CryptoRequestHandler<SupportedSchemesRpcQuery, CryptoKeySchemes> {
+        override val requestClass = SupportedSchemesRpcQuery::class.java
+
+        override fun handle(request: SupportedSchemesRpcQuery, context: CryptoRequestContext): CryptoKeySchemes {
             return CryptoKeySchemes(
                 signingService.getSupportedSchemes(context.tenantId, request.category)
             )
@@ -108,8 +121,10 @@ class CryptoOpsBusProcessor(
 
     private class ByIdsRpcQueryHandler(
         private val signingService: SigningService
-    ) : Handler<ByIdsRpcQuery> {
-        override fun handle(context: CryptoRequestContext, request: ByIdsRpcQuery): Any {
+    ) : CryptoRequestHandler<ByIdsRpcQuery, CryptoSigningKeys> {
+        override val requestClass = ByIdsRpcQuery::class.java
+
+        override fun handle(request: ByIdsRpcQuery, context: CryptoRequestContext): CryptoSigningKeys {
             val found = signingService.lookup(context.tenantId, request.keys)
             return CryptoSigningKeys(
                 found.map {
@@ -133,8 +148,10 @@ class CryptoOpsBusProcessor(
 
     private class KeysRpcQueryHandler(
         private val signingService: SigningService
-    ) : Handler<KeysRpcQuery> {
-        override fun handle(context: CryptoRequestContext, request: KeysRpcQuery): Any {
+    ) : CryptoRequestHandler<KeysRpcQuery, CryptoSigningKeys> {
+        override val requestClass = KeysRpcQuery::class.java
+
+        override fun handle(request: KeysRpcQuery, context: CryptoRequestContext): CryptoSigningKeys {
             val found = signingService.lookup(
                 tenantId = context.tenantId,
                 skip = request.skip,
@@ -164,8 +181,10 @@ class CryptoOpsBusProcessor(
 
     private class DeriveSharedSecretCommandHandler(
         private val signingService: SigningService
-    ) : Handler<DeriveSharedSecretCommand> {
-        override fun handle(context: CryptoRequestContext, request: DeriveSharedSecretCommand): Any {
+    ) : CryptoRequestHandler<DeriveSharedSecretCommand, CryptoDerivedSharedSecret> {
+        override val requestClass = DeriveSharedSecretCommand::class.java
+
+        override fun handle(request: DeriveSharedSecretCommand, context: CryptoRequestContext): CryptoDerivedSharedSecret {
             val sharedSecret = signingService.deriveSharedSecret(
                 tenantId = context.tenantId,
                 publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array()),
@@ -178,8 +197,10 @@ class CryptoOpsBusProcessor(
 
     private class GenerateKeyPairCommandHandler(
         private val signingService: SigningService
-    ) : Handler<GenerateKeyPairCommand> {
-        override fun handle(context: CryptoRequestContext, request: GenerateKeyPairCommand): Any {
+    ) : CryptoRequestHandler<GenerateKeyPairCommand, CryptoPublicKey> {
+        override val requestClass = GenerateKeyPairCommand::class.java
+
+        override fun handle(request: GenerateKeyPairCommand, context: CryptoRequestContext): CryptoPublicKey {
             val publicKey = if (request.externalId.isNullOrBlank()) {
                 signingService.generateKeyPair(
                     tenantId = context.tenantId,
@@ -204,8 +225,10 @@ class CryptoOpsBusProcessor(
 
     private class GenerateFreshKeyRpcCommandHandler(
         private val signingService: SigningService
-    ) : Handler<GenerateFreshKeyRpcCommand> {
-        override fun handle(context: CryptoRequestContext, request: GenerateFreshKeyRpcCommand): Any {
+    ) : CryptoRequestHandler<GenerateFreshKeyRpcCommand, CryptoPublicKey> {
+        override val requestClass = GenerateFreshKeyRpcCommand::class.java
+
+        override fun handle(request: GenerateFreshKeyRpcCommand, context: CryptoRequestContext): CryptoPublicKey {
             val publicKey = if (request.externalId.isNullOrBlank()) {
                 signingService.freshKey(
                     tenantId = context.tenantId,
@@ -230,8 +253,10 @@ class CryptoOpsBusProcessor(
 
     private class GenerateWrappingKeyRpcCommandHandler(
         private val signingService: SigningService
-    ) : Handler<GenerateWrappingKeyRpcCommand> {
-        override fun handle(context: CryptoRequestContext, request: GenerateWrappingKeyRpcCommand): Any {
+    ) : CryptoRequestHandler<GenerateWrappingKeyRpcCommand, CryptoNoContentValue> {
+        override val requestClass = GenerateWrappingKeyRpcCommand::class.java
+
+        override fun handle(request: GenerateWrappingKeyRpcCommand, context: CryptoRequestContext): CryptoNoContentValue {
             signingService.createWrappingKey(
                 hsmId = request.hsmId,
                 failIfExists = request.failIfExists,
@@ -244,8 +269,10 @@ class CryptoOpsBusProcessor(
 
     private class SignRpcCommandHandler(
         private val signingService: SigningService
-    ) : Handler<SignRpcCommand> {
-        override fun handle(context: CryptoRequestContext, request: SignRpcCommand): Any {
+    ) : CryptoRequestHandler<SignRpcCommand, CryptoSignatureWithKey> {
+        override val requestClass = SignRpcCommand::class.java
+
+        override fun handle(request: SignRpcCommand, context: CryptoRequestContext): CryptoSignatureWithKey {
             val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
             val signature = signingService.sign(
                 context.tenantId,
