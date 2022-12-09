@@ -99,7 +99,7 @@ class UtxoLedgerTests {
                 .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
             assertThat(parsedResult.transaction).withFailMessage {
-                "Member with holding identity $holdingId did not receive the transaction"
+                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
             }.isNotNull
             assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
