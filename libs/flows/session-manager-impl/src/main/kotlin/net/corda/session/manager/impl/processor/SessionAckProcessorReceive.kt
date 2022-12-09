@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
@@ -7,7 +8,6 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.time.Instant
 
 /**
  * Process a [SessionAck] received.
@@ -28,7 +28,7 @@ class SessionAckProcessorReceive(
     override fun execute(): SessionState {
         return if (sessionState == null) {
             val errorMessage = "Received SessionAck on key $key for sessionId ${sessionEvent.sessionId} which had null state"
-            logger.warn(errorMessage)
+            logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionAck-NullState", instant)
         } else {
             logger.debug {

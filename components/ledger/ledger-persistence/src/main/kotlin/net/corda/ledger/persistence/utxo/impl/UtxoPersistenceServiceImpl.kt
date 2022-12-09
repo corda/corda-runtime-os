@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -58,6 +59,18 @@ class UtxoPersistenceServiceImpl constructor(
                         nowUtc
                     )
                 }
+            }
+
+            // Insert relevancy information
+            transaction.relevantStatesIndexes.forEach { relevantStateIndex ->
+                repository.persistTransactionRelevantStates(
+                    em,
+                    transactionIdString,
+                    ConsensualComponentGroup.OUTPUT_STATES.ordinal,
+                    relevantStateIndex,
+                    consumed = false,
+                    nowUtc
+                )
             }
 
             // Insert the Transactions signatures

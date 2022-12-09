@@ -217,27 +217,25 @@ class UtxoRepositoryImpl(
             .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionRelevancy(
+    override fun persistTransactionRelevantStates(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        relevant: Boolean,
         consumed: Boolean,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
-            INSERT INTO {h-schema}utxo_transaction_output(
-                transaction_id, group_idx, leaf_idx, is_relevant, consumed, created)
+            INSERT INTO {h-schema}utxo_relevant_transaction_state(
+                transaction_id, group_idx, leaf_idx, consumed, created)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :relevant, :consumed, :createdAt)
+                :transactionId, :groupIndex, :leafIndex, :consumed, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("relevant", relevant)
             .setParameter("consumed", consumed)
             .setParameter("createdAt", timestamp)
             .executeUpdate()

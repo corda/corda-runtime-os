@@ -15,7 +15,6 @@ import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.libs.configuration.SmartConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -28,7 +27,9 @@ class FlowEventPipelineFactoryImplTest {
     private val checkpoint = Checkpoint()
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
-    private val config = mock<SmartConfig>()
+    private val flowEventContext = buildFlowEventContext(flowCheckpoint, flowEvent.payload)
+
+    private val config = flowEventContext.config
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().also { factory ->
         whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }
@@ -65,7 +66,7 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
-            buildFlowEventContext(flowCheckpoint, flowEvent.payload, config)
+            flowEventContext
         )
         val result = factory.create(checkpoint, flowEvent, config, emptyMap())
         assertEquals(expected.context, result.context)
