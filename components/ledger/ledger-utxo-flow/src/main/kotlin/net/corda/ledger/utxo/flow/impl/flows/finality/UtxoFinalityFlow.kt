@@ -95,7 +95,9 @@ class UtxoFinalityFlow(
                 CordaRuntimeException(message)
             }
 
-            log.debug("Received signatures from ${session.counterparty} for transaction $transactionId")
+            log.debug(
+                "Received ${signaturesReceivedFromSessions[session]!!.size} signatures from ${session.counterparty} for transaction $transactionId"
+            )
 
             signaturesReceivedFromSessions[session]!!.forEach { signature ->
                 try {
@@ -144,7 +146,7 @@ class UtxoFinalityFlow(
     }
 }
 
-// todo: move this
+// todo: move this (CORE-7032)
 // receiveAll does not return the sessions, so we cannot use session.counterparty
 // receiveAllMap needs the casts.
 @Suspendable

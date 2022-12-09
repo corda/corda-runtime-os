@@ -48,14 +48,14 @@ class UtxoReceiveFinalityFlow(
 
         log.trace("Waiting for an initially signed transaction.")
 
-        var transaction = session.receive<UtxoSignedTransactionInternal>()
-        val transactionId = transaction.id
+        val initialTransaction = session.receive<UtxoSignedTransactionInternal>()
+        val transactionId = initialTransaction.id
         log.debug("Initially signed transaction received: $transactionId")
 
         log.debug("Verifying transaction: $transactionId")
 
         log.debug("Verifying signatures of transaction: $transactionId")
-        transaction.signatures.forEach {
+        initialTransaction.signatures.forEach {
             try {
                 log.debug("Verifying signature($it) of transaction: $transactionId")
                 transactionSignatureService.verifySignature(transactionId, it)
@@ -73,13 +73,14 @@ class UtxoReceiveFinalityFlow(
 
         // TODO [CORE-5982] Verify Transaction (platform/etc checks)
         log.debug("Verifying ledger transaction: $transactionId")
-        verifyTransaction(transaction)
+        verifyTransaction(initialTransaction)
 
         log.debug("Validating transaction: $transactionId")
-        val signaturesPayload = if (verify(transaction)) {
+        var transaction = initialTransaction
+        val signaturesPayload = if (verify(initialTransaction)) {
             log.debug("Successfully validated transaction: $transactionId")
             // Which of our keys are required.
-            val myExpectedSigningKeys = transaction
+            val myExpectedSigningKeys = initialTransaction
                 .getMissingSignatories()
                 .intersect(
                     memberLookup
@@ -101,7 +102,7 @@ class UtxoReceiveFinalityFlow(
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug("Recorded transaction with the initial and our signatures: $transactionId")
 
-            Payload.Success(transaction.signatures.filter { it !in transaction.signatures })
+            Payload.Success(transaction.signatures.filter { it !in initialTransaction.signatures })
         } else {
             log.warn("Failed to validate transaction: $transactionId")
 
@@ -126,6 +127,7 @@ class UtxoReceiveFinalityFlow(
             transaction.verifySignatures()
         } else {
             // Q: We could verify the signatures one by one before adding to the tx, but verifySignatures() will check them anyway.
+            // (Main finality flow does that.)
             otherPartiesSignatures
                 .filter{ it !in transaction.signatures}
                 .forEach {
