@@ -3,6 +3,7 @@ package net.corda.ledger.notary.worker.selection.impl
 import net.corda.ledger.notary.worker.selection.NotaryWorkerSelectorService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
@@ -18,7 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger
     service = [ UsedByFlow::class ],
     scope = ServiceScope.PROTOTYPE
 )
-class NotaryWorkerSelectorServiceImpl @Activate constructor(): NotaryWorkerSelectorService {
+class NotaryWorkerSelectorServiceImpl @Activate constructor():
+    NotaryWorkerSelectorService, SingletonSerializeAsToken, UsedByFlow {
 
     private val selection = AtomicInteger(0)
 

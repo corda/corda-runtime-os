@@ -93,7 +93,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
-            "net.cordapp.testing.testflows.NotarisationTestFlow",
+            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -1018,7 +1018,7 @@ class FlowTests {
         val issuanceRequestID = startRpcFlow(
             bobHoldingId,
             paramMap,
-            "net.cordapp.testing.testflows.NotarisationTestFlow"
+            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
@@ -1041,7 +1041,7 @@ class FlowTests {
                 "inputStateRefs" to inputStates,
                 "referenceStateRefs" to refStates
             ),
-            "net.cordapp.testing.testflows.NotarisationTestFlow"
+            "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
         val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)

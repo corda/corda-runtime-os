@@ -22,7 +22,6 @@ import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-@Disabled
 class ConsensualLedgerTests {
 
     private companion object {

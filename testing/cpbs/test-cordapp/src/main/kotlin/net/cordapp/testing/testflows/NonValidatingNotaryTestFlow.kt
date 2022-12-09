@@ -43,7 +43,7 @@ import java.time.Instant
  * will be the current  UTC time ([Instant.now]) + 1 hour.
  */
 @InitiatingFlow(protocol = "non-validating-test")
-class NotarisationTestFlow : RPCStartableFlow {
+class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
@@ -58,7 +58,7 @@ class NotarisationTestFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     private companion object {
-        val log = loggerFor<NotarisationTestFlow>()
+        val log = loggerFor<NonValidatingNotaryTestFlow>()
     }
 
     @Suspendable
@@ -206,7 +206,7 @@ class NotarisationTestFlow : RPCStartableFlow {
     class TestCommand : Command
 
     /**
-     * A basic data class that represents the outcome of the [NotarisationTestFlow] flow.
+     * A basic data class that represents the outcome of the [NonValidatingNotaryTestFlow] flow.
      */
     data class NonValidatingNotaryTestFlowResult(
         val issuedStateRefs: List<String>,
@@ -215,7 +215,7 @@ class NotarisationTestFlow : RPCStartableFlow {
     )
 
     /**
-     * A basic data class that represents the required parameters for the [NotarisationTestFlow] flow.
+     * A basic data class that represents the required parameters for the [NonValidatingNotaryTestFlow] flow.
      */
     data class NotarisationTestFlowParameters(
         val outputStateCount: Int,
