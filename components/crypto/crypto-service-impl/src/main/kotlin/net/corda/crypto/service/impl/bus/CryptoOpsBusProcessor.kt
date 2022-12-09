@@ -64,7 +64,7 @@ class CryptoOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    private val handlersFactory =
+    private val handlersFactories =
         mapOf<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>(
             DeriveSharedSecretCommand::class.java to { DeriveSharedSecretCommandHandler(it) },
             GenerateFreshKeyRpcCommand::class.java to { GenerateFreshKeyRpcCommandHandler(it) },
@@ -82,7 +82,7 @@ class CryptoOpsBusProcessor(
             // TODO Need to check why signingService seems to be changing
             val signingService = signingFactory.getInstance()
             val requestType = request.request::class.java
-            val handler = handlersFactory.getHandlerForRequest(requestType, signingService)
+            val handler = handlersFactories.getHandlerForRequest(requestType, signingService)
             val response = executor.executeWithRetry {
                 handler.handle(request.request, request.context)
             }
