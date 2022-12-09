@@ -14,6 +14,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.osgi.service.component.annotations.Activate
@@ -54,14 +55,14 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                     filteredTransactionBuilder.signatories,
                     filteredTransactionBuilder.inputStates,
                     filteredTransactionBuilder.referenceInputStates,
-                    filteredTransactionBuilder.outputStates?.let { _ ->
+                    (filteredTransactionBuilder.outputStates as? ComponentGroupFilterParameters.AuditProof<*>)?.let { _ ->
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                             UtxoOutputInfoComponent::class.java
                         ) { true }
                     },
                     filteredTransactionBuilder.outputStates,
-                    filteredTransactionBuilder.commands?.let { _ ->
+                    (filteredTransactionBuilder.commands as? ComponentGroupFilterParameters.AuditProof<*>)?.let { _ ->
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.COMMANDS_INFO.ordinal,
                             List::class.java

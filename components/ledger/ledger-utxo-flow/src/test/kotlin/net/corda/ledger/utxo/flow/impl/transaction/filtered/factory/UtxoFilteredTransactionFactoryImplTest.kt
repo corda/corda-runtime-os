@@ -73,7 +73,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
         assertThat(predicate.test(utxoNotaryExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isFalse
     }
@@ -90,7 +90,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
         assertThat(predicate.test(utxoNotaryExample)).isFalse
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
     }
@@ -108,7 +108,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
         assertThat(predicate.test(utxoNotaryExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
     }
@@ -125,7 +125,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `includes output state infos if the output state component group is included`() {
+    fun `includes output state infos if the output state component group is included with an audit proof`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
             .withOutputStates()
         utxoFilteredTransactionFactory.create(signedTransaction, builder)
@@ -152,7 +152,20 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `includes command infos if the commands component group is included`() {
+    fun `does not include output state infos if the output state component group is included with a size proof`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+            .withOutputStatesSize()
+        utxoFilteredTransactionFactory.create(signedTransaction, builder)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroups)
+            .contains(UtxoComponentGroup.OUTPUTS.ordinal)
+            .doesNotContain(UtxoComponentGroup.OUTPUTS_INFO.ordinal)
+    }
+
+    @Test
+    fun `includes command infos if the commands component group is included with an audit proof`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
             .withCommands()
         utxoFilteredTransactionFactory.create(signedTransaction, builder)
@@ -176,5 +189,18 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         val componentGroupFilterParameters = argumentCaptor.firstValue
         val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
         assertThat(componentGroups).doesNotContain(UtxoComponentGroup.COMMANDS.ordinal, UtxoComponentGroup.COMMANDS_INFO.ordinal)
+    }
+
+    @Test
+    fun `does not include command infos if the commands component group is included with a size proof`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+            .withCommandsSize()
+        utxoFilteredTransactionFactory.create(signedTransaction, builder)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroups)
+            .contains(UtxoComponentGroup.COMMANDS.ordinal)
+            .doesNotContain(UtxoComponentGroup.COMMANDS_INFO.ordinal)
     }
 }
