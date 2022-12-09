@@ -32,7 +32,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.InputStream
@@ -82,7 +81,7 @@ class DynamicKeyStoreTest {
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithStubs,
         nodeConfiguration,
-        SigningMode.STUB,
+        SigningMode.REAL,
         cryptoOpsClient,
         certificateFactory,
     )
@@ -241,22 +240,6 @@ class DynamicKeyStoreTest {
         }
 
         @Test
-        fun `when keystore is using stubs, sign with known publicKey will send the correct data`() {
-            dynamicKeyStoreWithStubs.sign(publicKeyOne, spec, data)
-
-            verify(signer.constructed().first()).sign(tenantIdOne, publicKeyOne, spec, data)
-            verify(cryptoOpsClient, never()).sign(anyString(), any(), any<SignatureSpec>(), any(), any())
-        }
-
-        @Test
-        fun `when keystore is using stubs, sign with known publicKey will return the correct data`() {
-            val returnedData = "ok".toByteArray()
-            whenever(signer.constructed().first().sign(any(), any(), any(), any())).doReturn(returnedData)
-
-            assertThat(dynamicKeyStoreWithStubs.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
-        }
-
-        @Test
         fun `when keystore is not using stubs, sign with known publicKey will send the correct data`() {
             val returnedData = "ok".toByteArray()
             val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
@@ -265,7 +248,6 @@ class DynamicKeyStoreTest {
             dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)
 
             verify(cryptoOpsClient).sign(tenantIdOne, publicKeyOne, spec, data)
-            verify(signer.constructed().first(), never()).sign(any(), any(), any(), any())
         }
 
         @Test
@@ -276,7 +258,6 @@ class DynamicKeyStoreTest {
                 .doReturn(signatureWithKey)
 
             assertThat(dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
-            verify(signer.constructed().first(), never()).sign(any(), any(), any(), any())
         }
 
         @Test
@@ -298,7 +279,11 @@ class DynamicKeyStoreTest {
 
         @Test
         fun `onNext will replace the public key`() {
-            processorForKeystoreWithStubs.firstValue.onNext(
+            val returnedData = "ok".toByteArray()
+            val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
+            whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
+                .doReturn(signatureWithKey)
+            processorForKeystoreWithoutStubs.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
@@ -312,7 +297,7 @@ class DynamicKeyStoreTest {
             )
 
             assertDoesNotThrow {
-                dynamicKeyStoreWithStubs.sign(publicKeyTwo, spec, data)
+                dynamicKeystoreWithoutStubs.sign(publicKeyTwo, spec, data)
             }
         }
     }
