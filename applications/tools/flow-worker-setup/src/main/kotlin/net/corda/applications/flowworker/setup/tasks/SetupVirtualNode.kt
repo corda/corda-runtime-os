@@ -17,13 +17,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import kotlin.streams.toList
 
 /**
@@ -31,10 +29,6 @@ import kotlin.streams.toList
  * data to kafka when running independently of the formal components that manage and publish this information.
  */
 class SetupVirtualNode(private val context: TaskContext) : Task {
-
-    private companion object {
-        val log : Logger = LoggerFactory.getLogger("SetupVirtualNode")
-    }
 
     override fun execute() {
         val repositoryFolder =
@@ -63,7 +57,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         virtualNodes.forEach { vNode ->
             val hid = vNode.second.holdingIdentity
-            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.shortHash}'")
+            context.log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.shortHash}'")
         }
 
         cpiList.flatMap { it.cpks }.map { cpk ->

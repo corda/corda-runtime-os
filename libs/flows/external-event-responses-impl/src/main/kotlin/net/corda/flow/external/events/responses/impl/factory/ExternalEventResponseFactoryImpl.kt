@@ -30,14 +30,21 @@ class ExternalEventResponseFactoryImpl(
         cordaAvroSerializationFactory: CordaAvroSerializationFactory
     ) : this(cordaAvroSerializationFactory.createAvroSerializer { }, UTCClock())
 
-    override fun success(flowExternalEventContext: ExternalEventContext, payload: Any): Record<String, FlowEvent> {
+    override fun success(requestId: String, flowId: String, payload: Any): Record<String, FlowEvent> {
         val response = ExternalEventResponse.newBuilder()
-            .setRequestId(flowExternalEventContext.requestId)
+            .setRequestId(requestId)
             .setPayload(ByteBuffer.wrap(serializer.serialize(payload)))
             .setError(null)
             .setTimestamp(clock.instant())
             .build()
-        return flowEvent(flowExternalEventContext, response)
+        return flowEvent(flowId, response)
+    }
+
+    override fun success(flowExternalEventContext: ExternalEventContext, payload: Any): Record<String, FlowEvent> {
+        return success(
+            flowExternalEventContext.requestId,
+            flowExternalEventContext.flowId,
+            payload)
     }
 
     override fun transientError(
@@ -107,17 +114,17 @@ class ExternalEventResponseFactoryImpl(
             )
             .setTimestamp(clock.instant())
             .build()
-        return flowEvent(flowExternalEventContext, response)
+        return flowEvent(flowExternalEventContext.flowId, response)
     }
 
     private fun flowEvent(
-        flowExternalEventContext: ExternalEventContext,
+        flowId: String,
         response: ExternalEventResponse
     ): Record<String, FlowEvent> {
         return Record(
             Schemas.Flow.FLOW_EVENT_TOPIC,
-            flowExternalEventContext.flowId,
-            FlowEvent(flowExternalEventContext.flowId, response)
+            flowId,
+            FlowEvent(flowId, response)
         )
     }
 }
