@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl
 
 import net.corda.data.crypto.wire.CryptoRequestContext
+import net.corda.v5.base.util.uncheckedCast
 import java.lang.reflect.Constructor
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,7 +14,8 @@ interface CryptoRequestHandler<REQUEST, RESPONSE> {
     fun handle(request: REQUEST, context: CryptoRequestContext): RESPONSE
 }
 
-@Suppress("UNCHECKED_CAST")
 fun Map<Class<*>, CryptoRequestHandler<*, out Any>>.getHandlerForRequest(requestType: Class<*>): CryptoRequestHandler<Any, out Any> =
-    this[requestType] as? CryptoRequestHandler<Any, out Any>
-        ?: throw IllegalArgumentException("Unknown request type ${requestType.name}")
+    uncheckedCast(
+        this[requestType]
+            ?: throw IllegalArgumentException("Unknown request type ${requestType.name}")
+    )
