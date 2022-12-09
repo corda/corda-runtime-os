@@ -271,14 +271,6 @@ class CordaKafkaConsumerImplTest {
         assertThat(positionAfterReset).isEqualTo(0L)
     }
 
-
-    @Test
-    fun testGetPartitionsNullPointerException() {
-        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
-            cordaKafkaConsumer.getPartitions("topic")
-        }.withMessageContaining("Partitions for topic topic are null. Kafka may not have completed startup.")
-    }
-
     @Test
     fun testAssignInvokedFatal() {
         consumer = mock()
