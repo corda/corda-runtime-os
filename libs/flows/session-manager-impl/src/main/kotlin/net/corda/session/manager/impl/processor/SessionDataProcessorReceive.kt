@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionProcessState
@@ -11,7 +12,6 @@ import net.corda.session.manager.impl.processor.helper.generateErrorSessionState
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.time.Instant
 
 /**
  * Process a [SessionData] event received from a counterparty.
@@ -37,7 +37,7 @@ class SessionDataProcessorReceive(
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
             val errorMessage = "Received SessionData on key $key for session which was null: SessionEvent: $sessionEvent"
-            logger.warn(errorMessage)
+            logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
             getInboundDataEventResult(sessionState, sessionId)
