@@ -58,14 +58,14 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                             UtxoOutputInfoComponent::class.java
-                        ) { true } // TODO Do not include all infos?
+                        ) { true }
                     },
                     filteredTransactionBuilder.outputStates,
                     filteredTransactionBuilder.commands?.let { _ ->
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.COMMANDS_INFO.ordinal,
                             List::class.java
-                        ) { true } // TODO Do not include all infos?
+                        ) { true }
                     },
                     filteredTransactionBuilder.commands
                 )
