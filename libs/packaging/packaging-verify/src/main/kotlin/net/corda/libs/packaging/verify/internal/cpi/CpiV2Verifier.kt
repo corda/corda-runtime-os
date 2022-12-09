@@ -11,7 +11,7 @@ import net.corda.libs.packaging.verify.internal.cpb.CpbV2Verifier
 import net.corda.libs.packaging.verify.internal.firstOrThrow
 import net.corda.libs.packaging.verify.internal.requireAttribute
 import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
-import net.corda.libs.packaging.verify.internal.singleOrThrow
+import net.corda.libs.packaging.verify.internal.notMultipleOrThrow
 import java.util.jar.Manifest
 
 /**
@@ -20,16 +20,14 @@ import java.util.jar.Manifest
 class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
-    private val cpbVerifier: CpbV2Verifier
+    private val cpbVerifier: CpbV2Verifier?
     private val groupPolicy: GroupPolicy
 
     init {
         cpbVerifier = jarReader.entries.filter(::isCpb)
             .map { CpbV2Verifier(JarReader("$name/${it.name}", it.createInputStream(), jarReader.trustedCerts)) }
-            .singleOrThrow(
-                PackagingException("CPB not found in CPI \"$name\""),
-                PackagingException("Multiple CPBs found in CPI \"$name\"")
-            )
+            .notMultipleOrThrow(PackagingException("Multiple CPBs found in CPI \"$name\""))
+
         groupPolicy = jarReader.entries.filter(::isGroupPolicy).map { GroupPolicy() }
             .firstOrThrow(PackagingException("Group policy not found in CPI \"$name\""))
     }
@@ -54,7 +52,7 @@ class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
 
     override fun verify() {
         verifyManifest()
-        cpbVerifier.verify()
+        cpbVerifier?.verify()
         groupPolicy.verify()
     }
 }

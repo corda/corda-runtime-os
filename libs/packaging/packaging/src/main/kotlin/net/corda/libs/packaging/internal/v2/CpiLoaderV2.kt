@@ -39,10 +39,17 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
             val cpiEntries = readJar(jarInputStream)
 
             val groupPolicy = cpiEntries.single { it.entry.name.endsWith(CPI_GROUP_POLICY_ENTRY) }
-            val cpb = cpiEntries.single { it.entry.name.endsWith(".cpb") }
+            val cpbs = cpiEntries.filter { it.entry.name.endsWith(".cpb") }
+            if (cpbs.size > 1) {
+                throw IllegalArgumentException("CPI contains more than one CPB.")
+            }
 
             // Read CPB
-            val cpks = readCpksFromCpb(cpb.bytes.inputStream(), expansionLocation, cpiLocation).toList()
+            val cpks = if (cpbs.isEmpty()) {
+                emptyList()
+            } else {
+                readCpksFromCpb(cpbs.single().bytes.inputStream(), expansionLocation, cpiLocation).toList()
+            }
 
             val mainAttributes = jarInputStream.manifest.mainAttributes
             return CpiImpl(

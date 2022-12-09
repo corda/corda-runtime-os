@@ -14,6 +14,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.MGMRpcOps
@@ -49,6 +50,33 @@ fun E2eCluster.uploadCpi(
     @TempDir tempDir: Path,
     isMgm: Boolean = false
 ): String {
+    val keyStoreFilePath = Path.of(tempDir.toString(), "rootca.p12")
+    val keystore = TestUtils::class.java.classLoader.getResourceAsStream("rootca.p12")
+
+    Files.newOutputStream(
+        keyStoreFilePath,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.CREATE_NEW
+    ).write(keystore.readAllBytes())
+
+    // first upload certificate to corda
+    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+        with(client.start().proxy) {
+            val pem = TestUtils.ROOT_CA.toPem().toByteArray()
+
+            val upload = HttpFileUpload(
+                content = pem.inputStream(),
+                contentType = "application/x-pem-file",
+                extension = "pem",
+                fileName = "rootca.pem",
+                size = pem.size.toLong()
+            )
+
+            importCertificateChain("code-signer", "rootca", listOf(upload))
+        }
+    }
+
+    // then build and upload cpi
     return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
@@ -60,9 +88,6 @@ fun E2eCluster.uploadCpi(
                 }
             }
 
-
-//            val jarr = createEmptyJarWithManifest(groupPolicy)
-
             val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy.json")
 
             Files.newOutputStream(
@@ -70,15 +95,6 @@ fun E2eCluster.uploadCpi(
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW
             ).write(groupPolicy)
-
-            val keystore = TestUtils::class.java.classLoader.getResourceAsStream("alice.p12")
-            val keyStoreFilePath = Path.of(tempDir.toString(), "alice.p12")
-
-            Files.newOutputStream(
-                keyStoreFilePath,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.CREATE_NEW
-            ).write(keystore.readAllBytes())
 
             val cpiFileName = Path.of(tempDir.toString(), "test.cpi")
             CreateCpiV2().apply {
@@ -91,18 +107,18 @@ fun E2eCluster.uploadCpi(
                 signingOptions = SigningOptions().apply {
                     keyStoreFileName = keyStoreFilePath.toString()
                     keyStorePass = "cordadevpass"
-                    keyAlias = "alice"
+                    keyAlias = "rootca"
                 }
             }.run()
 
-            val jar = Files.readAllBytes(cpiFileName)
+            val cpiJar = Files.readAllBytes(cpiFileName)
 
             val upload = HttpFileUpload(
-                content = jar.inputStream(),
+                content = cpiJar.inputStream(),
                 contentType = "application/java-archive",
                 extension = "cpb",
                 fileName = "${uniqueName}.cpb",
-                size = jar.size.toLong(),
+                size = cpiJar.size.toLong(),
             )
             val id = cpi(upload).id
             eventually {

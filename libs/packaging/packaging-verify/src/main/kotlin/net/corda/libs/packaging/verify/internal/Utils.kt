@@ -74,6 +74,14 @@ internal fun <T> List<T>.firstOrThrow(noElementsException: Exception): T {
     return this[0]
 }
 
+internal fun <T> List<T>.notMultipleOrThrow(multipleElementsException: Exception): T? {
+    return when (size) {
+        0 -> null
+        1 -> this[0]
+        else -> throw multipleElementsException
+    }
+}
+
 internal fun <T> List<T>.singleOrThrow(noElementsException: Exception, multipleElementsException: Exception): T {
     return when (size) {
         0 -> throw noElementsException
