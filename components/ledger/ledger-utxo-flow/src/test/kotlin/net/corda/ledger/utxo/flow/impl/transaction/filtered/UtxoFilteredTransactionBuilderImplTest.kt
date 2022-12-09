@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
