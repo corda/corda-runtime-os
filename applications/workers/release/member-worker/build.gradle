@@ -14,6 +14,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:platform-info')
+    // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:member-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'

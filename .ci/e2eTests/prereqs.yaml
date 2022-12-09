@@ -6,8 +6,18 @@ global:
 
 kafka:
   auth:
-    enabled: true
     clientProtocol: sasl_tls
+    sasl:
+      jaas:
+        clientUsers:
+          - "bootstrap"
+          - "crypto"
+          - "db"
+          - "flow"
+          - "membership"
+          - "p2pGateway"
+          - "p2pLinkManager"
+          - "rpc"
   replicaCount: 7
   resources:
     requests:

@@ -15,6 +15,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:platform-info')
+    // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:gateway-processor')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
