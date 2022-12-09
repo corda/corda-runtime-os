@@ -86,8 +86,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
         */
         val utxoFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                val ledgerTransaction = signedTransaction.toLedgerTransaction()
-                UtxoLedgerTransactionVerifier(ledgerTransaction).verify()
                 UtxoFinalityFlow(signedTransaction as UtxoSignedTransactionInternal, sessions)
             })
         } catch (e: PrivilegedActionException) {
