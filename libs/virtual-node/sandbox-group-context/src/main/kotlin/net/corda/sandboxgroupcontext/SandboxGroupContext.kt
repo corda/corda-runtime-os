@@ -14,7 +14,7 @@ import net.corda.sandbox.SandboxGroup
  * The [VirtualNodeContext] member contains the unique key information that distinguishes a [SandboxGroupContext]
  * from another.
  */
-interface SandboxGroupContext : SandboxGroupContextData, AutoCloseable {
+interface SandboxGroupContext : SandboxGroupContextData {
     /**
      * Get an object from *this* [SandboxGroupContext] instance's object cache using the given key.
      *

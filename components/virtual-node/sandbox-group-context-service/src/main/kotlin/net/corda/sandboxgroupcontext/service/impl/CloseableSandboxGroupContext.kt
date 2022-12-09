@@ -23,7 +23,7 @@ internal class CloseableSandboxGroupContextImpl(
         private val logger = loggerFor<CloseableSandboxGroupContext>()
     }
 
-    val lock = ReentrantLock()
+    private val lock = ReentrantLock()
     private var isClosed = false
 
     override fun <T : Any> put(key: String, value: T) =

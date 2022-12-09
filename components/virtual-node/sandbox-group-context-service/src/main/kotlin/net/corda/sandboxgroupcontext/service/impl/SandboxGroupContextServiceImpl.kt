@@ -148,7 +148,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        val ctx = cache.get(virtualNodeContext) { vnc ->
+        return cache.get(virtualNodeContext) { vnc ->
             val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(vnc.holdingIdentity.shortHash.value)
                 .withTag(CordaMetrics.Tag.SandboxGroupType, vnc.sandboxGroupType.name)
@@ -199,21 +199,6 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 }
             }!!
         }
-        return SandboxGroupContexWrapper(ctx as CloseableSandboxGroupContextImpl)
-    }
-
-    internal class SandboxGroupContexWrapper(private val wrappedSandboxGroupContext: CloseableSandboxGroupContextImpl): SandboxGroupContext {
-        init {
-            wrappedSandboxGroupContext.lock.lock()
-        }
-        override fun close() {
-            wrappedSandboxGroupContext.lock.unlock()
-        }
-
-        override fun <T : Any> get(key: String, valueType: Class<out T>) = wrappedSandboxGroupContext.get(key, valueType)
-
-        override val virtualNodeContext: VirtualNodeContext = wrappedSandboxGroupContext.virtualNodeContext
-        override val sandboxGroup = wrappedSandboxGroupContext.sandboxGroup
     }
 
     private fun registerCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): Pair<Set<*>, Collection<AutoCloseable>>? {
