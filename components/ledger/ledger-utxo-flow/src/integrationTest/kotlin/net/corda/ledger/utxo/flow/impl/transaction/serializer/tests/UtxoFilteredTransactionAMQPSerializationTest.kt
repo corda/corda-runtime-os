@@ -3,18 +3,17 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.tests
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
+import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.createExample
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.security.PublicKey
 
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
 
@@ -23,15 +22,15 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
             notary = Party(MemberX500Name("alice", "LDN", "GB"), publicKeyExample),
-            contractStateTag = MyState::class.java.name,
+            contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"
         )
     }
 
     @Test
     fun `can serialize and deserialize utxo filtered transaction with outputs audit proof`() {
-        val outputState1 = MyState(0)
-        val outputState2 = MyState(1)
+        val outputState1 = UtxoStateClassExample("1", emptyList())
+        val outputState2 = UtxoStateClassExample("2", emptyList())
         val utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
             jsonValidator,
@@ -109,16 +108,16 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                 ), // inputs
                 emptyList(), // references
                 listOf(
-                    serializationService.serialize(MyState(0)).bytes,
-                    serializationService.serialize(MyState(1)).bytes
+                    serializationService.serialize(UtxoStateClassExample("1", emptyList())).bytes,
+                    serializationService.serialize(UtxoStateClassExample("2", emptyList())).bytes
                 ), // outputs
                 emptyList(), // commands
             )
         )
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
-                .withInputStates()
-                .withOutputStatesSize()
-                .build()
+            .withInputStates()
+            .withOutputStatesSize()
+            .build()
 
         assertThat(utxoFilteredTransaction.id).isNotNull
 
@@ -141,9 +140,5 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         assertThat(deserialized.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
         val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly
         assertThat(outputs.size).isEqualTo(2)
-    }
-
-    data class MyState(val value: Int) : ContractState {
-        override val participants: List<PublicKey> = emptyList()
     }
 }
