@@ -18,11 +18,12 @@ class UtxoFilteredTransactionBuilderImplTest {
 
     @Test
     fun withNotary() {
-        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withNotaryAndTimeWindow().notary
-        assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
-        assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.NOTARY.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Party>).predicate.test(mock()))
-            .isEqualTo(true)
+        assertThat(utxoFilteredTransactionBuilder.withNotary().notary).isTrue
+    }
+
+    @Test
+    fun withTimeWindow() {
+        assertThat(utxoFilteredTransactionBuilder.withTimeWindow().timeWindow).isTrue
     }
 
     @Test
@@ -151,8 +152,9 @@ class UtxoFilteredTransactionBuilderImplTest {
     }
 
     @Test
-    fun `all start as null`() {
-        assertThat(utxoFilteredTransactionBuilder.notary).isNull()
+    fun `all start as null or false`() {
+        assertThat(utxoFilteredTransactionBuilder.notary).isFalse
+        assertThat(utxoFilteredTransactionBuilder.timeWindow).isFalse
         assertThat(utxoFilteredTransactionBuilder.signatories).isNull()
         assertThat(utxoFilteredTransactionBuilder.inputStates).isNull()
         assertThat(utxoFilteredTransactionBuilder.referenceInputStates).isNull()
@@ -163,13 +165,15 @@ class UtxoFilteredTransactionBuilderImplTest {
     @Test
     fun `set all`() {
         val builder = utxoFilteredTransactionBuilder
-            .withNotaryAndTimeWindow()
+            .withNotary()
+            .withTimeWindow()
             .withSignatoriesSize()
             .withInputStates()
             .withReferenceInputStatesSize()
             .withOutputStatesSize()
             .withCommands() as UtxoFilteredTransactionBuilderInternal
-        assertThat(builder.notary).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
+        assertThat(builder.notary).isTrue
+        assertThat(builder.timeWindow).isTrue
         assertThat(builder.signatories).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat(builder.inputStates).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat(builder.referenceInputStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
@@ -183,7 +187,8 @@ class UtxoFilteredTransactionBuilderImplTest {
             .withInputStates()
             .withReferenceInputStatesSize()
             .withCommands() as UtxoFilteredTransactionBuilderInternal
-        assertThat(builder.notary).isNull()
+        assertThat(builder.notary).isFalse
+        assertThat(builder.timeWindow).isFalse
         assertThat(builder.signatories).isNull()
         assertThat(builder.inputStates).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat(builder.referenceInputStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)

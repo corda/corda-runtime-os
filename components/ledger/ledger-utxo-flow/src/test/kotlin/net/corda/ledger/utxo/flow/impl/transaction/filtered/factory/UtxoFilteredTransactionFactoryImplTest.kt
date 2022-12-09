@@ -7,6 +7,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.ledger.utxo.test.UtxoLedgerTest
+import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,7 +35,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     @Test
     fun `creates a filtered transaction`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
-            .withNotaryAndTimeWindow()
+            .withNotary()
             .withSignatories()
             .withInputStates()
         utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
@@ -43,7 +45,7 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
     @Test
     fun `includes the component groups set on the filtered transaction builder`() {
         val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
-            .withNotaryAndTimeWindow()
+            .withNotary()
             .withSignatories()
             .withInputStates()
         utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
@@ -57,6 +59,69 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
             UtxoComponentGroup.SIGNATORIES.ordinal,
             UtxoComponentGroup.INPUTS.ordinal
         )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `includes the notary without a time window when only the notary is set on the filtered transaction builder`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+            .withNotary()
+        utxoFilteredTransactionFactory.create(signedTransaction, builder)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroupFilterParameters).hasSize(2)
+        assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
+
+        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        assertThat(predicate.test(utxoNotaryExample)).isTrue
+        assertThat(predicate.test(utxoTimeWindowExample)).isFalse
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `includes the time window without a notary when only the time window is set on the filtered transaction builder`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+            .withTimeWindow()
+        utxoFilteredTransactionFactory.create(signedTransaction, builder)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroupFilterParameters).hasSize(2)
+        assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
+
+        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        assertThat(predicate.test(utxoNotaryExample)).isFalse
+        assertThat(predicate.test(utxoTimeWindowExample)).isTrue
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `includes the notary and time window when both are set on the filtered transaction builder`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+            .withNotary()
+            .withTimeWindow()
+        utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroupFilterParameters).hasSize(2)
+        assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
+
+        val predicate = componentGroupFilterParameters[1].let {(it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        assertThat(predicate.test(utxoNotaryExample)).isTrue
+        assertThat(predicate.test(utxoTimeWindowExample)).isTrue
+    }
+
+    @Test
+    fun `excludes the notary and time window when neither are set on the filtered transaction builder`() {
+        val builder = UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, mock())
+        utxoFilteredTransactionFactory.create(signedTransaction, builder as UtxoFilteredTransactionBuilderInternal)
+
+        val componentGroupFilterParameters = argumentCaptor.firstValue
+        val componentGroups = componentGroupFilterParameters.map { it.componentGroupIndex }
+        assertThat(componentGroupFilterParameters).hasSize(1)
+        assertThat(componentGroups).doesNotContain(UtxoComponentGroup.NOTARY.ordinal)
     }
 
     @Test

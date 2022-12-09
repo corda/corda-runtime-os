@@ -17,7 +17,8 @@ import java.util.function.Predicate
 data class UtxoFilteredTransactionBuilderImpl(
     private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
     private val signedTransaction: UtxoSignedTransactionInternal,
-    override val notary: ComponentGroupFilterParameters? = null,
+    override val notary: Boolean = false,
+    override val timeWindow: Boolean = false,
     override val signatories: ComponentGroupFilterParameters? = null,
     override val inputStates: ComponentGroupFilterParameters? = null,
     override val referenceInputStates: ComponentGroupFilterParameters? = null,
@@ -26,13 +27,13 @@ data class UtxoFilteredTransactionBuilderImpl(
 ) : UtxoFilteredTransactionBuilder, UtxoFilteredTransactionBuilderInternal {
 
     @Suspendable
-    override fun withNotaryAndTimeWindow(): UtxoFilteredTransactionBuilderInternal {
-        return copy(
-            notary = ComponentGroupFilterParameters.AuditProof(
-                UtxoComponentGroup.NOTARY.ordinal,
-                Any::class.java,
-            ) { true }
-        )
+    override fun withNotary(): UtxoFilteredTransactionBuilderInternal {
+        return copy(notary = true)
+    }
+
+    @Suspendable
+    override fun withTimeWindow(): UtxoFilteredTransactionBuilderInternal {
+        return copy(timeWindow = true)
     }
 
     @Suspendable

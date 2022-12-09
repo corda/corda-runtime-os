@@ -8,7 +8,9 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuil
  */
 interface UtxoFilteredTransactionBuilderInternal : UtxoFilteredTransactionBuilder {
 
-    val notary: ComponentGroupFilterParameters?
+    val notary: Boolean
+
+    val timeWindow: Boolean
 
     val signatories: ComponentGroupFilterParameters?
 
