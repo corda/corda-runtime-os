@@ -35,7 +35,7 @@ import javax.persistence.Version
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
     @ManyToOne(
-        fetch = FetchType.EAGER,
+        fetch = FetchType.LAZY,
         cascade = [CascadeType.PERSIST, CascadeType.MERGE]
     )
     @JoinColumn(name = "holding_identity_id")
