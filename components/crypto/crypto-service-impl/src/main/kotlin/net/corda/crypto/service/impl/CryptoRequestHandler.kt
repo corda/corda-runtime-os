@@ -2,12 +2,10 @@ package net.corda.crypto.service.impl
 
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.v5.base.util.uncheckedCast
-import java.lang.reflect.Constructor
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Handles crypto requests and returns response. Because requests are coming in as (Avro) [Object]s we grab appropriate handler
- * by actual object's [Class].
+ * by request's [Class].
  */
 interface CryptoRequestHandler<REQUEST, RESPONSE> {
     val requestClass: Class<REQUEST>
