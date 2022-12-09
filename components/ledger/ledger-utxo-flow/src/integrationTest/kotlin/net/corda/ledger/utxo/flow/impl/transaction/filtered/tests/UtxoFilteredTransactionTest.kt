@@ -28,13 +28,14 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"
         )
-        val command = MyCommand()
     }
 
     @Test
     fun `create filtered transaction with all components included`() {
         val outputState1 = UtxoFilteredTransactionAMQPSerializationTest.MyState(0)
         val outputState2 = UtxoFilteredTransactionAMQPSerializationTest.MyState(1)
+        val command1 = MyCommand("1")
+        val command2 = MyCommand("2")
         val utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
             jsonValidator,
@@ -54,8 +55,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                 ),
                 // command infos
                 listOf(
-                    serializationService.serialize(MyCommand::class.java.name).bytes,
-                    serializationService.serialize(MyCommand::class.java.name).bytes
+                    serializationService.serialize(listOf(MyCommand::class.java.name)).bytes,
+                    serializationService.serialize(listOf(MyCommand::class.java.name)).bytes
                 ),
                 // attachments
                 emptyList(),
@@ -76,8 +77,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                 ),
                 // commands
                 listOf(
-                    serializationService.serialize(command).bytes,
-                    serializationService.serialize(command).bytes
+                    serializationService.serialize(command1).bytes,
+                    serializationService.serialize(command2).bytes
                 ),
             )
         )
@@ -104,28 +105,28 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat(utxoFilteredTransaction.signatories)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.signatories as UtxoFilteredData.Audit<PublicKey>).values.values)
-            .isEqualTo(utxoSignedTransaction.signatories)
+            .containsExactlyElementsOf(utxoSignedTransaction.signatories)
 
         assertThat(utxoFilteredTransaction.inputStateRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
-            .isEqualTo(utxoSignedTransaction.inputStateRefs)
+            .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
         assertThat(utxoFilteredTransaction.referenceInputStateRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
-            .isEqualTo(utxoSignedTransaction.referenceStateRefs)
+            .containsExactlyElementsOf(utxoSignedTransaction.referenceStateRefs)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values)
-            .isEqualTo(utxoSignedTransaction.outputStateAndRefs)
+            .containsExactlyElementsOf(utxoSignedTransaction.outputStateAndRefs)
 
         assertThat(utxoFilteredTransaction.commands)
             .isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.commands as UtxoFilteredData.Audit<Command>).values.values)
-            .isEqualTo(utxoSignedTransaction.commands)
+            .containsExactlyElementsOf(utxoSignedTransaction.commands)
     }
 
-    class MyCommand : Command
+    data class MyCommand(val property: String) : Command
 }
