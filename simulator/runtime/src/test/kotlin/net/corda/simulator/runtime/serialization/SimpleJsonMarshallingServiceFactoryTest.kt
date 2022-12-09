@@ -1,4 +1,4 @@
-package net.corda.simulator.runtime.tools;
+package net.corda.simulator.runtime.serialization;
 
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.isA

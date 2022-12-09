@@ -1,6 +1,6 @@
 package net.corda.simulator.runtime.signing
 
-import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
+import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException

@@ -1,21 +1,20 @@
 package net.corda.simulator.runtime.signing
 
+import net.corda.simulator.runtime.testutils.generateKey
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
-import java.security.KeyPairGenerator
 
 class PemUtilsTest {
 
     @Test
     fun `should be able to pem encode and decode a key`() {
-        val publicKey = KeyPairGenerator.getInstance("EC").generateKeyPair().public
+
+        val publicKey = generateKey()
 
         val encoded = pemEncode(publicKey)
         val decoded = pemDecode(encoded)
 
-        println(encoded)
-
-        assertThat(pemEncode(decoded), `is`(encoded))
+        assertThat(decoded, `is`(publicKey))
     }
 }
