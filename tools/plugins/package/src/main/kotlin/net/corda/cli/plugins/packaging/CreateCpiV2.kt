@@ -22,7 +22,6 @@ import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import picocli.CommandLine
-import java.nio.file.StandardOpenOption
 
 /**
  * Filename of group policy within jar file
