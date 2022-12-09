@@ -18,6 +18,7 @@ kafka:
           - "p2pGateway"
           - "p2pLinkManager"
           - "rpc"
+        clientPasswords:
   replicaCount: 7
   resources:
     requests:
