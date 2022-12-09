@@ -122,18 +122,33 @@ data class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
-    @Deprecated("Temporary function until the parameterless version gets available")
-    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction {
-        check(!alreadySigned) { "A transaction cannot be signed twice." }
-        UtxoTransactionBuilderVerifier(this).verify()
-        val signedTransaction = utxoSignedTransactionFactory.create(this, signatories)
-        alreadySigned = true
-        return signedTransaction
+    override fun toSignedTransaction(): UtxoSignedTransaction {
+        TODO("Not yet implemented")
     }
 
     @Suspendable
-    override fun toSignedTransaction(): UtxoSignedTransaction {
+    @Deprecated("Temporary function until the argumentless version gets available")
+    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction =
+        sign(listOf(signatory))
+
+    @Suspendable
+    fun sign(): UtxoSignedTransaction {
         TODO("Not yet implemented")
+    }
+
+    @Suspendable
+    fun sign(vararg signatories: PublicKey): UtxoSignedTransaction =
+        sign(signatories.toList())
+
+    @Suspendable
+    fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
+        require(signatories.toList().isNotEmpty()) {
+            "At least one key needs to be provided in order to create a signed Transaction!"
+        }
+        UtxoTransactionBuilderVerifier(this).verify()
+        val tx = utxoSignedTransactionFactory.create(this, signatories)
+        alreadySigned = true
+        return tx
     }
 
     @Suppress("ComplexMethod")

@@ -4,7 +4,9 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
 
     fun verify() {
         verifyNotary()
-        verifySignatories()
+
+        // TODO : Needs readding.
+        //verifySignatories()
         verifyTimeWindow()
         verifyInputsAndOutputs()
         verifyCommands()
