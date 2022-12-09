@@ -51,7 +51,7 @@ class StaticNetworkTest {
         )
     }
 
-    private fun onboardStaticGroup(@TempDir tempDir: Path): String {
+    private fun onboardStaticGroup(tempDir: Path): String {
         val groupId = UUID.randomUUID().toString()
         val groupPolicy = createStaticMemberGroupPolicyJson(
             getCa(),

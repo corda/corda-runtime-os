@@ -35,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.util.*
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val P2P_TENANT_ID = "p2p"
@@ -47,7 +48,7 @@ private data class TestJsonObject(override val escapedJson: String = "") : JsonO
 
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
-    @TempDir tempDir: Path,
+    tempDir: Path,
     isMgm: Boolean = false
 ): String {
     val keyStoreFilePath = Path.of(tempDir.toString(), "rootca.p12")
@@ -96,11 +97,14 @@ fun E2eCluster.uploadCpi(
                 StandardOpenOption.CREATE_NEW
             ).write(groupPolicy)
 
+            val testRunUniqueId = UUID.randomUUID()
+            val applicationCpiName = "test-cpi_$testRunUniqueId"
+
             val cpiFileName = Path.of(tempDir.toString(), "test.cpi")
             CreateCpiV2().apply {
                 cpbFileName = ""
                 outputFileName = cpiFileName.toString()
-                cpiName = "test-cpi"
+                cpiName = applicationCpiName
                 cpiVersion = "1.0.0.0-SNAPSHOT"
                 cpiUpgrade = false
                 groupPolicyFileName = groupPolicyFilePath.toString()
@@ -388,7 +392,7 @@ fun E2eCluster.onboardMgm(
     setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
 }
 
-fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, @TempDir tempDir: Path) {
+fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
     val cpiCheckSum = uploadCpi(groupPolicy, tempDir)
 
     members.forEach { member ->
