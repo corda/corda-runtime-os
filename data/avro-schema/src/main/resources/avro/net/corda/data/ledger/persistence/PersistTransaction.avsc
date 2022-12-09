@@ -13,6 +13,14 @@
       "name": "status",
       "type": "string",
       "doc": "the transaction status"
+    },
+    {
+      "name": "relevantStatesIndexes",
+      "type": {
+        "type" : "array",
+        "items" : "int"
+      },
+      "doc": "indexes of the relevant states"
     }
   ]
 }

@@ -156,7 +156,7 @@
                                  referencedColumnNames="transaction_id,group_idx,leaf_idx"
                                  referencedTableName="utxo_transaction_component"/>
 
-        <createTable tableName="utxo_transaction_relevancy">
+        <createTable tableName="utxo_relevant_transaction_state">
             <column name="transaction_id" type="VARCHAR(160)">
                 <constraints nullable="false"/>
             </column>
@@ -164,9 +164,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="leaf_idx" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="is_relevant" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column name="consumed" type="BOOLEAN">
@@ -177,11 +174,11 @@
             </column>
         </createTable>
         <addPrimaryKey columnNames="transaction_id, group_idx, leaf_idx"
-                       constraintName="utxo_transaction_relevancy_pkey"
-                       tableName="utxo_transaction_relevancy"/>
+                       constraintName="utxo_relevant_transaction_state_pkey"
+                       tableName="utxo_relevant_transaction_state"/>
         <addForeignKeyConstraint baseColumnNames="transaction_id,group_idx,leaf_idx"
-                                 baseTableName="utxo_transaction_relevancy"
-                                 constraintName="fk_utxo_transaction_relevancy"
+                                 baseTableName="utxo_relevant_transaction_state"
+                                 constraintName="fk_utxo_relevant_transaction_state"
                                  referencedColumnNames="transaction_id,group_idx,leaf_idx"
                                  referencedTableName="utxo_transaction_component"/>
 
