@@ -13,6 +13,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuil
 import java.security.PublicKey
 import java.util.function.Predicate
 
+@Suppress("TooManyFunctions")
 data class UtxoFilteredTransactionBuilderImpl(
     private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
     private val signedTransaction: UtxoSignedTransactionInternal,
