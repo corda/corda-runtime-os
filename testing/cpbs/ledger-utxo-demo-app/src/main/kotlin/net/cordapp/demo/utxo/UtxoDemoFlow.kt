@@ -131,10 +131,10 @@ class UtxoResponderFlow : ResponderFlow {
         val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
             val state = ledgerTransaction.outputContractStates.first() as UtxoDemoFlow.TestUtxoState
             if (state.testField == "fail") {
-                log.info("Failed to verify the transaction - $ledgerTransaction")
+                log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
                 throw IllegalStateException("Failed verification")
             }
-            log.info("Verified the transaction- $ledgerTransaction")
+            log.info("Verified the transaction - ${ledgerTransaction.id}")
         }
 
         log.info("Finished responder flow - $finalizedSignedTransaction")
