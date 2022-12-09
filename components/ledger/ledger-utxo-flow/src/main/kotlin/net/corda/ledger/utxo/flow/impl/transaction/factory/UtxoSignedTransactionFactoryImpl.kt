@@ -125,39 +125,30 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoComponentGroup.values().sorted().map { componentGroupIndex ->
             when (componentGroupIndex) {
                 UtxoComponentGroup.METADATA -> listOf(metadataBytes)
-
                 UtxoComponentGroup.NOTARY -> notaryGroup.map {
                     serializationService.serialize(it!!).bytes
                 }
-
                 UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.COMMANDS_INFO -> commandsInfo.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.DATA_ATTACHMENTS -> utxoTransactionBuilder.attachments.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateRefs.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.OUTPUTS -> outputTransactionStates.map {
                     serializationService.serialize(it.contractState).bytes
                 }
-
                 UtxoComponentGroup.COMMANDS -> utxoTransactionBuilder.commands.map {
                     serializationService.serialize(it).bytes
                 }
-
                 UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceInputStateRefs.map {
                     serializationService.serialize(it).bytes
                 }
