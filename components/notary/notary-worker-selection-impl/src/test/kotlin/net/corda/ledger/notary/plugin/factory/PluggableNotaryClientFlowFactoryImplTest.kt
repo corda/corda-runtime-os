@@ -30,11 +30,11 @@ class PluggableNotaryClientFlowFactoryImplTest {
         )
     }
 
-    private lateinit var clientFactory: PluggableNotaryClientFlowFactoryImpl
+    private lateinit var clientFactory: PluggableNotaryClientFlowFactory
 
     @BeforeEach
     fun setup() {
-        clientFactory = PluggableNotaryClientFlowFactoryImpl()
+        clientFactory = PluggableNotaryClientFlowFactory()
     }
 
     @Test
@@ -42,7 +42,6 @@ class PluggableNotaryClientFlowFactoryImplTest {
         val exception = assertThrows<IllegalStateException> {
             clientFactory.create(
                 DUMMY_NOTARY_PARTY,
-                DUMMY_TYPE,
                 mock()
             )
         }
@@ -63,7 +62,6 @@ class PluggableNotaryClientFlowFactoryImplTest {
         val exception = assertThrows<CordaRuntimeException> {
             clientFactory.create(
                 DUMMY_NOTARY_PARTY,
-                DUMMY_TYPE,
                 mock()
             )
         }
@@ -82,7 +80,6 @@ class PluggableNotaryClientFlowFactoryImplTest {
         )
         clientFactory.create(
             DUMMY_NOTARY_PARTY,
-            DUMMY_TYPE,
             mock()
         )
     }
@@ -93,7 +90,6 @@ class PluggableNotaryClientFlowFactoryImplTest {
         val exception = assertThrows<IllegalStateException> {
             clientFactory.create(
                 DUMMY_NOTARY_PARTY,
-                DUMMY_TYPE,
                 mock()
             )
         }
@@ -120,7 +116,6 @@ class PluggableNotaryClientFlowFactoryImplTest {
 
         val createdClient = clientFactory.create(
             DUMMY_NOTARY_PARTY,
-            DUMMY_TYPE,
             mock()
         )
 

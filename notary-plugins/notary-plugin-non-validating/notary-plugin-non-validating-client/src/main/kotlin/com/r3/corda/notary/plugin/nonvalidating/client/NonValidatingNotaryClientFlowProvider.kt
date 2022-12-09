@@ -10,7 +10,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * A provider class that will instantiate a [NonValidatingNotaryClientFlowImpl].
  * This class is used when installing the notary plugins on startup.
  */
-@PluggableNotaryType("corda.notary.type.non-validating")
+@PluggableNotaryType("net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryClientFlowProvider : PluggableNotaryClientFlowProvider {
     override fun create(notary: Party, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
         return NonValidatingNotaryClientFlowImpl(stx, notary)

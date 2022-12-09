@@ -1,5 +1,6 @@
 package net.cordapp.testing.testflows
 
+import com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
@@ -13,7 +14,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.plugin.core.PluggableNotaryClientFlowFactory
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -57,14 +57,8 @@ class NotarisationTestFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    @CordaInject
-    lateinit var notaryPluginFactory: PluggableNotaryClientFlowFactory
-
     private companion object {
         val log = loggerFor<NotarisationTestFlow>()
-
-        // This is the type of the basic non-validating notary plugin defined in `NonValidatingNotaryClientFlowProvider`
-        const val NON_VALIDATING_NOTARY_PLUGIN_TYPE = "corda.notary.type.non-validating"
     }
 
     @Suspendable
@@ -75,20 +69,19 @@ class NotarisationTestFlow : RPCStartableFlow {
             "The transaction must have at least one input OR output state"
         }
 
-        val notaryParty = findNotaryParty()
+        val notaryWorker = findNotaryParty()
 
         val stx = buildSignedTransaction(
-            notaryParty,
+            notaryWorker,
             params.outputStateCount,
             params.inputStateRefs,
             params.referenceStateRefs,
             Pair(params.timeWindowLowerBoundOffsetMs, params.timeWindowUpperBoundOffsetMs)
         )
 
-        val pluginClient = notaryPluginFactory.create(
-            notaryParty,
-            params.pluginType,
-            stx
+        val pluginClient = NonValidatingNotaryClientFlowImpl(
+            stx,
+            notaryWorker
         )
 
         flowEngine.subFlow(pluginClient)
@@ -128,18 +121,12 @@ class NotarisationTestFlow : RPCStartableFlow {
                 1.hours.toMillis()
             }
 
-        val pluginType = requestMessage["pluginType"] ?: run {
-            log.info("No plugin type was provided, defaulting to the non-validating notary plugin")
-            NON_VALIDATING_NOTARY_PLUGIN_TYPE
-        }
-
         return NotarisationTestFlowParameters(
             outputStateCount,
             inputStateRefs,
             referenceStateRefs,
             timeWindowLowerBoundOffsetMs,
-            timeWindowUpperBoundOffsetMs,
-            pluginType
+            timeWindowUpperBoundOffsetMs
         )
     }
 
@@ -148,8 +135,7 @@ class NotarisationTestFlow : RPCStartableFlow {
      */
     @Suspendable
     private fun findNotaryParty(): Party {
-        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
-        //  need to find the notary instead of the first whose common name contains "Notary".
+        // We cannot use the notary virtual node lookup service in this flow so we need to do this hack
         val notary = memberLookup.lookup().first {
             it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
@@ -236,7 +222,6 @@ class NotarisationTestFlow : RPCStartableFlow {
         val inputStateRefs: List<String>,
         val referenceStateRefs: List<String>,
         val timeWindowLowerBoundOffsetMs: Long?,
-        val timeWindowUpperBoundOffsetMs: Long,
-        val pluginType: String
+        val timeWindowUpperBoundOffsetMs: Long
     )
 }

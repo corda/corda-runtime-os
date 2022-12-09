@@ -1,5 +1,7 @@
 package net.corda.ledger.notary.plugin.factory
 
+import net.corda.ledger.notary.worker.selection.NotaryWorkerSelectorService
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -12,7 +14,6 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlowProvider
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryType
-import net.corda.v5.ledger.notary.plugin.core.PluggableNotaryClientFlowFactory
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -21,36 +22,53 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class ],
+    service = [ UsedByFlow::class ],
+    property = [ "corda.marker.only:Boolean=true" ],
     scope = ServiceScope.PROTOTYPE
 )
-class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
+class PluggableNotaryClientFlowFactory @Activate constructor(
     @Reference(service = NotaryLookup::class)
-    private val notaryLookup: NotaryLookup
-) : SingletonSerializeAsToken, PluggableNotaryClientFlowFactory, UsedByFlow, CustomMetadataConsumer {
+    private val notaryLookup: NotaryLookup,
+    @Reference(service = NotaryWorkerSelectorService::class)
+    private val workerSelectorService: NotaryWorkerSelectorService,
+    @Reference(service = NotaryVirtualNodeLookup::class)
+    private val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+) : SingletonSerializeAsToken, UsedByFlow, CustomMetadataConsumer {
 
     private companion object {
-        val logger = loggerFor<PluggableNotaryClientFlowFactoryImpl>()
+        val logger = loggerFor<PluggableNotaryClientFlowFactory>()
     }
 
     private val pluggableNotaryClientFlowProviders = mutableMapOf<String, PluggableNotaryClientFlowProvider>()
 
     @Suspendable
-    override fun create(notary: Party, type: String, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
-        val pluginClass = notaryLookup.notaryServices.first {
-            it.name == notary.name
+    fun create(notaryService: Party, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
+        // TODO CORE-8856 If we use a lambda here it will throw an exception for some reason.
+        //  For now we use an old fashioned for loop but will need further investigation.
+        var pluginClass: String? = null
+        for (notaryInfo in notaryLookup.notaryServices) {
+            if (notaryInfo.name == notaryService.name && notaryInfo.publicKey == notaryService.owningKey) {
+                pluginClass = notaryInfo.pluginClass
+            }
         }
 
-        logger.error("Plugin class eeeEeeeeeee: $pluginClass")
-
-        val provider = pluggableNotaryClientFlowProviders[type]
-            ?: throw IllegalStateException("Notary flow provider not found for type: $type")
+        val nextWorker = selectWorker(notaryService)
+        val provider = pluggableNotaryClientFlowProviders[pluginClass]
+            ?: throw IllegalStateException("Notary flow provider not found for type: $pluginClass")
 
         return try {
-            provider.create(notary, stx)
+            provider.create(nextWorker, stx)
         } catch (e: Exception) {
-            throw CordaRuntimeException("Exception while trying to create notary client with name: $type", e)
+            throw CordaRuntimeException("Exception while trying to create notary client with name: $pluginClass", e)
         }
+    }
+
+    @Suspendable
+    private fun selectWorker(notaryService: Party): Party {
+        val workers = notaryVirtualNodeLookup.getNotaryVirtualNodes(notaryService.name)
+        return workerSelectorService.next(
+            workers.map { Party(it.name, it.sessionInitiationKey) }
+        )
     }
 
     @Suspendable
