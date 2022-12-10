@@ -12,7 +12,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
@@ -20,7 +19,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,7 +41,6 @@ class UtxoReceiveFinalityFlowTest {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val serializationService = mock<SerializationService>()
 
     private val session = mock<FlowSession>()
 
@@ -77,8 +74,6 @@ class UtxoReceiveFinalityFlowTest {
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
-
-        whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
 
     @Test
@@ -203,7 +198,6 @@ class UtxoReceiveFinalityFlowTest {
         val flow = UtxoReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
-        flow.serializationService = serializationService
         flow.call()
     }
 

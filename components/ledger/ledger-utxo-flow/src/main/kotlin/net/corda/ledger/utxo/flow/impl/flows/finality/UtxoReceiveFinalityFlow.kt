@@ -13,7 +13,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -36,9 +35,6 @@ class UtxoReceiveFinalityFlow(
 
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
-
-    @CordaInject
-    lateinit var serializationService: SerializationService
 
     @CordaInject
     lateinit var transactionSignatureService: TransactionSignatureService
