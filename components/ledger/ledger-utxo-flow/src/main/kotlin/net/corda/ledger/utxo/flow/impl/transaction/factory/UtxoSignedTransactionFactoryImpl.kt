@@ -158,10 +158,12 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                     serializationService.serialize(it).bytes
                 }
             }
+        }
     }
 
     private fun verifyTransaction(wireTransaction: WireTransaction){
         val ledgerTransactionToCheck = UtxoLedgerTransactionImpl(wireTransaction, serializationService)
-        UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        println(ledgerTransactionToCheck.id)
+        //UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
 }
