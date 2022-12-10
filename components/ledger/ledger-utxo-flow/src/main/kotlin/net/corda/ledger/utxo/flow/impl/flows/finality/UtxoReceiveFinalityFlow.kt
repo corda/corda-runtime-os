@@ -16,7 +16,7 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 
@@ -52,18 +52,10 @@ class UtxoReceiveFinalityFlow(
 
         log.debug("Verifying signatures of transaction: $transactionId")
         initialTransaction.signatures.forEach {
-            try {
-                log.debug("Verifying signature($it) of transaction: $transactionId")
-                transactionSignatureService.verifySignature(transactionId, it)
-            } catch (e: Exception) {
-                val payload: Payload.Failure<List<DigitalSignatureAndMetadata>> =
-                    Payload.Failure(
-                        "Failed to verify transaction's signature($it) from ${session.counterparty} for signed transaction " +
-                                "${transactionId}. Message: ${e.message}"
-                    )
-                log.warn(payload.message)
-                session.send(payload)
-                throw CordaRuntimeException(payload.message)
+            verifySignature(transactionId, it) { message ->
+                session.send(
+                    Payload.Failure<List<DigitalSignatureAndMetadata>>(message)
+                )
             }
         }
 
@@ -118,25 +110,19 @@ class UtxoReceiveFinalityFlow(
         log.debug("Waiting for other parties' signatures for transaction: $transactionId")
         val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
 
-        if (otherPartiesSignatures.isEmpty()) {
-            log.debug("Verifying signatures of transaction: $transactionId")
-            transaction.verifySignatures()
-        } else {
-            // Q: We could verify the signatures one by one before adding to the tx, but verifySignatures() will check them anyway.
-            // (Main finality flow does that.)
-            otherPartiesSignatures
-                .filter{ it !in transaction.signatures}
-                .forEach {
-                    transaction = transaction.addSignature(it)
-                }
+        // Q: Do we need to verify all signatures before adding them? verifySignatures() will check them again.
+        otherPartiesSignatures
+            .filter{ it !in transaction.signatures}
+            .forEach {
+                transaction = verifyAndAddSignature(transaction, it)
+            }
 
-            log.debug("Verifying signatures of transaction: $transactionId")
-            transaction.verifySignatures()
+        log.debug("Verifying signatures of transaction: $transactionId")
+        transaction.verifySignatures()
 
-            log.info("Recording transaction with all parties' signatures $transactionId")
-            persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.info("Recorded transaction with all parties' signatures $transactionId")
-        }
+        log.info("Recording transaction with all parties' signatures $transactionId")
+        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+        log.info("Recorded transaction with all parties' signatures $transactionId")
 
         log.debug("Waiting for Notary's signature for transaction: $transactionId")
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
@@ -145,23 +131,9 @@ class UtxoReceiveFinalityFlow(
             // TODO error handling
         }
         if (notarySignatures.isNotEmpty()) {    // TODO remove this if when notarization is integrated
-            log.debug("Verifying notary signatures for transaction: $transactionId")
+            log.debug("Verifying and adding notary signatures for transaction: $transactionId")
             notarySignatures.forEach {
-                try {
-                    log.debug("Verifying notary signature($it) for transaction: $transactionId")
-                    transactionSignatureService.verifySignature(transactionId, it)
-                } catch (e: Exception) {
-                    log.warn(
-                        "Failed to verify notary signature($it) from ${session.counterparty} for transaction " +
-                                "${transactionId}. Message: ${e.message}"
-                    )
-
-                    throw e
-                }
-            }
-
-            notarySignatures.forEach {
-                transaction = transaction.addSignature(it)
+                transaction = verifyAndAddSignature(transaction, it)
             }
 
             log.debug("Recording transaction with all parties' and the notary's signature $transactionId")
@@ -190,6 +162,36 @@ class UtxoReceiveFinalityFlow(
                 throw e
             }
         }
+    }
+
+    @Suspendable
+    private fun verifySignature(
+        transactionId: SecureHash,
+        signature: DigitalSignatureAndMetadata,
+        onFailure: ((message: String) -> Unit)?
+    ){
+        try {
+            log.debug("Verifying signature($signature) of transaction: $transactionId")
+            transactionSignatureService.verifySignature(transactionId, signature)
+        } catch (e: Exception) {
+            val message =
+                "Failed to verify transaction's signature($signature) from session: ${session.counterparty} for transaction " +
+                        "${transactionId}. Message: ${e.message}"
+            log.warn(message)
+            if (onFailure != null)
+                onFailure(message)
+            throw e
+        }
+    }
+
+    @Suspendable
+    private fun verifyAndAddSignature(
+        transaction: UtxoSignedTransactionInternal,
+        signature: DigitalSignatureAndMetadata,
+        onFailure: ((message: String) -> Unit)? = null
+    ):UtxoSignedTransactionInternal {
+        verifySignature(transaction.id, signature, onFailure)
+        return transaction.addSignature(signature)
     }
 
     private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {

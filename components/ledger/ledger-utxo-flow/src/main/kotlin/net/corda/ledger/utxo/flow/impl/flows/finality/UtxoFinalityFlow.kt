@@ -24,6 +24,8 @@ class UtxoFinalityFlow(
     private val sessions: List<FlowSession>
 ) : SubFlow<UtxoSignedTransaction> {
 
+    private val transactionId = initialTransaction.id
+
     private companion object {
         val log = contextLogger()
     }
@@ -42,7 +44,6 @@ class UtxoFinalityFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val transactionId = initialTransaction.id
 
         log.trace("Starting finality flow for transaction: $transactionId")
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
@@ -69,7 +70,7 @@ class UtxoFinalityFlow(
         var transaction = initialTransaction
         signaturesPayloads.forEach { (session, signaturesPayload) ->
             signaturesReceivedFromSessions[session] = signaturesPayload.getOrThrow { failure ->
-                val message = "Failed to receive signature from ${session.counterparty} for transaction " +
+                val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
                 log.debug("Processed ${session.counterparty}'s reply for transaction $transactionId: $message")
                 CordaRuntimeException(message)
@@ -78,24 +79,14 @@ class UtxoFinalityFlow(
             log.debug(
                 "Received ${signaturesReceivedFromSessions[session]!!.size} signatures from ${session.counterparty} for transaction $transactionId"
             )
+            if (signaturesReceivedFromSessions[session]!!.isEmpty()){   // Q: do we need this check?
+                val message = "Received 0 signatures from ${session.counterparty} for transaction $transactionId."
+                log.warn(message)
+                throw CordaRuntimeException(message)
+            }
 
             signaturesReceivedFromSessions[session]!!.forEach { signature ->
-                try {
-                    transactionSignatureService.verifySignature(transactionId, signature)
-                    log.debug(
-                        "Successfully verified signature ($signature) from ${session.counterparty} for transaction " +
-                                "$transactionId"
-                    )
-                } catch (e: Exception) {
-                    log.warn(
-                        "Failed to verify signature ($signature) from ${session.counterparty} for transaction " +
-                                "$transactionId. Message: ${e.message}"
-                    )
-
-                    throw e
-                }
-                transaction = transaction.addSignature(signature)
-                log.debug("Added signature($signature) from ${session.counterparty} for transaction $transactionId")
+                transaction = verifyAndAddSignature(transaction, signature)
             }
         }
 
@@ -124,5 +115,24 @@ class UtxoFinalityFlow(
 
         return transaction
     }
-}
 
+    @Suspendable
+    private fun verifyAndAddSignature(
+        transaction: UtxoSignedTransactionInternal,
+        signature: DigitalSignatureAndMetadata
+    ):UtxoSignedTransactionInternal {
+        try {
+            log.debug("Verifying signature($signature) of transaction: $transactionId")
+            transactionSignatureService.verifySignature(transactionId, signature)
+        } catch (e: Exception) {
+            log.warn(
+                "Failed to verify transaction's signature($signature) from party: ${signature.by} for transaction " +
+                        "$transactionId. Message: ${e.message}"
+            )
+            throw e
+        }
+        return transaction.addSignature(signature).also {
+            log.debug("Added signature($signature) from ${signature.by} for transaction $transactionId")
+        }
+    }
+}

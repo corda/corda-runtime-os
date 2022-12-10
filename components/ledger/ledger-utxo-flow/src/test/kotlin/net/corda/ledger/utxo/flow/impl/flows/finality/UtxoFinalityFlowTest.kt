@@ -247,6 +247,7 @@ class UtxoFinalityFlowTest {
         verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
 
+    /* Q: Can it be OK to return no signatures? */
     @Test
     fun `receiving no signatures from a session throws an exception`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
