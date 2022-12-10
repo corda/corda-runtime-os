@@ -97,7 +97,7 @@ class UtxoReceiveFinalityFlow(
             log.debug("Recording transaction as invalid: $transactionId")
             persistenceService.persist(transaction, TransactionStatus.INVALID)
             log.debug("Recorded transaction as invalid: $transactionId")
-            Payload.Failure("Transaction verification failed for transaction $transactionId when signature was requested")
+            Payload.Failure("Transaction validation failed for transaction $transactionId when signature was requested")
         }
 
         log.debug("Sending back our reply for transaction: $transactionId")
@@ -130,7 +130,7 @@ class UtxoReceiveFinalityFlow(
             log.warn("No notary signature received for transaction: $transactionId")
             // TODO error handling
         }
-        if (notarySignatures.isNotEmpty()) {    // TODO remove this if when notarization is integrated
+        if (notarySignatures.isNotEmpty()) {    // TODO remove this if/when notarization is integrated
             log.debug("Verifying and adding notary signatures for transaction: $transactionId")
             notarySignatures.forEach {
                 transaction = verifyAndAddSignature(transaction, it)
