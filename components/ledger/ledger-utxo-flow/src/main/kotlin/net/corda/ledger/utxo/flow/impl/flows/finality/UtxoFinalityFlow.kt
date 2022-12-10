@@ -16,7 +16,6 @@ import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
@@ -49,22 +48,7 @@ class UtxoFinalityFlow(
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
         log.debug("Recorded transaction with initial signatures $transactionId")
 
-        /* TODO CORE-7032
-        * When using sendAll, and parties return errors/throw on their side, the flow terminates after the first error
-        * The second receive does not get processed.
-        * For now, I left there the batch processing's bits. If we decided to stay sequential than the payload processing's
-        * try/catch could be moved inside the sessions loop.
-        log.debug(
-            "Requesting signatures from ${
-                sessions.map { it.counterparty }.joinToString("|")
-            } for transaction $transactionId"
-        )
-        flowMessaging.sendAll(signedTransaction, sessions.toSet())
-        log.debug("Waiting for other parties' signature payloads")
-        */
-
         val signaturesPayloads = try {
-            // TODO CORE-7032 flowMessaging.receiveAllMap<Payload<List<DigitalSignatureAndMetadata>>>(sessions.toSet())
             sessions.associateWith {
                 log.debug(
                     "Requesting signatures from ${it.counterparty} for transaction $transactionId"
@@ -142,10 +126,3 @@ class UtxoFinalityFlow(
     }
 }
 
-// todo: move this (CORE-7032)
-// receiveAll does not return the sessions, so we cannot use session.counterparty
-// receiveAllMap needs the casts.
-@Suspendable
-inline fun <reified R : Any> FlowMessaging.receiveAllMap(sessions: Set<FlowSession>): Map<FlowSession, R> {
-    return uncheckedCast(receiveAllMap(sessions.associateWith { R::class.java }))
-}
