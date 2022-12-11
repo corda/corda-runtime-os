@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -16,7 +17,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [TransactionBackchainVerifier::class, UsedByFlow::class], scope = PROTOTYPE, property = ["corda.system=true"])
+@Component(
+    service = [ TransactionBackchainVerifier::class, UsedByFlow::class ],
+    property = [ CORDA_SYSTEM_SERVICE ],
+    scope = PROTOTYPE
+)
 class TransactionBackchainVerifierImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class)
     private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService

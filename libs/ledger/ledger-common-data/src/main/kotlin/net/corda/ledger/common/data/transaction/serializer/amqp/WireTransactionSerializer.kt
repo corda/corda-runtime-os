@@ -2,6 +2,7 @@ package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -17,6 +18,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
     service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
 class WireTransactionSerializer @Activate constructor(
