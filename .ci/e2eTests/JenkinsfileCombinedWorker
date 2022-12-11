@@ -135,21 +135,23 @@ pipeline {
         }
         stage('smoketests') {
                 options {
-                    timeout(time: 20, unit: 'MINUTES')
+                    timeout(time: 7, unit: 'MINUTES')
                 }
                 steps {
                    gradlew('smoketest -PisCombinedWorker=true')
                 }
                 post {
                     always {
-                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                       captureJunitResults()
                     }
+                    aborted {
+                        captureJunitResults()
+                    }                    
                 }
-        } 	        
+        }       
     }
     post {
-        always {
-            
+        always {          
             script {      
                     findBuildScans()
                     splunkLogGenerator()
@@ -182,4 +184,9 @@ def gradleCmd() {
 def gradlew(String... args) {
     def allArgs = args.join(' ')
     sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
+}
+
+
+def captureJunitResults(){
+    junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
 }
