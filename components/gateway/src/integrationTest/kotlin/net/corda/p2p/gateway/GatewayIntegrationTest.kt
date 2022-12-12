@@ -41,7 +41,6 @@ import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -209,7 +208,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
@@ -253,7 +251,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
@@ -312,7 +309,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
@@ -399,7 +395,6 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
                 ).usingLifecycle { gateway ->
@@ -480,7 +475,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
@@ -582,7 +576,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
@@ -697,7 +690,6 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClientAlice,
                 avroSchemaRegistry
                 ),
@@ -716,7 +708,6 @@ class GatewayIntegrationTest : TestBase() {
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                     testCryptoOpsClientBob,
                 avroSchemaRegistry
                 )
@@ -791,7 +782,6 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle { gateway ->
@@ -931,7 +921,6 @@ class GatewayIntegrationTest : TestBase() {
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.REAL,
                 testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle { gateway ->
