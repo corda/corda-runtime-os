@@ -62,7 +62,7 @@ class CreateScriptTest {
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation write --topic topic &",
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation write --topic topic &"
         )
-        val create4 = command.createACLs("topic", listOf("db", "flow"), listOf("crypto", "member"))
+        val create4 = command.createACLs("topic", listOf("db", "flow"), listOf("crypto", "membership"))
         assertThat(create4).containsExactly(
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation read --topic topic &",
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &",
@@ -101,7 +101,7 @@ class CreateScriptTest {
         val createScript = CreateScript()
         createScript.create = Create()
         createScript.create!!.topic = TopicPlugin.Topic()
-        createScript.create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "member" to "Mo")
+        createScript.create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
         return createScript
     }
 }
