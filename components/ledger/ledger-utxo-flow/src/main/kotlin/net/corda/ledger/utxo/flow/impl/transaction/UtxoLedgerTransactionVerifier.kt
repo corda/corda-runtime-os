@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import kotlin.reflect.full.createInstance
 
 /**
  * Represents a UTXO ledger transaction verifier.
