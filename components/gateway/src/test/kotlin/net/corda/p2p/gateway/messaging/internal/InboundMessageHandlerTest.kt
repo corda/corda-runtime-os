@@ -105,7 +105,7 @@ class InboundMessageHandlerTest {
         publisherFactory,
         subscriptionFactory,
         SmartConfigImpl.empty(),
-        SigningMode.STUB,
+        SigningMode.REAL,
         mock(),
         avroSchemaRegistry
     )

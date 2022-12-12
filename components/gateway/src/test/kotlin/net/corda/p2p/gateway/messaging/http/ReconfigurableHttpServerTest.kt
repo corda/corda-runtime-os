@@ -74,7 +74,7 @@ class ReconfigurableHttpServerTest {
         listener,
         mock(),
         mock(),
-        SigningMode.STUB,
+        SigningMode.REAL,
         mock()
     )
 
