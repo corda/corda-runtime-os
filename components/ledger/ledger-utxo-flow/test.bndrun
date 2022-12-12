@@ -4,6 +4,9 @@
 -runee: JavaSE-11
 -runtrace: true
 
+# Enable debugging.
+# -runjdb: 1044
+
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.ledger-common-flow',\

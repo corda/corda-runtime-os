@@ -116,21 +116,21 @@ open class UtxoFilteredTransactionTestBase {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java),
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
-        ) { true }
+        )
 
     }
 
