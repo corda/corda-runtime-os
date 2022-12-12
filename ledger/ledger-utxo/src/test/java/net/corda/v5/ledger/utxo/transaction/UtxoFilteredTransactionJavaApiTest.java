@@ -5,6 +5,8 @@ import net.corda.v5.ledger.utxo.Command;
 import net.corda.v5.ledger.utxo.StateAndRef;
 import net.corda.v5.ledger.utxo.StateRef;
 import net.corda.v5.ledger.utxo.TimeWindow;
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData;
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

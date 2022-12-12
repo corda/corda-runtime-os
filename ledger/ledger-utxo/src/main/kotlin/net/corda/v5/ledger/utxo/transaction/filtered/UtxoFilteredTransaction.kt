@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.utxo.transaction
+package net.corda.v5.ledger.utxo.transaction.filtered
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash

@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.utxo.transaction
+package net.corda.v5.ledger.utxo.transaction.filtered
 
 import net.corda.v5.base.annotations.DoNotImplement
 
@@ -28,7 +28,7 @@ interface UtxoFilteredData<T> {
     @DoNotImplement
     interface SizeOnly<T> : UtxoFilteredData<T> {
         /**
-         * @param size The size of the component group in the original transaction
+         * @property size The size of the component group in the original transaction
          */
         val size: Int
     }
@@ -45,12 +45,12 @@ interface UtxoFilteredData<T> {
     interface Audit<T> : UtxoFilteredData<T> {
 
         /**
-         * @param size The size of the component group in the original transaction
+         * @property size The size of the component group in the original transaction
          */
         val size: Int
 
         /**
-         * @param values: A map of revealed entries with mapped by their index in the unfiltered transaction
+         * @property values A map of revealed entries with mapped by their index in the unfiltered transaction
          */
         val values: Map<Int, T>
     }
