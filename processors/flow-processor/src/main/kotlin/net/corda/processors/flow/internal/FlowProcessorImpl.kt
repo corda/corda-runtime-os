@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
+import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
+import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -47,6 +49,8 @@ class FlowProcessorImpl @Activate constructor(
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = TokenCacheComponentFactory::class)
+    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
 ) : FlowProcessor {
@@ -64,9 +68,11 @@ class FlowProcessorImpl @Activate constructor(
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
         ::membershipGroupReaderProvider,
-        ::groupParametersReaderService,
-    )
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
+        ::groupParametersReaderService
+    ).with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
+
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
