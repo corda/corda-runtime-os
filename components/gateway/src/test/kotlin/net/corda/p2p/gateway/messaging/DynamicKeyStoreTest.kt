@@ -6,14 +6,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -63,12 +61,12 @@ class DynamicKeyStoreTest {
         @Suppress("UNCHECKED_CAST")
         (context.arguments()[1] as (() -> CompactedSubscription<String, GatewayTlsCertificates>)).invoke()
     }
-    private val signer = mockConstruction(StubCryptoProcessor::class.java) { mock, _ ->
+/*    private val signer = mockConstruction(StubCryptoProcessor::class.java) { mock, _ ->
         val mockNamedLifecycle = mock<NamedLifecycle> {
             whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
         }
         whenever(mock.namedLifecycle).doReturn(mockNamedLifecycle)
-    }
+    }*/
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private var futures: MutableList<CompletableFuture<Unit>> = mutableListOf()
     private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
@@ -81,7 +79,6 @@ class DynamicKeyStoreTest {
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithStubs,
         nodeConfiguration,
-        SigningMode.REAL,
         cryptoOpsClient,
         certificateFactory,
     )
@@ -90,7 +87,6 @@ class DynamicKeyStoreTest {
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithoutStubs,
         nodeConfiguration,
-        SigningMode.REAL,
         cryptoOpsClient,
         certificateFactory
     )
@@ -99,7 +95,7 @@ class DynamicKeyStoreTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
-        signer.close()
+        //signer.close()
         blockingDominoTile.close()
     }
 
