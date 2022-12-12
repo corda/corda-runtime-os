@@ -17,7 +17,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 
@@ -51,10 +50,7 @@ class UtxoReceiveFinalityFlow(
         verifyTransaction(signedTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
-        val myKeys = memberLookup
-            .myInfo()
-            .ledgerKeys
-            .toSet()
+        val myKeys = memberLookup.getMyLedgerKeys()
         val signaturesPayload = if (verify(signedTransaction)) {
             persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
@@ -93,9 +89,7 @@ class UtxoReceiveFinalityFlow(
 
         signedTransactionToFinalize.verifySignatures()
 
-        val relevantStatesIndexes = signedTransactionToFinalize.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
-            Contract.isRelevant(stateAndRef.state.contractState, myKeys)
-        }.map { it.index }
+        val relevantStatesIndexes = signedTransactionToFinalize.getRelevantStatesIndexes(myKeys)
 
         persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded signed transaction $transactionId" }
