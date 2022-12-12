@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -38,7 +37,6 @@ class UtxoFinalityFlowTest {
     }
 
     private val transactionSignatureService = mock<TransactionSignatureService>()
-    private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val flowMessaging = mock<FlowMessaging>()
 
@@ -65,9 +63,6 @@ class UtxoFinalityFlowTest {
         whenever(sessionAlice.receive(Unit::class.java)).thenReturn(Unit)
         whenever(sessionBob.counterparty).thenReturn(BOB)
         whenever(sessionBob.receive(Unit::class.java)).thenReturn(Unit)
-
-        whenever(memberLookup.lookup(ALICE)).thenReturn(memberInfoAlice)
-        whenever(memberLookup.lookup(BOB)).thenReturn(memberInfoBob)
 
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
@@ -222,7 +217,6 @@ class UtxoFinalityFlowTest {
         val flow = UtxoFinalityFlow(signedTransaction, sessions)
         flow.transactionSignatureService = transactionSignatureService
         flow.flowMessaging = flowMessaging
-        flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.call()
     }
