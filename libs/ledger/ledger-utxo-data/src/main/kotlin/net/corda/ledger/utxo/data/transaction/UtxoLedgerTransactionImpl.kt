@@ -88,8 +88,4 @@ class UtxoLedgerTransactionImpl(
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
     }
-
-    override fun verify() {
-        UtxoLedgerTransactionVerifier(this).verify()
-    }
 }
