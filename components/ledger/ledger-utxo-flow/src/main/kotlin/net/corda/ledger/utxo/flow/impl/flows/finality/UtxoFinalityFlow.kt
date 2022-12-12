@@ -2,8 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -21,19 +19,13 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 class UtxoFinalityFlow(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>
-) : SubFlow<UtxoSignedTransaction> {
+) : SubFlow<UtxoSignedTransaction>, UtxoFinalityBase() {
 
     private val transactionId = initialTransaction.id
 
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
-
-    @CordaInject
-    lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -110,25 +102,5 @@ class UtxoFinalityFlow(
         log.trace("Finalisation of transaction $transactionId has been finished.")
 
         return transaction
-    }
-
-    @Suspendable
-    private fun verifyAndAddSignature(
-        transaction: UtxoSignedTransactionInternal,
-        signature: DigitalSignatureAndMetadata
-    ):UtxoSignedTransactionInternal {
-        try {
-            log.debug("Verifying signature($signature) of transaction: $transactionId")
-            transactionSignatureService.verifySignature(transactionId, signature)
-        } catch (e: Exception) {
-            log.warn(
-                "Failed to verify transaction's signature($signature) from party: ${signature.by} for transaction " +
-                        "$transactionId. Message: ${e.message}"
-            )
-            throw e
-        }
-        return transaction.addSignature(signature).also {
-            log.debug("Added signature($signature) from ${signature.by} for transaction $transactionId")
-        }
     }
 }

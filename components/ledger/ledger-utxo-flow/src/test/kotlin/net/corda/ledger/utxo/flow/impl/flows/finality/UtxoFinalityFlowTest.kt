@@ -71,6 +71,7 @@ class UtxoFinalityFlowTest {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
         whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
         whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
+        whenever(updatedSignedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
     }
 
     @Test
