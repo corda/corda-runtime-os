@@ -640,8 +640,8 @@ Kafka SASL init container
             {{- else }}
             org.apache.kafka.common.security.scram.ScramLoginModule required
             {{- end }}
-            username=$SASL_USERNAME
-            password=$SASL_PASSWORD;
+            username="$SASL_USERNAME"
+            password="$SASL_PASSWORD";
         };    
         EOF
   volumeMounts:

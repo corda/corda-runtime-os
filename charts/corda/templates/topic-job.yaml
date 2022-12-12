@@ -114,7 +114,7 @@ spec:
                 echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
 
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
-                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=$SASL_USERNAME password=$SASL_PASSWORD ;\n">> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"$SASL_USERNAME\" password=\"$SASL_PASSWORD\" ;\n">> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
           volumeMounts:
