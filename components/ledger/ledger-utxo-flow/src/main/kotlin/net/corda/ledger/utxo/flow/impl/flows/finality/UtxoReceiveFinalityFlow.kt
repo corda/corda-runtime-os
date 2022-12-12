@@ -86,7 +86,6 @@ class UtxoReceiveFinalityFlow(
                 transaction = transaction.sign(it).first
             }
 
-            log.debug("Recording transaction with the initial and our signatures: $transactionId")
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug("Recorded transaction with the initial and our signatures: $transactionId")
 
@@ -94,7 +93,6 @@ class UtxoReceiveFinalityFlow(
         } else {
             log.warn("Failed to validate transaction: $transactionId")
 
-            log.debug("Recording transaction as invalid: $transactionId")
             persistenceService.persist(transaction, TransactionStatus.INVALID)
             log.debug("Recorded transaction as invalid: $transactionId")
             Payload.Failure("Transaction validation failed for transaction $transactionId when signature was requested")
@@ -120,7 +118,6 @@ class UtxoReceiveFinalityFlow(
         log.debug("Verifying signatures of transaction: $transactionId")
         transaction.verifySignatures()
 
-        log.info("Recording transaction with all parties' signatures $transactionId")
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.info("Recorded transaction with all parties' signatures $transactionId")
 
@@ -136,7 +133,6 @@ class UtxoReceiveFinalityFlow(
                 transaction = verifyAndAddSignature(transaction, it)
             }
 
-            log.debug("Recording transaction with all parties' and the notary's signature $transactionId")
             persistenceService.persist(transaction, TransactionStatus.VERIFIED)
             log.debug("Recorded transaction with all parties' and the notary's signature $transactionId")
         }
@@ -168,7 +164,7 @@ class UtxoReceiveFinalityFlow(
     private fun verifySignature(
         transactionId: SecureHash,
         signature: DigitalSignatureAndMetadata,
-        onFailure: ((message: String) -> Unit)?
+        onFailure: ((message: String) -> Unit)? = null
     ){
         try {
             log.debug("Verifying signature($signature) of transaction: $transactionId")
@@ -187,10 +183,9 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     private fun verifyAndAddSignature(
         transaction: UtxoSignedTransactionInternal,
-        signature: DigitalSignatureAndMetadata,
-        onFailure: ((message: String) -> Unit)? = null
+        signature: DigitalSignatureAndMetadata
     ):UtxoSignedTransactionInternal {
-        verifySignature(transaction.id, signature, onFailure)
+        verifySignature(transaction.id, signature)
         return transaction.addSignature(signature)
     }
 
