@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -131,10 +132,12 @@ class PluggableNotaryClientFlowFactoryTest {
                 FirstNotaryServicePluginProvider { _, _ -> mock()}
             )
         )
-        clientFactory.create(
-            FIRST_NOTARY_SERVICE_PARTY,
-            mock()
-        )
+        assertDoesNotThrow {
+            clientFactory.create(
+                FIRST_NOTARY_SERVICE_PARTY,
+                mock()
+            )
+        }
     }
 
     @Test
@@ -151,15 +154,19 @@ class PluggableNotaryClientFlowFactoryTest {
             )
         )
 
-        val firstClient = clientFactory.create(
-            FIRST_NOTARY_SERVICE_PARTY,
-            mock()
-        )
+        val firstClient = assertDoesNotThrow {
+            clientFactory.create(
+                FIRST_NOTARY_SERVICE_PARTY,
+                mock()
+            )
+        }
 
-        val secondClient = clientFactory.create(
-            SECOND_NOTARY_SERVICE_PARTY,
-            mock()
-        )
+        val secondClient = assertDoesNotThrow {
+            clientFactory.create(
+                SECOND_NOTARY_SERVICE_PARTY,
+                mock()
+            )
+        }
 
         assertThat(firstClient).isNotEqualTo(secondClient)
     }
@@ -195,10 +202,12 @@ class PluggableNotaryClientFlowFactoryTest {
             )
         )
 
-        val createdClient = clientFactory.create(
-            FIRST_NOTARY_SERVICE_PARTY,
-            mock()
-        )
+        val createdClient = assertDoesNotThrow {
+            clientFactory.create(
+                FIRST_NOTARY_SERVICE_PARTY,
+                mock()
+            )
+        }
 
         assertThat(createdClient).isEqualTo(dummyClient)
     }
