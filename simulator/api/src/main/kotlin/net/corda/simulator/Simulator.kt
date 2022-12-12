@@ -40,6 +40,7 @@ class Simulator(
      * @param flowClasses A list of flow classes to be checked.
      * @return A simulated virtual node in which flows can be run.
      */
+    @SafeVarargs
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>

@@ -28,8 +28,11 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
 import java.time.Clock
 
 class DefaultServicesInjectorTest {
@@ -243,4 +246,40 @@ class DefaultServicesInjectorTest {
         }
     }
 
+    fun `should be able to inject flows into non-public fields`() {
+        // Given a flow
+        val flow = HelloFlow()
+        val fiber = SimFiberBase()
+
+        // When we inject the services
+        val injector: FlowServicesInjector = DefaultServicesInjector(
+            Mockito.mock(
+                SimulatorConfiguration::class.java
+            )
+        )
+
+        val services = listOf(JsonMarshallingService::class.java,
+            FlowEngine::class.java, FlowMessaging::class.java, SigningService::class.java,
+            DigitalSignatureVerificationService::class.java, PersistenceService::class.java,
+            MemberLookup::class.java
+        )
+
+        fiber.use {
+            injector.injectServices(
+                flow,
+                MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB"),
+                it
+            )
+
+            // Then sensible defaults should have been set
+            flow.javaClass.declaredFields.forEach {f ->
+                if(services.contains(f.type)){
+                    AccessController.doPrivileged(PrivilegedExceptionAction {
+                        f.isAccessible = true
+                    })
+                    assertNotNull(f.get(flow))
+                }
+            }
+        }
+    }
 }
