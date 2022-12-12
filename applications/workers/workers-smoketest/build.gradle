@@ -56,8 +56,10 @@ dependencies {
     smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
 
     // But building a cpb for use in a test is ok.
+    cpis project(path: ':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"

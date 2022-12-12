@@ -1,12 +1,12 @@
 package net.corda.membership.impl.synchronisation
 
-import java.util.Random
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -14,6 +14,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -27,6 +28,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
@@ -35,6 +38,7 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MemberSynchronisationService
@@ -54,9 +58,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -64,6 +66,9 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Random
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Component(service = [SynchronisationService::class])
 @Suppress("LongParameterList")
@@ -79,6 +84,9 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val p2pRecordsFactory: P2pRecordsFactory,
     private val merkleTreeGenerator: MerkleTreeGenerator,
     private val clock: Clock,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val groupParametersFactory: GroupParametersFactory,
+    private val groupParametersWriterService: GroupParametersWriterService,
 ) : MemberSynchronisationService {
     @Suppress("LongParameterList")
     @Activate
@@ -103,6 +111,12 @@ class MemberSynchronisationServiceImpl internal constructor(
         signatureVerificationService: SignatureVerificationService,
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService,
+        @Reference(service = MembershipPersistenceClient::class)
+        membershipPersistenceClient: MembershipPersistenceClient,
+        @Reference(service = GroupParametersFactory::class)
+        groupParametersFactory: GroupParametersFactory,
+        @Reference(service = GroupParametersWriterService::class)
+        groupParametersWriterService: GroupParametersWriterService,
     ) : this(
         publisherFactory,
         configurationReadService,
@@ -127,6 +141,9 @@ class MemberSynchronisationServiceImpl internal constructor(
             cordaAvroSerializationFactory,
         ),
         UTCClock(),
+        membershipPersistenceClient,
+        groupParametersFactory,
+        groupParametersWriterService,
     )
 
     /**
@@ -236,6 +253,21 @@ class MemberSynchronisationServiceImpl internal constructor(
                 (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
         }
 
+        private fun parseGroupParameters(
+            membershipPackage: MembershipPackage
+        ): GroupParameters {
+            return with(membershipPackage.groupParameters) {
+                val groupParametersBytes = groupParameters.array()
+                val parametersList = deserializer.deserialize(groupParametersBytes)
+                    ?: throw CordaRuntimeException("Failed to deserialize group parameters from received membership package.")
+                verifier.verify(
+                    mgmSignature,
+                    groupParametersBytes,
+                )
+                groupParametersFactory.create(parametersList)
+            }
+        }
+
         override fun cancelCurrentRequestAndScheduleNewOne(
             memberIdentity: HoldingIdentity,
             mgm: HoldingIdentity,
@@ -277,7 +309,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }.associateBy { it.id }
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
-                    // TODO - CORE-5811 - verify signatures in signed member infos.
                     val persistentMemberInfo = PersistentMemberInfo(
                         viewOwningMember.toAvro(),
                         memberInfo.memberProvidedContext.toWire(),
@@ -312,6 +343,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                         persistentMemberInfoRecords
                     }
                 }
+
+                val groupParameters = parseGroupParameters(updates.membershipPackage)
+                membershipPersistenceClient.persistGroupParameters(viewOwningMember, groupParameters)
+                groupParametersWriterService.put(viewOwningMember, groupParameters)
 
                 publisher.publish(allRecords).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

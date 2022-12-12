@@ -5,17 +5,21 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.GroupParameters
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -23,6 +27,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.toAvro
@@ -33,13 +38,18 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.MemberTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.MgmTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -51,6 +61,7 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.Verifier
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -63,6 +74,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
@@ -76,14 +88,12 @@ import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
-import net.corda.utilities.time.Clock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -147,6 +157,9 @@ class SynchronisationIntegrationTest {
         lateinit var membershipQueryClient: TestMembershipQueryClient
 
         @InjectService(timeout = 5000)
+        lateinit var membershipPersistenceClient: TestMembershipPersistenceClient
+
+        @InjectService(timeout = 5000)
         lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
         @InjectService(timeout = 5000)
@@ -154,6 +167,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var stableKeyPairDecryptor: StableKeyPairDecryptor
+
+        @InjectService(timeout = 5000)
+        lateinit var groupParametersWriterService: GroupParametersWriterService
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -219,6 +235,8 @@ class SynchronisationIntegrationTest {
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
         const val SCHEME = ECDSA_SECP256R1_CODE_NAME
+        const val EPOCH = "5"
+        const val PLATFORM_VERSION = "5000"
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
         val syncId = UUID.randomUUID().toString()
@@ -279,6 +297,8 @@ class SynchronisationIntegrationTest {
                                 LifecycleCoordinatorName.forComponent<MembershipP2PReadService>(),
                                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                                 LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                                LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                                LifecycleCoordinatorName.forComponent<GroupParametersWriterService>(),
                             )
                         )
                     } else if (e is RegistrationStatusChangeEvent) {
@@ -295,7 +315,9 @@ class SynchronisationIntegrationTest {
             membershipP2PReadService.start()
             cryptoOpsClient.start()
             membershipQueryClient.start()
+            membershipPersistenceClient.start()
             virtualNodeInfoReadService.start()
+            groupParametersWriterService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
             eventually {
@@ -353,7 +375,7 @@ class SynchronisationIntegrationTest {
                 String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
                 MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-                MemberInfoExtension.PLATFORM_VERSION to "5000",
+                MemberInfoExtension.PLATFORM_VERSION to PLATFORM_VERSION,
                 MemberInfoExtension.SERIAL to "1",
             ),
             sortedMapOf(
@@ -440,6 +462,7 @@ class SynchronisationIntegrationTest {
                     assertThat(member.groupId).isEqualTo(groupId)
                     assertThat(member.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 }
+            it.assertThat(membershipPackage.groupParameters).isNotNull
         }
     }
 
@@ -495,12 +518,37 @@ class SynchronisationIntegrationTest {
             .setHashCheck(hash.toAvro())
             .build()
 
+        val groupParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, EPOCH),
+                KeyValuePair(MPV_KEY, PLATFORM_VERSION),
+                KeyValuePair(MODIFIED_TIME_KEY, Instant.now().toString()),
+            ).sorted()
+        )
+        val serializedGroupParameters = keyValueSerializer.serialize(groupParameters)!!
+        val mgmSignatureGroupParameters = cryptoOpsClient.sign(
+            mgm.toCorda().shortHash.value,
+            mgmSessionKey,
+            SignatureSpec.ECDSA_SHA256,
+            serializedGroupParameters,
+            mapOf(
+                Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
+            )
+        ).let { withKey ->
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
+                ByteBuffer.wrap(withKey.bytes),
+                withKey.context.toWire()
+            )
+        }
+        val wireGroupParameters = WireGroupParameters(ByteBuffer.wrap(serializedGroupParameters), mgmSignatureGroupParameters)
+
         val membershipPackage = MembershipPackage.newBuilder()
             .setDistributionType(DistributionType.STANDARD)
             .setCurrentPage(0)
             .setPageCount(1)
             .setCpiAllowList(null)
-            .setGroupParameters(null)
+            .setGroupParameters(wireGroupParameters)
             .setMemberships(
                 membership
             )
@@ -518,6 +566,16 @@ class SynchronisationIntegrationTest {
             SubscriptionConfig("membership_updates_test_receiver", MEMBER_LIST_TOPIC),
             getTestProcessor { v ->
                 completableResult.complete(v as PersistentMemberInfo)
+            },
+            messagingConfig = bootConfig
+        ).also { it.start() }
+
+        // Start subscription to check published group parameters
+        val completableResult2 = CompletableFuture<GroupParameters>()
+        val groupParametersSubscription = subscriptionFactory.createPubSubSubscription(
+            SubscriptionConfig("group_parameters_test_receiver", GROUP_PARAMETERS_TOPIC),
+            getTestProcessor { v ->
+                completableResult2.complete(v as GroupParameters)
             },
             messagingConfig = bootConfig
         ).also { it.start() }
@@ -573,6 +631,25 @@ class SynchronisationIntegrationTest {
                 it.assertThat(memberPublished.ledgerKeys.size).isEqualTo(0)
                 it.assertThat(memberPublished.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 it.assertThat(memberPublished.modifiedTime).isEqualTo(clock.instant().toString())
+            }
+
+            it.assertThat(membershipPersistenceClient.getPersistedGroupParameters()!!.toAvro()).isEqualTo(groupParameters)
+        }
+
+        // Receive and assert on group parameters
+        val result2 = assertDoesNotThrow {
+            completableResult2.getOrThrow(Duration.ofSeconds(5))
+        }
+        groupParametersSubscription.close()
+
+        assertSoftly {
+            it.assertThat(result2).isNotNull
+            it.assertThat(result2)
+                .isNotNull
+                .isInstanceOf(GroupParameters::class.java)
+            with(result2) {
+                it.assertThat(this.groupParameters).isEqualTo(groupParameters)
+                it.assertThat(this.viewOwner).isEqualTo(requester)
             }
         }
     }

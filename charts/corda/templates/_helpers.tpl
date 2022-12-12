@@ -63,10 +63,24 @@ imagePullSecrets:
 {{- end }}
 
 {{/*
-Worker name
+Worker type in kebab case
+*/}}
+{{- define "corda.workerTypeKebabCase" -}}
+{{ . | kebabcase | replace "p-2p" "p2p" }}
+{{- end }}
+
+{{/*
+Worker type in upper snake case
+*/}}
+{{- define "corda.workerTypeUpperSnakeCase" -}}
+{{ . | snakecase | replace "p_2p" "p2p" | upper }}
+{{- end }}
+
+{{/*
+Worker pod name
 */}}
 {{- define "corda.workerName" -}}
-{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
+{{ include "corda.fullname" . }}-{{ include "corda.workerTypeKebabCase" .worker }}-worker
 {{- end }}
 
 {{/*
@@ -77,6 +91,12 @@ Worker annotations
 prometheus.io/scrape: "true"
 prometheus.io/path: /metrics
 prometheus.io/port: "7000"
+{{- end }}
+{{ if .Values.annotations -}}
+{{ .Values.annotations | toYaml }}
+{{- end }}
+{{ if ( get .Values.workers .worker ).annotations -}}
+{{ ( get .Values.workers .worker ).annotations | toYaml }}
 {{- end }}
 {{- end }}
 
@@ -111,14 +131,31 @@ Worker image
 {{- end }}
 
 {{/*
-Worker security context
+Pod security context
 */}}
-{{- define "corda.workerSecurityContext" -}}
+{{- define "corda.podSecurityContext" -}}
 {{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
+Container security context
+*/}}
+{{- define "corda.containerSecurityContext" -}}
+securityContext:
+  allowPrivilegeEscalation: false
+{{- end }}
+
+{{/*
+Worker service account
+*/}}
+{{- define "corda.serviceAccount" }}
+{{- if .Values.serviceAccount.name  }}
+serviceAccountName: {{ .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -140,7 +177,6 @@ DB client image
 Resources for the bootstrapper
 */}}
 {{- define "corda.bootstrapResources" }}
-
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
@@ -166,6 +202,15 @@ Node selector for the bootstrapper
 {{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
 nodeSelector:
   {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Service account for the bootstrapper
+*/}}
+{{- define "corda.bootstrapServiceAccount" }}
+{{- if or .Values.bootstrap.serviceAccount.name .Values.serviceAccount.name }}
+serviceAccountName: {{ default .Values.serviceAccount.name .Values.bootstrap.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -251,6 +296,8 @@ Corda CLI environment variables
   value: {{ .Values.logging.format }}
 - name: CONSOLE_LOG_LEVEL
   value: {{ .Values.logging.level }}
+- name: CORDA_CLI_HOME_DIR
+  value: "/tmp"
 {{- end }}
 
 {{/*
@@ -301,6 +348,22 @@ Initial admin user secret password key
 {{- else -}}
 password
 {{- end -}}
+{{- end -}}
+
+{{/*
+Initial admin secret environment variable
+*/}}
+{{- define "corda.initialAdminUserSecretEnv" -}}
+- name: INITIAL_ADMIN_USER_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "corda.initialAdminUserUsernameSecretName" . }}
+      key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+- name: INITIAL_ADMIN_USER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "corda.initialAdminUserPasswordSecretName" . }}
+      key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
 {{- end -}}
 
 
@@ -370,6 +433,7 @@ Volume mounts for corda workers
 {{- if .Values.dumpHostPath }}
 - mountPath: /dumps
   name: dumps
+  subPathExpr: $(K8S_POD_NAME)
 {{- end }}
 {{ include "corda.log4jVolumeMount" . }}
 {{- end }}
@@ -393,7 +457,7 @@ Volumes for corda workers
 {{- if .Values.dumpHostPath }}
 - name: dumps
   hostPath:
-    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/
     type: DirectoryOrCreate
 {{- end }}
 {{ include "corda.log4jVolume" . }}
@@ -421,7 +485,7 @@ Cluster DB name
 {{- end -}}
 
 {{/*
-Cluster DB credentials environment variables
+Cluster DB secret name
 */}}
 {{- define "corda.clusterDbDefaultSecretName" -}}
 {{ printf "%s-cluster-db" (include "corda.fullname" .) }}
@@ -436,7 +500,7 @@ Cluster DB credentials environment variables
     secretKeyRef:
       {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
@@ -446,7 +510,7 @@ Cluster DB credentials environment variables
     secretKeyRef:
       {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify .Values.db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "password"
@@ -472,40 +536,85 @@ Kafka TLS truststore password
 {{- end -}}
 
 {{/*
-Kafka SASL username environment variable
+Bootstrap Kafka SASL username and password environment variables
 */}}
-{{- define "corda.kafkaSaslUsername" -}}
-{{- if .Values.kafka.sasl.enabled -}}
-  {{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
+{{- define "corda.bootstrapKafkaSaslUsernameAndPasswordEnv" -}}
+{{- if .Values.kafka.sasl.enabled }}
 - name: SASL_USERNAME
+  {{- if .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else if .Values.bootstrap.kafka.sasl.username.value }}
+  value: {{ .Values.bootstrap.kafka.sasl.username.value | quote }}
+  {{- else if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
-  {{- else -}}
-- name: SASL_USERNAME
-  value: {{ required "Must specify kafka.sasl.username.value or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value | quote }}
-  {{- end -}}
-{{- end -}}
-{{- end -}}
-
-
-{{/*
-Kafka SASL password environment variable
-*/}}
-{{- define "corda.kafkaSaslPassword" -}}
-{{- if and .Values.kafka.sasl.enabled -}}
-  {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name -}}
+  {{- else }}
+  value: {{ required "Must specify bootstrap.kafka.sasl.username.value, bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value }}
+  {{- end }}
 - name: SASL_PASSWORD
+  {{- if .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if .Values.bootstrap.kafka.sasl.password.value }}
+  value: {{ .Values.bootstrap.kafka.sasl.password.value | quote }}
+  {{- else if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
-  {{- else -}}
-- name: SASL_PASSWORD
-  value: {{ required "Must specify kafka.sasl.password.value or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value | quote }}
-  {{- end -}}
+  {{- else }}
+  value: {{ required "Must specify bootstrap.kafka.sasl.password.value, bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value }}
+  {{- end }}
+{{- end }}
 {{- end -}}
+
+{{/*
+Kafka SASL username and password environment variables
+*/}}
+{{- define "corda.kafkaSaslUsernameAndPasswordEnv" -}}
+{{- if .Values.kafka.sasl.enabled }}
+  {{- $username := ( get .Values.workers .worker ).kafka.sasl.username }}
+- name: SASL_USERNAME
+  {{- if $username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify %s.kafka.sasl.username.valueFrom.secretKeyRef.key" .worker) $username.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $username.value }}
+  value: {{ $username.value | quote }}
+  {{- else if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify workers.%s.kafka.sasl.username.value, workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" .worker .worker) .Values.kafka.sasl.username.value }}
+  {{- end }}
+  {{- $password := ( get .Values.workers .worker ).kafka.sasl.password }}
+- name: SASL_PASSWORD
+  {{- if $password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify %s.kafka.sasl.password.valueFrom.secretKeyRef.key" .worker) $password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $password.value }}
+  value: {{ $password.value | quote }}
+  {{- else if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" .worker .worker) .Values.kafka.sasl.password.value }}
+  {{- end }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -517,8 +626,8 @@ Kafka SASL init container
   image: {{ include "corda.workerImage" . }}
   imagePullPolicy:  {{ .Values.imagePullPolicy }}
   env:
-  {{- include "corda.kafkaSaslPassword" . | nindent 2 }}
-  {{- include "corda.kafkaSaslUsername" . | nindent 2 }}
+  {{- include "corda.kafkaSaslUsernameAndPasswordEnv" . | nindent 2 }}
+  {{- include "corda.containerSecurityContext" . | nindent 2 }}
   command:
   - /bin/bash
   - -c
@@ -531,13 +640,105 @@ Kafka SASL init container
             {{- else }}
             org.apache.kafka.common.security.scram.ScramLoginModule required
             {{- end }}
-            username=$SASL_USERNAME
-            password=$SASL_PASSWORD;
+            username="$SASL_USERNAME"
+            password="$SASL_PASSWORD";
         };    
         EOF
   volumeMounts:
   - mountPath: "/etc/config"
     name: "jaas-conf"
     readOnly: false
-{{- end}}    
-{{- end}}
+{{- end }}    
+{{- end }}
+
+{{/*
+DB SALT and Passphrase environment variable
+*/}}
+{{- define "corda.dbSaltAndPassphraseEnv" -}}
+- name: SALT
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "salt"
+      {{- end }}
+- name: PASSPHRASE
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.workers.db.passphrase.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      key: "passphrase" 
+      {{- end }}
+{{- end }}
+
+{{/*
+Bootstrap RBAC User secret name 
+*/}}
+{{- define "corda.rbacDbUserSecretName" -}}
+{{ printf "%s-rbac-db-user" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+RBAC User environment variable
+*/}}
+{{- define "corda.rbacDbUserEnv" -}}
+- name: RBAC_DB_USER_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
+      key: "username" 
+      {{- end }}
+- name: RBAC_DB_USER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
+      key: "password" 
+      {{- end }}
+{{- end -}}
+
+{{/*
+Bootstrap crypto Worker secret name 
+*/}}
+{{- define "corda.cryptoDbUserSecretName" -}}
+{{ printf "%s-crypto-db-user" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+Crypto worker environment variable
+*/}}
+{{- define "corda.cryptoDbUserEnv" -}}
+- name: CRYPTO_DB_USER_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
+      key: "username" 
+      {{- end }}
+- name: CRYPTO_DB_USER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
+      key: "password" 
+      {{- end }}
+{{- end -}}

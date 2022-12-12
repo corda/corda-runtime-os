@@ -6,6 +6,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.ShortHash
@@ -23,7 +24,7 @@ import java.util.stream.Stream
 
 @Suppress("unused")
 @Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
-@ServiceRanking(Int.MAX_VALUE)
+@ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class VirtualNodeLoaderImpl @Activate constructor(
     @Reference
     private val cpiLoader: CpiLoader,

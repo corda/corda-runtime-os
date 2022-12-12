@@ -1,34 +1,32 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
-description 'Corda Notary Plugins Common Functionality'
+ext {
+    releasable = true
+}
 
-group 'com.r3.corda.notary.plugin.nonvalidating'
+description 'Corda Notary Plugin Common Library'
 
-// TODO CORE-7945 This should not be a CorDapp, we need to find a way to properly include it.
-//  Potentially `cordaEmbedded`. However, that throws errors so needs further investigation.
+group 'com.r3.corda.notary.plugin.common'
+
 cordapp {
-    targetPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
-        name "Corda Non-Validating Notary - Common"
+        name "Corda Notary Plugin Common Library"
         versionId 1
         vendor "R3"
     }
 }
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     cordaProvided "net.corda:corda-application"
-    cordaProvided "net.corda:corda-cipher-suite"
     cordaProvided "net.corda:corda-notary-plugin"
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided project(':libs:crypto:cipher-suite')
 }
-
-
-

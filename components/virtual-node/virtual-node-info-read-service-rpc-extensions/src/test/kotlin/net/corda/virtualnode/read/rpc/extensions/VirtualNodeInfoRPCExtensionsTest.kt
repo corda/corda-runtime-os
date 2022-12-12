@@ -90,4 +90,14 @@ class VirtualNodeInfoRPCExtensionsTest {
     fun `ShortHash ofOrThrow throws BadRequest if ShortHash is invalid`() {
         assertThrows<BadRequestException> { ShortHash.ofOrThrow(INVALID_SHORT_HASH) }
     }
+
+    @Test
+    fun `ShortHash parseOrThrow returns ShortHash if valid`() {
+        assertEquals(VALID_SHORT_HASH, ShortHash.parseOrThrow(VALID_SHORT_HASH.value))
+    }
+
+    @Test
+    fun `ShortHash parseOrThrow throws BadRequest if ShortHash is invalid`() {
+        assertThrows<BadRequestException> { ShortHash.parseOrThrow("${VALID_SHORT_HASH}AS3") }
+    }
 }

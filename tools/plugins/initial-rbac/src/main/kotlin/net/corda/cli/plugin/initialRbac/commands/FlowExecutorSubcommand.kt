@@ -34,6 +34,7 @@ class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
         PermissionTemplate("Start Flow endpoint", "POST:/api/v1/flow/$vnodeShortHash", null),
         PermissionTemplate("Get status for all flows", "GET:/api/v1/flow/$vnodeShortHash", null),
         PermissionTemplate("Get status for a specific flow", "GET:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX", null),
+        PermissionTemplate("Get a list of startable flows", "GET:/api/v1/flowclass/$vnodeShortHash", null),
         PermissionTemplate(
             "Get status for a specific flow via WebSocket",
             "WS:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",

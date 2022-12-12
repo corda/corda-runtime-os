@@ -1,9 +1,12 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
@@ -12,8 +15,9 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
@@ -32,10 +36,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -99,6 +105,7 @@ class CertificatesRpcOpsImplTest {
             verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Dependencies are DOWN")
         }
     }
+
     @Nested
     inner class GenerateCsrTests {
         private val holdingIdentityShortHash = "id"
@@ -300,6 +307,7 @@ class CertificatesRpcOpsImplTest {
                 certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
             }
         }
+
         @Test
         fun `valid certificate will send it to the client`() {
             val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
@@ -374,8 +382,153 @@ class CertificatesRpcOpsImplTest {
             certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
-                CertificateUsage.RPC_API_TLS, null, "alias", "$certificateText\n$certificateText\n$certificateText"
+                CertificateUsage.RPC_API_TLS,
+                null,
+                "alias",
+                "$certificateText\n$certificateText\n$certificateText"
             )
+        }
+    }
+
+    @Nested
+    inner class GetCertificateAliasesTests {
+        @Test
+        fun `it throws exception for invalid short hash`() {
+            assertThrows<BadRequestException> {
+                certificatesOps.getCertificateAliases(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    "nop"
+                )
+            }
+        }
+
+        @Test
+        fun `it throws exception for bad usage`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.getCertificateAliases(
+                    "nop",
+                    "012301230123"
+                )
+            }
+        }
+
+        @Test
+        fun `it calls the client with the correct arguments`() {
+            whenever(certificatesClient.getCertificateAliases(any(), any())).doReturn(emptyList())
+
+            certificatesOps.getCertificateAliases(
+                CertificateUsage.RPC_API_TLS.publicName,
+                "012301230123",
+            )
+
+            verify(certificatesClient).getCertificateAliases(
+                CertificateUsage.RPC_API_TLS,
+                ShortHash.of("012301230123")
+            )
+        }
+
+        @Test
+        fun `it return the correct data`() {
+            whenever(certificatesClient.getCertificateAliases(any(), anyOrNull())).doReturn(listOf("one", "two"))
+
+            val aliases = certificatesOps.getCertificateAliases(
+                CertificateUsage.RPC_API_TLS.publicName,
+                null,
+            )
+
+            assertThat(aliases).containsExactlyInAnyOrder("one", "two")
+        }
+
+        @Test
+        fun `it throws an exception if the request fails`() {
+            whenever(certificatesClient.getCertificateAliases(any(), any())).doThrow(CordaRuntimeException("Ooops"))
+
+            assertThrows<InternalServerException> {
+                certificatesOps.getCertificateAliases(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    "012301230123",
+                )
+            }
+        }
+    }
+
+    @Nested
+    inner class GetCertificateChainTests {
+        @Test
+        fun `it throws an exception for empty alias`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.getCertificateChain(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    null,
+                    "  "
+                )
+            }
+        }
+
+        @Test
+        fun `it throws an exception for invalid holding ID`() {
+            assertThrows<BadRequestException> {
+                certificatesOps.getCertificateChain(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    " ",
+                    "alias"
+                )
+            }
+        }
+
+        @Test
+        fun `it throws an exception for invalid usage`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.getCertificateChain(
+                    "nop",
+                    null,
+                    "alias"
+                )
+            }
+        }
+
+        @Test
+        fun `it throws an exception if alias can not be found`() {
+            whenever(certificatesClient.retrieveCertificates(null, CertificateUsage.RPC_API_TLS, "alias")).doReturn(null)
+            assertThrows<ResourceNotFoundException> {
+                certificatesOps.getCertificateChain(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    null,
+                    "alias"
+                )
+            }
+        }
+
+        @Test
+        fun `it return the correct data if the alias was found`() {
+            val hash = "321432143214"
+            val usage = CertificateUsage.P2P_SESSION
+            val pemCertificate = "yep"
+            val alias = "alias"
+            whenever(certificatesClient.retrieveCertificates(ShortHash.of(hash), usage, alias)).doReturn(pemCertificate)
+
+            val certificate = certificatesOps.getCertificateChain(
+                usage.publicName,
+                hash,
+                alias,
+            )
+
+            assertThat(certificate).isEqualTo(pemCertificate)
+        }
+
+        @Test
+        fun `it throws an exception if the client had an error`() {
+            whenever(
+                certificatesClient.retrieveCertificates(null, CertificateUsage.P2P_SESSION, "alias")
+            ).doThrow(CordaRuntimeException("Ooops"))
+
+            assertThrows<InternalServerException> {
+                certificatesOps.getCertificateChain(
+                    CertificateUsage.P2P_SESSION.publicName,
+                    null,
+                    "alias",
+                )
+            }
         }
     }
 }

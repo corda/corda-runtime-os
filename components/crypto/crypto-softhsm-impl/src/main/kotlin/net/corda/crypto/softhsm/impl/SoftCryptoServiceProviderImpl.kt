@@ -1,5 +1,10 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceProvider
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
@@ -18,11 +23,6 @@ import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.DigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -40,8 +40,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestService::class)
-    private val digestService: DigestService,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService,
     @Reference(service = WrappingKeyStore::class)
     private val store: WrappingKeyStore
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
@@ -71,7 +71,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
-        private val digestService: DigestService,
+        private val digestService: PlatformDigestService,
         private val store: WrappingKeyStore
     ) : AbstractImpl {
 

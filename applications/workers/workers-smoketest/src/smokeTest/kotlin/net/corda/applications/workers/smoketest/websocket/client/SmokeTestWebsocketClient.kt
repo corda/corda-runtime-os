@@ -1,5 +1,7 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
+import net.corda.applications.workers.smoketest.PASSWORD
+import net.corda.applications.workers.smoketest.USERNAME
 import java.net.URI
 import java.time.Duration
 import java.util.LinkedList
@@ -39,8 +41,8 @@ fun useWebsocketConnection(
 }
 
 class SmokeTestWebsocketClient(
-    private val username: String = "admin",
-    private val password: String = "admin",
+    private val username: String = USERNAME,
+    private val password: String = PASSWORD,
     private val connectTimeout: Duration = Duration.ofSeconds(10),
 ) : AutoCloseable {
 

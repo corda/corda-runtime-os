@@ -2,9 +2,10 @@ package net.corda.membership.impl.p2p
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -78,10 +79,9 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.utilities.time.Clock
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -329,7 +329,7 @@ class MembershipP2PIntegrationTest {
             val serializedHeader = headerSerializer.serialize(header)
                 ?: throw IllegalArgumentException("Serialized header cannot be null.")
             latestHeader = header
-            EciesParams( "salt".toByteArray(), serializedHeader )
+            HybridEncryptionParams( "salt".toByteArray(), serializedHeader )
         }
 
         val request = UnauthenticatedRegistrationRequest(

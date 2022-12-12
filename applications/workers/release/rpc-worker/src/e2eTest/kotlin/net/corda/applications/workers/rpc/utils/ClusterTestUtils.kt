@@ -18,6 +18,8 @@ import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
@@ -38,8 +40,8 @@ private data class TestJsonObject(override val escapedJson: String = "") : JsonO
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
     isMgm: Boolean = false
-) = with(testToolkit) {
-    httpClientFor(CpiUploadRPCOps::class.java).use { client ->
+): String {
+    return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
             if (isMgm) {
@@ -55,7 +57,7 @@ fun E2eCluster.uploadCpi(
                 content = jar.inputStream(),
                 contentType = "application/java-archive",
                 extension = "cpb",
-                fileName = "$uniqueName.cpb",
+                fileName = "${uniqueName}.cpb",
                 size = jar.size.toLong(),
             )
             val id = cpi(upload).id
@@ -78,8 +80,8 @@ fun E2eCluster.uploadCpi(
 fun E2eCluster.createVirtualNode(
     member: E2eClusterMember,
     cpiCheckSum: String
-) = with(testToolkit) {
-    httpClientFor(VirtualNodeRPCOps::class.java)
+) {
+    clusterHttpClientFor(VirtualNodeRPCOps::class.java)
         .use { client ->
             client.start().proxy.createVirtualNode(
                 VirtualNodeRequest(
@@ -101,8 +103,8 @@ fun E2eCluster.createVirtualNode(
 fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
-) = with(testToolkit) {
-    httpClientFor(KeysRpcOps::class.java)
+): Boolean {
+    return clusterHttpClientFor(KeysRpcOps::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -126,8 +128,8 @@ fun E2eCluster.keyExists(
 fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
-) = with(testToolkit) {
-    httpClientFor(KeysRpcOps::class.java)
+): String {
+    return clusterHttpClientFor(KeysRpcOps::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -160,8 +162,8 @@ fun E2eCluster.generateKeyPairIfNotExists(
 fun E2eCluster.assignSoftHsm(
     holdingId: String,
     cat: String
-) = with(testToolkit) {
-    httpClientFor(HsmRpcOps::class.java)
+): HsmAssociationInfo {
+    return clusterHttpClientFor(HsmRpcOps::class.java)
         .use { client ->
             client.start().proxy.assignSoftHsm(holdingId, cat)
         }
@@ -170,8 +172,8 @@ fun E2eCluster.assignSoftHsm(
 fun E2eCluster.register(
     holdingId: String,
     context: Map<String, String>
-) = with(testToolkit) {
-    httpClientFor(MemberRegistrationRpcOps::class.java)
+): RegistrationRequestProgress {
+    return clusterHttpClientFor(MemberRegistrationRpcOps::class.java)
         .use { client ->
             val proxy = client.start().proxy
             proxy.startRegistration(
@@ -195,8 +197,8 @@ fun E2eCluster.register(
 
 fun E2eCluster.generateGroupPolicy(
     holdingId: String
-) = with(testToolkit) {
-    httpClientFor(MGMRpcOps::class.java).use { client ->
+): String {
+    return clusterHttpClientFor(MGMRpcOps::class.java).use { client ->
         client.start().proxy.generateGroupPolicy(holdingId)
     }
 }
@@ -204,8 +206,8 @@ fun E2eCluster.generateGroupPolicy(
 fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
     sessionKeyId: String
-) = with(testToolkit) {
-    httpClientFor(NetworkRpcOps::class.java).use { client ->
+) {
+    clusterHttpClientFor(NetworkRpcOps::class.java).use { client ->
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
@@ -218,12 +220,12 @@ fun E2eCluster.setUpNetworkIdentity(
     }
 }
 
-fun E2eCluster.disableCLRChecks() = with(testToolkit) {
+fun E2eCluster.disableCLRChecks() {
     val sslConfig = "sslConfig"
     val revocationCheck = "revocationCheck"
     val mode = "mode"
     val modeOff = "OFF"
-    httpClientFor(ConfigRPCOps::class.java).use { client ->
+    clusterHttpClientFor(ConfigRPCOps::class.java).use { client ->
         val proxy = client.start().proxy
         val configResponse = proxy.get(GATEWAY_CONFIG)
         val config = ObjectMapper().readTree(
@@ -234,7 +236,7 @@ fun E2eCluster.disableCLRChecks() = with(testToolkit) {
                 UpdateConfigParameters(
                     GATEWAY_CONFIG,
                     configResponse.version,
-                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  }  }"),
+                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  } }"),
                     ConfigSchemaVersion(1, 0)
                 )
             )

@@ -10,11 +10,11 @@ class WireTransactionSerializerTest: CommonLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a wireTransaction`() {
-        val serialised = sandboxSerializationService1.serialize(wireTransaction)
+        val serialised =  serializationService.serialize(wireTransaction)
 
         // Perform deserialization and check if the correct class is deserialized
         val deserialized =
-            sandboxSerializationService2.deserialize(serialised)
+            serializationService.deserialize(serialised)
 
         assertThat(deserialized.javaClass.name).isEqualTo(
             "net.corda.ledger.common.data.transaction.WireTransaction"

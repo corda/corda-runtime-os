@@ -4,6 +4,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -12,17 +13,24 @@ import net.corda.v5.base.util.contextLogger
 
 class CpiReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<CpiIdentifier, CpiMetadata>,
     private val reconcilerWriter: ReconcilerWriter<CpiIdentifier, CpiMetadata>
 ) : ReconcilerWrapper {
     companion object {
         private val log = contextLogger()
+        private val dependencies = setOf(
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     }
 
     private var dbReconciler: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
     private var reconciler: Reconciler? = null
+
+    private val reconciliationContextFactory = {
+        listOf(ClusterReconciliationContext(dbConnectionManager))
+    }
 
     override fun close() {
         dbReconciler?.stop()
@@ -38,9 +46,10 @@ class CpiReconciler(
             dbReconciler =
                 DbReconcilerReader(
                     coordinatorFactory,
-                    dbConnectionManager,
                     CpiIdentifier::class.java,
                     CpiMetadata::class.java,
+                    dependencies,
+                    reconciliationContextFactory,
                     getAllCpiInfoDBVersionedRecords
                 ).also {
                     it.start()

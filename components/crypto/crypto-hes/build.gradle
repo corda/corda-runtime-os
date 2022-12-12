@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Crypto Hybrid Encryption Scheme API'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(':libs:crypto:cipher-suite')
+    api project(":libs:lifecycle:lifecycle")
+}
+
+

@@ -52,6 +52,50 @@ class ShortHashTest {
     }
 
     @Test
+    fun `can parse short hash`() {
+        assertDoesNotThrow {
+            ShortHash.parse("123456789012")
+        }
+    }
+
+    @Test
+    fun `can parse short hash from hex string in lower case`() {
+        assertDoesNotThrow {
+            ShortHash.parse("567890abcdef")
+        }
+    }
+
+    @Test
+    fun `can parse short hash from hex string in caps`() {
+        assertDoesNotThrow {
+            ShortHash.parse("567890ABCDEF")
+        }
+    }
+
+    @Test
+    fun `cannot parse short hash if too short`() {
+        // 11 chars < 12 REQUIRED
+        assertThrows<ShortHashException> {
+            ShortHash.parse("12345678901")
+        }
+    }
+
+    @Test
+    fun `cannot parse short hash if too long`() {
+        // 14 chars > 12 REQUIRED
+        assertThrows<ShortHashException> {
+            ShortHash.parse("12345678901d22")
+        }
+    }
+
+    @Test
+    fun `cannot parse short hash if not a hex string`() {
+        assertThrows<ShortHashException> {
+            ShortHash.parse("finishfinish")
+        }
+    }
+
+    @Test
     fun `comparison`() {
         assertThat(ShortHash.of("1234567890ab")).isEqualTo(ShortHash.of("1234567890ab"))
         assertThat(ShortHash.of("1234567890ab")).isNotEqualTo(ShortHash.of("ab1234567890"))

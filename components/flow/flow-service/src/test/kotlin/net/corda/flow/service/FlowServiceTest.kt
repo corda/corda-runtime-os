@@ -46,8 +46,7 @@ class FlowServiceTest {
 
     @Test
     fun `start event starts the flow executor`() {
-        val context = getFlowServiceTestContext()
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
 
             verify(flowExecutor).start()
@@ -56,9 +55,8 @@ class FlowServiceTest {
 
     @Test
     fun `configuration service event registration once all dependent components are up`() {
-        val context = getFlowServiceTestContext()
-        val flowServiceCoordinator = context.getCoordinatorFor<FlowService>()
-        context.run {
+        getFlowServiceTestContext().run {
+            val flowServiceCoordinator = getCoordinatorFor<FlowService>()
             testClass.start()
 
             verify(this.configReadService, times(0)).registerComponentForUpdates(any(), any())
@@ -74,13 +72,11 @@ class FlowServiceTest {
 
     @Test
     fun `on configuration event mark service up`() {
-        val context = getFlowServiceTestContext()
-
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
 
             verifyIsUp<FlowService>()
         }
@@ -88,13 +84,11 @@ class FlowServiceTest {
 
     @Test
     fun `on configuration event configures services`() {
-        val context = getFlowServiceTestContext()
-
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
 
             verify(flowExecutor).onConfigChange(any())
             verify(flowWakeUpScheduler).onConfigChange(any())
@@ -103,9 +97,7 @@ class FlowServiceTest {
 
     @Test
     fun `on all dependents up flow service should not be up`() {
-        val context = getFlowServiceTestContext()
-
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
             bringDependenciesUp()
 
@@ -116,13 +108,11 @@ class FlowServiceTest {
     @ParameterizedTest(name = "on component {0} going down the flow service should go down")
     @MethodSource("dependants")
     fun `on any dependent going down the flow service should go down`(name: LifecycleCoordinatorName) {
-        val context = getFlowServiceTestContext()
-
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
             verifyIsUp<FlowService>()
 
             bringDependencyDown(name)
@@ -134,13 +124,11 @@ class FlowServiceTest {
     @ParameterizedTest(name = "on component {0} going down the flow service should go to error")
     @MethodSource("dependants")
     fun `on any dependent going to error the flow service should go down`(name: LifecycleCoordinatorName) {
-        val context = getFlowServiceTestContext()
-
-        context.run {
+        getFlowServiceTestContext().run {
             testClass.start()
 
             bringDependenciesUp()
-            sendConfigUpdate(exampleConfig)
+            sendConfigUpdate<FlowService>(exampleConfig)
             verifyIsUp<FlowService>()
 
             setDependencyToError(name)

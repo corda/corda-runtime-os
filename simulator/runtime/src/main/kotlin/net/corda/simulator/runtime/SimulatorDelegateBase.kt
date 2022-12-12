@@ -10,7 +10,6 @@ import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.messaging.SimFiberBase
-import net.corda.simulator.runtime.signing.BaseSimKeyStore
 import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
@@ -62,9 +61,10 @@ class SimulatorDelegateBase  (
     ) {
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder == null) {
-            fiber.registerInitiator(member)
+            fiber.registerMember(member)
         } else {
             val responderFlowClass = castInitiatedFlowToResponder(flowClass)
+            fiber.registerMember(member)
             fiber.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
@@ -80,14 +80,16 @@ class SimulatorDelegateBase  (
     }
 
     override fun createVirtualNode(
-        responder: HoldingIdentity,
+        holdingIdentity: HoldingIdentity,
         protocol: String,
-        responderFlow: ResponderFlow
+        instanceFlow: Flow
     ): SimulatedVirtualNode {
-        log.info("Creating virtual node for \"${responder.member}\", flow instance provided for protocol $protocol")
-        fiber.registerResponderInstance(responder.member, protocol, responderFlow)
-        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory, BaseSimKeyStore())
+        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow instance provided for protocol $protocol")
+        fiber.registerMember(holdingIdentity.member)
+        fiber.registerFlowInstance(holdingIdentity.member, protocol, instanceFlow)
+        return SimulatedVirtualNodeBase(holdingIdentity, fiber, injector, flowFactory)
     }
+
 
     override fun close() {
         log.info("Closing Simulator")

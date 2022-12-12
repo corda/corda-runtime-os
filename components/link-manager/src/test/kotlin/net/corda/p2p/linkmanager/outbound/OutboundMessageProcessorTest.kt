@@ -26,8 +26,8 @@ import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
-import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -157,6 +157,80 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `authenticated messages are dropped if source X500 name is invalid`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                myIdentity.toAvro(),
+                HoldingIdentity(
+                    "Invalid X500 name",
+                    myIdentity.groupId,
+                ),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage, 1, 0
+                )
+            )
+        )
+
+        assertThat(records)
+            .hasSize(1)
+            .allSatisfy { record ->
+                assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+            }.allSatisfy { record ->
+                val value = record.value as? AppMessageMarker
+                val marker = value?.marker as? LinkManagerDiscardedMarker
+                assertThat(marker?.reason).contains("source 'Invalid X500 name' is not a valid X500 name")
+            }
+    }
+
+    @Test
+    fun `authenticated messages are dropped if destination X500 name is invalid`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                HoldingIdentity(
+                    "Invalid X500 name",
+                    myIdentity.groupId,
+                ),
+                remoteIdentity.toAvro(),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage, 1, 0
+                )
+            )
+        )
+
+        assertThat(records)
+            .hasSize(1)
+            .allSatisfy { record ->
+                assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+            }.allSatisfy { record ->
+                val value = record.value as? AppMessageMarker
+                val marker = value?.marker as? LinkManagerDiscardedMarker
+                assertThat(marker?.reason).contains("destination 'Invalid X500 name' is not a valid X500 name")
+            }
+    }
+
+    @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -215,6 +289,68 @@ class OutboundMessageProcessorTest {
         }.allMatch {
             (it.value as? LinkOutMessage)?.payload == unauthenticatedMsg
         }
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if source is invalid X500 name`() {
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                HoldingIdentity(
+                    "Invalid name",
+                    remoteIdentity.groupId,
+                ),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if destination is invalid X500 name`() {
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                HoldingIdentity(
+                    "Invalid name",
+                    myIdentity.groupId,
+                ),
+                myIdentity.toAvro(),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
     }
 
     @Test

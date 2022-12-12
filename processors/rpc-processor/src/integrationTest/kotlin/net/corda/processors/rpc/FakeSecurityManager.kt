@@ -7,9 +7,15 @@ import net.corda.httprpc.security.read.Password
 import net.corda.httprpc.security.read.RPCSecurityManager
 import javax.security.auth.login.FailedLoginException
 
+/**
+ * Note: We cannot use `FakeSecurityManager` from "net.corda.httprpc.test.utils" as this is non-OSGi module.
+ * It cannot be made OSGi module easily as it has a dependency on non-OSGi Unirest library.
+ */
 internal class FakeSecurityManager : RPCSecurityManager {
 
     companion object {
+        const val USERNAME = "admin"
+        const val PASSWORD = "admin"
         data class SecurityCheck(val action: String, val arguments: List<String>)
     }
 
@@ -40,12 +46,10 @@ internal class FakeSecurityManager : RPCSecurityManager {
     }
 
     override fun authenticate(principal: String, password: Password): AuthorizingSubject {
-        return "admin".let {
-            if (it.equals(principal, true) && password == Password(it)) {
-                RecordKeepingSubject(principal)
-            } else {
-                throw FailedLoginException("No provisions for: $principal")
-            }
+        return if (USERNAME.equals(principal, true) && password == Password(PASSWORD)) {
+            RecordKeepingSubject(principal)
+        } else {
+            throw FailedLoginException("No provisions for: $principal")
         }
     }
 

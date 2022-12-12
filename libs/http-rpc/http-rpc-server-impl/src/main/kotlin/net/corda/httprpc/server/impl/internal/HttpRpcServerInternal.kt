@@ -120,6 +120,8 @@ internal class HttpRpcServerInternal(
         }
     }
 
+    internal val port: Int get() = server.port()
+
     private fun getSwaggerUiBundle(): Bundle? {
         val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java) ?: return null
         return rendererBundle

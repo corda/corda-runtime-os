@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-library'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Packaging Interfaces and Data Classes'
 
 dependencies {

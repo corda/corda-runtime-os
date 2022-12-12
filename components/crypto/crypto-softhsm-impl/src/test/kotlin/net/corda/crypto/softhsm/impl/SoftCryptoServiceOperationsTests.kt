@@ -1,8 +1,19 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
@@ -15,19 +26,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
-import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.KeyMaterialSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
@@ -65,8 +63,7 @@ class SoftCryptoServiceOperationsTests {
         private val UNSUPPORTED_KEY_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
         private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
         private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var digestService: DigestService
-        private lateinit var verifier: SignatureVerificationService
+        private lateinit var platformDigestService: PlatformDigestService
         private lateinit var tenantId: String
         private lateinit var category: String
         private lateinit var wrappingKeyAlias: String
@@ -86,8 +83,7 @@ class SoftCryptoServiceOperationsTests {
             coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
             schemeMetadata = CipherSchemeMetadataImpl()
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            verifier = SignatureVerificationServiceImpl(schemeMetadata, digestService)
+            platformDigestService = PlatformDigestServiceImpl(schemeMetadata)
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
             wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
@@ -105,7 +101,7 @@ class SoftCryptoServiceOperationsTests {
                 keyMap,
                 wrappingKeyMap,
                 schemeMetadata,
-                digestService
+                platformDigestService
             )
             cryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
             softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {

@@ -41,13 +41,37 @@ class ExternalEventResponseFactoryImplTest {
     }
 
     @Test
-    fun success() {
+    fun `create success response from context and payload`() {
         val payload = FlowOpsResponse()
         val serialized = byteArrayOf(1, 2, 3)
 
         whenever(serializer.serialize(payload)).thenReturn(serialized)
 
         val record = externalEventResponseFactory.success(EXTERNAL_EVENT_CONTEXT, payload)
+        val flowEvent = record.value!!
+        val response = flowEvent.payload as ExternalEventResponse
+
+        assertEquals(Schemas.Flow.FLOW_EVENT_TOPIC, record.topic)
+        assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, record.key)
+        assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, flowEvent.flowId)
+        assertEquals(EXTERNAL_EVENT_CONTEXT.requestId, response.requestId)
+        assertEquals(ByteBuffer.wrap(serialized), response.payload)
+        assertNull(response.error)
+        assertEquals(NOW, response.timestamp)
+    }
+
+    @Test
+    fun `create success response from request id, flow id and payload`() {
+        val payload = FlowOpsResponse()
+        val serialized = byteArrayOf(1, 2, 3)
+
+        whenever(serializer.serialize(payload)).thenReturn(serialized)
+
+        val record = externalEventResponseFactory.success(
+            EXTERNAL_EVENT_CONTEXT.requestId,
+            EXTERNAL_EVENT_CONTEXT.flowId,
+            payload
+        )
         val flowEvent = record.value!!
         val response = flowEvent.payload as ExternalEventResponse
 

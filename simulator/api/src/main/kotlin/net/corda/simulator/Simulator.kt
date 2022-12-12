@@ -4,7 +4,6 @@ import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.factories.SimulatorDelegateFactory
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.ResponderFlow
 import java.util.ServiceLoader
 
 /**
@@ -41,6 +40,7 @@ class Simulator(
      * @param flowClasses A list of flow classes to be checked.
      * @return A simulated virtual node in which flows can be run.
      */
+    @SafeVarargs
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>
@@ -52,18 +52,19 @@ class Simulator(
      * Creates a simulated virtual node holding a concrete instance of a responder flow. Note that this bypasses all
      * checks for constructor and annotations on the flow.
      *
-     * @param responder The holding identity which will respond with this flow.
+     * @param holdingIdentity The holding identity which will call/respond to this flow.
      * @param protocol The protocol for which this responder instance should be run.
-     * @param responderFlow An instance of a responder flow.
+     * @param instanceFlow An instance of a responder/initiator flow.
      * @return A simulated virtual node which can run this instance of a responder flow.
      */
     override fun createVirtualNode(
-        responder: HoldingIdentity,
+        holdingIdentity: HoldingIdentity,
         protocol: String,
-        responderFlow: ResponderFlow
+        instanceFlow: Flow
     ): SimulatedVirtualNode {
-        return delegate.createVirtualNode(responder, protocol, responderFlow)
+        return delegate.createVirtualNode(holdingIdentity, protocol, instanceFlow)
     }
+
 
     /**
      * Closes Simulator, releasing all resources including any database connections and in-memory databases.

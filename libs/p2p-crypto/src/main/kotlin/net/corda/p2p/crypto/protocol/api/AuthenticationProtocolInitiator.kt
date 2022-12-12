@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
@@ -121,18 +122,15 @@ class AuthenticationProtocolInitiator(val sessionId: String,
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
     fun generateOurHandshakeMessage(theirPublicKey: PublicKey,
+                                    ourCertificates: List<PemCertificate>?,
                                     signingFn: (ByteArray) -> ByteArray): InitiatorHandshakeMessage {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.SENT_HANDSHAKE_MESSAGE, { initiatorHandshakeMessage!! }) {
             val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
-            val certificates = when(certificateCheckMode) {
-                is CertificateCheckMode.NoCertificate -> null
-                is CertificateCheckMode.CheckCertificate -> certificateCheckMode.ourCertificates
-            }
             val initiatorHandshakePayload = InitiatorHandshakePayload(
-                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, certificates),
+                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, ourCertificates),
                 ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)

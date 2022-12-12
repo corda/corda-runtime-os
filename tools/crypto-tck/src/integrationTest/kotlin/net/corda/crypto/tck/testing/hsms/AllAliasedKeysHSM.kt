@@ -1,20 +1,20 @@
 package net.corda.crypto.tck.testing.hsms
 
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SharedSecretSpec
+import net.corda.crypto.cipher.suite.SigningAliasSpec
+import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.computeHSMAlias
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.SharedSecretSpec
-import net.corda.v5.cipher.suite.SigningAliasSpec
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.computeHSMAlias
-import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 class AllAliasedKeysHSM(
     config: AllAliasedKeysHSMConfiguration,
     schemeMetadata: CipherSchemeMetadata,
-    digestService: DigestService
+    digestService: PlatformDigestService
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
     private val keyPairs = ConcurrentHashMap<String, KeyPair>()
 

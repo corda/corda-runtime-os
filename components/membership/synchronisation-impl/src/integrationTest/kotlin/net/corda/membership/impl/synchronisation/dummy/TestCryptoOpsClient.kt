@@ -9,7 +9,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -212,12 +212,12 @@ class TestCryptoOpsClientImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("TestCryptoOpsClient starting.")
+        logger.info("${this::class.java.simpleName} starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("TestCryptoOpsClient starting.")
+        logger.info("${this::class.java.simpleName} stopping.")
         coordinator.stop()
     }
 }

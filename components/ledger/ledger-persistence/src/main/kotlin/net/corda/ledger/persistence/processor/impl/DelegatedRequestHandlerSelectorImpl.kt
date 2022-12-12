@@ -2,8 +2,9 @@ package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.RequestHandler
-import net.corda.ledger.persistence.consensual.ConsensualMessageHandlerSelector
+import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -14,8 +15,8 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [DelegatedRequestHandlerSelector::class])
 class DelegatedRequestHandlerSelectorImpl @Activate constructor(
-    @Reference(service = ConsensualMessageHandlerSelector::class)
-    private val consensualMessageHandlerSelector: ConsensualMessageHandlerSelector,
+    @Reference(service = ConsensualRequestHandlerSelector::class)
+    private val consensualMessageHandlerSelector: ConsensualRequestHandlerSelector,
     @Reference(service = UtxoRequestHandlerSelector::class)
     private val utxoRequestHandlerSelector: UtxoRequestHandlerSelector,
 ) : DelegatedRequestHandlerSelector {
@@ -40,7 +41,7 @@ class DelegatedRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             else -> {
-                val error = IllegalStateException("unsupported ledger type '${request.ledgerType}'")
+                val error = UnsupportedLedgerTypeException(request.ledgerType)
                 log.error(error.message)
                 throw error
             }

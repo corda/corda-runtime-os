@@ -14,10 +14,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -37,7 +38,18 @@ import java.time.Instant
 
 class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
-    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val groupParameters: GroupParameters = mock()
+    private val groupParametersBytes = "test-group-parameters".toByteArray()
+    private val pubKey: PublicKey = mock {
+        on { encoded } doReturn "test-key".toByteArray()
+    }
+    private val signedGroupParameters: DigitalSignature.WithKey = mock {
+        on { bytes } doReturn "dummy-signature".toByteArray()
+        on { by } doReturn pubKey
+    }
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(eq(groupParameters.toAvro())) } doReturn groupParametersBytes
+    }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
@@ -48,7 +60,9 @@ class MembershipPackageFactoryTest {
         }
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator>()
-    private val mgmSigner = mock<Signer>()
+    private val mgmSigner = mock<Signer> {
+        on { sign(eq(groupParametersBytes)) } doReturn signedGroupParameters
+    }
     private val membersCount = 4
     private val members = (1..membersCount).map {
         mockMemberInfo("name-$it")
@@ -112,6 +126,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         )
 
         assertSoftly {
@@ -125,7 +140,16 @@ class MembershipPackageFactoryTest {
                 )
             )
             it.assertThat(membershipPackage.cpiAllowList).isNull()
-            it.assertThat(membershipPackage.groupParameters).isNull()
+            with(membershipPackage.groupParameters) {
+                it.assertThat(this.groupParameters).isEqualTo(ByteBuffer.wrap(groupParametersBytes))
+                it.assertThat(this.mgmSignature).isEqualTo(
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(pubKey.encoded),
+                        ByteBuffer.wrap(signedGroupParameters.bytes),
+                        KeyValuePairList(emptyList()),
+                    )
+                )
+            }
         }
     }
 
@@ -136,6 +160,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         ).memberships.hashCheck
 
         assertSoftly {
@@ -151,6 +176,7 @@ class MembershipPackageFactoryTest {
             signature,
             members,
             checkHash,
+            groupParameters,
         ).memberships.memberships
 
         val expectedMembers = (1..membersCount).map { index ->
@@ -192,6 +218,7 @@ class MembershipPackageFactoryTest {
                 signature.minus(members.last().holdingIdentity),
                 members,
                 checkHash,
+                groupParameters,
             )
         }
     }

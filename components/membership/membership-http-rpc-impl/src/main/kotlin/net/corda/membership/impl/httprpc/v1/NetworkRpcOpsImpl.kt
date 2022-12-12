@@ -15,7 +15,7 @@ import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,7 +38,7 @@ class NetworkRpcOpsImpl @Activate constructor(
     ) {
         try {
             certificatesClient.setupLocallyHostedIdentity(
-                ShortHash.ofOrThrow(holdingIdentityShortHash),
+                ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
                 request.useClusterLevelSessionCertificateAndKey == true,

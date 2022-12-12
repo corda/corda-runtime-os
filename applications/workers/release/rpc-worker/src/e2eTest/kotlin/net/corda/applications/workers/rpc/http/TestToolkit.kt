@@ -1,5 +1,7 @@
 package net.corda.applications.workers.rpc.http
 
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
 
@@ -16,6 +18,9 @@ interface TestToolkit {
     /**
      * Creates the [HttpRpcClient] for a given [RpcOps] class.
      */
-    fun <I : RpcOps> httpClientFor(rpcOpsClass: Class<I>, userName: String = "admin", password: String = "admin"):
-            HttpRpcClient<I>
+    fun <I : RpcOps> httpClientFor(
+        rpcOpsClass: Class<I>,
+        userName: String = adminUser,
+        password: String = adminPassword
+    ): HttpRpcClient<I>
 }

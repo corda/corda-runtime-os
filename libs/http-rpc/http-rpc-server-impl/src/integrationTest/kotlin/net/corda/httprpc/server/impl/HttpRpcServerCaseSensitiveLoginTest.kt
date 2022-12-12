@@ -4,7 +4,6 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
@@ -20,7 +19,7 @@ class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -36,7 +35,7 @@ class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
             ).apply { start() }
             client =
                 TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:" +
-                        "${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+                        "${server.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll

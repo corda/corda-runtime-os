@@ -10,7 +10,6 @@ import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.CustomString
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -23,7 +22,6 @@ import java.nio.file.Files
 
 internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
     companion object {
-        private val port = findFreePort()
 
         private val sslService = SslCertReadServiceStubImpl {
             Files.createTempDirectory("HttpRpcSSLClientIntegrationTest")
@@ -31,12 +29,13 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
         @BeforeAll
         @JvmStatic
+        @Suppress("unused")
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStore()
             val sslConfig = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", port),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 sslConfig,
                 null,
@@ -54,6 +53,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
         @AfterAll
         @JvmStatic
+        @Suppress("unused")
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
                 server.close()
@@ -66,7 +66,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start connection-aware client against server with accepted protocol version and SSL enabled succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "https://localhost:$port/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(true)
@@ -91,7 +91,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and SSL enabled and custom serializers succeeds`() {
         val client = HttpRpcClient(
-            baseAddress = "https://localhost:$port/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/v1/",
             CustomSerializationAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(true)
@@ -112,7 +112,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client with SSL enabled against server with less than rpc version since but valid version `() {
         val client = HttpRpcClient(
-            baseAddress = "https://localhost:$port/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(true)
@@ -138,7 +138,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client with SSL enabled against server with lower protocol version than minimum expected fails`() {
         val client = HttpRpcClient(
-            baseAddress = "https://localhost:$port/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/v1/",
             TestHealthCheckAPI::class.java,
             HttpRpcClientConfig()
                 .enableSSL(true)

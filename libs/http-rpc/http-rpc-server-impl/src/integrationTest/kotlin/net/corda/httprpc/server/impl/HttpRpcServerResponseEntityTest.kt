@@ -6,7 +6,6 @@ import net.corda.httprpc.test.CustomUnsafeString
 import net.corda.httprpc.test.ResponseEntityRpcOpsImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.POST
@@ -25,7 +24,7 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -42,7 +41,8 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                        "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll

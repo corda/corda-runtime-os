@@ -1,22 +1,22 @@
 package net.corda.crypto.tck.testing.hsms
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SharedSecretSpec
+import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
+import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
+import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.KeyMaterialSpec
-import net.corda.v5.cipher.suite.SharedSecretSpec
-import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -24,7 +24,7 @@ import java.security.PrivateKey
 class AllWrappedKeysHSM(
     config: AllWrappedKeysHSMConfiguration,
     schemeMetadata: CipherSchemeMetadata,
-    digestService: DigestService
+    digestService: PlatformDigestService
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
 
     override val extensions: List<CryptoServiceExtensions> = listOf(

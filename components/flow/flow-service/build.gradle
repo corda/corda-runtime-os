@@ -19,6 +19,7 @@ dependencies {
     implementation project(":components:virtual-node:sandbox-group-context-service")
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
+    runtimeOnly project(':components:virtual-node:sandbox-notary')
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
@@ -27,6 +28,7 @@ dependencies {
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:metrics")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")

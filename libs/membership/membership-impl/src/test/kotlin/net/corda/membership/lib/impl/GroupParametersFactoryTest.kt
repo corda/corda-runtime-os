@@ -59,7 +59,7 @@ class GroupParametersFactoryTest {
         with(groupParameters) {
             assertThat(epoch).isEqualTo(EPOCH.toInt())
             assertThat(minimumPlatformVersion).isEqualTo(MPV.toInt())
-            assertThat(modifiedTime).isBefore(Instant.now())
+            assertThat(modifiedTime).isBeforeOrEqualTo(Instant.now())
         }
     }
 }

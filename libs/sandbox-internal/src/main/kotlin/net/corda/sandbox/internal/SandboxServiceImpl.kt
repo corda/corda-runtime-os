@@ -225,7 +225,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         // Ensure that all of these bundles are resolved before we start them.
         if (!bundleUtils.resolveBundles(bundles)) {
-            val allFailed = bundles.filter { it.state < RESOLVED }
+            val allFailed = bundles.filter { !it.isFragment && it.state < RESOLVED }
             val ex = SandboxException("Failed to resolve bundles: ${allFailed.joinToString()}")
             for (failed in allFailed) {
                 try {

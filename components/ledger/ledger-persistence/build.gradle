@@ -28,9 +28,11 @@ dependencies {
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-consensual-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
@@ -38,7 +40,6 @@ dependencies {
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
-    implementation project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:crypto:merkle-impl')
 
     implementation 'net.corda:corda-config-schema'
@@ -50,6 +51,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 

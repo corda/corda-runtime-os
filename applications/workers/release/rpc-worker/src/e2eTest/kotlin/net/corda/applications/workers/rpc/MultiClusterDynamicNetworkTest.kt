@@ -21,19 +21,19 @@ import org.junit.jupiter.api.Test
 class MultiClusterDynamicNetworkTest {
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+            listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.uniqueName}"))
         )
     }
 
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Bob, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+            listOf(E2eClusterMember("O=Bob, L=London, C=GB, OU=${cluster.uniqueName}"))
         )
     }
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Mgm, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+            listOf(E2eClusterMember("O=Mgm, L=London, C=GB, OU=${cluster.uniqueName}"))
         )
     }
 

@@ -9,7 +9,7 @@ import net.corda.virtualnode.HoldingIdentity
 
 internal class MGMRegistrationGroupPolicyHandler(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    private val membershipPersistenceClient: MembershipPersistenceClient
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) {
 
     fun buildAndPersist(
@@ -29,15 +29,6 @@ internal class MGMRegistrationGroupPolicyHandler(
         if (groupPolicyPersistenceResult is MembershipPersistenceResult.Failure) {
             throw MGMRegistrationGroupPolicyHandlingException(
                 "Registration failed, persistence error. Reason: ${groupPolicyPersistenceResult.errorMsg}"
-            )
-        }
-
-        // Persist group parameters snapshot
-        val groupParametersPersistenceResult =
-            membershipPersistenceClient.persistGroupParametersInitialSnapshot(holdingIdentity)
-        if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationGroupPolicyHandlingException(
-                "Registration failed, persistence error. Reason: ${groupParametersPersistenceResult.errorMsg}"
             )
         }
 

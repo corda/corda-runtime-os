@@ -112,8 +112,7 @@ class OpenApiCompatibilityTest {
             "Corda HTTP RPC API",
             "All the endpoints for publicly visible Open API calls"
         )
-        val freePort = findFreePort()
-        val serverAddress = NetworkHostAndPort("localhost", freePort)
+        val serverAddress = NetworkHostAndPort("localhost", 0)
         val httpRpcSettings = HttpRpcSettings(
             serverAddress,
             context,
@@ -128,7 +127,7 @@ class OpenApiCompatibilityTest {
             { FakeSecurityManager() }, httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 
-        val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/swagger.json"
+        val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/v${context.version}/swagger.json"
         logger.info("Swagger should be accessible on: $url")
 
         return server.use {

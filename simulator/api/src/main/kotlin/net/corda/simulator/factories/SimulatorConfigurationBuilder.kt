@@ -32,6 +32,24 @@ interface SimulatorConfigurationBuilder {
     fun withTimeout(timeout: Duration): SimulatorConfigurationBuilder
 
     /**
+     * Registers a builder to use for the given service class in place of the service that Simulator would normally
+     * provide.
+     *
+     * The service parameter passed into the builder will be Simulator's version of the service, or null if
+     * Simulator does not yet support the service. The Holding Identity and flow class are also provided to
+     * allow finer-grained behaviour in overrides where required.
+     *
+     * @param service The class of the service to overwrite.
+     * @param builder The builder for the replacement service.
+     *
+     * @throws IllegalArgumentException if the `serviceClass` is not the class of a Corda service.
+     */
+    fun withServiceOverride(
+        serviceClass: Class<*>,
+        builder: ServiceOverrideBuilder<*>
+    ): SimulatorConfigurationBuilder
+
+    /**
      * @return Configuration built using chosen options or defaults if no overriding options have been selected.
      */
     fun build(): SimulatorConfiguration
@@ -40,6 +58,7 @@ interface SimulatorConfigurationBuilder {
         /**
          * @return A factory for building [net.corda.simulator.SimulatorConfiguration].
          */
+        @JvmStatic
         fun create(): SimulatorConfigurationBuilder {
             return ServiceLoader.load(SimulatorConfigurationBuilder::class.java).first()
         }

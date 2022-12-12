@@ -1,8 +1,7 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -17,6 +16,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.KeysFactory
 import net.corda.membership.impl.registration.MemberRole
@@ -65,7 +65,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -76,6 +75,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.ByteBuffer
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -112,6 +113,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -211,20 +214,20 @@ class StaticMemberRegistrationService @Activate constructor(
 
     private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
         val cache = lifecycleHandler.groupParametersCache
-        val groupParametersList = cache.getOrCreateGroupParameters(memberInfo.holdingIdentity).run {
+        val holdingIdentity = memberInfo.holdingIdentity
+        val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
             memberInfo.notaryDetails?.let {
                 cache.addNotary(memberInfo)
             } ?: this
         }
         val groupParameters = groupParametersFactory.create(groupParametersList)
 
-        // Persist group parameters for this member
-        persistenceClient.persistGroupParameters(
-            memberInfo.holdingIdentity,
-            groupParameters
-        )
+        // Persist group parameters for this member, and publish to Kafka.
+        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters)
+        groupParametersWriterService.put(holdingIdentity, groupParameters)
 
-        // If this member is a notary, persist updated group parameters for other members who have a vnode set up
+        // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
+        // Also publish to Kafka.
         memberInfo.notaryDetails?.let {
             val groupId = memberInfo.groupId
             staticMemberList
@@ -232,10 +235,9 @@ class StaticMemberRegistrationService @Activate constructor(
                 .forEach { staticMember ->
                 val name = MemberX500Name.parse(staticMember.name!!)
                 virtualNodeInfoReadService.get(HoldingIdentity(name, groupId))?.let {
-                    persistenceClient.persistGroupParameters(
-                        it.holdingIdentity,
-                        groupParameters
-                    )
+                    val peer = it.holdingIdentity
+                    persistenceClient.persistGroupParameters(peer, groupParameters)
+                    groupParametersWriterService.put(peer, groupParameters)
                 }
             }
         }

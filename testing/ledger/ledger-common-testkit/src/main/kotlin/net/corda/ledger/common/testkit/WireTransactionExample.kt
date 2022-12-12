@@ -1,25 +1,27 @@
 package net.corda.ledger.common.testkit
 
 import net.corda.common.json.validation.JsonValidator
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import java.time.Instant
 
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
-    jsonValidator: JsonValidator
+    jsonValidator: JsonValidator,
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups
 ): WireTransaction {
-    val metadata = transactionMetadataExample()
+    val metadata = transactionMetadataExample(numberOfComponentGroups = componentGroups.size + 1)
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val allGroupLists = listOf(
         listOf(canonicalJson.toByteArray()),
-    ) + defaultComponentGroups
-    return create(allGroupLists, metadata)
+    ) + componentGroups
+    return create(allGroupLists)
 }
 
 @Suppress("LongParameterList")
@@ -28,8 +30,9 @@ fun getWireTransactionExample(
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    metadata: TransactionMetadata = transactionMetadataExample(),
-    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups
+    componentGroupLists: List<List<ByteArray>> = defaultComponentGroups,
+    numberOfComponentGroups: Int = componentGroupLists.size + 1,
+    metadata: TransactionMetadata = transactionMetadataExample(numberOfComponentGroups = numberOfComponentGroups),
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
@@ -38,17 +41,21 @@ fun getWireTransactionExample(
         listOf(canonicalJson.toByteArray()),
     ) + componentGroupLists
 
+    val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups())
+        .map { index -> groups.getOrElse(index) { arrayListOf() } }
+
     return WireTransaction(
         merkleTreeProvider,
         digestService,
         getPrivacySalt(),
-        groups,
+        completeComponentGroupLists,
         metadata
     )
 }
 
-private val defaultComponentGroups: List<List<ByteArray>> = listOf(
+val defaultComponentGroups: List<List<ByteArray>> = listOf(
     listOf(".".toByteArray()),
-    listOf("abc d efg".toByteArray())
+    // Randomness ensures that transaction ids change between test runs
+    listOf("abc d efg - ${Instant.now()}".toByteArray())
 )
 

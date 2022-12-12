@@ -25,7 +25,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
 
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:crypto:crypto-ecies')
+    implementation project(':components:crypto:crypto-hes')
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-p2p')
 

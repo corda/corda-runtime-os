@@ -1,6 +1,11 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
     id 'net.corda.plugins.cordapp-cpk2'
+}
+
+ext {
+    releasable = true
 }
 
 description 'Corda Non-Validating Notary Plugin API'
@@ -8,7 +13,7 @@ description 'Corda Non-Validating Notary Plugin API'
 group 'com.r3.corda.notary.plugin.nonvalidating'
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
         name "Corda Non-Validating Notary - API"
         versionId 1
@@ -17,23 +22,12 @@ cordapp {
 }
 
 dependencies {
-    // TODO This SHOULD NOT be included, for now the `FilteredTransaction` is not part of the public API so we
-    //  need to pull this in.
-    cordaProvided project(":components:ledger:ledger-common-flow-api")
-
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-notary-plugin'
     cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-
-    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    cordaProvided "org.osgi:osgi.core"
     cordaProvided 'org.slf4j:slf4j-api'
 
-    // TODO CORE-7945 This should not be included as a CorDapp
     cordapp project(":notary-plugins:notary-plugin-common")
-
-    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 }

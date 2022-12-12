@@ -1,28 +1,28 @@
 package net.corda.crypto.softhsm.impl
 
-import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SharedSecretSpec
+import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
+import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.getParamsSafely
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
+import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
+import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.SharedSecretSpec
-import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.getParamsSafely
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
@@ -41,7 +41,7 @@ class SoftCryptoService(
     private val keyMap: SoftKeyMap,
     private val wrappingKeyMap: SoftWrappingKeyMap,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService
+    private val digestService: PlatformDigestService
 ) : CryptoService {
     companion object {
         private val logger = contextLogger()

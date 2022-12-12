@@ -15,9 +15,10 @@ dependencies {
 
     api project(':testing:sandboxes')
     api project(':testing:sandboxes-testkit')
+    api project(':libs:serialization:serialization-amqp')
+    implementation project(':testing:test-serialization')
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
-    implementation project(':libs:serialization:serialization-amqp')
     implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 }

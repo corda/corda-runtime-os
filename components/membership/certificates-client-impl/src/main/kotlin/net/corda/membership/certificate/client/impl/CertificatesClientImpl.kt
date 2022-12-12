@@ -2,14 +2,17 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.ListCertificateAliasesRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,7 +33,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -85,9 +87,14 @@ class CertificatesClientImpl @Activate constructor(
         send<CertificateImportedRpcResponse>(holdingIdentityId, usage, ImportCertificateRpcRequest(alias, certificates))
     }
 
-    private fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage, alias: String): String? {
+    override fun getCertificateAliases(usage: CertificateUsage, holdingIdentityId: ShortHash?): Collection<String> {
+        return send<ListCertificateAliasRpcResponse>(holdingIdentityId, usage, ListCertificateAliasesRpcRequest())?.aliases ?: emptyList()
+    }
+
+    override fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage, alias: String): String? {
         return send<CertificateRetrievalRpcResponse>(holdingIdentityId, usage, RetrieveCertificateRpcRequest(alias))?.certificates
     }
+
     override fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,

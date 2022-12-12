@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit.DAYS
 import java.util.concurrent.Executors
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
@@ -21,8 +23,8 @@ class PermissionSummaryConcurrentE2eTest {
     companion object {
         private val testToolkit by TestToolkitProperty()
         private val concurrentTestToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
-        private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
+        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, adminUser, adminPassword)
+        private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, adminUser, adminPassword)
     }
 
     @Test
@@ -51,7 +53,7 @@ class PermissionSummaryConcurrentE2eTest {
         }
 
         val permissionsCount = 50
-        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
+        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, adminUser, adminPassword)
         val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {
             proxy.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}", false)

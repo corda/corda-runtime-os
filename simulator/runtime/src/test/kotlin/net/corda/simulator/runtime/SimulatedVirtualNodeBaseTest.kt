@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime
 
 import net.corda.simulator.HoldingIdentity
-import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.factories.RequestDataFactory
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
@@ -21,7 +20,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.KeyPairGenerator
 
 class SimulatedVirtualNodeBaseTest {
 
@@ -55,8 +53,7 @@ class SimulatedVirtualNodeBaseTest {
             holdingId,
             fiber,
             injector,
-            flowFactory,
-            keyStore
+            flowFactory
         )
 
         // When a flow class is run on that node
@@ -65,7 +62,7 @@ class SimulatedVirtualNodeBaseTest {
         virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), eq(flowFactory), any())
+        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), eq(flowFactory))
 
         // And the flow should have been called
         verify(flow, times(1)).call(argThat { request -> request.getRequestBody() == "someData" })
@@ -78,8 +75,7 @@ class SimulatedVirtualNodeBaseTest {
             holdingId,
             fiber,
             injector,
-            flowFactory,
-            keyStore
+            flowFactory
         )
 
         // And a persistence service registered on the fiber
@@ -94,28 +90,27 @@ class SimulatedVirtualNodeBaseTest {
     }
 
     @Test
-    fun `should generate keys via the key store and register with the fiber`() {
+    fun `should inject services into instance flow and call flow`() {
         // Given a virtual node with dependencies
+        val flow = mock<RPCStartableFlow>()
+
         val virtualNode = SimulatedVirtualNodeBase(
             holdingId,
             fiber,
             injector,
             flowFactory,
-            keyStore
         )
 
-        // And a key store which will give us a new key
-        val publicKey = KeyPairGenerator.getInstance("EC").generateKeyPair().public
-        whenever(keyStore.generateKey("my-key", HsmCategory.LEDGER, "CORDA.ECDSA.SECP256R"))
-            .thenReturn(publicKey)
+        // When a flow class is run on that node
+        // (NB: it doesn't actually matter if the flow class was created in that node or not)
+        val input = RPCRequestDataWrapperFactory().create("r1", "aClass", "someData")
+        virtualNode.callInstanceFlow(input, flow)
 
-        // When we create a new key
-        val result = virtualNode.generateKey("my-key", HsmCategory.LEDGER, "CORDA.ECDSA.SECP256R")
+        // Then it should have instantiated the node and injected the services into it
+        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), any())
 
-        // Then it should pass it on to the key store
-        assertThat(result, `is`(publicKey))
-
-        // And the key should have been registered with the fiber
-        verify(fiber, times(1)).registerKey(holdingId.member, publicKey)
+        // And the flow should have been called
+        verify(flow, times(1)).call(argThat { request -> request.getRequestBody() == "someData" })
     }
+
 }

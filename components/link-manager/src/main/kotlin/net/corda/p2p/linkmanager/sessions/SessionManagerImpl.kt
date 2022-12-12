@@ -38,7 +38,6 @@ import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
@@ -361,7 +360,7 @@ internal class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
-        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return emptyList()
+        val pkiMode = pkiMode(groupInfo, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
@@ -379,22 +378,16 @@ internal class SessionManagerImpl(
 
     private fun pkiMode(
         groupInfo: GroupPolicyListener.GroupInfo,
-        ourIdentityInfo: HostingMapListener.IdentityInfo,
         sessionManagerConfig: SessionManagerConfig
     ): CertificateCheckMode? {
         return when (groupInfo.sessionPkiMode) {
             STANDARD -> {
-                if (ourIdentityInfo.sessionCertificates == null) {
-                    logger.error("Expected session certificates to be in hosting map for our identity ${ourIdentityInfo.holdingIdentity}.")
-                    return null
-                }
                 if (groupInfo.sessionTrustStore == null) {
-                    logger.error("Expected session trust stores to be in group policy for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    logger.error("Expected session trust stores to be in group policy for group ${groupInfo.holdingIdentity.groupId}.")
                     return null
                 }
                 CertificateCheckMode.CheckCertificate(
                     groupInfo.sessionTrustStore,
-                    ourIdentityInfo.sessionCertificates,
                     sessionManagerConfig.revocationConfigMode,
                     revocationCheckerClient::checkRevocation
                 )
@@ -511,6 +504,7 @@ internal class SessionManagerImpl(
         val payload = try {
             session.generateOurHandshakeMessage(
                 responderMemberInfo.sessionPublicKey,
+                ourIdentityInfo.sessionCertificates,
                 signWithOurGroupId
             )
         } catch (exception: CryptoProcessorException) {
@@ -648,12 +642,7 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
-        val ourIdentityInfo = linkManagerHostingMap.getInfo(hostedIdentityInSameGroup)
-        if (ourIdentityInfo == null) {
-            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
-            return null
-        }
-        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return null
+        val pkiMode = pkiMode(groupInfo, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
@@ -732,7 +721,7 @@ internal class SessionManagerImpl(
                     data
                 )
             }
-            session.generateOurHandshakeMessage(ourPublicKey, signData)
+            session.generateOurHandshakeMessage(ourPublicKey, ourIdentityInfo.sessionCertificates, signData)
         } catch (exception: CryptoProcessorException) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +

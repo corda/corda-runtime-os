@@ -23,7 +23,6 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'
     implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"

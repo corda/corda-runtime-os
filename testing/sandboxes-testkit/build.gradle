@@ -13,5 +13,4 @@ dependencies {
     api project(':components:virtual-node:sandbox-group-context-service')
     api project(':libs:virtual-node:sandbox-group-context')
     api project(':testing:sandboxes')
-    implementation project(':testing:test-utilities')
 }

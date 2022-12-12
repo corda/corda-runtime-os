@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -22,12 +23,19 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(getUtxoInvalidStateAndRef())
-            .addReferenceInputState(getUtxoInvalidStateAndRef())
+            .addInputState(getUtxoInvalidStateAndRef().ref)
+            .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
+        assertEquals(getUtxoInvalidStateAndRef().ref, tx.inputStateRefs.single())
+        assertEquals(getUtxoInvalidStateAndRef().ref, tx.referenceStateRefs.single())
+        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(utxoTimeWindowExample, tx.timeWindow)
+        assertEquals(publicKeyExample, tx.signatories.first())
     }
 
     @Test
@@ -36,9 +44,16 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
+        assertThat(tx.inputStateRefs).isEmpty()
+        assertThat(tx.referenceStateRefs).isEmpty()
+        assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
+        assertEquals(utxoNotaryExample, tx.notary)
+        assertEquals(utxoTimeWindowExample, tx.timeWindow, )
+        assertEquals(publicKeyExample, tx.signatories.first())
     }
 
     // TODO Add tests for verification failures.
@@ -49,8 +64,9 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(getUtxoInvalidStateAndRef())
-            .addReferenceInputState(getUtxoInvalidStateAndRef())
+            .addInputState(getUtxoInvalidStateAndRef().ref)
+            .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
+            .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             .toSignedTransaction(publicKeyExample) as UtxoSignedTransactionImpl
@@ -58,7 +74,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = CordaPackageSummary(
+        val expectedCpiMetadata = CordaPackageSummaryImpl(
             "CPI name",
             "CPI version",
             "46616B652D76616C7565",
@@ -67,13 +83,13 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
         assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
 
         val expectedCpkMetadata = listOf(
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
                 "",
                 "0101010101010101010101010101010101010101010101010101010101010101"
             ),
-            CordaPackageSummary(
+            CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
                 "",
@@ -90,8 +106,9 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
                 .setNotary(utxoNotaryExample)
                 .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
                 .addOutputState(utxoStateExample)
-                .addInputState(getUtxoInvalidStateAndRef())
-                .addReferenceInputState(getUtxoInvalidStateAndRef())
+                .addInputState(getUtxoInvalidStateAndRef().ref)
+                .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
+                .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
 

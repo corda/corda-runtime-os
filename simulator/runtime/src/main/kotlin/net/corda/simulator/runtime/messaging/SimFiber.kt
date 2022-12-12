@@ -1,7 +1,13 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.runtime.flows.FlowServicesInjector
+import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -17,7 +23,7 @@ interface SimFiber : Closeable, HasMemberInfos {
     /**
      * Registers an initiating member for [MemberLookup].
      */
-    fun registerInitiator(initiator: MemberX500Name)
+    fun registerMember(member: MemberX500Name)
 
     /**
      * Registers a responder class against the given member name and protocol.
@@ -29,13 +35,13 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun registerResponderClass(responder: MemberX500Name, protocol: String, flowClass: Class<out ResponderFlow>)
 
     /**
-     * Registers an instance of a responder class against the given member name and protocol.
+     * Registers an instance initiating flows for a given member and protocol
      *
-     * @param responder The member for whom to register the responder class.
-     * @param protocol The detected protocol of the responder class.
-     * @param flowClass The instance of responder flow to use in response to the given protocol.
+     * @param member The member who initiates/ responds to the flow
+     * @param protocol The protocol of the initiating flow
+     * @param instanceFlow The instance flow class
      */
-    fun registerResponderInstance(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow)
+    fun registerFlowInstance(member: MemberX500Name, protocol: String, instanceFlow: Flow)
 
     /**
      * @param member The member for whom to look up the responder class.
@@ -45,6 +51,13 @@ interface SimFiber : Closeable, HasMemberInfos {
      * no class has been registered.
      */
     fun lookUpResponderClass(member: MemberX500Name, protocol: String): Class<out ResponderFlow>?
+
+    /**
+     * @param member The member for whom to look up the initiator instance.
+     *
+     * @return A [Map] of previously registered instance initiating flows with protocols
+     */
+    fun lookupFlowInstance(member: MemberX500Name): Map<Flow, String>?
 
     /**
      * @param member The member for whom to look up the responder instance.
@@ -64,6 +77,14 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService
 
     /**
+     * Creates a signing service for the member
+     *
+     * @param member The member for whom to create the persistence service.
+     * @return The [SigningService] for the given member.
+     */
+    fun createSigningService(member: MemberX500Name): SigningService
+
+    /**
      * Creates a member lookup as it exists at the time of calling.
      *
      * @param member The member for whom to create a member lookup.
@@ -72,10 +93,25 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun createMemberLookup(member: MemberX500Name): MemberLookup
 
     /**
-     * @param member The member for whom to register a key.
-     * @param publicKey The key to register.
+     * Creates a flow messing service.
+     *
+     * @param configuration for the Simulator
+     * @param flow for which FlowMessaging is required
+     * @param member The member for whom to create the FlowMessaging service
+     * @param injector for flow services
+     * @return A [FlowMessaging] services responsible for sending and receiving messages
      */
-    fun registerKey(member: MemberX500Name, publicKey: PublicKey)
+    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow,
+                            member: MemberX500Name, injector: FlowServicesInjector): FlowMessaging
+
+    /**
+     * @param alias The alias to use for the key.
+     * @param hsmCategory The HSM category for the key.
+     * @param scheme The scheme for the key.
+     * @param member The member for whom to register a key.
+     * @return A generated key that is also registered with the member.
+     */
+    fun generateAndStoreKey(alias: String, hsmCategory: HsmCategory, scheme: String, member: MemberX500Name): PublicKey
 }
 
 /**

@@ -8,8 +8,7 @@ abstract class HttpRpcIntegrationTestBase {
     internal companion object {
         lateinit var server: HttpRpcServer
         fun isServerInitialized() = ::server.isInitialized
-        const val password = "admin"
-        val userAlice = User("admin", password, setOf())
+        val userAlice = User(FakeSecurityManager.USERNAME, FakeSecurityManager.PASSWORD, setOf())
         val securityManager = FakeSecurityManager()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
     }

@@ -2,19 +2,20 @@ package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.crypto.merkle.impl.NonceHashDigestProvider
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -37,15 +38,15 @@ class FilteredTransactionImplTest {
     private companion object {
         val digestAlgorithmName = DigestAlgorithmName.SHA2_256D.name
         const val metadataJson = "{}"
-        val metadata = TransactionMetadata(
+        val metadata = TransactionMetadataImpl(
             linkedMapOf(
-                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+                TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
             )
         )
     }
 
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val digestService = DigestServiceImpl(PlatformDigestServiceImpl(cipherSchemeMetadata), null)
 
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = mock<JsonMarshallingService>()
@@ -56,9 +57,9 @@ class FilteredTransactionImplTest {
     private val filteredComponentGroup0Proof = mock<MerkleProof>()
     private val filteredComponentGroup1AuditProof = mock<MerkleProof>()
     private val filteredComponentGroup1SizeProof = mock<MerkleProof>()
-    private val filteredComponentGroup0 = FilteredComponentGroup(0, filteredComponentGroup0Proof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1AuditProof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1SizeProof, MerkleProofType.SIZE)
+    private val filteredComponentGroup0 = FilteredComponentGroup(0, filteredComponentGroup0Proof)
+    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1AuditProof)
+    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1SizeProof)
     private val indexedMerkleLeaf0 = indexedMerkleLeaf(0, byteArrayOf(1))
     private val indexedMerkleLeaf1 = indexedMerkleLeaf(1, byteArrayOf(2))
 
@@ -66,7 +67,7 @@ class FilteredTransactionImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(jsonMarshallingService.parse(metadataJson, TransactionMetadata::class.java)).thenReturn(metadata)
+        whenever(jsonMarshallingService.parse(metadataJson, TransactionMetadataImpl::class.java)).thenReturn(metadata)
         whenever(componentGroupMerkleProof.proofType).thenReturn(MerkleProofType.AUDIT)
         whenever(filteredComponentGroup0Proof.proofType).thenReturn(MerkleProofType.AUDIT)
         whenever(filteredComponentGroup1AuditProof.proofType).thenReturn(MerkleProofType.AUDIT)

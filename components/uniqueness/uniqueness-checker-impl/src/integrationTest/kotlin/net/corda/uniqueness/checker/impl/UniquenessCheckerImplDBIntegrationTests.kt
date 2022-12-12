@@ -66,29 +66,31 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     private val baseTime: Instant = Instant.EPOCH
 
+    private val groupId = UUID.randomUUID().toString()
+
     // Default holding id used in most tests
     private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", "Test Group")
+        "C=GB, L=London, O=Alice", groupId)
     private val defaultHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
     private val defaultHoldingIdentityDb: EntityManagerFactory
 
     // Additional holding identites
     private val bobHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Bob", "Test Group")
+        "C=GB, L=London, O=Bob", groupId)
     private val bobHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(bobHoldingIdentity.shortHash)
     private val bobHoldingIdentityDb: EntityManagerFactory
 
     private val charlieHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Charlie", "Test Group")
+        "C=GB, L=London, O=Charlie", groupId)
     private val charlieHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(charlieHoldingIdentity.shortHash)
     private val charlieHoldingIdentityDb: EntityManagerFactory
 
     // Holding id that has no associated uniqueness DB
     private val noDbHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Nobody", "Test Group")
+        "C=GB, L=London, O=Nobody", groupId)
     private val noDbHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
 

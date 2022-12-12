@@ -28,7 +28,6 @@ import net.corda.httprpc.test.utils.TestClientFileUpload
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.WebResponse
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
@@ -37,7 +36,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -57,7 +56,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll

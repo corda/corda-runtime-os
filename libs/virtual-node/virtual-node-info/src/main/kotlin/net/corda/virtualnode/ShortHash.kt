@@ -35,6 +35,23 @@ class ShortHash private constructor(val value: String) {
         }
 
         /**
+         * Parses the given [hexString] and creates a short hash.
+         *
+         * For consistency with [SecureHash.toHexString], any lower case alpha characters are
+         * converted to uppercase.
+         *
+         * @throws [ShortHashException] if the string is not hexadecimal or has length different from [LENGTH].
+         */
+        fun parse(hexString: String) : ShortHash {
+            if (hexString.length != LENGTH) {
+                throw ShortHashException("Hex string has length of ${hexString.length} " +
+                        "but should be $LENGTH characters")
+            }
+
+            return of(hexString)
+        }
+
+        /**
          * Creates a short hash from the given secure hash.
          */
         fun of(secureHash: SecureHash) = of(secureHash.toHexString())

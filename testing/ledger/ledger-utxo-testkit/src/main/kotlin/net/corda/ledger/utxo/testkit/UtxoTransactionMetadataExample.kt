@@ -1,21 +1,23 @@
 package net.corda.ledger.utxo.testkit
 
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 
-val utxoTransactionMetadataExample = TransactionMetadata(linkedMapOf(
-    TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-    TransactionMetadata.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
-    TransactionMetadata.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
-    TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-    TransactionMetadata.PLATFORM_VERSION_KEY to 123,
-    TransactionMetadata.CPI_METADATA_KEY to cpiPackageSummaryExample,
-    TransactionMetadata.CPK_METADATA_KEY to cpkPackageSummaryListExample,
-    TransactionMetadata.SCHEMA_VERSION_KEY to TransactionMetadata.SCHEMA_VERSION
+val utxoTransactionMetadataExample = TransactionMetadataImpl(linkedMapOf(
+    TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
+    TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+    TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+    TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+    TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+    TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+    TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample,
+    TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+    TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to UtxoComponentGroup.values().size
 // TODO
 // List of component group types
 // Membership group parameters hash

@@ -15,7 +15,7 @@ import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -88,7 +88,7 @@ class MGMRpcOpsImpl @Activate constructor(
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
             return try {
-                mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
+                mgmOpsClient.generateGroupPolicy(ShortHash.parseOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {

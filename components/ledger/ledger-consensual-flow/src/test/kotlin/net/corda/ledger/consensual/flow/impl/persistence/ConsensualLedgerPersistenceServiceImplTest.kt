@@ -1,8 +1,9 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
@@ -11,7 +12,6 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -35,7 +35,6 @@ class ConsensualLedgerPersistenceServiceImplTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
-    private val digitalSignatureVerificationService = mock<DigitalSignatureVerificationService>()
 
     private lateinit var consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
 
@@ -58,8 +57,8 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        val expectedObj = mock<CordaPackageSummary>()
-        whenever(serializationService.deserialize<CordaPackageSummary>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        val expectedObj = mock<CordaPackageSummaryImpl>()
+        whenever(serializationService.deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<ConsensualSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
@@ -72,7 +71,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
         ).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
-        verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 

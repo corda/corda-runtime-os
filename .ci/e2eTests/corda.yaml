@@ -2,12 +2,18 @@ imagePullSecrets:
   - "docker-registry-cred"
 
 bootstrap:
-  initialAdminUser:
-    password:
-      value: "admin"
   db:
     clientImage:
       registry: docker-remotes.software.r3.com
+  kafka:
+    sasl:
+      username:
+        value: "bootstrap"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "kafka-credentials"
+            key: "bootstrap"
 
 
 logging:
@@ -33,13 +39,6 @@ kafka:
           key: "ca.crt"
   sasl:
     enabled: true
-    username:
-      value: "user"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-kafka-jaas"
-          key: "client-passwords"
 
 resources:
   requests:
@@ -48,3 +47,75 @@ resources:
   limits:
     memory: "1250Mi"
     cpu: "1000m"
+
+workers:
+  crypto:
+    kafka:
+      sasl:
+        username:
+          value: "crypto"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "crypto"
+  db:
+    kafka:
+      sasl:
+        username:
+          value: "db"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "db"
+  flow:
+    kafka:
+      sasl:
+        username:
+          value: "flow"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "flow"
+  membership:
+    kafka:
+      sasl:
+        username:
+          value: "membership"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "membership"
+  p2pGateway:
+    kafka:
+      sasl:
+        username:
+          value: "p2pGateway"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "p2pGateway"
+  p2pLinkManager:
+    kafka:
+      sasl:
+        username:
+          value: "p2pLinkManager"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "p2pLinkManager"
+  rpc:
+    kafka:
+      sasl:
+        username:
+          value: "rpc"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "rpc"

@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
 import kong.unirest.json.JSONObject
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import picocli.CommandLine.Option
@@ -46,6 +46,27 @@ abstract class BaseOnboard : Runnable {
         ObjectMapper()
     }
 
+    private val rpcPassword by lazy {
+        if (cordaClusterName != null) {
+            val getSecret = ProcessBuilder().command(
+                "kubectl",
+                "get",
+                "secret",
+                "corda-initial-admin-user",
+                "--namespace",
+                cordaClusterName,
+                "-o",
+                "go-template={{ .data.password | base64decode }}"
+            ).start()
+            if (getSecret.waitFor() != 0) {
+                throw OnboardException("Can not get admin password. ${getSecret.errorStream.reader().readText()}")
+            }
+            getSecret.inputStream.reader().readText()
+        } else {
+            "admin"
+        }
+    }
+
     private val url by lazy {
         val rpcPort = if (cordaClusterName != null) {
             val port = ServerSocket(0).use {
@@ -79,7 +100,7 @@ abstract class BaseOnboard : Runnable {
     protected fun setupClient() {
         Unirest.config()
             .verifySsl(false)
-            .setDefaultBasicAuth("admin", "admin")
+            .setDefaultBasicAuth("admin", rpcPassword)
             .defaultBaseUrl(url)
     }
 

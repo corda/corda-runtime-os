@@ -3,6 +3,7 @@ package net.corda.testing.sandboxes.impl
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.PublicKeyHash
@@ -14,7 +15,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 
 @Suppress("unused")
 @Component
-@ServiceRanking(Int.MAX_VALUE)
+@ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
     private val logger = loggerFor<MembershipGroupReaderProvider>()
 

@@ -51,6 +51,7 @@ dependencies {
 
     e2eTestImplementation project(":libs:configuration:configuration-endpoints")
     e2eTestImplementation project(":libs:crypto:certificate-generation")
+    e2eTestImplementation project(':libs:crypto:cipher-suite')
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
@@ -70,7 +71,6 @@ dependencies {
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
-    e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
 }
 
@@ -84,6 +84,16 @@ tasks.register('e2eTest', Test) {
 }
 
 tasks.named('e2eTest') {
+
+    def pluginsProject = project.rootProject.project('tools').project('plugins')
+    // Needs to build CLI tool along with plugins to be usable from within E2E tests
+    dependsOn pluginsProject.tasks.named('copyCliFiles')
+
+    // Set CLI_BUILD_DIR to be accessible from E2E tests
+    if(System.getenv("CLI_BUILD_DIR") == null) {
+        environment "CLI_BUILD_DIR", pluginsProject.layout.buildDirectory.get().asFile.absolutePath
+    }
+
     if(System.getenv("JDK_HOSTS_FILE") != null) {
         jvmArgs "-Djdk.net.hosts.file=${System.getenv("JDK_HOSTS_FILE")}"
     }

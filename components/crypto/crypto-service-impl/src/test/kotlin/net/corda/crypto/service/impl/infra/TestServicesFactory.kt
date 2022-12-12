@@ -3,7 +3,19 @@ package net.corda.crypto.service.impl.infra
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.CryptoServiceProvider
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.SharedSecretSpec
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createTestCryptoConfig
@@ -27,18 +39,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.SharedSecretSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
@@ -124,13 +124,11 @@ class TestServicesFactory {
 
     val coordinatorFactory: TestLifecycleCoordinatorFactoryImpl = TestLifecycleCoordinatorFactoryImpl()
 
-    val digest: DigestService by lazy {
-        DigestServiceImpl(schemeMetadata, null)
-    }
+    val platformDigest = PlatformDigestServiceImpl(schemeMetadata)
+    val digest = DigestServiceImpl(platformDigest, null)
 
-    val verifier: SignatureVerificationService by lazy {
+    val verifier: SignatureVerificationService =
         SignatureVerificationServiceImpl(schemeMetadata, digest)
-    }
 
     val configurationReadService: TestConfigurationReadService by lazy {
         TestConfigurationReadService(
@@ -207,7 +205,7 @@ class TestServicesFactory {
                 TransientSoftKeyMap(DefaultSoftPrivateKeyWrapping(wrappingKeyMap)),
                 wrappingKeyMap,
                 schemeMetadata,
-                digest
+                platformDigest
             ),
             recordedCryptoContexts
         )

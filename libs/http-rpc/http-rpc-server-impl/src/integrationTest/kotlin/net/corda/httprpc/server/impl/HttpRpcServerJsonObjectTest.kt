@@ -6,7 +6,6 @@ import net.corda.httprpc.test.CustomUnsafeString
 import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
@@ -23,7 +22,7 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -39,7 +38,8 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll

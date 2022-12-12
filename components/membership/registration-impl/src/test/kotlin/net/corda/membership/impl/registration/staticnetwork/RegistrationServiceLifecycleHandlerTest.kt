@@ -94,7 +94,8 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         platformInfoProvider,
         mock(),
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        mock(),
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -103,56 +104,52 @@ class RegistrationServiceLifecycleHandlerTest {
 
     @Test
     fun `Start event does not immediately move to UP status`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
 
-            context.verifyIsDown<TestRegistrationComponent>()
+            verifyIsDown<TestRegistrationComponent>()
         }
     }
 
     @Test
     fun `UP is posted once all dependencies are UP and configuration has been provided`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
-            context.verifyIsUp<TestRegistrationComponent>()
-            assertNotNull(context.testClass.registrationServiceLifecycleHandler.publisher)
-            assertNotNull(context.testClass.registrationServiceLifecycleHandler.groupParametersCache)
+            verifyIsUp<TestRegistrationComponent>()
+            assertNotNull(testClass.registrationServiceLifecycleHandler.publisher)
+            assertNotNull(testClass.registrationServiceLifecycleHandler.groupParametersCache)
         }
     }
 
     @Test
     fun `component remains UP if the config is changed`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
-            context.verifyIsUp<TestRegistrationComponent>()
+            verifyIsUp<TestRegistrationComponent>()
 
             // A config update of any variety should not trigger the test component to go down. This can be verified by
             // sending the same thing again, as the code will still respond to this event as if it were a change.
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
         }
     }
 
     @Test
     fun `component is DOWN after a stop event and the publisher is closed`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
-            context.verifyIsUp<TestRegistrationComponent>()
+            verifyIsUp<TestRegistrationComponent>()
             testClass.stop()
-            context.verifyIsDown<TestRegistrationComponent>()
+            verifyIsDown<TestRegistrationComponent>()
         }
 
         assertThrows<IllegalArgumentException> { registrationServiceLifecycleHandler.publisher }
@@ -160,89 +157,85 @@ class RegistrationServiceLifecycleHandlerTest {
 
     @Test
     fun `component goes DOWN if one of its dependencies goes DOWN`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
             toggleDependency<GroupPolicyProvider>({
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             }, {
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
 
             toggleDependency<ConfigurationReadService>({
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             }, {
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
 
             toggleDependency<HSMRegistrationClient>({
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             }, {
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             })
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
         }
     }
 
     @Test
     fun `component goes DOWN and comes back UP if subscription goes DOWN then UP`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
-            context.verifyIsUp<TestRegistrationComponent>()
+            verifyIsUp<TestRegistrationComponent>()
 
             toggleDependency(subName, {
-                context.verifyIsDown<TestRegistrationComponent>()
+                verifyIsDown<TestRegistrationComponent>()
             }, {
-                context.verifyIsUp<TestRegistrationComponent>()
+                verifyIsUp<TestRegistrationComponent>()
             })
         }
     }
 
     @Test
     fun `component goes DOWN and comes back UP if a dependent component errors and comes back`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
 
             setDependencyToError<HSMRegistrationClient>()
-            context.verifyIsDown<TestRegistrationComponent>()
+            verifyIsDown<TestRegistrationComponent>()
             bringDependencyUp<HSMRegistrationClient>()
 
             // Model a config update coming back due to us re-registering with the config read service.
-            sendConfigUpdate(configs)
-            context.verifyIsUp<TestRegistrationComponent>()
+            sendConfigUpdate<TestRegistrationComponent>(configs)
+            verifyIsUp<TestRegistrationComponent>()
         }
     }
 
     @Test
     fun `component handles a subscription error and restart`() {
-        val context = getTestContext()
-        context.run {
+        getTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate(configs)
+            sendConfigUpdate<TestRegistrationComponent>(configs)
 
-            context.verifyIsUp<TestRegistrationComponent>()
+            verifyIsUp<TestRegistrationComponent>()
 
             setDependencyToError(subName)
-            context.verifyIsDown<TestRegistrationComponent>()
+            verifyIsDown<TestRegistrationComponent>()
             bringDependencyUp(subName)
-            context.verifyIsUp<TestRegistrationComponent>()
+            verifyIsUp<TestRegistrationComponent>()
         }
     }
 
@@ -288,7 +281,8 @@ class RegistrationServiceLifecycleHandlerTest {
                 mock(),
                 platformInfoProvider,
                 mock(),
-                virtualNodeInfoReadService
+                virtualNodeInfoReadService,
+                mock(),
             )
 
             val handle = RegistrationServiceLifecycleHandler(staticMemberRegistrationService)

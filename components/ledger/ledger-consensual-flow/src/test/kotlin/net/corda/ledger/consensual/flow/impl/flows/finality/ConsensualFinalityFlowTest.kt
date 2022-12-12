@@ -1,9 +1,11 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import java.security.PublicKey
+import java.time.Instant
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -26,8 +28,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
-import java.time.Instant
 
 class ConsensualFinalityFlowTest {
 

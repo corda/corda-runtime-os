@@ -1,5 +1,8 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.certificates.CertificateUsage
@@ -19,9 +22,6 @@ import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -192,6 +192,58 @@ class CertificatesRpcOpsImpl @Activate constructor(
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")
+        }
+    }
+
+    override fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.getCertificateAliases(
+                usageType,
+                holdingIdentityShortHash,
+            ).toList()
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
+        }
+    }
+
+    override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
+            ShortHash.ofOrThrow(holdingIdentityId)
+        } else {
+            null
+        }
+        val usageType = CertificateUsage.values().firstOrNull {
+            it.publicName.equals(usage.trim(), ignoreCase = true)
+        } ?: throw InvalidInputDataException(
+            details = mapOf("usage" to "Unknown usage: $usage")
+        )
+        return try {
+            certificatesClient.retrieveCertificates(
+                holdingIdentityShortHash,
+                usageType,
+                alias
+            ) ?: throw ResourceNotFoundException(alias, "alias")
+        } catch (e: ResourceNotFoundException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn("Could not get certificate aliases", e)
+            throw InternalServerException("Could not get certificate aliases: ${e.message}")
         }
     }
 

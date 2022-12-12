@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.signing
 
 import net.corda.simulator.crypto.HsmCategory
-import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
+import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.crypto.SignatureSpec
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -15,7 +15,7 @@ class SimWithJsonSigningServiceTest {
         // Given a signing service and some bytes
         val jsonMarshallingService = SimpleJsonMarshallingService()
         val keyStore = BaseSimKeyStore()
-        val service =  SimWithJsonSigningService(jsonMarshallingService, keyStore)
+        val service =  SimWithJsonSigningService(keyStore)
 
         // When we add a key to the keystore and sign using the service
         val publicKey = keyStore.generateKey("my-alias", HsmCategory.LEDGER, "anyscheme")

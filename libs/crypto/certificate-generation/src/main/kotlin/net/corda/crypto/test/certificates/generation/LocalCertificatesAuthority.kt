@@ -60,9 +60,11 @@ internal open class LocalCertificatesAuthority(
         defaultPrivateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
 
+    private val issuer = X500Name("C=UK, CN=r3.com")
+
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificate {
         val caKeyPair = generateKeyPair()
-        val certBuilder = certificateBuilder("C=UK CN=r3.com", caKeyPair.public)
+        val certBuilder = certificateBuilder(issuer.toString(), caKeyPair.public)
 
         val basicConstraints = BasicConstraints(true)
 
@@ -101,7 +103,7 @@ internal open class LocalCertificatesAuthority(
         val dnName = X500Name(name)
         val certSerialNumber = nextSerialNumber()
         val endDate = Date(now + validDuration.toMillis())
-        return JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, key)
+        return JcaX509v3CertificateBuilder(issuer, certSerialNumber, startDate, endDate, dnName, key)
     }
 
     internal fun asKeyStore(alias: String): KeyStore {
@@ -142,7 +144,7 @@ internal open class LocalCertificatesAuthority(
         }.build(parameter)
 
         val certificateBuilder = certificateBuilder(
-            "C=UK CN=${hosts.first()}",
+            "C=UK, CN=${hosts.first()}",
             publicKey
         )
         hosts.forEach { host ->
@@ -186,7 +188,7 @@ internal open class LocalCertificatesAuthority(
         val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(csr.subjectPublicKeyInfo.encoded))
 
         val certificateGenerator = JcaX509v3CertificateBuilder(
-            X500Name("C=UK CN=r3.com"),
+            issuer,
             certSerialNumber,
             startDate,
             endDate,

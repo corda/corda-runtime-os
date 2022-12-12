@@ -186,12 +186,37 @@
                 false,
                 true
             ]
-            
         },
         "nodeSelector": {
             "type": "object",
             "default": {},
             "title": "node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/",
+            "required": [],
+            "properties": {},
+            "examples": [{}]
+        },
+        "serviceAccount": {
+            "type": "object",
+            "default": {},
+            "title": "service account for pod assignment, see https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+            "additionalProperties": false,
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "default": "",
+                    "title": "name of the service account",
+                    "examples": [""]
+                }
+            },
+            "examples": [{}]
+        },
+        "annotations": {
+            "type": "object",
+            "default": {},
+            "title": "custom annotations for all workers",
             "required": [],
             "properties": {},
             "examples": [{}]
@@ -425,8 +450,12 @@
                         }
                     },
                     "examples": [{
-                        "username": "user",
-                        "password": "password",
+                        "username": {
+                            "value": "user"
+                        },
+                        "password": {
+                            "value": "password"
+                        },
                         "mechanism": "SCRAM-SHA-256",
                         "enabled": true
                     }]
@@ -491,6 +520,12 @@
                             ],
                             "additionalProperties": false,
                             "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
                                 "dbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -515,6 +550,12 @@
                                 }
                             },
                             "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                },
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
@@ -528,6 +569,12 @@
                                 "dbConnectionPool"
                             ],
                             "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
                                 "dbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -551,6 +598,12 @@
                                 }
                             },
                             "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                },
                                 "dbConnectionPool": {
                                     "maxSize": 5
                                 }
@@ -657,6 +710,19 @@
                             "examples": [
                                 3
                             ]
+                        },
+                        "sasl": {
+                            "type": "object",
+                            "title": "kafka SASL credentials",
+                            "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "additionalProperties": false
                         }
                     },
                     "if": {
@@ -781,6 +847,24 @@
                     "properties": {},
                     "examples": [{}]
                 },
+                "serviceAccount": {
+                    "type": "object",
+                    "default": "",
+                    "title": "service account for the bootstrap containers",
+                    "additionalProperties": false,
+                    "required": [
+                        "name"
+                    ],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "",
+                            "title": "name of the service account",
+                            "examples": [""]
+                        }
+                    },
+                    "examples": [{}]
+                },
                 "rbac": {
                     "type": "object",
                     "default": {},
@@ -834,11 +918,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -871,11 +957,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -895,20 +983,10 @@
                                     }
                                 },
                                 "salt": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker salt, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 },
                                 "passphrase": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "db worker passphrase, defaults to a value randomly-generated on install",
-                                    "examples": [
-                                        "password"
-                                    ]
+                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{
@@ -956,11 +1034,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -1012,11 +1092,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
-                                "resources": {}
+                                "resources": {},
+                                "kafka": {}
                             }
                         }
                     ]
@@ -1034,11 +1116,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -1149,11 +1233,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "useStubs": {
                                     "type": "boolean",
                                     "default": false,
@@ -1210,11 +1296,13 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "annotations": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "useStubs": {
                                     "type": "boolean",
                                     "default": false,
@@ -1563,6 +1651,14 @@
                 "javaOptions": {
                     "type": "string"
                 },
+                "annotations": {
+                    "type": "object",
+                    "default": {},
+                    "title": "custom annotations for the worker",
+                    "required": [],
+                    "properties": {},
+                    "examples": [{}]
+                },
                 "replicaCount": {
                     "type": "integer",
                     "default": 1,
@@ -1712,6 +1808,26 @@
                             "memory": "2048Mi"
                         }
                     }]
+                },
+                "kafka": {
+                    "type": "object",
+                    "title": "kafka configuration",
+                    "properties": {
+                        "sasl": {
+                            "type": "object",
+                            "title": "kafka SASL credentials",
+                            "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "additionalProperties": false
+                    }
                 }
             },
             "examples": [{

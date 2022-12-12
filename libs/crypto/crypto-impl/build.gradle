@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-library'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Common crypto implementation'
 
 dependencies {
@@ -17,6 +21,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':libs:layered-property-map')
 
+    implementation 'net.corda:corda-application'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-serialization"

@@ -17,8 +17,8 @@ abstract class UtxoLedgerIntegrationTest: CommonLedgerIntegrationTest() {
     override fun initialize(setup: SandboxSetup){
         super.initialize(setup)
 
-        utxoSignedTransactionFactory = sandboxGroupContext1.getSandboxSingletonService()
-        utxoLedgerService = sandboxGroupContext1.getSandboxSingletonService()
+        utxoSignedTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
+        utxoLedgerService = sandboxGroupContext.getSandboxSingletonService()
         utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
             jsonValidator,

@@ -15,6 +15,17 @@ interface ExternalEventResponseFactory {
     /**
      * Creates a response representing the successful processing of an external event.
      *
+     * @param requestId The [ExternalEventContext.requestId] that the received event contained.
+     * @param flowId The [ExternalEventContext.flowId] that the received event contained.
+     * @param payload The Avro schema object to send.
+     *
+     * @return A [FlowEvent] record containing a [ExternalEventResponse] to send back to the calling flow.
+     */
+    fun success(requestId: String, flowId: String, payload: Any): Record<String, FlowEvent>
+
+    /**
+     * Creates a response representing the successful processing of an external event.
+     *
      * @param flowExternalEventContext The [ExternalEventContext] that the received event contained.
      * @param payload The Avro schema object to send.
      *

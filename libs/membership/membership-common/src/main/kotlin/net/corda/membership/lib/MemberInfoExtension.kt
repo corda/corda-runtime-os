@@ -77,9 +77,6 @@ class MemberInfoExtension {
         /** Key name for certificate property. */
         const val CERTIFICATE = "corda.session.certificate"
 
-        /** Key name for created time property. */
-        const val CREATED_TIME = "corda.createdTime"
-
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
 
@@ -229,7 +226,7 @@ class MemberInfoExtension {
                 null
             }
 
-        /** Return the key used for ECIES encryption. Only MGMs should have a value set for ecdh key. */
+        /** Return the key used for hybrid encryption. Only MGMs should have a value set for ecdh key. */
         @JvmStatic
         val MemberInfo.ecdhKey: PublicKey?
             get() = memberProvidedContext.parseOrNull(ECDH_KEY)

@@ -2,10 +2,10 @@ package net.corda.membership.impl.registration.dummy
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.EciesParamsProvider
-import net.corda.crypto.ecies.EncryptedDataWithKey
-import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.HybridEncryptionParamsProvider
+import net.corda.crypto.hes.EncryptedDataWithKey
+import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,7 +24,7 @@ class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
     override fun encrypt(
         otherPublicKey: PublicKey,
         plainText: ByteArray,
-        params: EciesParamsProvider
+        params: HybridEncryptionParamsProvider
     ): EncryptedDataWithKey {
         val ephemeralKey = cryptoOpsClient.generateKeyPair(
             "tenantId",
@@ -32,11 +32,11 @@ class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
             "alias",
             ECDSA_SECP256R1_CODE_NAME
         )
-        val eciesParamsProvider = params.get(ephemeralKey, otherPublicKey)
+        val hybridEncryptionParamsProvider = params.get(ephemeralKey, otherPublicKey)
         return EncryptedDataWithKey(
             ephemeralKey,
             plainText,
-            EciesParams(eciesParamsProvider.salt, eciesParamsProvider.aad)
+            HybridEncryptionParams(hybridEncryptionParamsProvider.salt, hybridEncryptionParamsProvider.aad)
         )
     }
 }

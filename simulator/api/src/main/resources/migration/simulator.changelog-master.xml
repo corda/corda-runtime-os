@@ -1,0 +1,42 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="0" author="R3.Corda" dbms="hsql">
+        <createSequence sequenceName="hibernate_sequence" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="consensual-signed-transaction-entity-v1.0">
+        <createTable tableName="consensual_transaction">
+            <column name="id" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true" unique="true"/>
+            </column>
+            <column name="state_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="consensual_transaction_signature">
+            <column name="transaction_id" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="fk_transaction_signature" references="consensual_transaction(id)"/>
+            </column>
+            <column name="signature_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, signature_idx"
+                       constraintName="consensual_transaction_signature_pkey"
+                       tableName="consensual_transaction_signature"/>
+    </changeSet>
+
+</databaseChangeLog>

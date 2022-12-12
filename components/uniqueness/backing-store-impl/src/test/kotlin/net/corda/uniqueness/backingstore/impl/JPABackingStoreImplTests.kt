@@ -35,6 +35,7 @@ import org.mockito.kotlin.doReturn
 import java.sql.Connection
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -59,7 +60,8 @@ class JPABackingStoreImplTests {
     private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
     private lateinit var dbConnectionManager: DbConnectionManager
 
-    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
+    private val groupId = UUID.randomUUID().toString()
+    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
 
     inner class DummyLifecycle : LifecycleEvent
 

@@ -17,14 +17,12 @@ interface FilteredTransactionFactory {
      * @param wireTransaction The [WireTransaction] to filter and convert to a [FilteredTransaction].
      * @param componentGroupFilterParameters The ordinals to include in the filtered transaction along with the deserialized form of each
      * component and the type of Merkle proof that should be created.
-     * @param filter The [Predicate] to apply to each item in the transaction.
      *
      * @return A [FilteredTransaction] only containing items that passed through the [filter].
      */
     @Suspendable
     fun create(
         wireTransaction: WireTransaction,
-        componentGroupFilterParameters: List<ComponentGroupFilterParameters>,
-        filter: Predicate<Any>
+        componentGroupFilterParameters: List<ComponentGroupFilterParameters>
     ): FilteredTransaction
 }

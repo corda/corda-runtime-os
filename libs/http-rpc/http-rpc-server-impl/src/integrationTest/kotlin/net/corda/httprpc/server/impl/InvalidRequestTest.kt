@@ -8,7 +8,6 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.WebResponse
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
@@ -32,7 +31,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
@@ -47,7 +46,8 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                        "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll
@@ -226,5 +226,35 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         val responseBody = parseUuidResponse.body
         assertNotNull(responseBody)
         assertDoesNotThrow(responseBody) { JsonParser.parseString(responseBody) }
+    }
+
+    @Test
+    fun `pass integer in query that cannot be parsed`() {
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            val responseBody = body
+            assertNotNull(responseBody)
+
+            val json = JsonParser.parseString(responseBody) as JsonObject
+            val responseTitle = json["title"].asString
+            assertThat(responseTitle).contains("Unable to parse parameter 'id'")
+        }
+
+        client.call(HttpVerb.GET, WebRequest<Any>("health/hello/world?id=wrongInt"), userName, password).doAssert()
+    }
+
+    @Test
+    fun `pass integer in path that cannot be parsed`() {
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            val responseBody = body
+            assertNotNull(responseBody)
+
+            val json = JsonParser.parseString(responseBody) as JsonObject
+            val responseTitle = json["title"].asString
+            assertThat(responseTitle).contains("Unable to parse parameter 'number'")
+        }
+
+        client.call(HttpVerb.POST, WebRequest<Any>("health/plusone/wrongInt"), userName, password).doAssert()
     }
 }

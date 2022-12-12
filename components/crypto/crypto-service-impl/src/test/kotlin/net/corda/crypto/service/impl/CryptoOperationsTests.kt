@@ -1,13 +1,18 @@
 package net.corda.crypto.service.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
-import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
+import net.corda.crypto.hes.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -18,11 +23,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -614,7 +614,7 @@ class CryptoOperationsTests {
             otherPublicKey = stableKeyPair.publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

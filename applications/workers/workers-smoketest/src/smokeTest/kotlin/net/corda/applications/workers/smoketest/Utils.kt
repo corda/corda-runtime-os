@@ -12,12 +12,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 const val USERNAME = "admin"
-const val PASSWORD = "admin"
+val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
 const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 
 // The CPB and CPI used in smoke tests
 const val TEST_CPI_NAME = "test-cordapp"
 const val TEST_CPB_LOCATION = "/META-INF/test-cordapp.cpb"
+const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
+const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
 
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))

@@ -1,14 +1,14 @@
 package net.corda.crypto.tck.testing.hsms
 
-import net.corda.crypto.impl.getSigningData
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.getParamsSafely
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.SignatureInstances
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.getParamsSafely
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.impl.getSigningData
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -23,7 +23,7 @@ import javax.crypto.Cipher
 abstract class AbstractHSM(
     userName: String,
     protected val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService
+    private val digestService: PlatformDigestService
 ) {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 

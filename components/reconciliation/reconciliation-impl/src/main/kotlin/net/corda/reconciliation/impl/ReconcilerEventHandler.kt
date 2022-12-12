@@ -60,13 +60,12 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             logger.info("Starting reconciliations")
-            reconcileAndScheduleNext(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
+            reconcileAndScheduleNext(coordinator)
         } else {
             // TODO Revise below actions in case of an error from sub services (DOWN vs ERROR)
             coordinator.updateStatus(event.status)
             coordinator.cancelTimer(timerKey)
-            closeResources()
         }
     }
 
@@ -83,7 +82,6 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
-            closeResources()
         }
     }
 

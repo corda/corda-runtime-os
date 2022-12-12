@@ -9,6 +9,10 @@ plugins {
     id 'biz.aQute.bnd.builder'
 }
 
+ext {
+    releasable = true
+}
+
 description "Bare bones Kotlin reflection within an OSGi framework."
 
 configurations {

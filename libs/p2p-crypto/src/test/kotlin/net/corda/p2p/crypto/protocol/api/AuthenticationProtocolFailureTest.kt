@@ -78,7 +78,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(
             initiatorHandshakeMessage.header,
@@ -112,7 +116,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
@@ -144,7 +152,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage, aliceX500Name, wrongPublicKey, SignatureSpec.ECDSA_SHA256
@@ -173,7 +185,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -188,7 +204,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForB
+        )
 
         assertThatThrownBy {
             authenticationProtocolA.validatePeerHandshakeMessage(
@@ -224,7 +244,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if responder certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -259,7 +279,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            ourCertificates,
+            signingCallbackForA
+        )
 
         assertThrows<InvalidPeerCertificate> { authenticationProtocolB.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
@@ -273,7 +297,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if initiator certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -307,7 +331,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            ourCertificates,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -322,7 +350,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            ourCertificates,
+            signingCallbackForB
+        )
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(
@@ -334,8 +366,7 @@ class AuthenticationProtocolFailureTest {
 
     @Test
     fun `session authentication fails for responder if initiator doesn't send a certificate`() {
-        val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -367,7 +398,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForA
+        )
 
         assertThrows<InvalidPeerCertificate> { authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -381,7 +416,7 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails for initiator if responder doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
 
         val authenticationProtocolA = AuthenticationProtocolInitiator(
             sessionId,
@@ -413,7 +448,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            ourCertificates,
+            signingCallbackForA
+        )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -428,7 +467,11 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            null,
+            signingCallbackForB
+        )
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(

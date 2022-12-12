@@ -2,7 +2,6 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -16,12 +15,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -51,13 +50,13 @@ class CertificatesServiceImplTest {
         } doReturn subscription
     }
     private val configurationReadService = mock<ConfigurationReadService>()
-    private val processor = mock<CertificatesProcessor>()
+    private val client = mock<DbCertificateClient>()
 
     private val service = CertificatesServiceImpl(
         coordinatorFactory,
         subscriptionFactory,
         configurationReadService,
-        processor,
+        client,
     )
 
     @Test
@@ -277,114 +276,6 @@ class CertificatesServiceImplTest {
 
             verify(subscription).close()
             verify(registration).close()
-        }
-    }
-
-    @Nested
-    inner class ClientFunctionalityTest {
-        private val hash = ShortHash.of("123456789000")
-        private val certificateProcessor = mock<CertificatesProcessor.CertificateProcessor<*>>()
-
-        @Test
-        fun `importCertificates import the certificates`() {
-            val block = argumentCaptor<(CertificatesProcessor.CertificateProcessor<*>) -> Unit>()
-            whenever(
-                processor.useCertificateProcessor(
-                    eq(hash),
-                    eq(CertificateUsage.P2P_SESSION),
-                    block.capture()
-                )
-            ).doReturn(Unit)
-
-            service.importCertificates(
-                CertificateUsage.P2P_SESSION,
-                hash,
-                "alias",
-                "certificate",
-            )
-
-            block.firstValue.invoke(certificateProcessor)
-            verify(certificateProcessor).saveCertificates("alias", "certificate")
-        }
-
-        @Test
-        fun `retrieveCertificates call the processor`() {
-            whenever(certificateProcessor.readCertificates("alias")).doReturn("Certificate")
-            val block = argumentCaptor<(CertificatesProcessor.CertificateProcessor<*>) -> String>()
-            whenever(
-                processor.useCertificateProcessor(
-                    eq(hash),
-                    eq(CertificateUsage.P2P_SESSION),
-                    block.capture(),
-                )
-            ).doReturn("Certificate")
-
-            service.retrieveCertificates(
-                CertificateUsage.P2P_SESSION,
-                hash,
-                "alias",
-            )
-
-            block.firstValue.invoke(certificateProcessor)
-            verify(certificateProcessor).readCertificates("alias")
-        }
-
-        @Test
-        fun `retrieveCertificates return the results`() {
-            whenever(
-                processor.useCertificateProcessor(
-                    eq(hash),
-                    eq(CertificateUsage.P2P_SESSION),
-                    any<(CertificatesProcessor.CertificateProcessor<*>) -> String>()
-                )
-            ).doReturn("Certificate")
-
-            val certificates = service.retrieveCertificates(
-                CertificateUsage.P2P_SESSION,
-                hash,
-                "alias",
-            )
-
-            assertThat(certificates).isEqualTo("Certificate")
-        }
-
-        @Test
-        fun `retrieveAllCertificates call the processor`() {
-            whenever(certificateProcessor.readAllCertificates()).doReturn(listOf("3"))
-            val block = argumentCaptor<(CertificatesProcessor.CertificateProcessor<*>) -> List<String>>()
-            whenever(
-                processor.useCertificateProcessor(
-                    eq(hash),
-                    eq(CertificateUsage.P2P_SESSION),
-                    block.capture(),
-                )
-            ).doReturn(listOf("3"))
-
-            service.retrieveAllCertificates(
-                CertificateUsage.P2P_SESSION,
-                hash,
-            )
-
-            block.firstValue.invoke(certificateProcessor)
-            verify(certificateProcessor).readAllCertificates()
-        }
-
-        @Test
-        fun `retrieveAllCertificates return the results`() {
-            whenever(
-                processor.useCertificateProcessor(
-                    eq(hash),
-                    eq(CertificateUsage.P2P_SESSION),
-                    any<(CertificatesProcessor.CertificateProcessor<*>) -> List<String>>()
-                )
-            ).doReturn(listOf("1", "2"))
-
-            val certificates = service.retrieveAllCertificates(
-                CertificateUsage.P2P_SESSION,
-                hash,
-            )
-
-            assertThat(certificates).isEqualTo(listOf("1", "2"))
         }
     }
 }

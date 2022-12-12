@@ -26,11 +26,11 @@ import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC2_T
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
+import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
-import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
+import net.corda.messaging.integration.processors.TestDurableDummyMessageProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessor
-import net.corda.messaging.integration.processors.TestDurableStringProcessor
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
@@ -183,7 +183,7 @@ class DurableSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
+        val futures = publisher.publish(getDummyRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
@@ -201,7 +201,7 @@ class DurableSubscriptionIntegrationTest {
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
-            TestDurableStringProcessor(dlqLatch),
+            TestDurableDummyMessageProcessor(dlqLatch),
             TEST_CONFIG,
             null
         )

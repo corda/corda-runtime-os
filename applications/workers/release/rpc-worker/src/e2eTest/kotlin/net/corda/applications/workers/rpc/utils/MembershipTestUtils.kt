@@ -159,8 +159,8 @@ fun E2eCluster.assertMemberInMemberList(
 
 fun E2eCluster.lookupMembers(
     holdingId: String
-) = with(testToolkit) {
-    httpClientFor(MemberLookupRpcOps::class.java)
+): List<RpcMemberInfo> {
+    return clusterHttpClientFor(MemberLookupRpcOps::class.java)
         .use { client ->
             client.start().proxy.lookup(holdingId).members
         }

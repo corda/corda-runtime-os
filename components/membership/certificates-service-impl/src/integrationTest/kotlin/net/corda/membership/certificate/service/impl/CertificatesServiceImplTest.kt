@@ -105,7 +105,7 @@ internal class CertificatesServiceImplTest {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
         }
 
-        certificatesService.importCertificates(usage, null, testAlias, testRawCertificate)
+        certificatesService.client.importCertificates(usage, null, testAlias, testRawCertificate)
 
         val importedCertificate = entityManagerFactory.transaction {
             it.find(ClusterCertificate::class.java, testAlias)
@@ -123,7 +123,7 @@ internal class CertificatesServiceImplTest {
             it.persist(ClusterCertificate("otherTenant", testAlias, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(testUsage, null, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates( null, testUsage, testAlias)
 
         assertThat(certificate).isNull()
     }
@@ -152,7 +152,7 @@ internal class CertificatesServiceImplTest {
             )
         }
 
-        val certificate = certificatesService.retrieveCertificates(testUsage, null, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates(null, testUsage, testAlias)
 
         assertThat(certificate).isEqualTo(testRawCertificate)
     }
@@ -166,9 +166,9 @@ internal class CertificatesServiceImplTest {
             it.persist(ClusterCertificate("otherTenant", "otherAlias", "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveAllCertificates(testUsage, null)
+        val aliases = certificatesService.client.getCertificateAliases(testUsage, null)
 
-        assertThat(certificate).isEmpty()
+        assertThat(aliases).isEmpty()
     }
 
     @Test
@@ -184,10 +184,12 @@ internal class CertificatesServiceImplTest {
             it.persist(ClusterCertificate("otherAlias", "OtherUsage", "otherCertificate"))
         }
 
-        val certificates = certificatesService.retrieveAllCertificates(testUsage, null)
+        val certificates = certificatesService.client.getCertificateAliases(testUsage, null)
 
-        assertThat(certificates.size).isEqualTo(2)
-        assertThat(certificates.toSet()).isEqualTo(setOf(testRawCertificate1, testRawCertificate2))
+        assertThat(certificates).containsExactlyInAnyOrder(
+            "testAlias1",
+            "testAlias2"
+        )
     }
 
     @Test
@@ -200,7 +202,7 @@ internal class CertificatesServiceImplTest {
             it.createQuery("delete from Certificate").executeUpdate()
         }
 
-        certificatesService.importCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias, testRawCertificate)
+        certificatesService.client.importCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias, testRawCertificate)
 
         val importedCertificate = entityManagerFactory.transaction {
             it.find(Certificate::class.java, testAlias)
@@ -217,7 +219,7 @@ internal class CertificatesServiceImplTest {
             it.persist(Certificate("otherAlias", CertificateUsage.P2P_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(CertificateUsage.P2P_TLS, testTenant, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates( testTenant, CertificateUsage.P2P_TLS, testAlias)
 
         assertThat(certificate).isNull()
     }
@@ -233,7 +235,7 @@ internal class CertificatesServiceImplTest {
             it.persist(Certificate("otherAlias", CertificateUsage.RPC_API_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias)
+        val certificate = certificatesService.client.retrieveCertificates(testTenant, CertificateUsage.RPC_API_TLS, testAlias)
 
         assertThat(certificate).isEqualTo(testRawCertificate)
     }
@@ -245,9 +247,9 @@ internal class CertificatesServiceImplTest {
             it.createQuery("delete from Certificate").executeUpdate()
         }
 
-        val certificate = certificatesService.retrieveAllCertificates(CertificateUsage.P2P_SESSION, testTenant)
+        val aliases = certificatesService.client.getCertificateAliases(CertificateUsage.P2P_SESSION, testTenant)
 
-        assertThat(certificate).isEmpty()
+        assertThat(aliases).isEmpty()
     }
 
     @Test
@@ -261,9 +263,11 @@ internal class CertificatesServiceImplTest {
             it.persist(Certificate("testAlias2", CertificateUsage.P2P_SESSION.publicName, testRawCertificate2))
         }
 
-        val certificates = certificatesService.retrieveAllCertificates(CertificateUsage.P2P_SESSION, testTenant)
+        val aliases = certificatesService.client.getCertificateAliases(CertificateUsage.P2P_SESSION, testTenant)
 
-        assertThat(certificates.size).isEqualTo(2)
-        assertThat(certificates.toSet()).isEqualTo(setOf(testRawCertificate1, testRawCertificate2))
+        assertThat(aliases).containsExactlyInAnyOrder(
+            "testAlias1",
+            "testAlias2",
+        )
     }
 }

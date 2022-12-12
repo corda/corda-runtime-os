@@ -13,7 +13,6 @@ import net.corda.httprpc.test.utils.FakeSecurityManager
 import net.corda.httprpc.test.utils.TestHttpClient
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
@@ -24,7 +23,6 @@ import kotlin.test.assertEquals
 
 
 class HttpRpcServerAzureAdTest {
-    private lateinit var httpRpcSettings: HttpRpcSettings
     private lateinit var httpRpcServer: HttpRpcServer
     private lateinit var client: TestHttpClient
     private lateinit var securityManager: RPCSecurityManager
@@ -32,8 +30,8 @@ class HttpRpcServerAzureAdTest {
     @BeforeEach
     fun setUp() {
         securityManager = FakeSecurityManager()
-        httpRpcSettings = HttpRpcSettings(
-            NetworkHostAndPort("localhost", findFreePort()),
+        val httpRpcSettings = HttpRpcSettings(
+            NetworkHostAndPort("localhost", 0),
             HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
             null,
             SsoSettings(
@@ -49,7 +47,8 @@ class HttpRpcServerAzureAdTest {
             multipartDir,
             true
         ).apply { start() }
-        client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+        client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcServer.port}/" +
+                "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
     }
 
     @AfterEach

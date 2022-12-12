@@ -89,7 +89,7 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 event.config.getConfig(MESSAGING_CONFIG).apply {
-                    flowRpcOps.initialise(this)
+                    flowRpcOps.initialise(this, ::signalErrorStatus)
                     flowStatusCacheService.initialise(this)
                 }
             }
@@ -106,5 +106,9 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
         if(isRunning){
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
+    }
+
+    private fun signalErrorStatus() {
+        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
     }
 }

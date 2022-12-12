@@ -8,20 +8,19 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parseList
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 import java.time.Instant
 
@@ -42,12 +41,6 @@ import java.time.Instant
  * be positive or negative. As an example: If `3600000` is provided, the transaction's time window will end at UTC time
  * ([Instant.now]) + 1 hour. If not provided, it will default to 1 hour, which means that the time window's upper bound
  * will be the current  UTC time ([Instant.now]) + 1 hour.
- *
- * TODO CORE-7939 Add extra state parameters once they are available.
- * TODO CORE-7939 This test flow should be modified once the Ledger (UtxoLedgerTransactionImpl and back-chain resolution)
- *  has been finished. Since `inputStateAndRefs` returns an empty list for now, the uniqueness check will always
- *  pass as each transaction will be considered an ISSUANCE transaction. After the ledger is in a better state
- *  we'll need to ISSUE states first before we can CONSUME them.
  */
 @InitiatingFlow(protocol = "non-validating-test")
 class NonValidatingNotaryTestFlow : RPCStartableFlow {
@@ -66,16 +59,59 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
     private companion object {
         val log = loggerFor<NonValidatingNotaryTestFlow>()
-
-        // TODO CORE-7939 Can be removed after ledger has been fixed
-        const val DUMMY_TX_ID = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903"
-        const val DUMMY_TX_ID_2 = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
     }
 
-    @Suppress("DEPRECATION")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
+        val params = extractParameters(requestBody)
+
+        require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
+            "The transaction must have at least one input OR output state"
+        }
+
+        val notaryWorker = findNotaryParty()
+
+        val stx = buildSignedTransaction(
+            notaryWorker,
+            params.outputStateCount,
+            params.inputStateRefs,
+            params.referenceStateRefs,
+            Pair(params.timeWindowLowerBoundOffsetMs, params.timeWindowUpperBoundOffsetMs)
+        )
+
+        val pluginClient = NonValidatingNotaryClientFlowImpl(
+            stx,
+            notaryWorker
+        )
+
+        flowEngine.subFlow(pluginClient)
+
+        return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
+            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
+        ))
+    }
+
+    /**
+     * A helper function that extracts the required parameters from the JSON request body into a
+     * [NotarisationTestFlowParameters] object so it is easily accessible and this way the parsing
+     * logic is separated from the main flow logic in [call].
+     */
+    @Suppress("ComplexMethod")
+    @Suspendable
+    private fun extractParameters(requestBody: RPCRequestData): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
+
+        val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0
+
+        val inputStateRefs = requestMessage["inputStateRefs"]?.let {
+            jsonMarshallingService.parseList<String>(it)
+        } ?: emptyList()
+
+        val referenceStateRefs = requestMessage["referenceStateRefs"]?.let {
+            jsonMarshallingService.parseList<String>(it)
+        } ?: emptyList()
 
         val timeWindowLowerBoundOffsetMs = requestMessage["timeWindowLowerBoundOffsetMs"]?.toLong()
 
@@ -85,48 +121,75 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 1.hours.toMillis()
             }
 
-        val myInfo = memberLookup.myInfo()
+        return NotarisationTestFlowParameters(
+            outputStateCount,
+            inputStateRefs,
+            referenceStateRefs,
+            timeWindowLowerBoundOffsetMs,
+            timeWindowUpperBoundOffsetMs
+        )
+    }
 
-        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we need to find the
-        //  notary instead of a random member
+    /**
+     * A helper function that will find the notary party on the network.
+     */
+    @Suspendable
+    private fun findNotaryParty(): Party {
+        // We cannot use the notary virtual node lookup service in this flow so we need to do this hack
         val notary = memberLookup.lookup().first {
-            it.name != myInfo.name
+            it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
 
-        val notaryParty = Party(notary.name, notary.sessionInitiationKey)
+        return Party(notary.name, notary.sessionInitiationKey)
+    }
 
-        val stx = utxoLedgerService.getTransactionBuilder()
-            .setNotary(notaryParty)
+    /**
+     * A helper function that will build a UTXO signed transaction from the provided input parameters using the
+     * [UtxoTransactionBuilder] utility class.
+     */
+    @Suppress(
+        "deprecation", // Can be removed once the new `sign` function on the TX builder is added
+    )
+    @Suspendable
+    private fun buildSignedTransaction(
+        notaryServerParty: Party,
+        outputStateCount: Int,
+        inputStateRefs: List<String>,
+        referenceStateRefs: List<String>,
+        timeWindowBounds: Pair<Long?, Long>
+    ): UtxoSignedTransaction {
+        return utxoLedgerService.getTransactionBuilder()
+            .setNotary(notaryServerParty)
             .addCommand(TestCommand())
-            // TODO CORE-7939 Can be removed after empty component groups have been fixed
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            // TODO CORE-7939 For now we are spending non-existent states this needs rework after ledger
-            //  work is finished
-            .addInputState(generateStateAndRef(DUMMY_TX_ID, 0, notaryParty))
-            .addReferenceInputState(generateStateAndRef(DUMMY_TX_ID_2, 0, notaryParty))
-            .addOutputState(TestContract.TestState(emptyList()))
             .run {
-                if (timeWindowLowerBoundOffsetMs != null) {
+                // TODO CORE-8726 Since the builder will always be copied with the new attributes,
+                //  we always need to re-assign it
+                var builder = if (timeWindowBounds.first != null) {
                     setTimeWindowBetween(
-                        Instant.now().plusMillis(timeWindowLowerBoundOffsetMs),
-                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                        Instant.now().plusMillis(timeWindowBounds.first!!),
+                        Instant.now().plusMillis(timeWindowBounds.second)
                     )
                 } else {
                     setTimeWindowUntil(
-                        Instant.now().plusMillis(timeWindowUpperBoundOffsetMs)
+                        Instant.now().plusMillis(timeWindowBounds.second)
                     )
                 }
-            }
-            .toSignedTransaction(myInfo.sessionInitiationKey)
 
-        val sigs = flowEngine.subFlow(
-            NonValidatingNotaryClientFlowImpl(
-                stx,
-                notaryParty
-            )
-        )
+                repeat(outputStateCount) {
+                    builder = builder.addOutputState(
+                        TestContract.TestState(emptyList())
+                    )
+                }
 
-        return "Received ${sigs.size} signatures from the notary, plugin ran successfully."
+                inputStateRefs.forEach {
+                    builder = builder.addInputState(StateRef.parse(it))
+                }
+
+                referenceStateRefs.forEach {
+                    builder = builder.addReferenceInputState(StateRef.parse(it))
+                }
+                builder
+            }.toSignedTransaction(memberLookup.myInfo().sessionInitiationKey)
     }
 
     /**
@@ -139,39 +202,26 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         override fun verify(transaction: UtxoLedgerTransaction) {}
     }
+
     class TestCommand : Command
 
-    // TODO CORE-7939 These must be removed once the transaction builder logic has been fixed
-    //  They are only needed because empty component groups are not supported, thus we cannot create issuance
-    //  transactions and we can't access the actual `TransactionStateImpl` and `StateAndRefImpl` classes.
-    class TestTxStateImpl(
-        override val contractState: TestContract.TestState,
-        override val contractStateType: Class<out TestContract.TestState>,
-        override val contractType: Class<out Contract>,
-        override val encumbrance: Int?,
-        override val notary: Party
-    ) : TransactionState<TestContract.TestState>
+    /**
+     * A basic data class that represents the outcome of the [NonValidatingNotaryTestFlow] flow.
+     */
+    data class NonValidatingNotaryTestFlowResult(
+        val issuedStateRefs: List<String>,
+        val consumedInputStateRefs: List<String>,
+        val consumedReferenceStateRefs: List<String>
+    )
 
-    class TestStateAndRefImpl(
-        override val ref: StateRef,
-        override val state: TransactionState<TestContract.TestState>
-    ) : StateAndRef<TestContract.TestState>
-
-    private fun generateStateAndRef(txId: String, index: Int, notary: Party) : StateAndRef<TestContract.TestState> {
-        val txHash = SecureHash.parse(txId)
-        val stateRef = StateRef(txHash, index)
-
-        val transactionState = TestTxStateImpl(
-            TestContract.TestState(emptyList()),
-            TestContract.TestState::class.java,
-            TestContract::class.java,
-            null,
-            notary
-        )
-        return TestStateAndRefImpl(
-            stateRef,
-            transactionState
-        )
-    }
+    /**
+     * A basic data class that represents the required parameters for the [NonValidatingNotaryTestFlow] flow.
+     */
+    data class NotarisationTestFlowParameters(
+        val outputStateCount: Int,
+        val inputStateRefs: List<String>,
+        val referenceStateRefs: List<String>,
+        val timeWindowLowerBoundOffsetMs: Long?,
+        val timeWindowUpperBoundOffsetMs: Long
+    )
 }
-

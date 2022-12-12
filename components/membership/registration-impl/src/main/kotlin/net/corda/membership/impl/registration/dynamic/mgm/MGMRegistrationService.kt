@@ -1,8 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -17,9 +17,13 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -31,13 +35,13 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -65,7 +69,11 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = GroupParametersWriterService::class)
+    private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -162,7 +170,7 @@ class MGMRegistrationService @Activate constructor(
         )
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
-            membershipPersistenceClient
+            membershipPersistenceClient,
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher { publisher }
 
@@ -184,6 +192,17 @@ class MGMRegistrationService @Activate constructor(
                     member,
                     context
                 )
+
+                // Persist group parameters snapshot
+                val groupParametersPersistenceResult =
+                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                    throw MembershipPersistenceException(groupParametersPersistenceResult.errorMsg)
+                }
+
+                // Publish group parameters to Kafka
+                val groupParameters = groupParametersFactory.create(groupParametersPersistenceResult.getOrThrow())
+                groupParametersWriterService.put(member, groupParameters)
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
 

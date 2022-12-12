@@ -1,14 +1,14 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 
 val cpkPackageSummaryListExample = listOf(
-    CordaPackageSummary(
+    CordaPackageSummaryImpl(
         "MockCpk",
         "1",
         "",
         "0101010101010101010101010101010101010101010101010101010101010101"),
-    CordaPackageSummary(
+    CordaPackageSummaryImpl(
         "MockCpk",
         "3",
         "",

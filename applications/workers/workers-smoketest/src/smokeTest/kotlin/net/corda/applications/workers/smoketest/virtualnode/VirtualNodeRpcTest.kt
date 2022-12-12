@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import java.time.Duration
 import java.time.temporal.ChronoUnit
@@ -22,12 +21,10 @@ import net.corda.httprpc.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Instant
 import java.util.UUID
 
 const val CODESIGNER_CERT = "/cordadevcodesign.pem"
@@ -368,17 +365,14 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(80)
     fun `can force upload same CPI`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            // Note CPI/CPK timestamp
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            // Perform force upload of the CPI
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -388,17 +382,13 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            // Check that timestamp for CPK been updated
-            // Cannot use `assertWithRetry` as there is a strict type `Instant`
-            // Allow ample time for CPI upload to be propagated through the system
+            // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
 
-    // This test has no effect without forceUploading
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(81)
     fun `can run the uploaded CPI`() {
@@ -419,14 +409,13 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(90)
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -438,12 +427,11 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(120)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(91)
     fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
@@ -454,7 +442,6 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(92)
     fun `Can sync DB and persist fish`() {
@@ -467,14 +454,13 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(100)
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val initialCpkTimeStamp = getCpkTimestamp(cpiName)
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
@@ -486,14 +472,13 @@ class VirtualNodeRpcTest {
             }
 
             eventually(Duration.ofSeconds(100)) {
-                assertThat(getCpkTimestamp(cpiName)).isAfter(initialCpkTimeStamp)
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
             }
 
             runReturnAStringFlow("original-cpi")
         }
     }
 
-    @Disabled("Pending https://r3-cev.atlassian.net/browse/CORE-7629")
     @Test
     @Order(101)
     fun `Can sync DB again and persist dog`() {
@@ -525,15 +510,10 @@ class VirtualNodeRpcTest {
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
-    private fun ClusterBuilder.getCpkTimestamp(cpiName: String): Instant {
+    private fun ClusterBuilder.getCpiFileChecksum(cpiName: String): String {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        val cpksJson = cpiJson["cpks"].toList()
-        return cpksJson.first()["timestamp"].toInstant()
-    }
-
-    private fun JsonNode.toInstant(): Instant {
-        return Instant.parse(this.asText())
+        return cpiJson["cpiFileFullChecksum"].toString()
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {

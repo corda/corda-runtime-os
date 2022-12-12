@@ -18,6 +18,7 @@ import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,6 +27,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -61,9 +63,16 @@ class PersistGroupParametersHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
+    private val resultList: List<GroupParametersEntity> = mock {
+        on { isEmpty() } doReturn false
+        on { size } doReturn 1
+        on { singleOrNull() } doReturn GroupParametersEntity(1, "test".toByteArray())
+    }
+    private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+        on { resultList } doReturn resultList
+    }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-        on { setMaxResults(1) } doReturn mock
-        on { singleResult } doReturn GroupParametersEntity(1, "test".toByteArray())
+        on { setMaxResults(1) } doReturn previousEntry
     }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
@@ -104,30 +113,40 @@ class PersistGroupParametersHandlerTest {
         on { clock } doReturn clock
     }
     private val handler = PersistGroupParametersHandler(persistenceHandlerServices)
+    private val mockGroupParameters = KeyValuePairList(
+        listOf(
+            KeyValuePair(EPOCH_KEY, "5")
+        )
+    )
+    private val requestContext = mock<MembershipRequestContext> {
+        on { holdingIdentity } doReturn identity.toAvro()
+    }
+    private val request = mock<PersistGroupParameters> {
+        on { groupParameters } doReturn mockGroupParameters
+    }
 
     @Test
     fun `invoke return the correct version`() {
-        val context = mock<MembershipRequestContext> {
-            on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
-        }
-        val request = mock<PersistGroupParameters> {
-            on { groupParameters } doReturn KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "5")
-                )
-            )
-        }
+        val result = handler.invoke(requestContext, request)
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
+    }
 
-        val result = handler.invoke(context, request)
+    @Test
+    fun `persisting group parameters is successful when there was nothing persisted previously`() {
+        val previousEntry: TypedQuery<GroupParametersEntity> = mock {
+            on { resultList } doReturn emptyList()
+        }
+        val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
+            on { setMaxResults(1) } doReturn previousEntry
+        }
+        whenever(entityManager.createQuery(eq(query))).doReturn(groupParametersQuery)
 
-        assertThat(result).isEqualTo(PersistGroupParametersResponse(5))
+        val result = handler.invoke(requestContext, request)
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
     }
 
     @Test
     fun `invoke with lower epoch than previous group parameters throws exception`() {
-        val context = mock<MembershipRequestContext> {
-            on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
-        }
         val request = mock<PersistGroupParameters> {
             on { groupParameters } doReturn KeyValuePairList(
                 listOf(
@@ -136,6 +155,17 @@ class PersistGroupParametersHandlerTest {
             )
         }
 
-        assertFailsWith<MembershipPersistenceException> { handler.invoke(context, request) }
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("already exist")
+    }
+
+    @Test
+    fun `invoke throws exception when there is no epoch defined in request`() {
+        val request = mock<PersistGroupParameters> {
+            on { groupParameters } doReturn KeyValuePairList(emptyList())
+        }
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("epoch not found")
     }
 }

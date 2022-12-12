@@ -8,7 +8,6 @@ import net.corda.httprpc.server.impl.HttpRpcServerImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.AzureAdMock
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
@@ -18,12 +17,10 @@ import kotlin.test.assertEquals
 
 class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
 
-    private lateinit var httpRpcSettings: HttpRpcSettings
-
     @BeforeEach
     fun setUp() {
-        httpRpcSettings = HttpRpcSettings(
-            NetworkHostAndPort("localhost", findFreePort()),
+        val httpRpcSettings = HttpRpcSettings(
+            NetworkHostAndPort("localhost", 0),
             context,
             null,
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
@@ -48,7 +45,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
     fun `azuread token accepted as authentication`() {
         AzureAdMock.create().use {
             val client = HttpRpcClient(
-                baseAddress = "http://localhost:${httpRpcSettings.address.port}/api/v1/",
+                baseAddress = "http://localhost:${server.port}/api/v1/",
                 TestHealthCheckAPI::class.java,
                 HttpRpcClientConfig()
                     .enableSSL(false)

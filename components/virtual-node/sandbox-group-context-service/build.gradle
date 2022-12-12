@@ -18,7 +18,7 @@ configurations {
 dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -28,6 +28,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-notary-plugin"
 
     api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:cache:cache-caffeine")

@@ -4,6 +4,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
@@ -24,7 +26,7 @@ class LimitedUserAuthorizationE2eTest {
 
     companion object {
         private val testToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
+        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, adminUser, adminPassword)
         private lateinit var limitedUserTestHelper: RbacE2eClientRequestHelper
         private var limitedUserLogin: String = testToolkit.uniqueName
         private var limitedUserPassword: String = testToolkit.uniqueName

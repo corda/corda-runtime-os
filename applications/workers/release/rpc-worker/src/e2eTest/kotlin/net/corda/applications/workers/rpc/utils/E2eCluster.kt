@@ -1,21 +1,30 @@
 package net.corda.applications.workers.rpc.utils
 
-import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.kafka.KafkaTestToolKit
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.client.HttpRpcClient
 
 interface E2eCluster {
     val members: List<E2eClusterMember>
 
     val clusterConfig: E2eClusterConfig
 
-    val testToolkit: TestToolkit
-
     val kafkaTestToolkit: KafkaTestToolKit
 
     val p2pUrl: String
 
     fun addMembers(membersToAdd: List<E2eClusterMember>)
+
+    val uniqueName: String
+
+    /**
+     * Creates the [HttpRpcClient] for a given [RpcOps] class.
+     */
+    fun <I : RpcOps> clusterHttpClientFor(
+        rpcOpsClass: Class<I>,
+        userName: String = AdminPasswordUtil.adminUser
+    ): HttpRpcClient<I>
 }
 
 internal object E2eClusterFactory {
@@ -29,7 +38,7 @@ private class E2eClusterImpl(
 ) : E2eCluster {
     override val members = mutableListOf<E2eClusterMember>()
 
-    override val testToolkit by TestToolkitProperty(
+    private val testToolkit by TestToolkitProperty(
         clusterConfig.rpcHost,
         clusterConfig.rpcPort
     )
@@ -43,4 +52,12 @@ private class E2eClusterImpl(
     override fun addMembers(membersToAdd: List<E2eClusterMember>) {
         members.addAll(membersToAdd)
     }
+
+    override val uniqueName: String
+        get() = testToolkit.uniqueName
+
+    override fun <I : RpcOps> clusterHttpClientFor(
+        rpcOpsClass: Class<I>,
+        userName: String
+    ): HttpRpcClient<I> = testToolkit.httpClientFor(rpcOpsClass, userName, clusterConfig.rpcPassword)
 }

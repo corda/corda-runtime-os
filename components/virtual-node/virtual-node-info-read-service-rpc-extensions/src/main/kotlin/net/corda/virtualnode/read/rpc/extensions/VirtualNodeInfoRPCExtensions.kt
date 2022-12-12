@@ -69,7 +69,7 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
  * @see VirtualNodeInfoReadService.getByHoldingIdentityShortHash
  */
 fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(holdingIdentityShortHash: String): VirtualNodeInfo {
-    val shortHash = ShortHash.ofOrThrow(holdingIdentityShortHash)
+    val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
     return getByHoldingIdentityShortHash(shortHash) ?: throw ResourceNotFoundException("Virtual Node", shortHash.value)
 }
 
@@ -95,7 +95,7 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
     holdingIdentityShortHash: String,
     message: () -> String
 ): VirtualNodeInfo {
-    val shortHash = ShortHash.ofOrThrow(holdingIdentityShortHash)
+    val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
     return getByHoldingIdentityShortHash(shortHash) ?: throw ResourceNotFoundException(message())
 }
 
@@ -108,9 +108,28 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
  *
  * @see ShortHash.of
  */
+@SuppressWarnings("SwallowedException")
 fun ShortHash.Companion.ofOrThrow(holdingIdentityShortHash: String): ShortHash {
     return try {
         of(holdingIdentityShortHash)
+    } catch (e: ShortHashException) {
+        throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+    }
+}
+
+/**
+ * Creates a short hash parsing the given [holdingIdentityShortHash].
+ *
+ * For consistency with [SecureHash.toHexString], any lower case alpha characters are converted to uppercase.
+ *
+ * @throws [BadRequestException] If the string is not hexadecimal or has length different from [LENGTH].
+ *
+ * @see ShortHash.of
+ */
+@SuppressWarnings("SwallowedException")
+fun ShortHash.Companion.parseOrThrow(holdingIdentityShortHash: String): ShortHash {
+    return try {
+        parse(holdingIdentityShortHash)
     } catch (e: ShortHashException) {
         throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
     }

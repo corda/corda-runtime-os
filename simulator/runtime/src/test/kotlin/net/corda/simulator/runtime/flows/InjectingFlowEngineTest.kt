@@ -37,7 +37,7 @@ class InjectingFlowEngineTest {
         val response = engine.subFlow(flow)
 
         // Then it should inject those
-        verify(injector, times(1)).injectServices(eq(flow), eq(member), eq(fiber), any(), any())
+        verify(injector, times(1)).injectServices(eq(flow), eq(member), eq(fiber), any())
 
         // And it should call the subFlow
         assertThat(response, `is`("Yo!"))

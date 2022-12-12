@@ -4,10 +4,11 @@ import java.nio.file.Path
 import org.osgi.framework.BundleContext
 
 interface SandboxSetup {
-    fun configure(
-        bundleContext: BundleContext,
-        baseDirectory: Path
-    )
+    companion object {
+        const val SANDBOX_SERVICE_RANKING = Int.MAX_VALUE / 2
+    }
+
+    fun configure(bundleContext: BundleContext, baseDirectory: Path)
 
     fun start()
     fun shutdown()

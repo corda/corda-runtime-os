@@ -35,13 +35,12 @@ import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
         private val httpRpcSettings = HttpRpcSettings(
-            NetworkHostAndPort("localhost", findFreePort()),
+            NetworkHostAndPort("localhost", 0),
             context,
             null,
             null,
@@ -66,7 +65,8 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll
@@ -498,7 +498,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
 
     @Test
     fun `GET swagger UI dependencies should return non empty result`() {
-        val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/")
+        val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
         val swagger = baseClient.call(GET, WebRequest<Any>("api/v1/swagger"))
         val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))

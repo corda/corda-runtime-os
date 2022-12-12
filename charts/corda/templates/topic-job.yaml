@@ -14,10 +14,16 @@ spec:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: create-topics
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
@@ -27,6 +33,11 @@ spec:
             '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
             'create',
+            {{- if .Values.kafka.sasl.enabled }}
+              {{- range $k, $v := .Values.workers }}
+            '-u', '{{ printf "%s=$KAFKA_SASL_USERNAME_%s" $k ( include "corda.workerTypeUpperSnakeCase" $k ) }}',
+              {{- end }}
+            {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
             'connect'{{- if .Values.bootstrap.kafka.cleanup }},
@@ -44,14 +55,34 @@ spec:
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
             {{ include "corda.cliEnv" . | nindent 12 }}
+            {{- if .Values.kafka.sasl.enabled }}
+              {{- range $k, $v := .Values.workers }}
+            - name: {{ ( printf "KAFKA_SASL_USERNAME_%s" ( include "corda.workerTypeUpperSnakeCase" $k )) | quote }}
+                {{- if $v.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $v.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+                  key: {{ required (printf "Must specify workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.key" $k) $v.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+                {{- else if $v.kafka.sasl.username.value }}
+              value: {{ $v.kafka.sasl.username.value | quote }}
+                {{- else if $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+                  key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" $.Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+                {{- else }}
+              value: {{ required (printf "Must specify workers.%s.kafka.sasl.username.value, workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" $k $k) $.Values.kafka.sasl.username.value | quote }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
       initContainers:
         - name: create-trust-store
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
-          {{- include "corda.kafkaSaslPassword" . | nindent 12 }}
-          {{- include "corda.kafkaSaslUsername" . | nindent 12 }}
+          {{- include "corda.bootstrapKafkaSaslUsernameAndPasswordEnv" . | nindent 12 }}
           {{- include "corda.kafkaTlsPassword" . | nindent 12 }}
           command:
             - /bin/bash
@@ -83,7 +114,7 @@ spec:
                 echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
 
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
-                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=$SASL_USERNAME password=$SASL_PASSWORD ;\n">> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"$SASL_USERNAME\" password=\"$SASL_PASSWORD\" ;\n">> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
           volumeMounts:

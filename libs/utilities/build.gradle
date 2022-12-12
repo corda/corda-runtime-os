@@ -4,6 +4,9 @@ plugins {
 }
 description 'Utilities'
 
+ext {
+    releasable = true
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

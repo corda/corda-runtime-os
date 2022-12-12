@@ -2,10 +2,11 @@ package net.corda.testing.sandboxes.testkit.impl
 
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.testkit.VirtualNodeService
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,7 +28,8 @@ class VirtualNodeServiceImpl @Activate constructor(
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
-        private fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+        private fun generateHoldingIdentity()
+            = HoldingIdentity(MemberX500Name.parse(X500_NAME), UUID.randomUUID().toString())
     }
 
     init {

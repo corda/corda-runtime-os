@@ -48,11 +48,6 @@ import static java.util.stream.Collectors.toUnmodifiableList;
  */
 final class OSGiFrameworkMain {
     /**
-     * Full qualified name of the OSGi framework factory should be part of the class path.
-     */
-    private static final String FRAMEWORK_FACTORY_FQN = "org.apache.felix.framework.FrameworkFactory";
-
-    /**
      * Prefix of the temporary directory used as bundle cache.
      */
     private static final String FRAMEWORK_STORAGE_PREFIX = "osgi-cache";
@@ -150,7 +145,6 @@ final class OSGiFrameworkMain {
             final Path frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX);
             OSGiFrameworkWrap osgiFrameworkWrap = new OSGiFrameworkWrap(
                 OSGiFrameworkWrap.getFrameworkFrom(
-                    FRAMEWORK_FACTORY_FQN,
                     frameworkStorageDir,
                     OSGiFrameworkWrap.getFrameworkPropertyFrom(SYSTEM_PACKAGES_EXTRA)
                 )

@@ -13,10 +13,9 @@ dependencies {
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     api platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(":components:crypto:crypto-ecies-core-impl")
+    implementation project(":components:crypto:crypto-hes-core-impl")
 
-    api "net.corda:corda-cipher-suite"
-
+    api project(':libs:crypto:cipher-suite')
     api project(':libs:crypto:cipher-suite-impl')
     api project(':libs:crypto:crypto-serialization-impl')
 

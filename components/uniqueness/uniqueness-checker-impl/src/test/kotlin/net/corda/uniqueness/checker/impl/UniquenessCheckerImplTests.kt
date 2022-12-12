@@ -56,9 +56,11 @@ class UniquenessCheckerImplTests {
 
     private val baseTime: Instant = Instant.EPOCH
 
+    private val groupId = UUID.randomUUID().toString()
+
     // Default holding id used in most tests
     private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", "Test Group").toAvro()
+        "C=GB, L=London, O=Alice", groupId).toAvro()
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -1115,11 +1117,11 @@ class UniquenessCheckerImplTests {
     @Nested
     inner class MultiTenancy {
         private val bobHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Bob", "Test Group")
+            "C=GB, L=London, O=Bob", groupId)
         private val charlieHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Charlie", "Test Group")
+            "C=GB, L=London, O=Charlie", groupId)
         private val davidHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=David", "Test Group")
+            "C=GB, L=London, O=David", groupId)
 
         @Test
         fun `Requests for different holding identities are processed independently`() {

@@ -14,6 +14,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-base'
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-ledger-common'
+    cordaProvided 'net.corda:corda-ledger-consensual'
     cordaProvided 'org.slf4j:slf4j-api'
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"

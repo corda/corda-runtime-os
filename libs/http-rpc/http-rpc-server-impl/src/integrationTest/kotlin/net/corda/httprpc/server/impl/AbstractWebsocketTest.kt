@@ -37,6 +37,10 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
 
     protected abstract val httpRpcSettings: HttpRpcSettings
 
+    // We cannot use `httpRpcSettings.port` as when it is assigned to 0 a free port will be allocated during
+    // webserver start-up
+    protected abstract val port: Int
+
     @AfterEach
     fun reset() {
         securityManager.forgetChecks()
@@ -98,7 +102,7 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         val range = 50
 
         val uri = URI(
-            "$wsProtocol://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
+            "$wsProtocol://${httpRpcSettings.address.host}:$port/" +
                     "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/$start?range=$range"
         )
 
@@ -170,7 +174,7 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         }
 
         val uri = URI(
-            "$wsProtocol://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
+            "$wsProtocol://${httpRpcSettings.address.host}:$port/" +
                     "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/100"
         )
 

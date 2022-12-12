@@ -3,10 +3,10 @@ package net.corda.membership.p2p.helpers
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
@@ -25,8 +25,8 @@ class KeySpecExtractor(
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
-            GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
+            EDDSA_ED25519_CODE_NAME to SignatureSpec.EDDSA_ED25519,
+            GOST3410_GOST3411_CODE_NAME to SignatureSpec.GOST3410_GOST3411,
             RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
             SM2_CODE_NAME to SignatureSpec.SM2_SM3,
             SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
@@ -44,8 +44,8 @@ class KeySpecExtractor(
                 SignatureSpec.ECDSA_SHA512,
             )
                 .map { it.signatureName },
-            EDDSA_ED25519_TEMPLATE to listOf(SignatureSpec.EDDSA_ED25519.signatureName),
-            GOST3410_GOST3411_TEMPLATE to listOf(SignatureSpec.GOST3410_GOST3411.signatureName),
+            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpec.EDDSA_ED25519.signatureName),
+            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpec.GOST3410_GOST3411.signatureName),
             RSA_CODE_NAME to listOf(SignatureSpec.RSA_SHA256, SignatureSpec.RSA_SHA384, SignatureSpec.RSA_SHA512)
                 .map { it.signatureName },
             SM2_CODE_NAME to listOf(SignatureSpec.SM2_SM3.signatureName),

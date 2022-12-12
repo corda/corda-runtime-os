@@ -40,7 +40,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
         on {
             persistGroupParametersInitialSnapshot(eq(testHoldingIdentity))
-        } doReturn MembershipPersistenceResult.Success(Unit)
+        } doReturn MembershipPersistenceResult.Success(mock())
     }
 
     private val testContext: Map<String, String> = mapOf(
@@ -50,7 +50,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
     private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
         layeredPropertyMapFactory,
-        membershipPersistenceClient
+        membershipPersistenceClient,
     )
 
     @Test
@@ -69,7 +69,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
     }
 
     @Test
-    fun `group parameters are persisted using the correct holding identity and map`() {
+    fun `group policy is persisted using the correct holding identity and map`() {
         mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)
 
         verify(membershipPersistenceClient).persistGroupPolicy(
@@ -88,18 +88,6 @@ class MGMRegistrationGroupPolicyHandlerTest {
             mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)
         }
         verify(membershipPersistenceClient).persistGroupPolicy(any(), any())
-    }
-
-    @Test
-    fun `Failed group parameters persistence is rethrown as group policy handling exception`() {
-        whenever (
-            membershipPersistenceClient.persistGroupParametersInitialSnapshot(any())
-        ) doReturn MembershipPersistenceResult.Failure("")
-
-        assertThrows<MGMRegistrationGroupPolicyHandlingException> {
-            mgmRegistrationGroupPolicyHandler.buildAndPersist(testHoldingIdentity, testContext)
-        }
-        verify(membershipPersistenceClient).persistGroupParametersInitialSnapshot(any())
     }
 
     @Test

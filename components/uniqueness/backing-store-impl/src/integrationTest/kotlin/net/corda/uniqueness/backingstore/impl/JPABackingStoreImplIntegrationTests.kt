@@ -58,6 +58,7 @@ import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.Duration
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
@@ -83,7 +84,8 @@ class JPABackingStoreImplIntegrationTests {
     private val baseTime = Instant.EPOCH
     private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
-    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
+    private val groupId = UUID.randomUUID().toString()
+    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
     private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
     private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(

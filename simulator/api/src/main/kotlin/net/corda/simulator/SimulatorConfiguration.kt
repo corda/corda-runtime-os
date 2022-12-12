@@ -1,5 +1,6 @@
 package net.corda.simulator
 
+import net.corda.simulator.factories.ServiceOverrideBuilder
 import java.time.Clock
 import java.time.Duration
 
@@ -24,4 +25,8 @@ interface SimulatorConfiguration {
      */
     val clock : Clock
 
+    /**
+     * A map of services to be overridden against the builders for the new services.
+     */
+    val serviceOverrides: Map<Class<*>, ServiceOverrideBuilder<*>>
 }

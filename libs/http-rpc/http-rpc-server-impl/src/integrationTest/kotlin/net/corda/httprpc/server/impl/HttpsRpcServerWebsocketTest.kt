@@ -5,7 +5,6 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.ssl.impl.SslCertReadServiceStubImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -29,13 +28,14 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
 
         @BeforeAll
         @JvmStatic
+        @Suppress("unused")
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStore()
             val sslConfig = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
             httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
+                NetworkHostAndPort("localhost", 0),
                 context,
                 sslConfig,
                 null,
@@ -53,13 +53,14 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
-                "https://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/",
+                "https://${httpRpcSettings.address.host}:${server.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/",
                 true
             )
         }
 
         @AfterAll
         @JvmStatic
+        @Suppress("unused")
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
                 server.close()
@@ -74,4 +75,7 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
     override val log = LOG
 
     override val httpRpcSettings = HttpsRpcServerWebsocketTest.httpRpcSettings
+
+    override val port: Int
+        get() = server.port
 }

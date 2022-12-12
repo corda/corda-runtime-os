@@ -81,6 +81,7 @@ class TopicTemplates {
                     } 
                 ]"""
         const val EVENT_LOG_TOPIC2 = "EventLogTopic2"
+        const val EVENT_LOG_TOPIC2_OUTPUT = "$EVENT_LOG_TOPIC2-output"
         val EVENT_LOG_TOPIC2_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_LOG_TOPIC2" 

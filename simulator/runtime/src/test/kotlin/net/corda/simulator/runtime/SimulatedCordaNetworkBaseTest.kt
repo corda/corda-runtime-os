@@ -70,7 +70,7 @@ class SimulatedCordaNetworkBaseTest {
         corda.createVirtualNode(holdingId, "ping-ack", responder)
 
         // Then it should have registered the responder with the fiber
-        verify(fiber, times(1)).registerResponderInstance(holdingId.member,"ping-ack", responder)
+        verify(fiber, times(1)).registerFlowInstance(holdingId.member,"ping-ack", responder)
     }
 
     @Test
@@ -83,7 +83,7 @@ class SimulatedCordaNetworkBaseTest {
         corda.createVirtualNode(holdingId, PingAckFlow::class.java)
 
         // Then it should have registered the initiating member with the fiber
-        verify(fiber, times(1)).registerInitiator(holdingId.member)
+        verify(fiber, times(1)).registerMember(holdingId.member)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.v5.base.types.MemberX500Name
@@ -65,11 +66,12 @@ class AuthenticationProtocolTest {
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
         val ourCertificate = mutableListOf("")
-        val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificate, RevocationCheckMode.HARD_FAIL, mock())
+        val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), RevocationCheckMode.HARD_FAIL, mock())
         val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
 
         executeProtocol(
-            partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, certificateCheckMode = certificateCheckMode
+            partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256,
+            certificateCheckMode = certificateCheckMode, partyACertificate = ourCertificate, partyBCertificate = ourCertificate
         )
         //One validator for AuthenticationProtocolInitiator and one for AuthenticationProtocolResponder
         assertThat(certificateValidator.constructed().size).isEqualTo(2)
@@ -86,7 +88,7 @@ class AuthenticationProtocolTest {
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, true)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, duplicateInvocations = true)
     }
 
     @Suppress("LongParameterList")
@@ -94,6 +96,8 @@ class AuthenticationProtocolTest {
                                 partyBSessionKey: KeyPair,
                                 signature: Signature,
                                 signatureSpec: SignatureSpec,
+                                partyACertificate: List<PemCertificate>? = null,
+                                partyBCertificate: List<PemCertificate>? = null,
                                 duplicateInvocations: Boolean = false,
                                 certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate) {
         val protocolInitiator = AuthenticationProtocolInitiator(
@@ -143,7 +147,11 @@ class AuthenticationProtocolTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            partyACertificate,
+            signingCallbackForA
+        )
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
@@ -152,7 +160,7 @@ class AuthenticationProtocolTest {
             signatureSpec
         )
         if (duplicateInvocations) {
-            assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA))
+            assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, partyACertificate, signingCallbackForA))
                 .isEqualTo(initiatorHandshakeMessage)
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
@@ -168,7 +176,11 @@ class AuthenticationProtocolTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(
+            partyBSessionKey.public,
+            partyBCertificate,
+            signingCallbackForB
+        )
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage,
@@ -177,7 +189,7 @@ class AuthenticationProtocolTest {
             signatureSpec
         )
         if (duplicateInvocations) {
-            assertThat(protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB))
+            assertThat(protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, partyBCertificate, signingCallbackForB))
                 .isEqualTo(responderHandshakeMessage)
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,

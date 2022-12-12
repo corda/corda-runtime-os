@@ -15,7 +15,6 @@ dependencies {
 
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-base'
-    implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-db-schema'
     implementation "net.corda:corda-topic-schema"
@@ -33,6 +32,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(":libs:configuration:configuration-datamodel")
     implementation project(':libs:configuration:configuration-merger')
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
@@ -43,7 +43,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:virtual-node-info")
 
-    integrationTestImplementation project(':components:crypto:crypto-ecies')
+    integrationTestImplementation project(':components:crypto:crypto-hes')
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
@@ -78,8 +78,8 @@ dependencies {
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-core-impl")
-    integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-impl")
+    integrationTestRuntimeOnly project(":components:crypto:crypto-hes-core-impl")
+    integrationTestRuntimeOnly project(":components:crypto:crypto-hes-impl")
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 

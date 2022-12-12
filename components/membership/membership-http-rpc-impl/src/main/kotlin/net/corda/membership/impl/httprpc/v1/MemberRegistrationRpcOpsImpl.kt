@@ -16,7 +16,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -135,7 +135,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
             return try {
                 memberOpsClient.checkRegistrationProgress(
-                    ShortHash.ofOrThrow(holdingIdentityShortHash)
+                    ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
             } catch (e: RegistrationProgressNotFoundException) {
                 throw ResourceNotFoundException(e.message!!)
@@ -148,7 +148,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         ): RegistrationRequestStatus? {
             return try {
                 memberOpsClient.checkSpecificRegistrationProgress(
-                    ShortHash.ofOrThrow(holdingIdentityShortHash),
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
                     registrationRequestId
                 )?.fromDto()
             } catch (e: RegistrationProgressNotFoundException) {

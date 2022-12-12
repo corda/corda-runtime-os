@@ -2,6 +2,11 @@ plugins {
     id 'biz.aQute.bnd.builder'
     id 'corda.common-publishing'
 }
+
+ext {
+    releasable = true
+}
+
 description 'Corda Serialization encoding'
 
 configurations {

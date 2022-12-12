@@ -20,7 +20,6 @@ sealed class CertificateCheckMode {
      */
     data class CheckCertificate(
         val truststore: List<PemCertificate>,
-        val ourCertificates: List<PemCertificate>,
         val revocationCheckMode: RevocationCheckMode,
         val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckResponse
     ): CertificateCheckMode()

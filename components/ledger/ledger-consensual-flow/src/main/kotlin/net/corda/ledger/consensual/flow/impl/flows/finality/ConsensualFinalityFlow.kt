@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -62,14 +62,14 @@ class ConsensualFinalityFlow(
             }
         }
 
-        // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
+        // TODO [CORE-8655] Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
         val missingSignatories = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
         require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
             "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
-        // TODO [CORE-7029] Record unfinalised transaction
+        persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
 
@@ -118,8 +118,7 @@ class ConsensualFinalityFlow(
 
                     throw e
                 }
-                signedByParticipantsTransaction =
-                    signedByParticipantsTransaction.addSignature(signature)
+                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
                 log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }

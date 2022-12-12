@@ -1,10 +1,7 @@
 package net.corda.crypto.service.impl.bus
 
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.time.Instant
-import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
@@ -32,7 +29,6 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -48,6 +44,10 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.time.Instant
+import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

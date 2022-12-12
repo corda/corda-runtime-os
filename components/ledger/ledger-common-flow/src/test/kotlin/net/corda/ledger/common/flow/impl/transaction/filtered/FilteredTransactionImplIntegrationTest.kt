@@ -3,9 +3,10 @@ package net.corda.ledger.common.flow.impl.transaction.filtered
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
@@ -41,7 +42,8 @@ class FilteredTransactionImplIntegrationTest {
     private lateinit var wireTransaction: WireTransaction
     private lateinit var filteredTransaction: FilteredTransaction
 
-    private val digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
+    private val digestService =
+        DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -54,7 +56,8 @@ class FilteredTransactionImplIntegrationTest {
     )
 
     @BeforeEach
-    fun beforeEach() {}
+    fun beforeEach() {
+    }
 
     @Test
     fun `transaction can be filtered and successfully verified`() {
@@ -89,16 +92,16 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
-                ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
-                ComponentGroupFilterParameters.AuditProof(3, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(3, Any::class.java) { it is MyClassC },
                 ComponentGroupFilterParameters.SizeProof(4),
-                ComponentGroupFilterParameters.AuditProof(5, Any::class.java),
-                ComponentGroupFilterParameters.AuditProof(6, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(5, Any::class.java) { it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(6, Any::class.java) { it is MyClassC },
                 ComponentGroupFilterParameters.SizeProof(10),
             )
-        ) { it is MyClassC }
+        )
 
         filteredTransaction.verify()
     }
@@ -123,11 +126,11 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
-                ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { true },
             )
-        ) { true }
+        )
 
         val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
         val componentGroup2 = filteredTransaction.getComponentGroupContent(2)!!
@@ -163,11 +166,11 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
-                ComponentGroupFilterParameters.AuditProof(2, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassC },
+                ComponentGroupFilterParameters.AuditProof(2, Any::class.java) { it is MyClassA || it is MyClassC },
             )
-        ) { it is MyClassA || it is MyClassC }
+        )
 
         val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
         val componentGroup2 = filteredTransaction.getComponentGroupContent(2)!!
@@ -203,10 +206,10 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassC },
             )
-        ) { it is MyClassA || it is MyClassC }
+        )
 
         val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
         val componentGroup2 = filteredTransaction.getComponentGroupContent(2)
@@ -236,11 +239,11 @@ class FilteredTransactionImplIntegrationTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadataImpl::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.SizeProof(2),
             )
-        ) { true }
+        )
 
         val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
         val componentGroup2 = filteredTransaction.getComponentGroupContent(2)!!
@@ -250,38 +253,6 @@ class FilteredTransactionImplIntegrationTest {
         assertNotEquals(COMPONENT_1.toList(), componentGroup1.single().toList())
         assertNotEquals(COMPONENT_1.toList(), componentGroup2.first().toList())
         assertNotEquals(COMPONENT_2.toList(), componentGroup2[1].toList())
-    }
-
-    @Test
-    fun `cannot retrieve filtered out component group content when the merkle proof for the group is a size proof`() {
-
-        whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
-        whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
-
-        wireTransaction = getWireTransactionExample(
-            digestService,
-            merkleTreeProvider,
-            jsonMarshallingService,
-            jsonValidator,
-            componentGroupLists = listOf(
-                listOf(COMPONENT_1),
-                listOf(COMPONENT_1, COMPONENT_2)
-            )
-        )
-
-        filteredTransaction = filteredTransactionFactory.create(
-            wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.SizeProof(1),
-            )
-        ) { it is MyClassA || it is MyClassC }
-
-        val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
-        val componentGroup2 = filteredTransaction.getComponentGroupContent(2)
-
-        assertEquals(1, componentGroup1.size)
-        assertNull(componentGroup2)
     }
 
     @CordaSerializable

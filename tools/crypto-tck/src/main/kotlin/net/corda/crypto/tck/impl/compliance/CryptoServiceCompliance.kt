@@ -1,11 +1,30 @@
 package net.corda.crypto.tck.impl.compliance
 
+import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
+import net.corda.crypto.cipher.suite.CRYPTO_KEY_TYPE
+import net.corda.crypto.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
+import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
+import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
+import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
+import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
-import net.corda.crypto.ecies.EciesParams
-import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
-import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
+import net.corda.crypto.hes.HybridEncryptionParams
+import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
+import net.corda.crypto.hes.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
 import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.impl.decorators.supportsSharedSecretDerivation
@@ -13,25 +32,6 @@ import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ConcurrentTests.Companion.createTestCase
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
-import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
-import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
-import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
-import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.KeyMaterialSpec
-import net.corda.v5.cipher.suite.SharedSecretAliasSpec
-import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
-import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.OID_COMPOSITE_KEY
@@ -342,7 +342,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
             otherPublicKey = key.publicKey,
             plainText = plainText
         ) { _, _ ->
-            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            HybridEncryptionParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
             }, null)
         }

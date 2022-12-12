@@ -4,7 +4,6 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
@@ -22,7 +21,8 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
         @JvmStatic
         @Suppress("Unused")
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", 0), context, null,
+                null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
                 ::securityManager,
@@ -30,7 +30,8 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll

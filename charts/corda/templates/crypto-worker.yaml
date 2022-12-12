@@ -17,8 +17,9 @@ spec:
       labels:
         {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.workerSecurityContext" . | nindent 6 }}
+      {{- include "corda.podSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.serviceAccount" . | nindent 6 }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -35,22 +36,12 @@ spec:
       - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy:  {{ .Values.imagePullPolicy }}
-        securityContext:
-          allowPrivilegeEscalation: false
         {{- include "corda.workerResources" . | nindent 8 }}
+        {{- include "corda.containerSecurityContext" . | nindent 8 }}
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
         {{- include "corda.clusterDbEnv" . | nindent 10 }}
-          - name: SALT
-            valueFrom:
-              secretKeyRef:
-                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                key: salt
-          - name: PASSPHRASE
-            valueFrom:
-              secretKeyRef:
-                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                key: passphrase
+        {{- include "corda.dbSaltAndPassphraseEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
           - -spassphrase=$(PASSPHRASE)
