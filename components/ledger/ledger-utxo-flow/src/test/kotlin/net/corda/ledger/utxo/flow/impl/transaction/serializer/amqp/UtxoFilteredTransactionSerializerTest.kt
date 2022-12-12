@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransact
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionTestBase
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

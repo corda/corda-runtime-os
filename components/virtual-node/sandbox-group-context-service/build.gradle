@@ -28,6 +28,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-notary-plugin"
 
     api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:cache:cache-caffeine")

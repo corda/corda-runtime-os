@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.outbound
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -26,9 +27,9 @@ import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.Component
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -112,21 +113,31 @@ internal class OutboundMessageProcessor(
 
     private fun checkSourceAndDestinationValid(
         source: HoldingIdentity, destination: HoldingIdentity
-    ): Pair<Boolean, String?> {
-         return if (source.groupId != destination.groupId) {
-            return Pair(false, "group IDs do not match")
-        } else if (!linkManagerHostingMap.isHostedLocally(source)) {
-            return Pair(false, "source ID is not locally hosted")
-        } else Pair(true, null)
+    ): String? {
+        val cordaSource = try {
+            source.toCorda()
+        } catch (e: Exception) {
+            return "source '${source.x500Name}' is not a valid X500 name: ${e.message}"
+        }
+        try {
+            MemberX500Name.parse(destination.x500Name)
+        } catch (e: Exception) {
+            return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
+        }
+        return if (source.groupId != destination.groupId) {
+            return "group IDs do not match"
+        } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
+            return "source ID is not locally hosted"
+        } else null
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
 
-        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
-            message.header.source.toCorda(), message.header.destination.toCorda()
+        val discardReason = checkSourceAndDestinationValid(
+            message.header.source, message.header.destination
         )
-        if (!sourceAndDestinationValid) {
+        if (discardReason != null) {
             logger.warn("Dropping outbound unauthenticated message from ${message.header.source} to ${message.header.destination} as the " +
                     discardReason)
             return emptyList()
@@ -171,14 +182,14 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
-        val (sourceAndDestinationValid, discardReason) = checkSourceAndDestinationValid(
-            messageAndKey.message.header.source.toCorda(), messageAndKey.message.header.destination.toCorda()
+        val discardReason = checkSourceAndDestinationValid(
+            messageAndKey.message.header.source, messageAndKey.message.header.destination
         )
 
-        if (!sourceAndDestinationValid) {
+        if (discardReason != null) {
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
                     " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
-            return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason!!))
+            return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {

@@ -33,6 +33,12 @@ class Create(
     )
     var partitionOverride: Int = 1
 
+    @CommandLine.Option(
+        names = ["-u", "--user"],
+        description = ["One or more Corda workers and their respective Kafka users e.g. -u crypto=Charlie -u rest=Rob"]
+    )
+    var kafkaUsers: Map<String, String> = emptyMap()
+
     data class TopicConfig(
         val name: String,
         val consumers: List<String>,
@@ -55,6 +61,17 @@ class Create(
             .build()
     )
 
+    private val workersForProcessor = mapOf(
+        "crypto" to listOf("crypto", "combined"),
+        "db" to listOf("db", "combined"),
+        "flow" to listOf("flow", "combined"),
+        "membership" to listOf("membership", "combined"),
+        "gateway" to listOf("p2pGateway", "combined"),
+        "link-manager" to listOf("p2pLinkManager", "combined"),
+        "rpc" to listOf("rpc", "combined"),
+        "uniqueness" to listOf("db", "combined")
+    )
+
     fun getTopicConfigs(): List<TopicConfig> {
         val files: List<URL> = resourceGetter("net/corda/schema")
 
@@ -69,6 +86,15 @@ class Create(
 
     fun getTopicName(topicConfig: TopicConfig): String {
         return "${topic!!.namePrefix}${topicConfig.name}"
+    }
+
+    fun getUsersForProcessors(processors: List<String>): Set<String> {
+        return processors.map { processor -> getUsersForProcessor(processor) }.flatten().toSet()
+    }
+
+    private fun getUsersForProcessor(processor: String): Set<String> {
+        val workers = workersForProcessor[processor] ?: throw IllegalStateException("Unknown processor $processor")
+        return workers.mapNotNull { worker -> kafkaUsers[worker] }.toSet()
     }
 
     fun collectJars(

@@ -1,7 +1,6 @@
 package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
@@ -10,6 +9,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.ResponseFactory
 import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,8 +24,8 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = DelegatedRequestHandlerSelector::class)
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
-    @Reference(service = ExternalEventResponseFactory::class)
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    @Reference(service = ResponseFactory::class)
+    private val responseFactory: ResponseFactory
 ) : PersistenceRequestSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
@@ -37,7 +37,7 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
         val processor = PersistenceRequestProcessor(
             entitySandboxService,
             delegatedRequestHandlerSelector,
-            externalEventResponseFactory
+            responseFactory
         )
 
         return subscriptionFactory.createDurableSubscription(

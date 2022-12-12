@@ -16,7 +16,6 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -26,6 +25,7 @@ import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
@@ -82,7 +82,7 @@ class UtxoLedgerMessageProcessorTests {
 
     // For sandboxing
     private lateinit var virtualNode: VirtualNodeService
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
 
@@ -98,7 +98,7 @@ class UtxoLedgerMessageProcessorTests {
         logger.info("Setup test (test directory: {})", testDirectory)
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            externalEventResponseFactory = setup.fetchService(TIMEOUT_MILLIS)
+            responseFactory = setup.fetchService(TIMEOUT_MILLIS)
             virtualNode = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
@@ -125,7 +125,7 @@ class UtxoLedgerMessageProcessorTests {
         val processor = PersistenceRequestProcessor(
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            externalEventResponseFactory
+            responseFactory
         )
 
         val requestId = UUID.randomUUID().toString()

@@ -134,54 +134,54 @@ kafka:
     mechanism: "SCRAM-SHA-256"
     # -- enable/disable SASL for client connection to Kafka
     enabled: false
-    # -- SASL username configuration for client connection to Kafka
+    # default SASL username configuration for client connection to Kafka
     username: 
-      # -- the SASL user
+      # -- the default SASL username for client connection to Kafka
       value: ""
-      # -- the SASL user secret configuration; used in preference to value if name is set
+      # the default SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
       valueFrom:
-        # -- the SASL user secret key reference
+        # the default SASL username secret key reference for client connection to Kafka
         secretKeyRef:
-          # -- the SASL user secret name
+          # -- the default SASL username secret name for client connection to Kafka
           name: ""
-          # -- the SASL user secret key 
+          # -- the default SASL username secret key for client connection to Kafka
           key: ""
-    # -- SASL password configuration for client connection to Kafka
+    # default SASL password configuration for client connection to Kafka
     password: 
-      # -- the SASL password
+      # -- the default SASL password for client connection to Kafka
       value: ""
-      # -- the SASL password secret configuration; used in preference to value if name is set
+      # the default SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
       valueFrom:
-        # -- the SASL password secret key reference
+        # the default SASL password secret key reference for client connection to Kafka
         secretKeyRef:
-          # -- the SASL password secret name
+          # -- the default SASL password secret name for client connection to Kafka
           name: ""
-          # -- the SASL password secret key 
+          # -- the default SASL password secret key  for client connection to Kafka
           key: ""
 
 # Configuration for cluster bootstrap
 bootstrap:
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
-    # -- the initial admin user username configuration
+    # the initial admin user username configuration
     username: 
       # -- the initial admin user username
       value: "admin"
-      # -- the initial admin user username secret configuration; used in preference to value if name is set
+      # the initial admin user username secret configuration; used in preference to value if name is set
       valueFrom:
-        # -- the initial admin user username secret key reference
+        # the initial admin user username secret key reference
         secretKeyRef:
           # -- the initial admin user username secret name
           name: ""
           # -- the initial admin user username secret key
           key: ""
-    # -- the initial admin user password configuration
+    # the initial admin user password configuration
     password: 
       # -- the initial admin user password; generated if not specified
       value: ""
-      # -- the initial admin user password secret configuration
+      # the initial admin user password secret configuration
       valueFrom:
-        # -- the initial admin user password secret key reference
+        # the initial admin user password secret key reference
         secretKeyRef:
           # -- the initial admin user password secret name
           name: ""
@@ -276,6 +276,32 @@ bootstrap:
     partitions: 10
     # -- Kafka topic replicas
     replicas: 3
+    # if kafka.sasl.enabled, the credentials to connect to Kafka with for bootstrap
+    sasl:
+      # bootstrap SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+      username:
+        # -- the bootstrap SASL username for client connection to Kafka
+        value: ""
+        # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap SASL username secret key reference for client connection to Kafka
+          secretKeyRef:
+            # -- the bootstrap SASL username secret name for client connection to Kafka
+            name: ""
+            # -- the bootstrap SASL username secret key for client connection to Kafka
+            key: ""
+      # bootstrap SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+      password:
+        # -- the bootstrap SASL password for client connection to Kafka
+        value: ""
+        # the bootstrap SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap SASL password secret key reference for client connection to Kafka
+          secretKeyRef:
+            # -- the bootstrap SASL password secret name for client connection to Kafka
+            name: ""
+            # -- the bootstrap SASL password secret key for client connection to Kafka
+            key: ""
 
   # Configuration for CLI image used for bootstrap
   image:
@@ -343,6 +369,34 @@ workers:
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+    # crypto worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the crypto worker
+      sasl:
+        # crypto worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the crypto worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the crypto worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the crypto worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the crypto worker SASL username secret key for client connection to Kafka
+              key: ""
+        # crypto worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the crypto worker SASL password for client connection to Kafka
+          value: ""
+          # the crypto worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the crypto worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the crypto worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the crypto worker SASL password secret key for client connection to Kafka
+              key: ""
 
   # DB worker configuration
   db:
@@ -410,6 +464,34 @@ workers:
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+    # DB worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the DB worker
+      sasl:
+        # DB worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the DB worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the DB worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the DB worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the DB worker SASL username secret key for client connection to Kafka
+              key: ""
+        # DB worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the DB worker SASL password for client connection to Kafka
+          value: ""
+          # the DB worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the DB worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the DB worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the DB worker SASL password secret key for client connection to Kafka
+              key: ""
 
   # flow worker configuration
   flow:
@@ -450,6 +532,34 @@ workers:
       limits: {}
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
+    # flow worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
+      sasl:
+        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the flow worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL username secret key for client connection to Kafka
+              key: ""
+        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the flow worker SASL password for client connection to Kafka
+          value: ""
+          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the flow worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the flow worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the flow worker SASL password secret key for client connection to Kafka
+              key: ""
 
   # membership worker configuration
   membership:
@@ -488,6 +598,34 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the membership worker containers
       limits: {}
+    # membership worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the membership worker
+      sasl:
+        # membership worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the membership worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the membership worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the membership worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the membership worker SASL username secret key for client connection to Kafka
+              key: ""
+        # membership worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the membership worker SASL password for client connection to Kafka
+          value: ""
+          # the membership worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the membership worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the membership worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the membership worker SASL password secret key for client connection to Kafka
+              key: ""
 
   # RPC worker configuration
   rpc:
@@ -536,28 +674,56 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
+    # RPC worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the RPC worker
+      sasl:
+        # RPC worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the RPC worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the RPC worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the RPC worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the RPC worker SASL username secret key for client connection to Kafka
+              key: ""
+        # RPC worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the RPC worker SASL password for client connection to Kafka
+          value: ""
+          # the RPC worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the RPC worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the RPC worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the RPC worker SASL password secret key for client connection to Kafka
+              key: ""
 
-  # P2P Link Manager worker configuration
+  # P2P link manager worker configuration
   p2pLinkManager:
-    # p2p-link-manager worker image configuration
+    # P2P link manager worker image configuration
     image:
-      # -- p2p-link-manager worker image registry, defaults to image.registry
+      # -- P2P link manager worker image registry, defaults to image.registry
       registry: ""
-      # -- p2p-link-manager worker image repository
+      # -- P2P link manager worker image repository
       repository: "corda-os-p2p-link-manager-worker"
-      # -- p2p-link-manager worker image tag, defaults to image.tag
+      # -- P2P link manager worker image tag, defaults to image.tag
       tag: ""
-    # -- p2p-link-manager worker replica count
+    # -- P2P link manager worker replica count
     replicaCount: 1
-    # -- p2p-link-manager worker extra annotations
+    # -- P2P link manager worker extra annotations
     annotations: {}
-    # -- additional Java options for the p2p-link-manager worker
+    # -- additional Java options for the P2P link manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-link-manager worker debug configuration
     debug:
-      # -- run p2p-link-manager worker with debug enabled
+      # -- run P2P link manager worker with debug enabled
       enabled: false
-      # -- if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached
+      # -- if debug is enabled, suspend the P2P link manager worker until the debugger is attached
       suspend: false
     # logging configuration
     logging:
@@ -566,36 +732,65 @@ workers:
       # -- additional Log4j 2 XML configuration
       override: ""
     profiling:
-      # -- run p2p-link-manager worker with profiling enabled
+      # -- run P2P link manager worker with profiling enabled
       enabled: false
-    # resource limits and requests configuration for the p2p-link-manager worker containers.
+    # resource limits and requests configuration for the P2P link manager worker containers.
     resources:
-      # -- the CPU/memory resource requests for the p2p-link-manager worker containers
+      # -- the CPU/memory resource requests for the P2P link manager worker containers
       requests: {}
-      # -- the CPU/memory resource limits for the p2p-link-manager worker containers
+      # -- the CPU/memory resource limits for the P2P link manager worker containers
       limits: {}
+    # P2P link manager worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P link manager worker
+      sasl:
+        # P2P link manager worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the P2P link manager worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the P2P link manager worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the P2P link manager worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the P2P link manager worker SASL username secret key for client connection to Kafka
+              key: ""
+        # P2P link manager worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the P2P link manager worker SASL password for client connection to Kafka
+          value: ""
+          # the P2P link manager worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the P2P link manager worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the P2P link manager worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the P2P link manager worker SASL password secret key for client connection to Kafka
+              key: ""
 
-  # P2P Gateway worker configuration
+  # P2P gateway worker configuration
   p2pGateway:
-    # p2p-gateway worker image configuration
+    # P2P gateway worker image configuration
     image:
-      # -- p2p-gateway worker image registry, defaults to image.registry
+      # -- P2P gateway worker image registry, defaults to image.registry
       registry: ""
-      # -- p2p-gateway worker image repository
+      # -- P2P gateway worker image repository
       repository: "corda-os-p2p-gateway-worker"
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
-    # -- p2p-gateway worker replica count
+    # -- P2P gateway worker replica count
     replicaCount: 1
-    # -- p2p-gateway worker extra annotations
+    # -- P2P gateway worker extra annotations
     annotations: {}
-    # -- additional Java options for the p2p-gateway worker
+    # -- additional Java options for the P2P gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-gateway worker debug configuration
+    useStubs: false
     debug:
-      # -- run p2p-gateway worker with debug enabled
+      # -- run P2P gateway worker with debug enabled
       enabled: false
-      # -- if debug is enabled, suspend the p2p-gateway worker until the debugger is attached
+      # -- if debug is enabled, suspend the P2P gateway worker until the debugger is attached
       suspend: false
     # logging configuration
     logging:
@@ -604,15 +799,43 @@ workers:
       # -- additional Log4j 2 XML configuration
       override: ""
     profiling:
-      # -- run p2p-gateway worker with profiling enabled
+      # -- run P2P gateway worker with profiling enabled
       enabled: false
-    # resource limits and requests configuration for the p2p-gateway worker containers.
+    # resource limits and requests configuration for the P2P gateway worker containers.
     resources:
-      # -- the CPU/memory resource requests for the p2p-gateway worker containers
+      # -- the CPU/memory resource requests for the P2P gateway worker containers
       requests: {}
-      # -- the CPU/memory resource limits for the p2p-gateway worker containers
+      # -- the CPU/memory resource limits for the P2P gateway worker containers
       limits: {}
-    # p2p-gateway worker service configuration
+    # P2P gateway worker service configuration
     service:
-      # -- The Gateway HTTP port
+      # -- The P2P gateway HTTP port
       port: 8080
+    # P2P gateway worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P gateway worker
+      sasl:
+        # P2P gateway worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the P2P gateway worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the P2P gateway worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the P2P gateway worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the P2P gateway worker SASL username secret key for client connection to Kafka
+              key: ""
+        # P2P gateway worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the P2P gateway worker SASL password for client connection to Kafka
+          value: ""
+          # the P2P gateway worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the P2P gateway worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the P2P gateway worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the P2P gateway worker SASL password secret key for client connection to Kafka
+              key: ""
