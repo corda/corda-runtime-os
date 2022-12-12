@@ -40,16 +40,16 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.crypto.DelegatingCryptoService
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
@@ -214,7 +214,7 @@ class SessionManagerTest {
         on { dominoTile } doReturn hostingMapDominoTile
         on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
-    private val cryptoService = mock<StubCryptoProcessor> {
+    private val cryptoService = mock<DelegatingCryptoService> {
         on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
         val namedLifecycle = mock<NamedLifecycle> {
             whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
