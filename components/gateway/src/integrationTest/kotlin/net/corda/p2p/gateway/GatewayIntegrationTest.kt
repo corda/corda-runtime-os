@@ -291,6 +291,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("http://www.alice.net:$port")
@@ -311,8 +312,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB,
-                mock(),
+                SigningMode.REAL,
+                testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
@@ -697,7 +698,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.REAL,
-                testCryptoOpsClient,
+                testCryptoOpsClientAlice,
                 avroSchemaRegistry
                 ),
                 Gateway(
@@ -716,7 +717,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.REAL,
-                testCryptoOpsClient,
+                    testCryptoOpsClientBob,
                 avroSchemaRegistry
                 )
             ).onEach {
