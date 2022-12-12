@@ -11,7 +11,6 @@ public class AMQPTestUtils {
 
     public static SerializerFactory testDefaultFactory() {
         return SerializerFactoryBuilder.build(
-                (SandboxGroup) Objects.requireNonNull(TestSerializationContext.testSerializationContext.getSandboxGroup())
-        );
+                (SandboxGroup) Objects.requireNonNull(TestSerializationContext.testSerializationContext.getSandboxGroup()));
     }
 }
