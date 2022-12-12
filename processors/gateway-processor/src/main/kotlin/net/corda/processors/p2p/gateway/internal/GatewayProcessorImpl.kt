@@ -76,7 +76,7 @@ class GatewayProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
 
                 val thirdPartyComponentMode = if (event.useStubComponents) {
-                    SigningMode.STUB
+                    SigningMode.REAL
                 } else {
                     SigningMode.REAL
                 }

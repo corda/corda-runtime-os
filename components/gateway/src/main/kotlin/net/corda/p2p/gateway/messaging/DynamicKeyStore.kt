@@ -173,9 +173,4 @@ enum class SigningMode {
      * In this mode, signing is delegated to a real crypto processor.
      */
     REAL,
-
-    /**
-     * In this mode, signing is delegated to a stub crypto processor (that reads cryptographic material directly from Kafka)
-     */
-    STUB
 }
