@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
@@ -123,6 +122,7 @@ class UtxoLedgerTransactionVerifierTest {
         }
     }
 
+    @Suppress("TooGenericExceptionThrown")
     class MyInvalidContractB : Contract {
         override fun verify(transaction: UtxoLedgerTransaction) {
             throw Exception("Something is wrong here")
