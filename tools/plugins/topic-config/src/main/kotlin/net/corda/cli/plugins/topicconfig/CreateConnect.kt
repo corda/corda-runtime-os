@@ -117,12 +117,14 @@ class CreateConnect : Runnable {
     fun getAclBindings(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.flatMap { topicConfig: Create.TopicConfig ->
             val pattern = ResourcePattern(ResourceType.TOPIC, topicConfig.name, PatternType.LITERAL)
-            val consumerEntries = topicConfig.consumers.map { consumer ->
-                AccessControlEntry("User:$consumer", "*", AclOperation.READ, AclPermissionType.ALLOW)
-            }
-            val producerEntries = topicConfig.producers.map { producer ->
-                AccessControlEntry("User:$producer", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
-            }
+            val consumerEntries = create!!.getUsersForProcessors(topicConfig.consumers)
+                .map { user ->
+                    AccessControlEntry("User:$user", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                }
+            val producerEntries = create!!.getUsersForProcessors(topicConfig.producers)
+                .map { user ->
+                    AccessControlEntry("User:$user", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
+                }
             (consumerEntries + producerEntries).map { AclBinding(pattern, it) }
         }
 
