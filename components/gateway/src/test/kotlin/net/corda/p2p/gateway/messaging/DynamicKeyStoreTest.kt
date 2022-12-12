@@ -61,12 +61,7 @@ class DynamicKeyStoreTest {
         @Suppress("UNCHECKED_CAST")
         (context.arguments()[1] as (() -> CompactedSubscription<String, GatewayTlsCertificates>)).invoke()
     }
-/*    private val signer = mockConstruction(StubCryptoProcessor::class.java) { mock, _ ->
-        val mockNamedLifecycle = mock<NamedLifecycle> {
-            whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(mock.namedLifecycle).doReturn(mockNamedLifecycle)
-    }*/
+
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private var futures: MutableList<CompletableFuture<Unit>> = mutableListOf()
     private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
@@ -95,7 +90,6 @@ class DynamicKeyStoreTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
-        //signer.close()
         blockingDominoTile.close()
     }
 
