@@ -97,7 +97,8 @@ class PluggableNotaryClientFlowFactoryTest {
             )
         }
 
-        assertThat(exception.message).contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
+        assertThat(exception.message)
+            .contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
     }
 
     @Test
@@ -117,7 +118,8 @@ class PluggableNotaryClientFlowFactoryTest {
             )
         }
 
-        assertThat(exception.message).contains("Exception while trying to create notary client with name: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
+        assertThat(exception.message)
+            .contains("Exception while trying to create notary client with name: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
         assertThat(exception).hasCause(providerError)
     }
 
@@ -172,7 +174,8 @@ class PluggableNotaryClientFlowFactoryTest {
             )
         }
 
-        assertThat(exception.message).contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
+        assertThat(exception.message)
+            .contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
     }
 
     @Test
