@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 /**
  * Utxo Transaction verification checks which do not require resolved states.
@@ -10,6 +11,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl):
     UtxoTransactionVerifier()
 {
+    override val subjectClass: String = UtxoTransactionBuilder::class.simpleName!!
+
     fun verify() {
         /**
          * These checks are unique to [UtxoTransactionBuilder].
@@ -30,19 +33,19 @@ class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransac
 
     private fun verifyNotary() {
         checkNotNull(transactionBuilder.notary) {
-            "The notary of the current ${this::class.java.name} must not be null."
+            "The notary of the current $subjectClass must not be null."
         }
     }
 
     private fun verifyTimeWindow() {
         checkNotNull(transactionBuilder.timeWindow) {
-            "The time window of the current ${this::class.java.name} must not be null."
+            "The time window of the current $subjectClass must not be null."
         }
     }
 
     private fun verifyEncumbranceGroups() {
         check(transactionBuilder.getEncumbranceGroups().all { it.value.size > 1 }) {
-            "Every encumbrance group of the current ${this::class.java.name} must contain more than one output state."
+            "Every encumbrance group of the current $subjectClass must contain more than one output state."
         }
     }
 }

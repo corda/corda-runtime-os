@@ -5,6 +5,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class UtxoLedgerTransactionVerifier(private val ledgerTransaction: UtxoLedgerTransaction): UtxoTransactionVerifier()  {
 
+    override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
+
     fun verifyPlatformChecks(notary: Party) {
         /**
          * These checks are shared with [UtxoTransactionBuilderVerifier] verification.
@@ -35,7 +37,7 @@ class UtxoLedgerTransactionVerifier(private val ledgerTransaction: UtxoLedgerTra
             "Input and Reference input states' notaries need to be the same. ${allInputs.map { it.notary }.distinct().size}"
         }
         check(allInputs.first().notary == notary) {
-            "Input and Reference input states' notaries need to be the same as the transaction's notary."
+            "Input and Reference input states' notaries need to be the same as the $subjectClass's notary."
         }
         // TODO check rotated notaries
     }
