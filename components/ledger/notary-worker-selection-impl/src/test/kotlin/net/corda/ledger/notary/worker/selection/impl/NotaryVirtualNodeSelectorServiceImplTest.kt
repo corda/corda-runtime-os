@@ -28,19 +28,28 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         }
     }
 
-    private lateinit var notaryServiceIdentity: Party
+    private lateinit var firstNotaryServiceIdentity: Party
+    private lateinit var secondNotaryServiceIdentity: Party
     private lateinit var virtualNodeLookup: NotaryVirtualNodeLookup
 
     @BeforeEach
     fun setup() {
-        notaryServiceIdentity = Party(
+        firstNotaryServiceIdentity = Party(
             MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"),
             mock()
         )
 
+        secondNotaryServiceIdentity = Party(
+            MemberX500Name.Companion.parse("O=MySecondNotaryService, L=London, C=GB"),
+            mock()
+        )
+
         virtualNodeLookup = mock {
-            on { getNotaryVirtualNodes(eq(notaryServiceIdentity.name)) } doReturn
-                    listOf(NOTARY_WORKER_1, NOTARY_WORKER_2, NOTARY_WORKER_3, NOTARY_WORKER_4)
+            on { getNotaryVirtualNodes(eq(firstNotaryServiceIdentity.name)) } doReturn
+                    listOf(NOTARY_WORKER_1, NOTARY_WORKER_3)
+
+            on { getNotaryVirtualNodes(eq(secondNotaryServiceIdentity.name)) } doReturn
+                    listOf(NOTARY_WORKER_2, NOTARY_WORKER_4)
         }
     }
 
@@ -53,12 +62,43 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         val selectedVirtualNodes = mutableMapOf<Party, Int>()
 
         (1..SELECTION_COUNT).forEach { _ ->
-            val selected = selector.selectVirtualNode(notaryServiceIdentity)
+            val selected = selector.selectVirtualNode(firstNotaryServiceIdentity)
             selectedVirtualNodes.merge(selected, 1, Int::plus)
         }
 
-        assertThat(selectedVirtualNodes.size).isEqualTo(4)
+        assertThat(selectedVirtualNodes.size).isEqualTo(2)
         assertThat(selectedVirtualNodes).doesNotContainValue(0)
         assertThat(selectedVirtualNodes).doesNotContainValue(SELECTION_COUNT)
+    }
+
+    @Test
+    fun `only select virtual nodes that belong to the given service`() {
+        val selector = NotaryVirtualNodeSelectorServiceImpl(virtualNodeLookup)
+
+        val selectedVirtualNodesForFirstService = mutableMapOf<Party, Int>()
+        val selectedVirtualNodesForSecondService = mutableMapOf<Party, Int>()
+
+        (1..SELECTION_COUNT).forEach { _ ->
+            selectedVirtualNodesForFirstService.merge(
+                selector.selectVirtualNode(firstNotaryServiceIdentity),
+                1,
+                Int::plus
+            )
+
+            selectedVirtualNodesForSecondService.merge(
+                selector.selectVirtualNode(secondNotaryServiceIdentity),
+                1,
+                Int::plus
+            )
+        }
+
+        assertThat(selectedVirtualNodesForFirstService).containsOnlyKeys(
+            Party(NOTARY_WORKER_1.name, NOTARY_WORKER_1.sessionInitiationKey),
+            Party(NOTARY_WORKER_3.name, NOTARY_WORKER_3.sessionInitiationKey)
+        )
+        assertThat(selectedVirtualNodesForSecondService).containsOnlyKeys(
+            Party(NOTARY_WORKER_2.name, NOTARY_WORKER_2.sessionInitiationKey),
+            Party(NOTARY_WORKER_4.name, NOTARY_WORKER_4.sessionInitiationKey)
+        )
     }
 }
