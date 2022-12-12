@@ -153,6 +153,8 @@ class UtxoReceiveFinalityFlow(
 
     private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        UtxoLedgerTransactionVerifier(ledgerTransactionToCheck).verify()
+        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
+        verifier.verifyPlatformChecks(signedTransaction.notary)
+        verifier.verifyContracts()
     }
 }

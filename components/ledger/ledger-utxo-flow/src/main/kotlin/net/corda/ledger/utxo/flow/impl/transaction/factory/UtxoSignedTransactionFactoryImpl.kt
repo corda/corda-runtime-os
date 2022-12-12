@@ -6,11 +6,11 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetadataVerifier
@@ -20,6 +20,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -63,7 +64,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        verifyTransaction(wireTransaction)
+        verifyTransaction(wireTransaction, utxoTransactionBuilder.notary!!)
 
         // Everything is OK, we can sign the transaction.
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
@@ -161,9 +162,10 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         }
     }
 
-    private fun verifyTransaction(wireTransaction: WireTransaction){
+    private fun verifyTransaction(wireTransaction: WireTransaction, notary: Party){
         val ledgerTransactionToCheck = UtxoLedgerTransactionImpl(wireTransaction, serializationService)
-        println(ledgerTransactionToCheck.id)
-        //UtxoTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
+        verifier.verifyPlatformChecks(notary)
+        verifier.verifyContracts()
     }
 }

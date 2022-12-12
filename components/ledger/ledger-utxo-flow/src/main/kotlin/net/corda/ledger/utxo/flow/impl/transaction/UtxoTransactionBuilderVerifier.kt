@@ -2,16 +2,17 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl) {
 
+    /**
+     * Utxo Transaction verification checks which do not require resolved states.
+     */
     fun verify() {
         verifyNotary()
-
-        // TODO : Needs readding.
-        //verifySignatories()
+        // TODO Check the notary is in the group parameters whitelist
+        verifySignatories()
         verifyTimeWindow()
         verifyInputsAndOutputs()
         verifyCommands()
         verifyEncumbranceGroups()
-        // TODO : Contract Verification
     }
 
     private fun verifyNotary() {
