@@ -14,20 +14,16 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.p2p.linkmanager.crypto.DelegatingCryptoService
 import net.corda.p2p.linkmanager.grouppolicy.ForwardingGroupPolicyProvider
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.grouppolicy.StubGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
 import net.corda.p2p.linkmanager.inbound.InboundLinkManager
 import net.corda.p2p.linkmanager.membership.ForwardingMembershipGroupReader
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
-import net.corda.p2p.linkmanager.membership.StubMembershipGroupReader
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -47,7 +43,6 @@ class LinkManager(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
-    thirdPartyComponentsMode: ThirdPartyComponentsMode,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -63,21 +58,15 @@ class LinkManager(
         }
     }
 
-    private val forwardingGroupPolicyProvider: LinkManagerGroupPolicyProvider = when (thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL -> ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, groupPolicyProvider,
+    private val forwardingGroupPolicyProvider: LinkManagerGroupPolicyProvider = ForwardingGroupPolicyProvider(
+        lifecycleCoordinatorFactory, groupPolicyProvider,
             virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient)
-        ThirdPartyComponentsMode.STUB -> StubGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
-    }
-    private val linkManagerCryptoProcessor: CryptoProcessor = when(thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL -> DelegatingCryptoService(cryptoOpsClient)
-        ThirdPartyComponentsMode.STUB -> StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
-    }
 
-    private val members: LinkManagerMembershipGroupReader = when(thirdPartyComponentsMode) {
-        ThirdPartyComponentsMode.REAL ->
-            ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
-        ThirdPartyComponentsMode.STUB -> StubMembershipGroupReader(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
-    }
+    private val linkManagerCryptoProcessor: CryptoProcessor = DelegatingCryptoService(cryptoOpsClient)
+
+    private val members: LinkManagerMembershipGroupReader = ForwardingMembershipGroupReader(
+        membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
+
 
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

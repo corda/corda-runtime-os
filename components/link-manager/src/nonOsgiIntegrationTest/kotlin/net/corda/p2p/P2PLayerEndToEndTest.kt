@@ -49,7 +49,6 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -442,8 +441,7 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 mock(),
-                mock(),
-                ThirdPartyComponentsMode.STUB
+                mock()
             )
 
         private val gateway =

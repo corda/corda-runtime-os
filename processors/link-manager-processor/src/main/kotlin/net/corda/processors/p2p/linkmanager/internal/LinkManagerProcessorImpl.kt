@@ -22,7 +22,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.v5.base.util.contextLogger
@@ -96,12 +95,6 @@ class LinkManagerProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                val thirdPartyComponentMode = if (event.useStubComponents) {
-                    ThirdPartyComponentsMode.STUB
-                } else {
-                    ThirdPartyComponentsMode.REAL
-                }
-
                 val linkManager = LinkManager(
                     subscriptionFactory,
                     publisherFactory,
@@ -114,9 +107,8 @@ class LinkManagerProcessorImpl @Activate constructor(
                     cryptoOpsClient,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
-                    groupParametersReaderService,
+                    groupParametersReaderService
                     //This will be removed once integration with MGM/crypto has been completed.
-                    thirdPartyComponentMode
                 )
 
                 this.linkManager = linkManager

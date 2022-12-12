@@ -13,5 +13,5 @@ enum class ThirdPartyComponentsMode {
     /**
      * In this mode, the internal (stubbed) component is used.
      */
-    STUB
+    //STUB
 }
