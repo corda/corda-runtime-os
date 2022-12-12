@@ -15,7 +15,7 @@ class WireTransactionKryoSerializerTest : CommonLedgerTest() {
         val serializer = createCheckpointSerializer(
             serializers = mapOf(WireTransaction::class.java to wireTransactionKryoSerializer),
             singletonInstances = emptyList(),
-            extraClasses = setOf(PrivacySalt::class.java, PrivacySaltImpl::class.java)
+            extraClasses = setOf(PrivacySalt::class.java, PrivacySaltImpl::class.java, emptyList<String>()::class.java)
         )
 
         val bytes = serializer.serialize(wireTransactionExample)

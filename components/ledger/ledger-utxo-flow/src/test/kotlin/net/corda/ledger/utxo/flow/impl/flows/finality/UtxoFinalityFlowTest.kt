@@ -68,18 +68,45 @@ class UtxoFinalityFlowTest {
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
 
         whenever(signedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
         whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
-        whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
+        whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(
+            updatedSignedTransaction
+        )
         whenever(updatedSignedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
     }
 
     @Test
     fun `receiving valid signatures over a transaction leads to it being recorded and distributed for recording to passed in sessions`() {
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureBob)))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
         whenever(updatedSignedTransaction.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
@@ -97,10 +124,12 @@ class UtxoFinalityFlowTest {
 
         verify(sessionAlice).sendAndReceive(Payload::class.java, signedTransaction)
         verify(sessionBob).sendAndReceive(Payload::class.java, signedTransaction)
-        verify(flowMessaging).sendAllMap(mapOf(
-            sessionAlice to listOf(signatureBob),
-            sessionBob to listOf(signatureAlice1, signatureAlice2)
-        ))
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
     }
 
     @Test
@@ -109,8 +138,20 @@ class UtxoFinalityFlowTest {
 
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyBob))
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureBob)))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1
+                )
+            )
+        )
+        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
         whenever(updatedSignedTransaction.signatures).thenReturn(listOf(signatureAlice1, signatureBob))
 
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
@@ -128,16 +169,30 @@ class UtxoFinalityFlowTest {
 
         verify(sessionAlice).sendAndReceive(Payload::class.java, signedTransaction)
         verify(sessionBob).sendAndReceive(Payload::class.java, signedTransaction)
-        verify(flowMessaging).sendAllMap(mapOf(
-            sessionAlice to listOf(signatureBob),
-            sessionBob to listOf(signatureAlice1)
-        ))
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1)
+            )
+        )
     }
 
     @Test
     fun `receiving a session error instead of signatures rethrows the error`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenThrow(CordaRuntimeException("session error"))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(
+            sessionBob.sendAndReceive(
+                Payload::class.java,
+                signedTransaction
+            )
+        ).thenThrow(CordaRuntimeException("session error"))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -155,8 +210,20 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `receiving a failure payload throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(
+            sessionBob.sendAndReceive(
+                Payload::class.java,
+                signedTransaction
+            )
+        ).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -177,8 +244,20 @@ class UtxoFinalityFlowTest {
     /* Q: Can it be OK to return no signatures? */
     @Test
     fun `receiving no signatures from a session throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(emptyList<List<DigitalSignatureAndMetadata>>()))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(
+            sessionBob.sendAndReceive(
+                Payload::class.java,
+                signedTransaction
+            )
+        ).thenReturn(Payload.Success(emptyList<List<DigitalSignatureAndMetadata>>()))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -198,10 +277,25 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `failing to verify a received signature throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(Payload.Success(listOf(signatureBob)))
+        whenever(sessionAlice.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.sendAndReceive(Payload::class.java, signedTransaction)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob))).thenThrow(CryptoSignatureException(""))
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureBob))).thenThrow(
+            CryptoSignatureException("")
+        )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CryptoSignatureException::class.java)

@@ -65,7 +65,8 @@ class UtxoFinalityFlow(
             }
 
             log.debug(
-                "Received ${signaturesReceivedFromSessions[session]!!.size} signatures from ${session.counterparty} for transaction $transactionId"
+                "Received ${signaturesReceivedFromSessions[session]!!.size} signatures from ${session.counterparty}" +
+                        " for transaction $transactionId"
             )
             if (signaturesReceivedFromSessions[session]!!.isEmpty()){   // Q: do we need this check?
                 val message = "Received 0 signatures from ${session.counterparty} for transaction $transactionId."

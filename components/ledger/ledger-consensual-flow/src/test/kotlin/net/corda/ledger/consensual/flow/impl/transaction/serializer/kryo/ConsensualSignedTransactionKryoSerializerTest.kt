@@ -25,6 +25,7 @@ class ConsensualSignedTransactionKryoSerializerTest: ConsensualLedgerTest() {
                 DigitalSignatureAndMetadata::class.java,
                 consensualSignedTransactionExample.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
+                emptyList<String>()::class.java,
                 DigitalSignature.WithKey::class.java
             )
         )

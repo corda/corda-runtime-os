@@ -13,7 +13,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
-abstract class UtxoFinalityBase() : SubFlow<UtxoSignedTransaction> {
+abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     private companion object {
         val log = contextLogger()

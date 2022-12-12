@@ -114,11 +114,10 @@ class UtxoReceiveFinalityFlow(
 
         log.debug("Waiting for Notary's signature for transaction: $transactionId")
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
-        if (notarySignatures.isEmpty()) {
+        if (notarySignatures.isEmpty()) { // TODO reorg this if/when notarization is integrated
             log.warn("No notary signature received for transaction: $transactionId")
             // TODO error handling
-        }
-        if (notarySignatures.isNotEmpty()) {    // TODO remove this if/when notarization is integrated
+        } else {
             log.debug("Verifying and adding notary signatures for transaction: $transactionId")
             notarySignatures.forEach {
                 transaction = verifyAndAddSignature(transaction, it)

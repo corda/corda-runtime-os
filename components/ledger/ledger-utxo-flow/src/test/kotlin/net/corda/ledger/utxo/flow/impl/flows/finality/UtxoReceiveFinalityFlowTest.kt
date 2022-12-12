@@ -7,6 +7,8 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -71,6 +73,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
         whenever(signedTransaction.id).thenReturn(ID)
+        whenever(signedTransaction.notary).thenReturn(utxoNotaryExample)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
@@ -83,6 +86,7 @@ class UtxoReceiveFinalityFlowTest {
 
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
+        whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
     }
 

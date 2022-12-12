@@ -2,54 +2,47 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 
-class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl) {
-
-    /**
-     * Utxo Transaction verification checks which do not require resolved states.
-     */
+/**
+ * Utxo Transaction verification checks which do not require resolved states.
+ * [UtxoTransactionVerifier] contains the ones shared with ledger transaction verifications.
+ * The ones in this file are pointless on Ledger Transactions.
+ */
+class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl):
+    UtxoTransactionVerifier()
+{
     fun verify() {
+        /**
+         * These checks are unique to [UtxoTransactionBuilder].
+         * The related fields are not nullable or do not exist in [UtxoLedgerTransaction].
+         */
         verifyNotary()
-        // TODO Check the notary is in the group parameters whitelist
-        verifySignatories()
         verifyTimeWindow()
-        verifyInputsAndOutputs()
-        verifyCommands()
         verifyEncumbranceGroups()
+
+        /**
+         * These checks are shared with [UtxoLedgerTransactionVerifier] verification.
+         */
+        verifySignatories(transactionBuilder.signatories)
+        verifyInputsAndOutputs(transactionBuilder.inputStateRefs, transactionBuilder.outputStates)
+        verifyCommands(transactionBuilder.commands)
+        verifyNotaryIsWhitelisted()
     }
 
     private fun verifyNotary() {
         checkNotNull(transactionBuilder.notary) {
-            "The notary of the current transaction builder must not be null."
-        }
-    }
-
-    private fun verifySignatories() {
-        check(transactionBuilder.signatories.isNotEmpty()) {
-            "At least one signatory signing key must be applied to the current transaction builder in order to create a signed transaction."
+            "The notary of the current ${this::class.java.name} must not be null."
         }
     }
 
     private fun verifyTimeWindow() {
         checkNotNull(transactionBuilder.timeWindow) {
-            "The time window of the current transaction builder must not be null."
-        }
-    }
-
-    private fun verifyInputsAndOutputs() {
-        check(transactionBuilder.inputStateRefs.isNotEmpty() || transactionBuilder.outputStates.isNotEmpty()) {
-            "At least one input state, or one output state must be applied to the current transaction builder."
-        }
-    }
-
-    private fun verifyCommands() {
-        check(transactionBuilder.commands.isNotEmpty()) {
-            "At least one command must be applied to the current transaction builder."
+            "The time window of the current ${this::class.java.name} must not be null."
         }
     }
 
     private fun verifyEncumbranceGroups() {
         check(transactionBuilder.getEncumbranceGroups().all { it.value.size > 1 }) {
-            "Every encumbrance group of the current transaction builder must contain more than one output state."
+            "Every encumbrance group of the current ${this::class.java.name} must contain more than one output state."
         }
     }
 }
