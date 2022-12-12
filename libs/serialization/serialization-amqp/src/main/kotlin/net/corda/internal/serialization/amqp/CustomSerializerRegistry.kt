@@ -267,7 +267,25 @@ class CachingCustomSerializerRegistry(
     }
 }
 
-class CustomSerializerPermission(name: String) : BasicPermission(name) {
+/**
+ * [CustomSerializerPermission] is used to allow/ block external custom serializers registration. A register-able
+ * external custom serializer should a serializer which is defined within a sandbox type X (X = FLOW or VERIFICATION or PERSISTENCE)
+ * whose target type also exists in the same sandbox type X.
+ *
+ * @param [targetBundleLocation] is the external custom serializer target type.
+ */
+class CustomSerializerPermission(targetBundleLocation: String) : BasicPermission(targetBundleLocation) {
+    init {
+        // `BasicPermission` parsing of passed in `targetBundleLocation`, if it is to contain a wildcard ('*')
+        // `BasicPermission` expects it to either be a single character ('*') or ending in (".*"). In our case, where we want
+        // to pass in bundle locations, the passed in string would look like for e.g. "FLOW/*". But according to the above rule
+        // this will not get parsed properly. So by `BasicPermission` it means we should be using wildcard only in single character.
+        // For cases like "FLOW/*" we should be only passing in just "FLOW".
+        if (targetBundleLocation.length > 1 && targetBundleLocation.endsWith('*')) {
+            throw IllegalArgumentException("Permission name cannot end with *")
+        }
+    }
+
     companion object {
         // `BasicPermission` doesn't allow an empty name so using "NON_BUNDLE" if class is non bundled
         const val NON_BUNDLE = "NON_BUNDLE"
