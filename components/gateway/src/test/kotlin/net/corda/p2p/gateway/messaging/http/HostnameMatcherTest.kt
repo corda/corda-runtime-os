@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
 import net.corda.testing.p2p.certificates.Certificates
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -37,7 +38,7 @@ class HostnameMatcherTest {
             it.load(Certificates.ipKeyStore.openStream(), "password".toCharArray())
         }
         val matcher = HostnameMatcher(keyStore)
-        assertTrue(matcher.matches(SNIHostName(ipAddress + SniCalculator.IP_SNI_SUFFIX)))
+        assertThat(matcher.matches(SNIHostName(ipAddress + SniCalculator.IP_SNI_SUFFIX))).isTrue
     }
 
     @Test

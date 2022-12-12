@@ -47,7 +47,8 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
                 }
             } else if (isIpSni(serverNameString)) {
                 val ipAddress = serverNameString.removeSuffix(SniCalculator.IP_SNI_SUFFIX)
-                if (matchIp(ipAddress, certificate)) {
+                val valid = InetAddressValidator.getInstance().isValid(ipAddress)
+                if (valid && matchIp(ipAddress, certificate)) {
                     return matched(alias)
                 }
             } else if (matchDNS(serverNameString, certificate)){
@@ -72,9 +73,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
     }
 
     private fun isIpSni(serverName: String): Boolean {
-        val correctSuffix = serverName.endsWith(SniCalculator.IP_SNI_SUFFIX)
-        val validIp = InetAddressValidator.getInstance().isValid(serverName.removeSuffix(SniCalculator.IP_SNI_SUFFIX))
-        return correctSuffix && validIp
+        return serverName.endsWith(SniCalculator.IP_SNI_SUFFIX)
     }
 
     private fun matched(alias: String): Boolean {
@@ -90,7 +89,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         }
         names.forEach {
             if (ALTNAME_IP == it[0]) {
-                val ipAddress = it[1] as String
+                val ipAddress = it[1] as? String
                 if (ip == ipAddress) {
                     return true
                 }
