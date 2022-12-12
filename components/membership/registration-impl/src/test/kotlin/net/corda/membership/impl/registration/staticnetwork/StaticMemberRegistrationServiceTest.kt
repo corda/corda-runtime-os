@@ -303,7 +303,7 @@ class StaticMemberRegistrationServiceTest {
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
 
-            (CryptoConsts.Categories.all - listOf(LEDGER)).forEach {
+            (CryptoConsts.Categories.all.minus(listOf(LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
                 verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
             }
@@ -366,7 +366,7 @@ class StaticMemberRegistrationServiceTest {
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
             verify(cryptoOpsClient).generateKeyPair(any(), eq(SESSION_INIT), any(), any(), any<Map<String, String>>())
 
-            (CryptoConsts.Categories.all - listOf(SESSION_INIT, LEDGER)).forEach {
+            (CryptoConsts.Categories.all.minus(listOf(SESSION_INIT, LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
                 verify(cryptoOpsClient, never()).generateKeyPair(any(), eq(it), any(), any(), any<Map<String, String>>())
             }

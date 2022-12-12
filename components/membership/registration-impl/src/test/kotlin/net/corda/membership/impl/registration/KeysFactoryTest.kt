@@ -129,22 +129,28 @@ class KeysFactoryTest {
 
     @Test
     fun `pem returns the correct PEM`() {
-        val key = keysFactory.getOrGenerateKeyPair(noExistingKeyCategory)
-
-        assertThat(key.pem).isEqualTo("PEM")
+        assertThat(
+            keysFactory
+                .getOrGenerateKeyPair(noExistingKeyCategory)
+                .pem
+        ).isEqualTo("PEM")
     }
 
     @Test
     fun `hash returns the correct hash`() {
-        val key = keysFactory.getOrGenerateKeyPair(existingKeyCategory)
-
-        assertThat(key.hash).isEqualTo(publicKey.calculateHash())
+        assertThat(
+            keysFactory
+                .getOrGenerateKeyPair(existingKeyCategory)
+                .hash
+        ).isEqualTo(publicKey.calculateHash())
     }
 
     @Test
     fun `spec returns the correct signature spec`() {
-        val key = keysFactory.getOrGenerateKeyPair(noExistingKeyCategory)
-
-        assertThat(key.spec).isEqualTo(SignatureSpec.ECDSA_SHA256)
+        assertThat(
+            keysFactory
+                .getOrGenerateKeyPair(noExistingKeyCategory)
+                .spec
+        ).isEqualTo(SignatureSpec.ECDSA_SHA256)
     }
 }
