@@ -1,7 +1,6 @@
 package net.corda.ledger.notary.plugin.factory
 
-import net.corda.ledger.notary.worker.selection.NotaryWorkerSelectorService
-import net.corda.membership.read.NotaryVirtualNodeLookup
+import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -17,71 +16,75 @@ import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.security.PublicKey
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PluggableNotaryClientFlowFactoryTest {
 
     private companion object {
-        const val DUMMY_TYPE = "DUMMY"
-        val DUMMY_NOTARY_SERVICE_KEY = mock<PublicKey>()
-        val DUMMY_NOTARY_SERVICE_NAME = MemberX500Name(
-            "NotaryService",
-            "R3",
-            "LDN",
-            "GB"
-        )
+        const val FIRST_NOTARY_SERVICE_PLUGIN_TYPE = "DUMMY"
+        const val SECOND_NOTARY_SERVICE_PLUGIN_TYPE = "DUMMY2"
 
-        val DUMMY_NOTARY_SERVICE_PARTY = Party(
-            DUMMY_NOTARY_SERVICE_NAME,
-            DUMMY_NOTARY_SERVICE_KEY
-        )
+        val FIRST_NOTARY_SERVICE_PARTY = createNotaryService(1)
+        val SECOND_NOTARY_SERVICE_PARTY = createNotaryService(2)
+
+        fun createNotaryService(serviceNumber: Int): Party {
+            return Party(
+                MemberX500Name(
+                    "NotaryService$serviceNumber",
+                    "R3",
+                    "LDN",
+                    "GB"
+                ),
+                mock()
+            )
+        }
     }
 
     private lateinit var clientFactory: PluggableNotaryClientFlowFactory
     private lateinit var notaryLookup: NotaryLookup
-    private lateinit var virtualNodeLookup: NotaryVirtualNodeLookup
-    private lateinit var workerSelectorService: NotaryWorkerSelectorService
+    private lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
     @BeforeEach
     fun setup() {
-        val mockNotaryInfo = mock<NotaryInfo> {
-            on { pluginClass } doReturn DUMMY_TYPE
-            on { name } doReturn DUMMY_NOTARY_SERVICE_NAME
-            on { publicKey } doReturn DUMMY_NOTARY_SERVICE_KEY
+        val mockFirstNotaryServiceInfo = mock<NotaryInfo> {
+            on { pluginClass } doReturn FIRST_NOTARY_SERVICE_PLUGIN_TYPE
+            on { name } doReturn FIRST_NOTARY_SERVICE_PARTY.name
+            on { publicKey } doReturn FIRST_NOTARY_SERVICE_PARTY.owningKey
         }
+        val mockSecondNotaryServiceInfo = mock<NotaryInfo> {
+            on { pluginClass } doReturn SECOND_NOTARY_SERVICE_PLUGIN_TYPE
+            on { name } doReturn SECOND_NOTARY_SERVICE_PARTY.name
+            on { publicKey } doReturn SECOND_NOTARY_SERVICE_PARTY.owningKey
+        }
+
         notaryLookup = mock {
-            on { notaryServices } doReturn listOf(mockNotaryInfo)
+            on { notaryServices } doReturn listOf(mockFirstNotaryServiceInfo, mockSecondNotaryServiceInfo)
         }
 
-        val workerName = MemberX500Name(
-            "NotaryWorker",
-            "R3",
-            "LDN",
-            "GB"
-        )
-        val workerKey = mock<PublicKey>()
-
-        val worker = mock<MemberInfo> {
-            on { name } doReturn workerName
-            on { sessionInitiationKey } doReturn workerKey
-        }
-        virtualNodeLookup = mock {
-            on { getNotaryVirtualNodes(eq(DUMMY_NOTARY_SERVICE_NAME)) } doReturn listOf(worker)
+        val firstServiceVNode = mock<MemberInfo> {
+            on { name } doReturn MemberX500Name.parse("CN=VNode1, O=Corda, L=LDN, C=GB")
+            on { sessionInitiationKey } doReturn mock()
         }
 
-        workerSelectorService = mock {
-            on { next(any()) } doReturn Party(workerName, workerKey)
+        val secondServiceVNode = mock<MemberInfo> {
+            on { name } doReturn MemberX500Name.parse("CN=VNode2, O=Corda, L=LDN, C=GB")
+            on { sessionInitiationKey } doReturn mock()
+        }
+
+        virtualNodeSelectorService = mock {
+            on { next(eq(FIRST_NOTARY_SERVICE_PARTY)) } doAnswer  { firstServiceVNode.toParty() }
+            on { next(eq(SECOND_NOTARY_SERVICE_PARTY)) } doAnswer { secondServiceVNode.toParty() }
         }
 
         clientFactory = PluggableNotaryClientFlowFactory(
             notaryLookup,
-            workerSelectorService,
-            virtualNodeLookup
+            virtualNodeSelectorService
         )
     }
 
@@ -89,12 +92,12 @@ class PluggableNotaryClientFlowFactoryTest {
     fun `Plugin provider that is not present on the network cannot be loaded`() {
         val exception = assertThrows<IllegalStateException> {
             clientFactory.create(
-                DUMMY_NOTARY_SERVICE_PARTY,
+                FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
         }
 
-        assertThat(exception.message).contains("Notary flow provider not found for type: $DUMMY_TYPE")
+        assertThat(exception.message).contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
     }
 
     @Test
@@ -104,17 +107,17 @@ class PluggableNotaryClientFlowFactoryTest {
         // when instantiated
         clientFactory.accept(
             createPluginProviderSandboxContext(
-                PluginProvider { _, _ -> throw providerError }
+                FirstNotaryServicePluginProvider { _, _ -> throw providerError }
             )
         )
         val exception = assertThrows<CordaRuntimeException> {
             clientFactory.create(
-                DUMMY_NOTARY_SERVICE_PARTY,
+                FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
         }
 
-        assertThat(exception.message).contains("Exception while trying to create notary client with name: $DUMMY_TYPE")
+        assertThat(exception.message).contains("Exception while trying to create notary client with name: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
         assertThat(exception).hasCause(providerError)
     }
 
@@ -123,13 +126,40 @@ class PluggableNotaryClientFlowFactoryTest {
         // Install a valid plugin provider to the factory with type of `DUMMY_TYPE`
         clientFactory.accept(
             createPluginProviderSandboxContext(
-                PluginProvider { _, _ -> mock()}
+                FirstNotaryServicePluginProvider { _, _ -> mock()}
             )
         )
         clientFactory.create(
-            DUMMY_NOTARY_SERVICE_PARTY,
+            FIRST_NOTARY_SERVICE_PARTY,
             mock()
         )
+    }
+
+    @Test
+    fun `Multiple plugin providers that are valid and are for different service will be instantiated`() {
+        // Install two valid plugin providers for different types
+        clientFactory.accept(
+            createPluginProviderSandboxContext(
+                FirstNotaryServicePluginProvider { _, _ -> mock()}
+            )
+        )
+        clientFactory.accept(
+            createPluginProviderSandboxContext(
+                SecondNotaryServicePluginProvider { _, _ -> mock()}
+            )
+        )
+
+        val firstClient = clientFactory.create(
+            FIRST_NOTARY_SERVICE_PARTY,
+            mock()
+        )
+
+        val secondClient = clientFactory.create(
+            SECOND_NOTARY_SERVICE_PARTY,
+            mock()
+        )
+
+        assertThat(firstClient).isNotEqualTo(secondClient)
     }
 
     @Test
@@ -137,12 +167,12 @@ class PluggableNotaryClientFlowFactoryTest {
         clientFactory.accept(createPluginProviderSandboxContext(NoAnnotationProvider()))
         val exception = assertThrows<IllegalStateException> {
             clientFactory.create(
-                DUMMY_NOTARY_SERVICE_PARTY,
+                FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
         }
 
-        assertThat(exception.message).contains("Notary flow provider not found for type: $DUMMY_TYPE")
+        assertThat(exception.message).contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
     }
 
     @Test
@@ -151,19 +181,19 @@ class PluggableNotaryClientFlowFactoryTest {
 
         clientFactory.accept(
             createPluginProviderSandboxContext(
-                PluginProvider { _, _ -> dummyClient }
+                FirstNotaryServicePluginProvider { _, _ -> dummyClient }
             )
         )
 
         // This will be ignored since we already have a registered provider for `DUMMY_PROVIDER`
         clientFactory.accept(
             createPluginProviderSandboxContext(
-                PluginProvider { _, _ -> mock() }
+                FirstNotaryServicePluginProvider { _, _ -> mock() }
             )
         )
 
         val createdClient = clientFactory.create(
-            DUMMY_NOTARY_SERVICE_PARTY,
+            FIRST_NOTARY_SERVICE_PARTY,
             mock()
         )
 
@@ -178,8 +208,18 @@ class PluggableNotaryClientFlowFactoryTest {
         }
     }
 
-    @PluggableNotaryType(DUMMY_TYPE)
-    private class PluginProvider(
+    @PluggableNotaryType(FIRST_NOTARY_SERVICE_PLUGIN_TYPE)
+    private class FirstNotaryServicePluginProvider(
+        private val createLogic: (notary: Party, stx: UtxoSignedTransaction) -> PluggableNotaryClientFlow
+    ) : PluggableNotaryClientFlowProvider {
+        override fun create(
+            notary: Party,
+            stx: UtxoSignedTransaction
+        ): PluggableNotaryClientFlow = createLogic(notary, stx)
+    }
+
+    @PluggableNotaryType(SECOND_NOTARY_SERVICE_PLUGIN_TYPE)
+    private class SecondNotaryServicePluginProvider(
         private val createLogic: (notary: Party, stx: UtxoSignedTransaction) -> PluggableNotaryClientFlow
     ) : PluggableNotaryClientFlowProvider {
         override fun create(
@@ -191,4 +231,6 @@ class PluggableNotaryClientFlowFactoryTest {
     private class NoAnnotationProvider : PluggableNotaryClientFlowProvider {
         override fun create(notary: Party, stx: UtxoSignedTransaction): PluggableNotaryClientFlow = mock()
     }
+
+    private fun MemberInfo.toParty(): Party = Party(name, sessionInitiationKey)
 }

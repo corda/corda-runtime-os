@@ -1,7 +1,6 @@
 package net.corda.ledger.notary.plugin.factory
 
-import net.corda.ledger.notary.worker.selection.NotaryWorkerSelectorService
-import net.corda.membership.read.NotaryVirtualNodeLookup
+import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -29,10 +28,8 @@ import org.osgi.service.component.annotations.ServiceScope
 class PluggableNotaryClientFlowFactory @Activate constructor(
     @Reference(service = NotaryLookup::class)
     private val notaryLookup: NotaryLookup,
-    @Reference(service = NotaryWorkerSelectorService::class)
-    private val workerSelectorService: NotaryWorkerSelectorService,
-    @Reference(service = NotaryVirtualNodeLookup::class)
-    private val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+    @Reference(service = NotaryVirtualNodeSelectorService::class)
+    private val virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 ) : SingletonSerializeAsToken, UsedByFlow, CustomMetadataConsumer {
 
     private companion object {
@@ -52,23 +49,14 @@ class PluggableNotaryClientFlowFactory @Activate constructor(
             }
         }
 
-        val nextWorker = selectWorker(notaryService)
         val provider = pluggableNotaryClientFlowProviders[pluginClass]
             ?: throw IllegalStateException("Notary flow provider not found for type: $pluginClass")
 
         return try {
-            provider.create(nextWorker, stx)
+            provider.create(virtualNodeSelectorService.next(notaryService), stx)
         } catch (e: Exception) {
             throw CordaRuntimeException("Exception while trying to create notary client with name: $pluginClass", e)
         }
-    }
-
-    @Suspendable
-    private fun selectWorker(notaryService: Party): Party {
-        val workers = notaryVirtualNodeLookup.getNotaryVirtualNodes(notaryService.name)
-        return workerSelectorService.next(
-            workers.map { Party(it.name, it.sessionInitiationKey) }
-        )
     }
 
     @Suspendable
@@ -91,27 +79,22 @@ class PluggableNotaryClientFlowFactory @Activate constructor(
                     "A @PluggableNotaryType annotation must exist on every PluggableNotaryClientFlowProvider " +
                             "but was not present in ${provider.javaClass.name}. Skipping provider."
                 )
-                return@forEach
-            }
-
-            if (notaryProviderTypes.size > 1) {
+            } else if (notaryProviderTypes.size > 1) {
                 // This should not be possible but having an extra check just in case
                 logger.warn(
                     "The provider ${provider.javaClass.name} is annotated with multiple @PluggableNotaryType " +
                             "annotations. Skipping provider."
                 )
-                return@forEach
-            }
-
-            val providerType = notaryProviderTypes.single().type
-            val currentProvider = pluggableNotaryClientFlowProviders[providerType]
-            if (currentProvider != null) {
-                logger.warn(
-                    "A provider is already registered for the type: $providerType, it is not possible to " +
-                            "register multiple providers for a single type. Skipping provider."
-                )
             } else {
-                pluggableNotaryClientFlowProviders[providerType] = provider
+                val providerType = notaryProviderTypes.single().type
+                if (pluggableNotaryClientFlowProviders[providerType] != null) {
+                    logger.warn(
+                        "A provider is already registered for the type: $providerType, it is not possible to " +
+                                "register multiple providers for a single type. Skipping provider."
+                    )
+                } else {
+                    pluggableNotaryClientFlowProviders[providerType] = provider
+                }
             }
         }
     }
