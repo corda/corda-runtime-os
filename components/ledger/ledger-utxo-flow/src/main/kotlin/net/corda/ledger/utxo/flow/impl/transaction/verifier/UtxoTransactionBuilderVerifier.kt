@@ -1,4 +1,6 @@
-package net.corda.ledger.utxo.flow.impl.transaction
+package net.corda.ledger.utxo.flow.impl.transaction.verifier
+
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 
 class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl) {
 

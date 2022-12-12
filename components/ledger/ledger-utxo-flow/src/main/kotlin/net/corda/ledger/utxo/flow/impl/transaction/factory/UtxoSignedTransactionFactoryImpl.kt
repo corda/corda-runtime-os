@@ -10,10 +10,10 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetadataVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
