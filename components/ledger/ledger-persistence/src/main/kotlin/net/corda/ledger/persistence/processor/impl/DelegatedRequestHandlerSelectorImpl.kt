@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
@@ -40,7 +41,7 @@ class DelegatedRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             else -> {
-                val error = IllegalStateException("unsupported ledger type '${request.ledgerType}'")
+                val error = UnsupportedLedgerTypeException(request.ledgerType)
                 log.error(error.message)
                 throw error
             }
