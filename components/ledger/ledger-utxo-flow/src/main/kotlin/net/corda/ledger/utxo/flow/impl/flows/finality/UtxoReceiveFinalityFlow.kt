@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -39,8 +40,6 @@ class UtxoReceiveFinalityFlow(
         val transactionId = initialTransaction.id
         log.debug("Initially signed transaction received: $transactionId")
 
-        log.debug("Verifying transaction: $transactionId")
-
         log.debug("Verifying signatures of transaction: $transactionId")
         initialTransaction.signatures.forEach {
             verifySignature(transactionId, it) { message ->
@@ -50,7 +49,6 @@ class UtxoReceiveFinalityFlow(
             }
         }
 
-        // TODO [CORE-5982] Verify Transaction (platform/etc checks)
         log.debug("Verifying ledger transaction: $transactionId")
         verifyTransaction(initialTransaction)
 
@@ -114,7 +112,7 @@ class UtxoReceiveFinalityFlow(
 
         log.debug("Waiting for Notary's signature for transaction: $transactionId")
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
-        if (notarySignatures.isEmpty()) { // TODO reorg this if/when notarization is integrated
+        if (notarySignatures.isEmpty()) { // TODO reorg this when notarization is integrated
             log.warn("No notary signature received for transaction: $transactionId")
             // TODO error handling
         } else {
@@ -127,7 +125,7 @@ class UtxoReceiveFinalityFlow(
             log.debug("Recorded transaction with all parties' and the notary's signature $transactionId")
         }
 
-        // TODO Until we do not have notarisation, but still want to satisfy the smoke tests somehow...
+        // TODO Until we do not have notarisation yet, but still want to satisfy the smoke tests somehow...
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
 
         return transaction
@@ -151,6 +149,7 @@ class UtxoReceiveFinalityFlow(
     }
 
     private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
+        UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
         val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
         verifier.verifyPlatformChecks(signedTransaction.notary)
