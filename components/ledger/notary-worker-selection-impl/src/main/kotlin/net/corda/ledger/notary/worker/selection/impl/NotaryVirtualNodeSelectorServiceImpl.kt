@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.ServiceScope
  * Implements a random selection of notary virtual nodes.
  */
 @Component(
-    service = [ UsedByFlow::class ],
+    service = [ UsedByFlow::class, NotaryVirtualNodeSelectorService::class ],
     scope = ServiceScope.PROTOTYPE
 )
 class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
