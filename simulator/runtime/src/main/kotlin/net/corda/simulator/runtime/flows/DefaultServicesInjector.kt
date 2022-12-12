@@ -115,7 +115,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
 
     private fun createSerializationService(): SerializationService {
         log.info("Injecting ${SerializationService::class.java.simpleName}")
-        return BaseSerializationService()
+        return BaseSerializationService(configuration.customSerializers)
     }
 
     private fun createSpecService(): SignatureSpecService {
@@ -156,7 +156,10 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
 
     private fun createJsonMarshallingService() : JsonMarshallingService {
         log.info("Injecting ${JsonMarshallingService::class.java.simpleName}")
-        return SimpleJsonMarshallingService()
+        return SimpleJsonMarshallingService(
+            configuration.customJsonSerializers,
+            configuration.customJsonDeserializers
+        )
     }
 
     private fun createFlowEngine(

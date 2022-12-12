@@ -2,6 +2,9 @@ package net.corda.simulator.runtime.config
 
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonSerializer
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers
 import org.hamcrest.Matchers.`is`
@@ -43,6 +46,41 @@ class DefaultConfigurationBuilderTest {
     }
 
     @Test
+    fun `should be able to add custom serializers to configuration`(){
+        val customSerializer1 = mock<SerializationCustomSerializer<*, *>>()
+        val customSerializer2 = mock<SerializationCustomSerializer<*, *>>()
+        val configuration = DefaultConfigurationBuilder()
+            .withCustomSerializer(customSerializer1)
+            .withCustomSerializer(customSerializer2)
+            .build()
+
+        assertThat(configuration.customSerializers.size, `is`(2))
+        assertThat(configuration.customSerializers, `is`(listOf(customSerializer1, customSerializer2)))
+    }
+
+    @Test
+    fun `should be able to add custom json serializers to configuration`(){
+        val customJsonSerializer = mock<JsonSerializer<Any>>()
+        val type = Any::class.java
+        val configuration = DefaultConfigurationBuilder()
+            .withCustomJsonSerializer(customJsonSerializer, type)
+            .build()
+
+        assertThat(configuration.customJsonSerializers, `is`(mapOf(customJsonSerializer to type)))
+    }
+
+    @Test
+    fun `should be able to add custom json deserializers to configuration`(){
+        val customJsonDeserializer = mock<JsonDeserializer<Any>>()
+        val type = Any::class.java
+        val configuration = DefaultConfigurationBuilder()
+            .withCustomJsonDeserializer(customJsonDeserializer, type)
+            .build()
+
+        assertThat(configuration.customJsonDeserializers, `is`(mapOf(customJsonDeserializer to type)))
+    }
+
+    @Test
     fun `should provide sensible defaults`() {
         val config = DefaultConfigurationBuilder().build()
 
@@ -50,5 +88,6 @@ class DefaultConfigurationBuilderTest {
         assertThat(config.timeout, `is`(Duration.ofMinutes(1)))
         assertThat(config.pollInterval, `is`(Duration.ofMillis(100)))
         assertThat(config.serviceOverrides, `is`(mapOf()))
+        assertThat(config.customSerializers, `is`(listOf()))
     }
 }
