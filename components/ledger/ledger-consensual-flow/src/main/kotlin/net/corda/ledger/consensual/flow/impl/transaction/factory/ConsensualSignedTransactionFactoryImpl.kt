@@ -8,7 +8,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.data.transaction.ConsensualTransactionVerification
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.type.UsedByFlow
@@ -62,7 +62,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         ConsensualTransactionVerification.verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
-        val wireTransaction = wireTransactionFactory.create(componentGroups, metadata)
+        val wireTransaction = wireTransactionFactory.create(componentGroups)
 
         verifyTransaction(wireTransaction)
 
@@ -96,6 +96,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private fun consensualMetadata() = linkedMapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+        TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
     )
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray =

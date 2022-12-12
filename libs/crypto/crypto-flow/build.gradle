@@ -13,7 +13,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "net.corda:corda-avro-schema"
-    api "net.corda:corda-cipher-suite"
+    api project(':libs:crypto:cipher-suite')
 
     implementation project(":libs:crypto:cipher-suite-impl")
 

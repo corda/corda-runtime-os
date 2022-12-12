@@ -126,6 +126,12 @@
         "$ref": "#/definitions/package_metadata"
       }
     },
+    "numberOfComponentGroups": {
+      "title": "Number of component groups",
+      "description": "The number of component groups contained in the transaction",
+      "type": "integer",
+      "default": 0
+    },
     "schemaVersion": {
       "title": "Metadata schema version",
       "type": "integer",

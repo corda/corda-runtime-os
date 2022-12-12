@@ -41,9 +41,9 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(":components:crypto:crypto-client")
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":components:membership:membership-persistence-client")
-    implementation "net.corda:corda-cipher-suite"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -85,6 +85,10 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(':libs:messaging:message-bus')
     nonOsgiIntegrationTestImplementation project(":libs:messaging:db-message-bus-impl")
     nonOsgiIntegrationTestImplementation project(":components:crypto:crypto-client")
+    nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
+    nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
+    nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")

@@ -1,8 +1,8 @@
 package net.corda.simulator.runtime
 
+import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testflows.ValidStartingFlow
-import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test

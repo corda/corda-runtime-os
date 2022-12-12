@@ -4,12 +4,24 @@ import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.SimFiberBase
 import net.corda.simulator.runtime.testflows.HelloFlow
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SignatureSpecService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -30,7 +42,7 @@ class DefaultServicesInjectorTest {
         // With some helpful classes to use in services
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
         val fiber = SimFiberBase()
-        fiber.registerInitiator(member)
+        fiber.registerMember(member)
 
         fiber.use {
             // When we inject services into it
@@ -127,4 +139,108 @@ class DefaultServicesInjectorTest {
         @CordaInject
         lateinit var clock: Clock
     }
+
+    @Test
+    fun `should inject services to instance responder flows`() {
+
+        // When we create a instance responder flow
+        val responder = object : ResponderFlow {
+            @CordaInject
+            lateinit var flowMessaging: FlowMessaging
+            @CordaInject
+            lateinit var jsonMarshallingService: JsonMarshallingService
+            @CordaInject
+            lateinit var signatureSpecService: SignatureSpecService
+            @CordaInject
+            lateinit var consensualLedgerService: ConsensualLedgerService
+            @CordaInject
+            lateinit var flowEngine: FlowEngine
+            @CordaInject
+            lateinit var persistenceService: PersistenceService
+            @CordaInject
+            lateinit var memberLookup: MemberLookup
+            @CordaInject
+            lateinit var signingService: SigningService
+            @CordaInject
+            lateinit var signatureVerificationService: DigitalSignatureVerificationService
+
+            @Suspendable
+            override fun call(session: FlowSession) {}
+        }
+
+        val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+        val fiber = SimFiberBase()
+        fiber.registerMember(member)
+        fiber.registerFlowInstance(member, "protocol", responder)
+
+        fiber.use {
+            // When we inject services into it
+            DefaultServicesInjector(mock()).injectServices(responder, member, it)
+
+            // Then it should have constructed useful things for us
+            assertNotNull(responder.flowMessaging)
+            assertNotNull(responder.flowEngine)
+            assertNotNull(responder.jsonMarshallingService)
+            assertNotNull(responder.persistenceService)
+            assertNotNull(responder.memberLookup)
+            assertNotNull(responder.signingService)
+            assertNotNull(responder.signatureVerificationService)
+            assertNotNull(responder.signatureSpecService)
+            assertNotNull(responder.consensualLedgerService)
+        }
+    }
+
+    @Test
+    fun `should inject services to instance initiating flows`() {
+
+        // Given an instance flow
+        val flow = object : RPCStartableFlow {
+            @CordaInject
+            lateinit var flowMessaging: FlowMessaging
+            @CordaInject
+            lateinit var jsonMarshallingService: JsonMarshallingService
+            @CordaInject
+            lateinit var signatureSpecService: SignatureSpecService
+            @CordaInject
+            lateinit var consensualLedgerService: ConsensualLedgerService
+            @CordaInject
+            lateinit var flowEngine: FlowEngine
+            @CordaInject
+            lateinit var persistenceService: PersistenceService
+            @CordaInject
+            lateinit var memberLookup: MemberLookup
+            @CordaInject
+            lateinit var signingService: SigningService
+            @CordaInject
+            lateinit var signatureVerificationService: DigitalSignatureVerificationService
+
+            @Suspendable
+            override fun call(requestBody: RPCRequestData): String {
+                return ""
+            }
+        }
+
+        // With some helpful classes to use in services
+        val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+        val fiber = SimFiberBase()
+        fiber.registerMember(member)
+        fiber.registerFlowInstance(member, "protocol", flow)
+
+        fiber.use {
+            // When we inject services into it
+            DefaultServicesInjector(mock()).injectServices(flow, member, it)
+
+            // Then it should have constructed useful things for us
+            assertNotNull(flow.flowEngine)
+            assertNotNull(flow.jsonMarshallingService)
+            assertNotNull(flow.persistenceService)
+            assertNotNull(flow.flowMessaging)
+            assertNotNull(flow.memberLookup)
+            assertNotNull(flow.signingService)
+            assertNotNull(flow.signatureVerificationService)
+            assertNotNull(flow.signatureSpecService)
+            assertNotNull(flow.consensualLedgerService)
+        }
+    }
+
 }

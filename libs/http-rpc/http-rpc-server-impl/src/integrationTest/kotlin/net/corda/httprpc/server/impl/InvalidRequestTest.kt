@@ -227,4 +227,34 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         assertNotNull(responseBody)
         assertDoesNotThrow(responseBody) { JsonParser.parseString(responseBody) }
     }
+
+    @Test
+    fun `pass integer in query that cannot be parsed`() {
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            val responseBody = body
+            assertNotNull(responseBody)
+
+            val json = JsonParser.parseString(responseBody) as JsonObject
+            val responseTitle = json["title"].asString
+            assertThat(responseTitle).contains("Unable to parse parameter 'id'")
+        }
+
+        client.call(HttpVerb.GET, WebRequest<Any>("health/hello/world?id=wrongInt"), userName, password).doAssert()
+    }
+
+    @Test
+    fun `pass integer in path that cannot be parsed`() {
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            val responseBody = body
+            assertNotNull(responseBody)
+
+            val json = JsonParser.parseString(responseBody) as JsonObject
+            val responseTitle = json["title"].asString
+            assertThat(responseTitle).contains("Unable to parse parameter 'number'")
+        }
+
+        client.call(HttpVerb.POST, WebRequest<Any>("health/plusone/wrongInt"), userName, password).doAssert()
+    }
 }

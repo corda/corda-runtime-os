@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.CompositeKeyProvider
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -10,7 +11,6 @@ import net.corda.membership.lib.impl.converter.NotaryInfoConverter
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly

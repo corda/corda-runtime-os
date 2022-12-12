@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.persistence
 
+import net.corda.simulator.entities.ConsensualTransactionEntity
 import java.io.IOException
 import java.io.UncheckedIOException
 import java.net.URL
@@ -44,7 +45,7 @@ class JpaPersistenceUnitInfo : PersistenceUnitInfo {
     override fun getPersistenceUnitRootUrl(): URL? = null
 
     override fun getManagedClassNames(): MutableList<String> {
-        return mutableListOf()
+        return ConsensualTransactionEntity.CONSENSUAL_STATES_PERSISTENCE_CLASSES.toMutableList()
     }
 
     override fun excludeUnlistedClasses(): Boolean = false

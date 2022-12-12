@@ -14,7 +14,6 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
-    implementation "net.corda:corda-cipher-suite"
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
@@ -25,6 +24,7 @@ dependencies {
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-datamodel')
     implementation project(':libs:membership:membership-common')

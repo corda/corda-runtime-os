@@ -32,6 +32,11 @@ object CordaMetrics {
         object SandboxCreateTime : Metric<Timer>("sandbox.create.time", Metrics::timer)
 
         /**
+         * Time it took to execute a message pattern processor
+         */
+        object MessageProcessorTime : Metric<Timer>("messaging.processor.time", Metrics::timer)
+
+        /**
          * Time it took for a flow to complete sucessfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
@@ -54,6 +59,21 @@ object CordaMetrics {
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualNode"),
+
+        /**
+         * Message pattern type for which the metric is applicable.
+         */
+        MessagePatternType("messagePatternType"),
+
+        /**
+         * The name of the operation performed
+         */
+        OperationName("operationName"),
+
+        /**
+         * Message pattern clientId for which the metric is applicable.
+         */
+        MessagePatternClientId("messagePatternClientId"),
 
         /**
          * Flow class for which the metric is applicable.

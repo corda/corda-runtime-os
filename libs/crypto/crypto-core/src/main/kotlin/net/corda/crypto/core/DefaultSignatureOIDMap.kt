@@ -1,16 +1,16 @@
 package net.corda.crypto.core
 
-import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.equal
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.ID_CURVE_25519PH
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SHA512_256
-import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
+import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.equal
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.ID_CURVE_25519PH
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.SHA512_256
+import net.corda.crypto.cipher.suite.schemes.SM2_TEMPLATE
+import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
 
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1Integer

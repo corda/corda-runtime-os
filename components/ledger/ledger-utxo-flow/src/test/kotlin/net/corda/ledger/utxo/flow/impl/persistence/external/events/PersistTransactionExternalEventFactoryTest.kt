@@ -6,7 +6,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.flow.impl.persistence.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -34,12 +34,13 @@ class PersistTransactionExternalEventFactoryTest {
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
-        val transactionStatus = TransactionStatus.VERIFIED.value
+        val transactionStatus = TransactionStatus.VERIFIED
+        val relevantStatesIndexes = listOf(1)
 
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistTransactionParameters(transaction, transactionStatus)
+            PersistTransactionParameters(transaction, transactionStatus, relevantStatesIndexes)
         )
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
@@ -48,7 +49,7 @@ class PersistTransactionExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.UTXO,
-                PersistTransaction(transaction, transactionStatus),
+                PersistTransaction(transaction, transactionStatus.value, relevantStatesIndexes),
                 externalEventContext
             ),
             externalEventRecord.payload

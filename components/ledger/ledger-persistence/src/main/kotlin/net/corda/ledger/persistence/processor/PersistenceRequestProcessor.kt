@@ -38,6 +38,8 @@ class PersistenceRequestProcessor(
                 val sandbox = entitySandboxService.get(holdingIdentity)
                 delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
             } catch (e: Exception) {
+                // need to re-add database error handling of transient errors
+                log.warn("Unexpected error", e)
                 listOf<Record<*, *>>(externalEventResponseFactory.fatalError(request.flowExternalEventContext, e))
             }
         }

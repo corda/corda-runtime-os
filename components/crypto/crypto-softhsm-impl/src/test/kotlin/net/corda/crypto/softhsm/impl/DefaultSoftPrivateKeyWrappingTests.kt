@@ -1,12 +1,12 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.softhsm.PRIVATE_KEY_ENCODING_VERSION
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.KeyMaterialSpec
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

@@ -27,7 +27,7 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro

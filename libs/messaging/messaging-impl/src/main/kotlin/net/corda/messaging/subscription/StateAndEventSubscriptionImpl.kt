@@ -28,6 +28,7 @@ import net.corda.messaging.utils.getEventsByBatch
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
@@ -79,6 +80,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
             "producerClientId ${config.clientId}."
+
+    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, "StateAndEvent")
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+        .withTag(CordaMetrics.Tag.OperationName, "onNext")
+        .build()
 
     /**
      * Is the subscription running.
@@ -266,10 +273,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
-        val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
-            "Failed to finish within the time limit for state: $state and event: $event"
-        )
+        val future = processorMeter.recordCallable {
+            stateAndEventConsumer.waitForFunctionToFinish(
+                { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
+                "Failed to finish within the time limit for state: $state and event: $event"
+            )
+        }!!
         return uncheckedCast(future.tryGetResult())
     }
 

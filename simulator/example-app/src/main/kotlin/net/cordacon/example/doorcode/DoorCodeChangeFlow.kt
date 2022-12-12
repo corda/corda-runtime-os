@@ -7,14 +7,18 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.receive
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -56,9 +60,18 @@ class DoorCodeChangeFlow : RPCStartableFlow {
             .withStates(doorCodeState)
             .toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
 
-        val result = consensualLedgerService.finalize(signedTransaction, initiateSessions(participants))
+        val sessions = initiateSessions(participants.minus(memberLookup.myInfo().name))
+        val result = consensualLedgerService.finalize(signedTransaction, sessions)
 
-        val output = DoorCodeChangeResult(newDoorCode, result.signatures.map { getMemberFromSignature(it) }.toSet())
+        val output = DoorCodeChangeResult(
+            result.id,
+            newDoorCode,
+            result.signatures.map { getMemberFromSignature(it) }.toSet()
+        )
+
+        @Suppress("ForbiddenComment")
+        // TODO: This can be removed along with corresponding send once CORE-8641 is done
+        sessions.forEach { it.receive() }
 
         return jsonMarshallingService.format(output)
     }
@@ -99,9 +112,40 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
             log.info("\"${memberLookup.myInfo().name}\" got the new door code ${doorCodeState.code}")
         }
         val requiredSignatories = finalizedSignedTransaction.toLedgerTransaction().requiredSignatories
-        val actualSignatories = finalizedSignedTransaction.signatures.map {it.by}
-        check(requiredSignatories == actualSignatories)
+        val actualSignatories = finalizedSignedTransaction.signatures.map {it.by}.toSet()
+        check(requiredSignatories == actualSignatories) {
+            "Signatories were not as expected. Expected:\n    " + requiredSignatories.joinToString("\n    ") +
+            "and got:\n    " + actualSignatories.joinToString("\n    ")
+        }
         log.info("Finished responder flow - $finalizedSignedTransaction")
+        session.send(Unit)
+    }
+}
+
+class DoorCodeQueryFlow : RPCStartableFlow {
+    @CordaInject
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var consensualLedgerService: ConsensualLedgerService
+
+    @CordaInject
+    lateinit var memberLookup: MemberLookup
+
+    @Suspendable
+    override fun call(requestBody: RPCRequestData): String {
+        val txId = requestBody.getRequestBodyAs<DoorCodeQuery>(jsonMarshallingService).txId
+        val tx = consensualLedgerService.findSignedTransaction(txId)
+
+        checkNotNull(tx) {"No consensual ledger transaction was persisted for provided id"}
+
+        return jsonMarshallingService.format(DoorCodeQueryResponse(
+            (tx.toLedgerTransaction().states[0] as DoorCodeConsensualState).code,
+            tx.signatures.map { checkNotNull(memberLookup.lookup(it.by)?.name) }.toSet()
+        ))
     }
 }
 
@@ -112,7 +156,16 @@ data class DoorCode(val code: String)
 data class DoorCodeChangeRequest(val newDoorCode: DoorCode, val participants: List<MemberX500Name>)
 
 @CordaSerializable
-data class DoorCodeChangeResult(val newDoorCode: DoorCode, val signedBy: Set<MemberX500Name>)
+data class DoorCodeChangeResult(val txId: SecureHash, val newDoorCode: DoorCode, val signedBy: Set<MemberX500Name>)
+
+@CordaSerializable
+data class DoorCodeQuery(val txId: SecureHash)
+
+@CordaSerializable
+data class DoorCodeQueryResponse(
+    val doorCode: DoorCode,
+    val signatories: Set<MemberX500Name>
+)
 
 @CordaSerializable
 class DoorCodeConsensualState(val code: DoorCode, override val participants: List<PublicKey>) : ConsensualState {

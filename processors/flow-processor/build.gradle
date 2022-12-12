@@ -24,6 +24,7 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(":components:membership:membership-group-read")
+    implementation project(":components:ledger:ledger-utxo-token-cache")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
@@ -36,29 +37,42 @@ dependencies {
 
     runtimeOnly 'javax.persistence:javax.persistence-api'
     runtimeOnly "net.corda:corda-avro-schema"
+
+
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:flow:flow-service")
     runtimeOnly project(':components:ledger:ledger-common-flow')
     runtimeOnly project(':libs:ledger:ledger-common-data')
     runtimeOnly project(':components:ledger:ledger-consensual-flow')
     runtimeOnly project(':components:ledger:ledger-utxo-flow')
     runtimeOnly project(':libs:ledger:ledger-consensual-data')
+    runtimeOnly project(':components:ledger:ledger-utxo-flow')
+    runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")
+    runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
+    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
+    runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:flow-mapper-impl")
     runtimeOnly project(":libs:flows:session-manager-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(':libs:ledger:ledger-common-data')
+    runtimeOnly project(':libs:ledger:ledger-consensual-data')
+    runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
-    runtimeOnly project(":components:flow:flow-service")
+
 }
 
 description 'Flow Worker Processor'

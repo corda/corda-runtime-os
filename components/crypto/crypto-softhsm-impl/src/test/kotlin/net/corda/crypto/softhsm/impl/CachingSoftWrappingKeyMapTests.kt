@@ -1,12 +1,12 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

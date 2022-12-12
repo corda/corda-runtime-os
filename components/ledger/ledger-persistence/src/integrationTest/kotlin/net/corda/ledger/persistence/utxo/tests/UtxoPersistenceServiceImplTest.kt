@@ -6,14 +6,19 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
+import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -102,9 +107,9 @@ class UtxoPersistenceServiceImplTest {
             digestService = ctx.getSandboxSingletonService()
             serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
-            val repository = UtxoRepositoryImpl(serializationService, wireTransactionFactory, digestService)
+            val repository = UtxoRepositoryImpl(digestService, serializationService, wireTransactionFactory)
             persistenceService = UtxoPersistenceServiceImpl(
-                ctx,
+                entityManagerFactory.createEntityManager(),
                 repository,
                 digestService,
                 TEST_CLOCK
@@ -119,11 +124,156 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `can read signed transaction`() {
+    fun `find signed transaction that matches input status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
+
+        assertThat(dbSignedTransaction).isEqualTo(transaction)
+    }
+
+    @Test
+    fun `find signed transaction with different status returns null`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        val dbSignedTransaction = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
+
+        assertThat(dbSignedTransaction).isNull()
+    }
+
+    @Test
+    fun `update transaction status`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
+
+        persistenceService.updateStatus(transaction.id.toString(), VERIFIED)
+
+        assertTransactionStatus(transaction.id.toString(), VERIFIED, entityFactory)
+    }
+
+    @Test
+    fun `update transaction status does not affect other transactions`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = persistTransactionViaEntity(entityFactory)
+        val transaction2 = persistTransactionViaEntity(entityFactory)
+
+        assertTransactionStatus(transaction1.id.toString(), UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
+
+        persistenceService.updateStatus(transaction1.id.toString(), VERIFIED)
+
+        assertTransactionStatus(transaction1.id.toString(), VERIFIED, entityFactory)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
+    }
+
+    @Test
+    fun `persist signed transaction`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val account = "Account"
+        val transactionStatus = VERIFIED
+        val signedTransaction = createSignedTransaction(Instant.now())
+        val relevantStatesIndexes = listOf(0)
+
+        // Persist transaction
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            account,
+            transactionStatus,
+            relevantStatesIndexes
+        )
+        persistenceService.persistTransaction(transactionReader)
+
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        // Verify persisted data
+        entityManagerFactory.transaction { em ->
+            val dbTransaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+
+            assertThat(dbTransaction).isNotNull
+            val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
+            val txAccountId = dbTransaction.field<String>("accountId")
+            val txCreatedTs = dbTransaction.field<Instant?>("created")
+
+            assertThat(txPrivacySalt).isEqualTo(signedTransaction.wireTransaction.privacySalt.bytes)
+            assertThat(txAccountId).isEqualTo(account)
+            assertThat(txCreatedTs).isNotNull
+
+            val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
+            val txComponents = dbTransaction.field<Collection<Any>?>("components")
+            assertThat(txComponents).isNotNull
+                .hasSameSizeAs(componentGroupLists.filter { it.isNotEmpty() })
+            txComponents!!
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .groupBy { it.field<Int>("groupIndex") }.values
+                .zip(componentGroupLists)
+                .forEachIndexed { groupIndex, (dbComponentGroup, componentGroup) ->
+                    assertThat(dbComponentGroup).hasSameSizeAs(componentGroup)
+                    dbComponentGroup.zip(componentGroup)
+                        .forEachIndexed { leafIndex, (dbComponent, component) ->
+                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex)
+                            assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                            assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
+                            assertThat(dbComponent.field<String>("hash")).isEqualTo(
+                                digest("SHA-256", component).toString()
+                            )
+                            assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
+                        }
+                }
+
+            val dbRelevancyData = em.createNamedQuery("UtxoRelevantTransactionStateEntity.findByTransactionId", entityFactory.utxoRelevantTransactionState)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbRelevancyData).isNotNull
+                .hasSameSizeAs(relevantStatesIndexes)
+            dbRelevancyData
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(relevantStatesIndexes)
+                .forEach { (dbRelevancy, relevantStateIndex) ->
+                    assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
+                    assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(relevantStateIndex)
+                }
+
+            val signatures = signedTransaction.signatures
+            val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
+            assertThat(txSignatures)
+                .isNotNull
+                .hasSameSizeAs(signatures)
+            txSignatures!!
+                .sortedBy { it.field<Int>("index") }
+                .zip(signatures)
+                .forEachIndexed { index, (dbSignature, signature) ->
+                    assertThat(dbSignature.field<Int>("index")).isEqualTo(index)
+                    assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(
+                        serializationService.serialize(
+                            signature
+                        ).bytes
+                    )
+                    assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
+                        digest("SHA-256", signature.by.encoded).toString()
+                    )
+                    assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
+                }
+
+            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(txStatuses)
+                .isNotNull
+                .hasSize(1)
+            val dbStatus = txStatuses!!.first()
+            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
+            assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
+        }
+    }
+
+    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory): SignedTransactionContainer {
         val account = "Account"
         val createdTs = TEST_CLOCK.instant()
         val signedTransaction = createSignedTransaction(createdTs)
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             entityFactory.createUtxoTransactionEntity(
                 signedTransaction.id.toString(),
@@ -158,98 +308,23 @@ class UtxoPersistenceServiceImplTest {
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(
                     listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, "V", createdTs)
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, UNVERIFIED.value, createdTs)
                     )
                 )
                 em.persist(transaction)
             }
         }
-
-        val dbSignedTransaction = persistenceService.findTransaction(signedTransaction.id.toString())
-
-        assertThat(dbSignedTransaction).isEqualTo(signedTransaction)
+        return signedTransaction
     }
 
-    @Test
-    fun `can persist signed transaction`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
-        val account = "Account"
-        val transactionStatus = "V"
-        val signedTransaction = createSignedTransaction(Instant.now())
-
-        // Persist transaction
-        val transactionReader = TestUtxoTransactionReader(
-            signedTransaction,
-            account,
-            transactionStatus
-        )
-        persistenceService.persistTransaction(transactionReader)
-
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
-
-        // Verify persisted data
+    private fun assertTransactionStatus(transactionId: String, status: TransactionStatus, entityFactory: UtxoEntityFactory) {
         entityManagerFactory.transaction { em ->
-            val dbTransaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
-
-            assertThat(dbTransaction).isNotNull
-            val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
-            val txAccountId = dbTransaction.field<String>("accountId")
-            val txCreatedTs = dbTransaction.field<Instant?>("created")
-
-            assertThat(txPrivacySalt).isEqualTo(signedTransaction.wireTransaction.privacySalt.bytes)
-            assertThat(txAccountId).isEqualTo(account)
-            assertThat(txCreatedTs).isNotNull
-
-            val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
-            val txComponents = dbTransaction.field<Collection<Any>?>("components")
-            assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists)
-            txComponents!!
-                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .groupBy { it.field<Int>("groupIndex") }.values
-                .zip(componentGroupLists)
-                .forEachIndexed { groupIndex, (dbComponentGroup, componentGroup) ->
-                    assertThat(dbComponentGroup).hasSameSizeAs(componentGroup)
-                    dbComponentGroup.zip(componentGroup)
-                        .forEachIndexed { leafIndex, (dbComponent, component) ->
-                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex)
-                            assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
-                            assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
-                            assertThat(dbComponent.field<String>("hash")).isEqualTo(
-                                digest("SHA-256", component).toString()
-                            )
-                            assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
-                        }
-                }
-
-            val signatures = signedTransaction.signatures
-            val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
-            assertThat(txSignatures)
-                .isNotNull
-                .hasSameSizeAs(signatures)
-            txSignatures!!
-                .sortedBy { it.field<Int>("index") }
-                .zip(signatures)
-                .forEachIndexed { index, (dbSignature, signature) ->
-                    assertThat(dbSignature.field<Int>("index")).isEqualTo(index)
-                    assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(
-                        serializationService.serialize(
-                            signature
-                        ).bytes
-                    )
-                    assertThat(dbSignature.field<String>("publicKeyHash")).isEqualTo(
-                        digest("SHA-256", signature.by.encoded).toString()
-                    )
-                    assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
-                }
-
-            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
-            assertThat(txStatuses)
+            val dbTransaction = em.find(entityFactory.utxoTransaction, transactionId)
+            val statuses = dbTransaction.field<Collection<Any>?>("statuses")
+            assertThat(statuses)
                 .isNotNull
                 .hasSize(1)
-            val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus)
-            assertThat(dbStatus.field<Instant>("created")).isEqualTo(txCreatedTs)
+            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status.value)
         }
     }
 
@@ -277,11 +352,15 @@ class UtxoPersistenceServiceImplTest {
                 "$seed-fileChecksum3"
             )
         )
-        val transactionMetadata = transactionMetadataExample(cpkMetadata = cpks)
+        val transactionMetadata = transactionMetadataExample(
+            cpkMetadata = cpks,
+            numberOfComponentGroups = UtxoComponentGroup.values().size
+        )
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
-            listOf("group3_component1".toByteArray())
+            listOf("group3_component1".toByteArray()),
+            listOf("group4_component1".toByteArray())
         )
         val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
         val wireTransaction = wireTransactionFactory.create(
@@ -308,9 +387,10 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private class TestUtxoTransactionReader(
-        val transactionContainer:  SignedTransactionContainer,
+        val transactionContainer: SignedTransactionContainer,
         override val account: String,
-        override val status: String
+        override val status: TransactionStatus,
+        override val relevantStatesIndexes: List<Int>
     ): UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id
@@ -322,9 +402,11 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.signatures
         override val cpkMetadata: List<CordaPackageSummary>
             get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
+
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
         }
+
         override fun getConsumedStates(): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
         }

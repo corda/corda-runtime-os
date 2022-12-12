@@ -18,11 +18,13 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -32,6 +34,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -113,8 +116,9 @@ class UtxoLedgerMessageProcessorTests {
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
-        val transactionStatus = "V"
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val transactionStatus = TransactionStatus.VERIFIED.value
+        val relevantStatesIndexes = listOf(0)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, relevantStatesIndexes)
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
@@ -132,9 +136,11 @@ class UtxoLedgerMessageProcessorTests {
         assertThat(responses).hasSize(1)
 
         // Check that we wrote the expected things to the DB
-        val findRequest = createRequest(virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toString()))
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        val findRequest = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value)
+        )
+        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses).hasSize(1)
         val flowEvent = responses.first().value as FlowEvent
@@ -142,8 +148,7 @@ class UtxoLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
-        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
     }
 
@@ -153,7 +158,13 @@ class UtxoLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            transactionMetadataExample()
+            componentGroupLists = listOf(
+                listOf("1".toByteArray()),
+                listOf("2".toByteArray()),
+                listOf("3".toByteArray()),
+                listOf("4".toByteArray())
+            ),
+            metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
         return SignedTransactionContainer(
             wireTransaction,
@@ -166,7 +177,7 @@ class UtxoLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("UTXO ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.debug { "UTXO ledger persistence request: ${request.javaClass.simpleName} $request" }
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),

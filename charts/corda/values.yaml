@@ -53,6 +53,9 @@ nodeSelector: {}
 serviceAccount:
   name: ""
 
+# -- extra annotations (applied to all workers only)
+annotations: {}
+
 # Database configuration
 db:
   # Cluster database configuration
@@ -156,8 +159,6 @@ kafka:
           # -- the SASL password secret key 
           key: ""
 
-
-
 # Configuration for cluster bootstrap
 bootstrap:
   # Configuration for the initial user created with admin permissions
@@ -196,12 +197,61 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
+      # the username configuration 
+      username: 
+        # -- the username, defaults to a value randomly-generated on install
+        value: "crypto_user"
+        # the username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the username secret key reference
+          secretKeyRef:
+            # -- the username secret name
+            name: ""
+            # -- the username secret key
+            key: ""
+      # password configuration
+      password: 
+        # -- the password, defaults to a value randomly-generated on install
+        value: ""
+        # the password secret configuration
+        valueFrom:
+          # the password secret key reference
+          secretKeyRef:
+            # -- the password secret name
+            name: ""
+            # -- the password secret key
+            key: ""
+
     # RBAC configuration
     rbac:
       # JDBC connection pool configuration for RBAC DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
+      # the username configuration       
+      username: 
+        # -- the username, defaults to a value randomly-generated on install
+        value: "rbac_user"
+        # the username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the username secret key reference
+          secretKeyRef:
+            # -- the username secret name
+            name: ""
+            # -- the username secret key
+            key: ""
+      # password configuration
+      password: 
+        # -- the password, defaults to a value randomly-generated on install
+        value: ""
+        # the password secret configuration
+        valueFrom:
+          # the password secret key reference
+          secretKeyRef:
+            # -- the password secret name
+            name: ""
+            # -- the password secret key
+            key: ""
     # Image containing DB client, used to set up the DB
     clientImage:
       # -- registry for image containing a db client, used to set up the db
@@ -264,6 +314,8 @@ workers:
       tag: ""
     # -- crypto worker replica count
     replicaCount: 1
+    # -- crypto worker extra annotations
+    annotations: {}
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # crypto worker debug configuration
@@ -304,6 +356,8 @@ workers:
       tag: ""
     # -- DB worker replica count
     replicaCount: 1
+    # -- DB worker extra annotations
+    annotations: {}
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # DB worker debug configuration
@@ -369,6 +423,8 @@ workers:
       tag: ""
     # -- flow worker replica count
     replicaCount: 1
+    # -- flow worker extra annotations
+    annotations: {}
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # flow worker debug configuration
@@ -407,6 +463,8 @@ workers:
       tag: ""
     # -- membership worker replica count
     replicaCount: 1
+    # -- membership worker extra annotations
+    annotations: {}
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # membership worker debug configuration
@@ -443,6 +501,8 @@ workers:
       tag: ""
     # -- RPC worker replica count
     replicaCount: 1
+    # -- RPC worker extra annotations
+    annotations: {}
     # -- additional Java options for the rpc worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # RPC worker debug configuration
@@ -489,6 +549,8 @@ workers:
       tag: ""
     # -- p2p-link-manager worker replica count
     replicaCount: 1
+    # -- p2p-link-manager worker extra annotations
+    annotations: {}
     # -- additional Java options for the p2p-link-manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-link-manager worker debug configuration
@@ -525,6 +587,8 @@ workers:
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
+    # -- p2p-gateway worker extra annotations
+    annotations: {}
     # -- additional Java options for the p2p-gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-gateway worker debug configuration

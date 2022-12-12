@@ -18,6 +18,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.processors.p2p.gateway.GatewayProcessor
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,7 +38,9 @@ class GatewayProcessorImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = AvroSchemaRegistry::class)
+    private val avroSchemaRegistry: AvroSchemaRegistry
 ) : GatewayProcessor {
 
     private companion object {
@@ -85,7 +88,8 @@ class GatewayProcessorImpl @Activate constructor(
                     coordinatorFactory,
                     configMerger.getMessagingConfig(event.config),
                     thirdPartyComponentMode,
-                    cryptoOpsClient
+                    cryptoOpsClient,
+                    avroSchemaRegistry
                 )
                 this.gateway = gateway
 

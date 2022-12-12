@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import java.time.Instant
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -21,6 +20,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
+import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -115,6 +115,11 @@ class FlowEventProcessorImplTest {
             )
         )
     }
+    private val flowMDCService = mock<FlowMDCService>().apply {
+        whenever(getMDCLogging(anyOrNull(), anyOrNull(), any())).thenReturn(
+            emptyMap()
+        )
+    }
 
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
         whenever(create(anyOrNull(), any(), any(), any())).thenReturn(flowEventPipeline)
@@ -124,7 +129,8 @@ class FlowEventProcessorImplTest {
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
-        MINIMUM_SMART_CONFIG
+        MINIMUM_SMART_CONFIG,
+        flowMDCService
     )
 
     @BeforeEach
@@ -146,6 +152,7 @@ class FlowEventProcessorImplTest {
 
         assertThat(response.updatedState).isSameAs(checkpoint)
         assertThat(response.responseEvents).isEmpty()
+        verify(flowMDCService, times(0)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -156,6 +163,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -232,43 +240,6 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Execute flow pipeline and verify MDC from checkpoint with no external event`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-        whenever(flowState.externalEventState).thenReturn(null)
-
-        val response = processor.onNext(checkpoint, inputEvent)
-
-        assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
-
-        verify(checkpoint).flowState
-        verify(flowState).flowStartContext
-        verify(flowStartContext).requestId
-        verify(flowStartContext).identity
-        //this line is only executed for mdc when external events are present
-        verify(externalEventState, times(0)).requestId
-
-    }
-
-    @Test
-    fun `Execute flow pipeline and verify MDC with external event from checkpoint`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-
-        whenever(externalEventState.status).thenReturn(ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope()))
-        val response = processor.onNext(checkpoint, inputEvent)
-
-        assertEquals(checkpoint, response.updatedState)
-        assertEquals(outputRecords, response.responseEvents)
-
-        verify(checkpoint).flowState
-        verify(flowState).flowStartContext
-        verify(flowStartContext).requestId
-        verify(flowStartContext).identity
-        //this line is only executed for mdc when external events are present
-        verify(externalEventState).requestId
-    }
-
-    @Test
     fun `Execute flow pipeline from null checkpoint and start flow event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
 
@@ -276,6 +247,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     @Test
@@ -286,6 +258,7 @@ class FlowEventProcessorImplTest {
 
         assertEquals(checkpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
