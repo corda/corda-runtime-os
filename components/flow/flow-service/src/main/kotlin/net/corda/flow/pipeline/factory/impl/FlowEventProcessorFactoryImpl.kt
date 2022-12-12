@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
+import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
@@ -21,7 +22,9 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     @Reference(service = FlowEventExceptionProcessor::class)
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     @Reference(service = FlowEventContextConverter::class)
-    private val flowEventContextConverter: FlowEventContextConverter
+    private val flowEventContextConverter: FlowEventContextConverter,
+    @Reference(service = FlowMDCService::class)
+    private val flowMDCService: FlowMDCService
 ) : FlowEventProcessorFactory {
 
     override fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
@@ -29,7 +32,8 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
             flowEventPipelineFactory,
             flowEventExceptionProcessor,
             flowEventContextConverter,
-            config
+            config,
+            flowMDCService
         )
     }
 }

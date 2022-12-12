@@ -21,7 +21,8 @@ import java.util.function.Predicate
 
 @Component(service = [FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class],
     scope = PROTOTYPE,
-    property = ["corda.system=true"])
+    property = ["corda.system=true"]
+)
 class FilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
@@ -34,8 +35,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction,
-        componentGroupFilterParameters: List<ComponentGroupFilterParameters>,
-        filter: Predicate<Any>
+        componentGroupFilterParameters: List<ComponentGroupFilterParameters>
     ): FilteredTransaction {
 
         requireUniqueComponentGroupIndexes(componentGroupFilterParameters)
@@ -44,7 +44,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         val transactionId = wireTransaction.id
 
         val filteredComponentGroups = componentGroupFilterParameters
-            .map { filterComponentGroup(wireTransaction, it, filter) }
+            .map { filterComponentGroup(wireTransaction, it) }
             .associateBy(FilteredComponentGroup::componentGroupIndex)
 
         return FilteredTransactionImpl(
@@ -63,11 +63,10 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         }
     }
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("NestedBlockDepth", "UNCHECKED_CAST")
     private fun filterComponentGroup(
         wireTransaction: WireTransaction,
-        parameters: ComponentGroupFilterParameters,
-        filter: Predicate<Any>,
+        parameters: ComponentGroupFilterParameters
     ): FilteredComponentGroup {
 
         val componentGroupIndex = parameters.componentGroupIndex
@@ -83,14 +82,14 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
 
         val merkleProof = when (parameters) {
-            is ComponentGroupFilterParameters.AuditProof -> {
+            is ComponentGroupFilterParameters.AuditProof<*> -> {
 
                 val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
                     .filter { (_, component) ->
-                        skipFiltering || filter.test(
+                        skipFiltering || (parameters.predicate as Predicate<Any>).test(
                             serializationService.deserialize(
                                 component,
                                 parameters.deserializedClass
@@ -100,10 +99,11 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
-                        // If the unfiltered component gropup is empty, we return the proof of the marker.
                         if (componentGroup.isEmpty()) {
+                            // If the unfiltered component group is empty, we return the proof of the marker.
                             merkleTree.createAuditProof(listOf(0))
-                        } else {    //If we filter out everything, we return a size proof.
+                        } else {
+                            // If we filter out everything, we return a size proof.
                             componentGroupMerkleTreeSizeProofProvider.getSizeProof(merkleTree.leaves)
                         }
                     } else {
@@ -123,6 +123,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
         }
 
-        return FilteredComponentGroup(componentGroupIndex, merkleProof, parameters.merkleProofType)
+        return FilteredComponentGroup(componentGroupIndex, merkleProof)
     }
 }

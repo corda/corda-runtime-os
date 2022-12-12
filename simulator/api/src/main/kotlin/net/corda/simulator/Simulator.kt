@@ -4,7 +4,7 @@ import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.factories.SimulatorDelegateFactory
 import net.corda.v5.application.flows.Flow
-import java.util.*
+import java.util.ServiceLoader
 
 /**
  * Simulator is a simulated Corda 5 network which will run in-process. It allows a lightweight "virtual node" to be

@@ -12,9 +12,9 @@ import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -73,7 +73,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context: FlowEventContext<Any>,
         now: Instant
     ): List<Record<*, FlowMapperEvent>> {
-        val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
+        val flowCleanupTime = context.config.getLong(SESSION_FLOW_CLEANUP_TIME)
+        val expiryTime = now.plusMillis(flowCleanupTime).toEpochMilli()
         return context.checkpoint.sessions
             .filterNot { sessionState -> sessionState.hasScheduledCleanup }
             .filter { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }

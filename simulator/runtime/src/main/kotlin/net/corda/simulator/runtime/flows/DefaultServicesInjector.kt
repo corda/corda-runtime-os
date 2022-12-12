@@ -5,9 +5,9 @@ import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.ledger.SimConsensualLedgerService
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
+import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
 import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationService
-import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.utils.availableAPIs
 import net.corda.simulator.runtime.utils.checkAPIAvailability
 import net.corda.simulator.runtime.utils.injectIfRequired
@@ -73,8 +73,8 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         doInject(member, flow, SerializationService::class.java) { createSerializationService() }
         doInject(member, flow, ConsensualLedgerService::class.java) {
             createConsensualLedgerService(
-                createSigningService(member, fiber),
-                getOrCreateMemberLookup(member, fiber)
+                member,
+                fiber
             )
         }
 
@@ -117,11 +117,11 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     }
 
     private fun createConsensualLedgerService(
-        signingService: SigningService,
-        memberLookup: MemberLookup
+        member: MemberX500Name,
+        fiber: SimFiber
     ): ConsensualLedgerService {
         log.info("Injecting ${ConsensualLedgerService::class.java.simpleName}")
-        return SimConsensualLedgerService(signingService, memberLookup, configuration)
+        return SimConsensualLedgerService(member, fiber, configuration)
     }
 
     private fun createVerificationService(): DigitalSignatureVerificationService {

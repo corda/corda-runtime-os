@@ -15,8 +15,12 @@ class PersistTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFa
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction, parameters.transactionStatus.value)
+        return PersistTransaction(parameters.transaction, parameters.transactionStatus.value, parameters.relevantStatesIndexes)
     }
 }
 
-data class PersistTransactionParameters(val transaction: ByteBuffer, val transactionStatus: TransactionStatus)
+data class PersistTransactionParameters(
+    val transaction: ByteBuffer,
+    val transactionStatus: TransactionStatus,
+    val relevantStatesIndexes: List<Int>
+)

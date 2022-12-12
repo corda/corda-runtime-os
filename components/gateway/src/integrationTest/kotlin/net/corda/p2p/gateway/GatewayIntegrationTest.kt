@@ -59,11 +59,14 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.registry.deserialize
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.base.util.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
@@ -115,6 +118,8 @@ class GatewayIntegrationTest : TestBase() {
 
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.getAndIncrement()))
+
+    private val avroSchemaRegistry = AvroSchemaRegistryImpl()
 
     private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -206,7 +211,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
@@ -248,7 +254,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
@@ -261,10 +268,10 @@ class GatewayIntegrationTest : TestBase() {
                     ConnectionConfiguration(),
                 ).use { client ->
                     client.start()
-                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
+                    val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
                     assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                     assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                    val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                 }
             }
@@ -279,6 +286,50 @@ class GatewayIntegrationTest : TestBase() {
                         }
                     }
                 }
+        }
+
+        @Test
+        @Timeout(30)
+        fun `requests with extremely large payloads are rejected`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val port = getOpenPort()
+            val serverAddress = URI.create("http://www.alice.net:$port")
+            val bigMessage = ByteArray(10_000_000)
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
+            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        "/",
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                SigningMode.STUB,
+                mock(),
+                avroSchemaRegistry
+            ).usingLifecycle {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
+                it.startAndWaitForStarted()
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
+                HttpClient(
+                    serverInfo,
+                    bobSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val httpResponse =  client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
+                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.BAD_REQUEST)
+                }
+            }
         }
 
         @Test
@@ -305,7 +356,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, ipKeyStore)
                 it.startAndWaitForStarted()
@@ -323,10 +375,10 @@ class GatewayIntegrationTest : TestBase() {
                     ConnectionConfiguration(),
                 ).use { client ->
                     client.start()
-                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
+                    val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
                     assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                     assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                    val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                 }
             }
@@ -379,7 +431,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 override fun onRequest(request: HttpRequest) {
-                    val receivedGatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
+                    val receivedGatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
                     val p2pMessage = LinkInMessage(receivedGatewayMessage.payload)
                     assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
                         assertThat(String(it.payload.array())).isEqualTo("link out")
@@ -409,7 +461,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
-                    mock()
+                    mock(),
+                    avroSchemaRegistry
                 ).usingLifecycle { gateway ->
                     gateway.start()
 
@@ -446,10 +499,10 @@ class GatewayIntegrationTest : TestBase() {
                         ).use { secondInboundClient ->
                             secondInboundClient.start()
 
-                            val httpResponse = secondInboundClient.write(gatewayMessage.toByteBuffer().array()).get()
+                            val httpResponse = secondInboundClient.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
                             assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                             assertThat(httpResponse.payload).isNotNull
-                            val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                            val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                             assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                         }
 
@@ -488,7 +541,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
@@ -497,13 +551,13 @@ class GatewayIntegrationTest : TestBase() {
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
                     val gatewayMessage = GatewayMessage("msg-${msgNumber.getAndIncrement()}", p2pOutMessage.payload)
-                    val future = client.write(gatewayMessage.toByteBuffer().array())
+                    val future = client.write(avroSchemaRegistry.serialize(gatewayMessage).array())
                     Triple(client, gatewayMessage, future)
                 }.forEach { (client, gatewayMessage, future) ->
                     val httpResponse = future.get()
                     assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                     assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                    val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                     client.close()
                 }
@@ -548,14 +602,14 @@ class GatewayIntegrationTest : TestBase() {
             }.map { serverUri ->
                 val serverListener = object : ListenerWithServer() {
                     override fun onRequest(request: HttpRequest) {
-                        val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
+                        val gatewayMessage = avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(request.payload))
                         val p2pMessage = LinkInMessage(gatewayMessage.payload)
                         assertThat(
                             String((p2pMessage.payload as AuthenticatedDataMessage).payload.array())
                         )
                             .isEqualTo("Target-$serverUri")
                         val gatewayResponse = GatewayResponse(gatewayMessage.id)
-                        server?.write(HttpResponseStatus.OK, gatewayResponse.toByteBuffer().array(), request.source)
+                        server?.write(HttpResponseStatus.OK, avroSchemaRegistry.serialize(gatewayResponse).array(), request.source)
                         deliveryLatch.countDown()
                     }
                 }
@@ -588,7 +642,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
@@ -700,7 +755,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
-                    mock()
+                    mock(),
+                    avroSchemaRegistry
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -718,7 +774,8 @@ class GatewayIntegrationTest : TestBase() {
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
-                    mock()
+                    mock(),
+                    avroSchemaRegistry
                 )
             ).onEach {
                 it.startAndWaitForStarted()
@@ -791,7 +848,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
@@ -879,10 +937,10 @@ class GatewayIntegrationTest : TestBase() {
                 ConnectionConfiguration(),
             ).use { client ->
                 client.start()
-                val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).getOrThrow()
+                val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).getOrThrow()
                 assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
                 assertThat(httpResponse.payload).isNotNull
-                val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
                 assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
             }
         }
@@ -929,7 +987,8 @@ class GatewayIntegrationTest : TestBase() {
                 server.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
-                mock()
+                mock(),
+                avroSchemaRegistry
             ).usingLifecycle { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory

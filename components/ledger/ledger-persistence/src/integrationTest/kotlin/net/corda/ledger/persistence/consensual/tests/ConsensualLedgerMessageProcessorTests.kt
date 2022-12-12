@@ -117,7 +117,7 @@ class ConsensualLedgerMessageProcessorTests {
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, emptyList())
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
