@@ -51,7 +51,7 @@ data class CordappManifest(
         const val CORDAPP_CHECKPOINT_SERIALIZERS = "Corda-CheckpointCustomSerializer-Classes"
         const val CORDAPP_STATE_AND_REF_PROCESSORS = "Corda-StateAndRefPostProcessor-Classes"
         const val CORDAPP_CUSTOM_QUERY_PROCESSORS = "Corda-CustomQueryPostProcessor-Classes"
-        const val CORDAPP_NOTARIES = "Corda-NotaryService-Classes"
+        const val CORDAPP_NOTARY_PLUGIN_PROVIDER_CLASSES = "Corda-NotaryPluginProvider-Classes"
         const val CORDAPP_DIGEST_ALGORITHM_FACTORIES = "Corda-DigestAlgorithmFactory-Classes"
         const val CORDAPP_ENTITIES = "Corda-Entity-Classes"
         const val CORDAPP_TOKEN_STATE_OBSERVERS = "Corda-Token-Observer-Classes"
@@ -180,7 +180,7 @@ data class CordappManifest(
     val checkpointSerializers: Set<String> get() = parseSet(CORDAPP_CHECKPOINT_SERIALIZERS)
     val queryPostProcessors: Set<String>
         get() = parseSet(CORDAPP_STATE_AND_REF_PROCESSORS) + parseSet(CORDAPP_CUSTOM_QUERY_PROCESSORS)
-    val notaryProtocols: Set<String> get() = parseSet(CORDAPP_NOTARIES)
+    val notaryPluginProviders: Set<String> get() = parseSet(CORDAPP_NOTARY_PLUGIN_PROVIDER_CLASSES)
     val digestAlgorithmFactories: Set<String> get() = parseSet(CORDAPP_DIGEST_ALGORITHM_FACTORIES)
     val entities: Set<String> get() = parseSet(CORDAPP_ENTITIES)
     val tokenStateObservers: Set<String> get() = parseSet(CORDAPP_TOKEN_STATE_OBSERVERS)

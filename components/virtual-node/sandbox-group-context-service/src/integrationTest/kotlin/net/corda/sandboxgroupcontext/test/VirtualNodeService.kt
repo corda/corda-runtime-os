@@ -7,6 +7,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
+import net.corda.sandboxgroupcontext.service.registerNotaryPluginProviders
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
@@ -64,7 +65,8 @@ class VirtualNodeService @Activate constructor(
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             val closeables = listOf(
                 sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext),
-                sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext)
+                sandboxGroupContextComponent.registerCordappCustomSerializers(sandboxGroupContext),
+                sandboxGroupContextComponent.registerNotaryPluginProviders(sandboxGroupContext)
             )
             sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
             AutoCloseable {

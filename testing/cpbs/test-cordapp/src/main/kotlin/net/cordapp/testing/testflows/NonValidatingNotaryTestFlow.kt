@@ -63,6 +63,44 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
+        val params = extractParameters(requestBody)
+
+        require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
+            "The transaction must have at least one input OR output state"
+        }
+
+        val notaryWorker = findNotaryParty()
+
+        val stx = buildSignedTransaction(
+            notaryWorker,
+            params.outputStateCount,
+            params.inputStateRefs,
+            params.referenceStateRefs,
+            Pair(params.timeWindowLowerBoundOffsetMs, params.timeWindowUpperBoundOffsetMs)
+        )
+
+        val pluginClient = NonValidatingNotaryClientFlowImpl(
+            stx,
+            notaryWorker
+        )
+
+        flowEngine.subFlow(pluginClient)
+
+        return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
+            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
+            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
+        ))
+    }
+
+    /**
+     * A helper function that extracts the required parameters from the JSON request body into a
+     * [NotarisationTestFlowParameters] object so it is easily accessible and this way the parsing
+     * logic is separated from the main flow logic in [call].
+     */
+    @Suppress("ComplexMethod")
+    @Suspendable
+    private fun extractParameters(requestBody: RPCRequestData): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
         val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0
@@ -75,10 +113,6 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             jsonMarshallingService.parseList<String>(it)
         } ?: emptyList()
 
-        require(outputStateCount > 0 || inputStateRefs.isNotEmpty()) {
-            "The transaction must have at least one input OR output state"
-        }
-
         val timeWindowLowerBoundOffsetMs = requestMessage["timeWindowLowerBoundOffsetMs"]?.toLong()
 
         val timeWindowUpperBoundOffsetMs = requestMessage["timeWindowUpperBoundOffsetMs"]?.toLong()
@@ -87,34 +121,21 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 1.hours.toMillis()
             }
 
-        val notaryParty = findNotaryParty()
-
-        val stx = buildSignedTransaction(
-            notaryParty,
+        return NotarisationTestFlowParameters(
+            outputStateCount,
             inputStateRefs,
             referenceStateRefs,
-            outputStateCount,
-            Pair(timeWindowLowerBoundOffsetMs, timeWindowUpperBoundOffsetMs)
+            timeWindowLowerBoundOffsetMs,
+            timeWindowUpperBoundOffsetMs
         )
-
-        flowEngine.subFlow(
-            NonValidatingNotaryClientFlowImpl(
-                stx,
-                notaryParty
-            )
-        )
-
-        return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
-            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
-        ))
     }
 
+    /**
+     * A helper function that will find the notary party on the network.
+     */
     @Suspendable
     private fun findNotaryParty(): Party {
-        // TODO CORE-6996 For now `NotaryLookup` is still work in progress, once it is finished, we
-        //  need to find the notary instead of the first whose common name contains "Notary".
+        // We cannot use the notary virtual node lookup service in this flow so we need to do this hack
         val notary = memberLookup.lookup().first {
             it.name.commonName?.contains("notary", ignoreCase = true) ?: false
         }
@@ -122,15 +143,19 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         return Party(notary.name, notary.sessionInitiationKey)
     }
 
+    /**
+     * A helper function that will build a UTXO signed transaction from the provided input parameters using the
+     * [UtxoTransactionBuilder] utility class.
+     */
     @Suppress(
         "deprecation", // Can be removed once the new `sign` function on the TX builder is added
     )
     @Suspendable
     private fun buildSignedTransaction(
         notaryServerParty: Party,
+        outputStateCount: Int,
         inputStateRefs: List<String>,
         referenceStateRefs: List<String>,
-        outputStateCount: Int,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
         return utxoLedgerService.getTransactionBuilder()
@@ -166,6 +191,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 builder
             }.toSignedTransaction(memberLookup.myInfo().sessionInitiationKey)
     }
+
     /**
      * The contract and command classes are needed to build a signed UTXO transaction. Unfortunately, we cannot reuse
      * any internal contract/command as this flow belongs to an "external" CorDapp (CPB) so we can't introduce internal
@@ -176,11 +202,26 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
 
         override fun verify(transaction: UtxoLedgerTransaction) {}
     }
+
     class TestCommand : Command
 
+    /**
+     * A basic data class that represents the outcome of the [NonValidatingNotaryTestFlow] flow.
+     */
     data class NonValidatingNotaryTestFlowResult(
         val issuedStateRefs: List<String>,
         val consumedInputStateRefs: List<String>,
         val consumedReferenceStateRefs: List<String>
+    )
+
+    /**
+     * A basic data class that represents the required parameters for the [NonValidatingNotaryTestFlow] flow.
+     */
+    data class NotarisationTestFlowParameters(
+        val outputStateCount: Int,
+        val inputStateRefs: List<String>,
+        val referenceStateRefs: List<String>,
+        val timeWindowLowerBoundOffsetMs: Long?,
+        val timeWindowUpperBoundOffsetMs: Long
     )
 }
