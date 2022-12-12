@@ -146,7 +146,7 @@ class FilteredTransactionFactoryImplTest {
     }
 
     @Test
-    fun `creates a size proof when the component group contains no components after applying filtering`() {
+    fun `creates a size proof instead of an audit proof when the component group contains no components after applying filtering`() {
         wireTransaction = wireTransaction(
             listOf(
                 listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3),
@@ -176,7 +176,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
         )
@@ -208,7 +208,7 @@ class FilteredTransactionFactoryImplTest {
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
                 listOf(0)
