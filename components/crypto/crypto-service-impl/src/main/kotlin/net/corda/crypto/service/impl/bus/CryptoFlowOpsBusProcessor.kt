@@ -56,7 +56,6 @@ class CryptoFlowOpsBusProcessor(
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
 
-    @Suppress("UNCHECKED_CAST")
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
         val request = event.value
         if (request == null) {
