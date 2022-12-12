@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Corda notary virtual node selector - API'
+description 'Corda notary virtual node selector - implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

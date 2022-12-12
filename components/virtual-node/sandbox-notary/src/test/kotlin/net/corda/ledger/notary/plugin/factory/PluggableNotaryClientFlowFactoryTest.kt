@@ -79,8 +79,8 @@ class PluggableNotaryClientFlowFactoryTest {
         }
 
         virtualNodeSelectorService = mock {
-            on { next(eq(FIRST_NOTARY_SERVICE_PARTY)) } doAnswer  { firstServiceVNode.toParty() }
-            on { next(eq(SECOND_NOTARY_SERVICE_PARTY)) } doAnswer { secondServiceVNode.toParty() }
+            on { selectVirtualNode(eq(FIRST_NOTARY_SERVICE_PARTY)) } doAnswer  { firstServiceVNode.toParty() }
+            on { selectVirtualNode(eq(SECOND_NOTARY_SERVICE_PARTY)) } doAnswer { secondServiceVNode.toParty() }
         }
 
         clientFactory = PluggableNotaryClientFlowFactory(

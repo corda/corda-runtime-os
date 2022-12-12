@@ -53,7 +53,7 @@ class PluggableNotaryClientFlowFactory @Activate constructor(
             ?: throw IllegalStateException("Notary flow provider not found for type: $pluginClass")
 
         return try {
-            provider.create(virtualNodeSelectorService.next(notaryService), stx)
+            provider.create(virtualNodeSelectorService.selectVirtualNode(notaryService), stx)
         } catch (e: Exception) {
             throw CordaRuntimeException("Exception while trying to create notary client with name: $pluginClass", e)
         }

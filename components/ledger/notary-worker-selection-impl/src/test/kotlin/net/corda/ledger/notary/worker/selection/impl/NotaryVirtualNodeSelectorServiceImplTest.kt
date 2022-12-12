@@ -53,7 +53,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         val selectedVirtualNodes = mutableMapOf<Party, Int>()
 
         (1..SELECTION_COUNT).forEach { _ ->
-            val selected = selector.next(notaryServiceIdentity)
+            val selected = selector.selectVirtualNode(notaryServiceIdentity)
             selectedVirtualNodes.merge(selected, 1, Int::plus)
         }
 

@@ -26,9 +26,8 @@ class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
      * This function will fetch the virtual nodes that belong to the [serviceIdentity] and do a random selection on
      * that list.
      */
-    override fun next(serviceIdentity: Party): Party {
-        val workers = notaryVirtualNodeLookup.getNotaryVirtualNodes(serviceIdentity.name)
-        val selectedMember = workers.random()
+    override fun selectVirtualNode(serviceIdentity: Party): Party {
+        val selectedMember = notaryVirtualNodeLookup.getNotaryVirtualNodes(serviceIdentity.name).random()
 
         return Party(selectedMember.name, selectedMember.sessionInitiationKey)
     }
