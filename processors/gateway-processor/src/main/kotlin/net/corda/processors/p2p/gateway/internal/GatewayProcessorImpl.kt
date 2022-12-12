@@ -16,7 +16,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
@@ -75,19 +74,12 @@ class GatewayProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                val thirdPartyComponentMode = if (event.useStubComponents) {
-                    SigningMode.REAL
-                } else {
-                    SigningMode.REAL
-                }
-
                 val gateway = Gateway(
                     configurationReadService,
                     subscriptionFactory,
                     publisherFactory,
                     coordinatorFactory,
                     configMerger.getMessagingConfig(event.config),
-                    thirdPartyComponentMode,
                     cryptoOpsClient,
                     avroSchemaRegistry
                 )

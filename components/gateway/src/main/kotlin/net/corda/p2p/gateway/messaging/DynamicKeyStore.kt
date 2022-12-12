@@ -19,7 +19,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
@@ -35,7 +34,6 @@ internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    private val signingMode: SigningMode,
     private val cryptoOpsClient: CryptoOpsClient,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
@@ -71,7 +69,7 @@ internal class DynamicKeyStore(
 
     private val ready = CompletableFuture<Unit>()
 
-    private val signer: CryptoProcessor = if (signingMode == SigningMode.REAL) {
+    private val signer: CryptoProcessor =
       object: CryptoProcessor {
           override fun sign(tenantId: String, publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
               return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
@@ -79,13 +77,7 @@ internal class DynamicKeyStore(
 
           override val namedLifecycle = NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>())
       }
-    } else {
-        StubCryptoProcessor(
-            lifecycleCoordinatorFactory,
-            subscriptionFactory,
-            messagingConfiguration,
-        )
-    }
+
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -162,15 +154,4 @@ internal class DynamicKeyStore(
         val tenantId = publicKeyToTenantId[publicKey] ?: throw InvalidKeyException("Unknown public key")
         return signer.sign(tenantId, publicKey, spec, data)
     }
-}
-
-/**
- * This switch will exist temporarily until we complete migration with the membership components (and dynamic networks).
- * After that point, it can be removed as only the real crypto processor will be used.
- */
-enum class SigningMode {
-    /**
-     * In this mode, signing is delegated to a real crypto processor.
-     */
-    REAL,
 }
