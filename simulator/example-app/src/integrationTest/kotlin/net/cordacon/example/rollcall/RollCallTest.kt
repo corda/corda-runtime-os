@@ -33,13 +33,8 @@ class RollCallTest {
         // And a key to sign the absence record with
         teacherVNode.generateKey("teacher-key", HsmCategory.LEDGER, "Any scheme will do")
 
-        // and recipients with the responder flow
-        //
-        // and a flow to invoke when someone is absent (they return an empty string)
-        // Note: We don't actually need to do the upload, because it's a subflow so constructed inside the main flow -
-        // initialization, checking etc. will happen when it's passed to the engine.
-        //
-        // and a response (which we do need, but it's exactly the same; Ferris Bueller continues to take a day off)
+        // and recipients with the responder flow and a flow to respond to absence sub-flow when someone is absent
+        // (they return an empty string)
         val students = listOf("Albers", "Anderson", "Anheiser", "Busch", "Bueller"). map {
             "CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         }

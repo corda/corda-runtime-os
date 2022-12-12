@@ -8,14 +8,13 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredData
-import net.corda.v5.ledger.utxo.transaction.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 
-class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
-
+class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 
     @Test
     fun `metada and id are always present`() {
@@ -25,9 +24,9 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                )
+                ) { true }
             )
-        ) { true }
+        )
 
         val utxoFilteredTx: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
@@ -80,27 +79,22 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java),
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { it.index != 0 },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { it.index != 0 },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
-        ) {
-            when (it) {
-                is StateRef -> if (it.index == 0) false else true
-                else -> true
-            }
-        }
+        )
 
         assertThat(filteredTransaction.getComponentGroupContent(UtxoComponentGroup.INPUTS.ordinal))
             .hasSize(1)
@@ -136,27 +130,27 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java),
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) {
+                    when (it) {
+                        is Party -> false
+                        else -> true
+                    }
+                },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
-        ) {
-            when (it) {
-                is Party -> false
-                else -> true
-            }
-        }
+        )
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
@@ -172,26 +166,21 @@ class UtxoFilteredTransactionTest :UtxoFilteredTransactionTestBase() {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.REFERENCES.ordinal, StateRef::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
-        ) {
-            when (it) {
-                is Party -> false
-                else -> true
-            }
-        }
+        )
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 

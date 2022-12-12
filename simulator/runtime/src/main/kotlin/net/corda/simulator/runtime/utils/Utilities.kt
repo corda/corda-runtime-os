@@ -17,6 +17,8 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
 
 /**
  * If a field of the given class is present, creates the given value and sets it on this flow.
@@ -27,10 +29,27 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 fun Flow.injectIfRequired(
     fieldClass: Class<*>,
     valueCreator: () -> Any
-) = this.javaClass.declaredFields.firstOrNull {
-    it.type.equals(fieldClass) && it.canAccess(this) && it.isAnnotationPresent(CordaInject::class.java)
-}?.set(this, valueCreator())
+) {
+    val field = getSuperClassesFor(this.javaClass)
+        .flatMap { it.declaredFields.toSet() }
+        .firstOrNull {it.type.equals(fieldClass) && it.isAnnotationPresent(CordaInject::class.java)}
+    if (field != null) {
+        AccessController.doPrivileged(PrivilegedExceptionAction {
+            field.isAccessible = true
+        })
+        field.set(this, valueCreator())
+    }
+}
 
+private fun getSuperClassesFor(clazz: Class<*>): List<Class<*>> {
+    val superClasses = mutableListOf<Class<*>>()
+    var target: Class<*>? = clazz
+    while (target != null) {
+        superClasses.add(target)
+        target = target.superclass
+    }
+    return superClasses
+}
 /**
  * Converts this [MemberX500Name] to a unique name to use for the persistence sandbox for a member.
  */

@@ -28,6 +28,7 @@ class CordaFlowCheckerTest {
         assertThrows<NoSuspendableCallMethodException> { CordaFlowChecker().check(flowClass) }
     }
 
+
     @Test
     fun `should pass valid starting flows`() {
         val flowClass = ValidStartingFlow::class.java

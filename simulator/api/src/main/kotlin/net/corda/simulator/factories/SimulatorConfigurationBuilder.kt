@@ -58,6 +58,7 @@ interface SimulatorConfigurationBuilder {
         /**
          * @return A factory for building [net.corda.simulator.SimulatorConfiguration].
          */
+        @JvmStatic
         fun create(): SimulatorConfigurationBuilder {
             return ServiceLoader.load(SimulatorConfigurationBuilder::class.java).first()
         }

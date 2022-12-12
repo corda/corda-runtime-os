@@ -2,8 +2,10 @@ package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.persistence.common.RequestHandler
+import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
@@ -50,7 +52,7 @@ class ConsensualRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             else -> {
-                throw IllegalStateException("The Consensual request type '${request.request.javaClass}' is not supported.")
+                throw UnsupportedRequestTypeException(LedgerTypes.CONSENSUAL, request.request.javaClass)
             }
         }
     }

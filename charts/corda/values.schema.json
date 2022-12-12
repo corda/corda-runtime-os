@@ -450,8 +450,12 @@
                         }
                     },
                     "examples": [{
-                        "username": "user",
-                        "password": "password",
+                        "username": {
+                            "value": "user"
+                        },
+                        "password": {
+                            "value": "password"
+                        },
                         "mechanism": "SCRAM-SHA-256",
                         "enabled": true
                     }]
@@ -706,6 +710,19 @@
                             "examples": [
                                 3
                             ]
+                        },
+                        "sasl": {
+                            "type": "object",
+                            "title": "kafka SASL credentials",
+                            "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "additionalProperties": false
                         }
                     },
                     "if": {
@@ -907,6 +924,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -945,6 +963,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -1021,6 +1040,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -1077,7 +1097,8 @@
                                 "debug": {},
                                 "logging": {},
                                 "profiling": {},
-                                "resources": {}
+                                "resources": {},
+                                "kafka": {}
                             }
                         }
                     ]
@@ -1101,6 +1122,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -1217,6 +1239,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "useStubs": {
                                     "type": "boolean",
                                     "default": false,
@@ -1279,6 +1302,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "kafka": {},
                                 "useStubs": {
                                     "type": "boolean",
                                     "default": false,
@@ -1784,6 +1808,26 @@
                             "memory": "2048Mi"
                         }
                     }]
+                },
+                "kafka": {
+                    "type": "object",
+                    "title": "kafka configuration",
+                    "properties": {
+                        "sasl": {
+                            "type": "object",
+                            "title": "kafka SASL credentials",
+                            "properties": {
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "additionalProperties": false
+                    }
                 }
             },
             "examples": [{
