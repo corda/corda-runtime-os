@@ -22,7 +22,6 @@ dependencies {
     api project(':components:domino-logic')
     api project(':libs:crypto:delegated-signing')
     implementation project(":libs:cache:cache-caffeine")
-    implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(":components:crypto:crypto-client")
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")

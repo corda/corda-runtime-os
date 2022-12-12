@@ -21,7 +21,6 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:domino-logic')
     implementation project(':components:link-manager')
-    implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
