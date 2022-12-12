@@ -17,6 +17,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 
@@ -50,18 +51,17 @@ class UtxoReceiveFinalityFlow(
         verifyTransaction(signedTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
+        val myKeys = memberLookup
+            .myInfo()
+            .ledgerKeys
+            .toSet()
         val signaturesPayload = if (verify(signedTransaction)) {
             persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
 
             // We check which of our keys are required.
             val myExpectedSigningKeys = signedTransaction
                 .getMissingSignatories()
-                .intersect(
-                    memberLookup
-                        .myInfo()
-                        .ledgerKeys
-                        .toSet()
-                )
+                .intersect(myKeys)
 
             if (myExpectedSigningKeys.isEmpty()) {
                 log.debug { "We are not required signer of $transactionId." }
@@ -93,7 +93,11 @@ class UtxoReceiveFinalityFlow(
 
         signedTransactionToFinalize.verifySignatures()
 
-        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
+        val relevantStatesIndexes = signedTransactionToFinalize.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
+            Contract.isRelevant(stateAndRef.state.contractState, myKeys)
+        }.map { it.index }
+
+        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded signed transaction $transactionId" }
 
         session.send(Unit)

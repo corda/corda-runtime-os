@@ -17,6 +17,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
@@ -124,7 +125,16 @@ class UtxoFinalityFlow(
             }
         }
 
-        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
+        val myKeys = memberLookup
+            .myInfo()
+            .ledgerKeys
+            .toSet()
+
+        val relevantStatesIndexes = signedByParticipantsTransaction.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
+            Contract.isRelevant(stateAndRef.state.contractState, myKeys)
+        }.map { it.index }
+
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing
