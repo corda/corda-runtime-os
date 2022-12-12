@@ -20,6 +20,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
@@ -59,6 +60,8 @@ class UtxoReceiveFinalityFlowTest {
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
 
+    private val metadata = mock<TransactionMetadata>()
+
     private val ledgerTransaction = mock<UtxoLedgerTransactionImpl>()
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
@@ -73,6 +76,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
         whenever(signedTransaction.id).thenReturn(ID)
+        whenever(signedTransaction.metadata).thenReturn(metadata)
         whenever(signedTransaction.notary).thenReturn(utxoNotaryExample)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
@@ -175,12 +179,17 @@ class UtxoReceiveFinalityFlowTest {
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
         whenever(memberInfo.ledgerKeys).thenReturn(emptyList())
 
-        callReceiveFinalityFlow()
+        whenever(session.receive(List::class.java)).then {
+            throw CordaRuntimeException("session error")
+        }
 
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessage("session error")
         verify(signedTransaction, never()).sign(any<PublicKey>())
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
-        verify(persistenceService, times(2)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
     @Test
