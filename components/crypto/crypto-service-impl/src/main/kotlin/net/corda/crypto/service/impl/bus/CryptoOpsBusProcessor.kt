@@ -47,6 +47,18 @@ class CryptoOpsBusProcessor(
     companion object {
         private val logger: Logger = contextLogger()
 
+        private val handlersFactories =
+            mapOf<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>(
+                DeriveSharedSecretCommand::class.java to { DeriveSharedSecretCommandHandler(it) },
+                GenerateFreshKeyRpcCommand::class.java to { GenerateFreshKeyRpcCommandHandler(it) },
+                GenerateKeyPairCommand::class.java to { GenerateKeyPairCommandHandler(it) },
+                GenerateWrappingKeyRpcCommand::class.java to { GenerateWrappingKeyRpcCommandHandler(it) },
+                ByIdsRpcQuery::class.java to { ByIdsRpcQueryHandler(it) },
+                KeysRpcQuery::class.java to { KeysRpcQueryHandler(it) },
+                SupportedSchemesRpcQuery::class.java to { SupportedSchemesRpcQueryHandler(it) },
+                SignRpcCommand::class.java to { SignRpcCommandHandler(it) },
+            )
+
         private fun Map<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>.getHandlerForRequest(
             requestType: Class<*>,
             signingService: SigningService
@@ -64,22 +76,9 @@ class CryptoOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    private val handlersFactories =
-        mapOf<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>(
-            DeriveSharedSecretCommand::class.java to { DeriveSharedSecretCommandHandler(it) },
-            GenerateFreshKeyRpcCommand::class.java to { GenerateFreshKeyRpcCommandHandler(it) },
-            GenerateKeyPairCommand::class.java to { GenerateKeyPairCommandHandler(it) },
-            GenerateWrappingKeyRpcCommand::class.java to { GenerateWrappingKeyRpcCommandHandler(it) },
-            ByIdsRpcQuery::class.java to { ByIdsRpcQueryHandler(it) },
-            KeysRpcQuery::class.java to { KeysRpcQueryHandler(it) },
-            SupportedSchemesRpcQuery::class.java to { SupportedSchemesRpcQueryHandler(it) },
-            SignRpcCommand::class.java to { SignRpcCommandHandler(it) },
-        )
-
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            // TODO Need to check why signingService seems to be changing
             val signingService = signingFactory.getInstance()
             val requestType = request.request::class.java
             val handler = handlersFactories.getHandlerForRequest(requestType, signingService)
