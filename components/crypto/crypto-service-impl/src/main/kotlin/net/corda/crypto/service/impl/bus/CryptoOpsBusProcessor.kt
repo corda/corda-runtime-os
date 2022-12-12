@@ -48,7 +48,7 @@ class CryptoOpsBusProcessor(
         private val logger: Logger = contextLogger()
 
         private val handlersFactories =
-            mapOf<Class<*>, (signingService: SigningService) -> CryptoRequestHandler<*, out Any>>(
+            mapOf<Class<*>, (SigningService) -> CryptoRequestHandler<*, out Any>>(
                 DeriveSharedSecretCommand::class.java to { DeriveSharedSecretCommandHandler(it) },
                 GenerateFreshKeyRpcCommand::class.java to { GenerateFreshKeyRpcCommandHandler(it) },
                 GenerateKeyPairCommand::class.java to { GenerateKeyPairCommandHandler(it) },
