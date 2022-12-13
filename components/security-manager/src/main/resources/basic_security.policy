@@ -147,6 +147,8 @@ ALLOW {
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=PERSISTENCE/*)" "get")
 
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "PERSISTENCE")
+
 } "Allow public packages and services for PERSISTENCE Sandbox"
 
 DENY {
@@ -165,6 +167,8 @@ DENY {
 (org.osgi.framework.PackagePermission "co.paralleluniverse.common.*" "import")
 (org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.*" "import")
 (co.paralleluniverse.fibers.instrument.QuasarPermission "configuration" "")
+
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "*")
 
 (java.io.SerializablePermission "enableSubclassImplementation" "")
 (java.io.SerializablePermission "enableSubstitution" "")
@@ -274,6 +278,8 @@ ALLOW {
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=VERIFICATION/*)" "get")
 
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "VERIFICATION")
+
 } "Allow public packages and services for VERIFICATION Sandbox"
 
 DENY {
@@ -292,6 +298,8 @@ DENY {
 (org.osgi.framework.PackagePermission "co.paralleluniverse.common.*" "import")
 (org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.*" "import")
 (co.paralleluniverse.fibers.instrument.QuasarPermission "configuration" "")
+
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "*")
 
 (java.io.SerializablePermission "enableSubclassImplementation" "")
 (java.io.SerializablePermission "enableSubstitution" "")
