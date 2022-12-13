@@ -73,7 +73,8 @@ class TestDependenciesTracker(
         logger.info("ALL DEPENDENCIES ARE UP!!!")
     }
 
-    fun waitUntilAllStopped(duration: Duration) {
+    // This will actually get called when any of the sub components has stopped
+    fun waitUntilStopped(duration: Duration) {
         stopped.getOrThrow(duration)
     }
 

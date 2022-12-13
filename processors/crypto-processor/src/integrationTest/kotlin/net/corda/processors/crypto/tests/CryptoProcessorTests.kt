@@ -206,7 +206,7 @@ class CryptoProcessorTests {
                 flowOpsResponsesSub.close()
             }
             cryptoProcessor.stop()
-            tracker.waitUntilAllStopped(Duration.ofSeconds(10))
+            tracker.waitUntilStopped(Duration.ofSeconds(10))
             endTime = System.nanoTime()
             val endTimeSeconds = Duration.ofNanos(endTime!! - startTime!!).toSeconds()
             logger.info(">>>>>>>>>>>>>>>> CryptoProcessorTests took $endTimeSeconds seconds to run")
