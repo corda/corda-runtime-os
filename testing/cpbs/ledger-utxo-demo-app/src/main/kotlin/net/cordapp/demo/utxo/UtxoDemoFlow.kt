@@ -83,17 +83,13 @@ class UtxoDemoFlow : RPCStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            /* TODO CORE-8271 NotaryLookup does not seem to return the registered Notary
+            // TODO CORE-8271 NotaryLookup does not seem to return the registered Notary
             val notary = notaryLookup.notaryServices.first()
-             */
-            val notaryX500 = MemberX500Name.parse(request.notary)
-            val notary = requireNotNull(memberLookup.lookup(
-                notaryX500)) { "Member $notaryX500 does not exist in the membership group" }
 
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.ledgerKeys.first())) // CORE-8271
+                .setNotary(Party(notary.name, notary.publicKey)) // CORE-8271
                 .setTimeWindowBetween(Instant.MIN, Instant.MAX)
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())

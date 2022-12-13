@@ -19,7 +19,7 @@ dependencies {
     implementation project(":components:virtual-node:sandbox-group-context-service")
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
-    runtimeOnly project(':components:virtual-node:sandbox-notary')
+    runtimeOnly project(':components:virtual-node:sandbox-notary-impl')
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
