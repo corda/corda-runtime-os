@@ -32,6 +32,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("MaxLineLength")
 class UtxoFinalityFlowTest {
 
     private companion object {
@@ -103,7 +104,9 @@ class UtxoFinalityFlowTest {
             notarisedTx
         )
 
-        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(pluggableNotaryClientFlow)
+        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
+            pluggableNotaryClientFlow
+        )
     }
 
     @Test
