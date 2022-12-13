@@ -356,6 +356,7 @@ class CryptoProcessorTests {
 
         private fun assignHSMs() {
             val cryptoCategories = setOf(
+                CryptoConsts.Categories.CI,
                 CryptoConsts.Categories.LEDGER,
                 CryptoConsts.Categories.TLS,
                 CryptoConsts.Categories.SESSION_INIT,
