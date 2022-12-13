@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
@@ -115,5 +116,50 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             builder.toSignedTransaction(publicKeyExample)
             builder.toSignedTransaction(publicKeyExample)
         }
+    }
+
+    @Test
+    fun `Calculate encumbrance groups correctly`(){
+        val tx = utxoTransactionBuilder
+            .setNotary(utxoNotaryExample)
+            .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+            .addEncumberedOutputStates("encumbrance 1",
+                UtxoStateClassExample("test 1", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 2", listOf(publicKeyExample)))
+            .addOutputState(utxoStateExample)
+            .addEncumberedOutputStates("encumbrance 2",
+                UtxoStateClassExample("test 3", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 4", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 5", listOf(publicKeyExample)))
+            .addEncumberedOutputStates("encumbrance 1",
+                UtxoStateClassExample("test 6", listOf(publicKeyExample)))
+            .addInputState(getUtxoInvalidStateAndRef().ref)
+            .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
+            .addSignatories(listOf(publicKeyExample))
+            .addCommand(UtxoCommandExample())
+            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .toSignedTransaction(publicKeyExample)
+
+        assertThat(tx.outputStateAndRefs).hasSize(7)
+        assertThat(tx.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[2].state.encumbrance).isNull()
+
+        assertThat(tx.outputStateAndRefs[3].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[3].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[4].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[4].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[5].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[5].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[6].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[6].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
     }
 }
