@@ -66,12 +66,17 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
     @Suppress("DEPRECATION", "LongMethod")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        log.info("UTXO flow demo starting...")
+        log.info("UTXO flow demo starting!!...")
         try {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
             val myInfo = memberLookup.myInfo()
-            val members = request.members.map { memberLookup.lookup(MemberX500Name.parse(it))!! }
+            val members = request.members.map {
+                requireNotNull(memberLookup.lookup(MemberX500Name.parse(it))) {
+                    "Cannot find member $it"
+                }
+            }
+            log.info("Found members $members")
 
 //            val testState = TestState(
 //                request.input,
@@ -80,7 +85,7 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
 
             val testState = TestState(
                 request.input,
-                members.map { it.ledgerKeys.first() }
+                members.map { requireNotNull(it.ledgerKeys.firstOrNull()) { "Cannot find any ledger keys for member $it" } }
             )
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
@@ -250,7 +255,7 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
         val txs = session.receive<List<SecureHash>>()
         txs.map { utxoLedgerService.findSignedTransaction(it) }
             .forEachIndexed { index, tx ->
-                log.info("PEER TX${index+1} = ${tx?.id}")
+                log.info("PEER TX${index + 1} = ${tx?.id}")
             }
 
         utxoLedgerService.receiveFinality(session) {
@@ -259,7 +264,7 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
         txs.map { utxoLedgerService.findSignedTransaction(it) }
             .forEachIndexed { index, tx ->
-                log.info("PEER TX${index+1} = ${tx?.id}")
+                log.info("PEER TX${index + 1} = ${tx?.id}")
             }
 
         utxoLedgerService.receiveFinality(session) {
@@ -268,7 +273,7 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
         txs.map { utxoLedgerService.findSignedTransaction(it) }
             .forEachIndexed { index, tx ->
-                log.info("PEER TX${index+1} = ${tx?.id}")
+                log.info("PEER TX${index + 1} = ${tx?.id}")
             }
     }
 }
