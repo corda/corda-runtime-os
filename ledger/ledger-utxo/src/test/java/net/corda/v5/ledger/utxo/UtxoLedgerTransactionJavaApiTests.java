@@ -87,11 +87,6 @@ public final class UtxoLedgerTransactionJavaApiTests extends AbstractMockTestHar
     }
 
     @Test
-    public void verifyShouldBeCallable() {
-        utxoLedgerTransaction.verify();
-    }
-
-    @Test
     public void getAttachmentShouldReturnTheExpectedValue() {
         Attachment value = utxoLedgerTransaction.getAttachment(hash);
         Assertions.assertEquals(attachment, value);

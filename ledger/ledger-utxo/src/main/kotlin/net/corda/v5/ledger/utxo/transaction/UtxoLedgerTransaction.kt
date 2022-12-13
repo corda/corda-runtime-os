@@ -2,7 +2,6 @@ package net.corda.v5.ledger.utxo.transaction
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -55,13 +54,6 @@ interface UtxoLedgerTransaction {
     val outputStateAndRefs: List<StateAndRef<*>>
     val outputTransactionStates: List<TransactionState<*>> get() = outputStateAndRefs.map { it.state }
     val outputContractStates: List<ContractState> get() = outputTransactionStates.map { it.contractState }
-
-    /**
-     * Verifies the current [UtxoLedgerTransaction].
-     *
-     * @throws TransactionVerificationException if the current [UtxoLedgerTransaction] fails to verify correctly.
-     */
-    fun verify()
 
     /**
      * Obtains the ledger transaction [Attachment] with the specified id.

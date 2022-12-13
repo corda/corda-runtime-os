@@ -155,7 +155,6 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerTransaction.getOutputTransactionStates()).thenCallRealMethod();
         Mockito.when(utxoLedgerTransaction.getOutputContractStates()).thenCallRealMethod();
-        Mockito.doNothing().when(utxoLedgerTransaction).verify();
         Mockito.when(utxoLedgerTransaction.getAttachment(hash)).thenReturn(attachment);
         Mockito.when(utxoLedgerTransaction.getCommands(Create.class)).thenReturn((List) List.of(createCommand));
         Mockito.when(utxoLedgerTransaction.getCommands(Update.class)).thenReturn((List) List.of(updateCommand));
