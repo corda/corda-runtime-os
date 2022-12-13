@@ -26,7 +26,7 @@ import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -104,11 +104,18 @@ internal class OutboundMessageHandler(
                         peerMessage.header.destinationIdentity.groupId
                     )
 
-                    val sni = SniCalculator.calculateSni(
-                        peerMessage.header.destinationIdentity.x500Name,
-                        peerMessage.header.destinationNetworkType,
-                        peerMessage.header.address
-                    )
+                    val uri = URI.create(peerMessage.header.address)
+                    if (uri.scheme != "https") {
+                        throw IllegalArgumentException("Only HTTPS endpoints supported.")
+                    }
+                    val sni = when (peerMessage.header.destinationNetworkType) {
+                        NetworkType.CORDA_4 -> {
+                            SniCalculator.calculateCorda4Sni(peerMessage.header.destinationIdentity.x500Name)
+                        }
+                        else -> {
+                            SniCalculator.calculateCorda5Sni(uri)
+                        }
+                    }
                     val messageId = UUID.randomUUID().toString()
                     val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
                     val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
@@ -117,7 +124,7 @@ internal class OutboundMessageHandler(
                         null
                     }
                     val destinationInfo = DestinationInfo(
-                        URI.create(peerMessage.header.address),
+                        uri,
                         sni,
                         expectedX500Name,
                         trustStore,
