@@ -72,10 +72,10 @@ class CryptoFlowOpsBusProcessor(
             )
         }
         return try {
-            logger.info(
+            logger.debug {
                 "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                         "{ requestId: $requestId, key: $flowId }"
-            )
+            }
             val handler = getHandler(request.request::class.java, cryptoOpsClient)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
