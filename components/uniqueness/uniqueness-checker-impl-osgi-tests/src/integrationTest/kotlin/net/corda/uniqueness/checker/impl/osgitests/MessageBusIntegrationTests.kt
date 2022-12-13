@@ -256,7 +256,7 @@ class MessageBusIntegrationTests {
                 .build()
         ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
-                { assertThat(responses).hasSize(1) },
+                { assertThat(responses).hasSize(2) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
             )
         }
@@ -336,7 +336,7 @@ class MessageBusIntegrationTests {
                 .build()
         ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
-                { assertThat(responses).hasSize(1) },
+                { assertThat(responses).hasSize(3) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
             )
         }
