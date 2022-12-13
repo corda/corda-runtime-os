@@ -201,6 +201,7 @@ class NonValidatingNotaryServerFlowImplTest {
         }
     }
 
+    @Suppress("LongParameterList")
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
         filteredTxContents: Map<String, Any?> = emptyMap(),
