@@ -15,6 +15,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -59,6 +60,7 @@ class UtxoFinalityFlowTest {
 
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val updatedSignedTransaction = mock<UtxoSignedTransactionInternal>()
+    private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
@@ -75,6 +77,7 @@ class UtxoFinalityFlowTest {
 
         whenever(signedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
         whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
 

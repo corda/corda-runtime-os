@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -44,6 +45,8 @@ class UtxoFinalityFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
+
+        verify(signedTransaction)
 
         // TODO Check there is at least one state
 
@@ -144,6 +147,10 @@ class UtxoFinalityFlow(
         }
 
         return signedByParticipantsTransaction
+    }
+
+    private fun verify(signedTransaction: UtxoSignedTransaction) {
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     private fun requireCorrectReceivedSigningKeys(
