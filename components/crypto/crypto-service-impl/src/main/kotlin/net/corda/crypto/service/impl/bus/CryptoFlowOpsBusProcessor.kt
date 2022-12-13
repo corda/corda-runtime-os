@@ -7,14 +7,10 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.service.impl.CryptoRequestHandler
-import net.corda.crypto.service.impl.getHandlerForRequest
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -27,7 +23,7 @@ import net.corda.v5.base.util.debug
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
-    cryptoOpsClient: CryptoOpsProxyClient,
+    private val cryptoOpsClient: CryptoOpsProxyClient,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     event: ConfigChangedEvent
 ) : DurableProcessor<String, FlowOpsRequest> {
@@ -36,7 +32,6 @@ class CryptoFlowOpsBusProcessor(
     }
 
     override val keyClass: Class<String> = String::class.java
-
     override val valueClass = FlowOpsRequest::class.java
 
     private val config = event.config.toCryptoConfig().flowBusProcessor()
@@ -45,13 +40,6 @@ class CryptoFlowOpsBusProcessor(
         logger,
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
-
-    private val handlers = setOf<CryptoRequestHandler<*, out Any>>(
-        FilterMyKeysFlowQueryHandler(cryptoOpsClient),
-        SignFlowCommandHandler(cryptoOpsClient)
-    ).associateBy {
-        it.requestClass
-    }
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
@@ -82,10 +70,8 @@ class CryptoFlowOpsBusProcessor(
                 "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                         "{ requestId: $requestId, key: $flowId }"
             )
-            val requestType = request.request::class.java
-            val handler = handlers.getHandlerForRequest(requestType)
             val response = executor.executeWithRetry {
-                handler.handle(request.request, request.context)
+                handleRequest(request.request, request.context)
             }
             if (Instant.now() >= expireAt) {
                 logger.error(
@@ -116,6 +102,26 @@ class CryptoFlowOpsBusProcessor(
         }
     }
 
+    private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
+        return when (request) {
+            is FilterMyKeysFlowQuery ->
+                cryptoOpsClient.filterMyKeysProxy(
+                    tenantId = context.tenantId,
+                    candidateKeys = request.keys
+                )
+            is SignFlowCommand ->
+                cryptoOpsClient.signProxy(
+                    tenantId = context.tenantId,
+                    publicKey = request.publicKey,
+                    signatureSpec = request.signatureSpec,
+                    data = request.bytes,
+                    context = request.context
+                )
+            else ->
+                throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+        }
+    }
+
     private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
         request.context.requestTimestamp.plusSeconds(getRequestValidityWindowSeconds(request))
 
@@ -133,31 +139,4 @@ class CryptoFlowOpsBusProcessor(
         request.context.tenantId,
         KeyValuePairList(request.context.other.items.toList())
     )
-
-    private class FilterMyKeysFlowQueryHandler(
-        private val client: CryptoOpsProxyClient
-    ) : CryptoRequestHandler<FilterMyKeysFlowQuery, CryptoSigningKeys> {
-        override val requestClass = FilterMyKeysFlowQuery::class.java
-
-        override fun handle(request: FilterMyKeysFlowQuery, context: CryptoRequestContext): CryptoSigningKeys =
-            client.filterMyKeysProxy(
-                tenantId = context.tenantId,
-                candidateKeys = request.keys
-            )
-    }
-
-    private class SignFlowCommandHandler(
-        private val client: CryptoOpsProxyClient
-    ) : CryptoRequestHandler<SignFlowCommand, CryptoSignatureWithKey> {
-        override val requestClass = SignFlowCommand::class.java
-
-        override fun handle(request: SignFlowCommand, context: CryptoRequestContext): CryptoSignatureWithKey =
-            client.signProxy(
-                tenantId = context.tenantId,
-                publicKey = request.publicKey,
-                signatureSpec = request.signatureSpec,
-                data = request.bytes,
-                context = request.context
-            )
-    }
 }
