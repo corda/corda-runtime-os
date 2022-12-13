@@ -57,11 +57,5 @@ val defaultComponentGroups: List<List<ByteArray>> = listOf(
     listOf(".".toByteArray()),
     // Randomness ensures that transaction ids change between test runs
     listOf("abc d efg - ${Instant.now()}".toByteArray()),
-    listOf(),
-    listOf(),
-    listOf(),
-    listOf(),
-    listOf(),
-    listOf()
 )
 
