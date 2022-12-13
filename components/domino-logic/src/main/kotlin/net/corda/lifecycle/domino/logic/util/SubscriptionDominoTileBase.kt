@@ -172,9 +172,9 @@ abstract class SubscriptionDominoTileBase(
                 logger.info("The status of $name changed from $oldStatus to $status, stopping subscription.")
                 subscriptionRegistration.getAndSet(null)?.close()
                 if (status == LifecycleStatus.ERROR) {
-                    updateState(StoppedDueToChildStopped)
-                } else {
                     updateState(StoppedDueToError)
+                } else {
+                    updateState(StoppedDueToChildStopped)
                 }
                 coordinator.closeManagedResources(setOf(SUBSCRIPTION))
             }
