@@ -78,11 +78,6 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
             }
             log.info("Found members $members")
 
-//            val testState = TestState(
-//                request.input,
-//                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
-//            )
-
             val testState = TestState(
                 request.input,
                 members.map { requireNotNull(it.ledgerKeys.firstOrNull()) { "Cannot find any ledger keys for member $it" } }
