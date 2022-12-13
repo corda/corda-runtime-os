@@ -2,10 +2,12 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -29,6 +31,12 @@ class UtxoFinalityFlow(
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
+    @CordaInject
+    lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -92,13 +100,21 @@ class UtxoFinalityFlow(
             }
         })
 
-        // TODO Notarisation
-        // TODO Verify Notary signature
+        // We just let the notary exceptions bubble up.
+        val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
+        val notarySignatures = flowEngine.subFlow(notarisationFlow)
+        if (notarySignatures.isEmpty()){
+            throw CordaRuntimeException("Notary has not returned any signatures.")
+        }
+        notarySignatures.forEach { signature ->
+            transaction = verifyAndAddSignature(transaction, signature)
+        }
+
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug("Recorded verified (notarised) transaction $transactionId")
 
-        // Distribute notary signatures  - TODO
-        flowMessaging.sendAll(listOf<List<DigitalSignatureAndMetadata>>(), sessions.toSet())
+        // Distribute notary signatures
+        flowMessaging.sendAll(notarySignatures, sessions.toSet())
 
         log.trace("Finalisation of transaction $transactionId has been finished.")
 
