@@ -84,8 +84,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         //  when configuration default handling is complete (CORE-3780), this should be moved
         //  and changed to a sensible default, while keeping 2 as a default for our test environments.
         //  2 is good for a test environment as it is likely to validate both caching and eviction.
-        // TODO - revert this back to 2 once CORE-8691 is fixed.
-        const val SANDBOX_CACHE_SIZE_DEFAULT = 15L
+        const val SANDBOX_CACHE_SIZE_DEFAULT = 2L
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
