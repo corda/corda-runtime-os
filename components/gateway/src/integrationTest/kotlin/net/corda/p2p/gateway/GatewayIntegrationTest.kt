@@ -50,7 +50,6 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
@@ -955,13 +954,6 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Delete the first pair
-                server.publish(
-                    Record(
-                        CRYPTO_KEYS_TOPIC,
-                        keyStore.keyStore.aliases().nextElement(),
-                        null
-                    )
-                )
                 testCryptoOpsClient.removeTenantKeys()
 
 
