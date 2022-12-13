@@ -238,6 +238,7 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
+        System.setSecurityManager(null)
     }
 
     @Test
@@ -255,6 +256,7 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
+        System.setSecurityManager(null)
     }
 
     private fun applyPolicyFile(fileName: String) {
