@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.exceptions.ResponderFlowException
+import net.corda.simulator.exceptions.SessionAlreadyClosedException
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.testflows.PingAckMessage
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -137,7 +140,7 @@ class ConcurrentFlowMessagingTest {
 
     @Test
     fun `should set the error on an initiating flow session when a responder flow throws it`() {
-        // And a factory and injector that will not be used, with a responder that's already been created
+        // Given a factory and injector that will not be used, with a responder that's already been created
         // where the responder will throw an error
         val flowFactory = mock<FlowFactory>()
         val injector = mock<FlowServicesInjector>()
@@ -167,6 +170,72 @@ class ConcurrentFlowMessagingTest {
         }
     }
 
+    @Test
+    fun `should close all sessions it created when closed`() {
+        // Given flow messaging that has created two session pairs
+        val alice = MemberX500Name.parse("CN=alice, OU=Application, O=R3, L=London, C=GB")
+        val bob = MemberX500Name.parse("CN=bob, OU=Application, O=R3, L=London, C=GB")
+        val charlie = MemberX500Name.parse("CN=bob, OU=Application, O=R3, L=London, C=GB")
+
+        val sessionPair1 = SessionPair(mock(), mock())
+        val sessionPair2 = SessionPair(mock(), mock())
+        val sessionFactory = mock<SessionFactory>()
+        whenever(sessionFactory.createSessions(any(), any())).thenReturn(sessionPair1, sessionPair2)
+
+        // And instance flows (just because they're easier and not what we care about here)
+        val flowAndServiceLookUp = mock<SimFiber>()
+
+        whenever(flowAndServiceLookUp.lookUpResponderInstance(any(), eq("ping-ack")))
+            .thenReturn(IckResponderFlow(), IckResponderFlow())
+
+        val flowMessaging = ConcurrentFlowMessaging(
+            FlowContext(configuration, alice, "ping-ack"),
+            flowAndServiceLookUp,
+            mock(),
+            mock(),
+            sessionFactory
+        )
+
+        // When we initialize sessions, then close the flow messaging
+        flowMessaging.initiateFlow(bob)
+        flowMessaging.initiateFlow(charlie)
+        flowMessaging.close()
+
+        // Then the sessions should be closed too
+        listOf(sessionPair1.responderSession, sessionPair2.responderSession).forEach {
+            verify(it, atLeastOnce()).close()
+        }
+
+        listOf(sessionPair1.initiatorSession,sessionPair2.initiatorSession,).forEach {
+            verify(it, atLeastOnce()).close()
+        }
+    }
+
+    @Test
+    fun `should close responder session when responder call completes`() {
+        // Given an instance flow
+        val flowAndServiceLookUp = mock<SimFiber>()
+        val responderFlow = SendingResponderFlow()
+        whenever(flowAndServiceLookUp.lookUpResponderInstance(any(), eq("ping-ack")))
+            .thenReturn(responderFlow)
+
+        // When we initialize the session and make the call
+        val flowMessaging = ConcurrentFlowMessaging(
+            FlowContext(configuration, senderX500, "ping-ack"),
+            flowAndServiceLookUp,
+            mock(),
+            mock()
+        )
+
+        // When we call the responder session and wait for it to close (closing our initiator session will wait)
+        val session = flowMessaging.initiateFlow(receiverX500)
+        session.receive(Any::class.java)
+        session.close()
+
+        // Then the responder session should have been closed without timeout
+        assertThrows<SessionAlreadyClosedException> { responderFlow.capturedSession!!.send("") }
+    }
+
     class IckResponderFlow : ResponderFlow {
         override fun call(session: FlowSession) {
             session.send(PingAckMessage("Ick"))
@@ -179,4 +248,11 @@ class ConcurrentFlowMessagingTest {
         }
     }
 
+    class SendingResponderFlow : ResponderFlow {
+        var capturedSession : FlowSession? = null
+        override fun call(session: FlowSession) {
+            capturedSession = session
+            session.send(Unit)
+        }
+    }
 }

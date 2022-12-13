@@ -67,7 +67,7 @@ class SimulatedCordaNetworkBaseTest {
 
         // When I upload the relevant flow and concrete responder
         corda.createVirtualNode(holdingId, PingAckFlow::class.java)
-        corda.createVirtualNode(holdingId, "ping-ack", responder)
+        corda.createInstanceNode(holdingId, "ping-ack", responder)
 
         // Then it should have registered the responder with the fiber
         verify(fiber, times(1)).registerFlowInstance(holdingId.member,"ping-ack", responder)
