@@ -40,7 +40,6 @@ class HSMRegistrationBusProcessor(
     override fun onNext(request: HSMRegistrationRequest, respFuture: CompletableFuture<HSMRegistrationResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            val requestType = request.request::class.java
             val response = executor.executeWithRetry {
                 handleRequest(request.request, request.context)
             }
