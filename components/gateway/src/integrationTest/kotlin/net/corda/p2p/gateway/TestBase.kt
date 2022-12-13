@@ -110,6 +110,7 @@ open class TestBase {
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
     protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
+    protected val ipKeyStore = readKeyStore(Certificates.ipKeyStore)
     protected val aliceSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )

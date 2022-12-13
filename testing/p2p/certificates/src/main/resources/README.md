@@ -22,6 +22,10 @@ OCSP responder.
     - status: OK
     - CN: Dale
     - Alternates: www.dale.net, dale.net, 127.0.0.1, https://127.0.0.1:10004
+- sslkeystore_127.0.0.1.jks
+    - status: OK
+    - CN: 127.0.0.1
+    - Alternates: 127.0.0.1 (as an IP not a DNS name)
 
 For sslkeystore_alice.jks and sslkeystore_bob.jks we also downloaded the certificates into certificate_alice.pem and certificate_bob.pem respectively.
 
