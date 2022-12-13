@@ -363,7 +363,13 @@ class CryptoProcessorTests {
         }
 
         private fun assignHSMs() {
-            CryptoConsts.Categories.all.forEach {
+            val cryptoCategories = setOf(
+                CryptoConsts.Categories.LEDGER,
+                CryptoConsts.Categories.TLS,
+                CryptoConsts.Categories.SESSION_INIT,
+            )
+
+            cryptoCategories.forEach {
                 // cluster is assigned in the crypto processor
                 if (hsmRegistrationClient.findHSM(vnodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(vnodeId, it)
