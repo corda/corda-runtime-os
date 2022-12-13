@@ -5,8 +5,6 @@ import net.corda.httprpc.ResponseCode
 /**
  * The server encountered an internal error which prevented it from fulfilling the request.
  *
- * For errors that are unexpected, use [UnexpectedErrorException].
- *
  * @param message the response message
  * @param details additional problem details
  */

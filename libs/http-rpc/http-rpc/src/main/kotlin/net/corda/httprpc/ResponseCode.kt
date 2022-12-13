@@ -178,13 +178,6 @@ enum class ResponseCode constructor(val statusCode: Int) {
     INTERNAL_SERVER_ERROR(500),
 
     /**
-     * An unexpected error occurred internally. Caused by programming logic failures such as NPE, most likely requires support intervention.
-     *
-     * See `https://httpwg.org/specs/rfc9110.html#status.500`.
-     */
-    UNEXPECTED_ERROR(500),
-
-    /**
      * Common causes are a server that is down for maintenance or that is overloaded.
      * This response should be used for temporary conditions and the `Retry-After` HTTP header should, if possible,
      * contain the estimated time for the recovery of the service.
