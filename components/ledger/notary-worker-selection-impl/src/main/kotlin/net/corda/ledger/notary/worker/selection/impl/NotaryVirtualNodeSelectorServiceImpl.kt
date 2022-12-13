@@ -1,8 +1,10 @@
 package net.corda.ledger.notary.worker.selection.impl
 
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
-import net.corda.membership.read.NotaryVirtualNodeLookup
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -18,16 +20,21 @@ import org.osgi.service.component.annotations.ServiceScope
     scope = ServiceScope.PROTOTYPE
 )
 class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
-    @Reference(service = NotaryVirtualNodeLookup::class)
-    private val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup
 ): NotaryVirtualNodeSelectorService, SingletonSerializeAsToken, UsedByFlow {
 
+    private companion object {
+        val logger = loggerFor<NotaryVirtualNodeSelectorServiceImpl>()
+    }
     /**
      * This function will fetch the virtual nodes that belong to the [serviceIdentity] and do a random selection on
      * that list.
      */
     override fun selectVirtualNode(serviceIdentity: Party): Party {
-        val selectedMember = notaryVirtualNodeLookup.getNotaryVirtualNodes(serviceIdentity.name).random()
+        val selectedMember = memberLookup.lookup().filter {
+            it.notaryDetails?.serviceName == serviceIdentity.name
+        }.random()
 
         return Party(selectedMember.name, selectedMember.sessionInitiationKey)
     }
