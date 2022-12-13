@@ -12,6 +12,6 @@ data class NonValidatingNotaryTransactionDetails(
     val id: SecureHash,
     val numOutputs: Int,
     val timeWindow: TimeWindow,
-    val inputs: List<StateRef>,
-    val references: List<StateRef>
+    val inputs: Collection<StateRef>,
+    val references: Collection<StateRef>
 )

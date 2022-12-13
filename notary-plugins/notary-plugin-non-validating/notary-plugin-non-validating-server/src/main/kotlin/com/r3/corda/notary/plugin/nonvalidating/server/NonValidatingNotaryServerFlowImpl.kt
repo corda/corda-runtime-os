@@ -5,11 +5,7 @@ import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
 import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
-import com.r3.corda.notary.plugin.nonvalidating.api.INPUTS_GROUP
-import com.r3.corda.notary.plugin.nonvalidating.api.NOTARY_GROUP
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
-import com.r3.corda.notary.plugin.nonvalidating.api.OUTPUTS_GROUP
-import com.r3.corda.notary.plugin.nonvalidating.api.REFERENCES_GROUP
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -23,8 +19,8 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
 import java.lang.IllegalStateException
@@ -77,7 +73,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * 2. Run initial validation (signature etc.)
      * 3. Run verification
      * 4. Request uniqueness checking using the [LedgerUniquenessCheckerClientService]
-     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.response.NotarisationResponse]
+     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.NotarisationResponse]
      * back to the client including the specific
      * [NotaryError][net.corda.v5.ledger.notary.plugin.core.NotaryError] if applicable
      */
@@ -89,10 +85,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val txDetails = validateRequest(requestPayload)
             val request = NotarisationRequest(txDetails.inputs, txDetails.id)
 
-            // TODO This shouldn't ever fail but should add an error handling
-            // TODO Discuss this with MGM team but should we able to look up members by X500 name?
-            val otherMemberInfo = memberLookup.lookup(session.counterparty)!!
-            val otherParty = Party(session.counterparty, otherMemberInfo.sessionInitiationKey)
+            val otherMemberInfo = memberLookup.lookup(session.counterparty)
+                ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
+
+            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKey)
 
             validateRequestSignature(
                 request,
@@ -136,7 +132,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
     private fun validateRequest(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
-
         val transactionParts = try {
             extractParts(requestPayload)
         } catch (e: Exception) {
@@ -152,38 +147,28 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
-        // Notary component group will contain notary's identity as the first element and second as the time window
-        val timeWindowBytes = requestPayload.transaction.getComponentGroupContent(NOTARY_GROUP)?.get(1)?.second
-            ?: throw IllegalStateException("Time window component not found on transaction")
+        // The notary component is not needed by us but we validate that it is present just in case
+        requestPayload.transaction.notary
+            ?: throw IllegalStateException("Notary component could not be found on the transaction")
 
-        val inputsBytes = requestPayload.transaction.getComponentGroupContent(INPUTS_GROUP)
-            ?: throw IllegalStateException("Input states component not found on transaction")
+        val timeWindow = requestPayload.transaction.timeWindow
+            ?: throw IllegalStateException("Time window component could not be found on the transaction")
 
-        val refsBytes = requestPayload.transaction.getComponentGroupContent(REFERENCES_GROUP)
-            ?: throw IllegalStateException("Reference states component not found on transaction")
+        val inputStates = requestPayload.transaction.inputStateRefs as? UtxoFilteredData.Audit<StateRef>
+            ?: throw IllegalStateException("Could not fetch input states from the filtered transaction")
 
-        val outputCount = requestPayload.transaction.getComponentGroupContent(OUTPUTS_GROUP)?.size
-            ?: throw IllegalStateException("Output states component not found on transaction")
+        val refStates = requestPayload.transaction.referenceInputStateRefs as? UtxoFilteredData.Audit<StateRef>
+            ?: throw IllegalStateException("Could not fetch reference input states from the filtered transaction")
 
-        val timeWindow = serializationService.deserialize(
-            timeWindowBytes,
-            TimeWindow::class.java
-        )
-
-        val inputs = inputsBytes.map {
-            serializationService.deserialize(it.second, StateAndRef::class.java).ref
-        }
-
-        val refs = refsBytes.map {
-            serializationService.deserialize(it.second, StateAndRef::class.java).ref
-        }
+        val outputStates = requestPayload.transaction.outputStateAndRefs as? UtxoFilteredData.Audit<StateAndRef<*>>
+            ?: throw IllegalStateException("Could not fetch output states from the filtered transaction")
 
         return NonValidatingNotaryTransactionDetails(
             requestPayload.transaction.id,
-            outputCount,
+            outputStates.size,
             timeWindow,
-            inputs,
-            refs
+            inputStates.values.values,
+            refStates.values.values
         )
     }
 

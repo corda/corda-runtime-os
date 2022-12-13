@@ -4,13 +4,8 @@ import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationResponse
 import com.r3.corda.notary.plugin.common.NotaryErrorGeneral
 import com.r3.corda.notary.plugin.common.NotaryErrorReferenceStateUnknown
-import com.r3.corda.notary.plugin.nonvalidating.api.INPUTS_GROUP
-import com.r3.corda.notary.plugin.nonvalidating.api.NOTARY_GROUP
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
-import com.r3.corda.notary.plugin.nonvalidating.api.OUTPUTS_GROUP
-import com.r3.corda.notary.plugin.nonvalidating.api.REFERENCES_GROUP
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -24,10 +19,12 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
@@ -64,13 +61,6 @@ class NonValidatingNotaryServerFlowImplTest {
             on { sessionInitiationKey } doReturn aliceKey
             on { name } doReturn aliceName
         }
-
-        /* Component group hashes */
-        val twHash = "Time".toByteArray()
-        val inputHash = "Input".toByteArray()
-        val inputHash2 = "Input2".toByteArray()
-        val refHash = "Ref".toByteArray()
-        val outputHash = "Output".toByteArray()
 
         /* Uniqueness Client Service */
         val uniquenessCheckResponseSignature = DigitalSignatureAndMetadata(
@@ -150,20 +140,47 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary plugin server should respond with error if time window cannot be deserialised`() {
-        val errorSerializationService = mock<SerializationService> {
-            on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
-            on { deserialize(twHash, TimeWindow::class.java) } doThrow
-                    IllegalArgumentException("Cannot deserialize time window")
-        }
-        createAndCallServer(mockSuccessfulUniquenessClientService(), errorSerializationService) {
+    fun `Non-validating notary plugin server should respond with error if time window not present on filtered tx`() {
+        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("timeWindow" to null)) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText).contains(
-                "Could not validate request. Reason: Cannot deserialize time window"
+                "Could not validate request. Reason: Time window component could not be found on the transaction"
+            )
+        }
+    }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with error if notary not present on filtered tx`() {
+        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("notary" to null)) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
+            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+                "Could not validate request. Reason: Notary component could not be found on the transaction"
+            )
+        }
+    }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with error if input states are not audit type in the filtered tx`() {
+        val mockInputStateProof = mock<UtxoFilteredData.SizeOnly<StateRef>>()
+
+        createAndCallServer(mockSuccessfulUniquenessClientService(),
+            filteredTxContents = mapOf("inputStateRefs" to mockInputStateProof)
+        ) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
+            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+                "Could not validate request. Reason: Could not fetch input states from the filtered transaction"
             )
         }
     }
@@ -186,7 +203,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
-        serializationService: SerializationService? = null,
+        filteredTxContents: Map<String, Any?> = emptyMap(),
         sigVerifier: DigitalSignatureVerificationService = mockSigVerifier,
         flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
@@ -195,8 +212,16 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val txId = SecureHashUtils.randomSecureHash()
 
-        val mockStateRef = mock<StateAndRef<*>> {
-            on { ref } doReturn StateRef(txId, 0)
+        val mockStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateRef>> {
+            on { values } doReturn mapOf(0 to StateRef(txId, 0))
+        }
+
+        val mockStateAndRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateRef>> {
+            on { values } doReturn emptyMap()
+        }
+
+        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>> {
+            on { values } doReturn mapOf(0 to mock())
         }
 
         val mockTimeWindow = mock<TimeWindow> {
@@ -204,24 +229,45 @@ class NonValidatingNotaryServerFlowImplTest {
             on { until } doReturn Instant.now().plusMillis(100000)
         }
 
-        val paramOrDefaultSerializationService = serializationService
-            ?: mock {
-                on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
-                on { deserialize(twHash, TimeWindow::class.java) } doReturn mockTimeWindow
-                on { deserialize(inputHash, StateAndRef::class.java) } doReturn mockStateRef
-                on { deserialize(inputHash2, StateAndRef::class.java) } doReturn mockStateRef
-                on { deserialize(refHash, StateAndRef::class.java) } doReturn mockStateRef
-                on { deserialize(outputHash, TransactionState::class.java) } doReturn mock()
+        val mockSerializationService = mock<SerializationService> {
+            on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
+        }
+
+        val filteredTx = mock<UtxoFilteredTransaction> {
+            on { notary } doAnswer {
+                // Notary is a nullable field, so we should be able to provide `null` for it without always defaulting
+                if (filteredTxContents.containsKey("notary")) {
+                    filteredTxContents["notary"] as Party?
+                } else {
+                    Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
+                }
             }
 
-        val filteredTx = mock<FilteredTransaction> {
-            on { getComponentGroupContent(NOTARY_GROUP) } doReturn listOf(
-                Pair(0, "NOTARY".toByteArray()),
-                Pair(1, twHash)
-            )
-            on { getComponentGroupContent(INPUTS_GROUP) } doReturn listOf(Pair(0, inputHash), Pair(1, inputHash2))
-            on { getComponentGroupContent(OUTPUTS_GROUP) } doReturn listOf(Pair(0, outputHash))
-            on { getComponentGroupContent(REFERENCES_GROUP) } doReturn listOf(Pair(0, refHash))
+            on { timeWindow } doAnswer  {
+                // TW is a nullable field, so we should be able to provide `null` for it without always defaulting
+                if (filteredTxContents.containsKey("timeWindow")) {
+                    filteredTxContents["timeWindow"] as TimeWindow?
+                } else {
+                    mockTimeWindow
+                }
+            }
+
+            on { inputStateRefs } doAnswer {
+                @Suppress("unchecked_cast")
+                filteredTxContents["inputStateRefs"] as? UtxoFilteredData<StateRef>
+                    ?: mockStateRefUtxoFilteredData
+            }
+
+            on { referenceInputStateRefs } doAnswer {
+                @Suppress("unchecked_cast")
+                filteredTxContents["referenceInputStateRefs"] as? UtxoFilteredData<StateRef>
+                    ?: mockStateAndRefUtxoFilteredData
+            }
+            on { outputStateAndRefs } doAnswer {
+                @Suppress("unchecked_cast")
+                filteredTxContents["outputStateRefs"] as? UtxoFilteredData<StateAndRef<*>>
+                    ?: mockOutputStateRefUtxoFilteredData
+            }
             on { verify() } doAnswer {
                 txVerificationLogic()
             }
@@ -249,7 +295,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
-            paramOrDefaultSerializationService,
+            mockSerializationService,
             sigVerifier,
             mockMemberLookupService
         )
