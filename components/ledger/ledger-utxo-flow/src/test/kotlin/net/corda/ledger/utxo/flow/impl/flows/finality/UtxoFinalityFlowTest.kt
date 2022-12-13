@@ -91,7 +91,7 @@ class UtxoFinalityFlowTest {
                 publicKeyBob
             )
         )
-        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(initialTx.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
 
         whenever(updatedTxSomeSigs.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
