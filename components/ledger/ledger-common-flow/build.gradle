@@ -30,11 +30,6 @@ dependencies {
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:platform-info')
-
-    // TODO CORE-7101 may simplify this. Most of these are for accessing current sandbox group from fiber.
-    implementation project(':libs:sandbox')
-    implementation project(':components:flow:flow-service')
-    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     testImplementation project(':libs:membership:membership-common')
