@@ -42,8 +42,6 @@ class UtxoFinalityFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
-        verify(initialTransaction)
-
         log.trace("Starting finality flow for transaction: $transactionId")
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
         log.debug("Recorded transaction with initial signatures $transactionId")
@@ -122,8 +120,5 @@ class UtxoFinalityFlow(
         log.trace("Finalisation of transaction $transactionId has been finished.")
 
         return transaction
-    }
-    private fun verify(signedTransaction: UtxoSignedTransaction) {
-        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verifyContracts()
     }
 }
