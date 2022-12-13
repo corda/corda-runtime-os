@@ -80,7 +80,7 @@ class ConcurrentFlowMessaging(
             fromResponderToInitiator,
         )
 
-        log.info("Starting responder thread")
+        log.info("Starting responder thread for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
         thread {
             try {
                 responderFlow.call(recipientSession)

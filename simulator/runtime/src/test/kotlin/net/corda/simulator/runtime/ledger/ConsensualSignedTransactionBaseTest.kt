@@ -1,10 +1,12 @@
 package net.corda.simulator.runtime.ledger
 
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
+import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -99,12 +101,57 @@ class ConsensualSignedTransactionBaseTest {
         assertThat(ledgerTransaction.timestamp, `is`(ledgerInfo.timestamp))
     }
 
-    private fun toSignatureWithMetadata(it: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(it, "some bytes".toByteArray(), mapOf()),
-        DigitalSignatureMetadata(now(), mapOf())
+    @Test
+    fun `should be able to convert to a JPA entity and back again`() {
+        val ledgerInfo = ConsensualStateLedgerInfo(listOf(MyConsensualState(publicKeys)), now())
+        val signingService = mock<SigningService>()
+        val tx = ConsensualSignedTransactionBase(
+            publicKeys.map { toSignatureWithMetadata(it) },
+            ledgerInfo,
+            signingService,
+            config
+        )
+        val entity = tx.toEntity()
+        val retrievedTx = ConsensualSignedTransactionBase.fromEntity(
+            entity,
+            signingService,
+            BaseSerializationService(),
+            config)
+
+        assertThat(retrievedTx.signatures, `is`(tx.signatures))
+        assertThat(retrievedTx.toLedgerTransaction(), `is`(tx.toLedgerTransaction()))
+    }
+
+    @Test
+    fun `should be equal to another transaction with the same states and signatures`() {
+        val timestamp = now()
+        val ledgerInfo1 = ConsensualStateLedgerInfo(listOf(MyConsensualState(publicKeys)), timestamp)
+        val tx1 = ConsensualSignedTransactionBase(
+            publicKeys.map { toSignatureWithMetadata(it, timestamp) },
+            ledgerInfo1,
+            mock(),
+            config
+        )
+
+        val ledgerInfo2 = ConsensualStateLedgerInfo(listOf(MyConsensualState(publicKeys)), timestamp)
+        val tx2 = ConsensualSignedTransactionBase(
+            publicKeys.map { toSignatureWithMetadata(it, timestamp) },
+            ledgerInfo2,
+            mock(),
+            config
+        )
+
+        assertThat(tx1, `is`(tx2))
+        assertThat(tx1.hashCode(), `is`(tx2.hashCode()))
+    }
+
+    private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = now()) = DigitalSignatureAndMetadata(
+        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
+        DigitalSignatureMetadata(timestamp, mapOf())
     )
 
-    class MyConsensualState(override val participants: List<PublicKey>) : ConsensualState {
+    @CordaSerializable
+    data class MyConsensualState(override val participants: List<PublicKey>) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 }

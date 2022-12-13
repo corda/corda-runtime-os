@@ -225,7 +225,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-            ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
+            // Safeguard, should never happen in newer versions of Kafka
+            ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. " +
+                    "Kafka may not have completed startup.")
 
         return listOfPartitions.map {
             CordaTopicPartition(it.topic().removePrefix(config.topicPrefix), it.partition())

@@ -29,10 +29,10 @@ import javax.persistence.EntityManagerFactory
  */
 class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceService {
 
-    private val emf = createEntityManagerFactory(member)
+    private val emf : EntityManagerFactory = createEntityManagerFactory(member)
 
     companion object {
-        val log = contextLogger()
+        private val log = contextLogger()
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
             log.info("Creating EntityManagerFactory")
             val emf = HibernatePersistenceProvider()
@@ -51,12 +51,18 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 
             // NOTE: only need the connection here, creating EM is a bit wasteful but ok for now.
             //  alternative option would be to create a connection manually here.
-            emf.createEntityManager().use { em ->
-                em.unwrap(Session::class.java).doWork {
+            try {
+                emf.createEntityManager().use { em ->
+                    em.unwrap(Session::class.java).doWork {
 
-                    log.info("Running migrations")
-                     runMigrations(it)
+                        log.info("Running migrations for \"$member\"")
+                        runMigrations(it)
+                        log.info("Migrations for \"$member\" done")
+                    }
                 }
+            } catch (e: Exception) {
+                log.error("Exception encountered in db migrations for \"$member\"")
+                throw e
             }
             return emf
         }
@@ -69,7 +75,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                         @Suppress("ForbiddenComment")
                         // TODO: constant in `VirtualNodeDbChangeLog.MASTER_CHANGE_LOG'
                         //   should move into API repo.
-                        listOf("migration/db.changelog-master.xml")
+                        listOf("migration/simulator.changelog-master.xml", "migration/db.changelog-master.xml")
                     ),
                 )
             )

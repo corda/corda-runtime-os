@@ -30,6 +30,15 @@ bootstrap:
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
+  sasl:
+    enabled: true
+    username:
+      value: "user"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka-jaas"
+          key: "client-passwords"
   tls:
     enabled: true
     truststore:

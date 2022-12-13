@@ -22,6 +22,7 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
+import net.corda.sandboxgroupcontext.service.registerNotaryPluginProviders
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -56,7 +57,9 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
+        checkNotNull(vNodeInfo) {
+            "Failed to find the virtual node info for holder '${holdingIdentity}' in ${virtualNodeInfoReadService::class.java}"
+        }
 
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
@@ -112,6 +115,9 @@ class FlowSandboxServiceImpl @Activate constructor(
         val jsonSerializers = sandboxGroupContextComponent.registerCustomJsonSerializers(sandboxGroupContext)
         val jsonDeserializers = sandboxGroupContextComponent.registerCustomJsonDeserializers(sandboxGroupContext)
 
+        // Notary plugin support
+        val notaryPluginProviders = sandboxGroupContextComponent.registerNotaryPluginProviders(sandboxGroupContext)
+
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
@@ -122,6 +128,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             customSerializers.close()
             injectorService.close()
             customCrypto.close()
+            notaryPluginProviders.close()
         }
     }
 

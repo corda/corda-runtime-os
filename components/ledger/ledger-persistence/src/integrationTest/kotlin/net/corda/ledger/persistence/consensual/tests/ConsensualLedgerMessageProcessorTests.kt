@@ -16,7 +16,6 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -26,6 +25,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
@@ -34,6 +34,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -81,7 +82,7 @@ class ConsensualLedgerMessageProcessorTests {
 
     // For sandboxing
     private lateinit var virtualNode: VirtualNodeService
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
 
@@ -97,7 +98,7 @@ class ConsensualLedgerMessageProcessorTests {
         logger.info("Setup test (test directory: {})", testDirectory)
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            externalEventResponseFactory = setup.fetchService(TIMEOUT_MILLIS)
+            responseFactory = setup.fetchService(TIMEOUT_MILLIS)
             virtualNode = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
                 .createAvroDeserializer({}, EntityResponse::class.java)
@@ -116,14 +117,14 @@ class ConsensualLedgerMessageProcessorTests {
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
         val transactionStatus = TransactionStatus.VERIFIED.value
-        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus, emptyList())
         val request = createRequest(virtualNodeInfo.holdingIdentity, persistTransaction)
 
         // Send request to message processor
         val processor = PersistenceRequestProcessor(
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            externalEventResponseFactory
+            responseFactory
         )
 
         val requestId = UUID.randomUUID().toString()
@@ -170,7 +171,7 @@ class ConsensualLedgerMessageProcessorTests {
         request: Any,
         externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
     ): LedgerPersistenceRequest {
-        logger.info("Consensual ledger persistence request: {} {}", request.javaClass.simpleName, request)
+        logger.debug { "Consensual ledger persistence request: ${request.javaClass.simpleName} $request" }
         return LedgerPersistenceRequest(
             Instant.now(),
             holdingId.toAvro(),

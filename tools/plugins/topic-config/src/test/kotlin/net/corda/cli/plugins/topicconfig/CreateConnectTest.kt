@@ -32,12 +32,12 @@ class CreateConnectTest {
 
     @Test
     fun `validate acls with consumer and producer`() {
-        assertThat(command().getAclBindings(listOf(Create.TopicConfig("topic", listOf("consumer"), listOf("producer")))))
+        assertThat(command().getAclBindings(listOf(Create.TopicConfig("topic", listOf("db"), listOf("flow")))))
             .containsExactly(
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:consumer", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:producer", "*", AclOperation.WRITE, AclPermissionType.ALLOW))
+                    AccessControlEntry("User:Fiona", "*", AclOperation.WRITE, AclPermissionType.ALLOW))
             )
     }
 
@@ -45,6 +45,7 @@ class CreateConnectTest {
         val createConnect = CreateConnect()
         createConnect.create = Create()
         createConnect.create!!.topic = TopicPlugin.Topic()
+        createConnect.create!!.kafkaUsers = mapOf("db" to "Dan", "flow" to "Fiona")
         return createConnect
     }
 }

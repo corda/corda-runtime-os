@@ -51,7 +51,7 @@ open class UtxoFilteredTransactionTestBase {
         val signerKey2 = mock<PublicKey>()
 
         val outputInfo1 = UtxoOutputInfoComponent(null, notary, "", "")
-        val outputInfo2 = UtxoOutputInfoComponent(3, notary, "", "")
+        val outputInfo2 = UtxoOutputInfoComponent("three", notary, "", "")
     }
 
     lateinit var wireTransaction: WireTransaction
@@ -116,21 +116,21 @@ open class UtxoFilteredTransactionTestBase {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
                     TransactionMetadataImpl::class.java
-                ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java),
+                ) { true },
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java),
+                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java
-                ),
+                ) { true },
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
-        ) { true }
+        )
 
     }
 

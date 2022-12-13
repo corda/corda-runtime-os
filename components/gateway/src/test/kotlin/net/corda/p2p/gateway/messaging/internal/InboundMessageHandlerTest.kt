@@ -34,11 +34,14 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.registry.deserialize
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
+import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -88,6 +91,14 @@ class InboundMessageHandlerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }
 
+    private val requestId = "id"
+    private val serialisedMessage = "gateway-message".toByteArray()
+    private val serialisedResponse = "gateway-response".toByteArray()
+    private val avroSchemaRegistry = mock<AvroSchemaRegistry> {
+        on { serialize(any<GatewayResponse>()) } doReturn ByteBuffer.wrap(serialisedResponse)
+        on { deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage)) } doReturn
+                GatewayMessage(requestId, authenticatedP2PDataMessage(""))
+    }
     private val handler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -95,7 +106,8 @@ class InboundMessageHandlerTest {
         subscriptionFactory,
         SmartConfigImpl.empty(),
         SigningMode.STUB,
-        mock()
+        mock(),
+        avroSchemaRegistry
     )
 
     @AfterEach
@@ -113,7 +125,7 @@ class InboundMessageHandlerTest {
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = LinkInMessage(authenticatedP2PDataMessage(sessionId)).toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -129,10 +141,12 @@ class InboundMessageHandlerTest {
     @Test
     fun `onMessage will respond with error if message content is wrong`() {
         setRunning()
+        val invalidMessage = "invalid-message".toByteArray()
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(invalidMessage))).thenThrow(RuntimeException())
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = byteArrayOf(1, 2, 4),
+                payload = invalidMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -149,14 +163,13 @@ class InboundMessageHandlerTest {
         setRunning()
         val sessionId = "aaa"
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
-        val msgId = "msg-id"
         val p2pMessage = authenticatedP2PDataMessage(sessionId)
-        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
-        val gatewayResponse = GatewayResponse(msgId)
+        val gatewayMessage = GatewayMessage(requestId, p2pMessage)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -166,7 +179,7 @@ class InboundMessageHandlerTest {
             .writeResponse(
                 HttpResponseStatus.OK,
                 InetSocketAddress("www.r3.com", 1231),
-                gatewayResponse.toByteBuffer().array()
+                serialisedResponse
             )
     }
 
@@ -176,11 +189,11 @@ class InboundMessageHandlerTest {
         val msgId = "msg-id"
         val p2pMessage = unauthenticatedP2PMessage("abc")
         val gatewayMessage = GatewayMessage(msgId, p2pMessage)
-        val gatewayResponse = GatewayResponse(msgId)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -190,7 +203,7 @@ class InboundMessageHandlerTest {
             .writeResponse(
                 HttpResponseStatus.OK,
                 InetSocketAddress("www.r3.com", 1231),
-                gatewayResponse.toByteBuffer().array()
+                serialisedResponse
             )
     }
 
@@ -203,10 +216,11 @@ class InboundMessageHandlerTest {
         val p2pMessage = unauthenticatedP2PMessage("abc")
         val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
         val linkInMessage = LinkInMessage(p2pMessage)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -229,10 +243,11 @@ class InboundMessageHandlerTest {
         val p2pMessage = authenticatedP2PDataMessage(sessionId)
         val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
         val linkInMessage = LinkInMessage(p2pMessage)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -255,10 +270,11 @@ class InboundMessageHandlerTest {
         val p2pMessage = authenticatedP2PInitiatorHelloMessage(sessionId)
         val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
         val linkInMessage = LinkInMessage(p2pMessage)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -276,10 +292,11 @@ class InboundMessageHandlerTest {
         setRunning()
         val msgId = "msg-id"
         val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -289,7 +306,7 @@ class InboundMessageHandlerTest {
             .writeResponse(
                 HttpResponseStatus.GONE,
                 InetSocketAddress("www.r3.com", 1231),
-                GatewayResponse(msgId).toByteBuffer().array()
+                serialisedResponse
             )
     }
 
@@ -304,18 +321,16 @@ class InboundMessageHandlerTest {
             val payload = mock<AuthenticatedDataMessage> {
                 on { getHeader() } doReturn header
             }
-            val message = mock<GatewayMessage> {
+            val gatewayMessage = mock<GatewayMessage> {
                 on { getPayload() } doReturn payload
                 on { id } doReturn msgId
             }
-            it.`when`<GatewayMessage> {
-                GatewayMessage.fromByteBuffer(any())
-            }.doReturn(message)
+            `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
 
             handler.onRequest(
                 HttpRequest(
                     source = InetSocketAddress("www.r3.com", 1231),
-                    payload = byteArrayOf(),
+                    payload = serialisedMessage,
                     destination = InetSocketAddress("www.r3.com", 344),
                 )
             )
@@ -324,7 +339,7 @@ class InboundMessageHandlerTest {
                 .writeResponse(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR,
                     InetSocketAddress("www.r3.com", 1231),
-                    GatewayResponse(msgId).toByteBuffer().array()
+                    serialisedResponse
                 )
         }
     }
@@ -340,12 +355,13 @@ class InboundMessageHandlerTest {
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -364,12 +380,13 @@ class InboundMessageHandlerTest {
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -388,12 +405,13 @@ class InboundMessageHandlerTest {
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -412,12 +430,13 @@ class InboundMessageHandlerTest {
                 selectedMode = ProtocolMode.AUTHENTICATION_ONLY
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -436,12 +455,13 @@ class InboundMessageHandlerTest {
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
         val gatewayMessage = GatewayMessage("msg-id", payload)
+        `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -483,12 +503,10 @@ class InboundMessageHandlerTest {
     fun `onMessage authenticated message with empty partition will reply with an error`() {
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(emptyList())
         setRunning()
-        val msgId = "msg-id"
-        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
+                payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -498,7 +516,7 @@ class InboundMessageHandlerTest {
             .writeResponse(
                 HttpResponseStatus.GONE,
                 InetSocketAddress("www.r3.com", 1231),
-                GatewayResponse(msgId).toByteBuffer().array()
+                serialisedResponse
             )
     }
 }

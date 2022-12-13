@@ -43,6 +43,7 @@ interface RequestData {
          * [net.corda.v5.application.marshalling.JsonMarshallingService] and passed to the flow.
          * @return A [RequestData] with properties that match the provided parameters.
          */
+        @JvmStatic
         fun create(requestId: String, flowClass: Class<out Flow>, request: Any): RequestData
             = factory.create(requestId, flowClass, request)
 
@@ -56,6 +57,7 @@ interface RequestData {
          * @param request Data to be passed to the flow.
          * @return A [RequestData] with the provided parameters as properties.
          */
+        @JvmStatic
         fun create(requestId: String, flowClass: String, request: String) : RequestData
             = factory.create(requestId, flowClass, request)
 
@@ -66,6 +68,7 @@ interface RequestData {
          * @param jsonInput A JSON-formatted string containing a client-provided `requestId`, the `flowClass` to
          * be constructed and called and the `requestBody` to be passed into the flow.
          */
+        @JvmStatic
         fun create(jsonInput : String) = factory.create(jsonInput)
     }
 }

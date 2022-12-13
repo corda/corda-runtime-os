@@ -1,8 +1,9 @@
 package net.corda.ledger.common.flow.transaction.filtered.factory
 
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
+import java.util.function.Predicate
 
 /**
  * [ComponentGroupFilterParameters] is used with [FilteredTransactionFactory] to specify what component groups include in the
@@ -27,8 +28,14 @@ sealed interface ComponentGroupFilterParameters {
      *
      * @property componentGroupIndex The index of the component group to include.
      * @property deserializedClass The type that the component group deserializes its components into.
+     * @property predicate Filtering function that is applied to each deserialized component with the group. A component is included in the
+     * filtered component group when [predicate] returns `true` and is filtered out when `false` is returned.
      */
-    data class AuditProof(override val componentGroupIndex: Int, val deserializedClass: Class<*>) : ComponentGroupFilterParameters {
+    data class AuditProof<T : Any>(
+        override val componentGroupIndex: Int,
+        val deserializedClass: Class<T>,
+        val predicate: Predicate<T>
+    ) : ComponentGroupFilterParameters {
         override val merkleProofType = MerkleProofType.AUDIT
     }
 

@@ -57,9 +57,9 @@ class FilteredTransactionImplTest {
     private val filteredComponentGroup0Proof = mock<MerkleProof>()
     private val filteredComponentGroup1AuditProof = mock<MerkleProof>()
     private val filteredComponentGroup1SizeProof = mock<MerkleProof>()
-    private val filteredComponentGroup0 = FilteredComponentGroup(0, filteredComponentGroup0Proof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1AuditProof, MerkleProofType.AUDIT)
-    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1SizeProof, MerkleProofType.SIZE)
+    private val filteredComponentGroup0 = FilteredComponentGroup(0, filteredComponentGroup0Proof)
+    private val filteredComponentGroup1WithAuditProof = FilteredComponentGroup(1, filteredComponentGroup1AuditProof)
+    private val filteredComponentGroup1WithSizeProof = FilteredComponentGroup(1, filteredComponentGroup1SizeProof)
     private val indexedMerkleLeaf0 = indexedMerkleLeaf(0, byteArrayOf(1))
     private val indexedMerkleLeaf1 = indexedMerkleLeaf(1, byteArrayOf(2))
 

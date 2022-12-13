@@ -9,12 +9,12 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -66,11 +66,11 @@ class FilteredTransactionFactoryImplTest {
             filteredTransaction = filteredTransactionFactory.create(
                 wireTransaction,
                 componentGroupFilterParameters = listOf(
-                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
                 )
-            ) { true }
+            )
         }.hasMessageContaining("Unique component group indexes are required when filtering a transaction")
     }
 
@@ -85,10 +85,10 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { false },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.getComponentGroupContent(0)?.single()?.second)
             .isEqualTo(wireTransaction.componentGroupLists.first().single())
@@ -108,16 +108,16 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
             )
-        ) { true }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
     }
 
     @Test
@@ -133,20 +133,20 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassB },
             )
-        ) { it is MyClassA || it is MyClassB }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(2)
     }
 
     @Test
-    fun `creates a size proof when the component group contains no components after applying filtering`() {
+    fun `creates a size proof instead of an audit proof when the component group contains no components after applying filtering`() {
         wireTransaction = wireTransaction(
             listOf(
                 listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3),
@@ -168,42 +168,19 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
-                componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
+            componentGroupMerkleTreeSizeProofProvider1.getSizeProof(wireTransaction.componentMerkleTrees[1]!!.leaves)
         )
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
-    }
-
-    @Test
-    fun `creating a size proof does not apply filtering`() {
-        var filtered = false
-
-        wireTransaction = wireTransaction(
-            listOf(listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3))
-        )
-
-        filteredTransaction = filteredTransactionFactory.create(
-            wireTransaction,
-            componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
-                ComponentGroupFilterParameters.SizeProof(1),
-            )
-        ) {
-            filtered = true
-            false
-        }
-
-        assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filtered).isFalse
     }
 
     @Test
@@ -216,22 +193,22 @@ class FilteredTransactionFactoryImplTest {
             listOf(
                 emptyList(),
                 listOf(COMPONENT_1, COMPONENT_2),
-                listOf(COMPONENT_1, COMPONENT_2)
+                emptyList()
             )
         )
 
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
                 listOf(0)
@@ -253,15 +230,15 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
                 ComponentGroupFilterParameters.SizeProof(1),
             )
-        ) { false }
+        )
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.proofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
     }
 

@@ -11,7 +11,7 @@ import net.corda.v5.ledger.utxo.TransactionState
 data class TransactionStateImpl<out T : ContractState>(
     override val contractState: T,
     override val notary: Party,
-    override val encumbrance: Int?,
+    override val encumbrance: String?,
 ) : TransactionState<T> {
     override val contractType: Class<out Contract> get() = contractState.getContractClassOrThrow()
     override val contractStateType: Class<out T> get() = contractState.javaClass

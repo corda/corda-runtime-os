@@ -52,22 +52,22 @@ class CreateScriptTest {
 
         val create1 = command.createACLs("topic", emptyList(), emptyList())
         assertThat(create1).isEmpty()
-        val create2 = command.createACLs("topic", listOf("one", "two"), emptyList())
+        val create2 = command.createACLs("topic", listOf("db", "flow"), emptyList())
         assertThat(create2).containsExactly(
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:one --operation read --topic topic",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:two --operation read --topic topic"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &"
         )
-        val create3 = command.createACLs("topic", emptyList(), listOf("one", "two"))
+        val create3 = command.createACLs("topic", emptyList(), listOf("db", "flow"))
         assertThat(create3).containsExactly(
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:one --operation write --topic topic",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:two --operation write --topic topic"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation write --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation write --topic topic &"
         )
-        val create4 = command.createACLs("topic", listOf("one", "two"), listOf("three", "four"))
+        val create4 = command.createACLs("topic", listOf("db", "flow"), listOf("crypto", "membership"))
         assertThat(create4).containsExactly(
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:one --operation read --topic topic",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:two --operation read --topic topic",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:three --operation write --topic topic",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:four --operation write --topic topic"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Chris --operation write --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Mo --operation write --topic topic &"
         )
     }
 
@@ -101,6 +101,7 @@ class CreateScriptTest {
         val createScript = CreateScript()
         createScript.create = Create()
         createScript.create!!.topic = TopicPlugin.Topic()
+        createScript.create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
         return createScript
     }
 }
