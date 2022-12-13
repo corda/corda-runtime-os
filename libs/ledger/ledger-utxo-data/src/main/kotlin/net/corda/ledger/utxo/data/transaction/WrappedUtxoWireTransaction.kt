@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.data.transaction
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
@@ -75,7 +76,7 @@ class WrappedUtxoWireTransaction(
                 val contractState: ContractState = serializationService.deserialize(state)
                 val stateRef = StateRef(id, index)
                 val outputInfo = outputsInfo[index]
-                val transactionState = TransactionStateImpl(contractState, outputInfo.notary, outputInfo.encumbrance)
+                val transactionState = TransactionStateImpl(contractState, outputInfo.notary, outputInfo.getEncumbranceGroup())
                 StateAndRefImpl(transactionState, stateRef)
             }
     }
