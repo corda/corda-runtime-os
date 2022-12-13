@@ -18,6 +18,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -70,6 +71,7 @@ class UtxoFinalityFlowTest {
     private val notarisedTx = mock<UtxoSignedTransactionInternal>()
 
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
+    private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
@@ -89,6 +91,7 @@ class UtxoFinalityFlowTest {
                 publicKeyBob
             )
         )
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
 
         whenever(updatedTxSomeSigs.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))

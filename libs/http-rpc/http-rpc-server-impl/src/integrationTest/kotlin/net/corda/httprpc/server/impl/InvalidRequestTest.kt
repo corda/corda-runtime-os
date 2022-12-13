@@ -23,9 +23,8 @@ import kotlin.test.assertTrue
 
 class InvalidRequestTest : HttpRpcServerTestBase() {
     companion object {
-        const val JSON_PROCESSING_ERROR_TITLE = "Error during processing of request JSON."
-        const val MISSING_JSON_FIELD_TITLE = "Missing or invalid field in JSON request body."
-        const val MISSING_VALUE_ERROR = "value failed for JSON property str due to missing (therefore NULL) value"
+        private const val WRONG_PARAMETER = "Unable to parse parameter"
+        private const val MISSING_VALUE_ERROR = "value failed for JSON property str due to missing (therefore NULL) value"
 
         @BeforeAll
         @JvmStatic
@@ -108,8 +107,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertTrue(responseBody.contains(MISSING_JSON_FIELD_TITLE))
-            assertTrue(responseBody.contains(MISSING_VALUE_ERROR))
+            assertThat(responseBody).contains(MISSING_VALUE_ERROR)
         }
 
         // With explicit "pingPongData" in the root JSON
@@ -136,8 +134,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertTrue(responseBody.contains(MISSING_JSON_FIELD_TITLE))
-            assertTrue(responseBody.contains(MISSING_VALUE_ERROR))
+            assertThat(responseBody).contains(MISSING_VALUE_ERROR)
         }
 
         // With explicit "pingPongData" in the root JSON
@@ -165,7 +162,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertThat(responseBody).contains(JSON_PROCESSING_ERROR_TITLE)
+            assertThat(responseBody).contains(WRONG_PARAMETER)
         }
 
         // With "date" at the root of JSON
@@ -192,7 +189,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertThat(responseBody).contains(JSON_PROCESSING_ERROR_TITLE)
+            assertThat(responseBody).contains(WRONG_PARAMETER)
 
             //CORE-2404 case #1 exception contains line break, this is invalid in a json string
             val json = JsonParser.parseString(responseBody) as JsonObject

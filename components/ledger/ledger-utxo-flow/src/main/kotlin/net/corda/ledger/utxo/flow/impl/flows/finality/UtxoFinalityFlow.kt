@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -40,6 +41,8 @@ class UtxoFinalityFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
+
+        verify(initialTransaction)
 
         log.trace("Starting finality flow for transaction: $transactionId")
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
@@ -119,5 +122,8 @@ class UtxoFinalityFlow(
         log.trace("Finalisation of transaction $transactionId has been finished.")
 
         return transaction
+    }
+    private fun verify(signedTransaction: UtxoSignedTransaction) {
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verifyContracts()
     }
 }
