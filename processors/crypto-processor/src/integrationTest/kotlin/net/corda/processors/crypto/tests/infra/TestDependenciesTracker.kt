@@ -18,7 +18,6 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 class TestDependenciesTracker(
-    coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,
     private val dependencies: Set<LifecycleCoordinatorName>
@@ -29,6 +28,7 @@ class TestDependenciesTracker(
 
     private var registrationHandle: RegistrationHandle? = null
 
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<TestDependenciesTracker>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
 
     private val allDependenciesUp = CompletableFuture<LifecycleStatus>()

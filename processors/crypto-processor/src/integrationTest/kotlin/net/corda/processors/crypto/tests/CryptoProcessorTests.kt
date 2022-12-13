@@ -340,7 +340,6 @@ class CryptoProcessorTests {
             hsmRegistrationClient.start()
             stableDecryptor.start()
             tracker = TestDependenciesTracker(
-                    LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
             coordinatorFactory,
             lifecycleRegistry,
             setOf(
