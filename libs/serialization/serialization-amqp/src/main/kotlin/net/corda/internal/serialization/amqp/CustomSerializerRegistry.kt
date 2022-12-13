@@ -168,9 +168,7 @@ class CachingCustomSerializerRegistry(
                     accessControlContext
                 )
             } catch (ace: AccessControlException) {
-                // TODO I believe it should be warn, but check if it should be done info
-                //  Should we enrich log message? Should it contain the permission?
-                logger.warn("Illegal custom serializer detected for class ${customSerializer.type}")
+                logger.warn("Illegal custom serializer detected for ${customSerializer.type}", ace)
                 throw IllegalCustomSerializerException(serializer, serializer::class.java, ace)
             }
         }
