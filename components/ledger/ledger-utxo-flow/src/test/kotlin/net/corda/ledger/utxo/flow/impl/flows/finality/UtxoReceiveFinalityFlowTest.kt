@@ -56,15 +56,18 @@ class UtxoReceiveFinalityFlowTest {
 
     private val publicKey1 = mock<PublicKey>()
     private val publicKey2 = mock<PublicKey>()
+    private val publicKeyNotary = mock<PublicKey>()
 
     private val signature1 = digitalSignatureAndMetadata(publicKey1)
     private val signature2 = digitalSignatureAndMetadata(publicKey2)
+    private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary)
 
     private val metadata = mock<TransactionMetadata>()
 
     private val ledgerTransaction = mock<UtxoLedgerTransactionImpl>()
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
+    private val notarisedTransaction = mock<UtxoSignedTransactionInternal>()
 
     @BeforeEach
     fun beforeEach() {
@@ -87,45 +90,91 @@ class UtxoReceiveFinalityFlowTest {
         whenever(signedTransactionWithOwnKeys.getMissingSignatories()).thenReturn(setOf())
         whenever(signedTransactionWithOwnKeys.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransactionWithOwnKeys.signatures).thenReturn(listOf(signature1, signature2))
+        whenever(signedTransactionWithOwnKeys.addSignature(signatureNotary))
+            .thenReturn(notarisedTransaction)
+
+        whenever(notarisedTransaction.id).thenReturn(ID)
 
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
     }
-
     @Test
-    fun `receiving a transaction that passes verification is signed and recorded`() {
+    fun `receiving a transaction that passes verification and notarisation is signed and recorded`() {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
-        whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
+        whenever(session.receive(List::class.java))
+            .thenReturn(emptyList<DigitalSignatureAndMetadata>())
+            .thenReturn(listOf(signatureNotary))
 
         callReceiveFinalityFlow()
 
         verify(signedTransaction).sign(publicKey1)
         verify(signedTransaction).sign(publicKey2)
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
+        verify(session).send(Payload.Success(listOf(signature1, signature2)))
+    }
+
+    @Test
+    fun `receiving a transaction that passes verification then no notary signatures throws`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+        whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
+
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("No notary signature received for transaction:")
+
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction).sign(publicKey2)
+        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(session).send(Payload.Success(listOf(signature1, signature2)))
+    }
+
+    @Test
+    fun `receiving a transaction that passes verification then invalid notary signature throws`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+        whenever(session.receive(List::class.java))
+            .thenReturn(emptyList<DigitalSignatureAndMetadata>())
+            .thenReturn(listOf(signatureNotary))
+
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
+            CryptoSignatureException("Verifying notary signature failed!!")
+        )
+
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CryptoSignatureException::class.java)
+            .hasMessageContaining("Verifying notary signature failed!!")
+
+        verify(signedTransaction).sign(publicKey1)
+        verify(signedTransaction).sign(publicKey2)
+        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
     @Test
     fun `the received transaction is only signed with ledger keys in the transaction's missing signatories`() {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, mock()))
-        whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
+        whenever(session.receive(List::class.java))
+            .thenReturn(emptyList<DigitalSignatureAndMetadata>())
+            .thenReturn(listOf(signatureNotary))
 
         val signedTransactionWith1Key = mock<UtxoSignedTransactionInternal>()
         whenever(signedTransactionWith1Key.id).thenReturn(ID)
-        //whenever(signedTransactionWith1Key.getMissingSignatories()).thenReturn(setOf())
         whenever(signedTransactionWith1Key.signatures).thenReturn(listOf(signature1))
 
         whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransactionWith1Key to signature1)
+        whenever(signedTransactionWith1Key.addSignature(signatureNotary))
+            .thenReturn(notarisedTransaction)
 
         callReceiveFinalityFlow()
 
         verify(signedTransaction).sign(publicKey1)
         verify(signedTransactionWith1Key, never()).sign(publicKey2)
         verify(persistenceService, times(2)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(signedTransactionWith1Key, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
     }
 
