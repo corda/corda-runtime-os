@@ -279,8 +279,9 @@ class CustomSerializerPermission(targetBundleLocation: String) : BasicPermission
         // `BasicPermission` parsing of passed in `targetBundleLocation`, if it is to contain a wildcard ('*')
         // `BasicPermission` expects it to either be a single character ('*') or ending in (".*"). In our case, where we want
         // to pass in bundle locations, the passed in string would look like for e.g. "FLOW/*". But according to the above rule
-        // this will not get parsed properly. So with using `BasicPermission` it means we should be using wildcard only as a single character.
-        // For cases like "FLOW/*" we should be only passing in just "FLOW".
+        // this will not get parsed properly. So with using `BasicPermission` it means we should be using wildcard only
+        // as a single character.
+        // For cases like for e.g. "FLOW/*" we should only be passing in just "FLOW".
         if (targetBundleLocation.length > 1 && targetBundleLocation.endsWith('*')) {
             throw IllegalArgumentException("Permission name cannot end with *")
         }
