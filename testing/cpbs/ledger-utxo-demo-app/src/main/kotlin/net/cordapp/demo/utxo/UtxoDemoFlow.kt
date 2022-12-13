@@ -83,13 +83,12 @@ class UtxoDemoFlow : RPCStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            // TODO CORE-8271 NotaryLookup does not seem to return the registered Notary
             val notary = notaryLookup.notaryServices.first()
 
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.publicKey)) // CORE-8271
+                .setNotary(Party(notary.name, notary.publicKey))
                 .setTimeWindowBetween(Instant.MIN, Instant.MAX)
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
