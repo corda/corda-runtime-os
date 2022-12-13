@@ -112,21 +112,18 @@ class UtxoReceiveFinalityFlow(
 
         log.debug("Waiting for Notary's signature for transaction: $transactionId")
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
-        if (notarySignatures.isEmpty()) { // TODO reorg this when notarization is integrated
-            log.warn("No notary signature received for transaction: $transactionId")
-            // TODO error handling
-        } else {
-            log.debug("Verifying and adding notary signatures for transaction: $transactionId")
-            notarySignatures.forEach {
-                transaction = verifyAndAddSignature(transaction, it)
-            }
-
-            persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-            log.debug("Recorded transaction with all parties' and the notary's signature $transactionId")
+        if (notarySignatures.isEmpty()) {
+            val message = "No notary signature received for transaction: $transactionId"
+            log.warn(message)
+            throw CordaRuntimeException(message)
+        }
+        log.debug("Verifying and adding notary signatures for transaction: $transactionId")
+        notarySignatures.forEach {
+            transaction = verifyAndAddSignature(transaction, it)
         }
 
-        // TODO Until we do not have notarisation yet, but still want to satisfy the smoke tests somehow...
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
+        log.debug("Recorded transaction with all parties' and the notary's signature $transactionId")
 
         return transaction
     }
