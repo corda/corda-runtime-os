@@ -118,7 +118,7 @@ class UtxoReceiveFinalityFlow(
         }
         log.debug { "Verifying and adding notary signatures for transaction: $transactionId" }
         notarySignatures.forEach {
-            transaction = verifyAndAddSignature(transaction, it)
+            transaction = verifyAndAddNotarySignature(transaction, it)
         }
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)

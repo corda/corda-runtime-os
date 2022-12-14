@@ -107,7 +107,7 @@ class UtxoFinalityFlow(
             throw CordaRuntimeException("Notary has not returned any signatures.")
         }
         notarySignatures.forEach { signature ->
-            transaction = verifyAndAddSignature(transaction, signature)
+            transaction = verifyAndAddNotarySignature(transaction, signature)
         }
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)

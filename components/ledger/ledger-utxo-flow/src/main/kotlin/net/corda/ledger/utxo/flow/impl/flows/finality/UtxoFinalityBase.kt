@@ -60,6 +60,24 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         return transaction.addSignature(signature)
     }
 
+    @Suspendable
+    protected fun verifyAndAddNotarySignature(
+        transaction: UtxoSignedTransactionInternal,
+        signature: DigitalSignatureAndMetadata
+    ):UtxoSignedTransactionInternal {
+        try {
+            log.debug("Verifying signature($signature) of transaction: ${transaction.id}")
+            transactionSignatureService.verifyNotarySignature(transaction.id, signature)
+        } catch (e: Exception) {
+            val message =
+                "Failed to verify transaction's signature($signature) from session: ${signature.by} for transaction " +
+                        "${transaction.id}. Message: ${e.message}"
+            log.warn(message)
+            throw e
+        }
+        return transaction.addSignature(signature)
+    }
+
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
