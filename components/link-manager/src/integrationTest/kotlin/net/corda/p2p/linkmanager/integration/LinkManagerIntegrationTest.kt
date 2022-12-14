@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpiinfo.read.TestCpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -16,12 +16,11 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
-
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.grouppolicy.TestGroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -40,14 +39,13 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.TestVirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
@@ -138,6 +136,9 @@ class LinkManagerIntegrationTest {
 
     @Test
     fun `Link Manager can recover from bad configuration`() {
+        val testGroupPolicyProvider = TestGroupPolicyProvider(lifecycleCoordinatorFactory)
+        val testVirtualNodeInfoReadService = TestVirtualNodeInfoReadService(lifecycleCoordinatorFactory)
+        val testCpiInfoReadService = TestCpiInfoReadService(lifecycleCoordinatorFactory)
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -150,9 +151,9 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            Mockito.mock(GroupPolicyProvider::class.java),
-            Mockito.mock(VirtualNodeInfoReadService::class.java),
-            Mockito.mock(CpiInfoReadService::class.java),
+            testGroupPolicyProvider,
+            testVirtualNodeInfoReadService,
+            testCpiInfoReadService,
             cryptoOpsClient,
             membershipGroupReaderProvider,
             membershipQueryClient,
