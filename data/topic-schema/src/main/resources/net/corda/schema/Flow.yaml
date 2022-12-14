@@ -2,12 +2,19 @@ topics:
   FlowEventTopic:
     name: flow.event
     consumers:
+      - flow
     producers:
+      - db
+      - crypto
+      - flow
+      - uniqueness
     config:
   FlowEventStateTopic:
     name: flow.event.state
     consumers:
+      - flow
     producers:
+      - flow
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -18,17 +25,24 @@ topics:
   FlowEventDLQTopic:
     name: flow.event.dlq
     consumers:
+      - flow
     producers:
+      - flow
     config:
   FlowMapperEventTopic:
     name: flow.mapper.event
     consumers:
+      - flow
     producers:
+      - flow
+      - rpc
     config:
   FlowMapperEventStateTopic:
     name: flow.mapper.event.state
     consumers:
+      - flow
     producers:
+      - flow
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -39,12 +53,17 @@ topics:
   FlowMapperEventDLQTopic:
     name: flow.mapper.event.dlq
     consumers:
+      - flow
     producers:
+      - flow
     config:
   FlowStatusTopic:
     name: flow.status
     consumers:
+      - rpc
     producers:
+      - flow
+      - rpc
     config:
       cleanup.policy: compact
       segment.ms: 600000
