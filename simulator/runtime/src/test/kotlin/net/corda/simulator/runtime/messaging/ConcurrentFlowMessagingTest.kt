@@ -9,6 +9,7 @@ import net.corda.simulator.runtime.testflows.PingAckMessage
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -26,6 +27,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 @Timeout(5000)
@@ -236,6 +238,128 @@ class ConcurrentFlowMessagingTest {
         assertThrows<SessionAlreadyClosedException> { responderFlow.capturedSession!!.send("") }
     }
 
+    @Test
+    fun `should be able to send messages to multiple recipients at once` (){
+        // Given sessions created with multiple receivers
+        val sender = MemberX500Name.parse("CN=Sender, OU=Application, O=R3, L=London, C=GB")
+        val receiver1 = MemberX500Name.parse("CN=Receiver1, OU=Application, O=R3, L=London, C=GB")
+        val receiver2 = MemberX500Name.parse("CN=Receiver2, OU=Application, O=R3, L=London, C=GB")
+        val receiver3 = MemberX500Name.parse("CN=Receiver3, OU=Application, O=R3, L=London, C=GB")
+        val senderAndReceiver1Sessions =  constructSessions(sender, receiver1)
+        val senderAndReceiver2Sessions =  constructSessions(sender, receiver2)
+        val senderAndReceiver3Sessions =  constructSessions(sender, receiver3)
+
+        // And flow messaging service
+        val flowMessaging = ConcurrentFlowMessaging(
+            FlowContext(configuration, sender, "protocol"),
+            mock(), mock(), mock()
+        )
+        val payload = PingAckMessage("Ping")
+
+        // When we send messages to all recipients at once
+        flowMessaging.sendAll(payload,
+            setOf(
+                senderAndReceiver1Sessions.first,
+                senderAndReceiver2Sessions.first,
+                senderAndReceiver3Sessions.first
+            )
+        )
+
+        // Then each recipient should receive the message
+        assertThat(senderAndReceiver1Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
+        assertThat(senderAndReceiver2Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
+        assertThat(senderAndReceiver3Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
+
+        // Also when we send different type of messages to different recipients
+        val payload2 = Message("Ping2")
+        val payload3 = Message("Ping3")
+        val map = mapOf(
+            senderAndReceiver1Sessions.first to payload,
+            senderAndReceiver2Sessions.first to payload2,
+            senderAndReceiver3Sessions.first to payload3
+        )
+        flowMessaging.sendAllMap(map)
+
+        // Then each recipient should receive the correct message
+        assertThat(senderAndReceiver1Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
+        assertThat(senderAndReceiver2Sessions.second.receive<Message>().message, `is`("Ping2"))
+        assertThat(senderAndReceiver3Sessions.second.receive<Message>().message, `is`("Ping3"))
+    }
+
+    @Test
+    fun `should be able to receive messages from multiple senders at once` (){
+        // Given sessions created with multiple sender and one recipient
+        val sender1 = MemberX500Name.parse("CN=Sender1, OU=Application, O=R3, L=London, C=GB")
+        val sender2 = MemberX500Name.parse("CN=Sender2, OU=Application, O=R3, L=London, C=GB")
+        val sender3 = MemberX500Name.parse("CN=Sender3, OU=Application, O=R3, L=London, C=GB")
+        val receiver = MemberX500Name.parse("CN=Receiver, OU=Application, O=R3, L=London, C=GB")
+        val sender1AndReceiverSessions =  constructSessions(sender1, receiver)
+        val sender2AndReceiverSessions =  constructSessions(sender2, receiver)
+        val sender3AndReceiverSessions =  constructSessions(sender3, receiver)
+
+        // And flow messaging service
+        val flowMessaging = ConcurrentFlowMessaging(
+            FlowContext(configuration, receiver, "protocol"),
+            mock(), mock(), mock()
+        )
+
+        // When we send messages from different sender
+        sender1AndReceiverSessions.first.send(Message("From Sender1"))
+        sender2AndReceiverSessions.first.send(Message("From Sender2"))
+        sender3AndReceiverSessions.first.send(Message("From Sender3"))
+
+        //Then recipient should have received all messages at once
+        val receivedMessages = flowMessaging.receiveAll(Message::class.java,
+            setOf(
+                sender1AndReceiverSessions.second,
+                sender2AndReceiverSessions.second,
+                sender3AndReceiverSessions.second
+            )
+        )
+        assertThat(receivedMessages[0].message, `is`("From Sender1"))
+        assertThat(receivedMessages[1].message, `is`("From Sender2"))
+        assertThat(receivedMessages[2].message, `is`("From Sender3"))
+
+        // Also when we send different type of messages from different senders
+        sender1AndReceiverSessions.first.send(PingAckMessage("From Sender1"))
+        sender2AndReceiverSessions.first.send(Message("From Sender2"))
+        sender3AndReceiverSessions.first.send(Message("From Sender3"))
+
+        //Then recipient should have received all correct messages at once
+        val map = mapOf(
+            sender1AndReceiverSessions.second to PingAckMessage::class.java,
+            sender2AndReceiverSessions.second to Message::class.java,
+            sender3AndReceiverSessions.second to Message::class.java
+        )
+        val receivedMessagesMap = flowMessaging.receiveAllMap(map)
+
+        assertThat((receivedMessagesMap[sender1AndReceiverSessions.second] as PingAckMessage).message,
+            `is`("From Sender1"))
+        assertThat((receivedMessagesMap[sender2AndReceiverSessions.second] as Message).message,
+            `is`("From Sender2"))
+        assertThat((receivedMessagesMap[sender3AndReceiverSessions.second] as Message).message,
+            `is`("From Sender3"))
+    }
+
+    private fun constructSessions(sender: MemberX500Name, receiver: MemberX500Name) : Pair<FlowSession, FlowSession>{
+        val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
+        val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+
+        val sendingSession = BaseInitiatorFlowSession(
+            FlowContext(configuration, sender, "protocol"),
+            fromResponderToInitiator,
+            fromInitiatorToResponder
+        )
+
+        val receivingSession = BaseResponderFlowSession(
+            FlowContext(configuration, receiver, "protocol"),
+            fromInitiatorToResponder,
+            fromResponderToInitiator
+        )
+
+        return Pair(sendingSession, receivingSession)
+    }
+
     class IckResponderFlow : ResponderFlow {
         override fun call(session: FlowSession) {
             session.send(PingAckMessage("Ick"))
@@ -255,4 +379,5 @@ class ConcurrentFlowMessagingTest {
             session.send(Unit)
         }
     }
+    data class Message(val message: String)
 }

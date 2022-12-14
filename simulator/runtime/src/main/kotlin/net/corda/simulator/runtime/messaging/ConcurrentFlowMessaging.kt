@@ -103,19 +103,25 @@ class ConcurrentFlowMessaging(
     }
 
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
-        TODO("Not yet implemented")
+        requireBoxedType(receiveType)
+        return sessions.map { it.receive(receiveType) }
     }
 
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
-        TODO("Not yet implemented")
+        sessions.mapKeys { requireBoxedType(it.value) }
+        return sessions.mapValues { it.key.receive(it.value) }
     }
 
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
+        sessions.forEach { it.send(payload) }
     }
 
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
-        TODO("Not yet implemented")
+        payloadsPerSession.keys.forEach { it.send(payloadsPerSession[it]!!) }
+    }
+
+    private fun requireBoxedType(type: Class<*>) {
+        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
     override fun close() {
