@@ -47,8 +47,10 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
                 )
                 head.sandboxGroupContextToClose.close()
             } catch (e: Exception) {
-                logger.warn("Error closing ${head.cacheKey.sandboxGroupType} sandbox for " +
-                        "${head.cacheKey.holdingIdentity.x500Name}", e)
+                logger.warn(
+                    "Error closing ${head.cacheKey.sandboxGroupType} sandbox for " +
+                            "${head.cacheKey.holdingIdentity.x500Name}", e
+                )
             }
         }
     }
@@ -118,10 +120,12 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
      */
     internal class SandboxGroupContextWrapper(
         val wrappedSandboxGroupContext: CloseableSandboxGroupContext
-    ) : SandboxGroupContext {
+    ) : SandboxGroupContext, AutoCloseable {
 
         override fun <T : Any> get(key: String, valueType: Class<out T>) =
             wrappedSandboxGroupContext.get(key, valueType)
+
+        override fun close() = wrappedSandboxGroupContext.close()
 
         override val sandboxGroup = wrappedSandboxGroupContext.sandboxGroup
 
