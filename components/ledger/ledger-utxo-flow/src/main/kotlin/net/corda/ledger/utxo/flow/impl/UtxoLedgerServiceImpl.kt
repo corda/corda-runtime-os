@@ -9,6 +9,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -20,8 +22,9 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,10 +36,12 @@ import java.security.PrivilegedExceptionAction
 
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine,
+    @Reference(service = UtxoFilteredTransactionFactory::class)
+    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
     @Reference(service = UtxoSignedTransactionFactory::class)
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine,
     @Reference(service = UtxoLedgerPersistenceService::class)
     private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
@@ -62,6 +67,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
         // TODO resolve, etc
         return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
+    }
+
+    @Suspendable
+    override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
+        return UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal)
     }
 
     @Suspendable

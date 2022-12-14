@@ -7,6 +7,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions.assertThat
 import java.security.MessageDigest
@@ -173,11 +174,11 @@ fun registerMember(holdingIdentityShortHash: String, isNotary: Boolean = false) 
         assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
         assertWithRetry {
-            // Use a fairly long interval and timeout here to give plenty of time for the other side to respond. Longer
+            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the RPC worker, but for now this will have to suffice.
-            timeout(Duration.ofSeconds(60))
-            interval(Duration.ofSeconds(15))
+            timeout(60.seconds)
+            interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
             condition {
                 it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == "APPROVED"

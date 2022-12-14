@@ -22,7 +22,7 @@ String dockerLabel = '11'
 String architectureTag = ''
 
 /*
- * architecture for Kuberenetes workers during E2E tests
+ * architecture for Kubernetes workers during E2E tests
  */
 String e2eArchitecture = 'amd64'
 
@@ -117,21 +117,29 @@ pipeline {
         stage('Install kafka as prereqs') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
-                    sh '''
+                    sh '''#!/bin/bash
                         echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
                         helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
                             -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
+                        KAFKA_PASSWORDS=$(kubectl get secret prereqs-kafka-jaas -n "${NAMESPACE}" -o go-template="{{ index .data \\\"client-passwords\\\" | base64decode }}")
+                        IFS=',' read -r -a KAFKA_PASSWORDS_ARRAY <<< "$KAFKA_PASSWORDS"
+                        kubectl create secret generic kafka-credentials -n "${NAMESPACE}" \
+                            --from-literal=bootstrap="${KAFKA_PASSWORDS_ARRAY[0]}" \
+                            --from-literal=crypto="${KAFKA_PASSWORDS_ARRAY[1]}" \
+                            --from-literal=db="${KAFKA_PASSWORDS_ARRAY[2]}" \
+                            --from-literal=flow="${KAFKA_PASSWORDS_ARRAY[3]}" \
+                            --from-literal=membership="${KAFKA_PASSWORDS_ARRAY[4]}" \
+                            --from-literal=p2pGateway="${KAFKA_PASSWORDS_ARRAY[5]}" \
+                            --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[6]}" \
+                            --from-literal=rpc="${KAFKA_PASSWORDS_ARRAY[7]}"
                     '''
                 }
             }
             post {
-                always {
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
-                        kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
-                    sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
+                unsuccessful {
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: '*-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f *-support-bundle-*.tgz'
                 }
             }
         }
@@ -155,14 +163,9 @@ pipeline {
            }
             post {
                 unsuccessful {
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: '*-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f *-support-bundle-*.tgz'
                 }
             }
         }
@@ -198,15 +201,9 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                    sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                        pgrep kubectl | xargs kill -9
-                    '''.stripIndent()
-                    archiveArtifacts artifacts: 'forward.txt, logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
+                    sh './support_bundle.sh ${NAMESPACE}'
+                    archiveArtifacts artifacts: 'forward.txt, *-support-bundle-*.tgz', allowEmptyArchive: true
+                    sh 'rm -f forward.txt *-support-bundle-*.tgz'
                 }
             }
         }

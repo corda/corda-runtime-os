@@ -24,6 +24,8 @@ interface UtxoTransactionReader {
 
     val cpkMetadata: List<CordaPackageSummary>
 
+    val relevantStatesIndexes: List<Int>
+
     fun getProducedStates(): List<StateAndRef<ContractState>>
 
     fun getConsumedStates(): List<StateAndRef<ContractState>>

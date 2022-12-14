@@ -63,10 +63,24 @@ imagePullSecrets:
 {{- end }}
 
 {{/*
-Worker name
+Worker type in kebab case
+*/}}
+{{- define "corda.workerTypeKebabCase" -}}
+{{ . | kebabcase | replace "p-2p" "p2p" }}
+{{- end }}
+
+{{/*
+Worker type in upper snake case
+*/}}
+{{- define "corda.workerTypeUpperSnakeCase" -}}
+{{ . | snakecase | replace "p_2p" "p2p" | upper }}
+{{- end }}
+
+{{/*
+Worker pod name
 */}}
 {{- define "corda.workerName" -}}
-{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
+{{ include "corda.fullname" . }}-{{ include "corda.workerTypeKebabCase" .worker }}-worker
 {{- end }}
 
 {{/*
@@ -77,6 +91,12 @@ Worker annotations
 prometheus.io/scrape: "true"
 prometheus.io/path: /metrics
 prometheus.io/port: "7000"
+{{- end }}
+{{ if .Values.annotations -}}
+{{ .Values.annotations | toYaml }}
+{{- end }}
+{{ if ( get .Values.workers .worker ).annotations -}}
+{{ ( get .Values.workers .worker ).annotations | toYaml }}
 {{- end }}
 {{- end }}
 
@@ -516,29 +536,83 @@ Kafka TLS truststore password
 {{- end -}}
 
 {{/*
-Kafka SASL username and password environment variable
+Bootstrap Kafka SASL username and password environment variables
 */}}
-{{- define "corda.kafkaSaslUsernameAndPasswordEnv" -}}
+{{- define "corda.bootstrapKafkaSaslUsernameAndPasswordEnv" -}}
 {{- if .Values.kafka.sasl.enabled }}
-  {{- if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
 - name: SASL_USERNAME
+  {{- if .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name -}}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else if .Values.bootstrap.kafka.sasl.username.value }}
+  value: {{ .Values.bootstrap.kafka.sasl.username.value | quote }}
+  {{- else if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
   {{- else }}
-- name: SASL_USERNAME
-  value: {{ required "Must specify kafka.sasl.username.value or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value | quote }}
+  value: {{ required "Must specify bootstrap.kafka.sasl.username.value, bootstrap.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" .Values.kafka.sasl.username.value }}
   {{- end }}
-  {{- if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
 - name: SASL_PASSWORD
+  {{- if .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if .Values.bootstrap.kafka.sasl.password.value }}
+  value: {{ .Values.bootstrap.kafka.sasl.password.value | quote }}
+  {{- else if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
   valueFrom:
     secretKeyRef:
       name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
   {{- else }}
+  value: {{ required "Must specify bootstrap.kafka.sasl.password.value, bootstrap.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Kafka SASL username and password environment variables
+*/}}
+{{- define "corda.kafkaSaslUsernameAndPasswordEnv" -}}
+{{- if .Values.kafka.sasl.enabled }}
+  {{- $username := ( get .Values.workers .worker ).kafka.sasl.username }}
+- name: SASL_USERNAME
+  {{- if $username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify %s.kafka.sasl.username.valueFrom.secretKeyRef.key" .worker) $username.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $username.value }}
+  value: {{ $username.value | quote }}
+  {{- else if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify workers.%s.kafka.sasl.username.value, workers.%s.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name" .worker .worker) .Values.kafka.sasl.username.value }}
+  {{- end }}
+  {{- $password := ( get .Values.workers .worker ).kafka.sasl.password }}
 - name: SASL_PASSWORD
-  value: {{ required "Must specify kafka.sasl.password.value or kafka.sasl.password.valueFrom.secretKeyRef.name" .Values.kafka.sasl.password.value | quote }}
+  {{- if $password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify %s.kafka.sasl.password.valueFrom.secretKeyRef.key" .worker) $password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $password.value }}
+  value: {{ $password.value | quote }}
+  {{- else if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" .worker .worker) .Values.kafka.sasl.password.value }}
   {{- end }}
 {{- end }}
 {{- end -}}
@@ -566,8 +640,8 @@ Kafka SASL init container
             {{- else }}
             org.apache.kafka.common.security.scram.ScramLoginModule required
             {{- end }}
-            username=$SASL_USERNAME
-            password=$SASL_PASSWORD;
+            username="$SASL_USERNAME"
+            password="$SASL_PASSWORD";
         };    
         EOF
   volumeMounts:
@@ -668,5 +742,3 @@ Crypto worker environment variable
       key: "password" 
       {{- end }}
 {{- end -}}
-
-

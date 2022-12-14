@@ -281,8 +281,18 @@ class DefaultLocalSerializerFactory(
     private fun makeActualMap(declaredType: Type, actualClass: Class<*>, typeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
         declaredType.asClass().checkSupportedMapType()
         val resolved = MapSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
+
+        val locallyDeclaredType = object : ParameterizedType {
+            override fun getActualTypeArguments(): Array<Type> = arrayOf(
+                resolved.keyType.observedType.asClass(),
+                resolved.valueType.observedType.asClass()
+            )
+            override fun getRawType(): Type = resolved.observedType.asClass()
+            override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
+        }
+
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
+            MapSerializer(locallyDeclaredType, this)
         }
     }
 

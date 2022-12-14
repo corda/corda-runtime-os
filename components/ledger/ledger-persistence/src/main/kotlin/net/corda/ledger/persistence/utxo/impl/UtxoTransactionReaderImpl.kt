@@ -52,6 +52,9 @@ class UtxoTransactionReaderImpl(
     override val cpkMetadata: List<CordaPackageSummary>
         get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
 
+    override val relevantStatesIndexes: List<Int>
+        get() = transaction.relevantStatesIndexes ?: emptyList()
+
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
         // TODO("Not yet implemented")
         return emptyList()

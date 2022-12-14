@@ -18,13 +18,18 @@ interface UtxoLedgerPersistenceService {
      * @param transaction Consensual signed transaction to persist.
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
+     * @param relevantStatesIndexes Indexes of relevant states.
      *
      * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
     @Suspendable
-    fun persist(transaction: UtxoSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummary>
+    fun persist(
+        transaction: UtxoSignedTransaction,
+        transactionStatus: TransactionStatus,
+        relevantStatesIndexes: List<Int> = emptyList()
+    ): List<CordaPackageSummary>
 
     @Suspendable
     fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus)

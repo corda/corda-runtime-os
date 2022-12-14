@@ -4,7 +4,7 @@ import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.factories.SimulatorDelegateFactory
 import net.corda.v5.application.flows.Flow
-import java.util.*
+import java.util.ServiceLoader
 
 /**
  * Simulator is a simulated Corda 5 network which will run in-process. It allows a lightweight "virtual node" to be
@@ -40,6 +40,7 @@ class Simulator(
      * @param flowClasses A list of flow classes to be checked.
      * @return A simulated virtual node in which flows can be run.
      */
+    @SafeVarargs
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>

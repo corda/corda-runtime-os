@@ -4,17 +4,17 @@ import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.SimFiberBase
 import net.corda.simulator.runtime.testflows.HelloFlow
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SignatureSpecService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -28,8 +28,11 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
 import java.time.Clock
 
 class DefaultServicesInjectorTest {
@@ -243,4 +246,40 @@ class DefaultServicesInjectorTest {
         }
     }
 
+    fun `should be able to inject flows into non-public fields`() {
+        // Given a flow
+        val flow = HelloFlow()
+        val fiber = SimFiberBase()
+
+        // When we inject the services
+        val injector: FlowServicesInjector = DefaultServicesInjector(
+            Mockito.mock(
+                SimulatorConfiguration::class.java
+            )
+        )
+
+        val services = listOf(JsonMarshallingService::class.java,
+            FlowEngine::class.java, FlowMessaging::class.java, SigningService::class.java,
+            DigitalSignatureVerificationService::class.java, PersistenceService::class.java,
+            MemberLookup::class.java
+        )
+
+        fiber.use {
+            injector.injectServices(
+                flow,
+                MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB"),
+                it
+            )
+
+            // Then sensible defaults should have been set
+            flow.javaClass.declaredFields.forEach {f ->
+                if(services.contains(f.type)){
+                    AccessController.doPrivileged(PrivilegedExceptionAction {
+                        f.isAccessible = true
+                    })
+                    assertNotNull(f.get(flow))
+                }
+            }
+        }
+    }
 }
