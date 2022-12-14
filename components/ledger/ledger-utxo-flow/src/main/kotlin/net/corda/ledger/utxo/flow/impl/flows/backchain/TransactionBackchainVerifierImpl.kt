@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -35,7 +35,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verifying transaction $transactionId" }
-                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verify()
+                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verifyContracts()
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verified transaction $transactionId" }
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught
