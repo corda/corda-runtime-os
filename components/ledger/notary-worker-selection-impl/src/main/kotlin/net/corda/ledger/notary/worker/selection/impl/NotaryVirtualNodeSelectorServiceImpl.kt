@@ -4,7 +4,6 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
