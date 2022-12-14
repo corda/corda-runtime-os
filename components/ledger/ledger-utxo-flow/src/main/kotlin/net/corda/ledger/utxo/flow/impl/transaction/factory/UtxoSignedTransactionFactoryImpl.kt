@@ -66,7 +66,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         verifyTransaction(wireTransaction, utxoTransactionBuilder.notary!!)
 
-        // Everything is OK, we can sign the transaction.
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
         return UtxoSignedTransactionImpl(

@@ -3,15 +3,15 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.sendAndReceive
+import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -35,15 +35,14 @@ class UtxoFinalityFlow(
     lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @CordaInject
     lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
         log.trace("Starting finality flow for transaction: $transactionId")
+        verifyTransaction(initialTransaction)
+
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with initial signatures $transactionId" }
 
@@ -52,7 +51,9 @@ class UtxoFinalityFlow(
                 log.debug {
                     "Requesting signatures from ${it.counterparty} for transaction $transactionId"
                 }
-                it.sendAndReceive<Payload<List<DigitalSignatureAndMetadata>>>(initialTransaction)
+                it.send(initialTransaction)
+                flowEngine.subFlow(TransactionBackchainSenderFlow(it))
+                it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
                 log.warn(
                     "Failed to receive signatures from ${it.counterparty} for transaction $transactionId"
@@ -74,11 +75,6 @@ class UtxoFinalityFlow(
                 "Received ${signatures.size} signatures from ${session.counterparty}" +
                         " for transaction $transactionId"
             }
-            if (signatures.isEmpty()) {   // Q: do we need this check?
-                val message = "Received 0 signatures from ${session.counterparty} for transaction $transactionId."
-                log.warn(message)
-                throw CordaRuntimeException(message)
-            }
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
@@ -87,7 +83,7 @@ class UtxoFinalityFlow(
         }.toMap()
 
         log.debug { "Verifying all signatures for transaction $transactionId." }
-        transaction.verifySignatures()
+        transaction.verifySignatures() // CORE-8935 Add better logging if the transaction is not fully signed
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
@@ -100,9 +96,13 @@ class UtxoFinalityFlow(
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
 
-        // We just let the notary exceptions bubble up.
         val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
-        val notarySignatures = flowEngine.subFlow(notarisationFlow)
+        val notarySignatures = try {
+            flowEngine.subFlow(notarisationFlow)
+        } catch (e: CordaRuntimeException){
+            log.warn(e.message)
+            throw e
+        }
         if (notarySignatures.isEmpty()) {
             throw CordaRuntimeException("Notary has not returned any signatures.")
         }
