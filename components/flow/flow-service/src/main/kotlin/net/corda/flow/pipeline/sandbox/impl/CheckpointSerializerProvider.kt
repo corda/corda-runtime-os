@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.CHECKPOINT_SERIALIZER
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.NON_INJECTABLE_SINGLETONS
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -26,7 +27,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("unused")
 @Component(
     service = [ UsedByFlow::class ],
-    property = [ "corda.marker.only:Boolean=true" ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
 class CheckpointSerializerProvider @Activate constructor(
