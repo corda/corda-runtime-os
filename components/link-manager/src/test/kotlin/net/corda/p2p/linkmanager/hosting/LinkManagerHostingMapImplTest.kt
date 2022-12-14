@@ -257,4 +257,10 @@ class LinkManagerHostingMapImplTest {
             )
         )
     }
+
+    @Test
+    fun `a test`() {
+        assertThat(null == true).isFalse
+        assertThat(null != false).isTrue
+    }
 }
