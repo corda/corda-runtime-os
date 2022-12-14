@@ -37,7 +37,11 @@ class CreateConnectTest {
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:Fiona", "*", AclOperation.WRITE, AclPermissionType.ALLOW))
+                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
+                    AccessControlEntry("User:Fiona", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
+                    AccessControlEntry("User:Fiona", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
             )
     }
 
