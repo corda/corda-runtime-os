@@ -73,11 +73,6 @@ class UtxoFinalityFlow(
                 "Received ${signatures.size} signatures from ${session.counterparty}" +
                         " for transaction $transactionId"
             }
-            if (signatures.isEmpty()) {   // Q: do we need this check?
-                val message = "Received 0 signatures from ${session.counterparty} for transaction $transactionId."
-                log.warn(message)
-                throw CordaRuntimeException(message)
-            }
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
@@ -86,7 +81,7 @@ class UtxoFinalityFlow(
         }.toMap()
 
         log.debug { "Verifying all signatures for transaction $transactionId." }
-        transaction.verifySignatures()
+        transaction.verifySignatures() // CORE-8935 Add better logging if the transaction is not fully signed
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 

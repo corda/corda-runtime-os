@@ -457,36 +457,6 @@ class UtxoFinalityFlowTest {
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
-    /* Q: Can it be OK to return no signatures? */
-    @Test
-    fun `receiving no signatures from a session throws an exception`() {
-        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success(
-                listOf(
-                    signatureAlice1,
-                    signatureAlice2
-                )
-            )
-        )
-        whenever(sessionBob.receive(Payload::class.java))
-            .thenReturn(Payload.Success(emptyList<List<DigitalSignatureAndMetadata>>()))
-
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Received 0 signatures from $BOB for transaction algo:010203.")
-
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
-        verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureBob))
-
-        verify(initialTx).addSignature(signatureAlice1)
-        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
-        verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
-
-        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
-    }
-
     @Test
     fun `failing to verify a received signature throws an exception`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
