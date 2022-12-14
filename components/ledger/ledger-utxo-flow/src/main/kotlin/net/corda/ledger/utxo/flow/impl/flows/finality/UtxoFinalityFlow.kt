@@ -15,6 +15,8 @@ import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
@@ -43,67 +45,65 @@ class UtxoFinalityFlow(
 
         log.trace("Starting finality flow for transaction: $transactionId")
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
-        log.debug("Recorded transaction with initial signatures $transactionId")
+        log.debug { "Recorded transaction with initial signatures $transactionId" }
 
-        val signaturesPayloads = try {
-            sessions.associateWith {
-                log.debug(
+        val signaturesPayloads = sessions.associateWith {
+            try {
+                log.debug {
                     "Requesting signatures from ${it.counterparty} for transaction $transactionId"
-                )
+                }
                 it.sendAndReceive<Payload<List<DigitalSignatureAndMetadata>>>(initialTransaction)
+            } catch (e: CordaRuntimeException) {
+                log.warn(
+                    "Failed to receive signatures from ${it.counterparty} for transaction $transactionId"
+                )
+                throw e
             }
-        } catch (e: CordaRuntimeException) {
-            log.warn(
-                "Failed to receive signatures from ${
-                    sessions.map { it.counterparty }.joinToString("|")
-                } for transaction $transactionId"
-            )
-            throw e
         }
 
-        log.debug("Processing other parties' signature payloads")
-        val signaturesReceivedFromSessions: MutableMap<FlowSession, List<DigitalSignatureAndMetadata>> = mutableMapOf()
         var transaction = initialTransaction
-        signaturesPayloads.forEach { (session, signaturesPayload) ->
-            signaturesReceivedFromSessions[session] = signaturesPayload.getOrThrow { failure ->
+        val signaturesReceivedFromSessions = signaturesPayloads.map { (session, signaturesPayload) ->
+            val signatures = signaturesPayload.getOrThrow { failure ->
                 val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
-                log.debug("Processed ${session.counterparty}'s reply for transaction $transactionId: $message")
+                log.debug { message }
                 CordaRuntimeException(message)
             }
 
-            log.debug(
-                "Received ${signaturesReceivedFromSessions[session]!!.size} signatures from ${session.counterparty}" +
+            log.debug {
+                "Received ${signatures.size} signatures from ${session.counterparty}" +
                         " for transaction $transactionId"
-            )
-            if (signaturesReceivedFromSessions[session]!!.isEmpty()){   // Q: do we need this check?
+            }
+            if (signatures.isEmpty()) {   // Q: do we need this check?
                 val message = "Received 0 signatures from ${session.counterparty} for transaction $transactionId."
                 log.warn(message)
                 throw CordaRuntimeException(message)
             }
 
-            signaturesReceivedFromSessions[session]!!.forEach { signature ->
+            signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
             }
-        }
+            session to signatures
+        }.toMap()
 
-        log.debug("Verifying all signatures for transaction $transactionId.")
+        log.debug { "Verifying all signatures for transaction $transactionId." }
         transaction.verifySignatures()
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-        log.debug("Recorded transaction with all parties' signatures $transactionId")
+        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
         // Distribute new signatures
-        flowMessaging.sendAllMap(sessions.associateWith { session ->
-            transaction.signatures.filter {
+        val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
+            session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signaturesReceivedFromSessions[session]!!    // These came from that party
+                it !in signatures                                   // These came from that party
             }
-        })
+        }.toMap()
+        flowMessaging.sendAllMap(notSeenSignaturesBySessions)
 
         // We just let the notary exceptions bubble up.
         val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
         val notarySignatures = flowEngine.subFlow(notarisationFlow)
-        if (notarySignatures.isEmpty()){
+        if (notarySignatures.isEmpty()) {
             throw CordaRuntimeException("Notary has not returned any signatures.")
         }
         notarySignatures.forEach { signature ->
@@ -111,12 +111,12 @@ class UtxoFinalityFlow(
         }
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug("Recorded verified (notarised) transaction $transactionId")
+        log.debug { "Recorded verified (notarised) transaction $transactionId" }
 
         // Distribute notary signatures
         flowMessaging.sendAll(notarySignatures, sessions.toSet())
 
-        log.trace("Finalisation of transaction $transactionId has been finished.")
+        log.trace { "Finalisation of transaction $transactionId has been finished." }
 
         return transaction
     }

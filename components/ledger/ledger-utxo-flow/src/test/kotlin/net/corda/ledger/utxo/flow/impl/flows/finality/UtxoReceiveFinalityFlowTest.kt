@@ -246,8 +246,8 @@ class UtxoReceiveFinalityFlowTest {
         val invalidSignature = mock<DigitalSignatureAndMetadata>()
 
         whenever(session.receive(List::class.java)).thenReturn(listOf(invalidSignature))
-        whenever(signedTransaction.signatures).thenReturn(listOf())
-        whenever(transactionSignatureService.verifySignature(any(), eq(invalidSignature))).thenThrow(
+        whenever(signedTransactionWithOwnKeys.addSignature(any())).thenReturn(signedTransactionWithOwnKeys)
+        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
 

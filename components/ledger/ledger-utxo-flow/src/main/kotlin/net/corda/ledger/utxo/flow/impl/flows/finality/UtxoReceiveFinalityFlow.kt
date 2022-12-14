@@ -15,6 +15,8 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 
@@ -34,13 +36,10 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
-        log.trace("Waiting for an initially signed transaction.")
-
         val initialTransaction = session.receive<UtxoSignedTransactionInternal>()
         val transactionId = initialTransaction.id
-        log.debug("Initially signed transaction received: $transactionId")
+        log.debug { "Beginning receive finality for transaction: $transactionId" }
 
-        log.debug("Verifying signatures of transaction: $transactionId")
         initialTransaction.signatures.forEach {
             verifySignature(transactionId, it) { message ->
                 session.send(
@@ -49,13 +48,11 @@ class UtxoReceiveFinalityFlow(
             }
         }
 
-        log.debug("Verifying ledger transaction: $transactionId")
         verifyTransaction(initialTransaction)
 
-        log.debug("Validating transaction: $transactionId")
         var transaction = initialTransaction
-        val signaturesPayload = if (verify(initialTransaction)) {
-            log.debug("Successfully validated transaction: $transactionId")
+        val signaturesPayload = if (validate(initialTransaction)) {
+            log.trace { "Successfully validated transaction: $transactionId" }
             // Which of our keys are required.
             val myExpectedSigningKeys = initialTransaction
                 .getMissingSignatories()
@@ -67,69 +64,70 @@ class UtxoReceiveFinalityFlow(
                 )
 
             if (myExpectedSigningKeys.isEmpty()) {
-                log.debug("We are not required signer of $transactionId.")
+                log.debug { "We are not required signer of $transactionId." }
             }
 
-            myExpectedSigningKeys.forEach{
-                log.debug("Signing transaction: $transactionId with $it")
-                transaction = transaction.sign(it).first
+            val mySignatures = myExpectedSigningKeys.map { publicKey ->
+                log.debug { "Signing transaction: $transactionId with $publicKey" }
+                transaction.sign(publicKey).also {
+                    transaction = it.first
+                }.second
             }
 
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.debug("Recorded transaction with the initial and our signatures: $transactionId")
+            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
 
-            Payload.Success(transaction.signatures.filter { it !in initialTransaction.signatures })
+            Payload.Success(mySignatures)
         } else {
             log.warn("Failed to validate transaction: $transactionId")
 
             persistenceService.persist(transaction, TransactionStatus.INVALID)
-            log.debug("Recorded transaction as invalid: $transactionId")
+            log.debug { "Recorded transaction as invalid: $transactionId" }
             Payload.Failure("Transaction validation failed for transaction $transactionId when signature was requested")
         }
 
-        log.debug("Sending back our reply for transaction: $transactionId")
+        log.trace { "Sending back our reply for transaction: $transactionId" }
         session.send(signaturesPayload)
 
         if (signaturesPayload is Payload.Failure) {
             throw CordaRuntimeException(signaturesPayload.message)
         }
 
-        log.debug("Waiting for other parties' signatures for transaction: $transactionId")
+        log.debug { "Waiting for other parties' signatures for transaction: $transactionId" }
         val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
 
-        // Q: Do we need to verify all signatures before adding them? verifySignatures() will check them again.
         otherPartiesSignatures
-            .filter{ it !in transaction.signatures}
+            .filter { it !in transaction.signatures }
             .forEach {
-                transaction = verifyAndAddSignature(transaction, it)
+                transaction = transaction.addSignature(it)
             }
 
-        log.debug("Verifying signatures of transaction: $transactionId")
+        log.debug { "Verifying signatures of transaction: $transactionId" }
         transaction.verifySignatures()
 
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.info("Recorded transaction with all parties' signatures $transactionId")
 
-        log.debug("Waiting for Notary's signature for transaction: $transactionId")
+        log.debug { "Waiting for Notary's signature for transaction: $transactionId" }
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
         if (notarySignatures.isEmpty()) {
             val message = "No notary signature received for transaction: $transactionId"
             log.warn(message)
             throw CordaRuntimeException(message)
         }
-        log.debug("Verifying and adding notary signatures for transaction: $transactionId")
+        log.debug { "Verifying and adding notary signatures for transaction: $transactionId" }
         notarySignatures.forEach {
             transaction = verifyAndAddSignature(transaction, it)
         }
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug("Recorded transaction with all parties' and the notary's signature $transactionId")
+        log.debug { "Recorded transaction with all parties' and the notary's signature $transactionId" }
 
         return transaction
     }
 
     @Suspendable
-    private fun verify(signedTransaction: UtxoSignedTransaction): Boolean {
+    private fun validate(signedTransaction: UtxoSignedTransaction): Boolean {
         return try {
             validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
@@ -137,7 +135,7 @@ class UtxoReceiveFinalityFlow(
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
             // Means contracts can't use [check] or [require] unless we provide our own functions for this.
             if (e is IllegalStateException || e is IllegalArgumentException || e is CordaRuntimeException) {
-                log.debug("Transaction ${signedTransaction.id} failed verification. Message: ${e.message}")
+                log.debug { "Transaction ${signedTransaction.id} failed verification. Message: ${e.message}" }
                 false
             } else {
                 throw e
