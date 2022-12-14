@@ -14,6 +14,9 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
+/**
+ * See [SimulatedInstanceNode].
+ */
 @Suppress("LongParameterList")
 class SimulatedInstanceNodeBase(
     override val holdingIdentity: HoldingIdentity,
@@ -32,8 +35,7 @@ class SimulatedInstanceNodeBase(
         if (ResponderFlow::class.java.isInstance(flow)) {
             fiber.registerFlowInstance(member, protocol, flow)
         } else if (!RPCStartableFlow::class.java.isInstance(flow)) {
-            error("Member \"$member\" has already registered " +
-                    "flow instance for protocol \"$protocol\"")
+            error("The flow provided to this node was neither a `ResponderFlow` nor an `RPCStartableFlow`.")
         }
     }
 
@@ -43,10 +45,14 @@ class SimulatedInstanceNodeBase(
 
     override fun callInstanceFlow(input: RequestData): String {
 
+        if (flow !is RPCStartableFlow) {
+            error("The flow provided to the instance node for member \"$member\" and protocol $protocol " +
+                    "was not an RPCStartableFlow")
+        }
         log.info("Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
                 "with request: ${input.requestBody}")
         injector.injectServices(flow, member, fiber, flowFactory)
-        val result = flowManager.call(input.toRPCRequestData(), flow as RPCStartableFlow)
+        val result = flowManager.call(input.toRPCRequestData(), flow)
         SimulatedVirtualNodeBase.log.info("Finished flow instance for member \"$member\" and protocol \"$protocol\"")
         return result
     }

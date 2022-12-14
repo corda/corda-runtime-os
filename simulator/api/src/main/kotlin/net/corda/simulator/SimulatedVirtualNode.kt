@@ -3,7 +3,7 @@ package net.corda.simulator
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**
- * A simulated virtual node in which flows or instances of flows can be run.
+ * A simulated virtual node in which flows can be run.
  */
 @DoNotImplement
 interface SimulatedVirtualNode : SimulatedNode {

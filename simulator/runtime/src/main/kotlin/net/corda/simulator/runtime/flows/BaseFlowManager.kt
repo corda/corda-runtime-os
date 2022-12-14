@@ -9,6 +9,9 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 
+/**
+ * See [FlowManager].
+ */
 class BaseFlowManager : FlowManager {
 
     companion object {

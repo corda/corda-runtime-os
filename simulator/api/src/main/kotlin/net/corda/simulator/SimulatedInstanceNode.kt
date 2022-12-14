@@ -1,5 +1,8 @@
 package net.corda.simulator
 
+/**
+ * A simulated node in which the flow to be run has already been constructed.
+ */
 interface SimulatedInstanceNode : SimulatedNode {
 
     /**
@@ -7,9 +10,10 @@ interface SimulatedInstanceNode : SimulatedNode {
      * the flow has completed before returning the response.
      *
      * @param input The data to input to the flow.
-     * @param flow The flow to be called
      *
      * @return The response from the flow.
+     * @throws IllegalStateException if the flow with which this node was constructed was not a
+     * [net.corda.v5.application.flows.RPCStartableFlow].
      */
     fun callInstanceFlow(input: RequestData): String
 }
