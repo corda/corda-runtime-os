@@ -2,5 +2,7 @@ topics:
   UniquenessCheckTopic:
     name: uniqueness.check
     consumers:
+      - "uniqueness"
     producers:
+      - "flow"
     config:
