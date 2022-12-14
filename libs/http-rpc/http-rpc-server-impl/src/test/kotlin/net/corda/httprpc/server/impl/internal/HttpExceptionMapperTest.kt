@@ -5,7 +5,6 @@ import net.corda.httprpc.exception.ForbiddenException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.NotAuthenticatedException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -71,38 +70,6 @@ class HttpExceptionMapperTest {
 
         assertEquals(401, response.status)
         assertEquals("auth failed", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with no parameters response`() {
-        val e = UnexpectedErrorException()
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals("Unexpected internal error occurred.", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with message response`() {
-        val e = UnexpectedErrorException("message")
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals("message", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with message and details response`() {
-        val e = UnexpectedErrorException("message", mapOf("key" to "value"))
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals("message", response.message)
-        assertEquals(1, response.details.size)
-        assertEquals("value", response.details["key"])
     }
 
     @Test
