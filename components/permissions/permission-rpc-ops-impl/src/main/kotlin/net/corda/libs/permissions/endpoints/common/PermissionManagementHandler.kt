@@ -5,7 +5,6 @@ import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import java.util.concurrent.TimeoutException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
@@ -63,7 +62,7 @@ fun <T : Any?> withPermissionManager(
 
     } catch (e: Exception) {
         logger.warn("Unexpected error during permission management operation.", e)
-        throw UnexpectedErrorException(
+        throw InternalServerException(
             "Unexpected permission management error occurred.",
             details = buildExceptionCauseDetails(e)
         )

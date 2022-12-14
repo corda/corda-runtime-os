@@ -40,7 +40,7 @@ internal object HttpExceptionMapper {
             )
 
             else -> HttpResponseException(
-                ResponseCode.UNEXPECTED_ERROR.statusCode,
+                ResponseCode.INTERNAL_SERVER_ERROR.statusCode,
                 "Unexpected error occurred.",
                 buildExceptionCauseDetails(e)
             )
