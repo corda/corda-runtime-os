@@ -41,7 +41,7 @@ class SimConsensualLedgerService(
         val finalSignedTransaction = sessions.fold(signedTransaction) {
             tx, sess ->
                 sess.send(signedTransaction)
-            (tx as ConsensualSignedTransactionBase).addSignature(sess.receive<DigitalSignatureAndMetadata>())
+            (tx as ConsensualSignedTransactionBase).addSignatures(sess.receive())
         }
 
         sessions.forEach {
@@ -75,8 +75,13 @@ class SimConsensualLedgerService(
     ): ConsensualSignedTransaction {
         var signedTransaction = session.receive<ConsensualSignedTransaction>()
         validator.checkTransaction(signedTransaction.toLedgerTransaction())
-        val signature = signStates(signedTransaction, memberLookup.myInfo().ledgerKeys[0])
-        session.send(signature)
+
+        val keysToSignWith = memberLookup.myInfo().ledgerKeys.filter {
+            signedTransaction.toLedgerTransaction().requiredSignatories.contains(it)
+        }
+
+        val signatures = signStates(signedTransaction, keysToSignWith)
+        session.send(signatures)
         val finalizedTx: ConsensualSignedTransactionBase = session.receive()
         persistenceService.persist(finalizedTx.toEntity())
         return finalizedTx
@@ -84,12 +89,15 @@ class SimConsensualLedgerService(
 
     private fun signStates(
         signedTransaction: ConsensualSignedTransaction,
-        publicKey: PublicKey
-    ): DigitalSignatureAndMetadata {
+        publicKeys: List<PublicKey>
+    ): List<DigitalSignatureAndMetadata> {
         val serializer = SimpleJsonMarshallingService()
         val bytesToSign = serializer.format(signedTransaction.toLedgerTransaction().states).toByteArray()
-        val signature = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
-        return DigitalSignatureAndMetadata(signature, DigitalSignatureMetadata(Instant.now(), mapOf()))
+        val signatures = publicKeys.map {
+            val signature = signingService.sign(bytesToSign, it, SignatureSpec.ECDSA_SHA256)
+            DigitalSignatureAndMetadata(signature, DigitalSignatureMetadata(Instant.now(), mapOf()))
+        }
+        return signatures
     }
 }
 
