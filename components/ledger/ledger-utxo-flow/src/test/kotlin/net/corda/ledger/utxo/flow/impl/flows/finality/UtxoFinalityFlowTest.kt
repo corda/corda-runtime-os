@@ -10,7 +10,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -48,7 +47,6 @@ class UtxoFinalityFlowTest {
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
-    private val flowEngine = mock<FlowEngine>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -127,7 +125,7 @@ class UtxoFinalityFlowTest {
             )
         )
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -135,7 +133,7 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -162,8 +160,8 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice).sendAndReceive(Payload::class.java, initialTx)
-        verify(sessionBob).sendAndReceive(Payload::class.java, initialTx)
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -183,7 +181,7 @@ class UtxoFinalityFlowTest {
             )
         )
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -191,7 +189,7 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -219,8 +217,8 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(sessionAlice).sendAndReceive(Payload::class.java, initialTx)
-        verify(sessionBob).sendAndReceive(Payload::class.java, initialTx)
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -240,7 +238,7 @@ class UtxoFinalityFlowTest {
             )
         )
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -248,7 +246,7 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -276,8 +274,8 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(sessionAlice).sendAndReceive(Payload::class.java, initialTx)
-        verify(sessionBob).sendAndReceive(Payload::class.java, initialTx)
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -297,7 +295,7 @@ class UtxoFinalityFlowTest {
             )
         )
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -305,7 +303,7 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -336,8 +334,8 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
-        verify(sessionAlice).sendAndReceive(Payload::class.java, initialTx)
-        verify(sessionBob).sendAndReceive(Payload::class.java, initialTx)
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -353,14 +351,14 @@ class UtxoFinalityFlowTest {
 
         whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyBob))
 
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -386,8 +384,8 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice).sendAndReceive(Payload::class.java, initialTx)
-        verify(sessionBob).sendAndReceive(Payload::class.java, initialTx)
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
         verify(flowMessaging).sendAllMap(
             mapOf(
                 sessionAlice to listOf(signatureBob),
@@ -399,7 +397,7 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `receiving a session error instead of signatures rethrows the error`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -408,9 +406,8 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(
-            sessionBob.sendAndReceive(
+            sessionBob.receive(
                 Payload::class.java,
-                initialTx
             )
         ).thenThrow(CordaRuntimeException("session error"))
 
@@ -430,7 +427,7 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `receiving a failure payload throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -439,9 +436,8 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(
-            sessionBob.sendAndReceive(
-                Payload::class.java,
-                initialTx
+            sessionBob.receive(
+                Payload::class.java
             )
         ).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
 
@@ -464,7 +460,7 @@ class UtxoFinalityFlowTest {
     /* Q: Can it be OK to return no signatures? */
     @Test
     fun `receiving no signatures from a session throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -472,12 +468,8 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(
-            sessionBob.sendAndReceive(
-                Payload::class.java,
-                initialTx
-            )
-        ).thenReturn(Payload.Success(emptyList<List<DigitalSignatureAndMetadata>>()))
+        whenever(sessionBob.receive(Payload::class.java))
+            .thenReturn(Payload.Success(emptyList<List<DigitalSignatureAndMetadata>>()))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -497,7 +489,7 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `failing to verify a received signature throws an exception`() {
-        whenever(sessionAlice.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureAlice1,
@@ -505,7 +497,7 @@ class UtxoFinalityFlowTest {
                 )
             )
         )
-        whenever(sessionBob.sendAndReceive(Payload::class.java, initialTx)).thenReturn(
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
             Payload.Success(
                 listOf(
                     signatureBob
@@ -530,12 +522,13 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `each passed in session is sent the transaction backchain`() {
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionAlice))
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionBob))

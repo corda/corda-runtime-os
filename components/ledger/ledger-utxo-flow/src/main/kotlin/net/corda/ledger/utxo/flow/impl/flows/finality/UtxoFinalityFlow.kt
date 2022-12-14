@@ -2,20 +2,16 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.sendAndReceive
+import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -39,9 +35,6 @@ class UtxoFinalityFlow(
     lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @CordaInject
     lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
 
     @Suspendable
@@ -57,7 +50,7 @@ class UtxoFinalityFlow(
                     "Requesting signatures from ${it.counterparty} for transaction $transactionId"
                 }
                 it.send(initialTransaction)
-                flowEngine.subFlow(TransactionBackchainSenderFlow(session))
+                flowEngine.subFlow(TransactionBackchainSenderFlow(it))
                 it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
                 log.warn(

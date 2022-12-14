@@ -6,6 +6,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -24,6 +25,9 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     protected fun verifySignature(

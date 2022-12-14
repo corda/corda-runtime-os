@@ -9,7 +9,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetad
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
@@ -35,9 +34,6 @@ class UtxoReceiveFinalityFlow(
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
-
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
@@ -45,7 +41,7 @@ class UtxoReceiveFinalityFlow(
         val transactionId = initialTransaction.id
         log.debug { "Beginning receive finality for transaction: $transactionId" }
 
-        flowEngine.subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction, session))
 
         initialTransaction.signatures.forEach {
             verifySignature(transactionId, it) { message ->

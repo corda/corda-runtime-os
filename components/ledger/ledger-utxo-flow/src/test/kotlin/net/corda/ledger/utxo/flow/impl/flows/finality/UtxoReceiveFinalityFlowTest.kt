@@ -283,6 +283,9 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction resolves the transaction's backchain`() {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+        whenever(session.receive(List::class.java))
+            .thenReturn(emptyList<DigitalSignatureAndMetadata>())
+            .thenReturn(listOf(signatureNotary))
 
         callReceiveFinalityFlow()
 
