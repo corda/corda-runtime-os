@@ -14,6 +14,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
@@ -89,7 +90,7 @@ class UtxoDemoFlow : RPCStartableFlow {
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .setNotary(Party(notary.name, notary.publicKey))
-                .setTimeWindowBetween(Instant.MIN, Instant.MAX)
+                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)

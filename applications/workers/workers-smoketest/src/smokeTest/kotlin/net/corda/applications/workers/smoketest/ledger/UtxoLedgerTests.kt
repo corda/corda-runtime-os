@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
+import net.corda.applications.workers.smoketest.TEST_NOTARY_CPB_LOCATION
+import net.corda.applications.workers.smoketest.TEST_NOTARY_CPI_NAME
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
@@ -34,6 +36,7 @@ class UtxoLedgerTests {
 
     private val testRunUniqueId = UUID.randomUUID()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
@@ -55,11 +58,12 @@ class UtxoLedgerTests {
     @BeforeAll
     fun beforeAll() {
         conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+        conditionallyUploadCordaPackage(notaryCpiName, TEST_NOTARY_CPB_LOCATION, GROUP_ID, staticMemberList)
 
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
-        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, cpiName)
+        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
