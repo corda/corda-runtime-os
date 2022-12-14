@@ -1,14 +1,16 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.exceptions.ResponderFlowException
+import net.corda.simulator.exceptions.SessionAlreadyClosedException
 import net.corda.simulator.runtime.testflows.PingAckMessage
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -31,10 +33,17 @@ class BlockingQueueFlowSessionTest {
 
     private val flowCallConfiguration = mock<SimulatorConfiguration>()
 
+    private val fakeClock = mock<Clock>()
+    private val fakeClockConfiguration = mock<SimulatorConfiguration>()
+
     init {
         whenever(flowCallConfiguration.pollInterval).doReturn(Duration.ofMillis(100))
         whenever(flowCallConfiguration.timeout).doReturn(Duration.ofMinutes(1))
         whenever(flowCallConfiguration.clock).doReturn(Clock.systemDefaultZone())
+
+        whenever(fakeClockConfiguration.timeout).doReturn(Duration.ofMinutes(5))
+        whenever(fakeClockConfiguration.pollInterval).doReturn(Duration.ofMillis(100))
+        whenever(fakeClockConfiguration.clock).doReturn(fakeClock)
     }
 
     @Test
@@ -43,13 +52,13 @@ class BlockingQueueFlowSessionTest {
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
 
-        val sendingSession = BlockingQueueFlowSession(
+        val sendingSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
             fromInitiatorToResponder
         )
 
-        val receivingSession = BlockingQueueFlowSession(
+        val receivingSession = BaseResponderFlowSession(
             FlowContext(flowCallConfiguration, receiver, "ping-ack"),
             fromInitiatorToResponder,
             fromResponderToInitiator
@@ -64,58 +73,114 @@ class BlockingQueueFlowSessionTest {
     }
 
     @Test
-    fun `should throw an exception if receivedException is set`() {
-        // Given a session constructed only on the sending side
+    fun `should throw an exception if the session is used after closing, except for closing again`() {
+        // Given sessions constructed with shared queues
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
 
-        val sendingSession = BlockingQueueFlowSession(
+        val initiatorSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
             fromInitiatorToResponder
         )
 
-        // When we send a message and then set a received exception
-        thread {
-            sleep(100)
-            sendingSession.responderErrorCaught(IllegalArgumentException("Just because"))
-        }
+        val responderSession = BaseResponderFlowSession(
+            FlowContext(flowCallConfiguration, receiver, "ping-ack"),
+            fromInitiatorToResponder,
+            fromResponderToInitiator
+        )
 
-        assertThrows<ResponderFlowException> {
-            sendingSession.receive<Any>()
-        }
+        // When we close them
+        responderSession.close()
+        initiatorSession.responderClosed()
+        initiatorSession.close()
+
+        // Then subsequent calls should error
+        assertThrows<SessionAlreadyClosedException> { initiatorSession.send("ping-ack") }
+        assertThrows<SessionAlreadyClosedException> { initiatorSession.receive() }
+
+        assertThrows<SessionAlreadyClosedException> { responderSession.send("ping-ack") }
+        assertThrows<SessionAlreadyClosedException> { responderSession.receive() }
+
+        // Except for closing again
+        assertDoesNotThrow { initiatorSession.close() }
+        assertDoesNotThrow { responderSession.close() }
     }
 
+
+
     @Test
-    fun `should time out if flow does not complete`() {
+    fun `should time out receive if flow does not complete`() {
         // Given a session constructed only on the sending side
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
-        val fakeClockConfiguration = mock<SimulatorConfiguration>()
 
-        val sendingSession = BlockingQueueFlowSession(
+        val sendingSession = BaseInitiatorFlowSession(
             FlowContext(fakeClockConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
             fromInitiatorToResponder
         )
 
-        // With a timeout of 5 minutes (for a demo)
-        val clock = mock<Clock>()
-        whenever(fakeClockConfiguration.timeout).doReturn(Duration.ofMinutes(5))
-        whenever(fakeClockConfiguration.pollInterval).doReturn(Duration.ofMillis(100))
-        whenever(fakeClockConfiguration.clock).doReturn(clock)
-
-        whenever(clock.instant()).thenReturn(Instant.now())
-
-        // When we advance the clock past 5 minutes
+        // When we advance the clock past the 5 minute fake timeout
+        whenever(fakeClock.instant()).thenReturn(Instant.now())
         thread {
             sleep(100)
-            whenever(clock.instant()).thenReturn(Instant.now().plusSeconds(60*6))
+            whenever(fakeClock.instant()).thenReturn(Instant.now().plusSeconds(60*6))
         }
 
-        // Then the session should time out
+        // Then the session should time out from any receive
         assertThrows<TimeoutException> {
             sendingSession.receive<Any>()
         }
+    }
+
+    @Test
+    fun `should time out close if flow does not complete`() {
+        // Given a session constructed only on the sending side
+        val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
+        val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+
+        val sendingSession = BaseInitiatorFlowSession(
+            FlowContext(fakeClockConfiguration, sender, "ping-ack"),
+            fromResponderToInitiator,
+            fromInitiatorToResponder
+        )
+
+        // When we advance the clock past the 5 minute fake timeout
+        whenever(fakeClock.instant()).thenReturn(Instant.now())
+        thread {
+            sleep(100)
+            whenever(fakeClock.instant()).thenReturn(Instant.now().plusSeconds(60*6))
+        }
+
+        // Then the session should time out from any close
+        assertThrows<TimeoutException> {
+            sendingSession.close()
+        }
+    }
+
+    @Test
+    fun `should wait for responder sessions to close`() {
+        // Given a session constructed only on the sending side
+        val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
+        val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+
+        val sendingSession = BaseInitiatorFlowSession(
+            FlowContext(flowCallConfiguration, sender, "ping-ack"),
+            fromResponderToInitiator,
+            fromInitiatorToResponder
+        )
+
+        // When we close the responder
+        var responderClosed = false
+        thread {
+            sleep(50)
+            responderClosed = true
+            sendingSession.responderClosed()
+        }
+
+        // Then the sending session should wait until it's closed before closing itself
+        sendingSession.close()
+        assertTrue(responderClosed, "Responder was not closed when sending session closed")
     }
 }

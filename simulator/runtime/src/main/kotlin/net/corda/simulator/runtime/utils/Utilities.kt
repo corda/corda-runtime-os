@@ -17,6 +17,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import java.lang.reflect.Field
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 
@@ -30,15 +31,17 @@ fun Flow.injectIfRequired(
     fieldClass: Class<*>,
     valueCreator: () -> Any
 ) {
+    accessField(fieldClass)?.set(this, valueCreator())
+}
+
+fun Flow.accessField(fieldClass: Class<*>): Field? {
     val field = getSuperClassesFor(this.javaClass)
         .flatMap { it.declaredFields.toSet() }
-        .firstOrNull {it.type.equals(fieldClass) && it.isAnnotationPresent(CordaInject::class.java)}
-    if (field != null) {
-        AccessController.doPrivileged(PrivilegedExceptionAction {
-            field.isAccessible = true
-        })
-        field.set(this, valueCreator())
-    }
+        .firstOrNull { it.type.equals(fieldClass) && it.isAnnotationPresent(CordaInject::class.java) }
+    AccessController.doPrivileged(PrivilegedExceptionAction {
+        field?.isAccessible = true
+    })
+    return field
 }
 
 private fun getSuperClassesFor(clazz: Class<*>): List<Class<*>> {
@@ -50,6 +53,7 @@ private fun getSuperClassesFor(clazz: Class<*>): List<Class<*>> {
     }
     return superClasses
 }
+
 /**
  * Converts this [MemberX500Name] to a unique name to use for the persistence sandbox for a member.
  */

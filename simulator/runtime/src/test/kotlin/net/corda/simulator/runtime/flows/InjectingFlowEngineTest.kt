@@ -22,17 +22,18 @@ class InjectingFlowEngineTest {
     private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
     @Test
-    fun `should inject subflow with provided services then call it`() {
+    fun `should inject subflow with provided services then call it through the flow manager`() {
         // Given some services and an injector
         val fiber = mock<SimFiber>()
         val injector = mock<FlowServicesInjector>()
+        val flowManager = mock<FlowManager>()
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(mock(), member, fiber, injector, CordaFlowChecker())
+        val engine = InjectingFlowEngine(mock(), member, fiber, injector, CordaFlowChecker(), flowManager)
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()
-        whenever(flow.call()).thenReturn("Yo!")
+        whenever(flowManager.call(flow)).thenReturn("Yo!")
 
         val response = engine.subFlow(flow)
 
