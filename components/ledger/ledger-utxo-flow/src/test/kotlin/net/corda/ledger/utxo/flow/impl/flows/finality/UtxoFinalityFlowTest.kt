@@ -4,10 +4,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -46,6 +48,7 @@ class UtxoFinalityFlowTest {
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
+    private val flowEngine = mock<FlowEngine>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -82,6 +85,8 @@ class UtxoFinalityFlowTest {
 
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
+
+        whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
 
         whenever(initialTx.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
         whenever(initialTx.getMissingSignatories()).thenReturn(
@@ -523,6 +528,19 @@ class UtxoFinalityFlowTest {
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
+    @Test
+    fun `each passed in session is sent the transaction backchain`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
+
+        callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
+
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionBob))
+    }
+
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = UtxoFinalityFlow(signedTransaction, sessions)
         flow.transactionSignatureService = transactionSignatureService
@@ -530,6 +548,7 @@ class UtxoFinalityFlowTest {
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
         flow.pluggableNotaryClientFlowFactory = pluggableNotaryClientFlowFactory
+        flow.flowEngine = flowEngine
         flow.call()
     }
 

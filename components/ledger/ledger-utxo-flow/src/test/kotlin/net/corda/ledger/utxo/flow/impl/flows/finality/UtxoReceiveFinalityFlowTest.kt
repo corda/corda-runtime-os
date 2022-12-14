@@ -5,14 +5,17 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -22,6 +25,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -49,6 +53,7 @@ class UtxoReceiveFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
+    private val flowEngine = mock<FlowEngine>()
 
     private val session = mock<FlowSession>()
 
@@ -78,6 +83,8 @@ class UtxoReceiveFinalityFlowTest {
 
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
+        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
+
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.metadata).thenReturn(metadata)
         whenever(signedTransaction.notary).thenReturn(utxoNotaryExample)
@@ -95,6 +102,7 @@ class UtxoReceiveFinalityFlowTest {
 
         whenever(notarisedTransaction.id).thenReturn(ID)
 
+        whenever(ledgerTransaction.id).thenReturn(ID)
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
@@ -272,11 +280,31 @@ class UtxoReceiveFinalityFlowTest {
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
+    @Test
+    fun `receiving a transaction resolves the transaction's backchain`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+
+        callReceiveFinalityFlow()
+
+       verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+    }
+
+    @Test
+    fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
+
+        assertThatThrownBy { callReceiveFinalityFlow() }.isInstanceOf(ContractVerificationException::class.java)
+
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+    }
+
     private fun callReceiveFinalityFlow(verifier: UtxoTransactionValidator = UtxoTransactionValidator { }) {
         val flow = UtxoReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.transactionSignatureService = transactionSignatureService
+        flow.flowEngine = flowEngine
         flow.call()
     }
 

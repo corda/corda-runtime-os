@@ -2,7 +2,11 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -52,7 +56,9 @@ class UtxoFinalityFlow(
                 log.debug {
                     "Requesting signatures from ${it.counterparty} for transaction $transactionId"
                 }
-                it.sendAndReceive<Payload<List<DigitalSignatureAndMetadata>>>(initialTransaction)
+                it.send(initialTransaction)
+                flowEngine.subFlow(TransactionBackchainSenderFlow(session))
+                it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
                 log.warn(
                     "Failed to receive signatures from ${it.counterparty} for transaction $transactionId"
