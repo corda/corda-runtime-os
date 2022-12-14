@@ -23,10 +23,6 @@ class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup
 ): NotaryVirtualNodeSelectorService, SingletonSerializeAsToken, UsedByFlow {
-
-    private companion object {
-        val logger = loggerFor<NotaryVirtualNodeSelectorServiceImpl>()
-    }
     /**
      * This function will fetch the virtual nodes that belong to the [serviceIdentity] and do a random selection on
      * that list.
