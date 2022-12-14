@@ -2,10 +2,14 @@ topics:
   PersistenceEntityProcessorTopic:
     name: persistence.entity.processor
     consumers:
+      - db
     producers:
+      - flow
     config:
   PersistenceLedgerProcessorTopic:
     name: persistence.ledger.processor
     consumers:
+      - db
     producers:
+      - flow
     config:
