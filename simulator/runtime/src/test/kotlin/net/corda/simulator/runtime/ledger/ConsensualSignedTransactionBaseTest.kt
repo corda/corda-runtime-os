@@ -48,7 +48,7 @@ class ConsensualSignedTransactionBaseTest {
             config
         )
         val signedByTwoTx = signedByOneTx.addSignature(publicKeys[1])
-        val signedByAllTx = signedByTwoTx.addSignature(signatures[2])
+        val signedByAllTx = signedByTwoTx.addSignatures(listOf(signatures[2]))
         assertThat(signedByAllTx.signatures.map {it.by}, `is`(publicKeys))
     }
 
