@@ -5,7 +5,6 @@ import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -52,13 +51,10 @@ class NotaryVirtualNodeSelectorServiceImplTest {
                 ).entries
                 on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn mockNotaryDetails
             }
-            val mgmContext: MGMContext = mock()
-
             return mock {
                 on { name } doReturn MemberX500Name.parse(memberName)
                 on { sessionInitiationKey } doReturn mock()
                 on { memberProvidedContext } doReturn mockMemberContext
-                on { mgmProvidedContext } doReturn mgmContext
             }
         }
     }
