@@ -4,12 +4,15 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
@@ -18,6 +21,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
@@ -44,6 +48,7 @@ class UtxoReceiveFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val serializationService = mock<SerializationService>()
+    private val flowEngine = mock<FlowEngine>()
 
     private val session = mock<FlowSession>()
 
@@ -68,12 +73,15 @@ class UtxoReceiveFinalityFlowTest {
 
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
+        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
+
         whenever(signedTransaction.id).thenReturn(ID)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2))
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
         whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
 
+        whenever(ledgerTransaction.id).thenReturn(ID)
         whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
@@ -199,11 +207,31 @@ class UtxoReceiveFinalityFlowTest {
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
+    @Test
+    fun `receiving a transaction resolves the transaction's backchain`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+
+        callReceiveFinalityFlow()
+
+       verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+    }
+
+    @Test
+    fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
+        whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
+
+        assertThatThrownBy { callReceiveFinalityFlow() }.isInstanceOf(ContractVerificationException::class.java)
+
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+    }
+
     private fun callReceiveFinalityFlow(verifier: UtxoTransactionValidator = UtxoTransactionValidator { }) {
         val flow = UtxoReceiveFinalityFlow(session, verifier)
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.serializationService = serializationService
+        flow.flowEngine = flowEngine
         flow.call()
     }
 
