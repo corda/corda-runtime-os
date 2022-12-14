@@ -19,6 +19,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(':components:crypto:crypto-client')
+    implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':libs:crypto:merkle-impl')
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:sandbox-types')

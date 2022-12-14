@@ -3,6 +3,8 @@ package net.corda.ledger.notary.plugin.factory.impl
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
@@ -22,7 +24,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
-    service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class ],
+    service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class, UsedByVerification::class, UsedByPersistence::class ],
     property = [ "corda.system=true" ],
     scope = ServiceScope.PROTOTYPE
 )
@@ -31,12 +33,14 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
     private val notaryLookup: NotaryLookup,
     @Reference(service = NotaryVirtualNodeSelectorService::class)
     private val virtualNodeSelectorService: NotaryVirtualNodeSelectorService
-) : PluggableNotaryClientFlowFactory, SingletonSerializeAsToken, UsedByFlow, CustomMetadataConsumer {
+) : PluggableNotaryClientFlowFactory, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence,
+    UsedByVerification, CustomMetadataConsumer {
 
     private companion object {
         val logger = loggerFor<PluggableNotaryClientFlowFactoryImpl>()
-        val pluggableNotaryClientFlowProviders = mutableMapOf<String, PluggableNotaryClientFlowProvider>()
     }
+
+    private val pluggableNotaryClientFlowProviders = mutableMapOf<String, PluggableNotaryClientFlowProvider>()
 
     @Suspendable
     override fun create(notaryService: Party, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
