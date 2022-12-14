@@ -2,17 +2,24 @@ topics:
   RPCPermissionsManagementTopic:
     name: rpc.permissions.management
     consumers:
+      - db
     producers:
+      - rpc
     config:
   RPCPermissionsManagementResponseTopic:
     name: rpc.permissions.management.resp
     consumers:
+      - rpc
     producers:
+      - db
     config:
   RPCPermissionsGroupTopic:
     name: rpc.permissions.group
     consumers:
+      - rpc
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -23,7 +30,10 @@ topics:
   RPCPermissionsPermissionTopic:
     name: rpc.permissions.permission
     consumers:
+      - rpc
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -34,7 +44,10 @@ topics:
   RPCPermissionsUserTopic:
     name: rpc.permissions.user
     consumers:
+      - rpc
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -45,7 +58,10 @@ topics:
   RPCPermissionsRoleTopic:
     name: rpc.permissions.role
     consumers:
+      - rpc
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000

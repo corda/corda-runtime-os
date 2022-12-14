@@ -1,13 +1,11 @@
 topics:
-  UserPermissionsManagementTopic:
-    name: user.permissions.management
-    consumers:
-    producers:
-    config:
   PermissionsUserSummaryTopic:
     name: permissions.user.summary
     consumers:
+      - rpc
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000

@@ -157,7 +157,6 @@ class Schemas {
     class Permissions {
         companion object {
             const val PERMISSIONS_USER_SUMMARY_TOPIC = "permissions.user.summary"
-            const val USER_PERMISSIONS_MGMT_TOPIC = "user.permissions.management"
         }
     }
 
