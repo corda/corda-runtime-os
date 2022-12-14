@@ -165,7 +165,7 @@ class UtxoFinalityFlowTest {
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureNotary))
+        verify(transactionSignatureService).verifyNotarySignature(any(), eq(signatureNotary))
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)
@@ -329,7 +329,7 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(transactionSignatureService.verifyNotarySignature(any(), eq(signatureNotary))).thenThrow(
             IllegalArgumentException("Notary signature verification failed.")
         )
 
@@ -390,7 +390,7 @@ class UtxoFinalityFlowTest {
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureNotary))
+        verify(transactionSignatureService).verifyNotarySignature(any(), eq(signatureNotary))
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs, never()).addSignature(signatureAlice2)

@@ -28,7 +28,7 @@ import java.time.Instant
 
 const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
 
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE,
@@ -43,7 +43,6 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = SignatureSpecService::class)
     private val signatureSpecService: SignatureSpecService,
-
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class)

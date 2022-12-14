@@ -147,7 +147,7 @@ class UtxoReceiveFinalityFlowTest {
             .thenReturn(emptyList<DigitalSignatureAndMetadata>())
             .thenReturn(listOf(signatureNotary))
 
-        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(transactionSignatureService.verifyNotarySignature(any(), eq(signatureNotary))).thenThrow(
             CryptoSignatureException("Verifying notary signature failed!!")
         )
 
