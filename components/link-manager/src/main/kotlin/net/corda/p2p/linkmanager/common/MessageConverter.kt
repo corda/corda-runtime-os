@@ -214,7 +214,7 @@ class MessageConverter {
             }
         }
 
-        internal fun <T> extractPayloadFromAuthenticatedEncryptedMessage(
+        fun <T> extractPayloadFromAuthenticatedEncryptedMessage(
             sessionAndMessage: SessionAndMessage.AuthenticatedEncrypted,
             deserialize: (ByteBuffer) -> T
         ): T? {
@@ -232,7 +232,7 @@ class MessageConverter {
             return deserializeHandleAvroErrors(deserialize, ByteBuffer.wrap(decryptedData), message.header.sessionId)
         }
 
-        internal fun <T> extractPayloadFromAuthenticatedMessage(
+        fun <T> extractPayloadFromAuthenticatedMessage(
             sessionAndMessage: SessionAndMessage.Authenticated,
             deserialize: (ByteBuffer) -> T
         ): T? {
