@@ -90,7 +90,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     override fun verifyNotarySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
         val txIds = listOf(transactionId)
         // Copy from net.corda.uniqueness.client.impl.LedgerUniquenessCheckerClientServiceImpl.signBatch
-        // Todo transition to proper verify
+        // TODO transition to proper verify
         val algorithms = txIds.mapTo(HashSet(), SecureHash::algorithm)
         require(algorithms.size > 0) {
             "Cannot sign an empty batch"

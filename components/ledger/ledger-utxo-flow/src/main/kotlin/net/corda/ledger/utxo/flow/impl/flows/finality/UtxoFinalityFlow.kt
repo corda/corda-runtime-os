@@ -83,7 +83,7 @@ class UtxoFinalityFlow(
         }.toMap()
 
         log.debug { "Verifying all signatures for transaction $transactionId." }
-        transaction.verifySignatures() // CORE-8935 Add better logging if the transaction is not fully signed
+        transaction.verifySignatures() // TODO CORE-8935 Add better logging if the transaction is not fully signed
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
