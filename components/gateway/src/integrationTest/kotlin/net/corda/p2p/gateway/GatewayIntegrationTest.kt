@@ -332,6 +332,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with ip address`() {
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val ipAddress = "127.0.0.1"
@@ -352,8 +353,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB,
-                mock(),
+                testCryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, ipKeyStore)
