@@ -54,6 +54,25 @@ import org.osgi.test.junit5.service.ServiceExtension
 class LinkManagerIntegrationTest {
 
     companion object {
+        private const val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
+        private const val cryptoConf = """
+        dummy=1
+    """
         private val logger = contextLogger()
 
         @InjectService(timeout = 4000)
@@ -144,7 +163,28 @@ class LinkManagerIntegrationTest {
         }
 
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
-
+        configPublisher.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.MESSAGING_CONFIG,
+                    Configuration(messagingConf, messagingConf, 0,
+                        ConfigurationSchemaVersion(1, 0)
+                    )
+                )
+            )
+        )
+        configPublisher.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.CRYPTO_CONFIG,
+                    Configuration(cryptoConf, cryptoConf, 0,
+                        ConfigurationSchemaVersion(1, 0)
+                    )
+                )
+            )
+        )
         val linkManager = LinkManager(
             subscriptionFactory,
             publisherFactory,
