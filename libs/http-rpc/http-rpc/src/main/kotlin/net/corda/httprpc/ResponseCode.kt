@@ -92,13 +92,6 @@ enum class ResponseCode constructor(val statusCode: Int) {
     BAD_REQUEST(400),
 
     /**
-     * Signals the request was syntactically correct but contained data that was invalid to successfully complete the request.
-     *
-     * See `https://httpwg.org/specs/rfc9110.html#status.400`.
-     */
-    INVALID_INPUT_DATA(400),
-
-    /**
      * Signals the user authentication failed.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.401`.
@@ -176,13 +169,6 @@ enum class ResponseCode constructor(val statusCode: Int) {
      * See `https://httpwg.org/specs/rfc9110.html#status.500`.
      */
     INTERNAL_SERVER_ERROR(500),
-
-    /**
-     * An unexpected error occurred internally. Caused by programming logic failures such as NPE, most likely requires support intervention.
-     *
-     * See `https://httpwg.org/specs/rfc9110.html#status.500`.
-     */
-    UNEXPECTED_ERROR(500),
 
     /**
      * Common causes are a server that is down for maintenance or that is overloaded.

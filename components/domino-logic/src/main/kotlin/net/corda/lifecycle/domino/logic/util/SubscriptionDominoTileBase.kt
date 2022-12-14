@@ -10,7 +10,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
@@ -77,7 +76,12 @@ abstract class SubscriptionDominoTileBase(
     override val isRunning: Boolean
         get() = internalState == Started
 
-    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.toSet())
+    private val dependentChildrenRegistrations = dependentChildren.associateBy {
+        coordinator.followStatusChangesByName(setOf(it))
+    }
+    private val latestChildStateMap = dependentChildren.associateWith {
+        LifecycleStatus.DOWN
+    }.toMutableMap()
     private var subscriptionRegistration = AtomicReference<RegistrationHandle>(null)
 
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())
@@ -112,12 +116,10 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
-        subscriptionRegistration.get()?.close()
-        subscriptionRegistration.set(null)
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
-        subscriptionRegistration.set(coordinator.followStatusChangesByName(setOf(subscriptionName)))
+        subscriptionRegistration.getAndSet(coordinator.followStatusChangesByName(setOf(subscriptionName)))?.close()
         coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.start()
     }
 
@@ -128,44 +130,53 @@ abstract class SubscriptionDominoTileBase(
                     startTile()
                 }
                 is RegistrationStatusChangeEvent -> {
-                    when(event.registration) {
-                        subscriptionRegistration.get() -> {
-                            when(event.status) {
-                                LifecycleStatus.UP -> {
-                                    updateState(Started)
-                                }
-                                LifecycleStatus.DOWN -> {
-                                    updateState(StoppedDueToChildStopped)
-                                }
-                                LifecycleStatus.ERROR -> {
-                                    updateState(StoppedDueToError)
-                                }
+                    if(event.registration == subscriptionRegistration.get()) {
+                        when(event.status) {
+                            LifecycleStatus.UP -> {
+                                updateState(Started)
+                            }
+                            LifecycleStatus.DOWN -> {
+                                updateState(StoppedDueToChildStopped)
+                            }
+                            LifecycleStatus.ERROR -> {
+                                updateState(StoppedDueToError)
                             }
                         }
-                        dependentChildrenRegistration -> {
-                            when(event.status) {
-                                LifecycleStatus.UP -> {
-                                    logger.info("All dependencies are started now, starting subscription.")
-                                    createAndStartSubscription()
-                                }
-                                LifecycleStatus.DOWN -> {
-                                    logger.info("One of the dependencies went down, stopping subscription.")
-                                    subscriptionRegistration.get()?.close()
-                                    subscriptionRegistration.set(null)
-                                    updateState(StoppedDueToChildStopped)
-                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
-                                }
-                                LifecycleStatus.ERROR -> {
-                                    logger.info("One of the dependencies had an error, stopping subscription.")
-                                    subscriptionRegistration.get()?.close()
-                                    subscriptionRegistration.set(null)
-                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
-                                    updateState(StoppedDueToError)
-                                }
-                            }
+                    } else {
+                        dependentChildrenRegistrations[event.registration]?.also { name ->
+                            statusChanged(name, event.status)
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun statusChanged(name: LifecycleCoordinatorName, status: LifecycleStatus) {
+        val oldStatus = latestChildStateMap.put(name, status)
+        when(status) {
+            LifecycleStatus.UP -> {
+                val notReady = latestChildStateMap.entries.filter {
+                    it.value != LifecycleStatus.UP
+                }.map {
+                    it.key
+                }
+                if (notReady.isEmpty()) {
+                    logger.info("All dependencies are started now, starting subscription.")
+                    createAndStartSubscription()
+                } else {
+                    logger.info("The status of $name had started. Waiting for $notReady.")
+                }
+            }
+            LifecycleStatus.DOWN, LifecycleStatus.ERROR -> {
+                logger.info("The status of $name changed from $oldStatus to $status, stopping subscription.")
+                subscriptionRegistration.getAndSet(null)?.close()
+                if (status == LifecycleStatus.ERROR) {
+                    updateState(StoppedDueToError)
+                } else {
+                    updateState(StoppedDueToChildStopped)
+                }
+                coordinator.closeManagedResources(setOf(SUBSCRIPTION))
             }
         }
     }

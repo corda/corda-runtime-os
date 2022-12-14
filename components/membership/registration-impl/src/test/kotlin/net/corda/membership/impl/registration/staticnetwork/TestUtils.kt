@@ -28,6 +28,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
@@ -100,6 +101,35 @@ class TestUtils {
                     "$SYNC_PROTOCOL": "com.foo.bar.SyncProtocol",
                     "$PROTOCOL_PARAMETERS": {
                         "$SESSION_KEY_POLICY": "$COMBINED",
+                        "$STATIC_NETWORK": {
+                            "$MEMBERS": $staticMemberTemplate
+                        }
+                    },
+                    "$P2P_PARAMETERS": {
+                        "$SESSION_PKI": "$NO_PKI",
+                        "$TLS_TRUST_ROOTS": [
+                            "$r3comCert"
+                        ],
+                        "$TLS_PKI": "$STANDARD",
+                        "$TLS_VERSION": "$VERSION_1_3",
+                        "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
+                    },
+                    "$CIPHER_SUITE": {}
+                }
+            """.trimIndent()
+            )
+        )
+
+        val groupPolicyWithStaticNetworkAndDistinctKeys = MemberGroupPolicyImpl(
+            ObjectMapper().readTree(
+                """
+                {
+                    "$FILE_FORMAT_VERSION": 1,
+                    "$GROUP_ID": "$DUMMY_GROUP_ID",
+                    "$REGISTRATION_PROTOCOL": "com.foo.bar.RegistrationProtocol",
+                    "$SYNC_PROTOCOL": "com.foo.bar.SyncProtocol",
+                    "$PROTOCOL_PARAMETERS": {
+                        "$SESSION_KEY_POLICY": "$DISTINCT",
                         "$STATIC_NETWORK": {
                             "$MEMBERS": $staticMemberTemplate
                         }

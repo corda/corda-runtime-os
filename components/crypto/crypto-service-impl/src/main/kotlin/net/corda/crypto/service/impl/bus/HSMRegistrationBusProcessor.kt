@@ -7,7 +7,6 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.service.HSMService
-import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -26,14 +25,9 @@ import java.util.concurrent.CompletableFuture
 class HSMRegistrationBusProcessor(
     private val hsmService: HSMService,
     event: ConfigChangedEvent
-) : WireProcessor(handlers), RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
+) : RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
     companion object {
         private val logger: Logger = contextLogger()
-        private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
-            AssignHSMCommand::class.java to AssignHSMCommandHandler::class.java,
-            AssignSoftHSMCommand::class.java to AssignSoftHSMCommandHandler::class.java,
-            AssignedHSMQuery::class.java to AssignedHSMQueryHandler::class.java,
-        )
     }
 
     private val config = event.config.toCryptoConfig().hsmRegistrationBusProcessor()
@@ -46,9 +40,8 @@ class HSMRegistrationBusProcessor(
     override fun onNext(request: HSMRegistrationRequest, respFuture: CompletableFuture<HSMRegistrationResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            val handler = getHandler(request.request::class.java, hsmService)
             val response = executor.executeWithRetry {
-                handler.handle(request.context, request.request)
+                handleRequest(request.request, request.context)
             }
             val result = HSMRegistrationResponse(createResponseContext(request), response)
             logger.debug {
@@ -62,6 +55,15 @@ class HSMRegistrationBusProcessor(
         }
     }
 
+    private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
+        return when (request) {
+            is AssignHSMCommand -> hsmService.assignHSM(context.tenantId, request.category, request.context.toMap())
+            is AssignSoftHSMCommand -> hsmService.assignSoftHSM(context.tenantId, request.category)
+            is AssignedHSMQuery -> hsmService.findAssignedHSM(context.tenantId, request.category) ?: CryptoNoContentValue()
+            else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+        }
+    }
+
     private fun createResponseContext(request: HSMRegistrationRequest) = CryptoResponseContext(
         request.context.requestingComponent,
         request.context.requestTimestamp,
@@ -70,25 +72,4 @@ class HSMRegistrationBusProcessor(
         request.context.tenantId,
         request.context.other
     )
-
-    private class AssignHSMCommandHandler(
-        private val hsmService: HSMService
-    ) : Handler<AssignHSMCommand> {
-        override fun handle(context: CryptoRequestContext, request: AssignHSMCommand): Any =
-            hsmService.assignHSM(context.tenantId, request.category, request.context.toMap())
-    }
-
-    private class AssignSoftHSMCommandHandler(
-        private val hsmService: HSMService
-    ) : Handler<AssignSoftHSMCommand> {
-        override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any =
-            hsmService.assignSoftHSM(context.tenantId, request.category)
-    }
-
-    private class AssignedHSMQueryHandler(
-        private val hsmService: HSMService
-    ) : Handler<AssignedHSMQuery> {
-        override fun handle(context: CryptoRequestContext, request: AssignedHSMQuery): Any =
-            hsmService.findAssignedHSM(context.tenantId, request.category) ?: CryptoNoContentValue()
-    }
 }
