@@ -40,13 +40,6 @@ class CpiInfoDbReconcilerReaderTest {
         CpkManifest(CpkFormatVersion(2, 3)),
         "mainBundle.jar",
         listOf("library.jar"),
-        listOf(
-            CpkIdentifier(
-                "SomeName 2",
-                "1.0",
-                SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
-            )
-        ),
         CordappManifest(
             "net.cordapp.Bundle",
             "1.2.3",

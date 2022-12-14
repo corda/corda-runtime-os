@@ -42,7 +42,6 @@ private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
     CpkManifest(CpkFormatVersion(1, 1)),
     "mock-bundle-$i",
     emptyList(),
-    emptyList(),
     CordappManifest(
         "mock-bundle-symbolic",
         "$i",

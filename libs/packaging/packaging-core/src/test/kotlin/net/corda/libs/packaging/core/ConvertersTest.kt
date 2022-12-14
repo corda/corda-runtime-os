@@ -13,7 +13,6 @@ class ConvertersTest {
             Assertions.assertEquals(cpkMetadata1.cpkId, cpkMetadata2.cpkId)
             Assertions.assertEquals(cpkMetadata1.mainBundle, cpkMetadata2.mainBundle)
             Assertions.assertEquals(cpkMetadata1.libraries, cpkMetadata2.libraries)
-            Assertions.assertEquals(cpkMetadata1.dependencies, cpkMetadata2.dependencies)
             assertCordappManifestEquals(cpkMetadata1.cordappManifest, cpkMetadata2.cordappManifest)
             Assertions.assertEquals(cpkMetadata1.type, cpkMetadata2.type)
             Assertions.assertEquals(cpkMetadata1.fileChecksum, cpkMetadata2.fileChecksum)

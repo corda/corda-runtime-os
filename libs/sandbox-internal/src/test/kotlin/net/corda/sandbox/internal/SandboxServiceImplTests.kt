@@ -543,14 +543,13 @@ private data class CpkAndContents(
     val libraryClass: Class<*>,
     val mainBundleName: String? = "${random.nextInt()}",
     val libraryBundleName: String? = "${random.nextInt()}",
-    private val cpkDependencies: List<CpkIdentifier> = emptyList(),
     val cpkChecksum: SecureHash? = null
 ) {
     val bundleNames = setOf(mainBundleName, libraryBundleName)
-    val cpk = createDummyCpk(cpkDependencies)
+    val cpk = createDummyCpk()
 
     /** Creates a dummy Cpk. */
-    private fun createDummyCpk(cpkDependencies: List<CpkIdentifier>) = object : Cpk {
+    private fun createDummyCpk() = object : Cpk {
         val mainBundle = Paths.get("${random.nextInt()}.jar").toString()
         val libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString())
         val cpkBytes = ByteArrayOutputStream().apply {
@@ -566,7 +565,6 @@ private data class CpkAndContents(
             manifest = CpkManifest(CpkFormatVersion(0, 0)),
             mainBundle = mainBundle,
             libraries = libraries,
-            dependencies = cpkDependencies,
             cordappManifest = mock<CordappManifest>().apply {
                 whenever(bundleSymbolicName).thenAnswer { mainBundleName }
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }

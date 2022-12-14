@@ -236,22 +236,6 @@ class CPKTests {
     }
 
     @Test
-    fun `Verify CPK dependencies are correct`() {
-        val dependencies = workflowCPK.metadata.dependencies
-        Assertions.assertEquals(1, dependencies.size)
-        val contractCPKDependency = dependencies.single()
-
-        contractCPKDependency.apply {
-            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.symbolic.name"), name)
-            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.version"), version)
-            Assertions.assertEquals(
-                cordaDevCertSummaryHash.toString().toByteArray().hash(), signerSummaryHash,
-                "The cpk dependency is expected to be signed with corda development key only"
-            )
-        }
-    }
-
-    @Test
     fun `Verify cordapp signature`() {
         Assertions.assertEquals(
             listOf(cordaDevCertSummaryHash).summaryHash(),
@@ -409,11 +393,6 @@ class CPKTests {
         assertThrows<PackagingException> {
             Files.newInputStream(nonJarFile).use { CpkReader.readCpk(it, processedWorkflowCPKPath, nonJarFile.toString()) }
         }
-    }
-
-    @Test
-    fun `corda-api dependencies are not included in cpk dependencies`() {
-        Assertions.assertIterableEquals(listOf("net.cordapp.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })
     }
 
     @Test

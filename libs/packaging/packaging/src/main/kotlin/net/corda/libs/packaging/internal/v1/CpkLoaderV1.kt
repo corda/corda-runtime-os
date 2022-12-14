@@ -2,12 +2,9 @@ package net.corda.libs.packaging.internal.v1
 
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkDocumentReader
-import net.corda.libs.packaging.CpkDocumentReader.Companion.SAME_SIGNER_PLACEHOLDER
-import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER
 import net.corda.libs.packaging.PackagingConstants.JAR_FILE_EXTENSION
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -20,6 +17,7 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.IOException
@@ -33,9 +31,7 @@ import java.security.cert.Certificate
 import java.time.Instant
 import java.util.Collections
 import java.util.NavigableMap
-import java.util.NavigableSet
 import java.util.TreeMap
-import java.util.TreeSet
 import java.util.jar.JarFile
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
@@ -60,7 +56,6 @@ internal object CpkLoaderV1 : CpkLoader {
         var cpkManifest: CpkManifest?,
         val libraryMap: NavigableMap<String, SecureHash>,
         var libraryConstraints: NavigableMap<String, SecureHash>,
-        var cpkDependencies: NavigableSet<CpkIdentifier>,
         val cpkFileName: String?
     ) {
         @Suppress("ThrowsCount")
@@ -115,7 +110,6 @@ internal object CpkLoaderV1 : CpkLoader {
                 cordappManifest = cordappManifest!!,
                 cordappCertificates = cordappCertificates!!,
                 libraries = Collections.unmodifiableList(ArrayList(libraryMap.keys)),
-                dependencies = cpkDependencies.toList(),
                 timestamp = Instant.now()
             )
         }
@@ -158,13 +152,7 @@ internal object CpkLoaderV1 : CpkLoader {
             try {
                 while (true) {
                     val jarEntry = jar.nextJarEntry ?: break
-                    if (jarEntry.name == CPK_DEPENDENCIES_FILE_ENTRY) {
-                        /** We need to do this as [CpkDocumentReader.readDependencies] closes the stream,
-                         * while we still need it afterward **/
-                        val uncloseableInputStream = UncloseableInputStream(jar)
-                        ctx.cpkDependencies =
-                            CpkDocumentReader.readDependencies(cpkEntry.name, uncloseableInputStream, ctx.fileLocationAppender)
-                    } else if (jarEntry.name == CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY) {
+                    if (jarEntry.name == CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY) {
                         val uncloseableInputStream = UncloseableInputStream(jar)
                         ctx.libraryConstraints =
                             CpkDocumentReader.readLibraryConstraints(cpkEntry.name, uncloseableInputStream, ctx.fileLocationAppender)
@@ -192,16 +180,6 @@ internal object CpkLoaderV1 : CpkLoader {
             )
             manifest.mainAttributes.getValue(CPK_TYPE)?.let(CpkType::parse)?.also { ctx.cpkType = it }
             CordappManifest.fromManifest(manifest) to signatureCollector.certificates
-        }
-
-        // Replace any "same as me" placeholders with this CPK's actual summary hash.
-        val cpkSummaryHash = certificates.signerSummaryHash()
-        ctx.cpkDependencies = ctx.cpkDependencies.mapTo(TreeSet()) { cpk ->
-            if (cpk.signerSummaryHash === SAME_SIGNER_PLACEHOLDER) {
-                CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)
-            } else {
-                cpk
-            }
         }
 
         consumeStream(cordappDigestInputStream, ctx.buffer)
@@ -253,7 +231,6 @@ internal object CpkLoaderV1 : CpkLoader {
             cpkManifest = null,
             libraryMap = TreeMap(),
             libraryConstraints = Collections.emptyNavigableMap(),
-            cpkDependencies = Collections.emptyNavigableSet(),
             fileLocationAppender = if (cpkLocation == null) {
                 { msg: String -> msg }
             } else {

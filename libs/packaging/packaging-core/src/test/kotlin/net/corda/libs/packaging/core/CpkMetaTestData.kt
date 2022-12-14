@@ -21,10 +21,6 @@ object CpkMetaTestData {
         "SomeName",
         "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     )
-    val cpkDependencyId = CpkIdentifier(
-        "SomeName 2",
-        "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
-    )
     val cpkType = CpkType.CORDA_API
     val cpkFormatVersion = CpkFormatVersion(2, 3)
     val cpkManifest = CpkManifest(CpkFormatVersion(2, 3))
@@ -51,7 +47,6 @@ object CpkMetaTestData {
             cpkManifest,
             "mainBundle.jar",
             listOf("library.jar"),
-            listOf(cpkDependencyId),
             cordappManifest,
             cpkType,
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
