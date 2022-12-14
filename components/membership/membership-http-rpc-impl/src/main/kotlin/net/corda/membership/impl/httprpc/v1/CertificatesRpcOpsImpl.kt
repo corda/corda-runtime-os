@@ -30,6 +30,7 @@ import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.Extension
@@ -37,6 +38,7 @@ import org.bouncycastle.asn1.x509.Extension.subjectAlternativeName
 import org.bouncycastle.asn1.x509.ExtensionsGenerator
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralName.dNSName
+import org.bouncycastle.asn1.x509.GeneralName.iPAddress
 import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.jce.X509KeyUsage.digitalSignature
@@ -108,9 +110,15 @@ class CertificatesRpcOpsImpl @Activate constructor(
             Extension.keyUsage, true, KeyUsage(digitalSignature)
         )
         subjectAlternativeNames?.forEach { name ->
-            val altName = GeneralName(dNSName, name)
-            val subjectAltName = GeneralNames(altName)
-            extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            if (InetAddressValidator.getInstance().isValid(name)) {
+                val altName = GeneralName(iPAddress, name)
+                val subjectAltName = GeneralNames(altName)
+                extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            } else {
+                val altName = GeneralName(dNSName, name)
+                val subjectAltName = GeneralNames(altName)
+                extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
+            }
         }
         val signatureSpec = contextMap?.get(SIGNATURE_SPEC)
 

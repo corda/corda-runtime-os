@@ -14,6 +14,7 @@ object SniCalculator {
     private const val HASH_ALGO = "SHA-256"
     const val HASH_TRUNCATION_SIZE = 32
     const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
+    const val IP_SNI_SUFFIX = ".cluster.corda.net"
 
     fun calculateSni(
         x500Name: String,
@@ -32,11 +33,12 @@ object SniCalculator {
                     .lowercase() + CLASSIC_CORDA_SNI_SUFFIX
             }
             NetworkType.CORDA_5 -> {
-                val sni = URI.create(address).host
-                // SNI values can't be IP addresses
-                if (InetAddressValidator.getInstance().isValid(sni))
-                    throw IllegalArgumentException("Address can't be IP")
-                sni
+                val uriAddress = URI.create(address)
+                if (InetAddressValidator.getInstance().isValid(uriAddress.host)) {
+                    "${uriAddress.host}$IP_SNI_SUFFIX"
+                } else {
+                    uriAddress.host
+                }
             }
         }
     }
