@@ -3,12 +3,14 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
@@ -42,6 +44,9 @@ class UtxoFinalityFlow(
 
     @CordaInject
     lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -82,6 +87,8 @@ class UtxoFinalityFlow(
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
+
+            flowEngine.subFlow(TransactionBackchainSenderFlow(session))
 
             val signaturesPayload = try {
                 session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
