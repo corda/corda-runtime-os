@@ -3,9 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -144,13 +142,5 @@ class UtxoReceiveFinalityFlow(
                 throw e
             }
         }
-    }
-
-    private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
-        verifier.verifyPlatformChecks(signedTransaction.notary)
-        verifier.verifyContracts()
     }
 }

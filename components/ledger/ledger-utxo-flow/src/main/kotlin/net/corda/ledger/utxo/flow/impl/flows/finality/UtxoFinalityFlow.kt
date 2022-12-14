@@ -41,6 +41,8 @@ class UtxoFinalityFlow(
     override fun call(): UtxoSignedTransaction {
 
         log.trace("Starting finality flow for transaction: $transactionId")
+        verifyTransaction(initialTransaction)
+
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with initial signatures $transactionId" }
 

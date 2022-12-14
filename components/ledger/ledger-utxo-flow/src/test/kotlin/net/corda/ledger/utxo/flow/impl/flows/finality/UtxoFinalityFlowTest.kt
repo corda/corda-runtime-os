@@ -3,10 +3,15 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.utxoNotaryExample
+import net.corda.ledger.utxo.testkit.utxoStateExample
+import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
@@ -18,6 +23,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -66,6 +72,8 @@ class UtxoFinalityFlowTest {
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
     private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary, byteArrayOf(1, 2, 6))
 
+    private val metadata = mock<TransactionMetadata>()
+
     private val initialTx = mock<UtxoSignedTransactionInternal>()
     private val updatedTxSomeSigs = mock<UtxoSignedTransactionInternal>()
     private val updatedTxAllSigs = mock<UtxoSignedTransactionInternal>()
@@ -95,6 +103,8 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(initialTx.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(initialTx.metadata).thenReturn(metadata)
+        whenever(initialTx.notary).thenReturn(utxoNotaryExample)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
 
         whenever(updatedTxSomeSigs.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
@@ -109,6 +119,12 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.addSignature(signatureNotary)).thenReturn(
             notarisedTx
         )
+
+        whenever(ledgerTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 11)))
+        whenever(ledgerTransaction.outputContractStates).thenReturn(listOf(utxoStateExample))
+        whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
+        whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
+        whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
 
         whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
             pluggableNotaryClientFlow
