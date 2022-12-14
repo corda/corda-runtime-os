@@ -11,6 +11,11 @@ val utxoStateExample = UtxoStateClassExample("test", listOf(publicKeyExample))
 
 val utxoInvalidStateExample = UtxoInvalidStateClassExample("test", listOf(publicKeyExample))
 
+val utxoStateAndRefExample: StateAndRef<UtxoStateClassExample> = StateAndRefImpl(
+    state = TransactionStateImpl(utxoStateExample, utxoNotaryExample, null),
+    ref = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+)
+
 val utxoInvalidStateAndRefExample: StateAndRef<UtxoInvalidStateClassExample> = StateAndRefImpl(
     state = TransactionStateImpl(utxoInvalidStateExample, utxoNotaryExample, null),
     ref = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -27,8 +28,15 @@ import org.mockito.kotlin.verify
 
 class SubscriptionDominoTileBaseTest {
 
+    private val subscriptionName = LifecycleCoordinatorName("sub-name", "1")
     private val subscriptionRegistration = mock<RegistrationHandle>()
-    private val childrenRegistration = mock<RegistrationHandle>()
+    private val childrenOneRegistration = mock<RegistrationHandle>()
+    private val childrenTwoRegistration = mock<RegistrationHandle>()
+    private val childrenThreeRegistration = mock<RegistrationHandle>()
+    private val childOne = mockTile(LifecycleCoordinatorName("componentA", "1"))
+    private val childTwo = mockTile(LifecycleCoordinatorName("componentB", "1"))
+    private val childThree = mockTile(LifecycleCoordinatorName("componentC", "1"))
+    private val children = setOf(childOne, childTwo, childThree)
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
@@ -38,22 +46,11 @@ class SubscriptionDominoTileBaseTest {
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
-        on { followStatusChangesByName(any()) } doAnswer { invocation ->
-            @Suppress("UNCHECKED_CAST")
-            val names = invocation.arguments.first() as Set<LifecycleCoordinatorName>
-            when {
-                names.contains(subscriptionName) -> {
-                    subscriptionRegistration
-                }
-                names.containsAll(children.map { it.coordinatorName }) -> {
-                    childrenRegistration
-                }
-                names.isEmpty() -> { mock() }
-                else -> {
-                    throw IllegalArgumentException("Unexpected parameter.")
-                }
-            }
-        }
+        on { followStatusChangesByName(setOf(subscriptionName)) } doReturn subscriptionRegistration
+        on { followStatusChangesByName(setOf(childOne.coordinatorName)) } doReturn childrenOneRegistration
+        on { followStatusChangesByName(setOf(childTwo.coordinatorName)) } doReturn childrenTwoRegistration
+        on { followStatusChangesByName(setOf(childThree.coordinatorName)) } doReturn childrenThreeRegistration
+
         on { getManagedResource<SubscriptionBase>(SubscriptionDominoTileBase.SUBSCRIPTION) } doAnswer {
             subscription
         }
@@ -65,17 +62,10 @@ class SubscriptionDominoTileBaseTest {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
 
-    private val subscriptionName = LifecycleCoordinatorName("sub-name", "1")
     private val subscriptionConfig = SubscriptionConfig("myGroup", "myEvent")
     private val subscription = mock<Subscription<*, *>>() {
         on { subscriptionName } doReturn subscriptionName
     }
-
-    private val children = setOf(
-        mockTile(LifecycleCoordinatorName("componentA", "1")),
-        mockTile(LifecycleCoordinatorName("componentB", "1")),
-        mockTile(LifecycleCoordinatorName("componentC", "1"))
-    )
 
     @Test
     fun `subscription tile starts all managed children when started`() {
@@ -122,7 +112,9 @@ class SubscriptionDominoTileBaseTest {
         subscriptionTile.start()
         verify(subscription, never()).start()
 
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         verify(subscription, times(1)).start()
         assertThat(subscriptionTile.isRunning).isFalse
 
@@ -137,7 +129,9 @@ class SubscriptionDominoTileBaseTest {
         subscriptionTile.start()
         verify(subscription, times(1)).start()
 
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         verify(subscription, times(1)).start()
         assertThat(subscriptionTile.isRunning).isFalse
     }
@@ -153,11 +147,14 @@ class SubscriptionDominoTileBaseTest {
         )
 
         subscriptionTile.start()
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.DOWN), coordinator)
-        verify(subscription, times(1)).close()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.DOWN), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.DOWN), coordinator)
+        verify(coordinator, atLeast(1)).closeManagedResources(setOf(SubscriptionDominoTileBase.SUBSCRIPTION))
         verify(subscriptionRegistration, times(1)).close()
         assertThat(subscriptionTile.isRunning).isFalse
     }
@@ -173,11 +170,13 @@ class SubscriptionDominoTileBaseTest {
         )
 
         subscriptionTile.start()
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.ERROR), coordinator)
-        verify(subscription, times(1)).close()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.ERROR), coordinator)
+        verify(coordinator, atLeast(1)).closeManagedResources(setOf(SubscriptionDominoTileBase.SUBSCRIPTION))
         verify(subscriptionRegistration, times(1)).close()
         assertThat(subscriptionTile.isRunning).isFalse
     }
@@ -193,7 +192,9 @@ class SubscriptionDominoTileBaseTest {
         )
 
         subscriptionTile.start()
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.ERROR), coordinator)
