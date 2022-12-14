@@ -94,9 +94,13 @@ class UtxoFinalityFlow(
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
 
-        // We just let the notary exceptions bubble up.
         val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
-        val notarySignatures = flowEngine.subFlow(notarisationFlow)
+        val notarySignatures = try {
+            flowEngine.subFlow(notarisationFlow)
+        } catch (e: CordaRuntimeException){
+            log.warn(e.message)
+            throw e
+        }
         if (notarySignatures.isEmpty()) {
             throw CordaRuntimeException("Notary has not returned any signatures.")
         }
