@@ -1,23 +1,31 @@
 topics:
-  ConfigManagementTopic:
-    name: config.management
-    consumers:
-    producers:
-    config:
   ConfigManagementRequestTopic:
     name: config.management.request
     consumers:
+      - db
     producers:
+      - rpc
     config:
   ConfigManagementRequestResponseTopic:
     name: config.management.request.resp
     consumers:
+      - rpc
     producers:
+      - db
     config:
   ConfigTopic:
     name: config.topic
     consumers:
+      - crypto
+      - db
+      - flow
+      - membership
+      - gateway
+      - link-manager
+      - rpc
+      - uniqueness
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
