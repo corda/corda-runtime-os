@@ -2,7 +2,14 @@ topics:
   GroupParametersTopic:
     name: membership.group.params
     consumers:
+      - db
+      - flow
+      - link-manager
+      - membership
+      - rpc
     producers:
+      - db
+      - membership
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -14,21 +21,39 @@ topics:
     name: membership.event
     consumers:
     producers:
+      - membership
     config:
   MembershipRegistrationTopic:
     name: membership.registration
     consumers:
+      - membership
     producers:
+      - membership
     config:
   MembershipRegistrationStateTopic:
     name: membership.registration.state
     consumers:
+      - membership
     producers:
+      - membership
+    config:
+  MembershipRegistrationDlqTopic:
+    name: membership.registration.dlq
+    consumers:
+      - membership
+    producers:
+      - membership
     config:
   MembershipMembersTopic:
     name: membership.members
     consumers:
+      - link-manager
+      - membership
+      - rpc
+      - flow
     producers:
+      - membership
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -39,25 +64,39 @@ topics:
   MembershipRpcOpsTopic:
     name: membership.rpc.ops
     consumers:
+      - membership
     producers:
+      - rpc
   MembershipRpcOpsResponseTopic:
     name: membership.rpc.ops.resp
     consumers:
+      - rpc
     producers:
+      - membership
   MembershipDBRpcOpsTopic:
     name: membership.db.rpc.ops
     consumers:
+      - db
     producers:
+      - link-manager
+      - membership
+      - rpc
     config:
   MembershipDBRpcOpsResponseTopic:
     name: membership.db.rpc.ops.resp
     consumers:
+      - link-manager
+      - membership
+      - rpc
     producers:
+      - db
     config:
   MembershipStaticNetworkTopic:
     name: membership.static.network
     consumers:
+      - membership
     producers:
+      - membership
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -68,5 +107,7 @@ topics:
   MembershipSynchronizationTopic:
     name: membership.sync
     consumers:
+      - membership
     producers:
+      - membership
     config:

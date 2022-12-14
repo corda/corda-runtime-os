@@ -41,7 +41,7 @@ class Schemas {
         companion object {
             const val CONFIG_TOPIC = "config.topic"
             const val CONFIG_MGMT_REQUEST_TOPIC = "config.management.request"
-            const val CONFIG_MGMT_REQUEST_RESP_TOPIC = "$CONFIG_MGMT_REQUEST_TOPIC.resp"
+            val CONFIG_MGMT_REQUEST_RESP_TOPIC = getRPCResponseTopic(CONFIG_MGMT_REQUEST_TOPIC)
         }
     }
 
@@ -52,7 +52,7 @@ class Schemas {
         companion object {
             const val HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.registration.hsm"
             const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
-            const val RPC_OPS_MESSAGE_RESPONSE_TOPIC = "crypto.ops.rpc.resp"
+            val RPC_OPS_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_OPS_MESSAGE_TOPIC)
             const val RPC_OPS_CLIENT_TOPIC = "crypto.ops.rpc.client"
             const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
             const val HSM_CONFIG_TOPIC = "crypto.config.hsm"
@@ -63,9 +63,9 @@ class Schemas {
             const val HSM_CONFIGURATION_LABEL_TOPIC = "crypto.hsm.label"
             const val HSM_CONFIGURATION_HSM_LABEL_TOPIC = "crypto.config.hsm.label"
             const val RPC_HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.hsm.rpc.registration"
-            const val RPC_HSM_REGISTRATION_MESSAGE_RESPONSE_TOPIC = "crypto.hsm.rpc.registration.resp"
+            val RPC_HSM_REGISTRATION_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_HSM_REGISTRATION_MESSAGE_TOPIC)
             const val RPC_HSM_CONFIGURATION_MESSAGE_TOPIC = "crypto.hsm.rpc.configuration"
-            const val RPC_HSM_CONFIGURATION_MESSAGE_RESPONSE_TOPIC = "crypto.hsm.rpc.configuration.resp"
+            val RPC_HSM_CONFIGURATION_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_HSM_CONFIGURATION_MESSAGE_TOPIC)
         }
     }
 
@@ -76,11 +76,11 @@ class Schemas {
         companion object {
             const val FLOW_STATUS_TOPIC = "flow.status"
             const val FLOW_EVENT_TOPIC = "flow.event"
-            const val FLOW_EVENT_STATE_TOPIC = "flow.event.state"
-            const val FLOW_EVENT_DLQ_TOPIC = "flow.event.dlq"
+            val FLOW_EVENT_STATE_TOPIC = getStateAndEventStateTopic(FLOW_EVENT_TOPIC)
+            val FLOW_EVENT_DLQ_TOPIC = getStateAndEventDLQTopic(FLOW_EVENT_TOPIC)
             const val FLOW_MAPPER_EVENT_TOPIC = "flow.mapper.event"
-            const val FLOW_MAPPER_EVENT_STATE_TOPIC = "flow.mapper.event.state"
-            const val FLOW_MAPPER_EVENT_DLQ_TOPIC = "flow.mapper.event.dlq"
+            val FLOW_MAPPER_EVENT_STATE_TOPIC = getStateAndEventStateTopic(FLOW_MAPPER_EVENT_TOPIC)
+            val FLOW_MAPPER_EVENT_DLQ_TOPIC = getStateAndEventDLQTopic(FLOW_MAPPER_EVENT_TOPIC)
         }
     }
 
@@ -90,8 +90,8 @@ class Schemas {
     class Services{
         companion object {
             const val TOKEN_CACHE_EVENT = "services.token.event"
-            const val TOKEN_CACHE_EVENT_STATE = "services.token.event.state"
-            const val TOKEN_CACHE_EVENT_DLQ = "services.token.event.dlq"
+            val TOKEN_CACHE_EVENT_STATE = getStateAndEventStateTopic(TOKEN_CACHE_EVENT)
+            val TOKEN_CACHE_EVENT_DLQ = getStateAndEventDLQTopic(TOKEN_CACHE_EVENT)
         }
     }
 
@@ -104,15 +104,16 @@ class Schemas {
 
             const val MEMBER_LIST_TOPIC = "membership.members"
             const val MEMBERSHIP_RPC_TOPIC = "membership.rpc.ops"
-            const val MEMBERSHIP_RPC_RESPONSE_TOPIC = "membership.rpc.ops.resp"
+            val MEMBERSHIP_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_RPC_TOPIC)
             const val MEMBERSHIP_DB_RPC_TOPIC = "membership.db.rpc.ops"
-            const val MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = "membership.db.rpc.ops.resp"
+            val MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_DB_RPC_TOPIC)
             const val MEMBERSHIP_STATIC_NETWORK_TOPIC = "membership.static.network"
 
             const val EVENT_TOPIC = "membership.event"
 
             const val REGISTRATION_COMMAND_TOPIC = "membership.registration"
-            const val REGISTRATION_STATE_TOPIC = "membership.registration.state"
+            val REGISTRATION_STATE_TOPIC = getStateAndEventStateTopic(REGISTRATION_COMMAND_TOPIC)
+            val REGISTRATION_DLQ_TOPIC = getStateAndEventDLQTopic(REGISTRATION_COMMAND_TOPIC)
 
             const val SYNCHRONIZATION_TOPIC = "membership.sync"
         }
@@ -120,7 +121,7 @@ class Schemas {
 
     object Certificates {
         const val CERTIFICATES_RPC_TOPIC = "certificates.rpc.ops"
-        const val CERTIFICATES_RPC_RESPONSE_TOPIC = "certificates.rpc.ops.resp"
+        val CERTIFICATES_RPC_RESPONSE_TOPIC = getRPCResponseTopic(CERTIFICATES_RPC_TOPIC)
     }
 
     /**
@@ -176,7 +177,7 @@ class Schemas {
     class RPC {
         companion object {
             const val RPC_PERM_MGMT_REQ_TOPIC = "rpc.permissions.management"
-            const val RPC_PERM_MGMT_RESP_TOPIC = "rpc.permissions.management.resp"
+            val RPC_PERM_MGMT_RESP_TOPIC = getRPCResponseTopic(RPC_PERM_MGMT_REQ_TOPIC)
             const val RPC_PERM_USER_TOPIC = "rpc.permissions.user"
             const val RPC_PERM_GROUP_TOPIC = "rpc.permissions.group"
             const val RPC_PERM_ROLE_TOPIC = "rpc.permissions.role"
@@ -201,7 +202,7 @@ class Schemas {
             const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
             const val VIRTUAL_NODE_MANAGEMENT_TOPIC = "virtual.node.management"
             const val VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request"
-            const val VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = "virtual.node.creation.request.resp"
+            val VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = getRPCResponseTopic(VIRTUAL_NODE_CREATION_REQUEST_TOPIC)
             const val CPI_INFO_TOPIC = "cpi.info"
             const val CPI_UPLOAD_TOPIC = "cpi.upload"
             const val CPI_CHUNK_WRITER = "cpi.chunk.writer"

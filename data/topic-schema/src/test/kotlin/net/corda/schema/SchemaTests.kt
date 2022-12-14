@@ -8,7 +8,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.typeOf
 
 class SchemaTests {
@@ -39,22 +41,24 @@ class SchemaTests {
     }
 
     // Scan companion objects for constant definitions
-    private val memberMap: Map<String, List<String>> by lazy {
+    private val memberMap by lazy {
         Schemas::class.nestedClasses
             .filter { it.simpleName != null && !it.isCompanion }
-            .associate {
-                it.simpleName!! to (it.companionObject ?: it)
-                    .members
-                    .filter { member ->
-                        member.isFinal &&
-                            member.returnType == typeOf<String>() &&
-                            member.parameters.size == 1
-                    }.map { callable ->
-                        if (it.companionObject == null) {
-                            callable.call()
+            .associate { it.simpleName!! to (it.companionObject ?: it) }
+            .mapValues { (_, cls) ->
+                cls.memberProperties
+                    .filter { property ->
+                        property.returnType == typeOf<String>()
+                    }.map { property ->
+                        @Suppress("UNCHECKED_CAST")
+                        property as KProperty1<Any?, String>
+                    }
+                    .map { property ->
+                        if (property.isConst && !cls.isCompanion) {
+                            property.call()
                         } else {
-                            callable.call(it.companionObject?.objectInstance)
-                        } as String
+                            property.get(cls.objectInstance)
+                        }
                     }
             }
     }

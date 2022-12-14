@@ -2,10 +2,14 @@ topics:
   CertificatesRpcOpsTopic:
     name: certificates.rpc.ops
     consumers:
+      - db
     producers:
+      - rpc
     config:
   CertificatesRpcOpsRespTopic:
     name: certificates.rpc.ops.resp
     consumers:
+      - rpc
     producers:
+      - db
     config:
