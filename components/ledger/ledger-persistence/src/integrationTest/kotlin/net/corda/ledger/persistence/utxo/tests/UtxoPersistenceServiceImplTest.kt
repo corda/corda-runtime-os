@@ -11,7 +11,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.transactionMetadataExample
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -111,6 +110,7 @@ class UtxoPersistenceServiceImplTest {
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory.createEntityManager(),
                 repository,
+                serializationService,
                 digestService,
                 TEST_CLOCK
             )
@@ -235,7 +235,7 @@ class UtxoPersistenceServiceImplTest {
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .zip(relevantStatesIndexes)
                 .forEach { (dbRelevancy, relevantStateIndex) ->
-                    assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
+                    assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(relevantStateIndex)
                 }
 

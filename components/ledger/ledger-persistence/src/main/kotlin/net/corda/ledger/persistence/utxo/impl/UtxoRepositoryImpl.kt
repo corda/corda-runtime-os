@@ -79,6 +79,33 @@ class UtxoRepositoryImpl(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
+    override fun findTransactionRelevantStates(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndices: List<Int>
+    ):  Map<Int, List<Pair<Int, ByteArray>>> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                JOIN {h-schema}utxo_relevant_transaction_state AS rts
+                    ON rts.transaction_id = tc.transaction_id
+                    AND rts.leaf_idx = tc.leaf_idx
+                WHERE tc.transaction_id = :transactionId
+                AND tc.group_idx IN (:groupIndices)
+                AND rts.consumed = false
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            ByteArray::class.java
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndices", groupIndices)
+            .resultListAsTuples()
+            .groupBy(
+                keySelector = { t -> (t[0] as Number).toInt() },
+                valueTransform = { t -> Pair((t[1] as Number).toInt(), t[2] as ByteArray) }
+            )
+    }
+
     override fun findTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String

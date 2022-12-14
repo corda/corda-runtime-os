@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindTransactionRelevantStates
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
@@ -39,11 +40,21 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getEntityManagerFactory().createEntityManager(),
             repository,
             sandbox.getSandboxSingletonService(),
+            sandbox.getSandboxSingletonService(),
             UTCClock()
         )
         return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(
+                    req,
+                    sandbox.getSerializationService(),
+                    request.flowExternalEventContext,
+                    persistenceService,
+                    UtxoOutputRecordFactoryImpl(responseFactory)
+                )
+            }
+            is FindTransactionRelevantStates -> {
+                return UtxoFindTransactionRelevantStatesRequestHandler(
                     req,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,

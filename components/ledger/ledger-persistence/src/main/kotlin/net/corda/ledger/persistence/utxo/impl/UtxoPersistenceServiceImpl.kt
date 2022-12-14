@@ -2,20 +2,31 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import javax.persistence.EntityManager
 
 class UtxoPersistenceServiceImpl constructor(
     private val entityManager: EntityManager,
     private val repository: UtxoRepository,
+    private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
@@ -29,6 +40,29 @@ class UtxoPersistenceServiceImpl constructor(
                 null
             }
         }
+    }
+
+    override fun findTransactionRelevantStates(id: String): List<StateAndRef<*>> {
+        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
+        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
+        val componentGroups = entityManager.transaction { em ->
+            repository.findTransactionRelevantStates(em, id, listOf(outputsInfoIdx, outputsIdx))
+        }
+        val outputInfos = componentGroups[outputsInfoIdx]
+            ?.associate { (idx, data) -> Pair(idx, serializationService.deserialize<UtxoOutputInfoComponent>(data)) }
+            ?: emptyMap()
+        val transactionId = SecureHash.parse(id)
+        return componentGroups[outputsIdx]?.map { (idx, data) ->
+            val info = outputInfos[idx]
+                ?: throw FilteredDataInconsistencyException(
+                    "Missing output info at index [$idx] for UTXO transaction with ID [$id]"
+                )
+            val contractState = serializationService.deserialize<ContractState>(data)
+            StateAndRefImpl(
+                state = TransactionStateImpl(contractState, info.notary, info.encumbrance),
+                ref = StateRef(transactionId, idx)
+            )
+        } ?: emptyList()
     }
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {
@@ -66,7 +100,7 @@ class UtxoPersistenceServiceImpl constructor(
                 repository.persistTransactionRelevantStates(
                     em,
                     transactionIdString,
-                    ConsensualComponentGroup.OUTPUT_STATES.ordinal,
+                    UtxoComponentGroup.OUTPUTS.ordinal,
                     relevantStateIndex,
                     consumed = false,
                     nowUtc

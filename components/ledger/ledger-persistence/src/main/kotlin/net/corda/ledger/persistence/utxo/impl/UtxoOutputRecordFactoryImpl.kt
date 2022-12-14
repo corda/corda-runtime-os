@@ -10,6 +10,7 @@ import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import java.nio.ByteBuffer
 
@@ -35,6 +36,20 @@ class UtxoOutputRecordFactoryImpl(
             externalEventContext,
             EntityResponse(
                 listOfNotNull(transactionContainer)
+                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
+            )
+        )
+    }
+
+    override fun getFindTransactionRelevantStatesSuccessRecord(
+        relevantStates: List<StateAndRef<*>>,
+        externalEventContext: ExternalEventContext,
+        serializationService: SerializationService
+    ): Record<String, FlowEvent> {
+        return responseFactory.successResponse(
+            externalEventContext,
+            EntityResponse(
+                relevantStates
                     .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
             )
         )

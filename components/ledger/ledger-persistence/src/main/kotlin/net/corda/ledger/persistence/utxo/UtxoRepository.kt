@@ -21,6 +21,13 @@ interface UtxoRepository {
         transactionId: String
     ): Map<Int, List<ByteArray>>
 
+    /** Retrieves transaction component leafs related to relevant unspent states */
+    fun findTransactionRelevantStates(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndices: List<Int>
+    ):  Map<Int, List<Pair<Int, ByteArray>>>
+
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(
         entityManager: EntityManager,
