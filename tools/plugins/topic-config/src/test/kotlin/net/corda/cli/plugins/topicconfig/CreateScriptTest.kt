@@ -55,19 +55,27 @@ class CreateScriptTest {
         val create2 = command.createACLs("topic", listOf("db", "flow"), emptyList())
         assertThat(create2).containsExactly(
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation read --topic topic &",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation describe --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation describe --topic topic &"
         )
         val create3 = command.createACLs("topic", emptyList(), listOf("db", "flow"))
         assertThat(create3).containsExactly(
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation write --topic topic &",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation write --topic topic &"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation describe --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation write --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation describe --topic topic &"
         )
         val create4 = command.createACLs("topic", listOf("db", "flow"), listOf("crypto", "membership"))
         assertThat(create4).containsExactly(
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Dan --operation describe --topic topic &",
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation read --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Fiona --operation describe --topic topic &",
             "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Chris --operation write --topic topic &",
-            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Mo --operation write --topic topic &"
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Chris --operation describe --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Mo --operation write --topic topic &",
+            "kafka-acls.sh --bootstrap-server address --add --allow-principal User:Mo --operation describe --topic topic &"
         )
     }
 

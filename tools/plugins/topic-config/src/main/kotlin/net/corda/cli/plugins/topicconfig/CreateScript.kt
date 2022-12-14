@@ -52,16 +52,22 @@ class CreateScript(
     }
 
     fun createACLs(topic: String, consumers: List<String>, producers: List<String>): List<String> {
-        val readACLs = create!!.getUsersForProcessors(consumers)
+        val consumerACLs = create!!.getUsersForProcessors(consumers)
             .map { user ->
-                "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$user --operation read --topic $topic &"
-            }
-        val writeACLs = create!!.getUsersForProcessors(producers)
-            .map { producer ->
-                "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$producer --operation write --topic $topic &"
-            }
+                listOf(
+                    "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$user --operation read --topic $topic &",
+                    "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$user --operation describe --topic $topic &"
+                )
+            }.flatten()
+        val producerACLs = create!!.getUsersForProcessors(producers)
+            .map { user ->
+                listOf(
+                    "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$user --operation write --topic $topic &",
+                    "${create!!.topic!!.getKafkaAclsCommand()} --add --allow-principal User:$user --operation describe --topic $topic &"
+                )
+            }.flatten()
 
-        return readACLs + writeACLs
+        return consumerACLs + producerACLs
     }
 
     override fun run() {
