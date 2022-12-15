@@ -70,20 +70,27 @@ class ConsensualDemoFlow : RPCStartableFlow {
             )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
+
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
                 .toSignedTransaction(myInfo.ledgerKeys.first())
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
-            val finalizedSignedTransaction = consensualLedgerService.finalize(
-                signedTransaction,
-                sessions
-            )
 
-            val resultMessage = finalizedSignedTransaction.id.toString()
-            log.info("Success! Response: $resultMessage")
-            return resultMessage
+            return try {
+                val finalizedSignedTransaction = consensualLedgerService.finalize(
+                    signedTransaction,
+                    sessions
+                )
+                finalizedSignedTransaction.id.toString().also {
+                    log.info("Success! Response: $it")
+                }
+
+            } catch (e: Exception) {
+                log.warn("Finality failed", e)
+                "Finality failed, ${e.message}"
+            }
         } catch (e: Exception) {
             log.warn("Failed to process consensual flow for request body '$requestBody' because:'${e.message}'")
             throw e
@@ -103,15 +110,18 @@ class ConsensualResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { ledgerTransaction ->
-            val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
-            if (state.testField == "fail") {
-                log.info("Failed to verify the transaction - $ledgerTransaction")
-                throw IllegalStateException("Failed verification")
+        try {
+            val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { ledgerTransaction ->
+                val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
+                if (state.testField == "fail") {
+                    log.info("Failed to verify the transaction - $ledgerTransaction")
+                    throw IllegalStateException("Failed verification")
+                }
+                log.info("Verified the transaction- $ledgerTransaction")
             }
-            log.info("Verified the transaction- $ledgerTransaction")
+            log.info("Finished responder flow - $finalizedSignedTransaction")
+        } catch (e: Exception) {
+            log.warn("Exceptionally finished responder flow", e)
         }
-
-        log.info("Finished responder flow - $finalizedSignedTransaction")
     }
 }

@@ -120,9 +120,9 @@ class UtxoLedgerTests {
             "net.cordapp.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(utxoFlowResult.flowError?.message).contains("Transaction validation failed for transaction")
-        assertThat(utxoFlowResult.flowError?.message).contains("when signature was requested")
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)
