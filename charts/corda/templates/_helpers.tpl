@@ -147,6 +147,8 @@ Container security context
 */}}
 {{- define "corda.containerSecurityContext" -}}
 securityContext:
+  runAsUser: 10001
+  runAsGroup: 10002
   allowPrivilegeEscalation: false
 {{- end }}
 
