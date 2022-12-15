@@ -3,10 +3,12 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
@@ -15,6 +17,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -42,6 +45,7 @@ class UtxoFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val serializationService = mock<SerializationService>()
+    private val flowEngine = mock<FlowEngine>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -59,6 +63,7 @@ class UtxoFinalityFlowTest {
 
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val updatedSignedTransaction = mock<UtxoSignedTransactionInternal>()
+    private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
@@ -74,8 +79,11 @@ class UtxoFinalityFlowTest {
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
 
+        whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
+
         whenever(signedTransaction.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
         whenever(updatedSignedTransaction.addSignature(any<DigitalSignatureAndMetadata>())).thenReturn(updatedSignedTransaction)
 
@@ -311,6 +319,19 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
     }
+
+    @Test
+    fun `each passed in session is sent the transaction backchain`() {
+        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
+
+        callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
+
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionBob))
+    }
     
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = UtxoFinalityFlow(signedTransaction, sessions)
@@ -318,6 +339,7 @@ class UtxoFinalityFlowTest {
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.serializationService = serializationService
+        flow.flowEngine = flowEngine
         flow.call()
     }
 

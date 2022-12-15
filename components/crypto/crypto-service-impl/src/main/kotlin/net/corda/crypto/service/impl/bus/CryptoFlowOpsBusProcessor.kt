@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus
 
-import java.time.Instant
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.flowBusProcessor
@@ -8,7 +7,6 @@ import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -22,22 +20,18 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     event: ConfigChangedEvent
-) : WireProcessor(handlers), DurableProcessor<String, FlowOpsRequest> {
+) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = contextLogger()
-        private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
-            FilterMyKeysFlowQuery::class.java to FilterMyKeysFlowQueryHandler::class.java,
-            SignFlowCommand::class.java to SignFlowCommandHandler::class.java
-        )
     }
 
     override val keyClass: Class<String> = String::class.java
-
     override val valueClass = FlowOpsRequest::class.java
 
     private val config = event.config.toCryptoConfig().flowBusProcessor()
@@ -76,9 +70,8 @@ class CryptoFlowOpsBusProcessor(
                 "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
                         "{ requestId: $requestId, key: $flowId }"
             )
-            val handler = getHandler(request.request::class.java, cryptoOpsClient)
             val response = executor.executeWithRetry {
-                handler.handle(request.context, request.request)
+                handleRequest(request.request, request.context)
             }
             if (Instant.now() >= expireAt) {
                 logger.error(
@@ -109,6 +102,26 @@ class CryptoFlowOpsBusProcessor(
         }
     }
 
+    private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
+        return when (request) {
+            is FilterMyKeysFlowQuery ->
+                cryptoOpsClient.filterMyKeysProxy(
+                    tenantId = context.tenantId,
+                    candidateKeys = request.keys
+                )
+            is SignFlowCommand ->
+                cryptoOpsClient.signProxy(
+                    tenantId = context.tenantId,
+                    publicKey = request.publicKey,
+                    signatureSpec = request.signatureSpec,
+                    data = request.bytes,
+                    context = request.context
+                )
+            else ->
+                throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
+        }
+    }
+
     private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
         request.context.requestTimestamp.plusSeconds(getRequestValidityWindowSeconds(request))
 
@@ -126,27 +139,4 @@ class CryptoFlowOpsBusProcessor(
         request.context.tenantId,
         KeyValuePairList(request.context.other.items.toList())
     )
-
-    private class FilterMyKeysFlowQueryHandler(
-        private val client: CryptoOpsProxyClient
-    ) : Handler<FilterMyKeysFlowQuery> {
-        override fun handle(context: CryptoRequestContext, request: FilterMyKeysFlowQuery): Any =
-            client.filterMyKeysProxy(
-                tenantId = context.tenantId,
-                candidateKeys = request.keys
-            )
-    }
-
-    private class SignFlowCommandHandler(
-        private val client: CryptoOpsProxyClient
-    ) : Handler<SignFlowCommand> {
-        override fun handle(context: CryptoRequestContext, request: SignFlowCommand): Any =
-            client.signProxy(
-                tenantId = context.tenantId,
-                publicKey = request.publicKey,
-                signatureSpec = request.signatureSpec,
-                data = request.bytes,
-                context = request.context
-            )
-    }
 }

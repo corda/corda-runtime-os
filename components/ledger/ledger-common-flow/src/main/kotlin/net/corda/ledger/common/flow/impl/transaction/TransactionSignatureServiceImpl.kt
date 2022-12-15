@@ -3,6 +3,7 @@ package net.corda.ledger.common.flow.impl.transaction
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -28,7 +29,7 @@ const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE,
-    property = ["corda.system=true"]
+    property = [ CORDA_SYSTEM_SERVICE ]
 )
 class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)

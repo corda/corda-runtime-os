@@ -2,11 +2,13 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
@@ -39,9 +41,15 @@ class UtxoReceiveFinalityFlow(
     @CordaInject
     lateinit var serializationService: SerializationService
 
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         val signedTransaction = session.receive<UtxoSignedTransactionInternal>()
+
+        flowEngine.subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+
         val transactionId = signedTransaction.id
 
         // TODO [CORE-5982] Verify Ledger Transaction

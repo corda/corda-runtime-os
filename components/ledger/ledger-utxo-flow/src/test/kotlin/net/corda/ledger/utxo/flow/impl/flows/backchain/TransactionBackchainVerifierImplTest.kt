@@ -3,8 +3,11 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
+import net.corda.ledger.utxo.testkit.utxoStateAndRefExample
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -27,20 +30,32 @@ class TransactionBackchainVerifierImplTest {
         val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
     }
 
-    private val transactionVerifier = mock<TransactionVerifier>()
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
 
     private val transaction1 = mock<UtxoSignedTransaction>()
     private val transaction2 = mock<UtxoSignedTransaction>()
     private val transaction3 = mock<UtxoSignedTransaction>()
 
-    private val transactionBackchainVerifier = TransactionBackchainVerifierImpl(transactionVerifier, utxoLedgerPersistenceService)
+    private val ledgerTransaction1 = mock<UtxoLedgerTransaction>()
+    private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
+    private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
+
+    private val transactionBackchainVerifier = TransactionBackchainVerifierImpl(utxoLedgerPersistenceService)
 
     @BeforeEach
     fun beforeEach() {
         whenever(utxoLedgerPersistenceService.find(TX_ID_1, UNVERIFIED)).thenReturn(transaction1)
         whenever(utxoLedgerPersistenceService.find(TX_ID_2, UNVERIFIED)).thenReturn(transaction2)
         whenever(utxoLedgerPersistenceService.find(TX_ID_3, UNVERIFIED)).thenReturn(transaction3)
+        whenever(transaction1.toLedgerTransaction()).thenReturn(ledgerTransaction1)
+        whenever(transaction2.toLedgerTransaction()).thenReturn(ledgerTransaction2)
+        whenever(transaction3.toLedgerTransaction()).thenReturn(ledgerTransaction3)
+        whenever(ledgerTransaction1.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
+        whenever(ledgerTransaction2.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
+        whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
+        whenever(ledgerTransaction1.outputStateAndRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction2.outputStateAndRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction3.outputStateAndRefs).thenReturn(emptyList())
     }
 
     @Test
@@ -58,7 +73,7 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `updates the statuses of transactions that pass verification even when a later transaction fails verification`() {
-        whenever(transactionVerifier.verify(transaction3)).thenThrow(IllegalStateException("failed verification"))
+        whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
         assertThat(transactionBackchainVerifier.verify(RESOLVING_TX_ID, topologicalSort())).isFalse
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
@@ -67,10 +82,10 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `returns false when a single transaction fails verification`() {
-        whenever(transactionVerifier.verify(transaction1)).thenThrow(IllegalStateException("failed verification"))
+        whenever(ledgerTransaction1.inputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
         assertThat(transactionBackchainVerifier.verify(RESOLVING_TX_ID, topologicalSort())).isFalse
-        verify(transactionVerifier, never()).verify(transaction2)
-        verify(transactionVerifier, never()).verify(transaction3)
+        verify(ledgerTransaction2, never()).inputStateAndRefs
+        verify(ledgerTransaction3, never()).inputStateAndRefs
         verify(utxoLedgerPersistenceService, never()).updateStatus(any(), eq(VERIFIED))
     }
 

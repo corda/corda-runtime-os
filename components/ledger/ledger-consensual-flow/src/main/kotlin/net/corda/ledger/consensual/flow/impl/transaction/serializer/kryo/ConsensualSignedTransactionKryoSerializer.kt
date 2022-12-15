@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -16,7 +17,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(
+    service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
+    scope = PROTOTYPE
+)
 class ConsensualSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serialisationService: SerializationService,

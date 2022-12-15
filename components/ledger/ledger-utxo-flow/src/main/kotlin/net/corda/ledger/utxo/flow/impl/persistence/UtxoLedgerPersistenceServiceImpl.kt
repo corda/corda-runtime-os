@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransac
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -29,7 +30,7 @@ import java.nio.ByteBuffer
 
 @Component(
     service = [ UtxoLedgerPersistenceService::class, UsedByFlow::class ],
-    property = [ "corda.system=true" ],
+    property = [ CORDA_SYSTEM_SERVICE ],
     scope = PROTOTYPE
 )
 class UtxoLedgerPersistenceServiceImpl @Activate constructor(

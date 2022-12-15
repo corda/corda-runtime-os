@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda notary virtual node selector - implementation'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'net.corda:corda-ledger-common'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:ledger:notary-worker-selection')
+    implementation project(':components:membership:membership-group-read')
+    implementation project(':libs:sandbox-types')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
