@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class WakeupEventTest2 {
+class CacheSyncComponentTest {
 
     private val virtualNodes = listOf(BOB_VIRTUAL_NODE, ALICE_VIRTUAL_NODE)
     private val testContextFactory = TestContextFactory()
@@ -241,7 +241,7 @@ class WakeupEventTest2 {
             TokenSyncEvent(BOB_VIRTUAL_NODE.holdingIdentity.toAvro(), TokenSyncWakeUp())
         )
 
-        context.assertOutputRecordCount(TOKEN_CACHE_SYNC_EVENT, 1)
+        context.assertOutputRecordCount(TOKEN_CACHE_EVENT, 1)
 
         context.assertTokenUnspentSyncCheckEventRecords(
             TOKEN_CACHE_EVENT,
@@ -276,7 +276,7 @@ class WakeupEventTest2 {
         )
 
         // Then expect the first three (configured block size) records to be read from the DB and published.
-        context.assertOutputRecordCount(TOKEN_CACHE_SYNC_EVENT, 1)
+        context.assertOutputRecordCount(TOKEN_CACHE_EVENT, 1)
 
         context.assertTokenUnspentSyncCheckEventRecords(
             TOKEN_CACHE_EVENT,
@@ -347,7 +347,7 @@ class WakeupEventTest2 {
             holdingIdentity = BOB_VIRTUAL_NODE.holdingIdentity.toAvro()
             mode = TokenSyncMode.FULL_SYNC
             fullSyncState = currentFullSyncState
-            periodcSyncstate = listOf()
+            periodicSyncState = listOf()
             nextWakeup = initialSystemTime
             transientFailureCount = 0
         }
@@ -403,7 +403,7 @@ class WakeupEventTest2 {
             holdingIdentity = BOB_VIRTUAL_NODE.holdingIdentity.toAvro()
             mode = TokenSyncMode.PERIODIC_CHECK
             fullSyncState = currentFullSyncState
-            periodcSyncstate = listOf()
+            periodicSyncState = listOf()
             nextWakeup = initialSystemTime
             transientFailureCount = 0
         }
@@ -462,7 +462,7 @@ class WakeupEventTest2 {
             holdingIdentity = BOB_VIRTUAL_NODE.holdingIdentity.toAvro()
             mode = TokenSyncMode.PERIODIC_CHECK
             fullSyncState = currentFullSyncState
-            periodcSyncstate = listOf()
+            periodicSyncState = listOf()
             nextWakeup = initialSystemTime
             transientFailureCount = 0
         }

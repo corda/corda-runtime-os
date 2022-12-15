@@ -31,7 +31,7 @@ class CurrentSyncStateImpl(
         get()  = state.fullSyncState.nextBlockStartOffset
 
     override val nextPeriodCheckBlockStartOffsets: Map<TokenPoolKeyRecord, Instant>
-        get() = state.periodcSyncstate.map {
+        get() = state.periodicSyncState.map {
            entityConverter.toTokenPoolKey(it.poolKey) to it.nextBlockStartOffset
         }.toMap()
 
@@ -58,7 +58,7 @@ class CurrentSyncStateImpl(
     }
 
     override fun updatePeriodicCheckState(newOffsets: Map<TokenPoolKeyRecord, Instant>) {
-        state.periodcSyncstate = newOffsets.map { newOffset ->
+        state.periodicSyncState = newOffsets.map { newOffset ->
             TokenPoolPeriodicSyncState.newBuilder()
                 .setPoolKey(entityConverter.toTokenPoolKey(holdingIdentity, newOffset.key))
                 .setNextBlockStartOffset(newOffset.value)
