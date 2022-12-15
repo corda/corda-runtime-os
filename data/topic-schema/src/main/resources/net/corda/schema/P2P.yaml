@@ -2,22 +2,33 @@ topics:
   P2PInTopic:
     name: p2p.in
     consumers:
+      - flow
+      - membership
     producers:
+      - link-manager
     config:
   P2POutTopic:
     name: p2p.out
     consumers:
+      - link-manager
     producers:
+      - flow
+      - membership
     config:
   P2POutMarkersTopic:
     name: p2p.out.markers
     consumers:
+      - link-manager
+      - membership
     producers:
+      - link-manager
     config:
   P2POutMarkersStateTopic:
     name: p2p.out.markers.state
     consumers:
+      - link-manager
     producers:
+      - link-manager
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -28,12 +39,17 @@ topics:
   P2POutMarkersDlqTopic:
     name: p2p.out.markers.dlq
     consumers:
+      - link-manager
     producers:
+      - link-manager
     config:
   P2PHostedIdentitiesTopic:
     name: p2p.hosted.identities
     consumers:
+      - link-manager
     producers:
+      - rpc # Dynamic Network registration
+      - membership # Static Network registration
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -44,17 +60,24 @@ topics:
   LinkInTopic:
     name: link.in
     consumers:
+      - link-manager
     producers:
+      - gateway
     config:
   LinkOutTopic:
     name: link.out
     consumers:
+      - gateway
     producers:
+      - link-manager
     config:
   GatewayTLSCertsTopic:
     name: gateway.tls.certs
     consumers:
+      - gateway
+      - link-manager
     producers:
+      - link-manager
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -65,7 +88,10 @@ topics:
   GatewayTLSTruststoresTopic:
     name: gateway.tls.truststores
     consumers:
+      - gateway
+      - link-manager
     producers:
+      - link-manager
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -76,17 +102,23 @@ topics:
   GatewayRevocationRequestTopic:
     name: gateway.revocation.request
     consumers:
+      - gateway
     producers:
+      - link-manager
     config:
   GatewayRevocationRequestResponseTopic:
     name: gateway.revocation.request.resp
     consumers:
+      - link-manager
     producers:
+      - gateway
     config:
   SessionOutPartitionsTopic:
     name: session.out.partitions
     consumers:
+      - gateway
     producers:
+      - link-manager
     config:
       cleanup.policy: compact
       segment.ms: 600000
