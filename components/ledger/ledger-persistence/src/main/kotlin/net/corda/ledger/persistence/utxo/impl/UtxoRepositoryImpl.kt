@@ -94,7 +94,7 @@ class UtxoRepositoryImpl(
                 WHERE tc.group_idx IN (:groupIndices)
                 AND rts.consumed = false
                 ORDER BY tc.group_idx, tc.leaf_idx""",
-            ByteArray::class.java
+            Tuple::class.java
         )
             .setParameter("groupIndices", groupIndices)
             .resultListAsTuples()
