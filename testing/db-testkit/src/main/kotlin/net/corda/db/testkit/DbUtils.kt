@@ -46,11 +46,12 @@ object DbUtils {
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
-        showSql: Boolean = true
+        showSql: Boolean = true,
+        rewriteBatchedInserts: Boolean = false
     ): EntityManagerConfiguration {
         val port = System.getProperty("postgresPort")
         return if (!port.isNullOrBlank()) {
-            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema)
+            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
             DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
@@ -74,13 +75,13 @@ object DbUtils {
         dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
-        createSchema: Boolean = false
+        createSchema: Boolean = false,
+        rewriteBatchedInserts: Boolean = false
     ): CloseableDataSource {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
-        val dbType = System.getProperty("databaseType")
 
         val factory = PostgresDataSourceFactory()
 
@@ -91,10 +92,10 @@ object DbUtils {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
-            jdbcUrl = when (dbType) {
-                "uniqueness" -> "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
-                else -> "$jdbcUrl?currentSchema=$schemaName"
-            }
+            jdbcUrl = if (rewriteBatchedInserts)
+                {"$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"}
+                else
+                {"$jdbcUrl?currentSchema=$schemaName"}
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing

@@ -90,7 +90,7 @@ class JPABackingStoreImplIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
     private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
     private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName)
+    private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName, rewriteBatchedInserts = true)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
         LiquibaseSchemaMigratorImpl(),
