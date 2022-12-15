@@ -158,40 +158,4 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.toBeClosed).isEmpty()
         assertThat(retrievedContext.wrappedSandboxGroupContext).isSameAs(sandboxContext1)
     }
-
-    @Test
-    fun `sandboxes of different types do not trigger close on eviction of other sandbox types`() {
-        val cache = SandboxGroupContextCacheImpl(2)
-
-        val vncFlow = VirtualNodeContext(
-            idAlice,
-            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
-            SandboxGroupType.FLOW,
-            "filter"
-        )
-        val vncPersistence = VirtualNodeContext(
-            idAlice,
-            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
-            SandboxGroupType.PERSISTENCE,
-            "filter"
-        )
-        val vncVerification = VirtualNodeContext(
-            idAlice,
-            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
-            SandboxGroupType.VERIFICATION,
-            "filter"
-        )
-        val sandboxContextFlow = mock<CloseableSandboxGroupContext>()
-        val sandboxContextPersistence = mock<CloseableSandboxGroupContext>()
-        val sandboxContextVerification = mock<CloseableSandboxGroupContext>()
-
-        cache.get(vncFlow) { sandboxContextFlow }
-        cache.get(vncPersistence) { sandboxContextPersistence }
-        cache.get(vncVerification) { sandboxContextVerification }
-        cache.get(vncFlow) { mock() }
-
-        verify(sandboxContextFlow, never()).close()
-        verify(sandboxContextPersistence, never()).close()
-        verify(sandboxContextVerification, never()).close()
-    }
 }
