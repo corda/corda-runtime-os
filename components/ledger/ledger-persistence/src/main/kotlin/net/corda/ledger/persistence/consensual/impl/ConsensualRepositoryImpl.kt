@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.consensual.ConsensualRepository
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -32,7 +33,7 @@ import javax.persistence.Tuple
  */
 @Component(
     service = [ ConsensualRepository::class, UsedByPersistence::class ],
-    property = [ "corda.marker.only:Boolean=true" ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
 class ConsensualRepositoryImpl @Activate constructor(

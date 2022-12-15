@@ -57,14 +57,13 @@ class Simulator(
      * @param instanceFlow An instance of a responder/initiator flow.
      * @return A simulated virtual node which can run this instance of a responder flow.
      */
-    override fun createVirtualNode(
+    override fun createInstanceNode(
         holdingIdentity: HoldingIdentity,
         protocol: String,
-        instanceFlow: Flow
-    ): SimulatedVirtualNode {
-        return delegate.createVirtualNode(holdingIdentity, protocol, instanceFlow)
+        flow: Flow
+    ): SimulatedInstanceNode {
+        return delegate.createInstanceNode(holdingIdentity, protocol, flow)
     }
-
 
     /**
      * Closes Simulator, releasing all resources including any database connections and in-memory databases.

@@ -34,9 +34,9 @@ interface SimulatedCordaNetwork : Closeable {
      * @param instanceFlow An instance of an initiator/ responder flow.
      * @return A simulated virtual node which can run this instance of a initiator/responder flow.
      */
-    fun createVirtualNode(
+    fun createInstanceNode(
         holdingIdentity: HoldingIdentity,
         protocol: String,
-        instanceFlow: Flow
-    ): SimulatedVirtualNode
+        flow: Flow
+    ): SimulatedInstanceNode
 }
