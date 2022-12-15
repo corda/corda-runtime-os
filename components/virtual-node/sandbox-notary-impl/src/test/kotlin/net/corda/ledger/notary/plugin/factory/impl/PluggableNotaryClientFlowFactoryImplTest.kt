@@ -1,4 +1,4 @@
-package net.corda.ledger.notary.plugin.factory
+package net.corda.ledger.notary.plugin.factory.impl
 
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -25,7 +25,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PluggableNotaryClientFlowFactoryTest {
+class PluggableNotaryClientFlowFactoryImplTest {
 
     private companion object {
         const val FIRST_NOTARY_SERVICE_PLUGIN_TYPE = "DUMMY"
@@ -47,7 +47,7 @@ class PluggableNotaryClientFlowFactoryTest {
         }
     }
 
-    private lateinit var clientFactory: PluggableNotaryClientFlowFactory
+    private lateinit var clientFactoryImpl: PluggableNotaryClientFlowFactoryImpl
     private lateinit var notaryLookup: NotaryLookup
     private lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
@@ -83,7 +83,7 @@ class PluggableNotaryClientFlowFactoryTest {
             on { selectVirtualNode(eq(SECOND_NOTARY_SERVICE_PARTY)) } doAnswer { secondServiceVNode.toParty() }
         }
 
-        clientFactory = PluggableNotaryClientFlowFactory(
+        clientFactoryImpl = PluggableNotaryClientFlowFactoryImpl(
             notaryLookup,
             virtualNodeSelectorService
         )
@@ -92,7 +92,7 @@ class PluggableNotaryClientFlowFactoryTest {
     @Test
     fun `Plugin provider that is not present on the network cannot be loaded`() {
         val exception = assertThrows<IllegalStateException> {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
@@ -107,13 +107,13 @@ class PluggableNotaryClientFlowFactoryTest {
         val providerError = IllegalArgumentException("This is an invalid plugin!")
         // Install a plugin to the factory with type of `DUMMY_TYPE`, but this plugin provider will throw an exception
         // when instantiated
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 FirstNotaryServicePluginProvider { _, _ -> throw providerError }
             )
         )
         val exception = assertThrows<CordaRuntimeException> {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
@@ -127,13 +127,13 @@ class PluggableNotaryClientFlowFactoryTest {
     @Test
     fun `Plugin provider that is valid will be instantiated`() {
         // Install a valid plugin provider to the factory with type of `DUMMY_TYPE`
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 FirstNotaryServicePluginProvider { _, _ -> mock()}
             )
         )
         assertDoesNotThrow {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
@@ -143,26 +143,26 @@ class PluggableNotaryClientFlowFactoryTest {
     @Test
     fun `Multiple plugin providers that are valid and are for different service will be instantiated`() {
         // Install two valid plugin providers for different types
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 FirstNotaryServicePluginProvider { _, _ -> mock()}
             )
         )
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 SecondNotaryServicePluginProvider { _, _ -> mock()}
             )
         )
 
         val firstClient = assertDoesNotThrow {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
         }
 
         val secondClient = assertDoesNotThrow {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 SECOND_NOTARY_SERVICE_PARTY,
                 mock()
             )
@@ -173,9 +173,9 @@ class PluggableNotaryClientFlowFactoryTest {
 
     @Test
     fun `Plugin provider with no @PluggableNotaryType will not be installed`() {
-        clientFactory.accept(createPluginProviderSandboxContext(NoAnnotationProvider()))
+        clientFactoryImpl.accept(createPluginProviderSandboxContext(NoAnnotationProvider()))
         val exception = assertThrows<IllegalStateException> {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )
@@ -189,21 +189,21 @@ class PluggableNotaryClientFlowFactoryTest {
     fun `Multiple plugin providers cannot be installed for a single type`() {
         val dummyClient = mock<PluggableNotaryClientFlow>()
 
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 FirstNotaryServicePluginProvider { _, _ -> dummyClient }
             )
         )
 
         // This will be ignored since we already have a registered provider for `DUMMY_PROVIDER`
-        clientFactory.accept(
+        clientFactoryImpl.accept(
             createPluginProviderSandboxContext(
                 FirstNotaryServicePluginProvider { _, _ -> mock() }
             )
         )
 
         val createdClient = assertDoesNotThrow {
-            clientFactory.create(
+            clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
             )

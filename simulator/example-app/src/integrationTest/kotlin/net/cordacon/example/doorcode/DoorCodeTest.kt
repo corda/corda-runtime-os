@@ -1,10 +1,11 @@
 package net.cordacon.example.doorcode
 
-import net.corda.simulator.HoldingIdentity
+
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.factories.JsonMarshallingServiceFactory
+import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -18,14 +19,14 @@ class DoorCodeTest {
 
         // Given Alice, Bob and Charlie all live in the house
         val simulator = Simulator()
-        val alice = HoldingIdentity.create("Alice")
-        val bob = HoldingIdentity.create("Bob")
-        val charlie = HoldingIdentity.create("Charlie")
+        val alice = createMember("Alice")
+        val bob = createMember("Bob")
+        val charlie = createMember("Charlie")
 
         val nodes = listOf(alice, bob, charlie).map {
             val node = simulator.createVirtualNode(it, DoorCodeChangeFlow::class.java,
                 DoorCodeChangeResponderFlow::class.java)
-            node.generateKey("${it.member.commonName}-door-code-change-key", HsmCategory.LEDGER, "any-scheme")
+            node.generateKey("${it.commonName}-door-code-change-key", HsmCategory.LEDGER, "any-scheme")
             node
         }
 
@@ -33,13 +34,13 @@ class DoorCodeTest {
         val requestData = RequestData.create(
             "r1",
             DoorCodeChangeFlow::class.java,
-            DoorCodeChangeRequest(DoorCode("1234"), listOf(alice.member, bob.member, charlie.member))
+            DoorCodeChangeRequest(DoorCode("1234"), listOf(alice, bob, charlie))
         )
 
         // Then the door code should be changed
         val result = jsonService.parse(nodes[0].callFlow(requestData), DoorCodeChangeResult::class.java)
         assertThat(result.newDoorCode, `is`(DoorCode("1234")))
-        assertThat(result.signedBy, `is`(setOf(alice.member, bob.member, charlie.member)))
+        assertThat(result.signedBy, `is`(setOf(alice, bob, charlie)))
 
         // And the result should have been persisted for all participants
         val transactionId = result.txId
@@ -55,7 +56,7 @@ class DoorCodeTest {
             charlieQueryNode.callFlow(queryRequestData),
             DoorCodeQueryResponse::class.java
         )
-        assertThat(queryResponse.signatories, `is`(setOf(alice.member, bob.member, charlie.member)))
+        assertThat(queryResponse.signatories, `is`(setOf(alice, bob, charlie)))
         assertThat(queryResponse.doorCode, `is`(DoorCode("1234")))
     }
 }

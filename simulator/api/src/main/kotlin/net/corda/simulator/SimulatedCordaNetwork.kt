@@ -2,6 +2,7 @@ package net.corda.simulator
 
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import java.io.Closeable
 
 /**
@@ -21,7 +22,7 @@ interface SimulatedCordaNetwork : Closeable {
      * @return A simulated virtual node in which flows can be run.
      */
     fun createVirtualNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode
 
@@ -35,7 +36,7 @@ interface SimulatedCordaNetwork : Closeable {
      * @return A simulated virtual node which can run this instance of a initiator/responder flow.
      */
     fun createInstanceNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         protocol: String,
         flow: Flow
     ): SimulatedInstanceNode

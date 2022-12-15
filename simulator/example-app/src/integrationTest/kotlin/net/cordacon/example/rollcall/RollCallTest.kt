@@ -1,6 +1,5 @@
 package net.cordacon.example.rollcall
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
@@ -27,8 +26,7 @@ class RollCallTest {
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         )
-        val teacherId = HoldingIdentity.create(teacher)
-        val teacherVNode = simulator.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = simulator.createVirtualNode(teacher, RollCallFlow::class.java)
 
         // And a key to sign the absence record with
         teacherVNode.generateKey("teacher-key", HsmCategory.LEDGER, "Any scheme will do")
@@ -39,7 +37,7 @@ class RollCallTest {
             "CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         }
         students.forEach { simulator.createVirtualNode(
-            HoldingIdentity.create(MemberX500Name.parse(it)),
+            MemberX500Name.parse(it),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java) }
 
@@ -47,10 +45,7 @@ class RollCallTest {
         val truantingAuth = MemberX500Name.parse(
             "O=TruantAuth, L=Chicago, C=US"
         )
-        val truantAuthVNode = simulator.createVirtualNode(
-            HoldingIdentity.create(truantingAuth),
-            TruancyResponderFlow::class.java
-        )
+        val truantAuthVNode = simulator.createVirtualNode(truantingAuth, TruancyResponderFlow::class.java)
 
         // When we invoke the roll call in Corda
         val response = teacherVNode.callFlow(

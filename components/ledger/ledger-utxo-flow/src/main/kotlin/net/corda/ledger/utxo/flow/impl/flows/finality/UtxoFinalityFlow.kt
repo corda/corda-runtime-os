@@ -134,7 +134,9 @@ class UtxoFinalityFlow(
             }
         }
 
-        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
+        val relevantStatesIndexes = signedByParticipantsTransaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing

@@ -45,6 +45,7 @@ dependencies {
     runtimeOnly project(':libs:ledger:ledger-common-data')
     runtimeOnly project(':components:ledger:ledger-consensual-flow')
     runtimeOnly project(':components:ledger:ledger-utxo-flow')
+    runtimeOnly project(":components:ledger:notary-worker-selection-impl")
     runtimeOnly project(':libs:ledger:ledger-consensual-data')
     runtimeOnly project(':components:ledger:ledger-utxo-flow')
     runtimeOnly project(':libs:ledger:ledger-utxo-data')
