@@ -2,6 +2,7 @@ package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -13,7 +14,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ], scope = PROTOTYPE)
+@Component(
+    service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
+    scope = PROTOTYPE
+)
 class WireTransactionKryoSerializer @Activate constructor(
     @Reference(service = WireTransactionFactory::class) private val wireTransactionFactory: WireTransactionFactory
 ) : CheckpointInternalCustomSerializer<WireTransaction>, UsedByFlow {

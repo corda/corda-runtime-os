@@ -1,12 +1,22 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.exceptions.ResponderFlowException
+import net.corda.simulator.exceptions.SessionAlreadyClosedException
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+
+enum class SessionState {
+    AVAILABLE { override fun closedCheck() {} },
+    CLOSED { override fun closedCheck() { throw SessionAlreadyClosedException() } };
+
+    abstract fun closedCheck()
+}
+
 
 /**
  * Implementation of [FlowSession] that uses two [BlockingQueue]s to enable sender and receiver to communicate.
@@ -15,21 +25,18 @@ import java.util.concurrent.TimeoutException
  * @param from The queue on which to receive.
  * @param to The queue on which to send.
  */
-class BlockingQueueFlowSession(
+abstract class BlockingQueueFlowSession(
     private val flowDetails: FlowContext,
-    private val from: BlockingQueue<Any>,
-    private val to: BlockingQueue<Any>
+    protected val from: BlockingQueue<Any>,
+    protected val to: BlockingQueue<Any>
 ) : FlowSession {
 
-    private val configuration = flowDetails.configuration
-    private var caughtResponderError: Throwable? = null
 
-    /**
-     * Not implemented.
-     */
-    override fun close() {
-        TODO("Not yet implemented")
-    }
+    protected val configuration = flowDetails.configuration
+    protected var counterpartyError: Throwable? = null
+    protected abstract fun rethrowAnyResponderError()
+
+    protected var state = SessionState.AVAILABLE
 
     /**
      * Not implemented.
@@ -57,12 +64,12 @@ class BlockingQueueFlowSession(
      * @throws ResponderFlowException if an error was detected in the responding flow.
      */
     override fun <R : Any> receive(receiveType: Class<R>): R {
+        state.closedCheck()
+        requireBoxedType(receiveType)
         val start = configuration.clock.instant()
-        while (configuration.clock.instant().minus(configuration.timeout) < start) {
-            val immutableResponderError = caughtResponderError
-            if (immutableResponderError != null) {
-                throw ResponderFlowException(immutableResponderError)
-            }
+        while (true) {
+            checkTimeout(start)
+            rethrowAnyResponderError()
             val received = from.poll(configuration.pollInterval.toMillis(), TimeUnit.MILLISECONDS)
             if (received != null) {
                 try {
@@ -73,14 +80,19 @@ class BlockingQueueFlowSession(
                 }
             }
         }
-        throw TimeoutException("Session belonging to \"$counterparty\" timed out after ${configuration.timeout}")
     }
 
-    /**
-     * @param payload The payload to send to the counterparty.
-     */
-    override fun send(payload: Any) {
-        to.put(payload)
+    protected fun checkTimeout(start: Instant) {
+        val now = configuration.clock.instant()
+        val against = start.plus(configuration.timeout)
+        val timedOut = now > against
+        if(timedOut) {
+            throw TimeoutException("Session belonging to \"$counterparty\" timed out after ${configuration.timeout}")
+        }
+    }
+
+    private fun requireBoxedType(type: Class<*>) {
+        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
     /**
@@ -91,17 +103,9 @@ class BlockingQueueFlowSession(
      * @see [BlockingQueueFlowSession.receive] for details of thrown exceptions.
      */
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
+        requireBoxedType(receiveType)
         send(payload)
         return receive(receiveType)
     }
-
-    /**
-     * Used by [net.corda.v5.application.messaging.FlowMessaging] to indicate that an exception has been detected on
-     * the responding thread.
-     *
-     * @param t The error thrown by the responding thread.
-     */
-    fun responderErrorCaught(t: Throwable) {
-        caughtResponderError = t
-    }
 }
+

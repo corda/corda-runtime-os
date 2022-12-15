@@ -8,8 +8,10 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.LinkedBlockingQueue
+import java.io.Closeable
 import kotlin.concurrent.thread
+
+interface CloseableFlowMessaging: FlowMessaging, Closeable
 
 /**
  * FlowMessaging is responsible for sending messages and from other "virtual nodes".
@@ -33,8 +35,11 @@ class ConcurrentFlowMessaging(
     private val flowContext: FlowContext,
     private val fiber: SimFiber,
     private val injector: FlowServicesInjector,
-    private val flowFactory: FlowFactory
-) : FlowMessaging {
+    private val flowFactory: FlowFactory,
+    private val sessionFactory: SessionFactory = BaseSessionFactory()
+) : CloseableFlowMessaging {
+
+    private val openedSessions = mutableListOf<SessionPair>()
 
     companion object {
         val log = contextLogger()
@@ -67,24 +72,20 @@ class ConcurrentFlowMessaging(
 
         injector.injectServices(responderFlow, x500Name, fiber, flowFactory)
 
-        val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
-        val fromResponderToInitiator = LinkedBlockingQueue<Any>()
-        val initiatorSession = BlockingQueueFlowSession(
-            flowContext.copy(member = x500Name),
-            fromResponderToInitiator,
-            fromInitiatorToResponder
-        )
-        val recipientSession = BlockingQueueFlowSession(
-            flowContext,
-            fromInitiatorToResponder,
-            fromResponderToInitiator,
-        )
+        val sessions = sessionFactory.createSessions(x500Name, flowContext)
+        openedSessions.add(sessions)
+
+        val (initiatorSession, responderSession) = sessions
 
         log.info("Starting responder thread for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
         thread {
             try {
-                responderFlow.call(recipientSession)
+                responderFlow.call(responderSession)
+                responderSession.close()
+                initiatorSession.responderClosed()
+                log.info("Closed responder for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
             } catch (t: Throwable) {
+                log.info("Caught error in protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
                 initiatorSession.responderErrorCaught(t)
             }
         }
@@ -102,19 +103,35 @@ class ConcurrentFlowMessaging(
     }
 
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
-        TODO("Not yet implemented")
+        requireBoxedType(receiveType)
+        return sessions.map { it.receive(receiveType) }
     }
 
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
-        TODO("Not yet implemented")
+        sessions.mapKeys { requireBoxedType(it.value) }
+        return sessions.mapValues { it.key.receive(it.value) }
     }
 
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
+        sessions.forEach { it.send(payload) }
     }
 
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
-        TODO("Not yet implemented")
+        payloadsPerSession.keys.forEach { it.send(payloadsPerSession[it]!!) }
+    }
+
+    private fun requireBoxedType(type: Class<*>) {
+        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
+    }
+
+    override fun close() {
+        openedSessions.forEach {
+            // Note that this order is important; the initiator waits for the responder to close anyway,
+            // which means that it has successfully been called.
+            // The second call to close the responder is in case it has errored.
+            it.initiatorSession.close()
+            it.responderSession.close()
+        }
     }
 
 }

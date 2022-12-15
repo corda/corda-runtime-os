@@ -29,8 +29,7 @@ network this would be done using the `CPI_HASH`).
 ```kotlin
   val simulator = Simulator()
   val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
-  val holdingIdentity = HoldingIdentity.create(member)
-  val node = simulator.createVirtualNode(holdingIdentity, HelloFlow::class.java)
+  val node = simulator.createVirtualNode(member, HelloFlow::class.java)
 
   val response = node.callFlow(
       RequestData.create("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
@@ -167,7 +166,7 @@ whenever(responder.call(any())).then {
 }
 
 val node = simulator.createVirtualNode(
-    HoldingIdentity.create(MemberX500Name.parse(studentId)),
+    MemberX500Name.parse(studentId),
     "roll-call",
     responder
 )

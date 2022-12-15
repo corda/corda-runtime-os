@@ -2,6 +2,7 @@ package net.corda.sandbox.serialization.json
 
 import net.corda.common.json.serializers.SerializationCustomizer
 import net.corda.common.json.serializers.serializableClassFromJsonSerializer
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -25,7 +26,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("unused")
 @Component(
     service = [ UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
-    property = [ "corda.marker.only:Boolean=true" ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
 class JsonSerializerProvider @Activate constructor(
