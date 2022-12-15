@@ -50,22 +50,11 @@ class Schemas {
      */
     class Crypto {
         companion object {
-            const val HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.registration.hsm"
-            const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
-            val RPC_OPS_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_OPS_MESSAGE_TOPIC)
-            const val RPC_OPS_CLIENT_TOPIC = "crypto.ops.rpc.client"
-            const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
-            const val HSM_CONFIG_TOPIC = "crypto.config.hsm"
-            const val MEMBER_CONFIG_TOPIC = "crypto.config.member"
-            const val SIGNING_KEY_PERSISTENCE_TOPIC = "crypto.key.info"
-            const val SOFT_HSM_PERSISTENCE_TOPIC = "crypto.key.soft"
-            const val EVENT_TOPIC = "crypto.event"
-            const val HSM_CONFIGURATION_LABEL_TOPIC = "crypto.hsm.label"
-            const val HSM_CONFIGURATION_HSM_LABEL_TOPIC = "crypto.config.hsm.label"
             const val RPC_HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.hsm.rpc.registration"
             val RPC_HSM_REGISTRATION_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_HSM_REGISTRATION_MESSAGE_TOPIC)
-            const val RPC_HSM_CONFIGURATION_MESSAGE_TOPIC = "crypto.hsm.rpc.configuration"
-            val RPC_HSM_CONFIGURATION_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_HSM_CONFIGURATION_MESSAGE_TOPIC)
+            const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
+            const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
+            val RPC_OPS_MESSAGE_RESPONSE_TOPIC = getRPCResponseTopic(RPC_OPS_MESSAGE_TOPIC)
         }
     }
 

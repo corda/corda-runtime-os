@@ -1,81 +1,46 @@
 topics:
-  CryptoEventHSMTopic:
-    name: crypto.event
-    consumers:
-    producers:
-    config:
-  CryptoConfigHSMTopic:
-    name: crypto.config.hsm
-    consumers:
-    producers:
-    config:
-  CryptoConfigHSMLabelTopic:
-    name: crypto.config.hsm.label
-    consumers:
-    producers:
-    config:
-  CryptoConfigMemberTopic:
-    name: crypto.config.member
-    consumers:
-    producers:
-    config:
-  CryptoKeyInfoTopic:
-    name: crypto.key.info
-    consumers:
-    producers:
-    config:
-  CryptoKeySoftTopic:
-    name: crypto.key.soft
-    consumers:
-    producers:
-    config:
-  CryptoHSMLabelTopic:
-    name: crypto.hsm.label
-    consumers:
-    producers:
-    config:
   CryptoHSMRPCRegistrationTopic:
     name: crypto.hsm.rpc.registration
     consumers:
+      - crypto
     producers:
+      - membership
+      - rpc
     config:
   CryptoHSMRPCRegistrationRespTopic:
     name: crypto.hsm.rpc.registration.resp
     consumers:
+      - membership
+      - rpc
     producers:
-    config:
-  CryptoHSMRPCConfigurationTopic:
-    name: crypto.hsm.rpc.configuration
-    consumers:
-    producers:
-    config:
-  CryptoHSMRPCConfigurationRespTopic:
-    name: crypto.hsm.rpc.configuration.resp
-    consumers:
-    producers:
+      - crypto
     config:
   CryptoOpsFlowTopic:
     name: crypto.ops.flow
     consumers:
+      - crypto
     producers:
+      - flow
     config:
   CryptoOpsRpcTopic:
     name: crypto.ops.rpc
     consumers:
+      - crypto
     producers:
+      - crypto
+      - gateway
+      - link-manager
+      - membership
+      - rpc
     config:
   CryptoOpsRpcResponseTopic:
     name: crypto.ops.rpc.resp
     consumers:
+      - crypto
+      - gateway
+      - link-manager
+      - membership
+      - rpc
     producers:
-    config:
-  CryptoOpsRpcClientTopic:
-    name: crypto.ops.rpc.client
-    consumers:
-    producers:
-    config:
-  CryptoRegistrationHSMTopic:
-    name: crypto.registration.hsm
-    consumers:
-    producers:
+      - crypto
     config:

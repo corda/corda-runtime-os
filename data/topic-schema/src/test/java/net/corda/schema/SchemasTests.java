@@ -8,8 +8,6 @@ public class SchemasTests {
     @Test
     void cryptoTopicsShouldLookNiceInJavaApi() {
         assertNotNull(Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC);
-        assertNotNull(Schemas.Crypto.RPC_HSM_CONFIGURATION_MESSAGE_TOPIC);
-        assertNotNull(Schemas.Crypto.HSM_CONFIGURATION_LABEL_TOPIC);
         assertNotNull(Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC);
         assertNotNull(Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC);
     }
