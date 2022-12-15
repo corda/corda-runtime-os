@@ -11,13 +11,15 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.virtualnode.HoldingIdentity
 
 class UtxoPersistTransactionRequestHandler(
+    private val holdingIdentity: HoldingIdentity,
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
-    private val utxoOutputRecordFactory: UtxoOutputRecordFactory
+    private val utxoOutputRecordFactory: UtxoOutputRecordFactory,
 ) : RequestHandler {
 
     private companion object {
@@ -33,16 +35,20 @@ class UtxoPersistTransactionRequestHandler(
         persistenceService.persistTransaction(transaction)
 
         // return output records
-        return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(producedTokens, consumedTokens) +
+        return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(holdingIdentity, producedTokens, consumedTokens) +
                 utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<UtxoToken> {
+    private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> {
         return this.flatMap { stateAndRef ->
-            tokenObservers.getObserversFor(stateAndRef.state.javaClass)
+            tokenObservers.getObserversFor(stateAndRef.state.javaClass).also { log.info("OBSERVERS FOR STATE $it") }
                 .mapNotNull { observer ->
                     try {
-                        observer.onCommit(stateAndRef.state.contractState)
+                        val token = observer.onCommit(stateAndRef.state.contractState).let { token ->
+                            token.poolKey.tokenType?.let { token }
+                                ?: token.copy(poolKey = token.poolKey.copy(tokenType = stateAndRef.state.contractStateType.name))
+                        }
+                        stateAndRef to token
                     } catch (e: Exception) {
                         log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state}'")
                         null

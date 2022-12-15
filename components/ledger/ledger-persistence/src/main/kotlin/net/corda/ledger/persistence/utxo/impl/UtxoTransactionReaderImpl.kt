@@ -60,7 +60,11 @@ class UtxoTransactionReaderImpl(
     override val relevantStatesIndexes: List<Int>
         get() = transaction.relevantStatesIndexes ?: emptyList()
 
-    override fun getProducedStates(): List<StateAndRef<ContractState>> = wrappedWireTransaction.outputStateAndRefs
+    override fun getProducedStates(): List<StateAndRef<ContractState>> {
+        // TODO("Not yet implemented")
+//        return emptyList()
+        return serializer.deserialize<List<StateAndRef<ContractState>>>(transaction.transaction.array())
+    }
 
     override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
         return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionHash }
