@@ -63,11 +63,11 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
         check(allInputs.first().notary == notary) {
             "Input and Reference input states' notaries need to be the same as the $subjectClass's notary."
         }
-        // TODO check rotated notaries
+        // TODO CORE-8958 check rotated notaries
     }
 
     private fun verifyInputsAreOlderThanOutputs(){
-        // TODO needs to access the previous transactions from the backchain somehow
+        // TODO CORE-8957 (needs to access the previous transactions from the backchain somehow)
     }
 
 }

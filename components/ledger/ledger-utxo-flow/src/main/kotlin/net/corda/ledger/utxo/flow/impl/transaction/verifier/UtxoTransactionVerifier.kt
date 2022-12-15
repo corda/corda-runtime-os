@@ -30,6 +30,6 @@ abstract class UtxoTransactionVerifier {
     }
 
     protected fun verifyNotaryIsWhitelisted() {
-        // TODO Check the notary is in the group parameters whitelist
+        // TODO CORE-8956 Check the notary is in the group parameters whitelist
     }
 }

@@ -20,7 +20,7 @@ interface TransactionSignatureService {
      * The underlying verification service signals the verification failures with different exceptions.
      * [DigitalSignatureVerificationService]
      * Currently, Notaries returns a temporary structure what we decode here.
-     * TODO Fix it with BatchSignatures
+     * TODO CORE-8954 Fix it with BatchSignatures
      */
     fun verifyNotarySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata)
 }
