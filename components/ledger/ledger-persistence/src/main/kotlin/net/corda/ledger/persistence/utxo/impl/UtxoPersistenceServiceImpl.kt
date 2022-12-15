@@ -42,26 +42,25 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T: ContractState> findUnconsumedRelevantStatesByType(id: String, stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManager.transaction { em ->
-            repository.findUnconsumedRelevantStatesByType(em, id, listOf(outputsInfoIdx, outputsIdx))
-        }
+            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
+        }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associate { (idx, data) -> Pair(idx, serializationService.deserialize<UtxoOutputInfoComponent>(data)) }
+            ?.associate { Pair(it.leafIndex, serializationService.deserialize<UtxoOutputInfoComponent>(it.data)) }
             ?: emptyMap()
-        val transactionId = SecureHash.parse(id)
-        return componentGroups[outputsIdx]?.mapNotNull { (idx, data) ->
-            require(outputInfos[idx] != null) {
-                "Missing output info at index [$idx] for UTXO transaction with ID [$id]"
+        return componentGroups[outputsIdx]?.mapNotNull {
+            val info = outputInfos[it.leafIndex]
+            require(info != null) {
+                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
-            val info = outputInfos[idx]!!
-            val contractState = serializationService.deserialize<ContractState>(data)
+            val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
                 StateAndRefImpl(
                     state = TransactionStateImpl(contractState as T, info.notary, info.encumbrance),
-                    ref = StateRef(transactionId, idx)
+                    ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
                 )
             } else {
                 null

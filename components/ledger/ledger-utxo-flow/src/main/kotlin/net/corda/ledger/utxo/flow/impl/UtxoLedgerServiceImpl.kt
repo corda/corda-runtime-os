@@ -75,8 +75,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T: ContractState> findUnconsumedStatesByType(id: SecureHash, stateClass: Class<out T>): List<StateAndRef<T>> {
-        return utxoLedgerPersistenceService.findUnconsumedStatesByType(id, stateClass)
+    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+        return utxoLedgerPersistenceService.findUnconsumedStatesByType(stateClass)
     }
 
     @Suspendable

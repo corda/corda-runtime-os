@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import java.math.BigDecimal
 import java.time.Instant
@@ -24,9 +25,8 @@ interface UtxoRepository {
     /** Retrieves transaction component leafs related to relevant unspent states */
     fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
-        transactionId: String,
         groupIndices: List<Int>
-    ):  Map<Int, List<Pair<Int, ByteArray>>>
+    ):  List<ComponentLeafDto>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(

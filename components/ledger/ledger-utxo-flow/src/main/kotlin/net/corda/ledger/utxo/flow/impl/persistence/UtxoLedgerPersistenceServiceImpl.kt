@@ -58,11 +58,11 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T: ContractState> findUnconsumedStatesByType(id: SecureHash, stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindUnconsumedStatesByTypeExternalEventFactory::class.java,
-                FindUnconsumedStatesByTypeParameters(id.toString(), stateClass)
+                FindUnconsumedStatesByTypeParameters(stateClass)
             )
         }.map { serializationService.deserialize(it.array()) }
     }
