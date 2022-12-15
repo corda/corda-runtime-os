@@ -85,11 +85,16 @@ class UtxoDemoFlow : RPCStartableFlow {
             )
 
             val notary = notaryLookup.notaryServices.first()
+            val notaryKey = memberLookup.lookup().first {
+                it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
+            }.ledgerKeys.first()
+            // TODO CORE-6173 use proper notary key
+            //val notaryKey = notary.publicKey
 
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.publicKey))
+                .setNotary(Party(notary.name, notaryKey))
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())

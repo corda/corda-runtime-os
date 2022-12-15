@@ -1,10 +1,12 @@
 package net.corda.ledger.common.flow.impl.transaction
 
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -12,8 +14,10 @@ import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +29,7 @@ import java.time.Instant
 
 const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
 
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE,
@@ -39,7 +43,11 @@ class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = SignatureSpecService::class)
-    private val signatureSpecService: SignatureSpecService
+    private val signatureSpecService: SignatureSpecService,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService,
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
     override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
@@ -56,14 +64,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     }
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
-        val signatureSpecStr = signatureWithMetadata.metadata.properties[SIGNATURE_METADATA_SIGNATURE_SPEC_KEY]
-        requireNotNull(signatureSpecStr ) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
-        val signatureSpec = SignatureSpec(signatureSpecStr)
-
-        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
-        require(signatureSpec in compatibleSpecs) {
-            "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
-        }
+        val signatureSpec = extractSignatureSpec(signatureWithMetadata)
 
         val signedData = SignableData(transactionId, signatureWithMetadata.metadata)
         digitalSignatureVerificationService.verify(
@@ -71,6 +72,58 @@ class TransactionSignatureServiceImpl @Activate constructor(
             signatureSpec = signatureSpec,
             signatureData = signatureWithMetadata.signature.bytes,
             clearData = serializationService.serialize(signedData).bytes
+        )
+    }
+
+    private fun extractSignatureSpec(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
+        val signatureSpecStr = signatureWithMetadata.metadata.properties[SIGNATURE_METADATA_SIGNATURE_SPEC_KEY]
+        requireNotNull(signatureSpecStr) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
+        val signatureSpec = SignatureSpec(signatureSpecStr)
+
+        val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
+        require(signatureSpec in compatibleSpecs) {
+            "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
+        }
+        return signatureSpec
+    }
+
+    override fun verifyNotarySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
+        val txIds = listOf(transactionId)
+        // Copy from net.corda.uniqueness.client.impl.LedgerUniquenessCheckerClientServiceImpl.signBatch
+        // TODO CORE-8954 transition to proper verify
+        val algorithms = txIds.mapTo(HashSet(), SecureHash::algorithm)
+        require(algorithms.size > 0) {
+            "Cannot sign an empty batch"
+        }
+        require(algorithms.size == 1) {
+            "Cannot sign a batch with multiple hash algorithms: $algorithms"
+        }
+
+        val algorithm = algorithms.first()
+
+        val allLeaves = txIds.map {
+            // we don't have a reHash function anymore
+            digestService.hash(it.bytes, DigestAlgorithmName(algorithm))
+        }
+
+        val hashDigest = merkleTreeProvider.createHashDigestProvider(
+            HASH_DIGEST_PROVIDER_DEFAULT_NAME,
+            DigestAlgorithmName(algorithm)
+        )
+
+        val merkleTree = merkleTreeProvider.createTree(
+            allLeaves.map { it.bytes },
+            hashDigest
+        )
+        // End of Copy
+
+        val signatureSpec = extractSignatureSpec(signatureWithMetadata)
+
+        digitalSignatureVerificationService.verify(
+            publicKey = signatureWithMetadata.by,
+            signatureSpec = signatureSpec,
+            signatureData = signatureWithMetadata.signature.bytes,
+            clearData = merkleTree.root.bytes
         )
     }
 

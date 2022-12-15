@@ -66,7 +66,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         verifyTransaction(wireTransaction)
 
-        // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
