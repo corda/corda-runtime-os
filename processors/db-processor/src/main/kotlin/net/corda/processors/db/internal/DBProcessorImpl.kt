@@ -81,8 +81,6 @@ class DBProcessorImpl @Activate constructor(
     private val chunkReadService: ChunkReadService,
     @Reference(service = CpkWriteService::class)
     private val cpkWriteService: CpkWriteService,
-    @Reference(service = CpkReadService::class)
-    private val cpkReadService: CpkReadService,
     @Reference(service = FlowPersistenceService::class)
     private val flowPersistenceService: FlowPersistenceService,
     @Reference(service = CpiInfoReadService::class)
@@ -145,9 +143,7 @@ class DBProcessorImpl @Activate constructor(
         ::virtualNodeWriteService,
         ::chunkReadService,
         ::cpkWriteService,
-        ::cpkReadService,
         ::flowPersistenceService,
-        ::cpkReadService,
         ::cpiInfoReadService,
         ::cpiInfoWriteService,
         ::certificatesService,
