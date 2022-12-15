@@ -54,7 +54,7 @@ private const val READ_FROM_STDIN = "-"
 class CreateCpiV2 : Runnable {
 
     @Option(names = ["--cpb", "-c"], required = false, description = ["CPB file to convert into CPI"])
-    lateinit var cpbFileName: String
+    var cpbFileName: String? = null
 
     @Option(
         names = ["--group-policy", "-g"],
@@ -98,8 +98,8 @@ class CreateCpiV2 : Runnable {
 
         // Check input Cpb file is indeed a Cpb
         var cpbPath: Path? = null
-        if (cpbFileName != "") {
-            cpbPath = requireFileExists(cpbFileName)
+        if (cpbFileName != null) {
+            cpbPath = requireFileExists(cpbFileName as String)
             verifyIsValidCpbV2(cpbPath)
         }
 

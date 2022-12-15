@@ -31,7 +31,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -100,7 +99,6 @@ fun E2eCluster.uploadCpi(
 
             val cpiFileName = Path.of(tempDir.toString(), "test$testRunUniqueId.cpi")
             CreateCpiV2().apply {
-                cpbFileName = ""
                 outputFileName = cpiFileName.toString()
                 cpiName = "test-cpi_$testRunUniqueId"
                 cpiVersion = "1.0.0.0-SNAPSHOT"
