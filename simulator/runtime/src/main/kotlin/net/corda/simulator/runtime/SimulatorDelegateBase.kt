@@ -2,6 +2,7 @@ package net.corda.simulator.runtime
 
 import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.SimulatedCordaNetwork
+import net.corda.simulator.SimulatedInstanceNode
 import net.corda.simulator.SimulatedVirtualNode
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.flows.BaseFlowFactory
@@ -79,17 +80,15 @@ class SimulatorDelegateBase  (
         )
     }
 
-    override fun createVirtualNode(
+    override fun createInstanceNode(
         holdingIdentity: HoldingIdentity,
         protocol: String,
-        instanceFlow: Flow
-    ): SimulatedVirtualNode {
-        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow instance provided for protocol $protocol")
-        fiber.registerMember(holdingIdentity.member)
-        fiber.registerFlowInstance(holdingIdentity.member, protocol, instanceFlow)
-        return SimulatedVirtualNodeBase(holdingIdentity, fiber, injector, flowFactory)
+        flow: Flow
+    ): SimulatedInstanceNode {
+        log.info("Creating virtual node for \"${holdingIdentity.member}\", " +
+                "flow instance provided for protocol $protocol")
+        return SimulatedInstanceNodeBase(holdingIdentity, protocol, flow, fiber, injector, flowFactory)
     }
-
 
     override fun close() {
         log.info("Closing Simulator")

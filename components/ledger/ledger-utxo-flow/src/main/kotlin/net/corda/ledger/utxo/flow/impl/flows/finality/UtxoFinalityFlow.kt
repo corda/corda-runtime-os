@@ -84,7 +84,8 @@ class UtxoFinalityFlow(
 
         log.debug { "Verifying all signatures for transaction $transactionId." }
         transaction.verifySignatures() // TODO CORE-8935 Add better logging if the transaction is not fully signed
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+        val relevantStatesIndexes = signedByParticipantsTransaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED, relevantStatesIndexes)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
         // Distribute new signatures

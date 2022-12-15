@@ -51,18 +51,14 @@ class UtxoReceiveFinalityFlow(
 
         verifyTransaction(initialTransaction)
 
+        val myKeys = memberLookup.getMyLedgerKeys()
         var transaction = initialTransaction
         val signaturesPayload = if (validate(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             // Which of our keys are required.
             val myExpectedSigningKeys = initialTransaction
                 .getMissingSignatories()
-                .intersect(
-                    memberLookup
-                        .myInfo()
-                        .ledgerKeys
-                        .toSet()
-                )
+                .intersect(myKeys)
 
             if (myExpectedSigningKeys.isEmpty()) {
                 log.debug { "We are not required signer of $transactionId." }
@@ -107,7 +103,6 @@ class UtxoReceiveFinalityFlow(
         transaction.verifySignatures()
 
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-        log.info("Recorded transaction with all parties' signatures $transactionId")
 
         log.debug { "Waiting for Notary's signature for transaction: $transactionId" }
         val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
@@ -121,7 +116,8 @@ class UtxoReceiveFinalityFlow(
             transaction = verifyAndAddNotarySignature(transaction, it)
         }
 
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
+        val signedTransactionToFinalize = session.receive<UtxoSignedTransactionInternal>()
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, signedTransactionToFinalize)
         log.debug { "Recorded transaction with all parties' and the notary's signature $transactionId" }
 
         return transaction

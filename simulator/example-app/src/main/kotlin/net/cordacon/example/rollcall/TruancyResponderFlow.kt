@@ -35,20 +35,19 @@ class TruancyResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        log.info("Received request; persisting records")
+        log.info("Request to process truancy records received")
 
         val record = session.receive(TruancyRecord::class.java)
 
-        verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
-            serializationService.serialize(record.absentees).bytes)
+        verificationService.verify(
+            record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
+            serializationService.serialize(record.absentees).bytes
+        )
+        log.info("Records verified; persisting records")
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
-
-        session.send(Unit)
-
         log.info("Records persisted")
     }
-
 }
 
 @CordaSerializable

@@ -75,7 +75,7 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
     private fun installProviders(providers: Set<PluggableNotaryClientFlowProvider>) {
         providers.forEach { provider ->
 
-            logger.info("Installing plugin provider class: ${provider.javaClass.name}")
+            logger.debug("Installing plugin provider class: ${provider.javaClass.name}")
 
             val notaryProviderTypes = provider.javaClass.getAnnotationsByType(PluggableNotaryType::class.java)
 
@@ -99,9 +99,10 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
                     )
                 } else {
                     pluggableNotaryClientFlowProviders[providerType] = provider
-                    logger.info("Provider ${provider.javaClass.name} has been installed for plugin: $providerType")
+                    logger.debug("Provider ${provider.javaClass.name} has been installed for plugin: $providerType")
                 }
             }
         }
     }
 }
+

@@ -25,12 +25,14 @@ import java.util.UUID
  *
  * @return The value returned by the subflow when called.
  */
+@Suppress("LongParameterList")
 class InjectingFlowEngine(
     private val configuration: SimulatorConfiguration,
     override val virtualNodeName: MemberX500Name,
     private val fiber: SimFiber,
     private val injector: FlowServicesInjector = DefaultServicesInjector(configuration),
-    private val flowChecker: FlowChecker = CordaFlowChecker()
+    private val flowChecker: FlowChecker = CordaFlowChecker(),
+    private val flowManager: FlowManager = BaseFlowManager()
 ) : FlowEngine {
     companion object {
         val log = contextLogger()
@@ -46,7 +48,7 @@ class InjectingFlowEngine(
         log.info("Running subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
         flowChecker.check(subFlow.javaClass)
         injector.injectServices(subFlow, virtualNodeName, fiber)
-        val result = subFlow.call()
+        val result = flowManager.call(subFlow)
         log.info("Finished subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
         return result
     }

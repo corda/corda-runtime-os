@@ -89,6 +89,7 @@ class UtxoFinalityFlowTest {
         whenever(sessionBob.counterparty).thenReturn(BOB)
         whenever(sessionBob.receive(Unit::class.java)).thenReturn(Unit)
 
+        whenever(memberLookup.myInfo()).thenReturn(memberInfoAlice)
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
 
