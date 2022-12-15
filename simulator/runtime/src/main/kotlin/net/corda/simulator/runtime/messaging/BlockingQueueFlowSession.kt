@@ -24,11 +24,13 @@ enum class SessionState {
  * @param flowDetails The context in which this session is taking place.
  * @param from The queue on which to receive.
  * @param to The queue on which to send.
+ * @param flowContextProperties The [FlowContextProperties] for the session
  */
 abstract class BlockingQueueFlowSession(
     private val flowDetails: FlowContext,
     protected val from: BlockingQueue<Any>,
-    protected val to: BlockingQueue<Any>
+    protected val to: BlockingQueue<Any>,
+    protected val flowContextProperties: SimFlowContextProperties
 ) : FlowSession {
 
 
@@ -42,9 +44,7 @@ abstract class BlockingQueueFlowSession(
      * Not implemented.
      */
     override val contextProperties: FlowContextProperties
-        get() {
-            TODO("Not yet implemented")
-        }
+        get() = flowContextProperties.toImmutableContext()
 
     /**
      * Returns the counterparty with whom this session has been opened.
@@ -108,4 +108,3 @@ abstract class BlockingQueueFlowSession(
         return receive(receiveType)
     }
 }
-

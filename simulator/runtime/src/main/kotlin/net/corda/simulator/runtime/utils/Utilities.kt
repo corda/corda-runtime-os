@@ -30,8 +30,14 @@ import java.security.PrivilegedExceptionAction
 fun Flow.injectIfRequired(
     fieldClass: Class<*>,
     valueCreator: () -> Any
-) {
-    accessField(fieldClass)?.set(this, valueCreator())
+) : Any {
+    val field = accessField(fieldClass)
+    var service = Any()
+    if(field != null){
+        service = valueCreator()
+        field.set(this, service)
+    }
+    return service
 }
 
 fun Flow.accessField(fieldClass: Class<*>): Field? {

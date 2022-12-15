@@ -8,6 +8,7 @@ import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -44,14 +45,21 @@ class SimulatedInstanceNodeBase(
     }
 
     override fun callInstanceFlow(input: RequestData): String {
+        return doCallFlow(input, emptyMap())
+    }
 
+    override fun callInstanceFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String {
+        return doCallFlow(input, contextPropertiesMap)
+    }
+
+    private fun doCallFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String{
         if (flow !is RPCStartableFlow) {
             error("The flow provided to the instance node for member \"$member\" and protocol $protocol " +
                     "was not an RPCStartableFlow")
         }
         log.info("Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
                 "with request: ${input.requestBody}")
-        injector.injectServices(flow, member, fiber, flowFactory)
+        injector.injectServices(flow, member, fiber, SimFlowContextProperties(contextPropertiesMap))
         val result = flowManager.call(input.toRPCRequestData(), flow)
         SimulatedVirtualNodeBase.log.info("Finished flow instance for member \"$member\" and protocol \"$protocol\"")
         return result

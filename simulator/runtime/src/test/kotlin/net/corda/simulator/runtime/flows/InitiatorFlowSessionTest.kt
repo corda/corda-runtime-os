@@ -4,6 +4,7 @@ import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseInitiatorFlowSession
 import net.corda.simulator.runtime.messaging.FlowContext
+import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
@@ -21,11 +22,13 @@ class InitiatorFlowSessionTest {
         // Given a session constructed only on the sending side
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         // When we send a message and then set a received exception
