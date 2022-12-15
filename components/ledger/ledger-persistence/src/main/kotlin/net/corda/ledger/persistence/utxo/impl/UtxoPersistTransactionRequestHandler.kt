@@ -13,7 +13,8 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
 
-class UtxoPersistTransactionRequestHandler(
+
+class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constructor(
     private val holdingIdentity: HoldingIdentity,
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
@@ -50,7 +51,7 @@ class UtxoPersistTransactionRequestHandler(
                         }
                         stateAndRef to token
                     } catch (e: Exception) {
-                        log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state}'")
+                        log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
                         null
                     }
                 }
