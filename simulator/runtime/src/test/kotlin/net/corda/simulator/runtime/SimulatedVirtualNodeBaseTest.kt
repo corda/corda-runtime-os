@@ -1,11 +1,13 @@
 package net.corda.simulator.runtime
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.factories.RequestDataFactory
 import net.corda.simulator.runtime.flows.FlowFactory
+import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.simulator.runtime.signing.SimKeyStore
+import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import org.hamcrest.MatcherAssert.assertThat
@@ -28,7 +30,7 @@ class SimulatedVirtualNodeBaseTest {
     private lateinit var flowFactory : FlowFactory
     private lateinit var injector : FlowServicesInjector
     private lateinit var keyStore : SimKeyStore
-    private val holdingId = HoldingIdentity.create("IRunCordapps")
+    private val holdingId = HoldingIdentityBase(createMember("IRunCordapps"), "groupId")
 
     @Test
     fun `should be a RequestDataFactory`() {
@@ -46,14 +48,17 @@ class SimulatedVirtualNodeBaseTest {
     @Test
     fun `should instantiate flow, inject services and call flow`() {
         // Given a virtual node with dependencies
+        val flowManager = mock<FlowManager>()
         val flow = mock<RPCStartableFlow>()
+        val contextProperties = SimFlowContextProperties(emptyMap())
         whenever(flowFactory.createInitiatingFlow(any(), any())).thenReturn(flow)
 
         val virtualNode = SimulatedVirtualNodeBase(
             holdingId,
             fiber,
             injector,
-            flowFactory
+            flowFactory,
+            flowManager
         )
 
         // When a flow class is run on that node
@@ -62,10 +67,14 @@ class SimulatedVirtualNodeBaseTest {
         virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), eq(flowFactory))
+        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber),
+            eq(contextProperties))
 
         // And the flow should have been called
-        verify(flow, times(1)).call(argThat { request -> request.getRequestBody() == "someData" })
+        verify(flowManager, times(1)).call(
+            argThat { request -> request.getRequestBody() == "someData" },
+            eq(flow)
+        )
     }
 
     @Test
@@ -75,7 +84,8 @@ class SimulatedVirtualNodeBaseTest {
             holdingId,
             fiber,
             injector,
-            flowFactory
+            flowFactory,
+            mock()
         )
 
         // And a persistence service registered on the fiber
@@ -87,30 +97,6 @@ class SimulatedVirtualNodeBaseTest {
 
         // Then it should be the one that was registered
         assertThat(result, `is`(persistenceService))
-    }
-
-    @Test
-    fun `should inject services into instance flow and call flow`() {
-        // Given a virtual node with dependencies
-        val flow = mock<RPCStartableFlow>()
-
-        val virtualNode = SimulatedVirtualNodeBase(
-            holdingId,
-            fiber,
-            injector,
-            flowFactory,
-        )
-
-        // When a flow class is run on that node
-        // (NB: it doesn't actually matter if the flow class was created in that node or not)
-        val input = RPCRequestDataWrapperFactory().create("r1", "aClass", "someData")
-        virtualNode.callInstanceFlow(input, flow)
-
-        // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), any())
-
-        // And the flow should have been called
-        verify(flow, times(1)).call(argThat { request -> request.getRequestBody() == "someData" })
     }
 
 }

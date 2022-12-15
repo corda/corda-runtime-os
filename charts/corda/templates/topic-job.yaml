@@ -35,7 +35,7 @@ spec:
             'create',
             {{- if .Values.kafka.sasl.enabled }}
               {{- range $k, $v := .Values.workers }}
-            '-u', '{{ printf "%s=$KAFKA_SASL_USERNAME_%s" $k ( include "corda.workerTypeUpperSnakeCase" $k ) }}',
+            '-u', '{{ printf "%s=$(KAFKA_SASL_USERNAME_%s)" $k ( include "corda.workerTypeUpperSnakeCase" $k ) }}',
               {{- end }}
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',

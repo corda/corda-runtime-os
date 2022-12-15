@@ -66,7 +66,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         verifyTransaction(wireTransaction)
 
-        // Everything is OK, we can sign the transaction.
         val signaturesWithMetaData = signatories.map {
             transactionSignatureService.sign(wireTransaction.id, it)
         }
@@ -109,7 +108,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         metadataBytes: ByteArray
     ): List<List<ByteArray>> {
 
-        // TODO CORE-7101 use CurrentSandboxService when it gets available
         val currentSandboxGroup = currentSandboxGroupContext.get().sandboxGroup
 
         val requiredSigningKeys = consensualTransactionBuilder

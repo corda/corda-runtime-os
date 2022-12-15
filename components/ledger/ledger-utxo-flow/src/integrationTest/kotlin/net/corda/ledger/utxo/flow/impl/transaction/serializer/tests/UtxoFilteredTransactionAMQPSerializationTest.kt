@@ -15,6 +15,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
+@Suppress("FunctionName")
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
 
     private companion object {

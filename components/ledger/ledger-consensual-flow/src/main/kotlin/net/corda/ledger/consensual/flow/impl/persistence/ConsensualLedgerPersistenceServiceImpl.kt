@@ -10,6 +10,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.external.events.Persist
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionParameters
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -26,7 +27,7 @@ import java.nio.ByteBuffer
 
 @Component(
     service = [ ConsensualLedgerPersistenceService::class, UsedByFlow::class ],
-    property = [ "corda.system=true" ],
+    property = [ CORDA_SYSTEM_SERVICE ],
     scope = PROTOTYPE
 )
 class ConsensualLedgerPersistenceServiceImpl @Activate constructor(

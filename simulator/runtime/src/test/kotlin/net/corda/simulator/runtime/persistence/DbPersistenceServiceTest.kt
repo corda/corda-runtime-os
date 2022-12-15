@@ -2,7 +2,6 @@ package net.corda.simulator.runtime.persistence
 
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.find
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -10,13 +9,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import java.util.UUID
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.NamedQuery
-import javax.persistence.Table
 
-class DBPersistenceServiceTest {
+class DbPersistenceServiceTest {
 
     private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
@@ -191,15 +185,3 @@ class DBPersistenceServiceTest {
     }
 }
 
-@NamedQuery(name="Greetings.findAll", query="SELECT g FROM GreetingEntity g")
-
-@CordaSerializable
-@Entity
-@Table(name="greetingentity")
-data class GreetingEntity (
-    @Id
-    @Column(name="id")
-    val id: UUID,
-    @Column(name="greeting")
-    val greeting: String
-)

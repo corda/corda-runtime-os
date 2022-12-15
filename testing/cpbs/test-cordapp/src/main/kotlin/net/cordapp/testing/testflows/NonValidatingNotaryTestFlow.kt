@@ -158,6 +158,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         referenceStateRefs: List<String>,
         timeWindowBounds: Pair<Long?, Long>
     ): UtxoSignedTransaction {
+        val myKey = memberLookup.myInfo().sessionInitiationKey
         return utxoLedgerService.getTransactionBuilder()
             .setNotary(notaryServerParty)
             .addCommand(TestCommand())
@@ -188,8 +189,9 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 referenceStateRefs.forEach {
                     builder = builder.addReferenceInputState(StateRef.parse(it))
                 }
+                builder = builder.addSignatories(listOf(myKey))
                 builder
-            }.toSignedTransaction(memberLookup.myInfo().sessionInitiationKey)
+            }.toSignedTransaction(myKey)
     }
 
     /**

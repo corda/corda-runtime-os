@@ -1,11 +1,11 @@
 package net.corda.simulator.runtime
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.exceptions.NoDefaultConstructorException
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testflows.PingAckFlow
 import net.corda.simulator.runtime.testflows.ValidStartingFlow
+import net.corda.simulator.runtime.testutils.createMember
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -21,7 +21,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class SimulatedCordaNetworkBaseTest {
-    private val holdingId = HoldingIdentity.create("IRunCordapps")
+    private val member = createMember("IRunCordapps")
 
     @Test
     fun `should pass on any errors from the flow checker`() {
@@ -34,7 +34,7 @@ class SimulatedCordaNetworkBaseTest {
 
         // When we upload the flow
         // Then it should error
-        assertThrows<NoDefaultConstructorException> { corda.createVirtualNode(holdingId, HelloFlow::class.java) }
+        assertThrows<NoDefaultConstructorException> { corda.createVirtualNode(member, HelloFlow::class.java) }
     }
 
     @Test
@@ -43,7 +43,7 @@ class SimulatedCordaNetworkBaseTest {
         val corda = SimulatorDelegateBase(mock())
 
         // When I upload two flows
-        val helloVirtualNode = corda.createVirtualNode(holdingId, HelloFlow::class.java, ValidStartingFlow::class.java)
+        val helloVirtualNode = corda.createVirtualNode(member, HelloFlow::class.java, ValidStartingFlow::class.java)
 
         // And I invoke the first one (let's use the constructor for RPC requests for fun)
         val response = helloVirtualNode.callFlow(
@@ -66,11 +66,11 @@ class SimulatedCordaNetworkBaseTest {
         }
 
         // When I upload the relevant flow and concrete responder
-        corda.createVirtualNode(holdingId, PingAckFlow::class.java)
-        corda.createVirtualNode(holdingId, "ping-ack", responder)
+        corda.createVirtualNode(member, PingAckFlow::class.java)
+        corda.createInstanceNode(member, "ping-ack", responder)
 
         // Then it should have registered the responder with the fiber
-        verify(fiber, times(1)).registerFlowInstance(holdingId.member,"ping-ack", responder)
+        verify(fiber, times(1)).registerFlowInstance(member,"ping-ack", responder)
     }
 
     @Test
@@ -80,10 +80,10 @@ class SimulatedCordaNetworkBaseTest {
         val corda = SimulatorDelegateBase(mock(), fiber = fiber)
 
         // When I upload an initiating flow
-        corda.createVirtualNode(holdingId, PingAckFlow::class.java)
+        corda.createVirtualNode(member, PingAckFlow::class.java)
 
         // Then it should have registered the initiating member with the fiber
-        verify(fiber, times(1)).registerMember(holdingId.member)
+        verify(fiber, times(1)).registerMember(member)
     }
 
     @Test
@@ -102,7 +102,7 @@ class SimulatedCordaNetworkBaseTest {
     @Test
     fun `should error if no flows are provided`() {
         val corda = SimulatorDelegateBase(mock())
-        assertThrows<java.lang.IllegalArgumentException> { corda.createVirtualNode(holdingId) }
+        assertThrows<java.lang.IllegalArgumentException> { corda.createVirtualNode(member) }
     }
 }
 

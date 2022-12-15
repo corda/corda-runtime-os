@@ -14,6 +14,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.BelongsToContract
@@ -83,18 +84,18 @@ class UtxoDemoFlow : RPCStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            /* TODO CORE-8271 NotaryLookup does not seem to return the registered Notary
             val notary = notaryLookup.notaryServices.first()
-             */
-            val notaryX500 = MemberX500Name.parse(request.notary)
-            val notary = requireNotNull(memberLookup.lookup(
-                notaryX500)) { "Member $notaryX500 does not exist in the membership group" }
+            val notaryKey = memberLookup.lookup().first {
+                it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
+            }.ledgerKeys.first()
+            // TODO CORE-6173 use proper notary key
+            //val notaryKey = notary.publicKey
 
             val txBuilder = utxoLedgerService.getTransactionBuilder()
             @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.ledgerKeys.first())) // CORE-8271
-                .setTimeWindowBetween(Instant.MIN, Instant.MAX)
+                .setNotary(Party(notary.name, notaryKey))
+                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
@@ -131,10 +132,10 @@ class UtxoResponderFlow : ResponderFlow {
         val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
             val state = ledgerTransaction.outputContractStates.first() as UtxoDemoFlow.TestUtxoState
             if (state.testField == "fail") {
-                log.info("Failed to verify the transaction - $ledgerTransaction")
+                log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
                 throw IllegalStateException("Failed verification")
             }
-            log.info("Verified the transaction- $ledgerTransaction")
+            log.info("Verified the transaction - ${ledgerTransaction.id}")
         }
 
         log.info("Finished responder flow - $finalizedSignedTransaction")

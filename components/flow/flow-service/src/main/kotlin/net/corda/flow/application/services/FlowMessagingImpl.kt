@@ -55,7 +55,7 @@ class FlowMessagingImpl @Activate constructor(
         requireBoxedType(receiveType)
         val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
-            FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty)
+            it.getSessionInfo()
         }.toSet())
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals)
@@ -70,7 +70,7 @@ class FlowMessagingImpl @Activate constructor(
         }
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
             val flowSessionInternal = it.key
-            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty)
+            flowSessionInternal.getSessionInfo()
         }.toSet())
         val received = fiber.suspend(request)
         setSessionsAsConfirmed(flowSessionInternals.keys)
@@ -83,7 +83,7 @@ class FlowMessagingImpl @Activate constructor(
         val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val serializedPayload = serialize(payload)
         val sessionToPayload =
-            flowSessionInternals.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
+            flowSessionInternals.associate { it.getSessionInfo() to serializedPayload }
         fiber.suspend(FlowIORequest.Send(sessionToPayload))
         setSessionsAsConfirmed(flowSessionInternals)
     }
@@ -93,7 +93,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
             val flowSessionInternal = (it.key as FlowSessionInternal)
-            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.value)
+            flowSessionInternal.getSessionInfo() to serialize(it.value)
         }.toMap()
         fiber.suspend(FlowIORequest.Send(sessionPayload))
         setSessionsAsConfirmed(uncheckedCast(payloadsPerSession.keys))

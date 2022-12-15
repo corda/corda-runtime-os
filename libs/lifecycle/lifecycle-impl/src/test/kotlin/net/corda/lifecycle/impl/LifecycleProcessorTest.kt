@@ -24,6 +24,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
@@ -559,6 +560,21 @@ class LifecycleProcessorTest {
         verify(resource1).close()
         verify(resource2).close()
         verify(resource3, never()).close()
+    }
+
+
+    @Test
+    fun `managed resources are closed only once`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
+        val resource = mock<Resource>()
+        processor.addManagedResource("TEST") { resource }
+        processor.closeManagedResources(setOf("TEST"))
+
+        processor.closeManagedResources(setOf("TEST"))
+
+        verify(resource, times(1)).close()
     }
 
     @Test
