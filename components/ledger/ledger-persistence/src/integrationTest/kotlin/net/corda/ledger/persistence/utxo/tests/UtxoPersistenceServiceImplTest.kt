@@ -360,7 +360,13 @@ class UtxoPersistenceServiceImplTest {
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray()),
-            listOf("group4_component1".toByteArray())
+            listOf("group4_component1".toByteArray()),
+            listOf("group5_component1".toByteArray()),
+            listOf("group6_component1".toByteArray()),
+            listOf("group7_component1".toByteArray()),
+            listOf("group8_component1".toByteArray()),
+            listOf("group9_component1".toByteArray())
+
         )
         val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
         val wireTransaction = wireTransactionFactory.create(
