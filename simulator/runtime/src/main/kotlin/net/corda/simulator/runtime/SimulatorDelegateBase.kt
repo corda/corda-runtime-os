@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.SimulatedCordaNetwork
 import net.corda.simulator.SimulatedInstanceNode
 import net.corda.simulator.SimulatedVirtualNode
@@ -18,6 +17,7 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import java.util.UUID
 
 
 /**
@@ -42,17 +42,19 @@ class SimulatorDelegateBase  (
     }
 
     private val flowFactory: FlowFactory = BaseFlowFactory()
+    private val groupId: String = UUID.randomUUID().toString()
 
     override fun createVirtualNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode {
-        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow classes: ${flowClasses.map{it.name}}")
+        log.info("Creating virtual node for \"${member}\", flow classes: ${flowClasses.map{it.name}}")
         require(flowClasses.isNotEmpty()) { "No flow classes provided" }
         flowClasses.forEach {
             flowChecker.check(it)
-            registerWithFiber(holdingIdentity.member, it)
+            registerWithFiber(member, it)
         }
+        val holdingIdentity = HoldingIdentityBase(member, groupId)
         return SimulatedVirtualNodeBase(holdingIdentity, fiber, injector, flowFactory)
     }
 
@@ -81,12 +83,14 @@ class SimulatorDelegateBase  (
     }
 
     override fun createInstanceNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         protocol: String,
         flow: Flow
     ): SimulatedInstanceNode {
-        log.info("Creating virtual node for \"${holdingIdentity.member}\", " +
+        log.info("Creating virtual node for \"${member}\", " +
                 "flow instance provided for protocol $protocol")
+
+        val holdingIdentity = HoldingIdentityBase(member, groupId)
         return SimulatedInstanceNodeBase(holdingIdentity, protocol, flow, fiber, injector, flowFactory)
     }
 

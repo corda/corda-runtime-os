@@ -1,6 +1,5 @@
 package net.cordacon.example;
 
-import net.corda.simulator.HoldingIdentity;
 import net.corda.simulator.RequestData;
 import net.corda.simulator.SimulatedVirtualNode;
 import net.corda.simulator.Simulator;
@@ -39,8 +38,7 @@ public class RollCallJavaTest {
 
         MemberX500Name teacher = MemberX500Name
                 .parse("CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US");
-        HoldingIdentity teacherId = HoldingIdentity.create(teacher);
-        SimulatedVirtualNode teacherVNode = simulator.createVirtualNode(teacherId, RollCallFlow.class);
+        SimulatedVirtualNode teacherVNode = simulator.createVirtualNode(teacher, RollCallFlow.class);
 
         // And a key to sign the absence record with
         teacherVNode.generateKey("teacher-key", HsmCategory.LEDGER, "Any Scheme");
@@ -52,18 +50,16 @@ public class RollCallJavaTest {
                 .collect(Collectors.toList());
         students.forEach(it ->
                 simulator.createVirtualNode(
-                        HoldingIdentity.create(MemberX500Name.parse(it)),
+                        MemberX500Name.parse(it),
                         RollCallResponderFlow.class,
                         AbsenceCallResponderFlow.class
                 )
         );
 
         // And a truanting authority who will be sent the signed absence record
-        MemberX500Name truantingAuth = MemberX500Name.parse(
-                "O=TruantAuth, L=Chicago, C=US"
-        );
+        MemberX500Name truantingAuth = MemberX500Name.parse("O=TruantAuth, L=Chicago, C=US");
         SimulatedVirtualNode truantAuthVNode = simulator.createVirtualNode(
-                HoldingIdentity.create(truantingAuth),
+                truantingAuth,
                 TruancyResponderFlow.class
         );
 
