@@ -2,7 +2,13 @@ topics:
   CPIInfoTopic:
     name: cpi.info
     consumers:
+      - db
+      - flow
+      - membership
+      - link-manager
+      - rpc
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -13,22 +19,24 @@ topics:
   CPIUploadTopic:
     name: cpi.upload
     consumers:
+      - db
     producers:
-    config:
-  CPIChunkWriterTopic:
-    name: cpi.chunk.writer
-    consumers:
-    producers:
+      - rpc
     config:
   CPIStatusTopic:
     name: cpi.upload.status
     consumers:
+      - rpc
     producers:
+      - db
     config:
   CPKFileTopic:
     name: cpk.file
     consumers:
+      - flow
+      - db
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -36,25 +44,31 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
-  VirtualNodeManagementTopic:
-    name: virtual.node.management
-    consumers:
-    producers:
-    config:
   VirtualNodeCreationRequestTopic:
     name: virtual.node.creation.request
     consumers:
+      - db
     producers:
+      - rpc
     config:
   VirtualNodeCreationRequestResponseTopic:
     name: virtual.node.creation.request.resp
     consumers:
+      - rpc
     producers:
+      - db
     config:
   VirtualNodeInfoTopic:
     name: virtual.node.info
     consumers:
+      - crypto
+      - db
+      - flow
+      - membership
+      - link-manager
+      - rpc
     producers:
+      - db
     config:
       cleanup.policy: compact
       segment.ms: 600000
