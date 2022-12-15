@@ -1,7 +1,9 @@
 package net.corda.v5.ledger.utxo
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import java.security.PublicKey
 
 /**
  * Defines a mechanism for implementing contracts, which perform transaction verification.
@@ -12,6 +14,16 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
  */
 @CordaSerializable
 interface Contract {
+
+    /**
+     * Establish whether a given state is relevant to a node, given the node's public keys.
+     *
+     * With default implementation, a state is relevant if any of the participants key matching one of this node's
+     * public keys.
+     */
+    fun isRelevant(state: ContractState, myKeys: Set<PublicKey>): Boolean {
+        return state.participants.any { it.containsAny(myKeys) }
+    }
 
     /**
      * Verifies the specified transaction associated with the current contract.
