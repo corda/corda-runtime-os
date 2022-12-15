@@ -786,7 +786,6 @@ workers:
     # -- additional Java options for the P2P gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
     # p2p-gateway worker debug configuration
-    useStubs: false
     debug:
       # -- run P2P gateway worker with debug enabled
       enabled: false

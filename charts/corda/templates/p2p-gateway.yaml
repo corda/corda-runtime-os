@@ -57,8 +57,6 @@ spec:
         {{- include "corda.workerEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
-        {{- if not .Values.workers.p2pGateway.useStubs}}
-          - "--without-stubs"
         {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
