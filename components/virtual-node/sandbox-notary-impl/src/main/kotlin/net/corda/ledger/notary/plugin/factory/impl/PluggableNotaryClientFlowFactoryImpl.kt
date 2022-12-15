@@ -105,4 +105,3 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
         }
     }
 }
-

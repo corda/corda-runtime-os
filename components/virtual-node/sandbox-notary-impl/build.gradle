@@ -17,4 +17,3 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
-
