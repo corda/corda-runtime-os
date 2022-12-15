@@ -12,7 +12,7 @@ data class ContractStateAndEncumbranceTag(val contractState: ContractState, val 
 
     fun toTransactionState(notary: Party, encumbranceGroupSize: Int?): TransactionState<*> {
         return TransactionStateImpl(contractState, notary, encumbranceTag?.let{
-            require(encumbranceGroupSize != null)
+            requireNotNull(encumbranceGroupSize)
             EncumbranceGroupImpl(encumbranceGroupSize, it)
         })
     }

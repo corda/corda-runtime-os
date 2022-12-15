@@ -74,9 +74,8 @@ class UtxoTransationEncumbranceVerifierTest {
         val result = verifyEncumberedInput(inputs)
         Assertions.assertThat(result).hasSize(1)
         Assertions.assertThat(result.first().exceptionMessage)
-            .isEqualTo("Encumbrance check failed: State SHA256:ABCDEF0123, 1 is part is used 2 times as input!")
+            .isEqualTo("Encumbrance check failed: State SHA256:ABCDEF0123, 1 is used 2 times as input!")
     }
-
 
     @Test
     fun `same encumbrance tag from two different tx is fine`() {
