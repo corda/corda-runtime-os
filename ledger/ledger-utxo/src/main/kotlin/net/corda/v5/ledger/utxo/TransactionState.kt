@@ -21,5 +21,5 @@ interface TransactionState<out T : ContractState> {
     val contractStateType: Class<out T>
     val contractType: Class<out Contract>
     val notary: Party
-    val encumbrance: String?
+    val encumbrance: EncumbranceGroup?
 }

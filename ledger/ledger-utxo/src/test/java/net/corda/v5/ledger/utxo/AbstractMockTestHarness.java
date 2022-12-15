@@ -83,11 +83,14 @@ public class AbstractMockTestHarness {
 
     private <T extends ContractState> TransactionState<T> createTransactionState(T contractState) {
         TransactionState<T> result = Mockito.mock(TransactionState.class);
+        EncumbranceGroup encumbranceGroup = Mockito.mock(EncumbranceGroup.class);
+        Mockito.when(encumbranceGroup.getTag()).thenReturn(encumbranceTag1);
+        Mockito.when(encumbranceGroup.getSize()).thenReturn(2);
 
         Mockito.when(result.getContractState()).thenReturn(contractState);
         Mockito.when(result.getContractType()).thenReturn((Class) contract.getClass());
         Mockito.when(result.getNotary()).thenReturn(new Party(notaryName, notaryKey));
-        Mockito.when(result.getEncumbrance()).thenReturn(encumbranceTag1);
+        Mockito.when(result.getEncumbrance()).thenReturn(encumbranceGroup);
 
         return result;
     }
