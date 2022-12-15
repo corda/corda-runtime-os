@@ -9,7 +9,6 @@ import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.db.connection.manager.DbConnectionManager
