@@ -5,8 +5,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionRelevantStatesExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionRelevantStatesParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -21,6 +21,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -57,11 +58,11 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findRelevantStates(id: SecureHash): List<StateAndRef<*>> {
+    override fun <T: ContractState> findUnconsumedStatesByType(id: SecureHash, stateClass: Class<out T>): List<StateAndRef<T>> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
-                FindTransactionRelevantStatesExternalEventFactory::class.java,
-                FindTransactionRelevantStatesParameters(id.toString())
+                FindUnconsumedStatesByTypeExternalEventFactory::class.java,
+                FindUnconsumedStatesByTypeParameters(id.toString(), stateClass)
             )
         }.map { serializationService.deserialize(it.array()) }
     }

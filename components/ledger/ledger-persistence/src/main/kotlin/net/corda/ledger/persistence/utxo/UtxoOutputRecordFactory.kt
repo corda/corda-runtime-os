@@ -22,7 +22,7 @@ interface UtxoOutputRecordFactory {
         serializationService: SerializationService
     ): Record<String, FlowEvent>
 
-    fun getFindTransactionRelevantStatesSuccessRecord(
+    fun getFindUnconsumedStatesByTypeSuccessRecord(
         relevantStates: List<StateAndRef<*>>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService

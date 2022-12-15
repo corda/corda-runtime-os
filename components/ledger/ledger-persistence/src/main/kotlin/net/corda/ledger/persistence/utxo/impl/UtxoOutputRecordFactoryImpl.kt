@@ -41,7 +41,7 @@ class UtxoOutputRecordFactoryImpl(
         )
     }
 
-    override fun getFindTransactionRelevantStatesSuccessRecord(
+    override fun getFindUnconsumedStatesByTypeSuccessRecord(
         relevantStates: List<StateAndRef<*>>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService

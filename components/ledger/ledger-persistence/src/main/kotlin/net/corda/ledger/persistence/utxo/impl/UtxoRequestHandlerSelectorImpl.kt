@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
-import net.corda.data.ledger.persistence.FindTransactionRelevantStates
+import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
@@ -53,8 +53,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     UtxoOutputRecordFactoryImpl(responseFactory)
                 )
             }
-            is FindTransactionRelevantStates -> {
-                return UtxoFindTransactionRelevantStatesRequestHandler(
+            is FindUnconsumedStatesByType -> {
+                return UtxoFindUnconsumedStatesByTypeRequestHandler(
                     req,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,

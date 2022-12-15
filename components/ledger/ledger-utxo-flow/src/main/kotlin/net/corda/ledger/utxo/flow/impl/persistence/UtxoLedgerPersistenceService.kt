@@ -5,6 +5,7 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
@@ -26,14 +27,14 @@ interface UtxoLedgerPersistenceService {
     fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
     /**
-     * Find relevant states of UTXO signed transaction in the persistence context given it's [id].
+     * Find relevant states of UTXO signed transaction in the persistence context given it's [id] and [stateClass].
      *
      * @param id UTXO signed transaction ID.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun findRelevantStates(id: SecureHash): List<StateAndRef<*>>
+    fun <T: ContractState> findUnconsumedStatesByType(id: SecureHash, stateClass: Class<out T>): List<StateAndRef<T>>
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.

@@ -20,7 +20,6 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import javax.persistence.EntityManager
 
 class UtxoPersistenceServiceImpl constructor(
@@ -42,26 +41,31 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    override fun findTransactionRelevantStates(id: String): List<StateAndRef<*>> {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(id: String, stateClass: Class<out T>): List<StateAndRef<T>> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManager.transaction { em ->
-            repository.findTransactionRelevantStates(em, id, listOf(outputsInfoIdx, outputsIdx))
+            repository.findUnconsumedRelevantStatesByType(em, id, listOf(outputsInfoIdx, outputsIdx))
         }
         val outputInfos = componentGroups[outputsInfoIdx]
             ?.associate { (idx, data) -> Pair(idx, serializationService.deserialize<UtxoOutputInfoComponent>(data)) }
             ?: emptyMap()
         val transactionId = SecureHash.parse(id)
-        return componentGroups[outputsIdx]?.map { (idx, data) ->
-            val info = outputInfos[idx]
-                ?: throw FilteredDataInconsistencyException(
-                    "Missing output info at index [$idx] for UTXO transaction with ID [$id]"
-                )
+        return componentGroups[outputsIdx]?.mapNotNull { (idx, data) ->
+            require(outputInfos[idx] != null) {
+                "Missing output info at index [$idx] for UTXO transaction with ID [$id]"
+            }
+            val info = outputInfos[idx]!!
             val contractState = serializationService.deserialize<ContractState>(data)
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notary, info.encumbrance),
-                ref = StateRef(transactionId, idx)
-            )
+            if (stateClass.isInstance(contractState)) {
+                StateAndRefImpl(
+                    state = TransactionStateImpl(contractState as T, info.notary, info.encumbrance),
+                    ref = StateRef(transactionId, idx)
+                )
+            } else {
+                null
+            }
         } ?: emptyList()
     }
 

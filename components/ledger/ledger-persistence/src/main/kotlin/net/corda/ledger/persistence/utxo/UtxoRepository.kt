@@ -22,7 +22,7 @@ interface UtxoRepository {
     ): Map<Int, List<ByteArray>>
 
     /** Retrieves transaction component leafs related to relevant unspent states */
-    fun findTransactionRelevantStates(
+    fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
         transactionId: String,
         groupIndices: List<Int>

@@ -79,7 +79,7 @@ class UtxoRepositoryImpl(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
-    override fun findTransactionRelevantStates(
+    override fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
         transactionId: String,
         groupIndices: List<Int>
