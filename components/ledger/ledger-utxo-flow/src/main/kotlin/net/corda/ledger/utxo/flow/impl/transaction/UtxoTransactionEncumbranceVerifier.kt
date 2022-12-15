@@ -9,7 +9,6 @@ import java.lang.IllegalArgumentException
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)
 
 
-@Suppress("NestedBlockDepth")
 fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<ContractVerificationFailure> {
     val failureReasons = mutableListOf<ContractVerificationFailure>()
 
