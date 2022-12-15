@@ -176,16 +176,11 @@ class EntitySandboxServiceImpl @Activate constructor(
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
         ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
-//        logger.debug {
-//            "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
-//                observers.map { it::class.java.name }}
-//            }"
-//        }
-        logger.info (
+        logger.debug {
             "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
                 observers.map { it::class.java.name }}
             }"
-        )
+        }
     }
 
     private fun getObserverFromClassName(

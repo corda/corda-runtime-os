@@ -18,7 +18,6 @@ class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<UtxoDemoFlow.Tes
     override val stateType = UtxoDemoFlow.TestUtxoState::class.java
 
     override fun onCommit(state: UtxoDemoFlow.TestUtxoState): UtxoToken {
-        log.info("HERE I AM $state")
         return UtxoToken(
             UtxoTokenPoolKey(
                 UtxoDemoFlow.TestUtxoState::class.java.name,

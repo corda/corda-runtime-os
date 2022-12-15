@@ -7,6 +7,10 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
@@ -61,9 +65,22 @@ class UtxoTransactionReaderImpl(
         get() = transaction.relevantStatesIndexes ?: emptyList()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        // TODO("Not yet implemented")
-//        return emptyList()
-        return serializer.deserialize<List<StateAndRef<ContractState>>>(transaction.transaction.array())
+        return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal].zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
+            .withIndex()
+            .filter { indexed -> indexed.index !in relevantStatesIndexes }
+            .map { (index, value) ->
+                Triple(
+                    index,
+                    serializer.deserialize<ContractState>(value.first),
+                    serializer.deserialize<UtxoOutputInfoComponent>(value.second)
+                )
+            }
+            .map { (index, state, info) ->
+                StateAndRefImpl(
+                    state = TransactionStateImpl(state, info.notary, info.encumbrance),
+                    ref = StateRef(id, index)
+                )
+            }
     }
 
     override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {

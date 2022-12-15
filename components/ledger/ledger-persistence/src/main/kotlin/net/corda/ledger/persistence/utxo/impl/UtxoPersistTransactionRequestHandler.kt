@@ -41,7 +41,7 @@ class UtxoPersistTransactionRequestHandler(
 
     private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> {
         return this.flatMap { stateAndRef ->
-            tokenObservers.getObserversFor(stateAndRef.state.javaClass).also { log.info("OBSERVERS FOR STATE $it") }
+            tokenObservers.getObserversFor(stateAndRef.state.contractStateType)
                 .mapNotNull { observer ->
                     try {
                         val token = observer.onCommit(stateAndRef.state.contractState).let { token ->

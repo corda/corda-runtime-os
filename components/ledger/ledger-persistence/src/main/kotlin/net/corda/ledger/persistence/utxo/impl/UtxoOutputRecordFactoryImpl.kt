@@ -31,8 +31,8 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
         val uniqueTokenPoolKeys = (groupedProducedTokens.keys + groupedConsumedTokens.keys).toSet()
 
         return uniqueTokenPoolKeys.map { poolKey ->
-            val producedTokenRecords = requireNotNull(groupedProducedTokens[poolKey]).map(::createTokenRecord)
-            val consumedTokenRecords = requireNotNull(groupedConsumedTokens[poolKey]).map(::createTokenRecord)
+            val producedTokenRecords = groupedProducedTokens[poolKey]?.map(::createTokenRecord) ?: emptyList()
+            val consumedTokenRecords = groupedConsumedTokens[poolKey]?.map(::createTokenRecord) ?: emptyList()
             TokenPoolCacheEvent.newBuilder()
                 .setPoolKey(poolKey)
                 .setPayload(
