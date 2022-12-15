@@ -15,6 +15,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -47,21 +48,27 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
      * @param member The name of the "virtual node".
      * @param protocolLookUp The "fiber" through which flow messaging will look up peers.
      * @param flowFactory A factory for constructing flows.
-     * @param keystore The store for members' generated keys.
      */
     override fun injectServices(
         flow: Flow,
         member: MemberX500Name,
         fiber: SimFiber,
-        flowFactory: FlowFactory
+        contextProperties: FlowContextProperties
     ) {
         log.info("Injecting services into ${flow.javaClass} for \"$member\"")
         checkAPIAvailability(flow, configuration)
         
         doInject(member, flow, JsonMarshallingService::class.java) { createJsonMarshallingService() }
-        doInject(member, flow, FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
+
+        val flowEngine = doInject(member, flow, FlowEngine::class.java) {
+            createFlowEngine(configuration, member, fiber, contextProperties) }
+
+        var userContextProperties = contextProperties
+        if(flowEngine is FlowEngine){
+            userContextProperties = flowEngine.flowContextProperties
+        }
         doInject(member, flow, FlowMessaging::class.java) {
-            createFlowMessaging(configuration, flow, member, fiber)
+            createFlowMessaging(configuration, flow, member, fiber, userContextProperties)
         }
         doInject(member, flow, MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
         doInject(member, flow, SigningService::class.java) {
@@ -91,7 +98,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         }
     }
 
-    private fun <T> doInject(member: MemberX500Name, flow: Flow, serviceClass: Class<T>, builder: () -> T) {
+    private fun <T> doInject(member: MemberX500Name, flow: Flow, serviceClass: Class<T>, builder: () -> T) : Any {
         val resolvedBuilder: () -> Any = if (configuration.serviceOverrides.containsKey(serviceClass)) {{
             @Suppress("UNCHECKED_CAST")
             val serviceOverrideBuilder = configuration.serviceOverrides[serviceClass] as ServiceOverrideBuilder<T>
@@ -103,7 +110,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
                 "No override and no builder provided for Service $serviceClass, this should never happen"
             )
         }}
-        flow.injectIfRequired(serviceClass, resolvedBuilder)
+        return flow.injectIfRequired(serviceClass, resolvedBuilder)
     }
 
     private fun createSerializationService(): SerializationService {
@@ -155,20 +162,22 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     private fun createFlowEngine(
         configuration: SimulatorConfiguration,
         member: MemberX500Name,
-        fiber: SimFiber
+        fiber: SimFiber,
+        contextProperties: FlowContextProperties
     ): FlowEngine {
         log.info("Injecting ${FlowEngine::class.java.simpleName}")
-        return InjectingFlowEngine(configuration, member, fiber)
+        return InjectingFlowEngine(configuration, member, fiber, contextProperties)
     }
 
     private fun createFlowMessaging(
         configuration: SimulatorConfiguration,
         flow: Flow,
         member: MemberX500Name,
-        fiber: SimFiber
+        fiber: SimFiber,
+        contextProperties: FlowContextProperties
     ): FlowMessaging {
         log.info("Injecting ${FlowMessaging::class.java.simpleName}")
-        return fiber.createFlowMessaging(configuration, flow, member, this);
+        return fiber.createFlowMessaging(configuration, flow, member, this, contextProperties)
     }
 }
 
