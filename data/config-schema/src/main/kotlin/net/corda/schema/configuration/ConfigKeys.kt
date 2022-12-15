@@ -10,6 +10,7 @@ object ConfigKeys {
     const val DB_CONFIG = "corda.db"
     const val FLOW_CONFIG = "corda.flow"
     const val MESSAGING_CONFIG = "corda.messaging"
+    const val UTXO_LEDGER_CONFIG = "corda.ledger.utxo"
     const val P2P_LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
     const val P2P_GATEWAY_CONFIG = "corda.p2p.gateway"
     const val RPC_CONFIG = "corda.rpc"

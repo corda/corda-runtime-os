@@ -40,14 +40,6 @@ public class TokenCacheJavaAPITest {
         public TokenClaim tryClaim(@NotNull TokenClaimCriteria criteria) {
             return new TokenClaimTestImpl();
         }
-
-        /**
-         * TESTING API - This is a temporary API to support testing until we have ledger integration, this will be removed
-         * when CORE-5722 is implemented
-         */
-        @Override
-        public void pushTokenUpdates(@NotNull List<? extends ClaimedToken> newTokens, @NotNull List<? extends ClaimedToken> consumedTokens) {
-        }
     }
 
     public class TokenClaimTestImpl implements TokenClaim{

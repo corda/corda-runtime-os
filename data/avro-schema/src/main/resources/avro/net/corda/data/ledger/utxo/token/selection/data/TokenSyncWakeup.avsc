@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "TokenSyncWakeUp",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Signal for the full synchronization process to continue",
+  "fields": []
+}

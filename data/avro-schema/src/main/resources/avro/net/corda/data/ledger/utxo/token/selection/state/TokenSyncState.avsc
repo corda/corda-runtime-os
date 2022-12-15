@@ -1,0 +1,54 @@
+{
+  "type": "record",
+  "name": "TokenSyncState",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.state",
+  "doc": "The current state of the token synchronization process",
+  "fields": [
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the user making the request"
+    },
+    {
+      "name": "mode",
+      "type": {
+        "name": "TokenSyncMode",
+        "type": "enum",
+        "symbols": [
+          "FULL_SYNC",
+          "PERIODIC_CHECK"
+        ]
+      },
+      "doc": "The current synchronization mode"
+    },
+    {
+      "name": "fullSyncState",
+      "type": [
+        "null",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenFullSyncState"
+      ],
+      "doc": "The current state of a full sync"
+    },
+    {
+      "name": "periodicSyncState",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.ledger.utxo.token.selection.data.TokenPoolPeriodicSyncState"
+      },
+      "doc": "The current state of a periodic sync"
+    },
+    {
+      "name": "nextWakeup",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Date and time the next wake-up is required."
+    },
+    {
+      "name": "transientFailureCount",
+      "type": "int",
+      "doc": "The number of times a transient failure has occurred."
+    }
+  ]
+}

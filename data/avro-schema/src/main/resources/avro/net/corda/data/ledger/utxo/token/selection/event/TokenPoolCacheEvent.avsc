@@ -4,20 +4,20 @@
   "namespace": "net.corda.data.ledger.utxo.token.selection.event",
   "doc": "Represents an inbound event to a token cache pool",
   "fields": [
-      {
-        "name": "poolKey",
-        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
-        "doc": "The key of the cache pool the event is for"
-      },
-      {
-        "name": "payload",
-        "type": [
-          "net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery",
-          "net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease",
-          "net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange",
-          "net.corda.data.ledger.utxo.token.selection.data.TokenTestLedgerChange"
-        ],
-        "doc": "Represents the specific type and data of inbound event"
-      }
-    ]
+    {
+      "name": "poolKey",
+      "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+      "doc": "The key of the cache pool the event is for"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenCachedSyncCheck"
+      ],
+      "doc": "Represents the specific type and data of inbound event"
+    }
+  ]
 }

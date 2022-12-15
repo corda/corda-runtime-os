@@ -81,6 +81,10 @@ class Schemas {
             const val TOKEN_CACHE_EVENT = "services.token.event"
             val TOKEN_CACHE_EVENT_STATE = getStateAndEventStateTopic(TOKEN_CACHE_EVENT)
             val TOKEN_CACHE_EVENT_DLQ = getStateAndEventDLQTopic(TOKEN_CACHE_EVENT)
+
+            const val TOKEN_CACHE_SYNC_EVENT = "services.token.sync.event"
+            val TOKEN_CACHE_SYNC_EVENT_STATE = getStateAndEventStateTopic(TOKEN_CACHE_SYNC_EVENT)
+            val TOKEN_CACHE_SYNC_EVENT_DLQ = getStateAndEventDLQTopic(TOKEN_CACHE_SYNC_EVENT)
         }
     }
 

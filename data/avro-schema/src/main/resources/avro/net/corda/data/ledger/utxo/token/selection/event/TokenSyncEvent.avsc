@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "TokenSyncEvent",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.event",
+  "doc": "Represents an inbound token sync event",
+  "fields": [
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the user making the request"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.ledger.utxo.token.selection.data.TokenSyncWakeUp",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenFullSyncRequest",
+        "net.corda.data.ledger.utxo.token.selection.data.TokenUnspentSyncCheck"
+      ],
+      "doc": "Represents the specific type and data of inbound event"
+    }
+  ]
+}

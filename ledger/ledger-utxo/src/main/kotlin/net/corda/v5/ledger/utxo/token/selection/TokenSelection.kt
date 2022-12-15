@@ -97,12 +97,5 @@ interface TokenSelection {
      */
     @Suspendable
     fun tryClaim(criteria: TokenClaimCriteria): TokenClaim?
-
-    /**
-     * TESTING API - This is a temporary API to support testing until we have ledger integration, this will be removed
-     * when CORE-5722 is implemented
-     */
-    @Suspendable
-    fun pushTokenUpdates(newTokens:List<ClaimedToken>, consumedTokens: List<ClaimedToken>)
 }
 
