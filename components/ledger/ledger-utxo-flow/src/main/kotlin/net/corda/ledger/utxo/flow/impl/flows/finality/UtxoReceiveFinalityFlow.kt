@@ -6,9 +6,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
@@ -28,9 +26,6 @@ class UtxoReceiveFinalityFlow(
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var memberLookup: MemberLookup
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -116,8 +111,8 @@ class UtxoReceiveFinalityFlow(
             transaction = verifyAndAddNotarySignature(transaction, it)
         }
 
-        val signedTransactionToFinalize = session.receive<UtxoSignedTransactionInternal>()
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED, signedTransactionToFinalize)
+        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(myKeys)
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded transaction with all parties' and the notary's signature $transactionId" }
 
         return transaction

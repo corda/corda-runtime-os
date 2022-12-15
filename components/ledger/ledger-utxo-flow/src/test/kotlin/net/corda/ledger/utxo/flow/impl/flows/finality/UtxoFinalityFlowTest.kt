@@ -15,6 +15,7 @@ import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -48,6 +49,7 @@ class UtxoFinalityFlowTest {
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
 
+    private val memberLookup = mock<MemberLookup>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val flowEngine = mock<FlowEngine>()
@@ -582,6 +584,7 @@ class UtxoFinalityFlowTest {
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = UtxoFinalityFlow(signedTransaction, sessions)
+        flow.memberLookup = memberLookup
         flow.transactionSignatureService = transactionSignatureService
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
