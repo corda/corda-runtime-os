@@ -37,19 +37,23 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
             val head = expiryQueue.poll() as? ToBeClosed ?: break
 
             if (!toBeClosed.remove(head)) {
-                logger.warn("Reaped unexpected sandboxGroup context for ${head.cacheKey}")
+                logger.warn("Reaped unexpected sandboxGroup context for {}", head.cacheKey)
             }
 
             try {
                 logger.info(
-                    "Closing ${head.cacheKey.sandboxGroupType} sandbox for " +
-                            "${head.cacheKey.holdingIdentity.x500Name} [UNUSED]"
+                    "Closing {} sandbox for {} [UNUSED]",
+                    head.cacheKey.sandboxGroupType,
+                    head.cacheKey.holdingIdentity.x500Name
                 )
+
                 head.sandboxGroupContextToClose.close()
-            } catch (e: Exception) {
+            } catch (exception: Exception) {
                 logger.warn(
-                    "Error closing ${head.cacheKey.sandboxGroupType} sandbox for " +
-                            "${head.cacheKey.holdingIdentity.x500Name}", e
+                    "Error closing {} sandbox for {}",
+                    head.cacheKey.sandboxGroupType,
+                    head.cacheKey.holdingIdentity.x500Name,
+                    exception
                 )
             }
         }
@@ -70,15 +74,19 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
                     }
 
                     logger.info(
-                        "Evicting ${key!!.sandboxGroupType} sandbox for " +
-                                "${key.holdingIdentity.x500Name} [${cause.name}]"
+                        "Evicting {} sandbox for {} [{}]",
+                        key!!.sandboxGroupType,
+                        key.holdingIdentity.x500Name,
+                        cause.name
                     )
 
                     purgeExpiryQueue()
                 } else {
                     logger.info(
-                        "Closing ${key!!.sandboxGroupType} sandbox for " +
-                                "${key.holdingIdentity.x500Name} [${cause.name}]"
+                        "Closing {} sandbox for {} [{}]",
+                        key!!.sandboxGroupType,
+                        key.holdingIdentity.x500Name,
+                        cause.name
                     )
 
                     (context?.wrappedSandboxGroupContext as? AutoCloseable)?.close()
@@ -100,8 +108,10 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
 
         return contexts.get(virtualNodeContext) {
             logger.info(
-                "Caching ${virtualNodeContext.sandboxGroupType} sandbox for " +
-                        "${virtualNodeContext.holdingIdentity.x500Name} (cache size: ${contexts.estimatedSize()})"
+                "Caching {} sandbox for {} (cache size: {})",
+                virtualNodeContext.sandboxGroupType,
+                virtualNodeContext.holdingIdentity.x500Name,
+                contexts.estimatedSize()
             )
 
             SandboxGroupContextWrapper(createFunction(virtualNodeContext))
