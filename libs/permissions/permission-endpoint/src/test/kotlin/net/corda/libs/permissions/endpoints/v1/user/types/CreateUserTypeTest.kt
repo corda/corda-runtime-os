@@ -34,8 +34,20 @@ class CreateUserTypeTest {
                 "Error #1" to "Full name exceed maximum length of 255.",
                 "Error #2" to "Login name exceed maximum length of 255.",
                 "Error #3" to "Login name contains invalid characters. Correct pattern is: '[-._@a-zA-Z0-9]{3,255}'.",
-                "Error #4" to "Password name exceed maximum length of 255.",
+                "Error #4" to "Password exceed maximum length of 255.",
                 "Error #5" to "Invalid UUID string: 1234"
+            )
+        }
+    }
+
+    @Test
+    fun testTooShort() {
+        Assertions.assertThatThrownBy {
+            CreateUserType("abc", "abc", true, "abc", null,
+                null)
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Password is too short. Minimum length is 5."
             )
         }
     }
