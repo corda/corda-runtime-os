@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction
+package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
@@ -13,7 +13,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 
-class UtxoTransationEncumbranceVerifierTest {
+class UtxoTransactionEncumbranceVerifierTest {
 
     class TestContractState : ContractState {
         override val participants: List<PublicKey>
@@ -41,7 +41,8 @@ class UtxoTransationEncumbranceVerifierTest {
     @Test
     fun `complete encumbrance group is fine`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notary,
+            StateAndRefImpl(TransactionStateImpl(
+                TestContractState(), notary,
                 null), StateRef(transactionId1, 0)),
             StateAndRefImpl(
                 TransactionStateImpl(TestContractState(), notary, EncumbranceGroupImpl(2, "test1")),
