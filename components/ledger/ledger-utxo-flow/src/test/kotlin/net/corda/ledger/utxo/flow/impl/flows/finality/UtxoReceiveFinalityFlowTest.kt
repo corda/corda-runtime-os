@@ -255,7 +255,6 @@ class UtxoReceiveFinalityFlowTest {
         verify(persistenceService, never()).persist(any(), any(), any())
     }
 
-    // Q: do we need this test?
     @Test
     fun `the received transaction is not signed if the member does not have any ledger keys`() {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, mock()))
