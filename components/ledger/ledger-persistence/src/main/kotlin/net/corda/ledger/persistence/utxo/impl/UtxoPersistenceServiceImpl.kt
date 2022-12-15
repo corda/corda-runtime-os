@@ -53,7 +53,7 @@ class UtxoPersistenceServiceImpl constructor(
             ?: emptyMap()
         return componentGroups[outputsIdx]?.mapNotNull {
             val info = outputInfos[it.leafIndex]
-            require(info != null) {
+            requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
             val contractState = serializationService.deserialize<ContractState>(it.data)
