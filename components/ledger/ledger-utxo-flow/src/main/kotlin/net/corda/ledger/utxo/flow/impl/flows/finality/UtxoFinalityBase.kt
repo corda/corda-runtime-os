@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -67,6 +68,12 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     ):UtxoSignedTransactionInternal {
         try {
             log.debug("Verifying signature($signature) of transaction: ${transaction.id}")
+            if (transaction.notary.owningKey != signature.by) {
+                throw CordaRuntimeException("Notary's signature has not been created by the transaction's notary. " +
+                    "Notary's public key: ${transaction.notary.owningKey} " +
+                    "Notary signature's key: ${signature.by}"
+                )
+            }
             transactionSignatureService.verifyNotarySignature(transaction.id, signature)
         } catch (e: Exception) {
             val message =

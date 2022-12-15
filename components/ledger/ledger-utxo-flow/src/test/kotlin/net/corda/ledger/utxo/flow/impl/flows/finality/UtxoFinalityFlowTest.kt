@@ -129,6 +129,7 @@ class UtxoFinalityFlowTest {
         whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
             pluggableNotaryClientFlow
         )
+        whenever(notaryService.owningKey).thenReturn(publicKeyNotary)
     }
 
     @Test
@@ -336,6 +337,64 @@ class UtxoFinalityFlowTest {
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Notary signature verification failed.")
+
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
+        verify(updatedTxSomeSigs).addSignature(signatureBob)
+        verify(updatedTxAllSigs, never()).addSignature(signatureNotary)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+        verify(flowMessaging, never()).sendAll(eq(listOf(signatureNotary)), any())
+    }
+
+    @Test
+    fun `receiving valid signatures over a transaction then receiving signatures from notary with unexpected signer throws`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
+        whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+        whenever(notaryService.owningKey).thenReturn(publicKeyAlice1)
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Notary's signature has not been created by the transaction's notary.")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
