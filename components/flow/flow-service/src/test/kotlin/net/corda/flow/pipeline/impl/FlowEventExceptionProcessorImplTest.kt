@@ -30,6 +30,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class FlowEventExceptionProcessorImplTest {
     private val flowMessageFactory = mock<FlowMessageFactory>()
@@ -46,6 +47,7 @@ class FlowEventExceptionProcessorImplTest {
         null,
         listOf<Record<String, String>>()
     )
+    private val serializedFiber = ByteBuffer.wrap("mock fiber".toByteArray())
 
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
@@ -57,6 +59,7 @@ class FlowEventExceptionProcessorImplTest {
     fun setup() {
         target.configure(smartFlowConfig)
         whenever(flowEventContextConverter.convert(any())).thenReturn(converterResponse)
+        whenever(flowCheckpoint.serializedFiber).thenReturn(serializedFiber)
     }
 
     @Test
