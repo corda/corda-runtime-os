@@ -78,6 +78,16 @@ interface UtxoLedgerService {
     fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder
 
     /**
+     * Finds unconsumed states of specific type in the vault
+     *
+     * @param stateClass State type
+     *
+     * @return The unconsumed states (or empty list if not found).
+     */
+    @Suspendable
+    fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+
+    /**
      * Verifies, signs, collects signatures, records and broadcasts a [UtxoSignedTransaction] to involved peers.
      *
      * @param signedTransaction The [UtxoSignedTransaction] to verify, finalise and recorded locally and with peer [sessions].

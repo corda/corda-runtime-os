@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "FindUnconsumedStatesByType",
+  "doc": "Retrieve the unconsumed relevant states of specific type. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "stateClassName",
+      "type": "string",
+      "doc": "The fully qualified state class name"
+    }
+  ]
+}
