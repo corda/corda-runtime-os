@@ -89,5 +89,7 @@ class DefaultConfigurationBuilderTest {
         assertThat(config.pollInterval, `is`(Duration.ofMillis(100)))
         assertThat(config.serviceOverrides, `is`(mapOf()))
         assertThat(config.customSerializers, `is`(listOf()))
+        assertThat(config.customJsonSerializers, `is`(mapOf()))
+        assertThat(config.customJsonDeserializers, `is`(mapOf()))
     }
 }
