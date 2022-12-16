@@ -130,12 +130,10 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
      */
     internal class SandboxGroupContextWrapper(
         val wrappedSandboxGroupContext: CloseableSandboxGroupContext
-    ) : SandboxGroupContext, AutoCloseable {
+    ) : SandboxGroupContext {
 
         override fun <T : Any> get(key: String, valueType: Class<out T>) =
             wrappedSandboxGroupContext.get(key, valueType)
-
-        override fun close() = wrappedSandboxGroupContext.close()
 
         override val sandboxGroup = wrappedSandboxGroupContext.sandboxGroup
 
