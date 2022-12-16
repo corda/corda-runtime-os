@@ -97,7 +97,7 @@ class NonValidatingNotaryClientFlowImpl(
         val filteredTx = utxoLedgerService.filterSignedTransaction(stx)
             .withInputStates()
             .withReferenceInputStates()
-            .withOutputStates()
+            .withOutputStatesSize()
             .withNotary()
             .withTimeWindow()
             .build()
