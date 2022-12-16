@@ -6,6 +6,7 @@ import net.corda.v5.ledger.common.Party
 @CordaSerializable
 data class UtxoOutputInfoComponent(
     val encumbrance: String?,
+    val encumbranceGroupSize: Int?,
     val notary: Party,
     val contractStateTag: String,
     val contractTag: String

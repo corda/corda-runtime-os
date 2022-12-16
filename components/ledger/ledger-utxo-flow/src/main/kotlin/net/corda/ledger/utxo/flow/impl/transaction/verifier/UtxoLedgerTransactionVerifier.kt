@@ -28,6 +28,8 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
     }
 
     fun verifyContracts() {
+        failureReasons.addAll(verifyEncumberedInput(transaction.inputStateAndRefs))
+
         val allTransactionStateAndRefs = transaction.inputStateAndRefs + transaction.outputStateAndRefs
         val contractClassMap = allTransactionStateAndRefs.groupBy { it.state.contractType }
 
