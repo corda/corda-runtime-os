@@ -44,8 +44,8 @@ class SandboxGroupContextCacheTest {
     fun `when cache is full, evict and do not close evicted sandbox if still in use`() {
         val cache = SandboxGroupContextCacheImpl(1)
         val sandboxContext1 = mock<CloseableSandboxGroupContext>()
-
-        cache.get(vNodeContext1) { sandboxContext1 }
+        val contextStrongRef = cache.get(vNodeContext1) { sandboxContext1 }
+        assertThat(contextStrongRef).isNotNull
 
         @Suppress("UnusedPrivateMember")
         for (i in 1..50) {
@@ -53,6 +53,8 @@ class SandboxGroupContextCacheTest {
                 on { holdingIdentity } doReturn idBob
                 on { sandboxGroupType } doReturn SandboxGroupType.FLOW
             }) { mock() }
+
+            forceGarbageCollectionExecution()
         }
 
         assertThat(cache.toBeClosed).isNotEmpty
@@ -63,7 +65,7 @@ class SandboxGroupContextCacheTest {
     fun `when cache is full, evict and close evicted sandbox if not in use anymore`() {
         val cache = SandboxGroupContextCacheImpl(1)
         val sandboxContext1: CloseableSandboxGroupContext = spy()
-        var contextStrongRef : SandboxGroupContext? = cache.get(vNodeContext1) { sandboxContext1 }
+        var contextStrongRef: SandboxGroupContext? = cache.get(vNodeContext1) { sandboxContext1 }
         assertThat(contextStrongRef).isNotNull
 
         // Trigger some evictions, close should not be invoked (there's at least one strong reference to the context)
@@ -84,15 +86,7 @@ class SandboxGroupContextCacheTest {
         // references to the wrapper and the Garbage Collector should eventually update the internal [ReferenceQueue])
         eventually(duration = Duration.ofSeconds(60), waitBetween = Duration.ofSeconds(1)) {
             // Trigger Garbage Collection so the internal [ReferenceQueue] is updated
-            var obj: String? = String()
-            val ref = WeakReference(obj)
-            obj = null
-            assertThat(obj as? Any).isNull()  // Annoying check to prevent compilation failure due to unused var
-            System.gc()
-
-            assertThat(ref.get())
-                .withFailMessage("garbage collector did not run")
-                .isNull()
+            forceGarbageCollectionExecution()
 
             // Trigger another Cache Eviction to force the internal purge
             cache.get(mock {
@@ -174,4 +168,16 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.toBeClosed).isEmpty()
         assertThat(retrievedContext.wrappedSandboxGroupContext).isSameAs(sandboxContext1)
     }
+}
+
+fun forceGarbageCollectionExecution() {
+    var obj: String? = String()
+    val ref = WeakReference(obj)
+    obj = null
+    assertThat(obj as? Any).isNull()  // Annoying check to prevent compilation failure due to unused var
+    System.gc()
+
+    assertThat(ref.get())
+        .withFailMessage("garbage collector did not run")
+        .isNull()
 }
