@@ -95,7 +95,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowFatalException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        val msg = "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. Checkpoint size: ${context.checkpoint.serializedFiber.position()}"
+        val msg =
+            "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
+                    "Checkpoint size: ${context.checkpoint.serializedFiber.position()}"
         log.warn(msg, exception)
         val records = createStatusRecord(context.checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(

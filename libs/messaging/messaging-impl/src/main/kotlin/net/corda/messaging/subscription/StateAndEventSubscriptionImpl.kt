@@ -245,14 +245,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         when {
             thisEventUpdates == null -> {
-                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. Processor failed to complete.")
+                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                        "Processor failed to complete.")
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
             thisEventUpdates.markForDLQ -> {
-                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. Processor marked event for the dead letter queue")
+                log.warn(
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                            "Processor marked event for the dead letter queue"
+                )
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
