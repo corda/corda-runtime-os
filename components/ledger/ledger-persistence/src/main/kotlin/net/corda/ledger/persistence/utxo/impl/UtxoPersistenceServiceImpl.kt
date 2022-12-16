@@ -7,6 +7,7 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
@@ -59,7 +60,7 @@ class UtxoPersistenceServiceImpl constructor(
             val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
                 StateAndRefImpl(
-                    state = TransactionStateImpl(contractState as T, info.notary, info.encumbrance),
+                    state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
                     ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
                 )
             } else {
