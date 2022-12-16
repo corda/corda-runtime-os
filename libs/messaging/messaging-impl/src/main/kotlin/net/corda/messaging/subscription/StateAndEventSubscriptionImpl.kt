@@ -1,9 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.*
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,6 +30,10 @@ import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.time.Duration
+import java.util.*
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -97,7 +97,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         get() = threadLooper.lifecycleCoordinatorName
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config}" }
+        log.debug { "Starting subscription with config: $config" }
         threadLooper.start()
     }
 
@@ -245,14 +245,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         when {
             thisEventUpdates == null -> {
-                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. Processor failed to complete.")
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
             thisEventUpdates.markForDLQ -> {
-                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor marked event for the dead letter queue")
+                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. Processor marked event for the dead letter queue")
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
