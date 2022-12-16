@@ -7,6 +7,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 
 interface UtxoTransactionReader {
 
@@ -28,5 +29,7 @@ interface UtxoTransactionReader {
 
     fun getProducedStates(): List<StateAndRef<ContractState>>
 
-    fun getConsumedStates(): List<StateAndRef<ContractState>>
+    fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>>
+
+    fun getConsumedStateRefs(): List<StateRef>
 }

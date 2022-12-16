@@ -433,7 +433,7 @@ class UtxoPersistenceServiceImplTest {
             ),
             listOf("group4_component1".toByteArray()),
             listOf("group5_component1".toByteArray()),
-            listOf("group6_component1".toByteArray()),
+            listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1).toBytes()),
             listOf("group7_component1".toByteArray()),
             listOf(TestContractState1().toBytes(), TestContractState2().toBytes()),
             listOf("group9_component1".toByteArray())
@@ -484,8 +484,12 @@ class UtxoPersistenceServiceImplTest {
             TODO("Not yet implemented")
         }
 
-        override fun getConsumedStates(): List<StateAndRef<ContractState>> {
+        override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
+        }
+
+        override fun getConsumedStateRefs(): List<StateRef> {
+            return listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
         }
     }
 
@@ -500,7 +504,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private fun ContractState.toBytes() = serializationService.serialize(this).bytes
-
+    private fun StateRef.toBytes() = serializationService.serialize(this).bytes
     private fun UtxoOutputInfoComponent.toBytes() = serializationService.serialize(this).bytes
 
     private fun digest(algorithm: String, data: ByteArray) =

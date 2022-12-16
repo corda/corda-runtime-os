@@ -36,6 +36,7 @@ import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -1094,6 +1095,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         }
 
         @Test
+        @Disabled("Too slow to run currently, can be re-enabled after CORE-6171 is delivered")
         fun `Generation and subsequent spend of large number of states is successful`() {
             val issueTxId = SecureHashUtils.randomSecureHash()
             val numStates = Short.MAX_VALUE

@@ -17,9 +17,16 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.osgi.framework.Bundle
 
-class BaseSerializationService : SerializationService by createSerializationService({}, CipherSchemeMetadataImpl()) {
+class BaseSerializationService(
+    private val customSerializers: List<SerializationCustomSerializer<*, *>> = listOf()
+) : SerializationService by createSerializationService(
+    { serializationFactory -> customSerializers.forEach {
+            serializationFactory.registerExternal(it, serializationFactory)
+        }
+    }, CipherSchemeMetadataImpl()) {
     companion object{
         private fun buildDefaultFactoryNoEvolution(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,

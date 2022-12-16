@@ -25,7 +25,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.GatewayTlsCertificates
-import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -103,7 +102,7 @@ open class TestBase {
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
-    protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
+    protected val partyASNI = SniCalculator.calculateCorda4Sni("O=PartyA, L=London, C=GB")
     protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
     protected val ipKeyStore = readKeyStore(Certificates.ipKeyStore)
     protected val aliceSslConfig = SslConfiguration(

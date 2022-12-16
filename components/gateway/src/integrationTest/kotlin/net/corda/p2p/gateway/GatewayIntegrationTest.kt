@@ -234,7 +234,7 @@ class GatewayIntegrationTest : TestBase() {
             val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
-            val serverAddress = URI.create("http://www.alice.net:$port")
+            val serverAddress = URI.create("https://www.alice.net:$port")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
@@ -291,7 +291,7 @@ class GatewayIntegrationTest : TestBase() {
             val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
-            val serverAddress = URI.create("http://www.alice.net:$port")
+            val serverAddress = URI.create("https://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -336,7 +336,7 @@ class GatewayIntegrationTest : TestBase() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val ipAddress = "127.0.0.1"
-            val serverAddress = URI.create("http://$ipAddress:$port")
+            val serverAddress = URI.create("https://$ipAddress:$port")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
@@ -361,7 +361,7 @@ class GatewayIntegrationTest : TestBase() {
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(
                     serverAddress,
-                    SniCalculator.calculateSni("", NetworkType.CORDA_5, "http://$ipAddress"),
+                    SniCalculator.calculateCorda5Sni(serverAddress),
                     null,
                     truststoreKeyStore
                 )
@@ -405,7 +405,7 @@ class GatewayIntegrationTest : TestBase() {
             alice.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
             )
-            val recipientServerUrl = URI.create("http://www.alice.net:${getOpenPort()}")
+            val recipientServerUrl = URI.create("https://www.alice.net:${getOpenPort()}")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
@@ -467,7 +467,7 @@ class GatewayIntegrationTest : TestBase() {
                     (1..configurationCount).map {
                         getOpenPort()
                     }.map {
-                        URI.create("http://www.alice.net:$it")
+                        URI.create("https://www.alice.net:$it")
                     }.forEach { url ->
                         configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
@@ -522,7 +522,7 @@ class GatewayIntegrationTest : TestBase() {
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
-            val serverAddress = URI.create("http://www.alice.net:${getOpenPort()}")
+            val serverAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
             Gateway(
@@ -594,7 +594,7 @@ class GatewayIntegrationTest : TestBase() {
             val serverUrls = (1..serversCount).map {
                 getOpenPort()
             }.map {
-                "http://www.chip.net:$it"
+                "https://www.chip.net:$it"
             }
             val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
@@ -678,8 +678,8 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway to gateway - dual stream`() {
             val testCryptoOpsClientAlice = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(chipKeyStore))
             val testCryptoOpsClientBob = TestCryptoOpsClient(bob.lifecycleCoordinatorFactory, listOf(daleKeyStore))
-            val aliceGatewayAddress = URI.create("http://www.chip.net:${getOpenPort()}")
-            val bobGatewayAddress = URI.create("http://www.dale.net:${getOpenPort()}")
+            val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
@@ -962,8 +962,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(120)
         fun `key store can change dynamically`() {
-            val aliceAddress = URI.create("http://www.alice.net:${getOpenPort()}")
-            val bobAddress = URI.create("http://www.bob.net:${getOpenPort()}")
+            val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
+            val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
             val server = Node("server")
             val testCryptoOpsClient = TestCryptoOpsClient(server.lifecycleCoordinatorFactory, emptyList())
             val configPublisher = ConfigPublisher()
