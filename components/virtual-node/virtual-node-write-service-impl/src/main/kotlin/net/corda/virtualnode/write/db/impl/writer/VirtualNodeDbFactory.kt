@@ -146,7 +146,7 @@ class VirtualNodeDbFactory(
 
             // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
             var jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityShortHash))
-            if (dbType == UNIQUENESS && jdbcUrl.startsWith("postgres")){
+            if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")){
                 jdbcUrl += "&reWriteBatchedInserts=true"
             }
 
