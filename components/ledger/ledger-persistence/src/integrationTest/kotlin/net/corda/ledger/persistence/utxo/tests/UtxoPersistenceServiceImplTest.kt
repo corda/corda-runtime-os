@@ -484,7 +484,7 @@ class UtxoPersistenceServiceImplTest {
             TODO("Not yet implemented")
         }
 
-        override fun getConsumedStates(): List<StateAndRef<ContractState>> {
+        override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
         }
 

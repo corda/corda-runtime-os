@@ -5,8 +5,9 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -31,6 +32,8 @@ class UtxoTransactionReaderImpl(
 
     private val serializer = sandbox.getSerializationService()
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
+    private val wrappedWireTransaction = WrappedUtxoWireTransaction(signedTransaction.wireTransaction, serializer)
+
 
     override val id: SecureHash
         get() = signedTransaction.id
@@ -57,18 +60,20 @@ class UtxoTransactionReaderImpl(
     override val relevantStatesIndexes: List<Int>
         get() = transaction.relevantStatesIndexes ?: emptyList()
 
-    override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        // TODO("Not yet implemented")
-        return emptyList()
+    override fun getProducedStates(): List<StateAndRef<ContractState>> = wrappedWireTransaction.outputStateAndRefs
+
+    override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
+        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionHash }
+            .flatMap { inputsByTransaction ->
+                // this is not the most efficient way of doing this - to be fixed in CORE-8971
+                val tx =
+                    persistenceService.findTransaction(inputsByTransaction.key.toString(), TransactionStatus.VERIFIED)
+                requireNotNull(tx) { "Failed to load transaction ${inputsByTransaction.key}" }
+                val wrappedTx = WrappedUtxoWireTransaction(tx.wireTransaction, serializer)
+                inputsByTransaction.value.map { ref -> wrappedTx.outputStateAndRefs[ref.index] }
+            }
     }
 
-    override fun getConsumedStates(): List<StateAndRef<ContractState>> {
-        // TODO("Not yet implemented")
-        return emptyList()
-    }
+    override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
 
-    override fun getConsumedStateRefs(): List<StateRef> {
-        return rawGroupLists[UtxoComponentGroup.INPUTS.ordinal]
-            .map { serializer.deserialize(it) }
-    }
 }
