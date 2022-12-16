@@ -9,6 +9,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
@@ -65,7 +66,8 @@ class UtxoTransactionReaderImpl(
         get() = transaction.relevantStatesIndexes ?: emptyList()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
-        return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal].zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
+        return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
+            .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
             .filter { indexed -> indexed.index !in relevantStatesIndexes }
             .map { (index, value) ->
@@ -77,7 +79,7 @@ class UtxoTransactionReaderImpl(
             }
             .map { (index, state, info) ->
                 StateAndRefImpl(
-                    state = TransactionStateImpl(state, info.notary, info.encumbrance),
+                    state = TransactionStateImpl(state, info.notary, info.getEncumbranceGroup()),
                     ref = StateRef(id, index)
                 )
             }
