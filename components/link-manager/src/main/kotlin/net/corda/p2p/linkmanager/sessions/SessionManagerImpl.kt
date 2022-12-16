@@ -37,6 +37,7 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -58,9 +59,12 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
+import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
@@ -82,7 +86,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class SessionManagerImpl(
     private val groups: LinkManagerGroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
@@ -95,7 +99,7 @@ internal class SessionManagerImpl(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
-    clock: Clock,
+    private val clock: Clock,
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
@@ -281,7 +285,7 @@ internal class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    override fun dataMessageSent(session: Session) {
+    private fun dataMessageSent(session: Session) {
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
@@ -291,6 +295,23 @@ internal class SessionManagerImpl(
         dominoTile.withLifecycleLock {
             heartbeatManager.messageAcknowledged(sessionId)
         }
+    }
+
+    override fun recordsForSessionEstablished(
+        session: Session,
+        messageAndKey: AuthenticatedMessageAndKey,
+    ): List<Record<String, *>> {
+        dataMessageSent(session)
+        return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, groups, members)?.let { message ->
+            val key = LinkManager.generateKey()
+            val messageRecord = Record(LINK_OUT_TOPIC, key, message)
+            val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
+            val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
+            listOf(
+                messageRecord,
+                markerRecord,
+            )
+        } ?: emptyList()
     }
 
     private fun onTileStart() {
@@ -1039,7 +1060,4 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
     }
-
-
-
 }

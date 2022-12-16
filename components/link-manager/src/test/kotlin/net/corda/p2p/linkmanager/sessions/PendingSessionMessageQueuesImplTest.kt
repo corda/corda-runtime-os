@@ -5,12 +5,10 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -27,7 +25,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -42,7 +39,10 @@ class PendingSessionMessageQueuesImplTest {
         on { sessionId } doReturn "SessionId"
         on { createMac(any()) } doReturn mac
     }
-    private val sessionManager = mock<SessionManager>()
+    private val recordForSessionEstablished = Record("topic", "key", mock<LinkOutMessage>())
+    private val sessionManager = mock<SessionManager> {
+        on { recordsForSessionEstablished(any(), any()) } doReturn listOf(recordForSessionEstablished)
+    }
     private val publisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
         @Suppress("UNCHECKED_CAST")
@@ -81,7 +81,7 @@ class PendingSessionMessageQueuesImplTest {
 
     @Test
     fun `sessionNegotiatedCallback publish messages`() {
-        val messages = (1..5).map {
+        (1..5).map {
             val header = AuthenticatedMessageHeader(
                 sessionCounterparties.counterpartyId.toAvro(),
                 sessionCounterparties.ourId.toAvro(),
@@ -100,19 +100,13 @@ class PendingSessionMessageQueuesImplTest {
 
         assertThat(
             publishedRecords.firstValue
-                .map {
-                    it.value?.payload
-                }.filterIsInstance<AuthenticatedDataMessage>()
-                .map { it.payload }
-                .map { DataMessagePayload.fromByteBuffer(it) }
-                .map { it.message }
-        ).containsExactlyInAnyOrderElementsOf(messages)
+        ).contains(recordForSessionEstablished)
     }
 
     @Test
-    fun `sessionNegotiatedCallback calls dataMessageSent`() {
+    fun `sessionNegotiatedCallback calls recordsForSessionEstablished`() {
         val count = 3
-        (1..count).map {
+        val messages = (1..count).map {
             val header = AuthenticatedMessageHeader(
                 sessionCounterparties.counterpartyId.toAvro(),
                 sessionCounterparties.ourId.toAvro(),
@@ -123,13 +117,16 @@ class PendingSessionMessageQueuesImplTest {
             )
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
-        }.onEach {
+        }
+        messages.onEach {
             queue.queueMessage(it)
         }
 
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groups, members)
 
-        verify(sessionManager, times(count)).dataMessageSent(session)
+        messages.forEach {
+            verify(sessionManager).recordsForSessionEstablished(session, it)
+        }
     }
 
     @Test

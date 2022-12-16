@@ -17,7 +17,6 @@ import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerDiscardedMarker
@@ -273,9 +272,10 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        val list = sessionManager.recordsForSessionEstablished(groups, members, state.session, messageAndKey).toMutableList()
-        list.add(recordForLMSentMarker(messageAndKey.message.header.messageId))
-        return list
+        return sessionManager.recordsForSessionEstablished(
+            state.session,
+            messageAndKey,
+        )
     }
 
     private fun recordForLMProcessedMarker(
@@ -298,13 +298,6 @@ internal class OutboundMessageProcessor(
 
     private fun recordsForNewSessions(state: SessionManager.SessionState.NewSessionsNeeded): List<Record<String, *>> {
         return recordsForNewSessions(state, inboundAssignmentListener, logger)
-    }
-
-    private fun recordForLMSentMarker(
-        messageId: String
-    ): Record<String, AppMessageMarker> {
-        val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
-        return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
 
     private fun recordForLMDiscardedMarker(message: AuthenticatedMessageAndKey,

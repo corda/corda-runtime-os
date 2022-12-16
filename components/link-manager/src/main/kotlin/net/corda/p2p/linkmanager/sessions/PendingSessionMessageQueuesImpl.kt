@@ -72,7 +72,7 @@ internal class PendingSessionMessageQueuesImpl(
                     "Sending queued message ${message.message.header.messageId} " +
                         "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
                 }
-                records.addAll(sessionManager.recordsForSessionEstablished(groups, members, session, message))
+                records.addAll(sessionManager.recordsForSessionEstablished(session, message))
             }
             publisher.publish(records)
         }
