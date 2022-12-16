@@ -323,6 +323,52 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
+    fun `onNext will not send anything for invalid URL`() {
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D"),
+                "subsystem",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "invalid URL",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+
+        handler.onNext(Record("", "", message))
+
+        verify(connectionManager.constructed().first(), never()).acquire(any())
+    }
+
+    @Test
+    fun `onNext will not send anything for wrong scheme URL`() {
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D"),
+                "subsystem",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "http://www.r3.com:4000/",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+
+        handler.onNext(Record("", "", message))
+
+        verify(connectionManager.constructed().first(), never()).acquire(any())
+    }
+
+    @Test
     fun `onNext will get the trust store from the trust store map`() {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
