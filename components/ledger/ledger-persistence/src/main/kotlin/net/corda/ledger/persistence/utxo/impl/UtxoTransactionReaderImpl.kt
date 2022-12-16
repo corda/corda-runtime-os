@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -16,6 +17,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
@@ -63,5 +65,12 @@ class UtxoTransactionReaderImpl(
     override fun getConsumedStates(): List<StateAndRef<ContractState>> {
         // TODO("Not yet implemented")
         return emptyList()
+    }
+
+    override fun getConsumedStateRefs(): List<StateRef> {
+        val input = rawGroupLists[UtxoComponentGroup.INPUTS.ordinal]
+        print(input)
+        return rawGroupLists[UtxoComponentGroup.INPUTS.ordinal]
+            .map { serializer.deserialize(it) }
     }
 }
