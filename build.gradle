@@ -100,6 +100,10 @@ allprojects {
             }
         }
     }
+    
+    pluginManager.withPlugin('corda.javadoc-generation') {
+        assemble.dependsOn javadocJar
+    }
 
     tasks.register('compileAll') { task ->
         description = "Compiles all the Kotlin and Java classes, including all of the test classes."
