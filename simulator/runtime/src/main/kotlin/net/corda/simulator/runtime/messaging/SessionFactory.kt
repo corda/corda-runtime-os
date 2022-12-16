@@ -4,22 +4,26 @@ import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.LinkedBlockingQueue
 
 interface SessionFactory {
-    fun createSessions(counterparty: MemberX500Name, flowContext: FlowContext): SessionPair
+    fun createSessions(counterparty: MemberX500Name, flowContext: FlowContext,
+                       flowContextProperties: SimFlowContextProperties): SessionPair
 }
 
 class BaseSessionFactory : SessionFactory {
-    override fun createSessions(counterparty: MemberX500Name, flowContext: FlowContext): SessionPair {
+    override fun createSessions(counterparty: MemberX500Name, flowContext: FlowContext,
+                                flowContextProperties: SimFlowContextProperties): SessionPair {
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
         val initiatorSession = BaseInitiatorFlowSession(
             flowContext.copy(member = counterparty),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
         val recipientSession = BaseResponderFlowSession(
             flowContext,
             fromInitiatorToResponder,
             fromResponderToInitiator,
+            flowContextProperties
         )
         return SessionPair(initiatorSession, recipientSession)
     }

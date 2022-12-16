@@ -1,11 +1,11 @@
 package net.corda.simulator.runtime
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.signing.SimKeyStore
+import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.RPCStartableFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,7 +22,7 @@ class SimulatedInstanceNodeTest {
     private lateinit var flowFactory : FlowFactory
     private lateinit var injector : FlowServicesInjector
     private lateinit var keyStore : SimKeyStore
-    private val holdingId = HoldingIdentity.create("IRunCordapps")
+    private val holdingId = HoldingIdentityBase(createMember("IRunCordapps"), "GroupId")
 
     @BeforeEach
     fun `setup mocks`() {

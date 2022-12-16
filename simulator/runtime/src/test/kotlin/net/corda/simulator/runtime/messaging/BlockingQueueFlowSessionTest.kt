@@ -51,17 +51,20 @@ class BlockingQueueFlowSessionTest {
         // Given a session constructed with shared queues
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         val receivingSession = BaseResponderFlowSession(
             FlowContext(flowCallConfiguration, receiver, "ping-ack"),
             fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            flowContextProperties
         )
 
         // When we send a message
@@ -77,17 +80,20 @@ class BlockingQueueFlowSessionTest {
         // Given sessions constructed with shared queues
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val initiatorSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         val responderSession = BaseResponderFlowSession(
             FlowContext(flowCallConfiguration, receiver, "ping-ack"),
             fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            flowContextProperties
         )
 
         // When we close them
@@ -114,11 +120,13 @@ class BlockingQueueFlowSessionTest {
         // Given a session constructed only on the sending side
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(fakeClockConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         // When we advance the clock past the 5 minute fake timeout
@@ -139,11 +147,13 @@ class BlockingQueueFlowSessionTest {
         // Given a session constructed only on the sending side
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(fakeClockConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         // When we advance the clock past the 5 minute fake timeout
@@ -164,11 +174,13 @@ class BlockingQueueFlowSessionTest {
         // Given a session constructed only on the sending side
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         // When we close the responder

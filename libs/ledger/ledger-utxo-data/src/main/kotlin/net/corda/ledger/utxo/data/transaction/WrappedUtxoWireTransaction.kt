@@ -25,6 +25,14 @@ class WrappedUtxoWireTransaction(
         const val timeWindowIndex: Int = 1
     }
 
+    init{
+        check(wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal].size ==
+                wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal].size
+        ) {
+            "The length of the outputs and output infos component groups needs to be the same."
+        }
+    }
+
     val id: SecureHash get() = wireTransaction.id
 
     val notary: Party by lazy(LazyThreadSafetyMode.PUBLICATION) {

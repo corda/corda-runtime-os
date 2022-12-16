@@ -4,6 +4,7 @@ import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.factories.SimulatorDelegateFactory
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.types.MemberX500Name
 import java.util.ServiceLoader
 
 /**
@@ -42,10 +43,10 @@ class Simulator(
      */
     @SafeVarargs
     override fun createVirtualNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode {
-        return delegate.createVirtualNode(holdingIdentity, *flowClasses)
+        return delegate.createVirtualNode(member, *flowClasses)
     }
 
     /**
@@ -58,11 +59,11 @@ class Simulator(
      * @return A simulated virtual node which can run this instance of a responder flow.
      */
     override fun createInstanceNode(
-        holdingIdentity: HoldingIdentity,
+        member: MemberX500Name,
         protocol: String,
         flow: Flow
     ): SimulatedInstanceNode {
-        return delegate.createInstanceNode(holdingIdentity, protocol, flow)
+        return delegate.createInstanceNode(member, protocol, flow)
     }
 
     /**

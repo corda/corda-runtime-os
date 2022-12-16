@@ -1,6 +1,8 @@
-import net.corda.simulator.HoldingIdentity
+package net.corda.simulator
+
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
+import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
@@ -19,9 +21,9 @@ class SessionManagementTest {
 
     companion object {
 
-        val alice = HoldingIdentity.create("Alice")
-        val bob = HoldingIdentity.create("Bob")
-        val charlie = HoldingIdentity.create("Charlie")
+        val alice = createMember("Alice")
+        val bob = createMember("Bob")
+        val charlie =createMember("Charlie")
 
         @InitiatingFlow("send-receive")
         class InitiatingSendingFlow: RPCStartableFlow {
@@ -30,7 +32,7 @@ class SessionManagementTest {
 
             @Suspendable
             override fun call(requestBody: RPCRequestData): String {
-                val session = flowMessaging.initiateFlow(bob.member)
+                val session = flowMessaging.initiateFlow(bob)
                 session.send(Unit)
                 return ""
             }
@@ -56,7 +58,7 @@ class SessionManagementTest {
 
             @Suspendable
             override fun call(): String {
-                val session = flowMessaging.initiateFlow(charlie.member)
+                val session = flowMessaging.initiateFlow(charlie)
                 session.receive(Any::class.java)
                 return ""
             }
@@ -90,12 +92,11 @@ class SessionManagementTest {
         simulator.createInstanceNode(charlie, "receive-send", charliesInstanceFlow)
 
         // When we call Alice's flow
-        aliceNode.callFlow(RequestData.Companion.create("r1", InitiatingSendingFlow::class.java, Unit))
+        aliceNode.callFlow(RequestData.create("r1", InitiatingSendingFlow::class.java, Unit))
 
         // Then it shouldn't finish until Charlie's does
         assertTrue(charliesInstanceFlow.finished)
     }
-
 
 
 
