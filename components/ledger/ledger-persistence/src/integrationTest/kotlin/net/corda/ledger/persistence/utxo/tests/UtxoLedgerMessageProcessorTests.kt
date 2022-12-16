@@ -158,12 +158,18 @@ class UtxoLedgerMessageProcessorTests {
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
-            componentGroupLists =
-            List(UtxoComponentGroup.values().size - 1) {    // Metadata will be appended later
-                listOf(
-                    (it + 1).toString().toByteArray()               // And it uses index 0.
-                )
-            },
+            componentGroupLists = listOf(
+                listOf("1".toByteArray()),
+                listOf("2".toByteArray()),
+                listOf("3".toByteArray()),
+                listOf("4".toByteArray()),
+                listOf("5".toByteArray()),
+                listOf("6".toByteArray()),
+                listOf("7".toByteArray()),
+                listOf("8".toByteArray()),
+                listOf("9".toByteArray()),
+                listOf("10".toByteArray())
+            ),
             metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
         return SignedTransactionContainer(
