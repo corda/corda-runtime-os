@@ -214,7 +214,7 @@ open class TestBase {
         }
     }
 
-    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
+    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword, testCryptoOpsClient: TestCryptoOpsClient) {
         val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
             val tenantId = "tenantId"
             val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
@@ -239,5 +239,7 @@ open class TestBase {
         publisher.publish(records).forEach {
             it.join()
         }
+
+        testCryptoOpsClient.createTenantKeys(keyStoreWithPassword)
     }
 }

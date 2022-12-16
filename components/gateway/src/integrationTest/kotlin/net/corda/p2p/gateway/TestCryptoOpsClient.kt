@@ -110,11 +110,7 @@ class TestCryptoOpsClient(
         val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
     }
 
-    //fixed coordinator not found
-    //now get CouldNotFindPrivateKey: Could not find private key
-    //here I need to put { some of publishKeystoreCertsAndKeys (in testbase) + addItem (stubCP) -- > to populate tenant map} also might need init block
-
-    fun toKeyPair(pem: String): KeyPair {
+    private fun toKeyPair(pem: String): KeyPair {
         return pem.reader().use {
             PEMParser(it).use { parser ->
                 generateSequence {
