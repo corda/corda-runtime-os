@@ -1,10 +1,10 @@
-package net.cordapp.demo.utxo.contract
+package net.cordapp.demo.obligation.contract
 
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.ContractState
 import java.math.BigDecimal
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 
 @BelongsToContract(ObligationContract::class)
 data class ObligationState(
