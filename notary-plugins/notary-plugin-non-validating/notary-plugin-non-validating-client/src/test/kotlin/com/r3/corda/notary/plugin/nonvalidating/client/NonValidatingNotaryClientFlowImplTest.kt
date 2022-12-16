@@ -16,6 +16,8 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -49,6 +51,8 @@ class NonValidatingNotaryClientFlowImplTest {
         }
 
         /* Transactions */
+        val mockFilteredTx = mock<UtxoFilteredTransaction>()
+
         val mockLedgerTransaction = mock<UtxoLedgerTransaction> {
             on { inputStateAndRefs } doReturn listOf(mockStateAndRef)
             on { outputStateAndRefs } doReturn emptyList()
@@ -70,8 +74,7 @@ class NonValidatingNotaryClientFlowImplTest {
 
         assertAll({
             assertThat(payload).isNotNull
-            assertThat(payload.numOutputs).isEqualTo(0)
-            assertThat(payload.transaction).isEqualTo(mockUtxoTx)
+            assertThat(payload.transaction).isEqualTo(mockFilteredTx)
             assertThat(payload.requestSignature.digitalSignature).isEqualTo(mockRequestSignature)
             assertThat(payload.requestSignature.platformVersion).isEqualTo(DUMMY_PLATFORM_VERSION)
         })
@@ -124,6 +127,15 @@ class NonValidatingNotaryClientFlowImplTest {
             on { sessionInitiationKey } doReturn mock()
         }
 
+        val mockBuilder = mock<UtxoFilteredTransactionBuilder> {
+            on { withInputStates() } doReturn this.mock
+            on { withReferenceInputStates() } doReturn this.mock
+            on { withOutputStatesSize() } doReturn this.mock
+            on { withNotary() } doReturn this.mock
+            on { withTimeWindow() } doReturn this.mock
+            on { build() } doReturn mockFilteredTx
+        }
+
         return NonValidatingNotaryClientFlowImpl(
             mockUtxoTx,
             Party(MemberX500Name("Alice", "Alice Corp", "LDN", "GB"), mock()),
@@ -136,6 +148,9 @@ class NonValidatingNotaryClientFlowImplTest {
             },
             mock {
                 on { sign(any(), any(), any()) } doReturn mockRequestSignature
+            },
+            mock {
+                on { filterSignedTransaction(any()) } doReturn mockBuilder
             }
         )
     }

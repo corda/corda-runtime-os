@@ -52,7 +52,8 @@ class UtxoFilteredTransactionImpl(
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
                 is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(filteredOutputStates.size)
                 is UtxoFilteredData.Audit -> {
-                    when (val filteredStateInfos = getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
+                    when (val filteredStateInfos =
+                        getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
                         is UtxoFilteredData.Audit -> {
                             val values = filteredOutputStates.values.entries.associateBy(
                                 keySelector = { (key, _) -> key },
@@ -67,6 +68,7 @@ class UtxoFilteredTransactionImpl(
                             )
                             FilteredDataAuditImpl(filteredOutputStates.size, values)
                         }
+
                         else -> throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
                     }
                 }
@@ -106,13 +108,25 @@ class UtxoFilteredTransactionImpl(
             ?.let { group ->
                 when (group.merkleProof.proofType) {
                     MerkleProofType.SIZE -> return FilteredDataSizeImpl(group.merkleProof.treeSize)
-                    MerkleProofType.AUDIT -> return FilteredDataAuditImpl(
-                        group.merkleProof.treeSize,
-                        group.merkleProof.leaves.associateBy(
-                            { leaf -> leaf.index },
-                            { leaf -> serializationService.deserialize(leaf.leafData) }
-                        )
-                    )
+                    MerkleProofType.AUDIT -> {
+                        // if it's an audit proof of an empty list, we need to strip the marker
+                        return if (group.merkleProof.leaves.size == 1
+                            && group.merkleProof.leaves.first().leafData.size == 0)
+                            FilteredDataAuditImpl(
+                                0,
+                                emptyMap()
+                            )
+                        else
+                            FilteredDataAuditImpl(
+                                group.merkleProof.treeSize,
+                                group.merkleProof.leaves.associateBy(
+                                    { leaf -> leaf.index },
+                                    { leaf ->
+                                        serializationService.deserialize(leaf.leafData)
+                                    }
+                                )
+                            )
+                    }
                 }
             } ?: return FilteredDataRemovedImpl()
     }

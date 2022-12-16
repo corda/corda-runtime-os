@@ -16,6 +16,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -41,6 +42,9 @@ class NonValidatingNotaryClientFlowImpl(
     @CordaInject
     private lateinit var signingService: SigningService
 
+    @CordaInject
+    private lateinit var utxoLedgerService: UtxoLedgerService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
@@ -52,12 +56,14 @@ class NonValidatingNotaryClientFlowImpl(
         flowMessaging: FlowMessaging,
         memberLookupService: MemberLookup,
         serializationService: SerializationService,
-        signingService: SigningService
+        signingService: SigningService,
+        utxoLedgerService: UtxoLedgerService
     ): this(stx, notary) {
         this.flowMessaging = flowMessaging
         this.serializationService = serializationService
         this.memberLookupService = memberLookupService
         this.signingService = signingService
+        this.utxoLedgerService = utxoLedgerService
     }
 
     /**
@@ -90,6 +96,14 @@ class NonValidatingNotaryClientFlowImpl(
      */
     @Suspendable
     internal fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
+        val filteredTx = utxoLedgerService.filterSignedTransaction(stx)
+            .withInputStates()
+            .withReferenceInputStates()
+            .withOutputStatesSize()
+            .withNotary()
+            .withTimeWindow()
+            .build()
+
         val notarisationRequest = NotarisationRequest(
             stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
             stx.id
@@ -102,10 +116,8 @@ class NonValidatingNotaryClientFlowImpl(
             signingService
         )
 
-        // TODO CORE-7249 Filtering needed
         return NonValidatingNotarisationPayload(
-            stx,
-            stx.toLedgerTransaction().outputStateAndRefs.size,
+            filteredTx,
             requestSignature
         )
     }
