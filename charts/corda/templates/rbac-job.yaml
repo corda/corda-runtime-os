@@ -16,8 +16,8 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10002
         fsGroup: 1000
       containers:
         - name: create-rbac-role-user-admin

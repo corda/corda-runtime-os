@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.v5.application.crypto.DigestService
@@ -77,6 +78,34 @@ class UtxoRepositoryImpl(
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
+    }
+
+    override fun findUnconsumedRelevantStatesByType(
+        entityManager: EntityManager,
+        groupIndices: List<Int>
+    ):  List<ComponentLeafDto> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                JOIN {h-schema}utxo_relevant_transaction_state AS rts
+                    ON rts.transaction_id = tc.transaction_id
+                    AND rts.leaf_idx = tc.leaf_idx
+                WHERE tc.group_idx IN (:groupIndices)
+                AND rts.consumed = false
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            Tuple::class.java
+        )
+            .setParameter("groupIndices", groupIndices)
+            .resultListAsTuples()
+            .map { t ->
+                ComponentLeafDto(
+                    t[0] as String, // transactionId
+                    (t[1] as Number).toInt(), // groupIndex
+                    (t[2] as Number).toInt(), // leafIndex
+                    t[3] as ByteArray // data
+                )
+            }
     }
 
     override fun findTransactionSignatures(

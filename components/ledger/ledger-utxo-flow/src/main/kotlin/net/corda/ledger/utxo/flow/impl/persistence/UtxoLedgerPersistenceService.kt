@@ -5,6 +5,8 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -12,6 +14,26 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * by the platform.
  */
 interface UtxoLedgerPersistenceService {
+    /**
+     * Find a UTXO signed transaction in the persistence context given it's [id].
+     *
+     * @param id UTXO signed transaction ID.
+     *
+     * @return The found UTXO signed transaction, null if it could not be found in the persistence context.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
+
+    /**
+     * Find unconsumed relevant states of type [stateClass].
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+
     /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
@@ -49,16 +71,4 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
-
-    /**
-     * Find a UTXO signed transaction in the persistence context given it's [id].
-     *
-     * @param id UTXO signed transaction ID.
-     *
-     * @return The found UTXO signed transaction, null if it could not be found in the persistence context.
-     *
-     * @throws CordaPersistenceException if an error happens during find operation.
-     */
-    @Suspendable
-    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 }

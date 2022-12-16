@@ -75,6 +75,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+        return utxoLedgerPersistenceService.findUnconsumedStatesByType(stateClass)
+    }
+
+    @Suspendable
     override fun finalize(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
