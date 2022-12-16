@@ -140,10 +140,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             throw IllegalStateException("Could not validate request.", e)
         }
 
-        val notaryServerIdentity = memberLookup.myInfo().run { Party(name, sessionInitiationKey) }
-        require(transactionParts.notary == notaryServerIdentity) {
-            "Notary server identity does not match with the one attached to the transaction"
-        }
+        // TODO CORE-8976 Add check for notary identity
+
         return transactionParts
     }
 

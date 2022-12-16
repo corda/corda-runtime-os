@@ -15,5 +15,6 @@ data class NonValidatingNotaryTransactionDetails(
     val timeWindow: TimeWindow,
     val inputs: Collection<StateRef>,
     val references: Collection<StateRef>,
+    // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
     val notary: Party
 )
