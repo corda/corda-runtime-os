@@ -42,7 +42,6 @@ spec:
         {{- include "corda.workerEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
-        {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:
@@ -56,7 +55,6 @@ spec:
           - name: profiling
             containerPort: 10045
         {{- end }}
-        {{- if not .Values.workers.p2pLinkManager.debug.enabled }}
         readinessProbe:
           httpGet:
             path: /status
@@ -75,7 +73,6 @@ spec:
             port: monitor
           periodSeconds: 5
           failureThreshold: 20
-        {{- end }}
       initContainers:
       {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:
