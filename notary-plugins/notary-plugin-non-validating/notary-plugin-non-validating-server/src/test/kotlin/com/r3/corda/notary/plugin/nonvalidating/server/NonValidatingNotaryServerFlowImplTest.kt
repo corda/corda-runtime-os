@@ -49,6 +49,12 @@ class NonValidatingNotaryServerFlowImplTest {
         val responseFromServer = mutableListOf<NotarisationResponse>()
 
         /* Members */
+        val notaryServerParty = Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
+        val notaryServerIdentity = mock<MemberInfo> {
+            on { name } doReturn notaryServerParty.name
+            on { sessionInitiationKey } doReturn notaryServerParty.owningKey
+        }
+
         const val DUMMY_PLATFORM_VERSION = 9001
 
         val aliceKey = mock<PublicKey>()
@@ -70,6 +76,7 @@ class NonValidatingNotaryServerFlowImplTest {
         /* Services */
         val mockMemberLookupService = mock<MemberLookup> {
             on { lookup(eq(aliceName)) } doReturn aliceMemberInfo
+            on { myInfo() } doReturn notaryServerIdentity
         }
 
         val mockSigVerifier = mock<DigitalSignatureVerificationService> {
@@ -96,7 +103,10 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText)
-                .contains("Error while verifying request signature. Cause: java.lang.IllegalArgumentException: Sig error")
+                .contains("Error while processing request from client")
+            assertThat(responseError.cause).hasStackTraceContaining(
+                "Sig error"
+            )
         }
     }
 
@@ -122,7 +132,10 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText)
-                .contains("Uniqueness checker cannot be reached")
+                .contains("Error while processing request from client")
+            assertThat(responseError.cause).hasStackTraceContaining(
+                "Uniqueness checker cannot be reached"
+            )
         }
     }
 
@@ -147,7 +160,10 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText).contains(
-                "Could not validate request. Reason: Time window component could not be found on the transaction"
+                "Error while processing request from client"
+            )
+            assertThat((responseError).cause).hasStackTraceContaining(
+                "Time window component could not be found on the transaction"
             )
         }
     }
@@ -161,7 +177,10 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText).contains(
-                "Could not validate request. Reason: Notary component could not be found on the transaction"
+                "Error while processing request from client"
+            )
+            assertThat((responseError).cause).hasStackTraceContaining(
+                "Notary component could not be found on the transaction"
             )
         }
     }
@@ -179,7 +198,10 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText).contains(
-                "Could not validate request. Reason: Could not fetch input states from the filtered transaction"
+                "Error while processing request from client"
+            )
+            assertThat((responseError).cause).hasStackTraceContaining(
+                "Could not fetch input states from the filtered transaction"
             )
         }
     }
@@ -196,7 +218,28 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText)
-                .contains("Error while validating the transaction, reason: DUMMY ERROR")
+                .contains("Error while processing request from client")
+            assertThat((responseError).cause).hasStackTraceContaining("DUMMY ERROR")
+        }
+    }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with error if notary identity invalid`() {
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            // What party we pass in here does not matter, it just needs to be different from the notary server party
+            filteredTxContents = mapOf("notary" to Party(MemberX500Name.parse("C=GB,L=London,O=Bob"), mock()))
+        ) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
+            assertThat((responseError as NotaryErrorGeneral).errorText)
+                .contains("Error while processing request from client")
+            assertThat((responseError).cause).hasStackTraceContaining(
+                "Notary server identity does not match with the one attached to the transaction"
+            )
         }
     }
 
@@ -235,16 +278,14 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val filteredTx = mock<UtxoFilteredTransaction> {
             on { notary } doAnswer {
-                // Notary is a nullable field, so we should be able to provide `null` for it without always defaulting
                 if (filteredTxContents.containsKey("notary")) {
                     filteredTxContents["notary"] as Party?
                 } else {
-                    Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
+                    notaryServerParty
                 }
             }
 
             on { timeWindow } doAnswer  {
-                // TW is a nullable field, so we should be able to provide `null` for it without always defaulting
                 if (filteredTxContents.containsKey("timeWindow")) {
                     filteredTxContents["timeWindow"] as TimeWindow?
                 } else {

@@ -120,7 +120,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             logger.warn("Error while processing request from client. Cause: $e")
             session.send(NotarisationResponse(
                 emptyList(),
-                NotaryErrorGeneralImpl("Error while processing request from client. Reason: ${e.message}", e)
+                NotaryErrorGeneralImpl("Error while processing request from client.", e)
             ))
         }
     }
@@ -137,9 +137,13 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             extractParts(requestPayload)
         } catch (e: Exception) {
             logger.warn("Could not validate request. Reason: ${e.message}")
-            throw IllegalStateException("Could not validate request. Reason: ${e.message}")
+            throw IllegalStateException("Could not validate request.", e)
         }
 
+        val notaryServerIdentity = memberLookup.myInfo().run { Party(name, sessionInitiationKey) }
+        require(transactionParts.notary == notaryServerIdentity) {
+            "Notary server identity does not match with the one attached to the transaction"
+        }
         return transactionParts
     }
 
@@ -175,7 +179,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             outputStates.size,
             filteredTx.timeWindow!!,
             inputStates.values.values,
-            refStates.values.values
+            refStates.values.values,
+            filteredTx.notary!!
         )
     }
 
@@ -188,11 +193,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
     private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {
         try {
-            val transaction = requestPayload.transaction as UtxoFilteredTransaction
-            transaction.verify()
+            (requestPayload.transaction as UtxoFilteredTransaction).verify()
         } catch (e: Exception) {
             logger.warn("Error while validating the transaction, reason: ${e.message}")
-            throw IllegalStateException("Error while validating the transaction, reason: ${e.message}")
+            throw IllegalStateException("Error while validating the transaction", e)
         }
     }
 
