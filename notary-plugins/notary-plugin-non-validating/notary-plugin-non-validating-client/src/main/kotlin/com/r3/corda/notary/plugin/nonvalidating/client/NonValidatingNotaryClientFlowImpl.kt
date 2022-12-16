@@ -56,12 +56,14 @@ class NonValidatingNotaryClientFlowImpl(
         flowMessaging: FlowMessaging,
         memberLookupService: MemberLookup,
         serializationService: SerializationService,
-        signingService: SigningService
+        signingService: SigningService,
+        utxoLedgerService: UtxoLedgerService
     ): this(stx, notary) {
         this.flowMessaging = flowMessaging
         this.serializationService = serializationService
         this.memberLookupService = memberLookupService
         this.signingService = signingService
+        this.utxoLedgerService = utxoLedgerService
     }
 
     /**
