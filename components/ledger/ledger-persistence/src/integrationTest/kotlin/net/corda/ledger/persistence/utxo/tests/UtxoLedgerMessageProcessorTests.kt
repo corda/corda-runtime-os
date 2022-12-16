@@ -35,6 +35,8 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -153,6 +155,9 @@ class UtxoLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
+        val inputStateRef = ctx.getSerializationService().serialize(
+            StateRef(SecureHash("SHA-256", ByteArray(12)), 1)
+        ).bytes
         val wireTransaction = getWireTransactionExample(
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
@@ -164,11 +169,10 @@ class UtxoLedgerMessageProcessorTests {
                 listOf("3".toByteArray()),
                 listOf("4".toByteArray()),
                 listOf("5".toByteArray()),
-                listOf("6".toByteArray()),
+                listOf(inputStateRef),
                 listOf("7".toByteArray()),
                 listOf("8".toByteArray()),
-                listOf("9".toByteArray()),
-                listOf("10".toByteArray())
+                listOf("9".toByteArray())
             ),
             metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )

@@ -40,6 +40,14 @@ interface UtxoRepository {
         id: String,
     ): String?
 
+    /** Marks relevant states of transactions consumed */
+    fun markTransactionRelevantStatesConsumed(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
+    )
+
     /** Persists transaction (operation is idempotent) */
     fun persistTransaction(
         entityManager: EntityManager,
