@@ -45,7 +45,6 @@ import java.time.Instant
 class NonValidatingNotaryServerFlowImplTest {
 
     private companion object {
-
         /* Cache for storing response from server */
         val responseFromServer = mutableListOf<NotarisationResponse>()
 
