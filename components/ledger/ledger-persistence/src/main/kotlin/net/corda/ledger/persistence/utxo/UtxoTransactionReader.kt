@@ -29,7 +29,7 @@ interface UtxoTransactionReader {
 
     fun getProducedStates(): List<StateAndRef<ContractState>>
 
-    fun getConsumedStates(): List<StateAndRef<ContractState>>
+    fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>>
 
     fun getConsumedStateRefs(): List<StateRef>
 }
