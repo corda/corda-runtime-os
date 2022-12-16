@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
@@ -15,7 +16,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [InternalCustomSerializer::class, UsedByFlow::class], scope = PROTOTYPE)
+@Component(
+    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
+    scope = PROTOTYPE
+)
 class FilteredTransactionSerializer @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
+import net.corda.applications.workers.smoketest.TEST_NOTARY_CPB_LOCATION
+import net.corda.applications.workers.smoketest.TEST_NOTARY_CPI_NAME
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
@@ -34,6 +36,7 @@ class UtxoLedgerTests {
 
     private val testRunUniqueId = UUID.randomUUID()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
@@ -55,11 +58,12 @@ class UtxoLedgerTests {
     @BeforeAll
     fun beforeAll() {
         conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+        conditionallyUploadCordaPackage(notaryCpiName, TEST_NOTARY_CPB_LOCATION, GROUP_ID, staticMemberList)
 
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
-        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, cpiName)
+        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
 
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
@@ -99,7 +103,7 @@ class UtxoLedgerTests {
                 .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
             assertThat(parsedResult.transaction).withFailMessage {
-                "Member with holding identity $holdingId did not receive the transaction"
+                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
             }.isNotNull
             assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
@@ -109,16 +113,16 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - creating a transaction that fails custom verification causes finality to fail`() {
+    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
             "net.cordapp.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(utxoFlowResult.flowError?.message).contains("Transaction verification failed for transaction")
-        assertThat(utxoFlowResult.flowError?.message).contains("when signature was requested")
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)

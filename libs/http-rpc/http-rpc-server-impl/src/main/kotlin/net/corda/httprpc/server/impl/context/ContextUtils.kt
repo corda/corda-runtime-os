@@ -1,10 +1,10 @@
 package net.corda.httprpc.server.impl.context
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
+import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
@@ -154,18 +154,25 @@ internal object ContextUtils {
             val parameterRetriever = ParameterRetrieverFactory.create(parameter, this)
             try {
                 parameterRetriever.apply(parametersRetrieverContext)
-            } catch(ex: JsonProcessingException) {
-                // These are handled in `HttpExceptionMapper`
-                throw ex
-            }
-            catch (ex: Exception) {
-                throw InvalidInputDataException(
-                    "Unable to parse parameter '${parameter.name}'",
-                    listOf("cause" to (ex.javaClass.simpleName + ": " + ex.message)).toMap())
+            } catch (ex: Exception) {
+                throw buildBadRequestResponse("Unable to parse parameter '${parameter.name}'", ex)
             }
         }
         return paramValues
     }
+
+    private fun buildBadRequestResponse(message: String, e: Exception): HttpApiException {
+        return (e.cause as? HttpApiException) ?: InvalidInputDataException(message, buildExceptionCauseDetails(e))
+    }
+
+    /**
+     * We'll add the name of the exception and the exception's message to the extra details map.
+     * This will give the user extra information to resolving their issue.
+     */
+    internal fun buildExceptionCauseDetails(e: Exception) = mapOf(
+        "cause" to e::class.java.simpleName,
+        "reason" to (e.message ?: "")
+    )
 
     private fun cleanUpMultipartRequest(ctx: Context) {
         ctx.uploadedFiles().forEach { it.content.close() }

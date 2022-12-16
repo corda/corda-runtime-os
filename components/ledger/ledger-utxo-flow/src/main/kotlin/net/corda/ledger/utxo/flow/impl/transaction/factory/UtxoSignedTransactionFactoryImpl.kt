@@ -10,15 +10,17 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionMetadataVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -61,6 +63,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
+
+        verifyTransaction(wireTransaction, utxoTransactionBuilder.notary!!)
+
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
         return UtxoSignedTransactionImpl(
@@ -105,13 +110,17 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             /*TODO notaryallowlist*/
         )
 
+        val encumbranceGroupSizes =
+            utxoTransactionBuilder.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
+
         val outputTransactionStates = utxoTransactionBuilder.outputStates.map {
-            it.toTransactionState(utxoTransactionBuilder.notary!!)
+            it.toTransactionState(utxoTransactionBuilder.notary!!, it.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
         }
 
         val outputsInfo = outputTransactionStates.map {
             UtxoOutputInfoComponent(
-                it.encumbrance,
+                it.encumbrance?.tag,
+                it.encumbrance?.size,
                 utxoTransactionBuilder.notary!!,
                 currentSandboxGroup.getEvolvableTag(it.contractStateType),
                 currentSandboxGroup.getEvolvableTag(it.contractType)
@@ -154,5 +163,12 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 }
             }
         }
+    }
+
+    private fun verifyTransaction(wireTransaction: WireTransaction, notary: Party){
+        val ledgerTransactionToCheck = UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
+        verifier.verifyPlatformChecks(notary)
+        verifier.verifyContracts()
     }
 }

@@ -5,7 +5,6 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
-import net.corda.data.ledger.utxo.token.selection.data.TokenTestLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
@@ -77,11 +76,6 @@ interface EntityConverter {
      * @return An instance of [LedgerChange]
      */
     fun toLedgerChange(avroPoolKey: TokenPoolCacheKey, tokenLedgerChange: TokenLedgerChange): LedgerChange
-
-    /**
-     * HACK: Added for testing will be removed by CORE-5722 (ledger integration)
-     */
-    fun toTestLedgerChange(avroPoolKey: TokenPoolCacheKey, tokenLedgerChange: TokenTestLedgerChange): LedgerChange
 
     /**
      * Creates a [BigDecimal] from an Avro [TokenAmount]

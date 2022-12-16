@@ -5,6 +5,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -13,12 +15,15 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransac
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -29,7 +34,7 @@ import java.nio.ByteBuffer
 
 @Component(
     service = [ UtxoLedgerPersistenceService::class, UsedByFlow::class ],
-    property = [ "corda.system=true" ],
+    property = [ CORDA_SYSTEM_SERVICE ],
     scope = PROTOTYPE
 )
 class UtxoLedgerPersistenceServiceImpl @Activate constructor(
@@ -51,6 +56,16 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }.firstOrNull()?.let {
             serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
         }
+    }
+
+    @Suspendable
+    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+        return wrapWithPersistenceException {
+            externalEventExecutor.execute(
+                FindUnconsumedStatesByTypeExternalEventFactory::class.java,
+                FindUnconsumedStatesByTypeParameters(stateClass)
+            )
+        }.map { serializationService.deserialize(it.array()) }
     }
 
     @Suspendable

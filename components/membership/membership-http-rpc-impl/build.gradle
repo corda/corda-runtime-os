@@ -30,6 +30,8 @@ dependencies {
     implementation "net.corda:corda-membership"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
+    implementation "commons-validator:commons-validator:$commonsVersion"
+
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

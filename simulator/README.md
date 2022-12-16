@@ -29,8 +29,7 @@ network this would be done using the `CPI_HASH`).
 ```kotlin
   val simulator = Simulator()
   val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
-  val holdingIdentity = HoldingIdentity.create(member)
-  val node = simulator.createVirtualNode(holdingIdentity, HelloFlow::class.java)
+  val node = simulator.createVirtualNode(member, HelloFlow::class.java)
 
   val response = node.callFlow(
       RequestData.create("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
@@ -167,7 +166,7 @@ whenever(responder.call(any())).then {
 }
 
 val node = simulator.createVirtualNode(
-    HoldingIdentity.create(MemberX500Name.parse(studentId)),
+    MemberX500Name.parse(studentId),
     "roll-call",
     responder
 )
@@ -202,8 +201,8 @@ in a readable JSON wrapper, using the key, alias, HSM category and signature sch
 
 The equivalent `DigitalVerificationService` simply looks to see if the clear data, signature spec and key are a match.
 
-Note that as with real Corda, private keys are contained within their own node, so keys generated in one 
-node cannot be used to sign data in another (though all public keys are accessible through `MemberInfo`).
+Note that as with real Corda, all public keys are accessible through `MemberInfo`, and that even though Simulator does 
+not perform any actual crypto, a member cannot use another member's key in signing.
 
 Note also that Simulator does not check to see if any given scheme is supported, and will only
 ever generate an ECDSA key, regardless of parameters. To verify that your chosen key scheme and signature spec

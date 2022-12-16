@@ -136,8 +136,8 @@ Pod security context
 {{- define "corda.podSecurityContext" -}}
 {{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
 securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
+  runAsUser: 10001
+  runAsGroup: 10002
   fsGroup: 1000
 {{- end }}
 {{- end }}
@@ -147,6 +147,8 @@ Container security context
 */}}
 {{- define "corda.containerSecurityContext" -}}
 securityContext:
+  runAsUser: 10001
+  runAsGroup: 10002
   allowPrivilegeEscalation: false
 {{- end }}
 
@@ -648,6 +650,7 @@ Kafka SASL init container
   - mountPath: "/etc/config"
     name: "jaas-conf"
     readOnly: false
+  {{- include "corda.bootstrapResources" . | nindent 2 }}
 {{- end }}    
 {{- end }}
 

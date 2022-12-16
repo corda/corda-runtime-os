@@ -28,10 +28,10 @@ class BaseFlowMessagingFactoryTest {
 
         // When we call the factory create method for the flow
         val flowMessagingA =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator)
+            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator, mock())
 
         val flowMessagingB =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder)
+            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder, mock())
 
         // Then the factory should return a flow messaging object
         assertThat(flowMessagingA is ConcurrentFlowMessaging)
@@ -49,9 +49,9 @@ class BaseFlowMessagingFactoryTest {
 
         // When we call the factory create method for the flow
         val flowMessagingA =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator)
+            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator, mock())
         val flowMessagingB =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder)
+            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder, mock())
 
         // Then the factory should return a flow messaging object
         assertThat(flowMessagingA is ConcurrentFlowMessaging)

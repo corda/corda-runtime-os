@@ -9,7 +9,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation 'net.corda:corda-notary-plugin'
+    api 'net.corda:corda-notary-plugin'
     implementation project(':components:ledger:notary-worker-selection')
     implementation project(':libs:sandbox')
     implementation project(':libs:virtual-node:sandbox-group-context')

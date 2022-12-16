@@ -114,8 +114,8 @@ class FlowSessionImpl(
         }
             ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
-    
-    private fun getSessionInfo(): FlowIORequest.SessionInfo {
+
+    override fun getSessionInfo(): FlowIORequest.SessionInfo {
         return FlowIORequest.SessionInfo(
             sourceSessionId,
             counterparty,

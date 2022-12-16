@@ -119,12 +119,18 @@ class CreateConnect : Runnable {
             val pattern = ResourcePattern(ResourceType.TOPIC, topicConfig.name, PatternType.LITERAL)
             val consumerEntries = create!!.getUsersForProcessors(topicConfig.consumers)
                 .map { user ->
-                    AccessControlEntry("User:$user", "*", AclOperation.READ, AclPermissionType.ALLOW)
-                }
+                    listOf(
+                        AccessControlEntry("User:$user", "*", AclOperation.READ, AclPermissionType.ALLOW),
+                        AccessControlEntry("User:$user", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                    )
+                }.flatten()
             val producerEntries = create!!.getUsersForProcessors(topicConfig.producers)
                 .map { user ->
-                    AccessControlEntry("User:$user", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
-                }
+                    listOf(
+                        AccessControlEntry("User:$user", "*", AclOperation.WRITE, AclPermissionType.ALLOW),
+                        AccessControlEntry("User:$user", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                    )
+                }.flatten()
             (consumerEntries + producerEntries).map { AclBinding(pattern, it) }
         }
 

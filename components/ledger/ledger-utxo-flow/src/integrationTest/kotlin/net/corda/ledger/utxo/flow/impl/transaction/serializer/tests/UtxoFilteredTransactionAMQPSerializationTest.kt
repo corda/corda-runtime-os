@@ -15,12 +15,14 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
+@Suppress("FunctionName")
 class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
 
     private companion object {
         val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
+            encumbranceGroupSize = null,
             notary = Party(MemberX500Name("alice", "LDN", "GB"), publicKeyExample),
             contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"

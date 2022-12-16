@@ -36,7 +36,7 @@ class SimConsensualLedgerServiceTest {
 
     companion object {
         private val alice = MemberX500Name.parse("O=Alice,L=London,C=GB")
-        private val publicKeys = generateKeys(3)
+        private val publicKeys = generateKeys(4)
         private val defaultConfiguration = SimulatorConfigurationBuilder.create().build()
     }
 
@@ -93,14 +93,14 @@ class SimConsensualLedgerServiceTest {
         )
         val signedTransaction = unsignedTx.addSignature(publicKeys[0])
 
-        // And a flow session is created
+        // And flow sessions are created which will add the other signatures
         val sessions = publicKeys.minus(publicKeys[0]).map {
             val signature = DigitalSignatureAndMetadata(
                 toSignature(it).signature,
                 DigitalSignatureMetadata(Instant.now(), mapOf())
             )
             val flowSession = mock<FlowSession>()
-            whenever(flowSession.receive<Any>(any())).thenReturn(signature, Unit)
+            whenever(flowSession.receive<Any>(any())).thenReturn(listOf(signature), Unit)
             flowSession
         }
         val simFiber = mock<SimFiber>()
@@ -128,9 +128,9 @@ class SimConsensualLedgerServiceTest {
 
     @Test
     fun `should sign transaction when receive finality is called then receive fully-signed transaction`(){
-        // Given a signed transaction is generated
+        // Given a signed transaction is generated with all keys except for publicKey[1]
         val ledgerInfo = ConsensualStateLedgerInfo(
-            listOf(NameConsensualState("CordaDev", publicKeys)), Instant.now())
+            listOf(NameConsensualState("CordaDev", publicKeys.minus(publicKeys[1]))), Instant.now())
         val signingService = mock<SigningService>()
 
         publicKeys.forEach {
@@ -145,9 +145,9 @@ class SimConsensualLedgerServiceTest {
         )
         val signedTransaction = unsignedTx.addSignature(publicKeys[0])
         val twiceSignedTransaction = signedTransaction
-            .addSignature(publicKeys[1])
-        val thriceSignedTransaction = twiceSignedTransaction
             .addSignature(publicKeys[2])
+        val thriceSignedTransaction = twiceSignedTransaction
+            .addSignature(publicKeys[3])
 
         // And a flow session is created that will send the first transaction to be signed,
         // followed by the fully-signed transaction for counterparty records
@@ -164,8 +164,10 @@ class SimConsensualLedgerServiceTest {
 
         val memberInfo = mock<MemberInfo>()
         val validator = mock<ConsensualTransactionValidator>()
+
+        // And our memberLookup gives back 2 keys, the 2nd of which matches and should be used to sign
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
-        whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKeys[1]))
+        whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKeys[1], publicKeys[2]))
 
         val ledgerService = SimConsensualLedgerService(alice, simFiber, defaultConfiguration)
         val finalSignedTx = ledgerService.receiveFinality(flowSession, validator)

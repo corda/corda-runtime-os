@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
 import org.apache.commons.validator.routines.DomainValidator
+import org.apache.commons.validator.routines.InetAddressValidator
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import javax.net.ssl.SNIHostName
@@ -12,12 +13,14 @@ import java.security.cert.X509Certificate
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
+import org.bouncycastle.asn1.x509.GeneralName
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HostnameMatcher::class.java)
-        private const val ALTNAME_DNS = 2
+        private const val ALTNAME_DNS = GeneralName.dNSName
+        private const val ALTNAME_IP = GeneralName.iPAddress
     }
 
     var matchedAlias: String? = null
@@ -42,6 +45,12 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
                 if (serverNameString == c4SniValue) {
                     return matched(alias)
                 }
+            } else if (isIpSni(serverNameString)) {
+                val ipAddress = serverNameString.removeSuffix(SniCalculator.IP_SNI_SUFFIX)
+                val valid = InetAddressValidator.getInstance().isValid(ipAddress)
+                if (valid && matchIp(ipAddress, certificate)) {
+                    return matched(alias)
+                }
             } else if (matchDNS(serverNameString, certificate)){
                 return matched(alias)
             }
@@ -63,9 +72,30 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         return correctSize && correctSuffix && validHashedLegalName
     }
 
+    private fun isIpSni(serverName: String): Boolean {
+        return serverName.endsWith(SniCalculator.IP_SNI_SUFFIX)
+    }
+
     private fun matched(alias: String): Boolean {
         matchedAlias = alias
         return true
+    }
+
+    private fun matchIp(ip: String, certificate: X509Certificate): Boolean {
+        val names = certificate.subjectAlternativeNames
+        if (names.isNullOrEmpty()) {
+            logger.debug("No subject alternative names found in the certificate")
+            return false
+        }
+        names.forEach {
+            if (ALTNAME_IP == it[0]) {
+                val ipAddress = it[1] as? String
+                if (ip == ipAddress) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     /**

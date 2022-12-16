@@ -127,8 +127,10 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 sig,
                 DigitalSignatureMetadata(
                     Instant.now(),
-                    // TODO how to populate this properly?
-                    mapOf("platformVersion" to myInfo.platformVersion.toString())
+                    mapOf(
+                        "platformVersion" to myInfo.platformVersion.toString(),
+                        "signatureSpec" to SignatureSpec.ECDSA_SHA256.signatureName
+                    )
                 )
             ),
             merkleTree

@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.filtered
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
@@ -60,7 +61,7 @@ class UtxoFilteredTransactionImpl(
                                     val info = filteredStateInfos.values[key]
                                         ?: throw FilteredDataInconsistencyException("Missing output info")
                                     StateAndRefImpl(
-                                        state = TransactionStateImpl(value, info.notary, info.encumbrance),
+                                        state = TransactionStateImpl(value, info.notary, info.getEncumbranceGroup()),
                                         ref = StateRef(id, key)
                                     )
                                 }
