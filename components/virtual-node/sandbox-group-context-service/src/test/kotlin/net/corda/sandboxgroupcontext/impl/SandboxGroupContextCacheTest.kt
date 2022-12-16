@@ -170,6 +170,7 @@ class SandboxGroupContextCacheTest {
     }
 }
 
+@Suppress("ExplicitGarbageCollectionCall")
 fun forceGarbageCollectionExecution() {
     var obj: String? = String()
     val ref = WeakReference(obj)
