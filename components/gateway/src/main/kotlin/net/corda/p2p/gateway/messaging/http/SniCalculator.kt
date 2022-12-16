@@ -18,6 +18,9 @@ object SniCalculator {
     fun calculateCorda4Sni(
         x500Name: String,
     ): String {
+        // The x500Name String can exist with RDNs in any order, therefore we need to ensure the calculation of the
+        // SNI always uses the same one. For example, both "O=PartyA, L=London, C=GB" and "L=London, O=PartyA, C=GB"
+        // will have the same calculated SNI value
         val x500NameSorted = X500Name(x500Name).rdNs.flatMap { it.typesAndValues.asList() }.sortedBy { it.type.toString() }.groupBy(
             AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
             .mapValues { it.value[0].toString() }.map { it }.joinToString(", ")

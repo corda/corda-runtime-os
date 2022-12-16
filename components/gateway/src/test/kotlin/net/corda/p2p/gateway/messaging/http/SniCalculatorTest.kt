@@ -36,9 +36,9 @@ class SniCalculatorTest {
         val sni = SniCalculator.calculateCorda4Sni(SOURCE)
 
         assertSoftly {
-            assertThat(sni).hasSizeLessThan(MAX_SNI_SIZE)
+            assertThat(sni).hasSizeLessThanOrEqualTo(MAX_SNI_SIZE)
             assertThat(sni.split(LABEL_DELIMITER)).allSatisfy {
-                assertThat(it).hasSizeLessThan(MAX_SNI_LABEL_SIZE)
+                assertThat(it).hasSizeLessThanOrEqualTo(MAX_SNI_LABEL_SIZE)
             }
         }
     }
