@@ -220,8 +220,8 @@ class NonValidatingNotaryServerFlowImplTest {
             on { values } doReturn emptyMap()
         }
 
-        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>> {
-            on { values } doReturn mapOf(0 to mock())
+        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.SizeOnly<StateAndRef<*>>> {
+            on { size } doReturn 1
         }
 
         val mockTimeWindow = mock<TimeWindow> {
