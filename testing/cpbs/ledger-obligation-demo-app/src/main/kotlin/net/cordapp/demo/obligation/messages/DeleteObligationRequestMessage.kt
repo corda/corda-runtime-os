@@ -1,5 +1,5 @@
-package net.cordapp.demo.utxo.messages
+package net.cordapp.demo.obligation.messages
 
-import java.util.*
+import java.util.UUID
 
 data class DeleteObligationRequestMessage(val id: UUID)
