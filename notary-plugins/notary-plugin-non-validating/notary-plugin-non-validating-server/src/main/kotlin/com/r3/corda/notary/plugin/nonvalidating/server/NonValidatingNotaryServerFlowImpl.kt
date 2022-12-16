@@ -21,6 +21,7 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
 import kotlin.IllegalStateException
@@ -147,31 +148,33 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
+        val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
         // The notary component is not needed by us but we validate that it is present just in case
-        requireNotNull(requestPayload.transaction.notary) {
+        requireNotNull(filteredTx.notary) {
             "Notary component could not be found on the transaction"
         }
 
-        requireNotNull(requestPayload.transaction.timeWindow) {
+        requireNotNull(filteredTx.timeWindow) {
             "Time window component could not be found on the transaction"
         }
 
-        val inputStates = requestPayload.transaction.inputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
+        val inputStates = filteredTx.inputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
             "Could not fetch input states from the filtered transaction"
         }
 
-        val refStates = requestPayload.transaction.referenceInputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
+        val refStates = filteredTx.referenceInputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
             "Could not fetch reference input states from the filtered transaction"
         }
 
-        val outputStates = requestPayload.transaction.outputStateAndRefs.castOrThrow<UtxoFilteredData.Audit<StateAndRef<*>>> {
+        val outputStates = filteredTx.outputStateAndRefs.castOrThrow<UtxoFilteredData.Audit<StateAndRef<*>>> {
             "Could not fetch output states from the filtered transaction"
         }
 
+        logger.error("lofaszjoska 6")
         return NonValidatingNotaryTransactionDetails(
-            requestPayload.transaction.id,
+            filteredTx.id,
             outputStates.size,
-            requestPayload.transaction.timeWindow!!,
+            filteredTx.timeWindow!!,
             inputStates.values.values,
             refStates.values.values
         )
@@ -185,8 +188,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
     private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {
-        val transaction = requestPayload.transaction
         try {
+            val transaction = requestPayload.transaction as UtxoFilteredTransaction
             transaction.verify()
         } catch (e: Exception) {
             logger.warn("Error while validating the transaction, reason: ${e.message}")

@@ -1,5 +1,6 @@
 package com.r3.corda.notary.plugin.nonvalidating.api
 
+import com.r3.corda.notary.plugin.common.BaseNotarisationPayload
 import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
@@ -10,6 +11,10 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
  */
 @CordaSerializable
 class NonValidatingNotarisationPayload(
-    val transaction: UtxoFilteredTransaction,
-    val requestSignature: NotarisationRequestSignature
+    transaction: UtxoFilteredTransaction,
+    requestSignature: NotarisationRequestSignature
+): BaseNotarisationPayload(
+    transaction,
+    requestSignature,
+    listOf(UtxoFilteredTransaction::class.java)
 )

@@ -99,6 +99,7 @@ class NonValidatingNotaryClientFlowImpl(
             .withReferenceInputStates()
             .withOutputStates()
             .withNotary()
+            .withTimeWindow()
             .build()
 
         val notarisationRequest = NotarisationRequest(
@@ -113,7 +114,6 @@ class NonValidatingNotaryClientFlowImpl(
             signingService
         )
 
-        // TODO CORE-7249 Filtering needed
         return NonValidatingNotarisationPayload(
             filteredTx,
             requestSignature
