@@ -96,7 +96,13 @@ internal class OutboundMessageHandler(
                 throw IllegalStateException("Can not handle events")
             }
 
-            sendMessage(event.value)
+            val peerMessage = event.value
+            try {
+                sendMessage(peerMessage)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")
+                CompletableFuture.completedFuture(Unit)
+            }
         }
     }
 
