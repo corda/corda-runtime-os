@@ -68,8 +68,6 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStateRefs(): List<StateRef> {
-        val input = rawGroupLists[UtxoComponentGroup.INPUTS.ordinal]
-        print(input)
         return rawGroupLists[UtxoComponentGroup.INPUTS.ordinal]
             .map { serializer.deserialize(it) }
     }
