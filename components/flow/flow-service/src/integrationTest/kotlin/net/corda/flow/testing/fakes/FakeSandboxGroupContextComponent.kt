@@ -194,12 +194,12 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         private val initiatorForProtocol: Map<String, String>,
         private val responderForProtocol: Map<String, String>
     ) : FlowProtocolStore {
-        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
-            return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
-        }
-
         override fun initiatorForProtocol(protocolName: String, supportedVersions: Collection<Int>): String {
             return initiatorForProtocol[protocolName] ?: throw IllegalArgumentException("No initiator configured for $protocolName")
+        }
+
+        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
+            return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
         }
 
         override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {

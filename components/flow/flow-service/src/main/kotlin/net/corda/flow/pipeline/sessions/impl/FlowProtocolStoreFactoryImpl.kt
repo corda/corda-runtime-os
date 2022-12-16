@@ -20,6 +20,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         private val logger = contextLogger()
     }
 
+    @Suppress("ThrowsCount")
     private fun extractDataForFlow(
         flowName: String,
         flowClass: Class<*>,
@@ -33,7 +34,14 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val versions = flowClass.getAnnotation(InitiatingFlow::class.java).version
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 initiatorToProtocol[flowName] = protocols
-                protocolToInitiator[protocols.single()] = flowName
+                if (protocols.any { it in protocolToInitiator }) {
+                    throw FlowFatalException(
+                        "Cannot declare multiple initiators for the same protocol in the same CPI"
+                    )
+                }
+                protocols.forEach {
+                    protocolToInitiator[it] = flowName
+                }
             }
 
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {

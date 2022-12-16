@@ -13,9 +13,10 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -31,7 +32,7 @@ class UtxoFinalityFlow(
 ) : UtxoFinalityBase() {
 
     private companion object {
-        val log = contextLogger()
+        val log = loggerFor<UtxoFinalityFlow>()
     }
 
     private val transactionId = initialTransaction.id
@@ -45,7 +46,6 @@ class UtxoFinalityFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         log.trace("Starting finality flow for transaction: $transactionId")
-        log.info("Plugin class is ${pluggableNotaryClientFlow.name}")
         verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
         sendTransactionAndBackchainToCounterparties()
@@ -219,7 +219,10 @@ class UtxoFinalityFlow(
         return notarizedTransaction to notarySignatures
     }
 
-    private fun newPluggableNotaryClientFlowInstance(
+    // Gets a new notary client plugin flow instance. This is done in a non-suspendable
+    // function to avoid trying (and failing) to serialize the objects used internally.
+    @VisibleForTesting
+    internal fun newPluggableNotaryClientFlowInstance(
         transaction: UtxoSignedTransactionInternal
     ) : PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {

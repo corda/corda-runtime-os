@@ -65,6 +65,22 @@ class FlowProtocolStoreImplTest {
     }
 
     @Test
+    fun `exception is thrown if no initiators are configured for provided protocols`() {
+        val protocolsToInitiators = mapOf(
+            FlowProtocol(PROTOCOL_1, 1) to INITIATING_FLOW_A,
+            FlowProtocol(PROTOCOL_1, 2) to INITIATING_FLOW_A,
+            FlowProtocol(PROTOCOL_1, 3) to INITIATING_FLOW_B
+        )
+        val protocolStore = FlowProtocolStoreImpl(mapOf(),protocolsToInitiators, mapOf())
+        assertThrows<FlowFatalException> {
+            protocolStore.initiatorForProtocol(PROTOCOL_2, listOf(1, 2, 3))
+        }
+        assertThrows<FlowFatalException> {
+            protocolStore.initiatorForProtocol(PROTOCOL_1, listOf(4))
+        }
+    }
+
+    @Test
     fun `exception is thrown if no responders are configured for provided protocols`() {
         val protocolsToResponders = mapOf(
             FlowProtocol(PROTOCOL_1, 1) to RESPONDER_FLOW_A,
