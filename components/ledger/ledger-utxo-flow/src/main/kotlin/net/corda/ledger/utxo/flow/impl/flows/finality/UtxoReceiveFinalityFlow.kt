@@ -100,7 +100,13 @@ class UtxoReceiveFinalityFlow(
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
 
         log.debug { "Waiting for Notary's signature for transaction: $transactionId" }
-        val notarySignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        val notarySignaturesPayload = session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+        val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
+            val message = "Notarisation failed. Failure received from ${session.counterparty} for transaction " +
+                    "$transactionId with message: ${failure.message}"
+            log.warn( message )
+            CordaRuntimeException(message)
+        }
         if (notarySignatures.isEmpty()) {
             val message = "No notary signature received for transaction: $transactionId"
             log.warn(message)
