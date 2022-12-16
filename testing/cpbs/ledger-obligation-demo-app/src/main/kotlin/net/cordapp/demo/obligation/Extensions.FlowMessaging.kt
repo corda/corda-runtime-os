@@ -1,4 +1,4 @@
-package net.cordapp.demo.utxo
+package net.cordapp.demo.obligation
 
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession

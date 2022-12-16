@@ -1,4 +1,4 @@
-package net.cordapp.demo.utxo.workflow
+package net.cordapp.demo.obligation.workflow
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -6,20 +6,24 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.cordapp.demo.utxo.contract.ObligationContract
-import net.cordapp.demo.utxo.contract.ObligationState
-import net.cordapp.demo.utxo.getParty
-import net.cordapp.demo.utxo.initiateFlows
-import net.cordapp.demo.utxo.messages.CreateObligationRequestMessage
-import net.cordapp.demo.utxo.messages.CreateObligationResponseMessage
+import net.cordapp.demo.obligation.contract.ObligationContract
+import net.cordapp.demo.obligation.contract.ObligationState
+import net.cordapp.demo.obligation.getNotaryParty
+import net.cordapp.demo.obligation.initiateFlows
+import net.cordapp.demo.obligation.messages.CreateObligationRequestMessage
+import net.cordapp.demo.obligation.messages.CreateObligationResponseMessage
+import java.time.Instant
 
 class CreateObligationFlow(
     private val obligation: ObligationState,
@@ -29,10 +33,14 @@ class CreateObligationFlow(
 
     internal companion object {
         const val FLOW_PROTOCOL = "create-obligation-flow"
+        val log = contextLogger()
     }
 
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
+
+    @CordaInject
+    private lateinit var memberLookup: MemberLookup
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -42,14 +50,18 @@ class CreateObligationFlow(
             .setNotary(notary)
             .addOutputState(obligation)
             .addCommand(ObligationContract.Create)
+            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
             .addSignatories(listOf(obligation.issuer))
 
-        val fullySignedTransaction = transaction.sign()
+        @Suppress("DEPRECATION")
+        val initiallySignedTransaction = transaction.toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
 
-        // TODO : For now, just send them the signed transaction. We'll add finality later.
-        sessions.forEach { it.send(fullySignedTransaction) }
+        val fullySignedSignedTransaction = utxoLedgerService.finalize(
+            initiallySignedTransaction,
+            sessions.toList()
+        )
 
-        return fullySignedTransaction
+        return fullySignedSignedTransaction
     }
 
     @InitiatingFlow(FLOW_PROTOCOL)
@@ -62,15 +74,16 @@ class CreateObligationFlow(
         private lateinit var flowMessaging: FlowMessaging
 
         @CordaInject
-        private lateinit var jsonService: JsonMarshallingService
+        private lateinit var jsonMarshallingService: JsonMarshallingService
 
         @CordaInject
         private lateinit var memberLookup: MemberLookup
 
         @Suspendable
         override fun call(requestBody: RPCRequestData): String {
+            log.info("CreateObligationFlow: starting.")
 
-            val request = requestBody.getRequestBodyAs(jsonService, CreateObligationRequestMessage::class.java)
+            val request = requestBody.getRequestBodyAs<CreateObligationRequestMessage>(jsonMarshallingService)
 
             val issuer = memberLookup.lookup(request.issuer)
                 ?: throw IllegalArgumentException("Unknown issuer: ${request.issuer}.")
@@ -78,8 +91,8 @@ class CreateObligationFlow(
             val holder = memberLookup.lookup(request.holder)
                 ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
 
-            val notary = memberLookup.lookup(request.notary)?.getParty()
-                ?: throw IllegalArgumentException("Unknown notary: ${request.notary}.")
+            val notary = memberLookup.lookup(request.notary)?.getNotaryParty(memberLookup, request.notaryService)
+                ?: throw IllegalArgumentException("Unknown notary: ${request.notaryService}.")
 
             val sessions = flowMessaging.initiateFlows(holder)
 
@@ -93,9 +106,10 @@ class CreateObligationFlow(
 
             val transaction = flowEngine.subFlow(createObligationFlow)
 
-            val response = CreateObligationResponseMessage(transaction.id)
+            val response = CreateObligationResponseMessage(transaction.id, obligationState.id)
 
-            return jsonService.format(response)
+            log.info("CreateObligationFlow: finishing.")
+            return jsonMarshallingService.format(response)
         }
     }
 }
