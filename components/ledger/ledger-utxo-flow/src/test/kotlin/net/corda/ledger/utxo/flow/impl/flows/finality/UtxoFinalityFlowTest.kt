@@ -58,6 +58,7 @@ class UtxoFinalityFlowTest {
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
+    private val sessions = setOf(sessionAlice, sessionBob)
 
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
@@ -188,7 +189,7 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1, signatureAlice2)
             )
         )
-        verify(flowMessaging).sendAll(listOf(signatureNotary), setOf(sessionAlice, sessionBob))
+        verify(flowMessaging).sendAll(Payload.Success(listOf(signatureNotary)), sessions)
     }
 
     @Test
@@ -245,7 +246,8 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1, signatureAlice2)
             )
         )
-        verify(flowMessaging, never()).sendAll(eq(listOf(signatureNotary)), any())
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
+        verify(flowMessaging).sendAll(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>(), eq(sessions))
     }
 
     @Test
@@ -302,7 +304,8 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1, signatureAlice2)
             )
         )
-        verify(flowMessaging, never()).sendAll(eq(listOf(signatureNotary)), any())
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
+        verify(flowMessaging).sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notary has not returned any signatures."), sessions)
     }
 
     @Test
@@ -362,7 +365,8 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1, signatureAlice2)
             )
         )
-        verify(flowMessaging, never()).sendAll(eq(listOf(signatureNotary)), any())
+        verify(flowMessaging).sendAll(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>(), eq(sessions))
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
     }
 
     @Test
@@ -420,7 +424,8 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1, signatureAlice2)
             )
         )
-        verify(flowMessaging, never()).sendAll(eq(listOf(signatureNotary)), any())
+        verify(flowMessaging).sendAll(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>(), eq(sessions))
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
     }
 
     @Test
@@ -470,7 +475,7 @@ class UtxoFinalityFlowTest {
                 sessionBob to listOf(signatureAlice1)
             )
         )
-        verify(flowMessaging).sendAll(listOf(signatureNotary), setOf(sessionAlice, sessionBob))
+        verify(flowMessaging).sendAll(Payload.Success(listOf(signatureNotary)), sessions)
     }
 
     @Test

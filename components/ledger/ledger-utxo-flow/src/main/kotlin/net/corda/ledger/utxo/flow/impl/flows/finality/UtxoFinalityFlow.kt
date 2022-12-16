@@ -101,21 +101,32 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarisationFlow)
         } catch (e: CordaRuntimeException){
-            log.warn(e.message)
+            val message = "Notarization failed with ${e.message}."
+            flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+            log.warn(message)
             throw e
         }
         if (notarySignatures.isEmpty()) {
-            throw CordaRuntimeException("Notary has not returned any signatures.")
+            val message = "Notary has not returned any signatures."
+            log.warn(message)
+            flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+            throw CordaRuntimeException(message)
         }
         notarySignatures.forEach { signature ->
-            transaction = verifyAndAddNotarySignature(transaction, signature)
+            transaction = try{
+                verifyAndAddNotarySignature(transaction, signature)
+            } catch(e: Exception) {
+                val message = e.message ?: "Notary signature verification failed."
+                flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+                throw e
+            }
         }
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded verified (notarised) transaction $transactionId" }
 
         // Distribute notary signatures
-        flowMessaging.sendAll(notarySignatures, sessions.toSet())
+        flowMessaging.sendAll(Payload.Success(notarySignatures), sessions.toSet())
 
         log.trace { "Finalisation of transaction $transactionId has been finished." }
 

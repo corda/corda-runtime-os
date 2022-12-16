@@ -8,6 +8,7 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.ContractVerificationException
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
@@ -75,7 +76,7 @@ class UtxoLedgerTransactionVerifierTest {
                 override val contractStateType: Class<out MyState> = state::class.java
                 override val contractType: Class<out Contract> = C::class.java
                 override val notary: Party = utxoNotaryExample
-                override val encumbrance: String? = null
+                override val encumbrance: EncumbranceGroup? = null
             },
             StateRef(transactionId, index)
         )

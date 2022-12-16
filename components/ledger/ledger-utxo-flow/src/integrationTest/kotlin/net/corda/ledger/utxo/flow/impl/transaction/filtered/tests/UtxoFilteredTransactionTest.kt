@@ -327,6 +327,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
+            encumbranceGroupSize = null,
             notary = utxoNotaryExample,
             contractStateTag = UtxoStateClassExample::class.java.name,
             contractTag = "contract tag"
