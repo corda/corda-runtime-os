@@ -29,6 +29,11 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
+import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -51,7 +56,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import java.lang.System.currentTimeMillis
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -65,7 +70,7 @@ import kotlin.system.measureTimeMillis
  * Kafka.
  *
  * @property vnodePublisher Used to publish to Kafka.
- * @property virtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
+ * @property oldVirtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
  * @property vnodeDbFactory Used to construct a mapping object which holds the multiple database connections we have.
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
@@ -78,11 +83,13 @@ import kotlin.system.measureTimeMillis
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
     private val dbConnectionManager: DbConnectionManager,
-    private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
+    private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
-    private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
+    private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi,
+    private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -115,7 +122,7 @@ internal class VirtualNodeWriterProcessor(
         try {
             val cpiMetadata: CpiMetadataLite?
             measureTimeMillis {
-                cpiMetadata = virtualNodeEntityRepository.getCpiMetadataByChecksum(create.cpiFileChecksum)
+                cpiMetadata = oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(create.cpiFileChecksum)
                 if (cpiMetadata == null) {
                     handleException(
                         respFuture,
@@ -134,17 +141,25 @@ internal class VirtualNodeWriterProcessor(
             }
             val holdingId = HoldingIdentity(MemberX500Name.parse(create.getX500CanonicalName()), groupId)
             measureTimeMillis {
-                if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
-                    handleException(
-                        respFuture,
-                        VirtualNodeAlreadyExistsException(
-                            "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name " +
-                                    "${create.x500Name} already exists."
+                val emf = dbConnectionManager.getClusterEntityManagerFactory()
+                emf.use { em ->
+                    if (virtualNodeRepository.find(em, holdingId.shortHash) != null) {
+                        handleException(
+                            respFuture,
+                            VirtualNodeAlreadyExistsException(
+                                "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name " +
+                                        "${create.x500Name} already exists."
+                            )
                         )
-                    )
-                    return
+                        return
+                    }
+
+                    if (holdingIdentityRepository.find(em, holdingId.shortHash) != null) {
+                        throw VirtualNodeWriteServiceException(
+                            "New holding identity $holdingId has a short hash that collided with existing holding identity."
+                        )
+                    }
                 }
-                checkUniqueId(holdingId)
             }.also {
                 logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
                         "${currentTimeMillis() - startMillis} ms"}
@@ -232,25 +247,25 @@ internal class VirtualNodeWriterProcessor(
                 //  another database.
                 it.transaction { tx ->
                     // Retrieve virtual node info
-                    val virtualNodeInfo = try {
-                        virtualNodeEntityRepository.getVirtualNode(shortHashString)
-                    } catch (e: VirtualNodeNotFoundException) {
-                        logger.warn("Could not find the virtual node: $shortHashString", e)
-                        respFuture.complete(
-                            VirtualNodeManagementResponse(
-                                instant,
-                                VirtualNodeManagementResponseFailure(
-                                    ExceptionEnvelope(
-                                        e::class.java.name,
-                                        e.message
+                    val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
+                    if(null == virtualNodeInfo) {
+                            logger.warn("Could not find the virtual node: $shortHashString")
+                            respFuture.complete(
+                                VirtualNodeManagementResponse(
+                                    instant,
+                                    VirtualNodeManagementResponseFailure(
+                                        ExceptionEnvelope(
+                                            VirtualNodeNotFoundException::class.java.name,
+                                            "Could not find the virtual node: $shortHashString"
+                                        )
                                     )
                                 )
                             )
-                        )
-                        return
-                    }
+                            return
+                        }
+
                     // Retrieve CPI metadata
-                    val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
@@ -312,50 +327,20 @@ internal class VirtualNodeWriterProcessor(
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
-            val updatedVirtualNodeEntity = em.use { entityManager ->
-                virtualNodeEntityRepository.setVirtualNodeState(
+            val updatedVirtualNode = em.use { entityManager ->
+                virtualNodeRepository.updateVirtualNodeState(
                     entityManager,
                     stateChangeRequest.holdingIdentityShortHash,
-                    stateChangeRequest.newState
+                    VirtualNodeState.valueOf(stateChangeRequest.newState)
                 )
             }
 
-            val virtualNodeInfo = with(updatedVirtualNodeEntity) {
-                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
-                    this.cpiName,
-                    this.cpiVersion
-                ) ?: throw CpiNotFoundException(
-                    "No corresponding meta data found for cpi for ${this.holdingIdentity.holdingIdentityShortHash}"
-                )
-                val holdingIdentity = HoldingIdentity(
-                    MemberX500Name.parse(this.holdingIdentity.x500Name),
-                    this.holdingIdentity.mgmGroupId
-                )
-                val cpiIdentifier = CpiIdentifier(
-                    cpiMetadata.id.name,
-                    cpiMetadata.id.version,
-                    cpiMetadata.id.signerSummaryHash
-                )
-                VirtualNodeInfo(
-                    holdingIdentity,
-                    cpiIdentifier,
-                    this.holdingIdentity.vaultDDLConnectionId,
-                    this.holdingIdentity.vaultDMLConnectionId!!,
-                    this.holdingIdentity.cryptoDDLConnectionId,
-                    this.holdingIdentity.cryptoDMLConnectionId!!,
-                    this.holdingIdentity.uniquenessDDLConnectionId,
-                    this.holdingIdentity.uniquenessDMLConnectionId!!,
-                    this.holdingIdentity.hsmConnectionId,
-                    VirtualNodeState.valueOf(this.virtualNodeState),
-                    this.entityVersion,
-                    this.insertTimestamp!!
-                )
-            }.toAvro()
+            val avroPayload = updatedVirtualNode.toAvro()
 
             val virtualNodeRecord = Record(
                 VIRTUAL_NODE_INFO_TOPIC,
-                virtualNodeInfo.holdingIdentity,
-                virtualNodeInfo
+                avroPayload.holdingIdentity,
+                avroPayload
             )
 
             try {
@@ -441,16 +426,6 @@ internal class VirtualNodeWriterProcessor(
         return MemberX500Name.parse(x500Name).toString()
     }
 
-    private fun checkUniqueId(holdingId: HoldingIdentity) {
-        virtualNodeEntityRepository.getHoldingIdentity(holdingId.shortHash)?.let { storedHoldingId ->
-            if (storedHoldingId != holdingId) {
-                throw VirtualNodeWriteServiceException(
-                    "New holding identity $holdingId has a short hash that collided with existing holding identity $storedHoldingId."
-                )
-            }
-        }
-    }
-
     private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
             vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
@@ -479,8 +454,17 @@ internal class VirtualNodeWriterProcessor(
                             putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor)!!,
                         )
-                    virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
-                    virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
+                    holdingIdentityRepository.put(
+                        entityManager,
+                        holdingIdentity,
+                        dbConnections.vaultDdlConnectionId,
+                        dbConnections.vaultDmlConnectionId,
+                        dbConnections.cryptoDdlConnectionId,
+                        dbConnections.cryptoDmlConnectionId,
+                        dbConnections.uniquenessDdlConnectionId,
+                        dbConnections.uniquenessDmlConnectionId,
+                    )
+                    virtualNodeRepository.put(entityManager, holdingIdentity, cpiId)
                     dbConnections
                 }
         } catch (e: Exception) {
