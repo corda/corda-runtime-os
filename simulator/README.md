@@ -105,6 +105,26 @@ val config = SimulatorConfigurationBuilder.create()
   .build()
 ```
 
+### Custom Serializer
+Simulator provides the ability to register custom serializers. You could register your own
+serializers using Simulator configuration as shown below.
+
+```kotlin
+val config = SimulatorConfigurationBuilder.create()
+  .withCustomSerializer(myCustomSerializer)
+  .build()
+```
+
+You could also register custom JSON serializer/ deserializer as shown below.
+
+```kotlin
+val config = SimulatorConfigurationBuilder.create()
+  .withCustomJsonSerializer(myCustomJsonSerializer, MyType::class.java)
+  .withCustomJsonDeserializer(myCustomJsonDeserializer, MyType::class.java)
+  .build()
+```
+
+
 ## RequestData
 
 Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted
