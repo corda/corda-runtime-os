@@ -347,6 +347,10 @@ subprojects {
             }
         }
     }
+    
+    pluginManager.withPlugin('corda.javadoc-generation') {
+        assemble.dependsOn javadocJar
+    }
 
     tasks.named("detekt").configure {
         if(file("$projectDir/detekt-baseline.xml").exists()){
