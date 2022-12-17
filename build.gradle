@@ -101,8 +101,10 @@ allprojects {
         }
     }
     
-    pluginManager.withPlugin('corda.javadoc-generation') {
-        assemble.dependsOn javadocJar
+    if(project.hasProperty('generateJavaDocWithBuild')) {
+        pluginManager.withPlugin('corda.javadoc-generation') {
+            assemble.dependsOn javadocJar
+        }
     }
 
     tasks.register('compileAll') { task ->
