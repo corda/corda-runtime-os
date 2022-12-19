@@ -5,7 +5,6 @@ import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
@@ -168,7 +167,7 @@ class CreateRoleE2eTest {
 
             assertThatThrownBy {
                 proxy.removeRole(adminUser, protectedRole.id)
-            }.isInstanceOf(BadRequestException::class.java)
+            }.isInstanceOf(RequestErrorException::class.java)
              .hasMessageContaining("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME")
         }
     }
