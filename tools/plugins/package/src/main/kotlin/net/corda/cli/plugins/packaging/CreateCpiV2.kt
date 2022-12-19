@@ -81,6 +81,11 @@ class CreateCpiV2 : Runnable {
     @CommandLine.Mixin
     var signingOptions = SigningOptions()
 
+    private val cpbPath: Path?
+        get() = cpbFileName?.let {
+            requireFileExists(it)
+        }
+
     /**
      * Check user supplied options, then start the process of building and signing the CPI
      */
@@ -90,46 +95,52 @@ class CreateCpiV2 : Runnable {
 
         val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
-        else {
+        else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
-        }
 
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         // Check input Cpb file is indeed a Cpb
-        var cpbPath: Path? = null
-        if (cpbFileName != null) {
-            cpbPath = requireFileExists(cpbFileName as String)
-            verifyIsValidCpbV2(cpbPath)
+        cpbPath?.let {
+            verifyIsValidCpbV2()
         }
 
-        // Create output filename if none specified
+        val outputName = determineOutputFileName()
+
+        // Check output Cpi file does not exist
+        val outputFilePath = requireFileDoesNotExist(outputName)
+
+        buildAndSignCpi(outputFilePath, groupPolicyString)
+    }
+
+    private fun determineOutputFileName() : String {
+        // Try create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
-            if (cpbPath != null) {
+            val cpb = cpbPath
+            if (cpb != null) {
                 val cpiFilename = "${File(cpbFileName!!).nameWithoutExtension}$CPI_EXTENSION"
-                val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
+                val cpbDirectory = cpb.toAbsolutePath().parent.toString()
                 outputName = Path.of(cpbDirectory, cpiFilename).toString()
             } else {
                 throw IllegalArgumentException("Must specify an Output File if no CPB is provided.")
             }
         }
-        // Check output Cpi file does not exist
-        val outputFilePath = requireFileDoesNotExist(outputName)
-
-        buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
+        return outputName
     }
 
     /**
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
-    private fun verifyIsValidCpbV2(cpbPath: Path) {
+    private fun verifyIsValidCpbV2() {
         try {
+            val path = cpbPath
+
             VerifierBuilder()
                 .type(PackageType.CPB)
                 .format(VerifierFactory.FORMAT_2)
-                .name(cpbPath.toString())
-                .inputStream(FileInputStream(cpbPath.toString()))
+                .name(path.toString())
+                .inputStream(FileInputStream(path.toString()))
                 .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
                 .build()
                 .verify()
@@ -143,11 +154,11 @@ class CreateCpiV2 : Runnable {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpi(cpbPath: Path?, outputFilePath: Path, groupPolicy: String) {
+    private fun buildAndSignCpi(outputFilePath: Path, groupPolicy: String) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
-            buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
+            buildUnsignedCpi(unsignedCpi, groupPolicy)
 
             // Sign CPI jar
             SigningHelpers.sign(
@@ -170,7 +181,7 @@ class CreateCpiV2 : Runnable {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(cpbPath: Path?, unsignedCpi: Path, groupPolicy: String) {
+    private fun buildUnsignedCpi(unsignedCpi: Path, groupPolicy: String) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
@@ -180,9 +191,9 @@ class CreateCpiV2 : Runnable {
         manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiUpgrade.toString()
 
         JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), manifest).use { cpiJar ->
-            if (cpbPath != null){
+            cpbPath?.let { path ->
                 // Copy the CPB contents
-                cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
+                cpiJar.putNextEntry(JarEntry(path.fileName.toString()))
                 Files.newInputStream(cpbPath, READ).use {
                     it.copyTo(cpiJar)
                 }
