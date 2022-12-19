@@ -19,6 +19,7 @@ import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.SignatureException
 
 @Component(service = [PluggableRPCOps::class])
 class NetworkRpcOpsImpl @Activate constructor(
@@ -50,6 +51,9 @@ class NetworkRpcOpsImpl @Activate constructor(
         } catch (e: BadRequestException) {
             logger.warn(e.message)
             throw e
+        } catch (e: SignatureException) {
+            logger.warn("Could not set up locally hosted identities", e)
+            throw BadRequestException("The certificate was not signed by the correct certificate authority. ${e.message}")
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
             throw InternalServerException("Could not import certificate: ${e.message}")
