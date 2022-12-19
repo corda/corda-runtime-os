@@ -7,6 +7,7 @@ import net.corda.internal.serialization.model.TypeModellingFingerPrinter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertNotEquals
 
@@ -14,7 +15,7 @@ import kotlin.test.assertNotEquals
 class TypeModellingFingerPrinterTests {
 
     val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
-    val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
+    val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
     val fingerprinter = TypeModellingFingerPrinter(
         customRegistry,
         testSerializationContext.currentSandboxGroup(),
