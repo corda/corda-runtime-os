@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "UTXO Ledger Obligation demo app"
+        name "UTXO Ledger Obligation demo app - worklow"
         versionId 1
         vendor "R3"
     }
@@ -16,10 +16,7 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-ledger-utxo'
 
-    testImplementation project(":libs:application:application-impl")
-    testImplementation project(":libs:sandbox-types")
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    cordapp project(':testing:cpbs:ledger-obligation-demo-app:ledger-obligation-demo-contract')
 
     // Common and API packages pulled in as transitive dependencies through client
     cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
