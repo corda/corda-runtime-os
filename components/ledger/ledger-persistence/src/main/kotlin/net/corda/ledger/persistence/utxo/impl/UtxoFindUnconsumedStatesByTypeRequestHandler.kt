@@ -10,6 +10,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 
+@Suppress("LongParameterList")
 class UtxoFindUnconsumedStatesByTypeRequestHandler(
     private val findUnconsumedStatesByType: FindUnconsumedStatesByType,
     private val sandbox: SandboxGroupContext,
