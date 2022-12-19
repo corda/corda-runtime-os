@@ -106,7 +106,7 @@ fun E2eCluster.uploadCpi(
                 groupPolicyFileName = groupPolicyFilePath.toString()
                 signingOptions = SigningOptions().apply {
                     keyStoreFileName = keyStoreFilePath.toString()
-                    keyStorePass = "cordadevpass"
+                    keyStorePass = TestUtils.KEY_STORE_PASSWORD.toString()
                     keyAlias = "rootca"
                 }
             }.run()
