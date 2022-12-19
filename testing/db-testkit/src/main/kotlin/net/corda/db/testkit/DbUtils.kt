@@ -92,10 +92,11 @@ object DbUtils {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
-            jdbcUrl = if (rewriteBatchedInserts)
-                {"$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"}
-                else
-                {"$jdbcUrl?currentSchema=$schemaName"}
+            jdbcUrl = if (rewriteBatchedInserts) {
+                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+            } else {
+                "$jdbcUrl?currentSchema=$schemaName"
+            }
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
