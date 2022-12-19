@@ -26,6 +26,9 @@ object TestUtils {
     internal val CA2 = certificate("ca2", resourceInputStream("ca2.p12"))
     internal val CODE_SIGNER_ALICE = codeSigner("alice", resourceInputStream("alice.p12"))
 
+    val ROOT_CA_KEY_STORE : InputStream
+        get() = resourceInputStream("rootca.p12")
+
     /**
      * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
      */

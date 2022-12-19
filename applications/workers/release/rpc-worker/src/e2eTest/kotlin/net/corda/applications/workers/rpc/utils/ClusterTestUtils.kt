@@ -51,8 +51,8 @@ fun E2eCluster.uploadCpi(
     isMgm: Boolean = false
 ): String {
     val testRunUniqueId = UUID.randomUUID()
-    val keystore = TestUtils::class.java.classLoader.getResourceAsStream("rootca.p12")
-    val keyStoreFilePath = Path.of(tempDir.toString(), "rootca$testRunUniqueId.p12")
+    val keystore = TestUtils.ROOT_CA_KEY_STORE
+    val keyStoreFilePath = Path.of(tempDir.toString(), "rootca-$testRunUniqueId.p12")
 
     Files.newOutputStream(
         keyStoreFilePath,
@@ -89,7 +89,7 @@ fun E2eCluster.uploadCpi(
                 }
             }
 
-            val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy$testRunUniqueId.json")
+            val groupPolicyFilePath = Path.of(tempDir.toString(), "groupPolicy-$testRunUniqueId.json")
 
             Files.newOutputStream(
                 groupPolicyFilePath,
@@ -97,7 +97,7 @@ fun E2eCluster.uploadCpi(
                 StandardOpenOption.CREATE_NEW
             ).write(groupPolicy)
 
-            val cpiFileName = Path.of(tempDir.toString(), "test$testRunUniqueId.cpi")
+            val cpiFileName = Path.of(tempDir.toString(), "test-$testRunUniqueId.cpi")
             CreateCpiV2().apply {
                 outputFileName = cpiFileName.toString()
                 cpiName = "test-cpi_$testRunUniqueId"

@@ -106,8 +106,8 @@ class CreateCpiV2 : Runnable {
         // Create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
-            val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
             if (cpbPath != null) {
+                val cpiFilename = "${File(cpbFileName!!).nameWithoutExtension}$CPI_EXTENSION"
                 val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
                 outputName = Path.of(cpbDirectory, cpiFilename).toString()
             } else {
