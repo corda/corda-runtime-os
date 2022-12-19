@@ -99,7 +99,7 @@ class UtxoPersistenceServiceImpl constructor(
                 }
             }
 
-            // Insert relevancy information
+            // Insert relevancy information for outputs
             transaction.relevantStatesIndexes.forEach { relevantStateIndex ->
                 repository.persistTransactionRelevantStates(
                     em,
@@ -108,6 +108,16 @@ class UtxoPersistenceServiceImpl constructor(
                     relevantStateIndex,
                     consumed = false,
                     nowUtc
+                )
+            }
+
+            // Mark inputs as consumed
+            transaction.getConsumedStateRefs().forEach { inputStateRef ->
+                repository.markTransactionRelevantStatesConsumed(
+                    em,
+                    inputStateRef.transactionHash.toString(),
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    inputStateRef.index
                 )
             }
 

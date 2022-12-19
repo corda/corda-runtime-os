@@ -140,6 +140,26 @@ class UtxoRepositoryImpl(
             .singleOrNull()
     }
 
+    override fun markTransactionRelevantStatesConsumed(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
+    ) {
+        entityManager.createNativeQuery(
+        """
+            UPDATE {h-schema}utxo_relevant_transaction_state
+            SET consumed = true
+            WHERE transaction_id = :transactionId
+            AND group_idx = :groupIndex
+            AND leaf_idx = :leafIndex"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .executeUpdate()
+    }
+
     override fun persistTransaction(
         entityManager: EntityManager,
         id: String,

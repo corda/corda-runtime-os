@@ -1,8 +1,10 @@
-package net.corda.libs.virtualnode.datamodel
+package net.corda.libs.virtualnode.datamodel.entities
 
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.HOLDING_IDENTITY_DB_TABLE
-import java.util.UUID
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
+import java.util.*
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -24,7 +26,7 @@ import javax.persistence.Table
 @Entity
 @Table(name = HOLDING_IDENTITY_DB_TABLE, schema = CONFIG)
 @Suppress("LongParameterList")
-data class HoldingIdentityEntity(
+internal class HoldingIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)
     val holdingIdentityShortHash: String,
@@ -63,5 +65,22 @@ data class HoldingIdentityEntity(
         this.cryptoDMLConnectionId = cryptoDmlConnectionId
         this.uniquenessDDLConnectionId = uniquenessDDLConnectionId
         this.uniquenessDMLConnectionId = uniquenessDMLConnectionId
+    }
+
+    fun toHoldingIdentity(): HoldingIdentity {
+        return HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if(this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HoldingIdentityEntity
+
+        return Objects.equals(holdingIdentityShortHash, other.holdingIdentityShortHash)
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hashCode(holdingIdentityShortHash)
     }
 }

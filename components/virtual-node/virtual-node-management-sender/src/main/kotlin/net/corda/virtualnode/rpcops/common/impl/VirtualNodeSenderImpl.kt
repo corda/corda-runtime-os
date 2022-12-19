@@ -5,6 +5,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import java.time.Duration
 
@@ -12,6 +13,10 @@ class VirtualNodeSenderImpl(
     override val timeout: Duration,
     private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
 ) : VirtualNodeSender {
+    companion object {
+        private val logger = contextLogger()
+    }
+
     /**
      * Sends the [request] to the virtual node topic in the message bus.
      *
@@ -27,6 +32,7 @@ class VirtualNodeSenderImpl(
         return try {
             sender.sendRequest(request).getOrThrow(timeout)
         } catch (e: Exception) {
+            logger.warn("Could not complete virtual node creation request.", e)
             throw CordaRuntimeException("Could not complete virtual node creation request.", e)
         }
     }

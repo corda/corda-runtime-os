@@ -14,6 +14,13 @@ import javax.net.ssl.SSLException
 abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionListener,
                                       private val logger: Logger): SimpleChannelInboundHandler<HttpObject>() {
 
+    private companion object {
+        val messagesNotToLog = listOf(
+            "unrecognized_name",
+            "Unrecognized server name indication",
+        )
+    }
+
     private var messageBodyBuf: ByteBuf? = null
 
     protected fun allocateBodyBuffer(ctx: ChannelHandlerContext, bytes: Int) {
@@ -70,6 +77,18 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
                         cause is SSLException && (cause.message?.contains("internal_error") == true) -> {
                             logger.warn("Received internal_error during handshake")
                         }
+                        cause is SSLException && (cause.message?.contains("unrecognized_name") == true) -> {
+                            logger.warn(
+                                "Unrecognized server name error." +
+                                "This is most likely due to mismatch between the certificates subject alternative name and the host name."
+                            )
+                        }
+                        cause is SSLException && (cause.message?.contains("Unrecognized server name indication") == true) -> {
+                            logger.warn(
+                                "Unrecognized server name error." +
+                                "This is most likely due to mismatch between the certificates subject alternative name and the host name."
+                            )
+                        }
                         else -> logger.warn("Handshake failure ${evt.cause().message}", evt.cause())
                     }
                     ctx.close()
@@ -89,7 +108,12 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.warn("Closing channel due to unrecoverable exception ${cause.message}", cause)
+        val message = cause.message ?: ""
+        if (!messagesNotToLog.any {
+            message.contains(it)
+            }) {
+            logger.warn("Closing channel due to unrecoverable exception ${cause.message}", cause)
+        }
         ctx.close()
     }
 
