@@ -47,7 +47,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                         when (this.size) {
                             0 -> null
                             1 -> this[0]
-                            else -> throw IllegalArgumentException("CPI contains more than one CPB.")
+                            else -> throw PackagingException("Multiple CPBs found in CPI.")
                         }
                     }
 

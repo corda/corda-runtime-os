@@ -117,10 +117,10 @@ class CreateCpiV2 : Runnable {
         // Try create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
-            val cpb = cpbPath
-            if (cpb != null) {
+            val cpbPath = this.cpbPath
+            if (cpbPath != null) {
                 val cpiFilename = "${File(cpbFileName!!).nameWithoutExtension}$CPI_EXTENSION"
-                val cpbDirectory = cpb.toAbsolutePath().parent.toString()
+                val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
                 outputName = Path.of(cpbDirectory, cpiFilename).toString()
             } else {
                 throw IllegalArgumentException("Must specify an Output File if no CPB is provided.")
