@@ -1,12 +1,15 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
+import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
@@ -37,11 +40,21 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getEntityManagerFactory().createEntityManager(),
             repository,
             sandbox.getSandboxSingletonService(),
+            sandbox.getSandboxSingletonService(),
             UTCClock()
         )
         return when (val req = request.request) {
             is FindTransaction -> {
                 return UtxoFindTransactionRequestHandler(
+                    req,
+                    sandbox.getSerializationService(),
+                    request.flowExternalEventContext,
+                    persistenceService,
+                    UtxoOutputRecordFactoryImpl(responseFactory)
+                )
+            }
+            is FindUnconsumedStatesByType -> {
+                return UtxoFindUnconsumedStatesByTypeRequestHandler(
                     req,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,
@@ -76,7 +89,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             else -> {
-                throw IllegalStateException("The UTXO request type '${request.request.javaClass}' is not supported.")
+                throw UnsupportedRequestTypeException(LedgerTypes.UTXO, request.request.javaClass)
             }
         }
     }

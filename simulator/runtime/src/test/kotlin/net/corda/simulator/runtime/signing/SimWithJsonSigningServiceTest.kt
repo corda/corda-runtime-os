@@ -29,7 +29,6 @@ class SimWithJsonSigningServiceTest {
             SignatureSpec.ECDSA_SHA256.signatureName,
             KeyParameters("my-alias", HsmCategory.LEDGER, "anyscheme"),
         )
-        println(signed.bytes.decodeToString())
         assertThat(result, `is`(expected))
     }
 

@@ -50,6 +50,7 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
@@ -235,7 +236,7 @@ class GatewayIntegrationTest : TestBase() {
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
-            val serverAddress = URI.create("http://www.alice.net:$port")
+            val serverAddress = URI.create("https://www.alice.net:$port")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
@@ -292,7 +293,7 @@ class GatewayIntegrationTest : TestBase() {
         fun `requests with extremely large payloads are rejected`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
-            val serverAddress = URI.create("http://www.alice.net:$port")
+            val serverAddress = URI.create("https://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -330,6 +331,69 @@ class GatewayIntegrationTest : TestBase() {
                 }
             }
         }
+
+        @Test
+        @Timeout(30)
+        fun `http client to gateway with ip address`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val port = getOpenPort()
+            val ipAddress = "127.0.0.1"
+            val serverAddress = URI.create("https://$ipAddress:$port")
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
+            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        "/",
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                SigningMode.STUB,
+                mock(),
+                avroSchemaRegistry
+            ).usingLifecycle {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, ipKeyStore)
+                it.startAndWaitForStarted()
+                val serverInfo = DestinationInfo(
+                    serverAddress,
+                    SniCalculator.calculateCorda5Sni(serverAddress),
+                    null,
+                    truststoreKeyStore
+                )
+                HttpClient(
+                    serverInfo,
+                    bobSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
+                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                    assertThat(httpResponse.payload).isNotNull
+                    val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                    assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+            assertThatIterable(publishedRecords)
+                .hasSize(1).allSatisfy {
+                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
+                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                            assertThat(it).isEqualTo(linkInMessage.payload)
+                        }
+                    }
+                }
+        }
     }
 
     @Nested
@@ -342,7 +406,7 @@ class GatewayIntegrationTest : TestBase() {
             alice.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
             )
-            val recipientServerUrl = URI.create("http://www.alice.net:${getOpenPort()}")
+            val recipientServerUrl = URI.create("https://www.alice.net:${getOpenPort()}")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
@@ -405,7 +469,7 @@ class GatewayIntegrationTest : TestBase() {
                     (1..configurationCount).map {
                         getOpenPort()
                     }.map {
-                        URI.create("http://www.alice.net:$it")
+                        URI.create("https://www.alice.net:$it")
                     }.forEach { url ->
                         configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
@@ -459,7 +523,7 @@ class GatewayIntegrationTest : TestBase() {
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
-            val serverAddress = URI.create("http://www.alice.net:${getOpenPort()}")
+            val serverAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
             Gateway(
@@ -531,7 +595,7 @@ class GatewayIntegrationTest : TestBase() {
             val serverUrls = (1..serversCount).map {
                 getOpenPort()
             }.map {
-                "http://www.chip.net:$it"
+                "https://www.chip.net:$it"
             }
             val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
@@ -614,8 +678,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - dual stream`() {
-            val aliceGatewayAddress = URI.create("http://www.chip.net:${getOpenPort()}")
-            val bobGatewayAddress = URI.create("http://www.dale.net:${getOpenPort()}")
+            val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
@@ -900,8 +964,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(120)
         fun `key store can change dynamically`() {
-            val aliceAddress = URI.create("http://www.alice.net:${getOpenPort()}")
-            val bobAddress = URI.create("http://www.bob.net:${getOpenPort()}")
+            val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
+            val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
             val server = Node("server")
             val configPublisher = ConfigPublisher()
             configPublisher.publishConfig(

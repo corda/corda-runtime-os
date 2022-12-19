@@ -274,12 +274,13 @@ internal class LifecycleProcessor(
     }
 
     internal fun closeManagedResources(resources: Set<String>?) {
-        if (resources != null) {
-            managedResources.filter { it.key in resources }.values
-        } else {
-            managedResources.values
-        }.forEach {
-            it.close()
+        managedResources.entries.removeIf { (name, resource) ->
+            if((resources == null) || (resources.contains(name))) {
+                resource.close()
+                true
+            } else {
+                false
+            }
         }
     }
 }

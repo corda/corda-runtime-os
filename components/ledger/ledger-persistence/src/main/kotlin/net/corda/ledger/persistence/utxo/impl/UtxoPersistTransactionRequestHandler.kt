@@ -27,7 +27,7 @@ class UtxoPersistTransactionRequestHandler(
     override fun execute(): List<Record<*, *>> {
         // Feed all produced and consumed states through any token observers defined for them
         val producedTokens = transaction.getProducedStates().toTokens(tokenObservers)
-        val consumedTokens = transaction.getConsumedStates().toTokens(tokenObservers)
+        val consumedTokens = transaction.getConsumedStates(persistenceService).toTokens(tokenObservers)
 
         // persist the transaction
         persistenceService.persistTransaction(transaction)

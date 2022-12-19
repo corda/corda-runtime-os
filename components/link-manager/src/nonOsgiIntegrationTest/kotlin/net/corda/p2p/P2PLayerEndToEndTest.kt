@@ -517,7 +517,7 @@ class P2PLayerEndToEndTest {
             MemberInfoEntry(
                 HoldingIdentity(identity.x500Name, identity.groupId),
                 keyPairs[i].public.toPem(),
-                "http://$p2pAddress:$p2pPort$URL_PATH",
+                "https://$p2pAddress:$p2pPort$URL_PATH",
             )
         }
 

@@ -22,8 +22,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
@@ -196,7 +196,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.addRoleToUser(any())).thenThrow(IllegalArgumentException("Exc"))
 
         endpoint.start()
-        val e = assertThrows<UnexpectedErrorException> {
+        val e = assertThrows<InternalServerException> {
             endpoint.addRole("userLogin1", "roleId1")
         }
         assertEquals("Unexpected permission management error occurred.", e.message)
@@ -239,7 +239,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.removeRoleFromUser(any())).thenThrow(IllegalArgumentException("Exc"))
 
         endpoint.start()
-        val e = assertThrows<UnexpectedErrorException> {
+        val e = assertThrows<InternalServerException> {
             endpoint.removeRole("userLogin1", "roleId1")
         }
         assertEquals("Unexpected permission management error occurred.", e.message)

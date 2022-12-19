@@ -1,7 +1,10 @@
 package net.corda.simulator.factories
 
 import net.corda.simulator.SimulatorConfiguration
+import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.serialization.SerializationCustomSerializer
 import java.time.Clock
 import java.time.Duration
 import java.util.ServiceLoader
@@ -50,6 +53,34 @@ interface SimulatorConfigurationBuilder {
     ): SimulatorConfigurationBuilder
 
     /**
+     * Register a custom serializer with the Simulator
+     *
+     * @param customSerializer The custom serializer class
+     */
+    fun withCustomSerializer(customSerializer: SerializationCustomSerializer<*, *>)
+    : SimulatorConfigurationBuilder
+
+
+    /**
+     * Register a custom serializer with the Simulator
+     *
+     * @param customJsonSerializer The custom Json Serializer class
+     * @param type The type to be serialized
+     */
+    fun withCustomJsonSerializer(customJsonSerializer: JsonSerializer<*>, type: Class<*>)
+            : SimulatorConfigurationBuilder
+
+
+    /**
+     * Register a custom serializer with the Simulator
+     *
+     * @param customJsonDeserializer The custom Json Deserializer class
+     * @param type The type to be deserialized
+     */
+    fun withCustomJsonDeserializer(customJsonDeserializer: JsonDeserializer<*>, type: Class<*>)
+            : SimulatorConfigurationBuilder
+
+    /**
      * @return Configuration built using chosen options or defaults if no overriding options have been selected.
      */
     fun build(): SimulatorConfiguration
@@ -58,6 +89,7 @@ interface SimulatorConfigurationBuilder {
         /**
          * @return A factory for building [net.corda.simulator.SimulatorConfiguration].
          */
+        @JvmStatic
         fun create(): SimulatorConfigurationBuilder {
             return ServiceLoader.load(SimulatorConfigurationBuilder::class.java).first()
         }

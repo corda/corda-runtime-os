@@ -10,7 +10,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
 import net.corda.lifecycle.Resource
-import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
@@ -278,7 +277,7 @@ class HttpTest : TestBase() {
         MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).use { server ->
             server.start()
             val expectedX500Name = "O=Test,L=London,C=GB"
-            val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
+            val sni = SniCalculator.calculateCorda4Sni("O=Test,L=London,C=GB")
             HttpClient(
                 DestinationInfo(serverAddress, sni, X500Name(expectedX500Name), c4TruststoreKeyStore),
                 c4sslConfig,
@@ -441,8 +440,6 @@ class HttpTest : TestBase() {
         private var serverChannel: Channel? = null
 
         private var started = false
-        val isRunning: Boolean
-            get() = started
 
         fun start() {
             lock.withLock {

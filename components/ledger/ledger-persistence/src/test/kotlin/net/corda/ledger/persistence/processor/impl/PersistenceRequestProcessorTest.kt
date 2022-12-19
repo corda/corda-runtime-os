@@ -5,13 +5,13 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -25,14 +25,14 @@ class PersistenceRequestProcessorTest {
 
     private val entitySandboxService = mock<EntitySandboxService>()
     private val delegatedRequestHandlerSelector = mock<DelegatedRequestHandlerSelector>()
-    private val externalEventResponseFactory = mock<ExternalEventResponseFactory>()
+    private val responseFactory = mock<ResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val sandbox = mock<SandboxGroupContext>()
 
     private val target = PersistenceRequestProcessor(
         entitySandboxService,
         delegatedRequestHandlerSelector,
-        externalEventResponseFactory
+        responseFactory
     )
 
     @BeforeEach
@@ -88,7 +88,7 @@ class PersistenceRequestProcessorTest {
         val failureResponseRecord = Record("", "3", FlowEvent())
         val request2Response = IllegalStateException()
         val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenThrow(request2Response) }
-        whenever(externalEventResponseFactory.fatalError(request2.flowExternalEventContext, request2Response))
+        whenever(responseFactory.errorResponse(request2.flowExternalEventContext, request2Response))
             .thenReturn(failureResponseRecord)
         whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
 

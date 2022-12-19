@@ -86,20 +86,16 @@ class GroupParametersCache(
     }
 
     private fun createGroupParametersSnapshot(holdingIdentity: HoldingIdentity): KeyValuePairList {
-        val groupParameters = KeyValuePairList(
+        return KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, "1"),
                 KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             )
-        )
-        val groupId = holdingIdentity.groupId
-
-        set(groupId, groupParameters)
-
-        groupParameters.publish(groupId)
-
-        return groupParameters
+        ).apply {
+            set(holdingIdentity.groupId, this)
+            publish(holdingIdentity.groupId)
+        }
     }
 
     private fun KeyValuePairList.publish(groupId: String) {

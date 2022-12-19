@@ -11,6 +11,7 @@ import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
 
@@ -60,7 +61,9 @@ internal class SandboxGroupImpl(
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
-                logger.info("Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}")
+                logger.debug {
+                    "Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}"
+                }
                 null
             }
         }.singleOrNull()

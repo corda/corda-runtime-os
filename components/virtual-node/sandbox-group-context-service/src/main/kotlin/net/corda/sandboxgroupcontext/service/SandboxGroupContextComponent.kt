@@ -7,6 +7,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
+import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlowProvider
 import net.corda.v5.serialization.SerializationCustomSerializer
 
 interface SandboxGroupContextComponent : SandboxGroupContextService, CacheConfiguration, Lifecycle
@@ -51,5 +52,13 @@ fun SandboxGroupContextComponent.registerCustomJsonDeserializers(sandboxGroupCon
         sandboxGroupContext,
         serviceNames = { metadata -> metadata.cordappManifest.jsonDeserializerClasses },
         serviceMarkerType = JsonDeserializer::class.java
+    )
+}
+
+fun SandboxGroupContextComponent.registerNotaryPluginProviders(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
+    return registerMetadataServices(
+        sandboxGroupContext,
+        serviceNames = { metadata -> metadata.cordappManifest.notaryPluginProviders },
+        serviceMarkerType = PluggableNotaryClientFlowProvider::class.java
     )
 }

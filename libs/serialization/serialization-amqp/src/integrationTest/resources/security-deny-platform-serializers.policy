@@ -1,0 +1,9 @@
+ALLOW {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "FLOW")
+} "allows custom serializers defined in flow sandboxes for types also defined in flow sandboxes"
+
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "*")
+} "denies custom serializers defined in flow sandboxes for types defined outside flow sandboxes(e.g. platform types)"

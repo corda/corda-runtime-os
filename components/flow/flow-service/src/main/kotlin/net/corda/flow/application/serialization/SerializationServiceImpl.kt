@@ -1,6 +1,7 @@
 package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
@@ -18,7 +19,7 @@ import java.io.NotSerializableException
 
 @Component(
     service = [ SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class ],
-    property = [ "corda.system=true" ],
+    property = [ CORDA_SYSTEM_SERVICE ],
     scope = PROTOTYPE
 )
 class SerializationServiceImpl @Activate constructor(
@@ -32,7 +33,7 @@ class SerializationServiceImpl @Activate constructor(
 
     private val serializationService
         get(): SerializationService {
-            return currentSandboxGroupContext.get().getObjectByKey<SerializationService>(AMQP_SERIALIZATION_SERVICE)
+            return currentSandboxGroupContext.get().getObjectByKey(AMQP_SERIALIZATION_SERVICE)
                 ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with an AMQP serializer for " +
                             "identity ${currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity}"

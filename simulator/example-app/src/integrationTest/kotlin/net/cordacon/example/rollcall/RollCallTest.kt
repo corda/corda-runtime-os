@@ -1,6 +1,5 @@
 package net.cordacon.example.rollcall
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
@@ -27,24 +26,18 @@ class RollCallTest {
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         )
-        val teacherId = HoldingIdentity.create(teacher)
-        val teacherVNode = simulator.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = simulator.createVirtualNode(teacher, RollCallFlow::class.java)
 
         // And a key to sign the absence record with
         teacherVNode.generateKey("teacher-key", HsmCategory.LEDGER, "Any scheme will do")
 
-        // and recipients with the responder flow
-        //
-        // and a flow to invoke when someone is absent (they return an empty string)
-        // Note: We don't actually need to do the upload, because it's a subflow so constructed inside the main flow -
-        // initialization, checking etc. will happen when it's passed to the engine.
-        //
-        // and a response (which we do need, but it's exactly the same; Ferris Bueller continues to take a day off)
+        // and recipients with the responder flow and a flow to respond to absence sub-flow when someone is absent
+        // (they return an empty string)
         val students = listOf("Albers", "Anderson", "Anheiser", "Busch", "Bueller"). map {
             "CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         }
         students.forEach { simulator.createVirtualNode(
-            HoldingIdentity.create(MemberX500Name.parse(it)),
+            MemberX500Name.parse(it),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java) }
 
@@ -52,10 +45,7 @@ class RollCallTest {
         val truantingAuth = MemberX500Name.parse(
             "O=TruantAuth, L=Chicago, C=US"
         )
-        val truantAuthVNode = simulator.createVirtualNode(
-            HoldingIdentity.create(truantingAuth),
-            TruancyResponderFlow::class.java
-        )
+        val truantAuthVNode = simulator.createVirtualNode(truantingAuth, TruancyResponderFlow::class.java)
 
         // When we invoke the roll call in Corda
         val response = teacherVNode.callFlow(
