@@ -106,6 +106,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                         listOf(getRPCResponseTopic(config.topic)),
                         partitionListener
                     )
+                    // Note that Lifecycle UP and DOWN are handled by the RPCConsumerRebalanceListener based on whether
+                    // partitions are available to this sender or not.
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
