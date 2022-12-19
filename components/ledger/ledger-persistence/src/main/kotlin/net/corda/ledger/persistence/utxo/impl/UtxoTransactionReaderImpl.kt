@@ -39,7 +39,6 @@ class UtxoTransactionReaderImpl(
     private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
     private val wrappedWireTransaction = WrappedUtxoWireTransaction(signedTransaction.wireTransaction, serializer)
 
-
     override val id: SecureHash
         get() = signedTransaction.id
 
@@ -66,10 +65,11 @@ class UtxoTransactionReaderImpl(
         get() = transaction.relevantStatesIndexes ?: emptyList()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
+        val relevantStatesSet = relevantStatesIndexes.toSet()
         return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
             .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
             .withIndex()
-            .filter { indexed -> indexed.index !in relevantStatesIndexes }
+            .filter { indexed -> relevantStatesSet.contains(indexed.index)}
             .map { (index, value) ->
                 Triple(
                     index,
