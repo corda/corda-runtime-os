@@ -27,7 +27,7 @@ ALLOW {
 
 (org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.suspend" "import")
 
-(net.corda.internal.serialization.amqp.CustomSerializerPermission "FLOW")
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "(location=FLOW/*)")
 
 } "Allow public packages and services for FLOW Sandbox"
 
@@ -158,7 +158,7 @@ ALLOW {
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=PERSISTENCE/*)" "get")
 
-(net.corda.internal.serialization.amqp.CustomSerializerPermission "PERSISTENCE")
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "(location=PERSISTENCE/*)")
 
 } "Allow public packages and services for PERSISTENCE Sandbox"
 
@@ -289,7 +289,7 @@ ALLOW {
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=VERIFICATION/*)" "get")
 
-(net.corda.internal.serialization.amqp.CustomSerializerPermission "VERIFICATION")
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "(location=VERIFICATION/*)")
 
 } "Allow public packages and services for VERIFICATION Sandbox"
 

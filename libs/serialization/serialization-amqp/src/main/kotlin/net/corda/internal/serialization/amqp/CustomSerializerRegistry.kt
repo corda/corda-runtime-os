@@ -1,6 +1,15 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.NON_BUNDLE
+import java.io.IOException
+import java.io.NotSerializableException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.lang.reflect.Type
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.security.BasicPermission
+import java.security.Permission
+import java.security.PrivateKey
 import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.model.DefaultCacheProvider
@@ -16,13 +25,10 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.framework.Constants.OBJECTCLASS
+import org.osgi.framework.Filter
 import org.osgi.framework.FrameworkUtil
-import java.io.NotSerializableException
-import java.lang.reflect.Type
-import java.security.AccessControlContext
-import java.security.AccessControlException
-import java.security.BasicPermission
-import java.security.PrivateKey
+import org.osgi.framework.InvalidSyntaxException
 
 /**
  * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
@@ -156,15 +162,9 @@ class CachingCustomSerializerRegistry(
         val sm = System.getSecurityManager()
         if (sm != null) {
             val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
-            val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
             try {
                 sm.checkPermission(
-                    CustomSerializerPermission(
-                        customSerializerTargetBundle
-                            ?.location
-                            ?.substringBefore('/')
-                            ?: NON_BUNDLE
-                    ),
+                    CustomSerializerPermission(customSerializer.type.asClass()),
                     accessControlContext
                 )
             } catch (ace: AccessControlException) {
@@ -269,24 +269,101 @@ class CachingCustomSerializerRegistry(
  * [CustomSerializerPermission] is used to allow/ block external custom serializers registration. A register-able
  * external custom serializer should a serializer which is defined within a sandbox type X (X = FLOW or VERIFICATION or PERSISTENCE)
  * whose target type also exists in the same sandbox type X. Look for uses of this class in .policy files for example uses.
- *
- * @param [targetBundleLocation] is the external custom serializer target type.
  */
-class CustomSerializerPermission(targetBundleLocation: String) : BasicPermission(targetBundleLocation) {
+class CustomSerializerPermission private constructor(@Transient private val clazz: Class<*>?, name: String) : BasicPermission(name) {
+    /**
+     * @param [clazz] is the external custom serializer target type.
+     */
+    constructor(clazz: Class<*>) : this(clazz, createName(clazz))
+
+    /**
+     * @param [name] is an OSGi filter expression that the external type's bundle must satisfy.
+     */
+    @Suppress("unused")
+    constructor(name: String) : this(null, name)
+
+    @Transient
+    private var filter: Filter?
+
     init {
-        // `BasicPermission` parsing of passed in `targetBundleLocation`, if it is to contain a wildcard ('*')
-        // `BasicPermission` expects it to either be a single character ('*') or ending in (".*"). In our case, where we want
-        // to pass in bundle locations, the passed in string would look like for e.g. "FLOW/*". But according to the above rule
-        // this will not get parsed properly. So with using `BasicPermission` it means we should be using wildcard only
-        // as a single character.
-        // For cases like for e.g. "FLOW/*" we should only be passing in just "FLOW".
-        if (targetBundleLocation.length > 1 && targetBundleLocation.endsWith('*')) {
-            throw IllegalArgumentException("Permission name cannot end with *")
+        if (name.length > 1 && name.endsWith('*')) {
+            throw IllegalArgumentException("CustomSerializerPermission name cannot emd with *")
+        }
+
+        filter = parseFilter(name)
+    }
+
+    private val properties: Map<String, Any> by lazy {
+        if (clazz != null) {
+            val props = mutableMapOf<String, Any>(OBJECTCLASS to clazz.name)
+            FrameworkUtil.getBundle(clazz)?.also { bundle ->
+                props["location"] = bundle.location
+                props["id"] = bundle.bundleId
+                bundle.symbolicName?.also { bsn ->
+                    props["name"] = bsn
+                }
+            }
+            props
+        } else {
+            throw IllegalStateException("Cannot determine bundle properties")
         }
     }
 
+    override fun implies(p: Permission?): Boolean {
+        return (p is CustomSerializerPermission) && p.clazz == null && p.filter == null && implies0(p)
+    }
+
+    private fun implies0(requested: CustomSerializerPermission): Boolean {
+        return filter?.matches(requested.properties) ?: super.implies(requested)
+    }
+
+    override fun hashCode(): Int {
+        var hash = name.hashCode()
+        if (clazz != null) {
+            hash = hash * 31 + clazz.hashCode()
+        }
+        return hash
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return (other === this) || (
+            (other is CustomSerializerPermission) && (name == other.name) && (clazz == other.clazz)
+        )
+    }
+
+    @Synchronized
+    @Throws(IOException::class)
+    private fun writeObject(s: ObjectOutputStream) {
+        if (clazz != null) {
+            throw NotSerializableException("cannot serialize")
+        } else {
+            s.defaultWriteObject()
+        }
+    }
+
+    @Synchronized
+    @Throws(IOException::class, ClassNotFoundException::class)
+    private fun readObject(s: ObjectInputStream) {
+        s.defaultReadObject()
+        filter = parseFilter(name)
+    }
+
     companion object {
-        // `BasicPermission` doesn't allow an empty name so using "NON_BUNDLE" if class is non bundled
-        const val NON_BUNDLE = "NON_BUNDLE"
+        private fun createName(clazz: Class<*>): String {
+            return FrameworkUtil.getBundle(clazz)?.let { bundle -> "(id=${bundle.bundleId})" } ?: "(!(id=*))"
+        }
+
+        private fun parseFilter(filterString: String): Filter? {
+            val filtered = filterString.trim { it <= ' ' }
+            return if (filtered[0] != '(') {
+                null
+            } else {
+                try {
+                    FrameworkUtil.createFilter(filtered)
+                } catch (e: InvalidSyntaxException) {
+                    throw IllegalArgumentException("invalid filter", e)
+                }
+            }
+        }
     }
 }

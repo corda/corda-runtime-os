@@ -1,6 +1,6 @@
 ALLOW {
 [org.osgi.service.condpermadmin.BundleLocationCondition "TEST/*"]
-(net.corda.internal.serialization.amqp.CustomSerializerPermission "TEST")
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "(location=TEST/*)")
 } "allows custom serializers defined in test sandboxes for types also defined in test sandboxes"
 
 DENY {
