@@ -20,7 +20,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
-    private val utxoOutputRecordFactory: UtxoOutputRecordFactory,
+    private val utxoOutputRecordFactory: UtxoOutputRecordFactory
 ) : RequestHandler {
 
     private companion object {
