@@ -5,11 +5,6 @@
   "doc": "The current state of a token cache pool",
   "fields": [
     {
-      "name": "holdingIdentity",
-      "type": "net.corda.data.identity.HoldingIdentity",
-      "doc": "The holding identity the state is for"
-    },
-    {
       "name": "poolKey",
       "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
       "doc": "The key of the cache pool the state is for"
