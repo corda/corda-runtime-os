@@ -56,6 +56,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             is FindUnconsumedStatesByType -> {
                 return UtxoFindUnconsumedStatesByTypeRequestHandler(
                     req,
+                    sandbox,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,

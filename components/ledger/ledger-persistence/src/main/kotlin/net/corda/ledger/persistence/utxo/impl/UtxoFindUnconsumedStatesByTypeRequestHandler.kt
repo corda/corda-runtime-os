@@ -6,11 +6,13 @@ import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 
 class UtxoFindUnconsumedStatesByTypeRequestHandler(
     private val findUnconsumedStatesByType: FindUnconsumedStatesByType,
+    private val sandbox: SandboxGroupContext,
     private val serializationService: SerializationService,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
@@ -19,7 +21,7 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
 
     @Suppress("UNCHECKED_CAST")
     override fun execute(): List<Record<*, *>> {
-        val stateType = Class.forName(findUnconsumedStatesByType.stateClassName)
+        val stateType = sandbox.sandboxGroup.loadClassFromMainBundles(findUnconsumedStatesByType.stateClassName)
         require(ContractState::class.java.isInstance(stateType)) {
             "Provided {findUnconsumedStatesByType.stateClassName} is not type of ContractState"
         }
