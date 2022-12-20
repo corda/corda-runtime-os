@@ -70,6 +70,7 @@ class AMQPwithOSGiSerializationTests {
         @TempDir
         testDirectory: Path
     ) {
+        applyPolicyFile("security-deny-platform-serializers.policy")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             sandboxFactory = setup.fetchService(timeout = 1500)
@@ -211,7 +212,6 @@ class AMQPwithOSGiSerializationTests {
 
     @Test
     fun `sandbox external custom serializers targeting platform types are denied`() {
-        applyPolicyFile("security-deny-platform-serializers.policy")
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
             // Corda platform type custom serializer
@@ -238,12 +238,10 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
-        System.setSecurityManager(null)
     }
 
     @Test
     fun `sandbox external custom serializers targeting sandbox types are allowed`() {
-        applyPolicyFile("security-deny-platform-serializers.policy")
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
             val factory = testDefaultFactory(sandboxGroup)
@@ -256,7 +254,6 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
-        System.setSecurityManager(null)
     }
 
     private fun applyPolicyFile(fileName: String) {
