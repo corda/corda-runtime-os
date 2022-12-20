@@ -43,11 +43,14 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(
+        stateClass: Class<out T>,
+        jPath: String?
+    ): List<StateAndRef<T>> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManager.transaction { em ->
-            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
+            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx), jPath)
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
             ?.associate { Pair(it.leafIndex, serializationService.deserialize<UtxoOutputInfoComponent>(it.data)) }
@@ -71,10 +74,9 @@ class UtxoPersistenceServiceImpl constructor(
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {
         val nowUtc = utcClock.instant()
+        val transactionIdString = transaction.id.toString()
 
         entityManager.transaction { em ->
-            val transactionIdString = transaction.id.toString()
-
             // Insert the Transaction
             repository.persistTransaction(
                 em,
@@ -99,6 +101,33 @@ class UtxoPersistenceServiceImpl constructor(
                 }
             }
 
+            // Insert inputs data
+            val inputs = transaction.getConsumedStateRefs()
+            inputs.forEachIndexed  { index, input ->
+                repository.persistTransactionSource(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    index,
+                    input.transactionHash.toString(),
+                    input.index,
+                    false,
+                    nowUtc
+                )
+            }
+
+            // Insert outputs data
+            transaction.getProducedStates().forEachIndexed { index, stateAndRef ->
+                repository.persistTransactionOutput(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    index,
+                    stateAndRef.state.contractState::class.java.canonicalName,
+                    timestamp = nowUtc
+                )
+            }
+
             // Insert relevancy information for outputs
             transaction.relevantStatesIndexes.forEach { relevantStateIndex ->
                 repository.persistTransactionRelevantStates(
@@ -111,13 +140,12 @@ class UtxoPersistenceServiceImpl constructor(
                 )
             }
 
-            // Mark inputs as consumed
-            transaction.getConsumedStateRefs().forEach { inputStateRef ->
+            // Mark inputs as consumed in relevancy table
+            if (inputs.isNotEmpty()) {
                 repository.markTransactionRelevantStatesConsumed(
                     em,
-                    inputStateRef.transactionHash.toString(),
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    inputStateRef.index
+                    inputs,
+                    UtxoComponentGroup.OUTPUTS.ordinal
                 )
             }
 

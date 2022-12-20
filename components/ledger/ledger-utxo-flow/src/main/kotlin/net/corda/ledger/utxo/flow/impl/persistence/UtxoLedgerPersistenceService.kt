@@ -27,12 +27,15 @@ interface UtxoLedgerPersistenceService {
     fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
     /**
-     * Find unconsumed relevant states of type [stateClass].
+     * Find unconsumed relevant states of type [stateClass] that match [jPath] query.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+    fun <T: ContractState> findUnconsumedStatesByType(
+        stateClass: Class<out T>,
+        jPath: String? = null
+    ): List<StateAndRef<T>>
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.

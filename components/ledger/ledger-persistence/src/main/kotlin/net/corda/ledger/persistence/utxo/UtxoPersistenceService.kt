@@ -9,7 +9,10 @@ import net.corda.v5.ledger.utxo.StateAndRef
 interface UtxoPersistenceService {
     fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer?
 
-    fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+    fun <T: ContractState> findUnconsumedRelevantStatesByType(
+        stateClass: Class<out T>,
+        jPath: String? = null
+    ): List<StateAndRef<T>>
 
     fun persistTransaction(transaction: UtxoTransactionReader)
 

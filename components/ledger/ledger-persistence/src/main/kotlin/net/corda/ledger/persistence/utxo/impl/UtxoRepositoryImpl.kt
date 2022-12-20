@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.persistence.common.PairStringInt
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -14,6 +15,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -82,8 +84,50 @@ class UtxoRepositoryImpl(
 
     override fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
+        groupIndices: List<Int>,
+        jPath: String?
+    ): List<ComponentLeafDto> {
+        if (jPath == null) {
+            return findUnconsumedRelevantStatesByType(entityManager, groupIndices)
+        }
+
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                WHERE EXISTS (
+                    SELECT * FROM {h-schema}utxo_transaction_output AS to,
+                        {h-schema}utxo_relevant_transaction_state AS rts
+                    WHERE ot.transaction_id = tc.transaction_id
+                    AND ot.group_idx = tc.group_idx
+                    AND ot.leaf_idx = tc.leaf_idx
+                    AND jsonb_path_exists(ot.json_representation, :jPath) 
+                    AND rts.transaction_id = tc.transaction_id
+                    AND rts.group_idx = tc.group_idx
+                    AND rts.leaf_idx = tc.leaf_idx
+                    AND rts.consumed = false
+                )
+                AND tc.group_idx IN (:groupIndices)
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            Tuple::class.java
+        )
+            .setParameter("jPath", jPath)
+            .setParameter("groupIndices", groupIndices)
+            .resultListAsTuples()
+            .map { t ->
+                ComponentLeafDto(
+                    t[0] as String, // transactionId
+                    (t[1] as Number).toInt(), // groupIndex
+                    (t[2] as Number).toInt(), // leafIndex
+                    t[3] as ByteArray // data
+                )
+            }
+    }
+
+    private fun findUnconsumedRelevantStatesByType(
+        entityManager: EntityManager,
         groupIndices: List<Int>
-    ):  List<ComponentLeafDto> {
+    ): List<ComponentLeafDto> {
         return entityManager.createNativeQuery(
             """
                 SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
@@ -142,21 +186,18 @@ class UtxoRepositoryImpl(
 
     override fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int
+        inputs: List<StateRef>,
+        outputIdx: Int
     ) {
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
             SET consumed = true
-            WHERE transaction_id = :transactionId
-            AND group_idx = :groupIndex
-            AND leaf_idx = :leafIndex"""
+            WHERE (transaction_id, leaf_idx) = ANY (:inputs)
+            AND group_idx = :outputIdx"""
         )
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
+            .setParameter("inputs", inputs.map { PairStringInt(it.transactionHash.toString(), it.index) })
+            .setParameter("outputIdx", outputIdx)
             .executeUpdate()
     }
 
@@ -231,13 +272,13 @@ class UtxoRepositoryImpl(
         groupIndex: Int,
         leafIndex: Int,
         type: String,
-        tokenType: String,
-        tokenIssuerHash: String,
-        tokenNotaryX500Name: String,
-        tokenSymbol: String,
-        tokenTag: String,
-        tokenOwnerHash: String,
-        tokenAmount: BigDecimal,
+        tokenType: String?,
+        tokenIssuerHash: String?,
+        tokenNotaryX500Name: String?,
+        tokenSymbol: String?,
+        tokenTag: String?,
+        tokenOwnerHash: String?,
+        tokenAmount: BigDecimal?,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(

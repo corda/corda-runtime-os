@@ -13,10 +13,11 @@ class FindUnconsumedStatesByTypeExternalEventFactory : AbstractUtxoLedgerExterna
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: FindUnconsumedStatesByTypeParameters): Any {
-        return FindUnconsumedStatesByType(parameters.stateClass.canonicalName)
+        return FindUnconsumedStatesByType(parameters.stateClass.canonicalName, parameters.jPath)
     }
 }
 
 data class FindUnconsumedStatesByTypeParameters(
-    val stateClass: Class<*>
+    val stateClass: Class<*>,
+    val jPath: String? = null
 )

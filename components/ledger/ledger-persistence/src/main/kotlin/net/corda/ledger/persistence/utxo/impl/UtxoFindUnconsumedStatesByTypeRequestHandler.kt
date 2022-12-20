@@ -26,7 +26,8 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
 
         // Find the relevant states of transaction
         val relevantStates = persistenceService.findUnconsumedRelevantStatesByType(
-            stateType as Class<out ContractState>
+            stateType as Class<out ContractState>,
+            findUnconsumedStatesByType.jPath
         )
 
         // Return output records
