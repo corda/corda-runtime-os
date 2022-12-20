@@ -24,7 +24,7 @@ class TokenLedgerChangeEventHandlerTest {
 
         val ledgerChange = LedgerChange(POOL_CACHE_KEY,"","", listOf(), listOf(token1, token2))
 
-        val target = TokenLedgerChangeEventHandler(mock())
+        val target = TokenLedgerChangeEventHandler()
         val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
@@ -39,7 +39,7 @@ class TokenLedgerChangeEventHandlerTest {
 
         val ledgerChange = LedgerChange(POOL_CACHE_KEY,"","", listOf(token1, token2), listOf())
 
-        val target = TokenLedgerChangeEventHandler(mock())
+        val target = TokenLedgerChangeEventHandler()
         val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()

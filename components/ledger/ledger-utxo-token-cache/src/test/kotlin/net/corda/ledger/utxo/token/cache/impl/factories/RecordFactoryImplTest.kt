@@ -54,6 +54,7 @@ class RecordFactoryImplTest {
     fun `create failure claim response`() {
         val expectedResponse = TokenClaimQueryResult().apply {
             this.poolKey = POOL_CACHE_KEY
+            this.claimId = externalEventRequestId
             this.resultType = TokenClaimResultStatus.NONE_AVAILABLE
             this.claimedTokens = listOf()
         }
