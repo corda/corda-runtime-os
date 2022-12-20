@@ -156,7 +156,7 @@ class CreateRoleE2eTest {
 
     @Test
     @Order(3)
-    fun `test unable to delete protected role`() {
+    fun `test unable to un-associate protected role`() {
         val protectedRole = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
             val proxy = client.start().proxy
             proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
@@ -169,6 +169,19 @@ class CreateRoleE2eTest {
                 proxy.removeRole(adminUser, protectedRole.id)
             }.isInstanceOf(RequestErrorException::class.java)
              .hasMessageContaining("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME")
+        }
+    }
+
+    @Test
+    @Order(4)
+    fun `test cannot change protected role`() {
+        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+            val protectedRole = proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
+            assertThatThrownBy {
+                proxy.removePermission(protectedRole.id, protectedRole.permissions.first().id)
+            }.isInstanceOf(RequestErrorException::class.java)
+                .hasMessageContaining("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be changed")
         }
     }
 }
