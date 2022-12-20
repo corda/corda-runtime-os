@@ -1,4 +1,4 @@
-package net.cordapp.demo.utxo
+package net.cordapp.demo.utxo.contract
 
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -7,7 +7,6 @@ import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
-import net.cordapp.demo.utxo.contract.TestUtxoState
 import java.math.BigDecimal
 
 class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
