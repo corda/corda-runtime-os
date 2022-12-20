@@ -8,7 +8,6 @@ import net.corda.persistence.common.EntityExtractor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxService
-import net.corda.persistence.common.PairStringInt
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException
@@ -135,7 +134,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             } catch (e: SandboxException) {
                 throw e
             }
-        }.toSet() + PairStringInt::class.java
+        }.toSet()
 
         // We now have the collection of class types, from the CPKs, with their *own* classloaders (i.e. osgi).
 

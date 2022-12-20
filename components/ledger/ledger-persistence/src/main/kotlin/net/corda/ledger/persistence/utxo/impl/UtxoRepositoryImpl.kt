@@ -7,7 +7,6 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.persistence.common.PairStringInt
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -15,7 +14,6 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -186,18 +184,21 @@ class UtxoRepositoryImpl(
 
     override fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        inputs: List<StateRef>,
-        outputIdx: Int
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
     ) {
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
             SET consumed = true
-            WHERE (transaction_id, leaf_idx) = ANY (:inputs)
-            AND group_idx = :outputIdx"""
+            WHERE transaction_id = :transactionId
+            AND group_idx = :groupIndex
+            AND leaf_idx = :leafIndex"""
         )
-            .setParameter("inputs", inputs.map { PairStringInt(it.transactionHash.toString(), it.index) })
-            .setParameter("outputIdx", outputIdx)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
             .executeUpdate()
     }
 

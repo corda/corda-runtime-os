@@ -4,7 +4,6 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -45,8 +44,9 @@ interface UtxoRepository {
     /** Marks relevant states of transactions consumed */
     fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        inputs: List<StateRef>,
-        outputIdx: Int
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
     )
 
     /** Persists transaction (operation is idempotent) */
