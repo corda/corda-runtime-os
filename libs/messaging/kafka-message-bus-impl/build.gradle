@@ -11,6 +11,7 @@ dependencies {
     
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
+    implementation project(":libs:messaging:kafka-utils")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")

@@ -1,4 +1,4 @@
-package net.corda.messagebus.kafka.utils
+package net.corda.messaging.kafka.utils
 
 import org.osgi.framework.Bundle
 import java.net.URL

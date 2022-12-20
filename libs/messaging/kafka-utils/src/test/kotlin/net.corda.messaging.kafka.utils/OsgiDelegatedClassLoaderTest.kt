@@ -1,6 +1,5 @@
-package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.utils
+package net.corda.messaging.kafka.utils
 
-import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
