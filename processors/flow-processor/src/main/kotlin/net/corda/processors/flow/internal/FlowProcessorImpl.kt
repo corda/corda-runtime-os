@@ -2,6 +2,7 @@ package net.corda.processors.flow.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
@@ -53,6 +54,8 @@ class FlowProcessorImpl @Activate constructor(
     private val tokenCacheComponentFactory: TokenCacheComponentFactory,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService
 ) : FlowProcessor {
 
     private companion object {
@@ -68,7 +71,8 @@ class FlowProcessorImpl @Activate constructor(
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
         ::membershipGroupReaderProvider,
-        ::groupParametersReaderService
+        ::groupParametersReaderService,
+        ::cpkReadService
     ).with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
 
     private val lifecycleCoordinator =
