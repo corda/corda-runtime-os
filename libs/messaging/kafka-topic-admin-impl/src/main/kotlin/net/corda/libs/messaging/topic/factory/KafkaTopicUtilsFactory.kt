@@ -19,7 +19,7 @@ class KafkaTopicUtilsFactory : TopicUtilsFactory {
 
     override fun createTopicUtils(props: Properties): TopicUtils {
         val contextClassLoader = Thread.currentThread().contextClassLoader
-        val currentBundle = FrameworkUtil.getBundle(KafkaTopicUtils::class.java)
+        val currentBundle = FrameworkUtil.getBundle(AdminClient::class.java)
 
         return if (currentBundle != null) {
             try {
