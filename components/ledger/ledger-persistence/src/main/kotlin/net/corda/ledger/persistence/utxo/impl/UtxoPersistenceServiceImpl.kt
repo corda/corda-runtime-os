@@ -129,12 +129,13 @@ class UtxoPersistenceServiceImpl constructor(
                 )
             }
 
-            // Mark inputs as consumed in relevancy table
-            if (inputs.isNotEmpty()) {
+            // Mark inputs as consumed
+            transaction.getConsumedStateRefs().forEach { inputStateRef ->
                 repository.markTransactionRelevantStatesConsumed(
                     em,
-                    inputs,
-                    UtxoComponentGroup.OUTPUTS.ordinal
+                    inputStateRef.transactionHash.toString(),
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    inputStateRef.index
                 )
             }
 
