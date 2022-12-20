@@ -38,6 +38,7 @@ class ClusterReconciliationContext(
     override fun close() {
         _entityManager?.close()
         _entityManager = null
+        _entityManagerFactory = null
     }
 }
 
