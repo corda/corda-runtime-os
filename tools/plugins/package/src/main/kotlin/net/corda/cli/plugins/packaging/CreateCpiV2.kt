@@ -53,8 +53,8 @@ private const val READ_FROM_STDIN = "-"
 )
 class CreateCpiV2 : Runnable {
 
-    @Option(names = ["--cpb", "-c"], required = true, description = ["CPB file to convert into CPI"])
-    lateinit var cpbFileName: String
+    @Option(names = ["--cpb", "-c"], required = false, description = ["CPB file to convert into CPI"])
+    var cpbFileName: String? = null
 
     @Option(
         names = ["--group-policy", "-g"],
@@ -81,13 +81,12 @@ class CreateCpiV2 : Runnable {
     @CommandLine.Mixin
     var signingOptions = SigningOptions()
 
+
     /**
      * Check user supplied options, then start the process of building and signing the CPI
      */
     override fun run() {
-
         // Check input files exist
-        val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
         val groupPolicyString = if (groupPolicyFileName == READ_FROM_STDIN)
@@ -97,19 +96,34 @@ class CreateCpiV2 : Runnable {
 
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
+        val cpbPath = cpbFileName?.let { requireFileExists(it) }
+
         // Check input Cpb file is indeed a Cpb
-        verifyIsValidCpbV2(cpbPath)
-        // Create output filename if none specified
-        var outputName = outputFileName
-        if (outputName == null) {
-            val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
-            val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
-            outputName = Path.of(cpbDirectory, cpiFilename).toString()
+        cpbPath?.let {
+            verifyIsValidCpbV2(it)
         }
+
+        val outputName = determineOutputFileName(cpbPath)
+
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
+    }
+
+    private fun determineOutputFileName(cpbPath: Path?) : String {
+        // Try create output filename if none specified
+        var outputName = outputFileName
+        if (outputName == null) {
+            if (cpbPath != null) {
+                val cpiFilename = "${File(cpbFileName!!).nameWithoutExtension}$CPI_EXTENSION"
+                val cpbDirectory = cpbPath.toAbsolutePath().parent.toString()
+                outputName = Path.of(cpbDirectory, cpiFilename).toString()
+            } else {
+                throw IllegalArgumentException("Must specify an Output File if no CPB is provided.")
+            }
+        }
+        return outputName
     }
 
     /**
@@ -135,7 +149,7 @@ class CreateCpiV2 : Runnable {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: String) {
+    private fun buildAndSignCpi(cpbPath: Path?, outputFilePath: Path, groupPolicy: String) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
@@ -162,7 +176,7 @@ class CreateCpiV2 : Runnable {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: String) {
+    private fun buildUnsignedCpi(cpbPath: Path?, unsignedCpi: Path, groupPolicy: String) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
@@ -172,11 +186,12 @@ class CreateCpiV2 : Runnable {
         manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiUpgrade.toString()
 
         JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), manifest).use { cpiJar ->
-
-            // Copy the CPB contents
-            cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
-            Files.newInputStream(cpbPath, READ).use {
-                it.copyTo(cpiJar)
+            cpbPath?.let {
+                // Copy the CPB contents
+                cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
+                Files.newInputStream(cpbPath, READ).use {
+                    it.copyTo(cpiJar)
+                }
             }
 
             // Add group policy
