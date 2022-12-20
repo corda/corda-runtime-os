@@ -22,6 +22,7 @@ dependencies {
 
     implementation 'net.corda:corda-config-schema'
 
+    implementation project(':libs:permissions:permission-common')
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-password')
     implementation project(':libs:configuration:configuration-datamodel')

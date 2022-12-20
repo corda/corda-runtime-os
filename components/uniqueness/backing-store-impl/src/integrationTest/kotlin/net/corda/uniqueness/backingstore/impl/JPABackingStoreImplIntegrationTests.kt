@@ -17,6 +17,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
@@ -385,15 +386,17 @@ class JPABackingStoreImplIntegrationTests {
             )
         }
 
-        @Disabled("Review with CORE-7278. This test fails because it fails to persist an error message with " +
-                "1024 bytes.")
         @Test
         fun `Persisting an error throws if the size is bigger than the maximum`() {
-            val txId = SecureHashUtils.randomSecureHash()
-            val internalRequest = generateRequestInternal(txId)
+            // We need to establish the object size without any message (i.e. a blank message) to
+            // see how much space we need to fill in order to hit our maximum valid  size.
+            val baseObjectSize = jpaBackingStoreObjectMapper()
+                .writeValueAsBytes(UniquenessCheckErrorMalformedRequestImpl("")).size
 
-            // 1024 is the expected maximum size of an error message.
-            val maxErrMsgLength = 1024
+            // Available characters that need filling is the hard-coded limit minus fixed size
+            val maxErrMsgLength =
+                UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH - baseObjectSize
+
             val validErrorMessage = "e".repeat(maxErrMsgLength)
             assertDoesNotThrow {
                 backingStoreImpl.session(aliceIdentity) { session ->
@@ -401,8 +404,10 @@ class JPABackingStoreImplIntegrationTests {
                         txnOps.commitTransactions(
                             listOf(
                                 Pair(
-                                    internalRequest, UniquenessCheckResultFailureImpl(
-                                        testClock.instant(), UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
+                                    generateRequestInternal(SecureHashUtils.randomSecureHash()),
+                                    UniquenessCheckResultFailureImpl(
+                                        testClock.instant(),
+                                        UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
                                     )
                                 )
                             )
@@ -413,14 +418,16 @@ class JPABackingStoreImplIntegrationTests {
 
             // Persisting this error should throw because its size if bigger than 1024.
             val invalidErrorMessage = "e".repeat(maxErrMsgLength + 1)
-            assertThrows<IllegalStateException> {
+            assertThrows<IllegalArgumentException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.commitTransactions(
                             listOf(
                                 Pair(
-                                    internalRequest, UniquenessCheckResultFailureImpl(
-                                        testClock.instant(), UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
+                                    generateRequestInternal(SecureHashUtils.randomSecureHash()),
+                                    UniquenessCheckResultFailureImpl(
+                                        testClock.instant(),
+                                        UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
                                     )
                                 )
                             )

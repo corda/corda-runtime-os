@@ -18,13 +18,16 @@ import java.util.Date
 
 object TestUtils {
     private val KEY_PASSWORD = "cordadevpass".toCharArray()
-    private val KEY_STORE_PASSWORD = KEY_PASSWORD
+    val KEY_STORE_PASSWORD = KEY_PASSWORD
     val ALICE = Signer("alice", privateKeyEntry("alice", resourceInputStream("alice.p12")))
     val BOB = Signer("bob", privateKeyEntry("bob", resourceInputStream("bob.p12")))
     val ROOT_CA = certificate("rootca", resourceInputStream("rootca.p12"))
     internal val CA1 = certificate("ca1", resourceInputStream("ca1.p12"))
     internal val CA2 = certificate("ca2", resourceInputStream("ca2.p12"))
     internal val CODE_SIGNER_ALICE = codeSigner("alice", resourceInputStream("alice.p12"))
+
+    val ROOT_CA_KEY_STORE : InputStream
+        get() = resourceInputStream("rootca.p12")
 
     /**
      * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]

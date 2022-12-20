@@ -1,5 +1,7 @@
 package net.corda.cli.plugin.initialconfig
 
+import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
+import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.PermissionType
@@ -39,7 +41,7 @@ fun buildRbacConfigSql(
         details = "Automated initial set-up"
     )
     val user = createUser(
-        fullName = "Default Admin",
+        fullName = DEFAULT_ADMIN_FULL_NAME,
         loginName = adminUser,
         password = password,
         timeStamp = timeStamp
@@ -146,7 +148,7 @@ private fun createPermission(timeStamp: Instant): Permission {
 
 private fun createAdminRole(timeStamp: Instant): Role {
     return Role(
-        name = "Default System Admin",
+        name = DEFAULT_SYSTEM_ADMIN_ROLE,
         groupVisibility = null,
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp
