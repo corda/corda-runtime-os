@@ -105,7 +105,7 @@ class NonValidatingNotaryClientFlowImpl(
             .build()
 
         val notarisationRequest = NotarisationRequest(
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
+            stx.inputStateRefs,
             stx.id
         )
 

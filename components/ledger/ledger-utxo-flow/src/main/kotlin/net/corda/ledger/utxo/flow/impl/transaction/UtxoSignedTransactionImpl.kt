@@ -84,8 +84,7 @@ data class UtxoSignedTransactionImpl(
                 false
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = toLedgerTransaction().signatories
-        return requiredSignatories.filter {
+        return signatories.filter {
             !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
         }.toSet()
     }
@@ -103,10 +102,9 @@ data class UtxoSignedTransactionImpl(
                 )
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = this.toLedgerTransaction().signatories
-        if (requiredSignatories.any {
+        if (signatories.any {
                 !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-            }){
+            }) {
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
