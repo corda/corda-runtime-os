@@ -24,21 +24,21 @@ interface ReconciliationContext : AutoCloseable {
 class ClusterReconciliationContext(
     private val dbConnectionManager: DbConnectionManager
 ) : ReconciliationContext {
-    private var _entityManagerFactory: EntityManagerFactory? = null
-    private var _entityManager: EntityManager? = null
+    private var entityManagerFactory: EntityManagerFactory? = null
+    private var entityManager: EntityManager? = null
 
-    private fun getOrCreateEntityManagerFactory() = _entityManagerFactory
+    private fun getOrCreateEntityManagerFactory() = entityManagerFactory
         ?: dbConnectionManager.getClusterEntityManagerFactory()
-            .also { _entityManagerFactory = it }
+            .also { entityManagerFactory = it }
 
-    override fun getOrCreateEntityManager(): EntityManager = _entityManager
+    override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: getOrCreateEntityManagerFactory().createEntityManager()
-            .also { _entityManager = it }
+            .also { entityManager = it }
 
     override fun close() {
-        _entityManager?.close()
-        _entityManager = null
-        _entityManagerFactory = null
+        entityManager?.close()
+        entityManager = null
+        entityManagerFactory = null
     }
 }
 
@@ -51,21 +51,21 @@ class VirtualNodeReconciliationContext(
     val virtualNodeInfo: VirtualNodeInfo
 ) : ReconciliationContext {
 
-    private var _entityManagerFactory: EntityManagerFactory? = null
-    private var _entityManager: EntityManager? = null
+    private var entityManagerFactory: EntityManagerFactory? = null
+    private var entityManager: EntityManager? = null
 
-    private fun getOrCreateEntityManagerFactory() = _entityManagerFactory
+    private fun getOrCreateEntityManagerFactory() = entityManagerFactory
         ?: dbConnectionManager.createEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
-            .also { _entityManagerFactory = it }
+            .also { entityManagerFactory = it }
 
-    override fun getOrCreateEntityManager(): EntityManager = _entityManager
+    override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: getOrCreateEntityManagerFactory().createEntityManager()
-            .also { _entityManager = it }
+            .also { entityManager = it }
 
     override fun close() {
-        _entityManager?.close()
-        _entityManagerFactory?.close()
-        _entityManager = null
-        _entityManagerFactory = null
+        entityManager?.close()
+        entityManagerFactory?.close()
+        entityManager = null
+        entityManagerFactory = null
     }
 }
