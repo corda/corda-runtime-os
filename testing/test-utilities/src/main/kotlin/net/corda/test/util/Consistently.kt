@@ -4,8 +4,9 @@ import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 /**
- * Similar to "eventually" but the opposite: execute an assertion that must continuously succeed during a configurable
- * period of time. This is meant for use from Kotlin code use only mainly due to its inline/reified nature
+ * Similar to "eventually" but, instead of waiting for a condition to become true, it continuously executes the
+ * assertion and verifies that it always succeeds during a configurable period of time.
+ * This is meant for use from Kotlin code use only mainly due to its inline/reified nature
  *
  * @param duration How long to wait for, before returning the last test success. The default is 5 seconds.
  * @param waitBetween How long to wait before retrying the test condition. The default is 1/10th of a second.
