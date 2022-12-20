@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.factory
+package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
@@ -13,6 +13,8 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -22,6 +24,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -49,6 +52,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -64,13 +69,15 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        verifyTransaction(wireTransaction, utxoTransactionBuilder.notary!!)
+        val ledgerTransactionToCheck = utxoLedgerTransactionFactory.create(wireTransaction)
+        verifyTransaction(ledgerTransactionToCheck, utxoTransactionBuilder.notary!!)
 
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
+            utxoLedgerTransactionFactory,
             wireTransaction,
             signaturesWithMetadata
         )
@@ -82,6 +89,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransaction = UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
+        utxoLedgerTransactionFactory,
         wireTransaction,
         signaturesWithMetaData
     )
@@ -165,8 +173,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         }
     }
 
-    private fun verifyTransaction(wireTransaction: WireTransaction, notary: Party){
-        val ledgerTransactionToCheck = UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+    private fun verifyTransaction(ledgerTransactionToCheck: UtxoLedgerTransaction, notary: Party){
         val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
         verifier.verifyPlatformChecks(notary)
         verifier.verifyContracts()

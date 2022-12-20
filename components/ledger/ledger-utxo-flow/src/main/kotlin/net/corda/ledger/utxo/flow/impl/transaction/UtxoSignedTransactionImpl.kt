@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -23,6 +23,7 @@ import java.util.Objects
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransactionInternal {
@@ -59,6 +60,7 @@ data class UtxoSignedTransactionImpl(
             UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureService,
+                utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignature
             ),
@@ -67,7 +69,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
-        UtxoSignedTransactionImpl(serializationService, transactionSignatureService,
+        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
             wireTransaction, signatures + signature)
 
     @Suspendable
@@ -109,7 +111,7 @@ data class UtxoSignedTransactionImpl(
         }
     }
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
-        return UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+        return utxoLedgerTransactionFactory.create(wireTransaction)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -128,6 +130,5 @@ data class UtxoSignedTransactionImpl(
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
-
 
 }

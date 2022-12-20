@@ -10,8 +10,13 @@ import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
 
@@ -20,8 +25,20 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
 
-        val inputStateRef = getUtxoInvalidStateAndRef().ref
-        val referenceStateRef = getUtxoInvalidStateAndRef().ref
+        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = inputStateAndRef.ref
+        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateRef = referenceStateAndRef.ref
+
+        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
+        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
+
+        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
+        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
+        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
+            .thenReturn(mockSignedTxForInput)
+            .thenReturn(mockSignedTxForRef)
+
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
@@ -53,7 +70,6 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         assertEquals(publicKeyExample, ledgerTransaction.signatories.first())
         assertIs<PublicKey>(ledgerTransaction.signatories.first())
 
-        /** TODO When inputStateAndRefs or referenceInputStateAndRefs will get available
         assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.inputStateAndRefs)
         assertEquals(1, ledgerTransaction.inputStateAndRefs.size)
         assertEquals(inputStateAndRef, ledgerTransaction.inputStateAndRefs.first())
@@ -63,7 +79,6 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         assertEquals(1, ledgerTransaction.referenceInputStateAndRefs.size)
         assertEquals(referenceStateAndRef, ledgerTransaction.referenceInputStateAndRefs.first())
         assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.referenceInputStateAndRefs.first())
-        */
 
         // TODO Also test Commands and Attachments when they get deserialized properly.
     }

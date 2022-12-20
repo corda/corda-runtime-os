@@ -1,8 +1,6 @@
 package net.corda.ledger.utxo.data.transaction
 
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
@@ -14,11 +12,11 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 
 class UtxoLedgerTransactionImpl(
-    wireTransaction: WireTransaction,
-    serializationService: SerializationService
+    private val wrappedWireTransaction: WrappedUtxoWireTransaction,
+    override val inputStateAndRefs: List<StateAndRef<*>>,
+    override val referenceInputStateAndRefs: List<StateAndRef<*>>
 ) : UtxoLedgerTransaction {
 
-    private val wrappedWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
     override val id: SecureHash
         get() = wrappedWireTransaction.id
 
@@ -40,18 +38,8 @@ class UtxoLedgerTransactionImpl(
     override val inputStateRefs: List<StateRef>
         get() = wrappedWireTransaction.inputStateRefs
 
-    override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
-    }
-
     override val referenceInputStateRefs: List<StateRef>
         get() = wrappedWireTransaction.referenceInputStateRefs
-
-    override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
-    }
 
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() = wrappedWireTransaction.outputStateAndRefs
