@@ -97,7 +97,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
         return try {
             val streams = reconciliationContextFactory.invoke().map { context ->
-                val currentTransaction = context.entityManager.transaction
+                val currentTransaction = context.getOrCreateEntityManager().transaction
                 currentTransaction.begin()
                 doGetAllVersionedRecords(context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,

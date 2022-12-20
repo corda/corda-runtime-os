@@ -13,6 +13,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.time.Instant
 import java.util.UUID
@@ -53,18 +54,43 @@ class ReconciliationContextTest {
         private val context = ClusterReconciliationContext(dbConnectionManager)
 
         @Test
-        fun `Context initialisation creates the entity manager factory and the entity manager`() {
+        fun `Context initialisation does not get the entity manager factory and create the entity manager`() {
+            verify(dbConnectionManager, never()).getClusterEntityManagerFactory()
+            verify(clusterEmf, never()).createEntityManager()
+        }
+
+        @Test
+        fun `Context entity manager factory and entity manager are retrieved or created when needed`() {
+            context.getOrCreateEntityManager()
             verify(dbConnectionManager).getClusterEntityManagerFactory()
             verify(clusterEmf).createEntityManager()
         }
 
         @Test
+        fun `Context entity manager factory and entity manager are retrieved or created when needed only if not previously closed`() {
+            context.getOrCreateEntityManager()
+            context.getOrCreateEntityManager()
+            verify(dbConnectionManager).getClusterEntityManagerFactory()
+            verify(clusterEmf).createEntityManager()
+        }
+
+        @Test
+        fun `Context entity manager factory and entity manager are retrieved or created when needed if previously closed`() {
+            context.getOrCreateEntityManager()
+            context.close()
+            context.getOrCreateEntityManager()
+            verify(dbConnectionManager, times(2)).getClusterEntityManagerFactory()
+            verify(clusterEmf, times(2)).createEntityManager()
+        }
+
+        @Test
         fun `Context exposes the entity manager`() {
-            assertThat(context.entityManager).isEqualTo(clusterEm)
+            assertThat(context.getOrCreateEntityManager()).isEqualTo(clusterEm)
         }
 
         @Test
         fun `Closing the context closes the entity manager`() {
+            context.getOrCreateEntityManager()
             verify(clusterEm, never()).close()
             context.close()
             verify(clusterEm).close()
@@ -72,6 +98,7 @@ class ReconciliationContextTest {
 
         @Test
         fun `Closing the context does not close the entity manager factory`() {
+            context.getOrCreateEntityManager()
             context.close()
             verify(clusterEmf, never()).close()
         }
@@ -86,7 +113,17 @@ class ReconciliationContextTest {
         )
 
         @Test
-        fun `Context initialisation creates the entity manager factory and the entity manager`() {
+        fun `Context initialisation does not create the entity manager factory and the entity manager`() {
+            verify(dbConnectionManager, never()).createEntityManagerFactory(
+                eq(virtualNodeInfo.vaultDmlConnectionId),
+                eq(jpaEntitiesSet)
+            )
+            verify(vnodeEmf, never()).createEntityManager()
+        }
+
+        @Test
+        fun `Context entity manager factory and entity manager are created when called`() {
+            context.getOrCreateEntityManager()
             verify(dbConnectionManager).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
@@ -95,12 +132,36 @@ class ReconciliationContextTest {
         }
 
         @Test
+        fun `Context entity manager factory and entity manager are not recreated if they haven't been closed`() {
+            context.getOrCreateEntityManager()
+            context.getOrCreateEntityManager()
+            verify(dbConnectionManager).createEntityManagerFactory(
+                eq(virtualNodeInfo.vaultDmlConnectionId),
+                eq(jpaEntitiesSet)
+            )
+            verify(vnodeEmf).createEntityManager()
+        }
+
+        @Test
+        fun `Context entity manager factory and entity manager are recreated if they have been closed`() {
+            context.getOrCreateEntityManager()
+            context.close()
+            context.getOrCreateEntityManager()
+            verify(dbConnectionManager, times(2)).createEntityManagerFactory(
+                eq(virtualNodeInfo.vaultDmlConnectionId),
+                eq(jpaEntitiesSet)
+            )
+            verify(vnodeEmf, times(2)).createEntityManager()
+        }
+
+        @Test
         fun `Context exposes the entity manager`() {
-            assertThat(context.entityManager).isEqualTo(vnodeEm)
+            assertThat(context.getOrCreateEntityManager()).isEqualTo(vnodeEm)
         }
 
         @Test
         fun `Closing the context closes the entity manager`() {
+            context.getOrCreateEntityManager()
             verify(vnodeEm, never()).close()
             context.close()
             verify(vnodeEm).close()
@@ -108,9 +169,12 @@ class ReconciliationContextTest {
 
         @Test
         fun `Closing the context closes the entity manager factory`() {
+            context.getOrCreateEntityManager()
             verify(vnodeEmf, never()).close()
             context.close()
             verify(vnodeEmf).close()
         }
+
+
     }
 }

@@ -44,7 +44,7 @@ class DbReconcilerReaderTest {
         on { onClose(streamOnCloseCaptor.capture()) } doReturn mock
     }
     private val reconciliationContext: ReconciliationContext = mock {
-        on { entityManager } doReturn em
+        on { getOrCreateEntityManager() } doReturn em
     }
 
     private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
