@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Assertions.fail
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.*
+import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val P2P_TENANT_ID = "p2p"
