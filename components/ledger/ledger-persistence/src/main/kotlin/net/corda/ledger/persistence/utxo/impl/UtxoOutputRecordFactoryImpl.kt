@@ -67,16 +67,13 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     }
 
     override fun getFindUnconsumedStatesByTypeSuccessRecord(
-        relevantStates: List<StateAndRef<*>>,
+        relevantStates: List<ByteBuffer>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(
-                relevantStates
-                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-            )
+            EntityResponse(relevantStates)
         )
     }
 

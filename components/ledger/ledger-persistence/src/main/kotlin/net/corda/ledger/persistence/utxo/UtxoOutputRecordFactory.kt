@@ -10,6 +10,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
+import java.nio.ByteBuffer
 
 interface UtxoOutputRecordFactory {
     fun getTokenCacheChangeEventRecords(
@@ -25,7 +26,7 @@ interface UtxoOutputRecordFactory {
     ): Record<String, FlowEvent>
 
     fun getFindUnconsumedStatesByTypeSuccessRecord(
-        relevantStates: List<StateAndRef<*>>,
+        relevantStates: List<ByteBuffer>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent>
