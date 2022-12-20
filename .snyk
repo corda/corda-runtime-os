@@ -10,6 +10,24 @@ ignore:
           identification algorithm set to “HTTPS”, which means a Corda gateway
           will always validate server certificate hostnames when establishing
           HTTPS connections with other gateways.
-        expires: 2022-10-20T15:45:03.904Z
-        created: 2022-09-20T15:45:03.911Z
+        expires: 2023-06-19T12:08:30.514Z
+        created: 2022-12-20T12:08:30.517Z
+  SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038426:
+    - '*':
+        reason: >-
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts
+        expires: 2023-06-19T12:13:21.424Z
+        created: 2022-12-20T12:13:21.430Z
+  SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038424:
+    - '*':
+        reason: >
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts
+        expires: 2023-06-19T12:17:21.108Z
+        created: 2022-12-20T12:17:21.129Z
 patch: {}
