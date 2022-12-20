@@ -12,7 +12,8 @@ import net.corda.orm.EntityManagerConfiguration
 class TestDbInfo(
     val name: String,
     val schemaName: String? = null,
-    showSql: Boolean = true
+    showSql: Boolean = true,
+    rewriteBatchedInserts: Boolean = false
 ) {
     companion object {
         private val configFactory = SmartConfigFactory.create(
@@ -37,6 +38,7 @@ class TestDbInfo(
     val emConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
         inMemoryDbName = name,
         schemaName = schemaName,
-        showSql = showSql
+        showSql = showSql,
+        rewriteBatchedInserts = rewriteBatchedInserts
     )
 }

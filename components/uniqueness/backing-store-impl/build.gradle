@@ -36,6 +36,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
     implementation "net.corda:corda-ledger-utxo"
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
@@ -45,6 +46,7 @@ dependencies {
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
+    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
