@@ -48,10 +48,10 @@ class UserEndpointImpl @Activate constructor(
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(loginName: String, roleId: String, principal: String) {
             val role = getRole(GetRoleRequestDto(principal, roleId)) ?:
-            throw BadRequestException("Supplied roleId is invalid", mapOf("roleId" to roleId))
+                throw ResourceNotFoundException("Role ID", roleId)
 
             val user = getUser(GetUserRequestDto(principal, loginName)) ?:
-            throw BadRequestException("Supplied user login name is invalid", mapOf("loginName" to loginName))
+                throw ResourceNotFoundException("User login", loginName)
 
             if (role.initialAdminRole && user.fullName == DEFAULT_ADMIN_FULL_NAME) {
                 throw BadRequestException("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME",

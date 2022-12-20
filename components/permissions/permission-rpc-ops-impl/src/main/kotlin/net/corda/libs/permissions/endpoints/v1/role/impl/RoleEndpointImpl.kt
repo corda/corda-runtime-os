@@ -41,10 +41,8 @@ class RoleEndpointImpl @Activate constructor(
 
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(roleId: String, principal: String) {
-            val role = getRole(GetRoleRequestDto(principal, roleId)) ?: throw BadRequestException(
-                "Supplied roleId is invalid",
-                mapOf("roleId" to roleId)
-            )
+            val role = getRole(GetRoleRequestDto(principal, roleId)) ?:
+                throw ResourceNotFoundException("Role ID", roleId)
 
             if (role.initialAdminRole) {
                 throw BadRequestException("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be changed", mapOf("roleId" to roleId))
