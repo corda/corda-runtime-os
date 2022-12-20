@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
@@ -174,8 +175,12 @@ class EntitySandboxServiceImpl @Activate constructor(
             .toSet()
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
-
         ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
+        logger.debug {
+            "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
+                observers.map { it::class.java.name }}
+            }"
+        }
     }
 
     private fun getObserverFromClassName(
