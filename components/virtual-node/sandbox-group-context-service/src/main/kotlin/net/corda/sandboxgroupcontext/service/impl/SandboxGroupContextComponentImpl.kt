@@ -36,8 +36,6 @@ import java.util.Collections.unmodifiableList
 @Suppress("Unused", "LongParameterList")
 @Component(service = [ SandboxGroupContextComponent::class ])
 class SandboxGroupContextComponentImpl @Activate constructor(
-    @Reference(service = CpkReadService::class)
-    private val cpkReadService: CpkReadService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SandboxCreationService::class)
@@ -96,7 +94,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        cpkReadService.start()
         coordinator.start()
     }
 
@@ -105,7 +102,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Deactivate
     override fun close() {
         coordinator.close()
-        cpkReadService.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
