@@ -181,8 +181,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var pollAndProcessSuccessful = false
         while (!pollAndProcessSuccessful && !threadLooper.loopStopped) {
             try {
+                log.debug { "Polling and processing events" }
                 for (batch in getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT))) {
-                    tryProcessBatchOfEvents(batch)
+                    if (!tryProcessBatchOfEvents(batch)) {
+                        return
+                    }
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
@@ -204,13 +207,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>) {
+    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
-        log.debug { "Processing events(size: ${events.size})" }
+        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         for (event in events) {
-            stateAndEventConsumer.resetPollInterval()
+            if (stateAndEventConsumer.resetPollInterval()) {
+                log.debug { "Abandoning event processing due to repartition." }
+                return false
+            }
             processEvent(event, outputRecords, updatedStates)
         }
 
@@ -230,6 +236,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Processing of events(size: ${events.size}) complete" }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        return true
     }
 
     private fun processEvent(
@@ -245,8 +252,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         when {
             thisEventUpdates == null -> {
-                log.warn("Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                        "Processor failed to complete.")
+                log.warn(
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                            "Processor failed to complete."
+                )
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null

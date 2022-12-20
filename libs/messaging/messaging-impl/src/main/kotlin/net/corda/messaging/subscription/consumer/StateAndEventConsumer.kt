@@ -34,7 +34,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      * Reset the poll interval if the consumers are close to exceeding the poll interval timeout.
      * If cutoff point is reached, the consumers are paused, poll is called, and the consumers are then resumed.
      */
-    fun resetPollInterval()
+    fun resetPollInterval() : Boolean
 
     /**
      * Run a [function] and return a future with the result of the function.
