@@ -21,11 +21,15 @@ class KafkaTopicUtilsFactory : TopicUtilsFactory {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val currentBundle = FrameworkUtil.getBundle(KafkaTopicUtils::class.java)
 
-        return try {
-            Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+        return if (currentBundle != null) {
+            try {
+                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+                KafkaTopicUtils(AdminClient.create(props))
+            } finally {
+                Thread.currentThread().contextClassLoader = contextClassLoader
+            }
+        } else {
             KafkaTopicUtils(AdminClient.create(props))
-        } finally {
-            Thread.currentThread().contextClassLoader = contextClassLoader
         }
     }
 }
