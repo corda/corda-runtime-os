@@ -18,7 +18,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
-import java.lang.ref.WeakReference
 import java.time.Duration
 
 class SandboxGroupContextCacheTest {
@@ -54,7 +53,8 @@ class SandboxGroupContextCacheTest {
                 on { sandboxGroupType } doReturn SandboxGroupType.FLOW
             }) { mock() }
 
-            forceGarbageCollectionExecution()
+            @Suppress("ExplicitGarbageCollectionCall")
+            System.gc()
         }
 
         assertThat(cache.toBeClosed).isNotEmpty
@@ -86,7 +86,8 @@ class SandboxGroupContextCacheTest {
         // references to the wrapper and the Garbage Collector should eventually update the internal [ReferenceQueue])
         eventually(duration = Duration.ofSeconds(60), waitBetween = Duration.ofSeconds(1)) {
             // Trigger Garbage Collection so the internal [ReferenceQueue] is updated
-            forceGarbageCollectionExecution()
+            @Suppress("ExplicitGarbageCollectionCall")
+            System.gc()
 
             // Trigger another Cache Eviction to force the internal purge
             cache.get(mock {
@@ -168,17 +169,4 @@ class SandboxGroupContextCacheTest {
         assertThat(cache.toBeClosed).isEmpty()
         assertThat(retrievedContext.wrappedSandboxGroupContext).isSameAs(sandboxContext1)
     }
-}
-
-@Suppress("ExplicitGarbageCollectionCall")
-fun forceGarbageCollectionExecution() {
-    var obj: String? = String()
-    val ref = WeakReference(obj)
-    obj = null
-    assertThat(obj as? Any).isNull()  // Annoying check to prevent compilation failure due to unused var
-    System.gc()
-
-    assertThat(ref.get())
-        .withFailMessage("garbage collector did not run")
-        .isNull()
 }
