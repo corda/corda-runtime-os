@@ -24,21 +24,15 @@ interface ReconciliationContext : AutoCloseable {
 class ClusterReconciliationContext(
     private val dbConnectionManager: DbConnectionManager
 ) : ReconciliationContext {
-    private var entityManagerFactory: EntityManagerFactory? = null
     private var entityManager: EntityManager? = null
 
-    private fun getOrCreateEntityManagerFactory() = entityManagerFactory
-        ?: dbConnectionManager.getClusterEntityManagerFactory()
-            .also { entityManagerFactory = it }
-
     override fun getOrCreateEntityManager(): EntityManager = entityManager
-        ?: getOrCreateEntityManagerFactory().createEntityManager()
+        ?: dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
             .also { entityManager = it }
 
     override fun close() {
         entityManager?.close()
         entityManager = null
-        entityManagerFactory = null
     }
 }
 
