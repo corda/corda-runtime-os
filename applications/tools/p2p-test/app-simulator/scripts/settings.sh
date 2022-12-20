@@ -36,6 +36,8 @@ APP_SIMULATOR_DIR=$REPO_TOP_LEVEL_DIR/applications/tools/p2p-test/app-simulator/
 APP_SIMULATOR_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator
 APP_SIMULATOR_DB_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator-db
 
+CORDA_CLI_DIR=$REPO_TOP_LEVEL_DIR/../corda-cli-plugin-host/
+
 # X500Names
 MGM_X500_NAME="C=GB,L=London,O=MGM"
 A_X500_NAME="C=GB,L=London,O=Alice"
