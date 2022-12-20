@@ -24,7 +24,7 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
     @Suppress("UNCHECKED_CAST")
     override fun execute(): List<Record<*, *>> {
         val stateType = sandbox.sandboxGroup.loadClassFromMainBundles(findUnconsumedStatesByType.stateClassName)
-        require(ContractState::class.java.isInstance(stateType)) {
+        require(ContractState::class.java.isAssignableFrom(stateType)) {
             "Provided ${findUnconsumedStatesByType.stateClassName} is not type of ContractState"
         }
 
