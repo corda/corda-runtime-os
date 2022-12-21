@@ -61,6 +61,8 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      initContainers:
+      {{ include "appSimulator.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:
       {{- include "appSimulator.volumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
