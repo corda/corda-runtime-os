@@ -33,6 +33,8 @@ kafka:
   transactionStateLogReplicationFactor: 3
 
 postgresql:
+  image:
+    tag: 12.13.0-debian-11-r13
   primary:
     resources:
       requests:
