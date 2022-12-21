@@ -200,24 +200,26 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             // Here we pause each consumer in order to mark a poll to avoid a Kafka timeout without actually consuming
             // any records.
             val eventConsumerPausePartitions = eventConsumer.assignment() - eventConsumer.paused()
+            val stateConsumerPausePartitions = stateConsumer.assignment() - stateConsumer.paused()
+
             log.debug { "Resetting poll interval. Pausing event consumer partitions: $eventConsumerPausePartitions"}
             eventConsumer.pause(eventConsumerPausePartitions)
+            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerPausePartitions"}
+            stateConsumer.pause(stateConsumerPausePartitions)
+
             val eventRecords = eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             eventRecords.forEach { event ->
                 log.warn("Resetting polling interval has lost event with key: ${event.key}, this will likely cause execution" +
                         " problems with the Flow with this id")
             }
-            eventConsumer.resume(eventConsumerPausePartitions)
-            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerPausePartitions" }
-
-            val stateConsumerPausePartitions = stateConsumer.assignment() - stateConsumer.paused()
-            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerPausePartitions"}
-            stateConsumer.pause(stateConsumerPausePartitions)
             val stateRecords = stateConsumer.poll(PAUSED_POLL_TIMEOUT)
             stateRecords.forEach { state ->
                 log.warn("Resetting polling interval has lost state with key: ${state.key}, this will likely cause execution" +
                         " problems with the Flow with this id")
             }
+
+            eventConsumer.resume(eventConsumerPausePartitions)
+            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerPausePartitions" }
             stateConsumer.resume(stateConsumerPausePartitions)
             log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerPausePartitions" }
 
