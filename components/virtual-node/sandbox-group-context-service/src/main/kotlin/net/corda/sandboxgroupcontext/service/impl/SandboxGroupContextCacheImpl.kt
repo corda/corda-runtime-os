@@ -129,14 +129,6 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
      * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
      */
     internal class SandboxGroupContextWrapper(
-        val wrappedSandboxGroupContext: CloseableSandboxGroupContext
-    ) : SandboxGroupContext {
-
-        override fun <T : Any> get(key: String, valueType: Class<out T>) =
-            wrappedSandboxGroupContext.get(key, valueType)
-
-        override val sandboxGroup = wrappedSandboxGroupContext.sandboxGroup
-
-        override val virtualNodeContext: VirtualNodeContext = wrappedSandboxGroupContext.virtualNodeContext
-    }
+        internal val wrappedSandboxGroupContext: CloseableSandboxGroupContext
+    ) : SandboxGroupContext by wrappedSandboxGroupContext
 }
