@@ -11,11 +11,5 @@ object PersistenceUtils {
             return signerSummaryHash?.toString() ?: ""
         }
 
-    // TODO this is no longer needed, just inline it in call sites
-    val CpkIdentifier.signerSummaryHashForDbQuery: String
-        get() {
-            return signerSummaryHash.toString()
-        }
-
-    fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHashForDbQuery)
+    fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHash.toString())
 }
