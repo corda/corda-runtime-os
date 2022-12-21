@@ -259,7 +259,7 @@ bootstrap:
       # -- repository for image containing a db client, used to set up the db
       repository: postgres
       # -- tag for image containing a db client, used to set up the db
-      tag: "14.4"
+      tag: "12"
 
   # Configuration for RBAC roles bootstrap
   rbac:

@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@NOTICK/test-different-jdk') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/3 * * *',
