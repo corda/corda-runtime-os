@@ -3,12 +3,11 @@ package net.corda.libs.messaging.topic.factory
 import net.corda.libs.messaging.topic.KafkaTopicUtils
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
-import net.corda.messaging.kafka.utils.OsgiDelegatedClassLoader
+import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import org.apache.kafka.clients.admin.AdminClient
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Component
 import java.util.*
-
 
 /**
  * Kafka implementation of [TopicUtilsFactory]

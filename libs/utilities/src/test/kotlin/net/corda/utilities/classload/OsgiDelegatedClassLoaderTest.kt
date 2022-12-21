@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.utils
+package net.corda.utilities.classload
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

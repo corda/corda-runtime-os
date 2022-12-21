@@ -9,8 +9,8 @@ import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
-import net.corda.messaging.kafka.utils.OsgiDelegatedClassLoader
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.classload.OsgiDelegatedClassLoader
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer

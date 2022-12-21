@@ -13,7 +13,7 @@ dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:topic-admin")
-    implementation project(":libs:messaging:kafka-utils")
+    implementation project(":libs:utilities")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
