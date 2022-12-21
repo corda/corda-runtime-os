@@ -69,7 +69,7 @@ class UtxoFilteredTransactionImpl(
                             FilteredDataAuditImpl(filteredOutputStates.size, values)
                         }
 
-                        else -> throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
+                        else -> FilteredDataSizeImpl(0)
                     }
                 }
 

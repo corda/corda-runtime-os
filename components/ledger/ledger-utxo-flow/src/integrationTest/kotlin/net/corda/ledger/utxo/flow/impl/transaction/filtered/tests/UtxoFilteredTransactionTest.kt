@@ -21,10 +21,13 @@ import java.security.PublicKey
 import java.time.Instant
 
 class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
-    
+
+    private lateinit var utxoSignedTransactionNoOutputs: UtxoSignedTransaction
+
     @BeforeEach
     fun beforeEach() {
         utxoSignedTransaction = createSignedTransaction()
+        utxoSignedTransactionNoOutputs = createSignedTransaction(0)
     }
     
     @Test
@@ -198,6 +201,80 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
     }
 
     @Test
+    fun `create filtered transaction with the notary setup`() {
+        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
+            .withInputStates()
+            .withReferenceInputStates()
+            .withOutputStatesSize()
+            .withNotary()
+            .withTimeWindow()
+            .build()
+
+        assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransaction.id)
+
+        assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransaction.metadata)
+
+        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransaction.notary)
+
+        assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransaction.timeWindow)
+
+        assertThat(utxoFilteredTransaction.signatories).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
+        assertThat(utxoFilteredTransaction.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+            .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
+
+        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+            .containsExactlyElementsOf(utxoSignedTransaction.referenceStateRefs)
+
+        assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.SizeOnly<StateAndRef<*>>).size)
+            .isEqualTo(utxoSignedTransaction.outputStateAndRefs.size)
+
+        assertThat(utxoFilteredTransaction.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
+        assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `create filtered transaction with the notary setup without outputs`() {
+        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransactionNoOutputs)
+            .withInputStates()
+            .withReferenceInputStates()
+            .withOutputStatesSize()
+            .withNotary()
+            .withTimeWindow()
+            .build()
+
+        assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransactionNoOutputs.id)
+
+        assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransactionNoOutputs.metadata)
+
+        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransactionNoOutputs.notary)
+
+        assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransactionNoOutputs.timeWindow)
+
+        assertThat(utxoFilteredTransaction.signatories).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
+        assertThat(utxoFilteredTransaction.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+            .containsExactlyElementsOf(utxoSignedTransactionNoOutputs.inputStateRefs)
+
+        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+            .containsExactlyElementsOf(utxoSignedTransactionNoOutputs.referenceStateRefs)
+
+        assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.SizeOnly<StateAndRef<*>>).size)
+            .isEqualTo(utxoSignedTransactionNoOutputs.outputStateAndRefs.size)
+
+        assertThat(utxoFilteredTransaction.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
+        assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
+    }
+
+    @Test
     fun `create filtered transaction with audit and size proofs and missing components`() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withNotary()
@@ -323,7 +400,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
     
-    private fun createSignedTransaction(): UtxoSignedTransaction {
+    private fun createSignedTransaction(numberOfOutputStates: Int = 2): UtxoSignedTransaction {
         val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
@@ -345,10 +422,9 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                 // Signatories
                 listOf(serializationService.serialize(publicKeyExample).bytes),
                 // output infos
-                listOf(
-                    serializationService.serialize(outputInfo).bytes,
+                List(numberOfOutputStates) {
                     serializationService.serialize(outputInfo).bytes
-                ),
+                },
                 // command infos
                 listOf(
                     serializationService.serialize(listOf(MyCommand::class.java.name)).bytes,
@@ -367,10 +443,9 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                     serializationService.serialize(StateRef(inputHash, 1)).bytes
                 ),
                 // outputs
-                listOf(
-                    serializationService.serialize(UtxoStateClassExample("1", emptyList())).bytes,
-                    serializationService.serialize(UtxoStateClassExample("2", emptyList())).bytes
-                ),
+                List(numberOfOutputStates) {
+                    serializationService.serialize(UtxoStateClassExample(it.toString(), emptyList())).bytes
+                },
                 // commands
                 listOf(
                     serializationService.serialize(MyCommand("1")).bytes,
