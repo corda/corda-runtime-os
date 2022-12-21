@@ -57,8 +57,8 @@ class SandboxGroupContextCacheTest {
             System.gc()
         }
 
-        assertThat(cache.toBeClosed).isNotEmpty
         verify(sandboxContext1, never()).close()
+        assertThat(cache.evictedContextsToBeClosed()).isTrue
     }
 
     @Test
@@ -79,8 +79,8 @@ class SandboxGroupContextCacheTest {
         verify(sandboxContext1, never()).close()
 
         // Remove the strong reference to the context, so it can be garbage collected
+        @Suppress("unused_value")
         contextStrongRef = null
-        assertThat(contextStrongRef as? Any).isNull() // Annoying check to prevent compilation failure due to unused var
 
         // Trigger some more garbage collections and cache evictions, close should be invoked now (there are no strong
         // references to the wrapper and the Garbage Collector should eventually update the internal [ReferenceQueue])
@@ -112,7 +112,7 @@ class SandboxGroupContextCacheTest {
 
         cache.get(vNodeContext1) { sandboxContext1 }
         cache.get(vNodeContext2) { sandboxContext2 }
-        assertThat(cache.toBeClosed).isEmpty()
+        assertThat(cache.evictedContextsToBeClosed()).isFalse
 
         cache.close()
 
@@ -127,7 +127,7 @@ class SandboxGroupContextCacheTest {
 
         cache.get(vNodeContext1) { sandboxContext1 }
         cache.remove(vNodeContext1)
-        assertThat(cache.toBeClosed).isEmpty()
+        assertThat(cache.evictedContextsToBeClosed()).isFalse
 
         verify(sandboxContext1, timeout(timeout)).close()
     }
@@ -135,14 +135,11 @@ class SandboxGroupContextCacheTest {
     @Test
     fun `when in cache retrieve same`() {
         val cache = SandboxGroupContextCacheImpl(10)
-        val sandboxContext1 = mock<CloseableSandboxGroupContext>()
+        val sandboxContext1 = cache.get(vNodeContext1) { mock(name = "ctx1") }
+        val retrievedContext = cache.get(vNodeContext1) { mock(name = "ctx2") }
 
-        cache.get(vNodeContext1) { sandboxContext1 }
-        val retrievedContext =
-            cache.get(vNodeContext1) { mock() } as SandboxGroupContextCacheImpl.SandboxGroupContextWrapper
-
-        assertThat(cache.toBeClosed).isEmpty()
-        assertThat(retrievedContext.wrappedSandboxGroupContext).isSameAs(sandboxContext1)
+        assertThat(cache.evictedContextsToBeClosed()).isFalse
+        assertThat(retrievedContext).isSameAs(sandboxContext1)
     }
 
     @Test
@@ -161,12 +158,10 @@ class SandboxGroupContextCacheTest {
             "filter"
         )
 
-        val sandboxContext1 = mock<CloseableSandboxGroupContext>()
-        cache.get(vnodeContext1) { sandboxContext1 }
-        val retrievedContext =
-            cache.get(equalVnodeContext1) { mock() } as SandboxGroupContextCacheImpl.SandboxGroupContextWrapper
+        val sandboxContext1 = cache.get(vnodeContext1) { mock(name = "ctx1") }
+        val retrievedContext = cache.get(equalVnodeContext1) { mock(name = "ctx2") }
 
-        assertThat(cache.toBeClosed).isEmpty()
-        assertThat(retrievedContext.wrappedSandboxGroupContext).isSameAs(sandboxContext1)
+        assertThat(cache.evictedContextsToBeClosed()).isFalse
+        assertThat(retrievedContext).isSameAs(sandboxContext1)
     }
 }

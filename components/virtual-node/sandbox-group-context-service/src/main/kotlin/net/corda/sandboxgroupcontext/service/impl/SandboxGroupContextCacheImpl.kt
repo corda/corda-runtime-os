@@ -16,18 +16,33 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
 
-    @VisibleForTesting
-    class ToBeClosed(
+    private class ToBeClosed(
         val cacheKey: VirtualNodeContext,
         val sandboxGroupContextToClose: AutoCloseable,
         sandboxGroupContext: SandboxGroupContextWrapper,
         referenceQueue: ReferenceQueue<SandboxGroupContextWrapper>
     ) : WeakReference<SandboxGroupContextWrapper>(sandboxGroupContext, referenceQueue)
 
-    @VisibleForTesting
-    val toBeClosed: ConcurrentHashMap.KeySetView<ToBeClosed, Boolean> = ConcurrentHashMap.newKeySet()
-
     private val expiryQueue = ReferenceQueue<SandboxGroupContextWrapper>()
+    private val toBeClosed: ConcurrentHashMap.KeySetView<ToBeClosed, Boolean> = ConcurrentHashMap.newKeySet()
+
+    /**
+     * Wrapper around [CloseableSandboxGroupContext], solely used to keep a [WeakReference] to every instance and only
+     * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
+     */
+    private class SandboxGroupContextWrapper(
+        val wrappedSandboxGroupContext: CloseableSandboxGroupContext
+    ) : SandboxGroupContext by wrappedSandboxGroupContext
+
+    /**
+     * Checks whether there are contexts that were evicted from the cache but haven't been closed yet, either because
+     * there are still strong reference to the [SandboxGroupContextWrapper] or because the garbage collector hasn't
+     * updated the [ReferenceQueue] yet. Used for testing purposes only.
+     *
+     * @return true if there are contexts to be closed, false otherwise.
+     */
+    @VisibleForTesting
+    internal fun evictedContextsToBeClosed() : Boolean = toBeClosed.isNotEmpty()
 
     @Suppress("TooGenericExceptionCaught")
     private fun purgeExpiryQueue() {
@@ -123,12 +138,4 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
         contexts.invalidateAll()
         contexts.cleanUp()
     }
-
-    /**
-     * Wrapper around [CloseableSandboxGroupContext], solely used to keep a [WeakReference] to every instance and only
-     * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
-     */
-    internal class SandboxGroupContextWrapper(
-        internal val wrappedSandboxGroupContext: CloseableSandboxGroupContext
-    ) : SandboxGroupContext by wrappedSandboxGroupContext
 }
