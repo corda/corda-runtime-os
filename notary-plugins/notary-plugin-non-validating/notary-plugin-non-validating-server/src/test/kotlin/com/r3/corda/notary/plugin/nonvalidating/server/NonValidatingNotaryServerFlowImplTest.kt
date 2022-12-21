@@ -16,7 +16,6 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.ledger.common.Party
@@ -25,6 +24,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
@@ -368,7 +368,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 IllegalArgumentException("Uniqueness checker cannot be reached")
     }
 
-    private fun mockUniquenessClientService(response: UniquenessCheckResponse) = mock<LedgerUniquenessCheckerClientService> {
+    private fun mockUniquenessClientService(response: LedgerUniquenessCheckResponse) = mock<LedgerUniquenessCheckerClientService> {
         on { requestUniquenessCheck(any(), any(), any(), any(), any(), any() )} doReturn response
     }
 }
