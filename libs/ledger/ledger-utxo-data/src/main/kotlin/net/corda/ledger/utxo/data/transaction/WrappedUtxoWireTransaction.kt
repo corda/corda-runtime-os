@@ -17,7 +17,7 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
 class WrappedUtxoWireTransaction(
-    private val wireTransaction: WireTransaction,
+    val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
 ) {
 
