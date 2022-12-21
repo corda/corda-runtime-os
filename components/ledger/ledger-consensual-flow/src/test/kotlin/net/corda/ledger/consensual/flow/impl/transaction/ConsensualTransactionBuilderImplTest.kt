@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
@@ -72,13 +73,13 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
