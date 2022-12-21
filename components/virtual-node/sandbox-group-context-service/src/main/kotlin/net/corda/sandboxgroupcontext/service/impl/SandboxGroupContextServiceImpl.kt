@@ -168,6 +168,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     )
                     throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($vnc)")
                 }
+                if (cpks.isEmpty()) {
+                    throw CordaRuntimeException("No CPKs in this virtual node context. " +
+                            "State and contract classes must be defined inside a contract CPK. ($vnc)")
+                }
 
                 val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, vnc.sandboxGroupType.name)
 

@@ -8,6 +8,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.cordapp.demo.consensual.contract.TestConsensualState
 
 data class FindTransactionParameters(val transactionId: String)
 
@@ -20,7 +21,7 @@ data class ConsensualTransactionResult(
 )
 
 // hacky DTO to enable JSON serialization without custom serializers
-fun ConsensualDemoFlow.TestConsensualState.toResult(): TestConsensualStateResult {
+fun TestConsensualState.toResult(): TestConsensualStateResult {
     return TestConsensualStateResult(this.testField, this.participants.map { it.encoded })
 }
 
@@ -29,7 +30,7 @@ fun ConsensualLedgerTransaction.toResult(): ConsensualTransactionResult {
     return this.let {
         ConsensualTransactionResult(
             it.id,
-            it.states.map { (it as ConsensualDemoFlow.TestConsensualState).toResult() },
+            it.states.map { (it as TestConsensualState).toResult() },
             it.requiredSignatories.map { it.encoded })
     }
 }

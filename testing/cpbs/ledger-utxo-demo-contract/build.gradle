@@ -1,12 +1,12 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpb2'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
-    workflow {
-        name "UTXO Ledger demo app"
+    contract {
+        name "Utxo Ledger demo contract"
         versionId 1
         vendor "R3"
     }
@@ -16,13 +16,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-ledger-utxo'
 
-    cordapp project(':testing:cpbs:ledger-utxo-demo-contract')
-
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    // Common and API packages pulled in as transitive dependencies through client
-    cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
 }
