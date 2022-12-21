@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -20,6 +21,7 @@ import java.util.Objects
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     override val notary: Party? = null,
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
@@ -148,7 +150,7 @@ data class UtxoTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         UtxoTransactionBuilderVerifier(this).verify()
-        val tx = utxoSignedTransactionFactory.create(this, signatories)
+        val tx = utxoSignedTransactionFactory.create(this, signatories, utxoLedgerPersistenceService)
         alreadySigned = true
         return tx
     }

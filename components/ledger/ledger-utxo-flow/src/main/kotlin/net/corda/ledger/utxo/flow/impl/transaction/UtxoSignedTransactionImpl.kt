@@ -110,6 +110,7 @@ data class UtxoSignedTransactionImpl(
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
+    @Suspendable
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return utxoLedgerTransactionFactory.create(wireTransaction)
     }

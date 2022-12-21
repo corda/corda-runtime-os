@@ -151,7 +151,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 
-        whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
+        whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any(), any())).thenReturn(expectedObj)
 
         assertThat(utxoLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 

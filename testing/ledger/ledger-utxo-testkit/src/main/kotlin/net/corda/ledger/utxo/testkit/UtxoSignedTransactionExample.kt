@@ -22,11 +22,12 @@ fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     wireTransactionFactory: WireTransactionFactory,
+    utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     componentGroups: List<List<ByteArray>> = defaultComponentGroups +
             List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator, componentGroups)
-    return create(wireTransaction, listOf(signatureWithMetadataExample))
+    return create(wireTransaction, listOf(signatureWithMetadataExample), utxoLedgerPersistenceService)
 }
 
 @Suppress("LongParameterList")

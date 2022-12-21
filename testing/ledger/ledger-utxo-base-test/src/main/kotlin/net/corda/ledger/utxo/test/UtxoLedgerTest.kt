@@ -34,10 +34,14 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         serializationServiceNullCfg,
         mockTransactionSignatureService(),
         transactionMetadataFactory,
-        wireTransactionFactory,
-        utxoLedgerTransactionFactory
+        wireTransactionFactory
     )
-    val utxoLedgerService = UtxoLedgerServiceImpl(utxoFilteredTransactionFactory, utxoSignedTransactionFactory, flowEngine, mock())
+    val utxoLedgerService = UtxoLedgerServiceImpl(
+        utxoFilteredTransactionFactory,
+        utxoSignedTransactionFactory,
+        flowEngine,
+        mockUtxoLedgerPersistenceService
+    )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
         mockTransactionSignatureService(),
@@ -60,5 +64,5 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     )
     
     // This is the only not stateless.
-    val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
+    val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockUtxoLedgerPersistenceService)
 }

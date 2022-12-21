@@ -43,7 +43,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory
+            utxoSignedTransactionFactory, mockUtxoLedgerPersistenceService
         )
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)

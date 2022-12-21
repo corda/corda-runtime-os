@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransaction
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -29,17 +30,22 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     override fun create(
         wireTransaction: WireTransaction
     ): UtxoLedgerTransaction {
-        val wrappedWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
-        // todo: handle not founds !!
-        // todo: optimize to load one tx once only
-        val inputStateAndRefs = wrappedWireTransaction.inputStateRefs.map {
-            utxoLedgerPersistenceService.find(it.transactionHash)!!.outputStateAndRefs[it.index]
-        }
-        val referenceInputStateAndRefs = wrappedWireTransaction.referenceInputStateRefs.map {
-            utxoLedgerPersistenceService.find(it.transactionHash)!!.outputStateAndRefs[it.index]
-        }
+        // todo optimize to load one tx once only
+        val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
+        val inputStateAndRefs =
+            wrappedUtxoWireTransaction.inputStateRefs.map { it ->
+                utxoLedgerPersistenceService.find(it.transactionHash)?.outputStateAndRefs?.get(it.index)
+                    ?: throw (CordaRuntimeException("Input state not found ${it.transactionHash} ${it.index}"))
+            }
+
+        val referenceInputStateAndRefs =
+            wrappedUtxoWireTransaction.referenceInputStateRefs.map { it ->
+                utxoLedgerPersistenceService.find(it.transactionHash)?.outputStateAndRefs?.get(it.index)
+                    ?: throw (CordaRuntimeException("Reference input state not found ${it.transactionHash} ${it.index}"))
+            }
+
         return UtxoLedgerTransactionImpl(
-            wrappedWireTransaction,
+            wrappedUtxoWireTransaction,
             inputStateAndRefs,
             referenceInputStateAndRefs
         )
