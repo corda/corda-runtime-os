@@ -20,14 +20,12 @@ import org.junit.jupiter.api.Test
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("FunctionName")
 class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
-
-    private lateinit var utxoSignedTransactionNoOutputs: UtxoSignedTransaction
 
     @BeforeEach
     fun beforeEach() {
         utxoSignedTransaction = createSignedTransaction()
-        utxoSignedTransactionNoOutputs = createSignedTransaction(0)
     }
     
     @Test
@@ -239,7 +237,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
     @Test
     fun `create filtered transaction with the notary setup without outputs`() {
-        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransactionNoOutputs)
+        val utxoSignedTransaction = createSignedTransaction(numberOfOutputStates = 0)
+        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withInputStates()
             .withReferenceInputStates()
             .withOutputStatesSize()
@@ -247,29 +246,27 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withTimeWindow()
             .build()
 
-        assertThat(utxoFilteredTransaction.id).isEqualTo(utxoSignedTransactionNoOutputs.id)
+        assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.SizeOnly<StateAndRef<*>>).size)
+            .isEqualTo(utxoSignedTransaction.outputStateAndRefs.size)
 
-        assertThat(utxoFilteredTransaction.metadata).isEqualTo(utxoSignedTransactionNoOutputs.metadata)
+        assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
+    }
 
-        assertThat(utxoFilteredTransaction.notary).isEqualTo(utxoSignedTransactionNoOutputs.notary)
-
-        assertThat(utxoFilteredTransaction.timeWindow).isEqualTo(utxoSignedTransactionNoOutputs.timeWindow)
-
-        assertThat(utxoFilteredTransaction.signatories).isInstanceOf(UtxoFilteredData.Removed::class.java)
+    @Test
+    fun `create filtered transaction with the notary setup without inputs`() {
+        val utxoSignedTransaction = createSignedTransaction(numberOfInputStates = 0)
+        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
+            .withInputStates()
+            .withReferenceInputStates()
+            .withOutputStatesSize()
+            .withNotary()
+            .withTimeWindow()
+            .build()
 
         assertThat(utxoFilteredTransaction.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
-            .containsExactlyElementsOf(utxoSignedTransactionNoOutputs.inputStateRefs)
-
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
-            .containsExactlyElementsOf(utxoSignedTransactionNoOutputs.referenceStateRefs)
-
-        assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
-        assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.SizeOnly<StateAndRef<*>>).size)
-            .isEqualTo(utxoSignedTransactionNoOutputs.outputStateAndRefs.size)
-
-        assertThat(utxoFilteredTransaction.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+            .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
@@ -400,7 +397,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
     
-    private fun createSignedTransaction(numberOfOutputStates: Int = 2): UtxoSignedTransaction {
+    private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransaction {
         val inputHash = SecureHash.parse("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
@@ -433,10 +430,9 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                 // attachments
                 emptyList(),
                 // inputs
-                listOf(
-                    serializationService.serialize(StateRef(inputHash, 0)).bytes,
-                    serializationService.serialize(StateRef(inputHash, 1)).bytes
-                ),
+                List(numberOfInputStates) {
+                    serializationService.serialize(StateRef(inputHash, it)).bytes
+                },
                 // references
                 listOf(
                     serializationService.serialize(StateRef(inputHash, 0)).bytes,
