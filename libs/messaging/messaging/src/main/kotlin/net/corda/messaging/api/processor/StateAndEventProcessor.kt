@@ -36,10 +36,27 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
         val responseEvents: List<Record<*, *>>,
 
         /**
-         * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
+         * Flag to indicate whether processing succeeded or failed.
          */
-        val markForDLQ: Boolean = false
-    )
+        val processingStatus: ProcessingStatus = ProcessingStatus.SUCCESS
+    ) {
+        enum class ProcessingStatus {
+            SUCCESS,
+
+            /**
+             * The processing failed in such a way the Flow targeted by the event should be sent to the DLQ. This means
+             * the Flow is in an internally invalid state and could no longer operate correctly.
+             */
+            SEND_TO_DLQ,
+
+            /**
+             * The processing failed in such a way the event was malformed or unable to be matched to an existing state.
+             * In this case there is no Flow to send to the DLQ, and no states should be written as this would involve
+             * 'inventing' a state.
+             */
+            STRAY_EVENT
+        }
+    }
 
     /**
      * Called to signal an incoming [event] relating to a given [state].  Implementers are expected to

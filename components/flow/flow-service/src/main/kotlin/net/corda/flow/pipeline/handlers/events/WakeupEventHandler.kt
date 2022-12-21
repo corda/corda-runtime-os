@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.flow.pipeline.exceptions.FlowStrayEventException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
@@ -24,7 +25,7 @@ class WakeupEventHandler : FlowEventHandler<Wakeup> {
                 "Received a ${Wakeup::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist. " +
                         "The event will be discarded."
             }
-            throw FlowEventException(
+            throw FlowStrayEventException(
                 "WakeupEventHandler received a ${Wakeup::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist"
             )
         }

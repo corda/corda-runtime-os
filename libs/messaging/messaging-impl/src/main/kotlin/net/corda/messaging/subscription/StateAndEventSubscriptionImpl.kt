@@ -252,7 +252,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
-            thisEventUpdates.markForDLQ -> {
+            thisEventUpdates.processingStatus == StateAndEventProcessor.Response.ProcessingStatus.SEND_TO_DLQ -> {
                 log.warn(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
@@ -264,6 +264,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 // In this case the processor may ask us to publish some output records regardless, so make sure these
                 // are outputted.
                 outputRecords.addAll(thisEventUpdates.responseEvents)
+            }
+
+            thisEventUpdates.processingStatus == StateAndEventProcessor.Response.ProcessingStatus.STRAY_EVENT -> {
+                log.warn("Event $event was marked as stray (acting upon unknown state), not writing any state.")
             }
 
             else -> {

@@ -51,7 +51,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
-            markForDLQ = true
+            processingStatus = StateAndEventProcessor.Response.ProcessingStatus.SEND_TO_DLQ
         )
     }
 
@@ -110,7 +110,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = records,
-            markForDLQ = true
+            processingStatus = StateAndEventProcessor.Response.ProcessingStatus.SEND_TO_DLQ
         )
     }
 

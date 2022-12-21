@@ -13,7 +13,11 @@ class FlowEventContextConverterImpl : FlowEventContextConverter {
         return StateAndEventProcessor.Response(
             flowContext.checkpoint.toAvro(),
             flowContext.outputRecords,
-            flowContext.sendToDlq
+            processingStatus = when(flowContext.processingStatus) {
+                FlowEventContext.ProcessingStatus.SUCCESS -> StateAndEventProcessor.Response.ProcessingStatus.SUCCESS
+                FlowEventContext.ProcessingStatus.SEND_TO_DLQ -> StateAndEventProcessor.Response.ProcessingStatus.SEND_TO_DLQ
+                FlowEventContext.ProcessingStatus.STRAY_EVENT -> StateAndEventProcessor.Response.ProcessingStatus.STRAY_EVENT
+            }
         )
     }
 }

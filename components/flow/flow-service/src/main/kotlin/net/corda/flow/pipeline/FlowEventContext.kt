@@ -25,8 +25,10 @@ data class FlowEventContext<T>(
     var inputEventPayload: T,
     val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
-    val sendToDlq: Boolean = false,
-    val mdcProperties: Map<String, String>
-)
-
-
+    val mdcProperties: Map<String, String>,
+    val processingStatus: ProcessingStatus = ProcessingStatus.SUCCESS
+) {
+    enum class ProcessingStatus {
+        SUCCESS, SEND_TO_DLQ, STRAY_EVENT
+    }
+}

@@ -8,6 +8,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowStrayEventException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
@@ -72,7 +73,12 @@ class FlowEventPipelineImpl(
         }
 
         val handler = getFlowEventHandler(updatedContext.inputEvent)
-        context = handler.preProcess(updatedContext)
+        try {
+            context = handler.preProcess(updatedContext)
+        } catch (ex: FlowStrayEventException) {
+            context = context.copy(processingStatus = FlowEventContext.ProcessingStatus.STRAY_EVENT)
+            throw ex
+        }
 
         return this
     }
