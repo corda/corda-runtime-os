@@ -57,14 +57,6 @@ class ConvertersTest {
     }
 
     @Test
-    fun `CPK․Identifier without signerSummaryHash round trip`() {
-        val original = CpkIdentifier("SomeName", "1.0", null)
-        val avroObject = original.toAvro()
-        val cordaObject = CpkIdentifier.fromAvro(avroObject)
-        Assertions.assertEquals(original, cordaObject)
-    }
-
-    @Test
     fun `CPK․Type round trip`() {
         val original = CpkMetaTestData.cpkType
         val avroObject = original.toAvro()

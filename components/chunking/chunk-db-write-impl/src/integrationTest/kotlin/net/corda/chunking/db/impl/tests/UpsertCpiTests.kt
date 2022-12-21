@@ -115,7 +115,7 @@ class UpsertCpiTests {
     private fun mockCpk(
         name: String,
         fileChecksum: SecureHash = newRandomSecureHash(),
-        cpkSignerSummaryHash: SecureHash? = newRandomSecureHash()
+        cpkSignerSummaryHash: SecureHash = newRandomSecureHash()
     ) = mock<Cpk>().also { cpk ->
         val cpkId = CpkIdentifier(name, "cpk-version", cpkSignerSummaryHash)
 

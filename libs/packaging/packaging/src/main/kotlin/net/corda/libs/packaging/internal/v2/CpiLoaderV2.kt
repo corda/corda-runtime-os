@@ -66,7 +66,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                             ?: throw PackagingException("CPI name missing from manifest"),
                         mainAttributes.getValue(PackagingConstants.CPI_VERSION_ATTRIBUTE)
                             ?: throw PackagingException("CPI version missing from manifest"),
-                        groupPolicy.entry.certificates.asSequence().signerSummaryHash()
+                        groupPolicy.entry.certificates.toList().signerSummaryHash()
                     ),
                     fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
                     cpksMetadata = cpks.map { it.metadata },

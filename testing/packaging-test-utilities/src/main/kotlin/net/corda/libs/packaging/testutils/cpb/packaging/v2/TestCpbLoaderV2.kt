@@ -79,7 +79,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                                 ?: throw PackagingException("$CPB_NAME_ATTRIBUTE missing from CPB manifest"),
                             mainAttributes.getValue(CPB_VERSION_ATTRIBUTE)
                                 ?: throw PackagingException("$CPB_VERSION_ATTRIBUTE missing from CPB manifest"),
-                                firstCpkEntry.certificates.asSequence().signerSummaryHash()
+                                firstCpkEntry.certificates.toList().signerSummaryHash()
                         ),
                         fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
                         cpksMetadata = cpks.map { it.metadata },

@@ -106,7 +106,7 @@ internal object CpkLoaderV1 : CpkLoader {
                 cpkId = CpkIdentifier(
                     cordappManifest!!.bundleSymbolicName,
                     cordappManifest!!.bundleVersion,
-                    cordappCertificates!!.asSequence().signerSummaryHash()
+                    cordappCertificates!!.signerSummaryHash()
                 ),
                 type = cpkType,
                 manifest = cpkManifest!!,
@@ -195,7 +195,7 @@ internal object CpkLoaderV1 : CpkLoader {
         }
 
         // Replace any "same as me" placeholders with this CPK's actual summary hash.
-        val cpkSummaryHash = certificates.asSequence().signerSummaryHash()
+        val cpkSummaryHash = certificates.signerSummaryHash()
         ctx.cpkDependencies = ctx.cpkDependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === SAME_SIGNER_PLACEHOLDER) {
                 CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)

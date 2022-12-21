@@ -85,7 +85,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
-        val signerSummaryHash = cordappCertificates.asSequence().signerSummaryHash()
+        val signerSummaryHash = cordappCertificates.signerSummaryHash()
 
         // List all libraries
         val libNames = readLibNames(cpkEntries)
@@ -109,11 +109,17 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             cordappManifest = cordappManifest,
             cordappCertificates = cordappCertificates,
             libraries = Collections.unmodifiableList(libNames),
-            dependencies = cpkDependencies.dependencies.map { CpkIdentifier(
-                it.name,
-                it.version,
-                if (it.verifySameSignerAsMe) signerSummaryHash else null
-            ) }
+            dependencies = cpkDependencies.dependencies.map {
+                CpkIdentifier(
+                    it.name,
+                    it.version,
+                    // TODO Should we be using CPKDependencyV2.verifyFileHash if CPKDependencyV2.verifySameSignerAsMe == false?
+                    if (it.verifySameSignerAsMe)
+                        signerSummaryHash
+                    else
+                        throw IllegalStateException("Signer summary hash not found")
+                )
+            }
                 .toList(), // Add file hash option
             timestamp = clock.instant()
         )

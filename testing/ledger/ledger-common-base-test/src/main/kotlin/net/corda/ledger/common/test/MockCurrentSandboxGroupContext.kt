@@ -38,7 +38,7 @@ private fun mockCpkMetadata() = mapOf(
 )
 
 private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
-    CpkIdentifier("MockCpk", "$i", null),
+    CpkIdentifier("MockCpk", "$i", SecureHash("TEST", "TEST".toByteArray())),
     CpkManifest(CpkFormatVersion(1, 1)),
     "mock-bundle-$i",
     emptyList(),
