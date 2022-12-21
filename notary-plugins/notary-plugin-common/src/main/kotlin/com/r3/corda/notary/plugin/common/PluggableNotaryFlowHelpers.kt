@@ -47,10 +47,6 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
         )
     }
 
-    // TODO CORE-3698: Review if this TODO is still valid
-    //  if requestSignature was generated over an old version of NotarisationRequest, we need to be able to
-    //  reserialize it in that version to get the exact same bytes. Modify the serialization logic once that's
-    //  available.
     val expectedSignedBytes = serializationService.serialize(notarisationRequest).bytes
 
     try {
