@@ -28,18 +28,17 @@ import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import net.corda.virtualnode.HoldingIdentity
 import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
@@ -192,14 +191,13 @@ open class JPABackingStoreImpl @Activate constructor(
         }
 
         override fun getStateDetails(
-            states: Collection<UniquenessCheckStateRef>
-        ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
+            states: Collection<StateRef>
+        ): Map<StateRef, UniquenessCheckStateDetails> {
 
-            val results = HashMap<
-                    UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+            val results = HashMap<StateRef, UniquenessCheckStateDetails>()
 
             val statePks = states.map{
-                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, it.txHash.bytes, it.stateIndex)
+                UniquenessTxAlgoStateRefKey(it.transactionHash.algorithm, it.transactionHash.bytes, it.index)
             }
 
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
@@ -215,7 +213,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     if (stateEntity.consumingTxId != null) {
                         SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                     } else null
-                val returnedState = UniquenessCheckStateRefImpl(
+                val returnedState = StateRef(
                     SecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
                     stateEntity.issueTxOutputIndex)
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
@@ -290,14 +288,14 @@ open class JPABackingStoreImpl @Activate constructor(
         protected open inner class TransactionOpsImpl : BackingStore.Session.TransactionOps {
 
             override fun createUnconsumedStates(
-                stateRefs: Collection<UniquenessCheckStateRef>
+                stateRefs: Collection<StateRef>
             ) {
                 stateRefs.forEach { stateRef ->
                     entityManager.persist(
                         UniquenessStateDetailEntity(
-                            stateRef.txHash.algorithm,
-                            stateRef.txHash.bytes,
-                            stateRef.stateIndex,
+                            stateRef.transactionHash.algorithm,
+                            stateRef.transactionHash.bytes,
+                            stateRef.index,
                             null, // Unconsumed
                             null // Unconsumed
                         )
@@ -307,7 +305,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckStateRef>
+                stateRefs: Collection<StateRef>
             ) {
                 stateRefs.forEach { stateRef ->
                     val safeUpdate = entityManager.createNamedQuery(
@@ -315,9 +313,9 @@ open class JPABackingStoreImpl @Activate constructor(
                     )
                         .setParameter("consumingTxAlgo", consumingTxId.algorithm)
                         .setParameter("consumingTxId", consumingTxId.bytes)
-                        .setParameter("issueTxAlgo", stateRef.txHash.algorithm)
-                        .setParameter("issueTxId", stateRef.txHash.bytes)
-                        .setParameter("stateIndex", stateRef.stateIndex)
+                        .setParameter("issueTxAlgo", stateRef.transactionHash.algorithm)
+                        .setParameter("issueTxId", stateRef.transactionHash.bytes)
+                        .setParameter("stateIndex", stateRef.index)
 
                     val updatedRowCount = safeUpdate.executeUpdate()
 

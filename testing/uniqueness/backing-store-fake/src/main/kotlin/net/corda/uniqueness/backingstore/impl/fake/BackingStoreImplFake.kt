@@ -19,10 +19,10 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -54,14 +54,14 @@ open class BackingStoreImplFake @Activate constructor(
     // Data persisted across different transactions, partitioned on holding id
     private val persistedStateData =
         HashMap<HoldingIdentity,
-                HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>>()
+                HashMap<StateRef, UniquenessCheckStateDetails>>()
     private val persistedTxnData =
         HashMap<HoldingIdentity,
                 HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>>()
 
     // Temporary cache of data created / updated during the current session
     private val sessionStateData =
-        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+        HashMap<StateRef, UniquenessCheckStateDetails>()
     private val sessionTxnData =
         HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
@@ -103,7 +103,7 @@ open class BackingStoreImplFake @Activate constructor(
             sessionTxnData.clear()
         }
 
-        override fun getStateDetails(states: Collection<UniquenessCheckStateRef>) =
+        override fun getStateDetails(states: Collection<StateRef>) =
             persistedStateData[activeHoldingIdentity]
                 ?.filterKeys { states.contains(it) } ?: emptyMap()
 
@@ -115,7 +115,7 @@ open class BackingStoreImplFake @Activate constructor(
 
             @Synchronized
             override fun createUnconsumedStates(
-                stateRefs: Collection<UniquenessCheckStateRef>
+                stateRefs: Collection<StateRef>
             ) {
                 sessionStateData.putAll(
                     stateRefs.map {
@@ -127,7 +127,7 @@ open class BackingStoreImplFake @Activate constructor(
             @Synchronized
             override fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckStateRef>
+                stateRefs: Collection<StateRef>
             ) {
                 sessionStateData.putAll(
                     stateRefs.map {

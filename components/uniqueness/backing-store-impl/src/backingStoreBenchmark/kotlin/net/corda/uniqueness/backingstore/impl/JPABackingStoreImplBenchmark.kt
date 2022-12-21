@@ -18,10 +18,9 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -40,8 +39,6 @@ import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.FileOutputStream
-import java.io.PrintStream
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -220,9 +217,9 @@ class JPABackingStoreImplBenchmark {
      * Creates unconsumed states, based on the configured number of operations, and returns the
      * state objects.
      */
-    private fun createUnconsumedStates() : List<UniquenessCheckStateRef> {
+    private fun createUnconsumedStates() : List<StateRef> {
         val states = List(numOpsPerIter) {
-            UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0)
+            StateRef(SecureHashUtils.randomSecureHash(), 0)
         }
 
         backingStore.transactionSession(holdingIdentity) { _, txOps ->

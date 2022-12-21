@@ -2,7 +2,7 @@ package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
+import net.corda.uniqueness.datamodel.impl.LedgerUniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -76,7 +76,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
             signBatch(listOf(SecureHash.parse(txId))).rootSignature
         } else null
 
-        return UniquenessCheckResponseImpl(
+        return LedgerUniquenessCheckResponseImpl(
             result,
             signature
         )

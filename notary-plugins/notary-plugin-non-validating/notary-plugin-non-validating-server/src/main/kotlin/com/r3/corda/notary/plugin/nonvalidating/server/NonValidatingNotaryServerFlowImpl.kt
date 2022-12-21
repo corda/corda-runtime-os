@@ -151,6 +151,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notary) {
             "Notary component could not be found on the transaction"
@@ -176,8 +177,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             filteredTx.id,
             outputStates.size,
             filteredTx.timeWindow!!,
-            inputStates.values.values,
-            refStates.values.values,
+            inputStates.values.values.toList(),
+            refStates.values.values.toList(),
             filteredTx.notary!!
         )
     }

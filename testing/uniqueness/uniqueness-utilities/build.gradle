@@ -13,6 +13,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger-utxo"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

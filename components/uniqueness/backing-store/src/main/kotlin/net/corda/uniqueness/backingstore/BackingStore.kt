@@ -5,9 +5,9 @@ import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -87,8 +87,8 @@ interface BackingStore : Lifecycle {
          * have been previously committed, keyed by their state reference.
          */
         fun getStateDetails(
-            states: Collection<UniquenessCheckStateRef>
-        ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
+            states: Collection<StateRef>
+        ): Map<StateRef, UniquenessCheckStateDetails>
 
         /**
          * For the given list of transaction id's, returns a map of transaction details for
@@ -108,7 +108,7 @@ interface BackingStore : Lifecycle {
              * Instructs the backing store to record new state records which are marked as
              * unconsumed.
              */
-            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckStateRef>)
+            fun createUnconsumedStates(stateRefs: Collection<StateRef>)
 
             /**
              * Instructs the backing store to mark previously unconsumed states as consumed by
@@ -116,7 +116,7 @@ interface BackingStore : Lifecycle {
              */
             fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckStateRef>
+                stateRefs: Collection<StateRef>
             )
 
             /**

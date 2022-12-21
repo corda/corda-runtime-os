@@ -6,8 +6,8 @@ import com.r3.corda.notary.plugin.common.NotaryErrorGeneral
 import com.r3.corda.notary.plugin.common.NotaryErrorReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.uniqueness.datamodel.impl.LedgerUniquenessCheckResponseImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -350,14 +350,14 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     private fun mockSuccessfulUniquenessClientService(): LedgerUniquenessCheckerClientService {
-        return mockUniquenessClientService(UniquenessCheckResponseImpl(
+        return mockUniquenessClientService(LedgerUniquenessCheckResponseImpl(
             UniquenessCheckResultSuccessImpl(Instant.now()),
             uniquenessCheckResponseSignature
         ))
     }
 
     private fun mockErrorUniquenessClientService(): LedgerUniquenessCheckerClientService {
-        return mockUniquenessClientService(UniquenessCheckResponseImpl(
+        return mockUniquenessClientService(LedgerUniquenessCheckResponseImpl(
             UniquenessCheckResultFailureImpl(Instant.now(), UniquenessCheckErrorReferenceStateUnknownImpl(emptyList())),
             null
         ))

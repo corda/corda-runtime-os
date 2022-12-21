@@ -2,8 +2,8 @@ package net.corda.uniqueness.datamodel.internal
 
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.uniqueness.datamodel.common.toStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
 import java.time.Instant
 
 /**
@@ -14,8 +14,8 @@ import java.time.Instant
 data class UniquenessCheckRequestInternal constructor(
     val txId: SecureHash,
     val rawTxId: String,
-    val inputStates: List<UniquenessCheckStateRef>,
-    val referenceStates: List<UniquenessCheckStateRef>,
+    val inputStates: List<StateRef>,
+    val referenceStates: List<StateRef>,
     val numOutputStates: Int,
     val timeWindowLowerBound: Instant?,
     val timeWindowUpperBound: Instant

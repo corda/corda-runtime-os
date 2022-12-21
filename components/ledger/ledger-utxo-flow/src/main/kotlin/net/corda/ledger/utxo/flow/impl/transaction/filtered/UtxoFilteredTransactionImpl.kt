@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.Party
@@ -27,6 +28,10 @@ class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
 ) : UtxoFilteredTransaction {
+
+    private companion object {
+        val logger = loggerFor<UtxoFilteredTransactionImpl>()
+    }
 
     override val id: SecureHash
         get() = filteredTransaction.id
@@ -52,6 +57,7 @@ class UtxoFilteredTransactionImpl(
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
                 is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(filteredOutputStates.size)
                 is UtxoFilteredData.Audit -> {
+                    logger.error("AUDIT VAGYOK VALAMIERT?")
                     when (val filteredStateInfos =
                         getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
                         is UtxoFilteredData.Audit -> {
@@ -69,7 +75,7 @@ class UtxoFilteredTransactionImpl(
                             FilteredDataAuditImpl(filteredOutputStates.size, values)
                         }
 
-                        else -> throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
+                        else -> FilteredDataSizeImpl(0)
                     }
                 }
 
@@ -104,11 +110,16 @@ class UtxoFilteredTransactionImpl(
 
 
     private inline fun <reified T : Any> getFilteredData(index: Int): UtxoFilteredData<T> {
+        logger.error("Ez vagyok: $index")
         return filteredTransaction.filteredComponentGroups[index]
             ?.let { group ->
                 when (group.merkleProof.proofType) {
-                    MerkleProofType.SIZE -> return FilteredDataSizeImpl(group.merkleProof.treeSize)
+                    MerkleProofType.SIZE -> {
+                        logger.error("size vagyok: $index")
+                        FilteredDataSizeImpl(group.merkleProof.treeSize)
+                    }
                     MerkleProofType.AUDIT -> {
+                        logger.error("audit vagyok: $index")
                         // if it's an audit proof of an empty list, we need to strip the marker
                         return if (group.merkleProof.leaves.size == 1
                             && group.merkleProof.leaves.first().leafData.size == 0)
@@ -116,7 +127,8 @@ class UtxoFilteredTransactionImpl(
                                 0,
                                 emptyMap()
                             )
-                        else
+                        else {
+                            logger.error("audit vagyok: $index")
                             FilteredDataAuditImpl(
                                 group.merkleProof.treeSize,
                                 group.merkleProof.leaves.associateBy(
@@ -126,6 +138,7 @@ class UtxoFilteredTransactionImpl(
                                     }
                                 )
                             )
+                        }
                     }
                 }
             } ?: return FilteredDataRemovedImpl()

@@ -4,7 +4,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 
-class UniquenessCheckResponseImpl(
+class LedgerUniquenessCheckResponseImpl(
     override val result: UniquenessCheckResult,
     override val signature: DigitalSignatureAndMetadata?
 ) : LedgerUniquenessCheckResponse

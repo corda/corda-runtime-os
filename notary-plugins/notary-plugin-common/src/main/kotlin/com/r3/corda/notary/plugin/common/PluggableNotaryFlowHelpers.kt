@@ -4,12 +4,6 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
@@ -18,6 +12,12 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 

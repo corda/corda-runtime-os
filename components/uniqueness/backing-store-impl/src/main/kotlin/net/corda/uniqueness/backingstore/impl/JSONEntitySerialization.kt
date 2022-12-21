@@ -13,9 +13,9 @@ import net.corda.uniqueness.datamodel.serialize.UniquenessCheckErrorTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateDetailsTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateRefTypeMixin
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 
 /**
  * This class contains various serializers and deserializers that are
@@ -33,7 +33,7 @@ fun jpaBackingStoreObjectMapper() = jacksonObjectMapper().apply {
 
     addMixIn(UniquenessCheckError::class.java, UniquenessCheckErrorTypeMixin::class.java)
     addMixIn(UniquenessCheckStateDetails::class.java, UniquenessCheckStateDetailsTypeMixin::class.java)
-    addMixIn(UniquenessCheckStateRef::class.java, UniquenessCheckStateRefTypeMixin::class.java)
+    addMixIn(StateRef::class.java, UniquenessCheckStateRefTypeMixin::class.java)
 }
 
 internal object SecureHashSerializer : JsonSerializer<SecureHash>() {

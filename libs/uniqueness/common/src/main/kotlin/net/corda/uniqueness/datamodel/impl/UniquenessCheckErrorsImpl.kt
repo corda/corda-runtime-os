@@ -1,13 +1,13 @@
 package net.corda.uniqueness.datamodel.impl
 
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import java.time.Instant
 
 data class UniquenessCheckErrorInputStateConflictImpl(
@@ -15,7 +15,7 @@ data class UniquenessCheckErrorInputStateConflictImpl(
 ) : UniquenessCheckErrorInputStateConflict
 
 data class UniquenessCheckErrorInputStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
+    override val unknownStates: List<StateRef>
 ) : UniquenessCheckErrorInputStateUnknown
 
 data class UniquenessCheckErrorReferenceStateConflictImpl(
@@ -23,7 +23,7 @@ data class UniquenessCheckErrorReferenceStateConflictImpl(
 ) : UniquenessCheckErrorReferenceStateConflict
 
 data class UniquenessCheckErrorReferenceStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
+    override val unknownStates: List<StateRef>
 ) : UniquenessCheckErrorReferenceStateUnknown
 
 data class UniquenessCheckErrorTimeWindowOutOfBoundsImpl(

@@ -17,17 +17,16 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBo
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorTimeWindowOutOfBounds
 import org.apache.avro.specific.SpecificRecord
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
@@ -159,8 +158,8 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
     UniquenessConstants.RESULT_REJECTED_REPRESENTATION
 }
 
-fun String.toStateRef() : UniquenessCheckStateRef {
-    return UniquenessCheckStateRefImpl(
+fun String.toStateRef() : StateRef {
+    return StateRef(
         SecureHash.parse(substringBeforeLast(":")),
         substringAfterLast(":").toInt()
     )

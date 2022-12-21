@@ -22,8 +22,8 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorMalformedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session

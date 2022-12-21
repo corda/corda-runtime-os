@@ -34,7 +34,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBo
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.utilities.time.Clock
@@ -42,11 +41,11 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -116,7 +115,7 @@ class BatchedUniquenessCheckerImpl(
     private val transactionDetailsCache =
         HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
     private val stateDetailsCache =
-        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+        HashMap<StateRef, UniquenessCheckStateDetails>()
 
     override fun start() {
         log.info("Uniqueness checker starting")
@@ -382,7 +381,7 @@ class BatchedUniquenessCheckerImpl(
         }
 
         repeat(request.numOutputStates) {
-            val outputStateRef = UniquenessCheckStateRefImpl(request.txId, it)
+            val outputStateRef = StateRef(request.txId, it)
 
             stateDetailsCache[outputStateRef] =
                 UniquenessCheckStateDetailsImpl(outputStateRef, null)
@@ -410,7 +409,7 @@ class BatchedUniquenessCheckerImpl(
             // Insert the output states
             txOps.createUnconsumedStates(
                 List(request.numOutputStates) {
-                    UniquenessCheckStateRefImpl(request.txId, it)
+                    StateRef(request.txId, it)
                 }
             )
 

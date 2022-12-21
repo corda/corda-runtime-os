@@ -14,6 +14,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -44,6 +45,10 @@ class NonValidatingNotaryClientFlowImpl(
 
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
+
+    private companion object {
+        val log = loggerFor<NonValidatingNotaryClientFlowImpl>()
+    }
 
     /**
      * Constructor used for testing to initialize the necessary services
@@ -105,7 +110,7 @@ class NonValidatingNotaryClientFlowImpl(
             .build()
 
         val notarisationRequest = NotarisationRequest(
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
+            stx.inputStateRefs,
             stx.id
         )
 

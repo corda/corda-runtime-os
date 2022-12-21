@@ -1,8 +1,8 @@
 package com.r3.corda.notary.plugin.common
 
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckStateDetails
 import java.time.Instant
 
 /**
@@ -16,7 +16,7 @@ data class NotaryErrorInputStateConflictImpl(
 
 @CordaSerializable
 data class NotaryErrorInputStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
+    override val unknownStates: List<StateRef>
 ) : NotaryErrorInputStateUnknown
 
 @CordaSerializable
@@ -26,7 +26,7 @@ data class NotaryErrorReferenceStateConflictImpl(
 
 @CordaSerializable
 data class NotaryErrorReferenceStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
+    override val unknownStates: List<StateRef>
 ) : NotaryErrorReferenceStateUnknown
 
 @CordaSerializable

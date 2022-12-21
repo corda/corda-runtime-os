@@ -9,7 +9,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateCon
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
+import net.corda.v5.ledger.utxo.StateRef
 
 /**
  * These mixins are needed because we cannot add these annotations to the API project and Jackson won't know
@@ -34,6 +34,6 @@ abstract class UniquenessCheckStateDetailsTypeMixin
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = UniquenessCheckStateRefImpl::class, name = "uniquenessStateRefImpl"),
+    JsonSubTypes.Type(value = StateRef::class, name = "stateRefImpl"),
 )
 abstract class UniquenessCheckStateRefTypeMixin

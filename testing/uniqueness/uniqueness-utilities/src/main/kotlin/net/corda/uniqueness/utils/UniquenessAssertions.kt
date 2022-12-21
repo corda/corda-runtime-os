@@ -6,15 +6,15 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.ledger.utxo.uniqueness.data.UniquenessCheckErrorTimeWindowOutOfBounds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -170,8 +170,8 @@ object UniquenessAssertions {
         )).unknownStates
         assertAll(
             { assertThat(unknownStates.size).isEqualTo(1) },
-            { assertThat(unknownStates.single().stateIndex).isEqualTo(stateIdx) },
-            { assertThat(unknownStates.single().txHash).isEqualTo(txId) })
+            { assertThat(unknownStates.single().index).isEqualTo(stateIdx) },
+            { assertThat(unknownStates.single().transactionHash).isEqualTo(txId) })
     }
 
     /**
@@ -193,8 +193,8 @@ object UniquenessAssertions {
         assertAll(
             { assertThat(conflicts.size).isEqualTo(1) },
             { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
-            { assertThat(conflicts.single().stateRef.txHash).isEqualTo(txId) },
-            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(stateIdx) })
+            { assertThat(conflicts.single().stateRef.transactionHash).isEqualTo(txId) },
+            { assertThat(conflicts.single().stateRef.index).isEqualTo(stateIdx) })
     }
 
     /**
@@ -216,8 +216,8 @@ object UniquenessAssertions {
         assertAll(
             { assertThat(conflicts.size).isEqualTo(1) },
             { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
-            { assertThat(conflicts.single().stateRef.txHash).isEqualTo(txId) },
-            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(stateIdx) })
+            { assertThat(conflicts.single().stateRef.transactionHash).isEqualTo(txId) },
+            { assertThat(conflicts.single().stateRef.index).isEqualTo(stateIdx) })
     }
 
     /**
@@ -237,8 +237,8 @@ object UniquenessAssertions {
         )).unknownStates
         assertAll(
             { assertThat(unknownStates.size).isEqualTo(1) },
-            { assertThat(unknownStates.single().stateIndex).isEqualTo(stateIdx) },
-            { assertThat(unknownStates.single().txHash).isEqualTo(txId) })
+            { assertThat(unknownStates.single().index).isEqualTo(stateIdx) },
+            { assertThat(unknownStates.single().transactionHash).isEqualTo(txId) })
     }
 
     /**
