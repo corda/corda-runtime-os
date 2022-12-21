@@ -29,10 +29,6 @@ class UtxoFilteredTransactionImpl(
     val filteredTransaction: FilteredTransaction
 ) : UtxoFilteredTransaction {
 
-    private companion object {
-        val logger = loggerFor<UtxoFilteredTransactionImpl>()
-    }
-
     override val id: SecureHash
         get() = filteredTransaction.id
 
@@ -57,7 +53,6 @@ class UtxoFilteredTransactionImpl(
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
                 is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(filteredOutputStates.size)
                 is UtxoFilteredData.Audit -> {
-                    logger.error("AUDIT VAGYOK VALAMIERT?")
                     when (val filteredStateInfos =
                         getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
                         is UtxoFilteredData.Audit -> {
@@ -110,16 +105,13 @@ class UtxoFilteredTransactionImpl(
 
 
     private inline fun <reified T : Any> getFilteredData(index: Int): UtxoFilteredData<T> {
-        logger.error("Ez vagyok: $index")
         return filteredTransaction.filteredComponentGroups[index]
             ?.let { group ->
                 when (group.merkleProof.proofType) {
                     MerkleProofType.SIZE -> {
-                        logger.error("size vagyok: $index")
                         FilteredDataSizeImpl(group.merkleProof.treeSize)
                     }
                     MerkleProofType.AUDIT -> {
-                        logger.error("audit vagyok: $index")
                         // if it's an audit proof of an empty list, we need to strip the marker
                         return if (group.merkleProof.leaves.size == 1
                             && group.merkleProof.leaves.first().leafData.size == 0)
@@ -128,7 +120,6 @@ class UtxoFilteredTransactionImpl(
                                 emptyMap()
                             )
                         else {
-                            logger.error("audit vagyok: $index")
                             FilteredDataAuditImpl(
                                 group.merkleProof.treeSize,
                                 group.merkleProof.leaves.associateBy(
