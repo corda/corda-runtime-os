@@ -26,10 +26,11 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
+import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -84,11 +85,13 @@ class CordaVNode @Activate constructor(
             val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
             val config = ConfigFactory.empty()
+                .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
                 .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(60000L))
-                .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+                .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+                .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             smartConfig = configFactory.create(config)
         }
     }
@@ -152,6 +155,19 @@ class CordaVNode @Activate constructor(
         )
     }
 
+    private fun flushHeapAfter(action: Runnable) {
+        try {
+            action.run()
+        } finally {
+            @Suppress("ExplicitGarbageCollectionCall")
+            System.gc()
+
+            Thread.sleep(WAIT_MILLIS)
+
+            vnode.flushSandboxCache()
+        }
+    }
+
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
         val holdingIdentity = HoldingIdentity(MemberX500Name.parse(X500_NAME), generateRandomId())
@@ -163,53 +179,31 @@ class CordaVNode @Activate constructor(
 
             // Checkpoint: We have created a sandbox for this CPI.
             val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
-            try {
-                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map(CpkMetadata::cpkId))
-                dumpHeap("created")
+            logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map(CpkMetadata::cpkId))
+            dumpHeap("created")
 
-                val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
-                val flowId = generateRandomId()
-                val record = Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, rpcStartFlow))
-                flowEventProcessorFactory.create(smartConfig).apply {
-                    val result = onNext(null, record)
-                    result.responseEvents.singleOrNull { evt ->
-                        evt.topic == FLOW_EVENT_TOPIC
-                    }?.also { evt ->
-                        @Suppress("unchecked_cast")
-                        onNext(result.updatedState, evt as Record<String, FlowEvent>)
-                    }
+            val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
+            val flowId = generateRandomId()
+            val record = Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, rpcStartFlow))
+            flowEventProcessorFactory.create(smartConfig).apply {
+                val result = onNext(null, record)
+                result.responseEvents.singleOrNull { evt ->
+                    evt.topic == FLOW_EVENT_TOPIC
+                }?.also { evt ->
+                    @Suppress("unchecked_cast")
+                    onNext(result.updatedState, evt as Record<String, FlowEvent>)
                 }
-            } finally {
-                destroy(sandboxContext)
             }
-
-            // Checkpoint: We have destroyed the sandbox.
-            logger.info("Destroyed sandbox")
-            dumpHeap("destroyed")
         } finally {
+            vnode.flushSandboxCache()
+
+            // Checkpoint: We have dropped the sandbox reference.
+            logger.info("Dropped sandbox")
+            dumpHeap("dropped")
+
             vnode.unloadVirtualNode(vnodeInfo)
         }
         logger.info("Unloaded CPI")
-    }
-
-    private fun destroy(context: SandboxGroupContext) {
-        if (context is AutoCloseable) {
-            logger.info("Destroying sandbox context (nicely)")
-            context.close()
-        } else {
-            // By hook, or by crook...
-            context::class.java.declaredFields.singleOrNull { field ->
-                field.type.isAssignableFrom(SandboxGroupContext::class.java)
-            }?.let { field ->
-                field.isAccessible = true
-                field.get(context)
-            }?.let { ctx ->
-                ctx as? AutoCloseable
-            }?.also { ctx ->
-                logger.info("Destroying sandbox context (nastily)")
-                ctx.close()
-            } ?: throw IllegalStateException("Sandbox $context not destroyed")
-        }
     }
 
     @Deactivate
@@ -226,9 +220,15 @@ class CordaVNode @Activate constructor(
         logger.info("Starting")
         try {
             dumpHeap("started")
-            executeSandbox("client-1", EXAMPLE_CPI_RESOURCE)
-            executeSandbox("client-2", EXAMPLE_CPI_RESOURCE)
-            executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
+            flushHeapAfter {
+                executeSandbox("client-1", EXAMPLE_CPI_RESOURCE)
+            }
+            flushHeapAfter {
+                executeSandbox("client-2", EXAMPLE_CPI_RESOURCE)
+            }
+            flushHeapAfter {
+                executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
+            }
         } catch (e: Exception) {
             logger.error("Application error", e)
         } finally {

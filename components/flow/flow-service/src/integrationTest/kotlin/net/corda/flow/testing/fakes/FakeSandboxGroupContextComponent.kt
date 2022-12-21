@@ -69,6 +69,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         TODO("Not yet implemented")
     }
 
+    override fun flushCache() {
+        TODO("Not yet implemented")
+    }
+
     override val isRunning: Boolean
         get() = true
 
