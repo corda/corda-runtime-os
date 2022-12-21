@@ -28,9 +28,9 @@ def checkConnection(){
 pipeline {
     agent {
         docker {
-            image 'build-zulu-openjdk:11'
+            image "build-zulu-openjdk:test-jdk11"
             label 'docker'
-            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryUrl 'https://engineering-docker-dev.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             args '-v /tmp:/host_tmp '
             alwaysPull true

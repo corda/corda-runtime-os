@@ -49,9 +49,9 @@ switch (params.BUILD_ARCH) {
 pipeline {
     agent {
         docker {
-            image "build-zulu-openjdk:${dockerLabel}"
-            label "${agentLabel}"
-            registryUrl 'https://engineering-docker.software.r3.com/'
+            image "build-zulu-openjdk:test-jdk11"
+            label 'docker'
+            registryUrl 'https://engineering-docker-dev.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             // Volume used to mount storage from the host as a volume to persist the cache between builds
             // Additional hosts used to facilitate access to Kafka
