@@ -302,6 +302,9 @@ class UtxoRepositoryImpl(
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)
+            // This is a workaround for avoiding error when tokenAmount is null, see:
+            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
+            .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
