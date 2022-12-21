@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
@@ -87,13 +88,13 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
