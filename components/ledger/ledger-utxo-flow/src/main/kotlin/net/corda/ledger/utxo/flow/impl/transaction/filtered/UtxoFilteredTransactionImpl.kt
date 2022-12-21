@@ -70,7 +70,7 @@ class UtxoFilteredTransactionImpl(
                             FilteredDataAuditImpl(filteredOutputStates.size, values)
                         }
 
-                        else -> FilteredDataSizeImpl(0)
+                        else -> throw FilteredDataInconsistencyException("Output infos have been removed. Cannot reconstruct outputs")
                     }
                 }
 
@@ -108,9 +108,7 @@ class UtxoFilteredTransactionImpl(
         return filteredTransaction.filteredComponentGroups[index]
             ?.let { group ->
                 when (group.merkleProof.proofType) {
-                    MerkleProofType.SIZE -> {
-                        FilteredDataSizeImpl(group.merkleProof.treeSize)
-                    }
+                    MerkleProofType.SIZE -> FilteredDataSizeImpl(group.merkleProof.treeSize)
                     MerkleProofType.AUDIT -> {
                         // if it's an audit proof of an empty list, we need to strip the marker
                         return if (group.merkleProof.leaves.size == 1
@@ -119,7 +117,7 @@ class UtxoFilteredTransactionImpl(
                                 0,
                                 emptyMap()
                             )
-                        else {
+                        else
                             FilteredDataAuditImpl(
                                 group.merkleProof.treeSize,
                                 group.merkleProof.leaves.associateBy(
@@ -129,7 +127,6 @@ class UtxoFilteredTransactionImpl(
                                     }
                                 )
                             )
-                        }
                     }
                 }
             } ?: return FilteredDataRemovedImpl()

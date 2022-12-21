@@ -46,10 +46,6 @@ class NonValidatingNotaryClientFlowImpl(
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
-    private companion object {
-        val log = loggerFor<NonValidatingNotaryClientFlowImpl>()
-    }
-
     /**
      * Constructor used for testing to initialize the necessary services
      */
