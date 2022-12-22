@@ -119,7 +119,7 @@ class UtxoPersistenceServiceImplTest {
             entityManagerFactory = ctx.getEntityManagerFactory()
             val repository = UtxoRepositoryImpl(digestService, serializationService, wireTransactionFactory)
             persistenceService = UtxoPersistenceServiceImpl(
-                entityManagerFactory.createEntityManager(),
+                entityManagerFactory,
                 repository,
                 serializationService,
                 digestService,

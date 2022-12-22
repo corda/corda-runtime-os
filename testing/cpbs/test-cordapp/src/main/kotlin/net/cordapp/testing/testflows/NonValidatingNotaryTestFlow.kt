@@ -187,7 +187,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 }
 
                 referenceStateRefs.forEach {
-                    builder = builder.addReferenceInputState(StateRef.parse(it))
+                    builder = builder.addReferenceState(StateRef.parse(it))
                 }
                 builder = builder.addSignatories(listOf(myKey))
                 builder

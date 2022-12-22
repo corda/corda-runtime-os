@@ -59,7 +59,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 FindTransactionParameters(id.toString(), transactionStatus)
             )
         }.firstOrNull()?.let {
-            serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
+            serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction(this)
         }
     }
 
@@ -128,8 +128,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {
-        return utxoSignedTransactionFactory.create(wireTransaction, signatures)
+    private fun SignedTransactionContainer.toSignedTransaction(utxoLedgerPersistenceService: UtxoLedgerPersistenceService)
+    : UtxoSignedTransaction {
+        return utxoSignedTransactionFactory.create(wireTransaction, signatures, utxoLedgerPersistenceService)
     }
 
     private fun UtxoSignedTransaction.toContainer() =

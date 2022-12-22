@@ -14,6 +14,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
 
@@ -29,8 +32,20 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
         val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
-        val inputStateRef = getUtxoInvalidStateAndRef().ref
-        val referenceStateRef = getUtxoInvalidStateAndRef().ref
+        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = inputStateAndRef.ref
+        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateRef = referenceStateAndRef.ref
+
+        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
+        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
+
+        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
+        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
+        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
+            .thenReturn(mockSignedTxForInput)
+            .thenReturn(mockSignedTxForRef)
+
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
@@ -39,7 +54,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addInputState(inputStateRef)
-            .addReferenceInputState(referenceStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)

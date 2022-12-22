@@ -98,7 +98,7 @@ class NonValidatingNotaryClientFlowImpl(
     internal fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
         val filteredTx = utxoLedgerService.filterSignedTransaction(stx)
             .withInputStates()
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStatesSize()
             .withNotary()
             .withTimeWindow()
