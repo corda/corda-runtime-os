@@ -10,6 +10,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import java.util.stream.Stream
 
 class VirtualNodeReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -29,7 +30,7 @@ class VirtualNodeReconciler(
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(dbConnectionManager))
+        Stream.of<ReconciliationContext>(ClusterReconciliationContext(dbConnectionManager))
     }
 
     override fun close() {

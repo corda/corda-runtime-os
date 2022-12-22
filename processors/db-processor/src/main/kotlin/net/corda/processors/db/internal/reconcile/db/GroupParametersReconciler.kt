@@ -20,6 +20,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
@@ -111,9 +112,9 @@ class GroupParametersReconciler(
     }
 
     private val reconciliationContextFactory = {
-        virtualNodeInfoReadService.getAll().map {
+        virtualNodeInfoReadService.getAll().map<VirtualNodeInfo, ReconciliationContext> {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
-        }
+        }.stream()
     }
 
     private fun getAllGroupParametersDBVersionedRecords(context: ReconciliationContext):

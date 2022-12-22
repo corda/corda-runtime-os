@@ -13,6 +13,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
+import net.corda.utilities.mapNotNull
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
@@ -29,7 +30,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
-    private val reconciliationContextFactory: () -> Collection<ReconciliationContext>,
+    private val reconciliationContextFactory: () -> Stream<ReconciliationContext>,
     private val doGetAllVersionedRecords: (ReconciliationContext) -> Stream<VersionedRecord<K, V>>
 ) : ReconcilerReader<K, V>, Lifecycle {
 
@@ -96,19 +97,24 @@ class DbReconcilerReader<K : Any, V : Any>(
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
         return try {
-            val streams = reconciliationContextFactory.invoke().map { context ->
-                val currentTransaction = context.getOrCreateEntityManager().transaction
-                currentTransaction.begin()
-                doGetAllVersionedRecords(context).onClose {
-                    // This class only have access to this em and transaction. This is a read only transaction,
-                    // only used for making streaming DB data possible.
-                    currentTransaction.rollback()
-                    context.close()
+            reconciliationContextFactory().mapNotNull { context ->
+                try {
+                    val currentTransaction = context.getOrCreateEntityManager().transaction
+                    currentTransaction.begin()
+                    doGetAllVersionedRecords(context).onClose {
+                        // This class only have access to this em and transaction. This is a read only transaction,
+                        // only used for making streaming DB data possible.
+                        currentTransaction.rollback()
+                        context.close()
+                    }
+                } catch (e: Exception) {
+                    logger.warn("Error while processing reconciliation record stream", e)
+                    coordinator.postEvent(GetRecordsErrorEvent(e))
+                    null
                 }
-            }
-            Stream.of(*streams.toTypedArray()).flatMap { i -> i }
+            }.flatMap { i -> i }
         } catch (e: Exception) {
-            logger.warn("Error while retrieving records for reconciliation", e)
+            logger.warn("Error while creating records stream for reconciliation", e)
             coordinator.postEvent(GetRecordsErrorEvent(e))
             null
         }
