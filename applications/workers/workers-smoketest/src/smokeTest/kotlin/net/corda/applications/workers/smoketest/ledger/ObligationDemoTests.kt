@@ -70,7 +70,8 @@ class ObligationDemoTests {
     }
 
     @Test
-    fun `Alice issues an obligation to Bob`() {
+    fun `Alice issues an obligation to Bob who then settles and deletes it`() {
+        // 1. Alice issues Bob
         val createFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf(
@@ -86,12 +87,10 @@ class ObligationDemoTests {
         assertThat(createFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(createFlowResult.flowError).isNull()
 
-        println(createFlowResult.flowResult!!)
-
         val createResults = objectMapper
             .readValue(createFlowResult.flowResult, CreateObligationResult::class.java)
 
-
+        // 2. Bob settles the obligation
         val updateFlowRequestId = startRpcFlow(
             bobHoldingId,
             mapOf(
@@ -104,8 +103,10 @@ class ObligationDemoTests {
         assertThat(updateFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(updateFlowResult.flowError).isNull()
 
-        println(updateFlowResult.flowResult!!)
+        val updateResults = objectMapper
+            .readValue(updateFlowResult.flowResult, UpdateObligationResult::class.java)
 
+        // 3. Bob deletes the obligation
         val deleteFlowRequestId = startRpcFlow(
             bobHoldingId,
             mapOf(
@@ -117,8 +118,12 @@ class ObligationDemoTests {
         assertThat(deleteFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(deleteFlowResult.flowError).isNull()
 
+        val deleteResults = objectMapper
+            .readValue(deleteFlowResult.flowResult, DeleteObligationResult::class.java)
+
     }
 
     data class CreateObligationResult(val transactionId: SecureHash, val obligationId: UUID)
     data class UpdateObligationResult(val transactionId: SecureHash)
+    data class DeleteObligationResult(val transactionId: SecureHash)
 }
