@@ -51,6 +51,7 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -110,24 +111,28 @@ open class TestBase {
     protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
     protected val ipKeyStore = readKeyStore(Certificates.ipKeyStore)
     protected val aliceSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val chipKeyStore = readKeyStore(Certificates.chipKeyStoreFile)
     protected val chipSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
     protected val daleSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-
+        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
 
     protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -174,6 +179,7 @@ open class TestBase {
                 .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
+                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
