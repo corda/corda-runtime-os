@@ -96,7 +96,7 @@ class ObligationDemoTests {
             bobHoldingId,
             mapOf(
                 "id" to createResults.obligationId,
-                "amountToSettle" to 10,
+                "amountToSettle" to 100,
             ),
             "net.cordapp.demo.obligation.workflow.UpdateObligationFlow\$Initiator"
         )
@@ -105,6 +105,17 @@ class ObligationDemoTests {
         assertThat(updateFlowResult.flowError).isNull()
 
         println(updateFlowResult.flowResult!!)
+
+        val deleteFlowRequestId = startRpcFlow(
+            bobHoldingId,
+            mapOf(
+                "id" to createResults.obligationId
+            ),
+            "net.cordapp.demo.obligation.workflow.DeleteObligationFlow\$Initiator"
+        )
+        val deleteFlowResult = awaitRpcFlowFinished(bobHoldingId, deleteFlowRequestId)
+        assertThat(deleteFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(deleteFlowResult.flowError).isNull()
 
     }
 
