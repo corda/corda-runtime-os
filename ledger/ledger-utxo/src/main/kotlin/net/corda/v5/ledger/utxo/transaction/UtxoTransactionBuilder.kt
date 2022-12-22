@@ -73,28 +73,28 @@ interface UtxoTransactionBuilder {
     fun addInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder
 
     /**
-     * Adds the specified reference input state to the current [UtxoTransactionBuilder].
+     * Adds the specified reference state to the current [UtxoTransactionBuilder].
      *
-     * @param stateRef The [StateRef] instance of the reference input state to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
+     * @param stateRef The [StateRef] instance of the reference state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference states.
      */
-    fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder
+    fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder
 
     /**
-     * Adds the specified reference input states to the current [UtxoTransactionBuilder].
+     * Adds the specified reference states to the current [UtxoTransactionBuilder].
      *
-     * @param stateRefs The [StateRef] instances of the reference input state to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
+     * @param stateRefs The [StateRef] instances of the reference state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference states.
      */
-    fun addReferenceInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder
+    fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder
 
     /**
-     * Adds the specified reference input states to the current [UtxoTransactionBuilder].
+     * Adds the specified reference states to the current [UtxoTransactionBuilder].
      *
-     * @param stateRefs The [StateRef] instances of the reference input state to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the specified reference input states.
+     * @param stateRefs The [StateRef] instances of the reference state to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the specified reference states.
      */
-    fun addReferenceInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder
+    fun addReferenceStates(vararg stateRefs: StateRef): UtxoTransactionBuilder
 
     /**
      * Adds the specified output state to the current [UtxoTransactionBuilder].

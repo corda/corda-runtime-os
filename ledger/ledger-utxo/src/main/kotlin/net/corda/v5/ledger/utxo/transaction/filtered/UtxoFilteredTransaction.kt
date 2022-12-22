@@ -18,7 +18,7 @@ import java.security.PublicKey
  * that we can still calculate and verify the transaction id as Merkle hash, but do not
  * have access to all data in the original transaction.
  *
- * For the list based data properties, there are three possiblities:
+ * For the list based data properties, there are three possibilities:
  * - The whole entry is filtered out - no further information about this data is available.
  *   This will be signified by returning an object implementing [UtxoFilteredData.Removed]
  * - Only the number of original entries is revealed, but not the actual data. In this case,
@@ -44,39 +44,39 @@ interface UtxoFilteredTransaction {
     val metadata: TransactionMetadata
 
     /**
-     * @param timeWindow The validity time window for finalizing/notarising this transaction or null if filtered
+     * @property timeWindow The validity time window for finalizing/notarising this transaction or null if filtered
      */
     val timeWindow: TimeWindow?
 
     /**
-     * @param notary The notary party for this transaction or null if filtered
+     * @property notary The notary party for this transaction or null if filtered
      */
     val notary: Party?
 
     /**
-     * @param signatories Potentially filtered list of required signers
+     * @property signatories Potentially filtered list of required signers
      */
     val signatories: UtxoFilteredData<PublicKey>
 
     /**
-     * @param inputStateRefs Potentially filtered list of input state refs
+     * @property inputStateRefs Potentially filtered list of input state refs
      */
     val inputStateRefs: UtxoFilteredData<StateRef>
 
     /**
-     * @param referenceInputStateRefs Potentially filtered list of reference state refs
+     * @property referenceStateRefs Potentially filtered list of reference state refs
      */
-    val referenceInputStateRefs: UtxoFilteredData<StateRef>
+    val referenceStateRefs: UtxoFilteredData<StateRef>
 
     /**
-     * @param outputStateRefs Potentially filtered list of outputs
+     * @property outputStateAndRefs Potentially filtered list of outputs
      * @throws FilteredDataInconsistencyException Throws if the output states and state type information
      * have been filtered inconsistently
      */
     val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
 
     /**
-     * @param commands Potentially filtered list of commands
+     * @property commands Potentially filtered list of commands
      */
     val commands: UtxoFilteredData<Command>
 
