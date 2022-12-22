@@ -13,7 +13,7 @@ data class SslConfiguration(
     val revocationCheck: RevocationConfig,
 
     /**
-     * How to validate TLS certificates in the gateway.
+     * What type of TLS connections to establish with gateways in other clusters.
      */
     val tlsType: TlsType
 )

@@ -2,12 +2,12 @@ package net.corda.p2p.gateway.messaging
 
 enum class TlsType {
     /**
-     * Only validate the TLS certificates for the gateway server.
+     * Establishes a regular TLS connection, where the server gateway will be authenticated.
      */
     ONE_WAY,
 
     /**
-     * Validate the TLS certificates for both the gateway server and client.
+     * Establishes a mutual TLS connection, where both the server and client gateway are authenticated.
      */
     MUTUAL,
 }
