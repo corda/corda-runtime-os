@@ -374,7 +374,7 @@ Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
 - "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}"
-- "--topicPrefix={{ .Values.kafka.topicPrefix }}"
+- "--topic-prefix={{ .Values.kafka.topicPrefix }}"
 {{- if .Values.kafka.tls.enabled }}
 {{- if .Values.kafka.sasl.enabled }}
 - "-msecurity.protocol=SASL_SSL"
