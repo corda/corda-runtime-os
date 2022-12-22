@@ -136,6 +136,11 @@ abstract class BuildkitBuild extends Exec {
     final Property<String> overrideEntryName =
             getObjects().property(String).convention('')
 
+    // Publishing to dockerhub
+    @Input
+    final Property<Boolean> dockerHubPublish =
+            getObjects().property(Boolean).convention(false)
+
     BuildkitBuild() {
         group = 'publishing'
 
@@ -209,6 +214,10 @@ abstract class BuildkitBuild extends Exec {
         if (!containerTag.get().isEmpty()) {
             targetTags = ["${containerTag.get()}"]
             imageRepo.add([name: targetRepo, tag: targetTags])
+        } else if (dockerHubPublish.get()) {
+            targetRepo = "corda"
+            targetTags = ["${version}"]
+            imageRepo.add([name: targetRepo, tag: targetTags])
         } else if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com"
             targetTags = ["preTest-${tagPrefix}${version}", "preTest-${tagPrefix}${gitRevision}"]
@@ -265,12 +274,12 @@ abstract class BuildkitBuild extends Exec {
                 if(isBuildx.get()){
                     logger.info("\nUsing docker Buildx\n")
                     baseCommand = ['docker', 'buildx', "build", "--file ./docker/Dockerfile"]
-                    opts = ["--build-arg BASE_IMAGE=${baseImageName}", "--build-arg BUILD_PATH=${containerizationDir.toString().replace("${project.rootDir}",".")}", "--build-arg JAR_LOCATION=${containerLocation + subDir.get()}", "--build-arg JDBC_PATH=${driverDir.toString().replace("${project.rootDir}",".")}", "--build-arg JDBC_DRIVER_LOCATION=${driverLocation}", "--build-arg IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${entryName}.jar\" "]
+                    opts = ["--build-arg BASE_IMAGE=${baseImageName}", "--build-arg BUILD_PATH=${containerizationDir.toString().replace("${project.rootDir}",".")}", "--build-arg JAR_LOCATION=${containerLocation + subDir.get()}", "--build-arg JDBC_PATH=${driverDir.toString().replace("${project.rootDir}",".")}", "--build-arg JDBC_DRIVER_LOCATION=${driverLocation}", "--build-arg IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}*${entryName}**.jar\" "]
                     commandTail = ["--${useDocker.get() ? "load" : "push"}", "--tag ${repo.name}/corda-os-${containerName.get()}:${tag}", "--cache-from ${repo.name}/corda-os-${containerName.get()}-cache", "--cache-to type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache", "."]
                 } else {
                     logger.info("\nUsing native buildkit client\n")
                     baseCommand = ['buildctl', "--addr tcp://localhost:3476", "build", "--frontend=dockerfile.v0", "--local context=/", "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
-                    opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}", "--opt build-arg:BUILD_PATH=${containerizationDir}", "--opt build-arg:JAR_LOCATION=${containerLocation + subDir.get()}", "--opt build-arg:JDBC_PATH=${driverDir}", "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}", "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${entryName}.jar\" "]
+                    opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}", "--opt build-arg:BUILD_PATH=${containerizationDir}", "--opt build-arg:JAR_LOCATION=${containerLocation + subDir.get()}", "--opt build-arg:JDBC_PATH=${driverDir}", "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}", "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}*${entryName}**.jar\" "]
                     commandTail = ["--output type=${useDocker.get() ? "docker" : "image"},name=${repo.name}/corda-os-${containerName.get()}:${tag}${useDocker.get() ? "" : ",push=true"}", "--export-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache", "--import-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache${useDocker.get() ? " | docker load" : ""}"]
                 }
 
