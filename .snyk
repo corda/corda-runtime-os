@@ -1,0 +1,46 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JAVA-ORGJETBRAINSKOTLIN-2628385:
+    - '*':
+        reason: >-
+          Gradle plugins use the version of Kotlin provided by Gradle itself, so
+          it is not susceptible to this vulnerability. In addition, this is a 
+          build-time vulnerability,  released artifacts are not affected due to
+          this.
+        expires: 2022-10-22T10:40:55.991Z
+        created: 2022-09-22T10:40:55.995Z
+  SNYK-JAVA-ORGJETBRAINSKOTLIN-2393744:
+    - '*':
+        reason: >-
+	This vulnerability relates to information exposure via creation of temporary
+	files via Kotlin functions with insecure permissions. Corda does not use any
+	of the vulnerable functions so it not susceptible to this vulnerability.
+        expires: 2023-06-19T10:40:55.991Z
+        created: 2022-09-22T10:40:55.995Z
+ SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038424:
+    - '*':
+        reason: >-
+	Corda5 Shippable artifacts do not make use of dokka-core, which is where this
+	dependency originates, this is used at compile / build time only for Kdoc 
+	generation and not shipped in any of our releasable artifacts.
+        expires: 2023-06-19T10:40:55.991Z
+        created: 2022-12-20T10:40:55.995Z
+ SNYK-JAVA-ORGJSOUP-2989728:
+    - '*':
+        reason: >-
+        Corda5 Shippable artifacts do not make use of dokka-core, which is where this
+        dependency originates, this is used at compile / build time only for Kdoc
+        generation and not shipped in any of our releasable artifacts.
+        expires: 2023-06-19T10:40:55.991Z
+        created: 2022-12-20T10:40:55.995Z
+ SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038426:
+    - '*':
+        reason: >-
+        Corda5 Shippable artifacts do not make use of dokka-core, which is where this
+        dependency originates, this is used at compile / build time only for Kdoc
+        generation and not shipped in any of our releasable artifacts.
+        expires: 2023-06-19T10:40:55.991Z
+        created: 2022-12-20T10:40:55.995Z
+patch: {}
