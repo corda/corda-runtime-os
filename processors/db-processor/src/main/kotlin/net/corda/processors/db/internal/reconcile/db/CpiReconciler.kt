@@ -30,7 +30,7 @@ class CpiReconciler(
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
-        Stream.of<ReconciliationContext>(ClusterReconciliationContext(dbConnectionManager))
+        Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
 
     override fun close() {

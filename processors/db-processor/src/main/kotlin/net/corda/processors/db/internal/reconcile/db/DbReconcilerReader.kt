@@ -30,7 +30,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
-    private val reconciliationContextFactory: () -> Stream<ReconciliationContext>,
+    private val reconciliationContextFactory: () -> Stream<out ReconciliationContext>,
     private val doGetAllVersionedRecords: (ReconciliationContext) -> Stream<VersionedRecord<K, V>>
 ) : ReconcilerReader<K, V>, Lifecycle {
 
