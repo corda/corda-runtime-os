@@ -64,7 +64,7 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
             )
             .addOutputState(utxoStateExample)
             .addInputState(inputStateRef)
-            .addReferenceInputState(referenceStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))

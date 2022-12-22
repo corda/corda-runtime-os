@@ -65,7 +65,7 @@ class WrappedUtxoWireTransaction(
         deserialize(UtxoComponentGroup.INPUTS)
     }
 
-    val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val referenceStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         deserialize(UtxoComponentGroup.REFERENCES)
     }
 

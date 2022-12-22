@@ -56,14 +56,14 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
 
 
     private fun verifyInputNotaries(notary: Party) {
-        val allInputs = transaction.inputTransactionStates + transaction.referenceInputTransactionStates
+        val allInputs = transaction.inputTransactionStates + transaction.referenceTransactionStates
         if(allInputs.isEmpty())
             return
         check(allInputs.map { it.notary }.distinct().size == 1) {
-            "Input and Reference input states' notaries need to be the same. ${allInputs.map { it.notary }.distinct().size}"
+            "Input and Reference states' notaries need to be the same. ${allInputs.map { it.notary }.distinct().size}"
         }
         check(allInputs.first().notary == notary) {
-            "Input and Reference input states' notaries need to be the same as the $subjectClass's notary."
+            "Input and Reference states' notaries need to be the same as the $subjectClass's notary."
         }
         // TODO CORE-8958 check rotated notaries
     }

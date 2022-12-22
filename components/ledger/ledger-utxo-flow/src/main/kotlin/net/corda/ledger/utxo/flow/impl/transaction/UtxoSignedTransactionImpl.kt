@@ -45,7 +45,7 @@ data class UtxoSignedTransactionImpl(
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() = wrappedWireTransaction.outputStateAndRefs
     override val referenceStateRefs: List<StateRef>
-        get() = wrappedWireTransaction.referenceInputStateRefs
+        get() = wrappedWireTransaction.referenceStateRefs
     override val timeWindow: TimeWindow
         get() = wrappedWireTransaction.timeWindow
     override val signatories: List<PublicKey>

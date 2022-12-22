@@ -28,7 +28,7 @@ data class UtxoTransactionBuilderImpl(
     override val commands: List<Command> = emptyList(),
     override val signatories: List<PublicKey> = emptyList(),
     override val inputStateRefs: List<StateRef> = emptyList(),
-    override val referenceInputStateRefs: List<StateRef> = emptyList(),
+    override val referenceStateRefs: List<StateRef> = emptyList(),
     override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
@@ -63,16 +63,16 @@ data class UtxoTransactionBuilderImpl(
         return addInputStates(stateRefs.toList())
     }
 
-    override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
-        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRef)
+    override fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(referenceStateRefs = referenceStateRefs + stateRef)
     }
 
-    override fun addReferenceInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
-        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRefs)
+    override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        return copy(referenceStateRefs = referenceStateRefs + stateRefs)
     }
 
-    override fun addReferenceInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
-        return addReferenceInputStates(stateRefs.toList())
+    override fun addReferenceStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
+        return addReferenceStates(stateRefs.toList())
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
@@ -163,7 +163,7 @@ data class UtxoTransactionBuilderImpl(
                 && other.attachments == attachments
                 && other.commands == commands
                 && other.inputStateRefs == inputStateRefs
-                && other.referenceInputStateRefs == referenceInputStateRefs
+                && other.referenceStateRefs == referenceStateRefs
                 && other.outputStates == outputStates
                 && other.signatories == signatories
     }
@@ -175,7 +175,7 @@ data class UtxoTransactionBuilderImpl(
         commands,
         signatories,
         inputStateRefs,
-        referenceInputStateRefs,
+        referenceStateRefs,
         outputStates,
     )
 

@@ -49,7 +49,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addInputState(inputStateRef)
-            .addReferenceInputState(referenceStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
@@ -75,10 +75,10 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         assertEquals(inputStateAndRef, ledgerTransaction.inputStateAndRefs.first())
         assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.inputStateAndRefs.first())
 
-        assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.referenceInputStateAndRefs)
-        assertEquals(1, ledgerTransaction.referenceInputStateAndRefs.size)
-        assertEquals(referenceStateAndRef, ledgerTransaction.referenceInputStateAndRefs.first())
-        assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.referenceInputStateAndRefs.first())
+        assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.referenceStateAndRefs)
+        assertEquals(1, ledgerTransaction.referenceStateAndRefs.size)
+        assertEquals(referenceStateAndRef, ledgerTransaction.referenceStateAndRefs.first())
+        assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.referenceStateAndRefs.first())
 
         // TODO Also test Commands and Attachments when they get deserialized properly.
     }

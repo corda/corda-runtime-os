@@ -35,7 +35,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withTimeWindow()
             .withSignatories()
             .withInputStates()
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStates()
             .withCommands()
             .build()
@@ -56,8 +56,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.referenceStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.referenceStateRefs)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
@@ -82,7 +82,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat(utxoFilteredTransaction.timeWindow).isNull()
         assertThat(utxoFilteredTransaction.signatories).isInstanceOf(UtxoFilteredData.Removed::class.java)
         assertThat(utxoFilteredTransaction.inputStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
         assertThat(utxoFilteredTransaction.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
 
@@ -114,7 +114,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values)
@@ -162,7 +162,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withTimeWindow()
             .withSignatoriesSize()
             .withInputStatesSize()
-            .withReferenceInputStatesSize()
+            .withReferenceStatesSize()
             .withOutputStatesSize()
             .withCommandsSize()
             .build()
@@ -183,8 +183,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
             .isEqualTo(utxoSignedTransaction.inputStateRefs.size)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        assertThat((utxoFilteredTransaction.referenceStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
             .isEqualTo(utxoSignedTransaction.referenceStateRefs.size)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
@@ -202,7 +202,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
     fun `create filtered transaction with the notary setup`() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withInputStates()
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStatesSize()
             .withNotary()
             .withTimeWindow()
@@ -222,8 +222,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.referenceStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.referenceStateRefs)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
@@ -240,7 +240,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val utxoSignedTransaction = createSignedTransaction(numberOfOutputStates = 0)
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withInputStates()
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStatesSize()
             .withNotary()
             .withTimeWindow()
@@ -258,7 +258,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         val utxoSignedTransaction = createSignedTransaction(numberOfInputStates = 0)
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
             .withInputStates()
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStatesSize()
             .withNotary()
             .withTimeWindow()
@@ -297,7 +297,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.inputStateRefs)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Removed::class.java)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         assertThat((utxoFilteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values)
@@ -317,7 +317,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withTimeWindow()
             .withSignatories { it == utxoSignedTransaction.signatories.single() }
             .withInputStates { it == utxoSignedTransaction.inputStateRefs[1] }
-            .withReferenceInputStates()
+            .withReferenceStates()
             .withOutputStates { it == utxoSignedTransaction.outputStateAndRefs.first().state.contractState }
             .withCommands { true }
             .build()
@@ -339,8 +339,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactly(utxoSignedTransaction.inputStateRefs[1])
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        assertThat((utxoFilteredTransaction.referenceStateRefs as UtxoFilteredData.Audit<StateRef>).values.values)
             .containsExactlyElementsOf(utxoSignedTransaction.referenceStateRefs)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
@@ -361,7 +361,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             .withTimeWindow()
             .withSignatories { false }
             .withInputStates { false }
-            .withReferenceInputStates { false }
+            .withReferenceStates { false }
             .withOutputStates { false }
             .withCommands { false }
             .build()
@@ -382,8 +382,8 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThat((utxoFilteredTransaction.inputStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
             .isEqualTo(utxoSignedTransaction.inputStateRefs.size)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
-        assertThat((utxoFilteredTransaction.referenceInputStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
+        assertThat(utxoFilteredTransaction.referenceStateRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        assertThat((utxoFilteredTransaction.referenceStateRefs as UtxoFilteredData.SizeOnly<StateRef>).size)
             .isEqualTo(utxoSignedTransaction.referenceStateRefs.size)
 
         assertThat(utxoFilteredTransaction.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)

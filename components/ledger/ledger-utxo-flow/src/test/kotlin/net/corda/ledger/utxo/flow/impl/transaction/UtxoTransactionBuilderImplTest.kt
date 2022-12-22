@@ -44,7 +44,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addInputState(inputStateRef)
-            .addReferenceInputState(referenceStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
@@ -163,7 +163,7 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .addEncumberedOutputStates("encumbrance 1",
                 UtxoStateClassExample("test 6", listOf(publicKeyExample)))
             .addInputState(inputStateRef)
-            .addReferenceInputState(referenceStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))

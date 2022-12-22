@@ -14,7 +14,7 @@ import java.security.PublicKey
 class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
     override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val referenceInputStateAndRefs: List<StateAndRef<*>>
+    override val referenceStateAndRefs: List<StateAndRef<*>>
 ) : UtxoLedgerTransaction {
 
     override val id: SecureHash
@@ -38,8 +38,8 @@ class UtxoLedgerTransactionImpl(
     override val inputStateRefs: List<StateRef>
         get() = wrappedWireTransaction.inputStateRefs
 
-    override val referenceInputStateRefs: List<StateRef>
-        get() = wrappedWireTransaction.referenceInputStateRefs
+    override val referenceStateRefs: List<StateRef>
+        get() = wrappedWireTransaction.referenceStateRefs
 
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() = wrappedWireTransaction.outputStateAndRefs
@@ -61,12 +61,12 @@ class UtxoLedgerTransactionImpl(
         return inputContractStates.filterIsInstance(type)
     }
 
-    override fun <T : ContractState> getReferenceInputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
-        return referenceInputStateAndRefs.filterIsContractStateInstance(type)
+    override fun <T : ContractState> getReferenceStateAndRefs(type: Class<T>): List<StateAndRef<T>> {
+        return referenceStateAndRefs.filterIsContractStateInstance(type)
     }
 
-    override fun <T : ContractState> getReferenceInputStates(type: Class<T>): List<T> {
-        return referenceInputContractStates.filterIsInstance(type)
+    override fun <T : ContractState> getReferenceStates(type: Class<T>): List<T> {
+        return referenceContractStates.filterIsInstance(type)
     }
 
     override fun <T : ContractState> getOutputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {

@@ -168,7 +168,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 UtxoComponentGroup.COMMANDS -> utxoTransactionBuilder.commands.map {
                     serializationService.serialize(it).bytes
                 }
-                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceInputStateRefs.map {
+                UtxoComponentGroup.REFERENCES -> utxoTransactionBuilder.referenceStateRefs.map {
                     serializationService.serialize(it).bytes
                 }
             }
