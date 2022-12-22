@@ -69,8 +69,8 @@ class UtxoDemoFlow : RPCStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            val notary = notaryLookup.notaryServices.first()
-            val notaryKey = memberLookup.lookup().first {
+            val notary = notaryLookup.notaryServices.single()
+            val notaryKey = memberLookup.lookup().single {
                 it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
             }.ledgerKeys.first()
             // TODO CORE-6173 use proper notary key
