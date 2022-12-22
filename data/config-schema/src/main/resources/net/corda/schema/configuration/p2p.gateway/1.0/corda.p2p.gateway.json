@@ -25,24 +25,32 @@
       "pattern": "^\\/[\\/.a-zA-Z0-9-]*$"
     },
     "sslConfig": {
-      "description": "Used for one-way TLS between Gateways.",
+      "description": "Used for TLS between Gateways.",
       "type": "object",
       "default": {},
       "properties": {
         "revocationCheck": {
           "type": "object",
           "default": {},
-          "description": "How to check for revocation of the server certificate.",
+          "description": "How to check for revocation of the TLS certificate.",
           "properties": {
             "mode": {
-            "oneOf": [
-              {"const": "SOFT_FAIL", "title": "The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details."},
-              {"const": "HARD_FAIL", "title": "Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."},
-              {"const": "OFF", "title": "Switch CRL check off."}
-            ],
-            "default": "SOFT_FAIL"
-           }
+              "oneOf": [
+                {"const": "SOFT_FAIL", "title": "The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details."},
+                {"const": "HARD_FAIL", "title": "Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."},
+                {"const": "OFF", "title": "Switch CRL check off."}
+              ],
+              "default": "SOFT_FAIL"
+            }
           }
+        },
+        "tlsType": {
+          "description": "What kind of TLS connections to establish between the gateways in our cluster and gateways in other clusters. This setting MUST be the same on all Gateways that need to communicate via HTTPS.",
+          "oneOf": [
+            {"const": "ONE_WAY", "title": "Establishes a regular TLS connection, where the server gateway will be authenticated."},
+            {"const": "MUTUAL", "title": "Establishes a mutual TLS connection, where both the server and client gateway are authenticated."}
+          ],
+          "default": "ONE_WAY"
         },
         "additionalProperties": false
       }
