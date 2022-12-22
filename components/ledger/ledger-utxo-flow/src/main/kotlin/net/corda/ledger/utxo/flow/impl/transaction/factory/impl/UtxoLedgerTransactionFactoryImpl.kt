@@ -30,17 +30,24 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     override fun create(
         wireTransaction: WireTransaction
     ): UtxoLedgerTransaction {
-        // todo optimize to load one tx once only
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
+        val sourceTransactions =
+            (wrappedUtxoWireTransaction.inputStateRefs + wrappedUtxoWireTransaction.referenceStateRefs)
+                .map { it.transactionHash }
+                .toSet()
+                .associateWith { it ->
+                    utxoLedgerPersistenceService.find(it)?.outputStateAndRefs
+                        ?: throw (CordaRuntimeException("Input state not found it"))
+                }
         val inputStateAndRefs =
             wrappedUtxoWireTransaction.inputStateRefs.map { it ->
-                utxoLedgerPersistenceService.find(it.transactionHash)?.outputStateAndRefs?.get(it.index)
+                sourceTransactions[it.transactionHash]?.get(it.index)
                     ?: throw (CordaRuntimeException("Input state not found ${it.transactionHash} ${it.index}"))
             }
 
         val referenceStateAndRefs =
             wrappedUtxoWireTransaction.referenceStateRefs.map { it ->
-                utxoLedgerPersistenceService.find(it.transactionHash)?.outputStateAndRefs?.get(it.index)
+                sourceTransactions[it.transactionHash]?.get(it.index)
                     ?: throw (CordaRuntimeException("Reference state not found ${it.transactionHash} ${it.index}"))
             }
 
