@@ -89,12 +89,16 @@ class DeleteObligationFlow(
                 utxoLedgerService.findUnconsumedStatesByType(ObligationState::class.java)
                     .first { it.state.contractState.id == request.id }
 
-
             val issuer = memberLookup.lookup(oldObligation.state.contractState.issuer)
                 ?: throw IllegalArgumentException("Unknown issuer: ${oldObligation.state.contractState.issuer}.")
 
-            // TODO : If this flow can be called by either party, we need the flow session for the counter-party.
-            val sessions = flowMessaging.initiateFlows(issuer)
+            val holder = memberLookup.lookup(oldObligation.state.contractState.holder)
+                ?: throw IllegalArgumentException("Unknown holder: ${oldObligation.state.contractState.holder}.")
+
+            // Since both parties can start this flow, we initiate the session with our counterparty.
+            val myInfo = memberLookup.myInfo()
+            val counterParty = listOf(issuer, holder).single { it != myInfo }
+            val sessions = flowMessaging.initiateFlows(counterParty)
 
             val deleteObligationFlow = DeleteObligationFlow(oldObligation, sessions)
 
