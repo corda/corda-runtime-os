@@ -19,7 +19,6 @@ import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.obligation.contract.ObligationContract
 import net.cordapp.demo.obligation.contract.ObligationState
-import net.cordapp.demo.obligation.getNotaryParty
 import net.cordapp.demo.obligation.initiateFlows
 import net.cordapp.demo.obligation.messages.CreateObligationRequestMessage
 import net.cordapp.demo.obligation.messages.CreateObligationResponseMessage
@@ -91,7 +90,13 @@ class CreateObligationFlow(
             val holder = memberLookup.lookup(request.holder)
                 ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
 
-            val notary = memberLookup.lookup(request.notary)?.getNotaryParty(memberLookup, request.notaryService)
+            // TODO CORE-6173 use proper notary keyand NotaryLookup service here.
+            val notary = memberLookup.lookup(request.notary)?.let { _ ->
+                val notaryKey = memberLookup.lookup().single {
+                    it.memberProvidedContext["corda.notary.service.name"] == request.notaryService.toString()
+                }.ledgerKeys[0]
+                Party(request.notaryService, notaryKey)
+            }
                 ?: throw IllegalArgumentException("Unknown notary: ${request.notaryService}.")
 
             val sessions = flowMessaging.initiateFlows(holder)
