@@ -373,8 +373,8 @@ include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
 include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:ledger-consensual-demo-app'
-include 'testing:cpbs:ledger-obligation-demo-app:ledger-obligation-demo-contract'
-include 'testing:cpbs:ledger-obligation-demo-app:ledger-obligation-demo-workflow'
+include 'testing:cpbs:ledger-obligation-demo-contract'
+include 'testing:cpbs:ledger-obligation-demo-app'
 include 'testing:cpbs:ledger-utxo-demo-app'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:test-cordapp'
@@ -504,6 +504,3 @@ gradleEnterprise {
         }
     }
 }
-include 'testing:cpbs:ledger-utxo-demo-app'
-findProject(':testing:cpbs:ledger-utxo-demo-app')?.name = 'ledger-utxo-demo-app'
-

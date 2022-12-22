@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import java.math.BigDecimal
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
@@ -26,7 +27,7 @@ class ObligationDemoTests {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-obligation-demo-app"
-        const val TEST_CPB_LOCATION = "/META-INF/ledger-obligation-demo-workflow.cpb"
+        const val TEST_CPB_LOCATION = "/META-INF/ledger-obligation-demo-app.cpb"
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
@@ -121,9 +122,52 @@ class ObligationDemoTests {
         val deleteResults = objectMapper
             .readValue(deleteFlowResult.flowResult, DeleteObligationResult::class.java)
 
+        // 4. Verify if all the three transactions are in both Alice's and Bob's vaults.
+
+        for (holdingId in listOf(aliceHoldingId, bobHoldingId)) {
+            listOf(
+                TestCase(createResults.transactionId, 2, 1),
+                TestCase(updateResults.transactionId, 2, 1),
+                TestCase(deleteResults.transactionId, 0, 2)
+            ). forEach {
+                val findTransactionFlowRequestId = startRpcFlow(
+                    holdingId,
+                    mapOf("transactionId" to it.transactionId.toString()),
+                    "net.cordapp.demo.obligation.workflow.FindTransactionFlow"
+                )
+                val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
+                assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+                assertThat(transactionResult.flowError).isNull()
+
+                val parsedResult = objectMapper
+                    .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
+
+                assertThat(parsedResult.transaction).withFailMessage {
+                    "Member with holding identity $holdingId did not receive the transaction $it.transactionId"
+                }.isNotNull
+                assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(it.transactionId.toString())
+                assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(it.expectedParticipantSize)
+                assertThat(parsedResult.transaction.signatories).hasSize(it.expectedSignatoriesSize)
+            }
+        }
     }
+
+    data class TestCase(val transactionId: SecureHash, val expectedParticipantSize: Int, val expectedSignatoriesSize: Int)
 
     data class CreateObligationResult(val transactionId: SecureHash, val obligationId: UUID)
     data class UpdateObligationResult(val transactionId: SecureHash)
     data class DeleteObligationResult(val transactionId: SecureHash)
+
+    data class ObligationStateResult(val amount: BigDecimal, val id: UUID, val participants: List<ByteArray>)
+
+    data class ObligationTransactionResult(
+        val id: SecureHash,
+        val states: List<ObligationStateResult>,
+        val signatories: List<ByteArray>
+    )
+
+    data class FindTransactionResponse(
+        val transaction: ObligationTransactionResult?,
+        val errorMessage: String?
+    )
 }
