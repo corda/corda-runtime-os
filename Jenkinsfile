@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 @Library('corda-shared-build-pipeline-steps@jansz/CORE-4935/buildkit-nightly-pipeline') _
-=======
-@Library('corda-shared-build-pipeline-steps@jansz/CORE-4935/buildkit-nightly') _
->>>>>>> 8cdbf380c (NOTICK: use correct Jenkins file for testing)
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
