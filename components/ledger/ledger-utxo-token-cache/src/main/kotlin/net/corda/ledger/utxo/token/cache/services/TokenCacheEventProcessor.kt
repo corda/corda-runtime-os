@@ -57,7 +57,7 @@ class TokenCacheEventProcessor constructor(
             )
         } catch (e: Exception) {
             log.error("Unexpected error while processing event '${event}'. The event will be sent to the DLQ.", e)
-            return StateAndEventProcessor.Response(state, listOf(), markForDLQ = true)
+            return StateAndEventProcessor.Response(state, listOf(), processingStatus = StateAndEventProcessor.Response.ProcessingStatus.SEND_TO_DLQ)
         }
     }
 }

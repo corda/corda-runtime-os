@@ -5,6 +5,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
+import net.corda.flow.pipeline.exceptions.FlowStrayEventException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -60,13 +61,24 @@ interface FlowEventExceptionProcessor {
     /**
      * Processes a [FlowEventException] and provides the pipeline response.
      *
-     * Invoked if an event should be discarded, for example a spurious wakeup or a session event for a failed session.
+     * Invoked if event processing failed, for example a session event for a failed session.
      *
      * @param exception The [FlowEventException] thrown during processing
      *
      * @return The updated response.
      */
     fun process(exception: FlowEventException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+
+    /**
+     * Processes a [FlowStrayEventException] and provides the pipeline response.
+     *
+     * Invoked if an event should be discarded, for example a spurious wakeup.
+     *
+     * @param exception The [FlowStrayEventException] thrown during processing
+     *
+     * @return The updated response.
+     */
+    fun process(exception: FlowStrayEventException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes a [FlowPlatformException] and provides the pipeline response.

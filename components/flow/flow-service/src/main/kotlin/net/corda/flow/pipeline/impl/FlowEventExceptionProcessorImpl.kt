@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
+import net.corda.flow.pipeline.exceptions.FlowStrayEventException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -137,6 +138,14 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         log.warn("A non critical error was reported while processing the event: ${exception.message}")
+        flowEventContextConverter.convert(context)
+    }
+
+    override fun process(
+        exception: FlowStrayEventException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+        log.warn("A stray event was discarded: ${exception.message}")
         flowEventContextConverter.convert(context)
     }
 
