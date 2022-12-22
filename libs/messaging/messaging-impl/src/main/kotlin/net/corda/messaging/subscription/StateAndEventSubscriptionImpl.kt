@@ -176,6 +176,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
+    @Suppress("NestedBlockDepth")
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
