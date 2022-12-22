@@ -73,9 +73,10 @@ class ConcurrentFlowMessaging(
 
         val responderClass = fiber.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
-            log.info("Matched protocol with responder instance")
-            fiber.lookUpResponderInstance(x500Name, protocol)
+            val foundResponder = fiber.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
+            log.info("Matched protocol with responder instance $foundResponder")
+            foundResponder
         } else {
             log.info("Matched protocol with responder class $responderClass")
             flowFactory.createResponderFlow(x500Name, responderClass)

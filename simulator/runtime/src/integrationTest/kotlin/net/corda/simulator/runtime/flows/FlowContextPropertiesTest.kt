@@ -1,6 +1,5 @@
 package net.corda.simulator.runtime.flows
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.runtime.testutils.createMember

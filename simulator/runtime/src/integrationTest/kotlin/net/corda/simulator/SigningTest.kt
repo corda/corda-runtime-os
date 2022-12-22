@@ -1,7 +1,6 @@
 package net.corda.simulator
 
 import net.corda.simulator.crypto.HsmCategory
-import net.corda.simulator.exceptions.NoKeyGeneratedException
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.crypto.SigningService

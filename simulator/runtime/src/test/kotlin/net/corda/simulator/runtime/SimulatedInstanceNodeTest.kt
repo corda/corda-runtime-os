@@ -44,7 +44,6 @@ class SimulatedInstanceNodeTest {
             flow,
             fiber,
             injector,
-            flowFactory,
             flowManager
         )
 
