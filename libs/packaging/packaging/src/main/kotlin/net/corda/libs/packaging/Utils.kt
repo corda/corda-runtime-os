@@ -63,17 +63,18 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     }.takeIf { counter > 0 }
 }
 
-fun Collection<Certificate>.signerSummaryHash(): SecureHash {
+fun Sequence<Certificate>.signerSummaryHash(): SecureHash? =
+    map {
+        it as? X509Certificate
+            ?: throw IllegalArgumentException("Certificate should be of type ${X509Certificate::class.java.name}")
+        MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash()
+    }.summaryHash()
+
+fun Collection<Certificate>.signerSummaryHashForRequiredSigners(): SecureHash {
     require(size > 0) {
         "Can't create signer summary hash on an empty signers set"
     }
-    return asSequence()
-        .map {
-            it as? X509Certificate
-                ?: throw IllegalArgumentException("Certificate should be of type ${X509Certificate::class.java.name}")
-            MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash()
-        }
-        .summaryHash()!!
+    return asSequence().signerSummaryHash()!!
 }
 
 private const val DEFAULT_VERIFY_JAR_SIGNATURES_KEY = "net.corda.packaging.jarSignatureVerification"

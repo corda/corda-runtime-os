@@ -2,7 +2,7 @@ package net.corda.libs.packaging.verify.internal.cpk
 
 import net.corda.libs.packaging.CpkDocumentReader
 import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.libs.packaging.signerSummaryHash
+import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import java.io.InputStream
 import java.security.CodeSigner
 import java.util.NavigableSet
@@ -21,7 +21,7 @@ class CpkDependencies(private val jarName: String, inputStream: InputStream, cpk
     /** Replace any "same as me" placeholders with CPK's actual summary hash */
     private fun replacePlaceholders(cpkCodeSigners: Array<CodeSigner>) {
         val certificates = cpkCodeSigners.map { it.signerCertPath.certificates.first() }.toSet()
-        val cpkSummaryHash = certificates.signerSummaryHash()
+        val cpkSummaryHash = certificates.signerSummaryHashForRequiredSigners()
         dependencies = dependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === CpkDocumentReader.SAME_SIGNER_PLACEHOLDER) {
                 CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)

@@ -6,9 +6,9 @@ import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
 import net.corda.libs.packaging.verify.internal.singleOrThrow
 import java.util.jar.JarEntry
@@ -25,7 +25,7 @@ class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
     val id: CpkIdentifier
         get() {
             val certificates = codeSigners.map { it.signerCertPath.certificates.first() }.toSet()
-            val cpkSummaryHash = certificates.signerSummaryHash()
+            val cpkSummaryHash = certificates.signerSummaryHashForRequiredSigners()
             with (mainBundle.manifest.mainAttributes) {
                 return CpkIdentifier(getValue(CPK_BUNDLE_NAME_ATTRIBUTE), getValue(CPK_BUNDLE_VERSION_ATTRIBUTE), cpkSummaryHash)
             }

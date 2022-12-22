@@ -7,7 +7,6 @@ import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER
 import net.corda.libs.packaging.PackagingConstants.JAR_FILE_EXTENSION
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -20,6 +19,7 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.IOException
@@ -106,7 +106,7 @@ internal object CpkLoaderV1 : CpkLoader {
                 cpkId = CpkIdentifier(
                     cordappManifest!!.bundleSymbolicName,
                     cordappManifest!!.bundleVersion,
-                    cordappCertificates!!.signerSummaryHash()
+                    cordappCertificates!!.signerSummaryHashForRequiredSigners()
                 ),
                 type = cpkType,
                 manifest = cpkManifest!!,
@@ -195,7 +195,7 @@ internal object CpkLoaderV1 : CpkLoader {
         }
 
         // Replace any "same as me" placeholders with this CPK's actual summary hash.
-        val cpkSummaryHash = certificates.signerSummaryHash()
+        val cpkSummaryHash = certificates.signerSummaryHashForRequiredSigners()
         ctx.cpkDependencies = ctx.cpkDependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === SAME_SIGNER_PLACEHOLDER) {
                 CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)

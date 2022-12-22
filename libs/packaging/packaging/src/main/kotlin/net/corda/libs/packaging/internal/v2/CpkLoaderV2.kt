@@ -25,6 +25,7 @@ import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v1.SignatureCollector
 import net.corda.libs.packaging.signerSummaryHash
+import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -85,7 +86,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
-        val signerSummaryHash = cordappCertificates.signerSummaryHash()
+        val signerSummaryHash = cordappCertificates.signerSummaryHashForRequiredSigners()
 
         // List all libraries
         val libNames = readLibNames(cpkEntries)
