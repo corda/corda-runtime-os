@@ -73,14 +73,12 @@ abstract class BuildkitBuild extends Exec {
     // Currently supported tools are docker buildx and native builkit 
     // NOTE: native buidkit requires port forwarding to the aws buildkit cluster
     @Input
-<<<<<<< HEAD
+
     final Property<Boolean> isBuildx =
             getObjects().property(Boolean).convention(true)
 
     // Handle for loading images into docker
     @Input
-=======
->>>>>>> ba73a313a (NOTICK: add BuildKit changes pt 2)
     final Property<Boolean> useShortName =
             getObjects().property(Boolean).convention(false)
 
@@ -253,7 +251,6 @@ abstract class BuildkitBuild extends Exec {
             ExecShellCommand(cmd)
         }
 
-<<<<<<< HEAD
         String[] baseCommand = []
         String[] opts = []
         String[] commandTail = []
@@ -273,13 +270,6 @@ abstract class BuildkitBuild extends Exec {
                     opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}", "--opt build-arg:BUILD_PATH=${containerizationDir}", "--opt build-arg:JAR_LOCATION=${containerLocation + subDir.get()}", "--opt build-arg:JDBC_PATH=${driverDir}", "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}", "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${entryName}.jar\" "]
                     commandTail = ["--output type=${useDocker.get() ? "docker" : "image"},name=${repo.name}/corda-os-${containerName.get()}:${tag}${useDocker.get() ? "" : ",push=true"}", "--export-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache", "--import-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache${useDocker.get() ? " | docker load" : ""}"]
                 }
-=======
-        for (repo in imageRepo) {
-            for (tag in repo.tag) {
-                String[] baseCommand = ['buildctl', "--addr tcp://localhost:3476", "build", "--frontend=dockerfile.v0", "--local context=/", "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
-                String[] opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}", "--opt build-arg:BUILD_PATH=${containerizationDir}", "--opt build-arg:JAR_LOCATION=${containerLocation + subDir.get()}", "--opt build-arg:JDBC_PATH=${driverDir}", "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}", "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${entryName}.jar\" "]
-                String[] commandTail = ["--output type=image,name=${repo.name}/corda-os-${containerName.get()}:${tag},push=true", "--export-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache", "--import-cache type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache"]
->>>>>>> ba73a313a (NOTICK: add BuildKit changes pt 2)
 
                 String[] buildkitCommand = baseCommand + opts + commandTail
 
