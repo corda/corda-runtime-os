@@ -73,11 +73,14 @@ abstract class BuildkitBuild extends Exec {
     // Currently supported tools are docker buildx and native builkit 
     // NOTE: native buidkit requires port forwarding to the aws buildkit cluster
     @Input
-
     final Property<Boolean> isBuildx =
             getObjects().property(Boolean).convention(true)
 
     // Handle for loading images into docker
+    @Input
+    final Property<Boolean> useDocker =
+            getObjects().property(Boolean).convention(false)
+
     @Input
     final Property<Boolean> useShortName =
             getObjects().property(Boolean).convention(false)
