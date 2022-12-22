@@ -94,12 +94,12 @@ class UtxoRepositoryImpl(
                 SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
                 FROM {h-schema}utxo_transaction_component AS tc
                 WHERE EXISTS (
-                    SELECT * FROM {h-schema}utxo_transaction_output AS to,
+                    SELECT * FROM {h-schema}utxo_transaction_output AS out,
                         {h-schema}utxo_relevant_transaction_state AS rts
-                    WHERE ot.transaction_id = tc.transaction_id
-                    AND ot.group_idx = tc.group_idx
-                    AND ot.leaf_idx = tc.leaf_idx
-                    AND jsonb_path_exists(ot.json_representation, :jPath) 
+                    WHERE out.transaction_id = tc.transaction_id
+                    AND out.group_idx = tc.group_idx
+                    AND out.leaf_idx = tc.leaf_idx
+                    AND jsonb_path_exists(out.json_representation, CAST(:jPath AS jsonpath)) 
                     AND rts.transaction_id = tc.transaction_id
                     AND rts.group_idx = tc.group_idx
                     AND rts.leaf_idx = tc.leaf_idx

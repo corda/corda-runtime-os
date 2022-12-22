@@ -213,6 +213,59 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `find unconsumed relevant transaction states that match JPath expression`() {
+        val createdTs = TEST_CLOCK.instant()
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = createSignedTransaction(createdTs)
+        val transaction2 = createSignedTransaction(createdTs)
+        entityManagerFactory.transaction { em ->
+
+            em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
+
+            val transaction1Entity = createTransactionEntity(entityFactory, transaction1)
+                .also { em.persist(it) }
+            val transaction2Entity = createTransactionEntity(entityFactory, transaction2)
+                .also { em.persist(it) }
+
+            entityFactory.createUtxoRelevantTransactionStateEntity(
+                transaction1Entity,
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                1,
+                false,
+                createdTs
+            ).also { em.persist(it) }
+            entityFactory.createUtxoRelevantTransactionStateEntity(
+                transaction2Entity,
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                0,
+                false,
+                createdTs
+            ).also { em.persist(it) }
+            entityFactory.createUtxoRelevantTransactionStateEntity(
+                transaction2Entity,
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                1,
+                true,
+                createdTs
+            ).also { em.persist(it) }
+        }
+
+        val stateClass = TestContractState2::class.java
+        val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass, "\$ ? (@.name == \"state1\")")
+        assertThat(unconsumedStates).isNotNull
+        assertThat(unconsumedStates.size).isEqualTo(1)
+        val state = unconsumedStates.first()
+        val transactionId = state[0].decodeToString()
+        assertThat(transactionId).isEqualTo(transaction1.id.toString())
+        val leafIndex = state[1].decodeToString().toInt()
+        assertThat(leafIndex).isEqualTo(1)
+        val outputInfo = state[2]
+        assertThat(outputInfo).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
+        val output = state[3]
+        assertThat(output).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
+    }
+
+    @Test
     fun `update transaction status`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -527,11 +580,22 @@ class UtxoPersistenceServiceImplTest {
     class TestContractState1 : ContractState {
         override val participants: List<PublicKey>
             get() = emptyList()
+
+        override fun toJsonRepresentation() = """
+            {
+                "name" : "state1"
+            }
+        """.trimIndent()
     }
 
     class TestContractState2 : ContractState {
         override val participants: List<PublicKey>
             get() = emptyList()
+        override fun toJsonRepresentation() = """
+            {
+                "name" : "state2"
+            }
+        """.trimIndent()
     }
 
 
