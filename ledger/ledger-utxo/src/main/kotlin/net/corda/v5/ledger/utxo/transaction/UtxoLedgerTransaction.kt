@@ -20,9 +20,9 @@ import java.security.PublicKey
  * @property inputStateAndRefs The input states and state references to be consumed by the current [UtxoLedgerTransaction].
  * @property inputTransactionStates The input transaction states to be consumed by the current [UtxoLedgerTransaction].
  * @property inputContractStates The input contract states to be consumed by the current [UtxoLedgerTransaction].
- * @property referenceInputStateAndRefs The input states and state referenced to be referenced by the current [UtxoLedgerTransaction].
- * @property referenceInputTransactionStates The input transaction states to be referenced by the current [UtxoLedgerTransaction].
- * @property referenceInputContractStates The input contract states to be referenced by the current [UtxoLedgerTransaction].
+ * @property referenceStateAndRefs The input states and state referenced to be referenced by the current [UtxoLedgerTransaction].
+ * @property referenceTransactionStates The input transaction states to be referenced by the current [UtxoLedgerTransaction].
+ * @property referenceContractStates The input contract states to be referenced by the current [UtxoLedgerTransaction].
  * @property outputStateAndRefs The output states and state references to be created by the current [UtxoLedgerTransaction].
  * @property outputTransactionStates The output transaction states to be created by the current [UtxoLedgerTransaction].
  * @property outputContractStates The output contract states to be created by the current [UtxoLedgerTransaction].
@@ -46,10 +46,10 @@ interface UtxoLedgerTransaction {
     val inputTransactionStates: List<TransactionState<*>> get() = inputStateAndRefs.map { it.state }
     val inputContractStates: List<ContractState> get() = inputStateAndRefs.map { it.state.contractState }
 
-    val referenceInputStateRefs: List<StateRef>
-    val referenceInputStateAndRefs: List<StateAndRef<*>>
-    val referenceInputTransactionStates: List<TransactionState<*>> get() = referenceInputStateAndRefs.map { it.state }
-    val referenceInputContractStates: List<ContractState> get() = referenceInputTransactionStates.map { it.contractState }
+    val referenceStateRefs: List<StateRef>
+    val referenceStateAndRefs: List<StateAndRef<*>>
+    val referenceTransactionStates: List<TransactionState<*>> get() = referenceStateAndRefs.map { it.state }
+    val referenceContractStates: List<ContractState> get() = referenceTransactionStates.map { it.contractState }
 
     val outputStateAndRefs: List<StateAndRef<*>>
     val outputTransactionStates: List<TransactionState<*>> get() = outputStateAndRefs.map { it.state }
@@ -92,22 +92,22 @@ interface UtxoLedgerTransaction {
     fun <T : ContractState> getInputStates(type: Class<T>): List<T>
 
     /**
-     * Obtains all ledger transaction [StateAndRef] reference inputs that match the specified [ContractState] type.
+     * Obtains all ledger transaction [StateAndRef] references that match the specified [ContractState] type.
      *
      * @param T The underlying type of the [ContractState].
      * @param type The type of the [ContractState].
-     * @return Returns all ledger transaction [StateAndRef] reference inputs that match the specified [ContractState] type.
+     * @return Returns all ledger transaction [StateAndRef] references that match the specified [ContractState] type.
      */
-    fun <T : ContractState> getReferenceInputStateAndRefs(type: Class<T>): List<StateAndRef<T>>
+    fun <T : ContractState> getReferenceStateAndRefs(type: Class<T>): List<StateAndRef<T>>
 
     /**
-     * Obtains all ledger transaction [ContractState] reference inputs that match the specified [ContractState] type.
+     * Obtains all ledger transaction [ContractState] references that match the specified [ContractState] type.
      *
      * @param T The underlying type of the [ContractState].
      * @param type The type of the [ContractState].
-     * @return Returns all ledger transaction [ContractState] reference inputs that match the specified [ContractState] type.
+     * @return Returns all ledger transaction [ContractState] references that match the specified [ContractState] type.
      */
-    fun <T : ContractState> getReferenceInputStates(type: Class<T>): List<T>
+    fun <T : ContractState> getReferenceStates(type: Class<T>): List<T>
 
     /**
      * Obtains all ledger transaction [StateAndRef] outputs that match the specified [ContractState] type.
@@ -159,23 +159,23 @@ inline fun <reified T : ContractState> UtxoLedgerTransaction.getInputStates(): L
 }
 
 /**
- * Obtains all ledger transaction [StateAndRef] reference inputs that match the specified [ContractState] type.
+ * Obtains all ledger transaction [StateAndRef] references that match the specified [ContractState] type.
  *
  * @param T The underlying type of the [ContractState].
- * @return Returns all ledger transaction [StateAndRef] reference inputs that match the specified [ContractState] type.
+ * @return Returns all ledger transaction [StateAndRef] references that match the specified [ContractState] type.
  */
-inline fun <reified T : ContractState> UtxoLedgerTransaction.getReferenceInputStateAndRefs(): List<StateAndRef<T>> {
-    return getReferenceInputStateAndRefs(T::class.java)
+inline fun <reified T : ContractState> UtxoLedgerTransaction.getReferenceStateAndRefs(): List<StateAndRef<T>> {
+    return getReferenceStateAndRefs(T::class.java)
 }
 
 /**
- * Obtains all ledger transaction [ContractState] reference inputs that match the specified [ContractState] type.
+ * Obtains all ledger transaction [ContractState] references that match the specified [ContractState] type.
  *
  * @param T The underlying type of the [ContractState].
- * @return Returns all ledger transaction [ContractState] reference inputs that match the specified [ContractState] type.
+ * @return Returns all ledger transaction [ContractState] references that match the specified [ContractState] type.
  */
-inline fun <reified T : ContractState> UtxoLedgerTransaction.getReferenceInputStates(): List<T> {
-    return getReferenceInputStates(T::class.java)
+inline fun <reified T : ContractState> UtxoLedgerTransaction.getReferenceStates(): List<T> {
+    return getReferenceStates(T::class.java)
 }
 
 /**
