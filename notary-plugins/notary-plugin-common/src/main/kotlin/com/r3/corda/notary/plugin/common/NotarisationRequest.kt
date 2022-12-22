@@ -11,6 +11,6 @@ import net.corda.v5.ledger.utxo.StateRef
  */
 @CordaSerializable
 data class NotarisationRequest(
-    val statesToConsume: Collection<StateRef>,
+    val statesToConsume: List<StateRef>,
     val transactionId: SecureHash
 )
