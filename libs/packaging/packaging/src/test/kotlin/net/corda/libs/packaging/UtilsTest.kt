@@ -45,7 +45,7 @@ class UtilsTest {
         val expectedCertSummaryHash = SecureHash(algoName, md.digest())
 
         // Check X500 names hashes getting sorted before they get hashed
-        val outOfOrderCerts = setOf(bobCert, aliceCert)
+        val outOfOrderCerts = sequenceOf(bobCert, aliceCert)
 
         assertEquals(expectedCertSummaryHash, outOfOrderCerts.signerSummaryHash())
     }
