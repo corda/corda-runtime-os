@@ -37,8 +37,10 @@ private fun mockCpkMetadata() = mapOf(
     Mockito.mock(Bundle::class.java) to makeCpkMetadata(3, CordappType.CONTRACT),
 )
 
+val dummyCpkSignerSummaryHash = SecureHash("TEST", "TEST".toByteArray())
+
 private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
-    CpkIdentifier("MockCpk", "$i", null),
+    CpkIdentifier("MockCpk", "$i", dummyCpkSignerSummaryHash),
     CpkManifest(CpkFormatVersion(1, 1)),
     "mock-bundle-$i",
     emptyList(),

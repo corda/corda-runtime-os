@@ -23,9 +23,8 @@ object CpkDependencyResolver {
             val dependencyAlreadyResolved = resolvedSet.tailSet(cpkIdentifier).any { it.name == cpkIdentifier.name }
             if (!dependencyAlreadyResolved) {
                 //All CPKs with the required symbolic name and version greater or equal are valid candidates
-                val needle = CpkIdentifier(cpkIdentifier.name, cpkIdentifier.version, null)
-                val cpkCandidates = availableIds.tailMap(needle).asSequence()
-                    .filter { it.key.name == needle.name
+                val cpkCandidates = availableIds.tailMap(cpkIdentifier).asSequence()
+                    .filter { it.key.name == cpkIdentifier.name
                             && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
                     .toList()
                 when {
