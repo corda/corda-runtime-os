@@ -16,6 +16,7 @@ interface VNodeService {
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
     fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext
     fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
+    fun flushSandboxCache()
 }
 
 @Suppress("unused")
@@ -36,7 +37,7 @@ class VNodeServiceImpl @Activate constructor(
     private val logger = loggerFor<VNodeService>()
 
     init {
-        setupSandboxCache()
+        sandboxGroupContextComponent.initCache(1)
     }
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
@@ -49,14 +50,14 @@ class VNodeServiceImpl @Activate constructor(
         virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
         virtualNodeLoader.forgetCPI(cpiMetadata.cpiId)
         cpiLoader.removeCpiMetadata(cpiMetadata.cpiId)
-        setupSandboxCache()
+        flushSandboxCache()
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {
         return flowSandboxService.get(holdingIdentity)
     }
 
-    private fun setupSandboxCache() {
-        sandboxGroupContextComponent.initCache(1)
+    override fun flushSandboxCache() {
+        sandboxGroupContextComponent.flushCache()
     }
 }

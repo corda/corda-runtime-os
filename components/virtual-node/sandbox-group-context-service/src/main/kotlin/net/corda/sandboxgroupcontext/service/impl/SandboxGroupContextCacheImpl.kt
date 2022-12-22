@@ -11,7 +11,14 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
-internal class SandboxGroupContextCacheImpl(override val capacity: Long) : SandboxGroupContextCache {
+internal class SandboxGroupContextCacheImpl private constructor(
+    override val capacity: Long,
+    private val expiryQueue: ReferenceQueue<SandboxGroupContextWrapper>,
+    private val toBeClosed: MutableSet<ToBeClosed>
+) : SandboxGroupContextCache {
+    constructor(capacity: Long)
+        : this(capacity, ReferenceQueue<SandboxGroupContextWrapper>(), ConcurrentHashMap.newKeySet())
+
     private companion object {
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
@@ -23,9 +30,6 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
         referenceQueue: ReferenceQueue<SandboxGroupContextWrapper>
     ) : WeakReference<SandboxGroupContextWrapper>(sandboxGroupContext, referenceQueue)
 
-    private val expiryQueue = ReferenceQueue<SandboxGroupContextWrapper>()
-    private val toBeClosed: ConcurrentHashMap.KeySetView<ToBeClosed, Boolean> = ConcurrentHashMap.newKeySet()
-
     /**
      * Wrapper around [CloseableSandboxGroupContext], solely used to keep a [WeakReference] to every instance and only
      * invoke [CloseableSandboxGroupContext.close] on cache eviction when all strong references are gone.
@@ -35,14 +39,24 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
     ) : SandboxGroupContext by wrappedSandboxGroupContext
 
     /**
+     * Recreates the cache with [newCapacity], and keeping the same expiry queue.
+     */
+    override fun resize(newCapacity: Long): SandboxGroupContextCache
+        = SandboxGroupContextCacheImpl(newCapacity, expiryQueue, toBeClosed)
+
+    /**
      * Checks whether there are contexts that were evicted from the cache but haven't been closed yet, either because
      * there are still strong reference to the [SandboxGroupContextWrapper] or because the garbage collector hasn't
      * updated the [ReferenceQueue] yet. Used for testing purposes only.
      *
-     * @return true if there are contexts to be closed, false otherwise.
+     * @return number of contexts to be closed.
      */
     @VisibleForTesting
-    internal fun evictedContextsToBeClosed() : Boolean = toBeClosed.isNotEmpty()
+    internal val evictedContextsToBeClosed: Int
+        get() {
+            purgeExpiryQueue()
+            return toBeClosed.size
+        }
 
     @Suppress("TooGenericExceptionCaught")
     private fun purgeExpiryQueue() {
@@ -78,41 +92,34 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
         "Sandbox-Cache",
         Caffeine.newBuilder()
             .maximumSize(capacity)
-            // If the entry was manually removed from the cache by the user, automatically close the wrapped
-            // [CloseableSandboxGroupContext]. If the entry was automatically removed due to eviction, however, add the
-            // wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue], so it is only closed once it's safe
-            // to do so (wrapping [SandboxGroupContextWrapper] is not referenced anymore).
+            // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
+            // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
+            // is not referenced anymore).
             .removalListener { key, context, cause ->
-                if (cause.wasEvicted()) {
-                    (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                        toBeClosed += ToBeClosed(key!!, autoCloseable, context, expiryQueue)
-                    }
-
-                    logger.info(
-                        "Evicting {} sandbox for {} [{}]",
-                        key!!.sandboxGroupType,
-                        key.holdingIdentity.x500Name,
-                        cause.name
-                    )
-
-                    purgeExpiryQueue()
-                } else {
-                    logger.info(
-                        "Closing {} sandbox for {} [{}]",
-                        key!!.sandboxGroupType,
-                        key.holdingIdentity.x500Name,
-                        cause.name
-                    )
-
-                    (context?.wrappedSandboxGroupContext as? AutoCloseable)?.close()
+                purgeExpiryQueue()
+                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                    toBeClosed += ToBeClosed(key!!, autoCloseable, context, expiryQueue)
                 }
+
+                logger.info(
+                    "Closing {} sandbox for {} [{}]",
+                    key!!.sandboxGroupType,
+                    key.holdingIdentity.x500Name,
+                    cause.name
+                )
             }
     )
 
-    override fun remove(virtualNodeContext: VirtualNodeContext) {
+    override fun flush() {
+        contexts.invalidateAll()
+        contexts.cleanUp()
         purgeExpiryQueue()
+    }
 
+    override fun remove(virtualNodeContext: VirtualNodeContext) {
         contexts.invalidate(virtualNodeContext)
+        contexts.cleanUp()
+        purgeExpiryQueue()
     }
 
     override fun get(
@@ -134,8 +141,6 @@ internal class SandboxGroupContextCacheImpl(override val capacity: Long) : Sandb
     }
 
     override fun close() {
-        // close everything in cache
-        contexts.invalidateAll()
-        contexts.cleanUp()
+        flush()
     }
 }

@@ -26,6 +26,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             ?: throw IllegalStateException("Cannot initialize sandbox cache")
     }
 
+    override fun flushCache() {
+        (sandboxGroupContextService as? CacheConfiguration)?.flushCache()
+            ?: throw IllegalStateException("Cannot flush sandbox cache")
+    }
+
     override fun start() {
         logger.info("Started")
     }

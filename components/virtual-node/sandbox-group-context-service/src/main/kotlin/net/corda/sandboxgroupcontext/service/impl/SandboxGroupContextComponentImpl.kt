@@ -174,6 +174,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 
+    override fun flushCache() {
+        (sandboxGroupContextService as? CacheConfiguration)?.flushCache()
+            ?: throw IllegalStateException("Sandbox cache could not be flushed")
+    }
+
     override fun initCache(capacity: Long) {
         logger.info("Initialising Sandbox cache with capacity: $capacity")
         resizeCache(capacity)
