@@ -174,7 +174,5 @@ class ReconciliationContextTest {
             context.close()
             verify(vnodeEmf).close()
         }
-
-
     }
 }
