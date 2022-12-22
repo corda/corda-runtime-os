@@ -204,7 +204,7 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(serializationService, filteredTransaction)
 
-        assertThat(utxoFilteredTransaction.referenceInputStateRefs)
+        assertThat(utxoFilteredTransaction.referenceStateRefs)
             .isInstanceOf(UtxoFilteredData.Removed::class.java)
 
     }
