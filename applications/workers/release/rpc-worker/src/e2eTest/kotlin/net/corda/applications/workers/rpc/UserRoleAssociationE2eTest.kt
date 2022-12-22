@@ -142,8 +142,8 @@ class UserRoleAssociationE2eTest {
 
             // remove a fake role to assert validation does not expose role names in the system.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, "fakeRoleId") }
-                .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Supplied roleId is invalid")
+                .isInstanceOf(MissingRequestedResourceException::class.java)
+                .hasMessageContaining("Role ID 'fakeRoleId' not found")
 
         }
     }

@@ -11,7 +11,9 @@ import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
@@ -125,12 +127,18 @@ class StateAndEventConsumerImplTest {
                 stateAndEventListener
             )
 
+        val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, "key1", "value1", 0)
+        whenever(stateConsumer.poll(any())).thenReturn(listOf(record))
+
         consumer.pollAndUpdateStates(true)
 
         verify(stateConsumer, times(1)).assignment()
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
-        verify(stateAndEventListener, times(1)).onPartitionSynced(any())
+        verify(stateAndEventListener, times(1)).onPartitionSynced(mapOf("key1" to "value1"))
+
+        // partitionsToSync should have had the synced partition removed
+        assertThat(partitionState.partitionsToSync.size).isEqualTo(0)
     }
 
     @Test
@@ -141,6 +149,10 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
+
+        val record = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, partitionId, 0, "key1", "value1", 0)
+        whenever(stateConsumer.poll(any())).thenReturn(listOf(record))
+
         val consumer = StateAndEventConsumerImpl(
             config,
             eventConsumer,
@@ -155,6 +167,12 @@ class StateAndEventConsumerImplTest {
         verify(stateConsumer, times(1)).poll(any())
         verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
+
+        // When false is passed to pollAndUpdateStates to indicate not to try and process whether partitions are synced
+        // or not, partitionsToSync should remain untouched, even though we return a record from the poll above which
+        // corresponds to a state which would otherwise have marked the partition as synced.
+        assertThat(partitionState.partitionsToSync.size).isEqualTo(1)
+        assertThat(partitionState.partitionsToSync[partitionId]).isEqualTo(Long.MAX_VALUE)
     }
 
     @Test
@@ -196,12 +214,33 @@ class StateAndEventConsumerImplTest {
                 (mutableMapOf(), mutableMapOf()), stateAndEventListener
         )
 
+        val assignedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val pausedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 1))
+        whenever(eventConsumer.assignment()).thenReturn(assignedTopicPartitions)
+        whenever(eventConsumer.paused()).thenReturn(pausedTopicPartitions)
+
         consumer.resetPollInterval()
+
+        val eventConsumerOrder = inOrder(eventConsumer)
 
         verify(eventConsumer, times(1)).assignment()
         verify(eventConsumer, times(1)).paused()
-        verify(eventConsumer, times(1)).pause(any())
-        verify(eventConsumer, times(1)).resume(any())
+
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .pause(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        eventConsumerOrder.verify(eventConsumer, times(1)).poll(any())
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+
+        val stateConsumerOrder = inOrder(stateConsumer)
+
+        verify(stateConsumer, times(1)).assignment()
+        verify(stateConsumer, times(1)).paused()
+        stateConsumerOrder.verify(stateConsumer, times(1))
+            .pause(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        stateConsumerOrder.verify(stateConsumer, times(1)).poll(any())
+        stateConsumerOrder.verify(stateConsumer, times(1))
+            .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
     }
 
     private fun setupMocks(): Mocks {

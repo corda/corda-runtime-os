@@ -1,6 +1,6 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk2'
+    id 'net.corda.plugins.cordapp-cpb2'
 }
 
 description 'Fish test bundle'
@@ -12,7 +12,7 @@ group 'com.r3.testing'
 
 cordapp {
     targetPlatformVersion platformVersion as Integer
-    workflow {
+    contract {
         name 'Testing Fish CPK'
         versionId 1
         vendor 'R3'
