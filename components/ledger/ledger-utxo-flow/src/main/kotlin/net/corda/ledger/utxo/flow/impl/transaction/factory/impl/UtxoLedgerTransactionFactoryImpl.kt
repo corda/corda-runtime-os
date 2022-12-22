@@ -37,7 +37,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
                 .toSet()
                 .associateWith { it ->
                     utxoLedgerPersistenceService.find(it)?.outputStateAndRefs
-                        ?: throw (CordaRuntimeException("Input state not found it"))
+                        ?: throw (CordaRuntimeException("Could not find transaction $it when fetching input states."))
                 }
         val inputStateAndRefs =
             wrappedUtxoWireTransaction.inputStateRefs.map { it ->
