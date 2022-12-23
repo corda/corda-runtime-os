@@ -29,7 +29,7 @@ class ObligationDemoTests {
         const val TEST_CPI_NAME = "ledger-obligation-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-obligation-demo-app.cpb"
 
-        val objectMapper = ObjectMapper().apply {u
+        val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
     }
