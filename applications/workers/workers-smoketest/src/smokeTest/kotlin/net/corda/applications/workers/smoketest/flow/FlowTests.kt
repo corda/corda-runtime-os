@@ -884,6 +884,7 @@ class FlowTests {
 
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
+        val unknownTxId = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
@@ -915,8 +916,12 @@ class FlowTests {
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateUnknown")
+                // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
+                // expect notarisation error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "Could not find transaction ${unknownTxId.substringBeforeLast(":")} " +
+                            "when fetching input states"
+                )
             })
         }
     }
@@ -964,17 +969,22 @@ class FlowTests {
 
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
+        // Random unknown state
+        val unknownTxId = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
         consumeStatesAndValidateResult(
             inputStates = listOf(
-                // Random unknown state
-                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                unknownTxId
             ),
             refStates = emptyList()
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+                // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
+                // expect notarisation error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "Could not find transaction ${unknownTxId.substringBeforeLast(":")} " +
+                            "when fetching input states"
+                )
             })
         }
     }
