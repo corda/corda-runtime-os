@@ -46,6 +46,7 @@ class EntityConverterImpl : EntityConverter {
     override fun toClaimRelease(avroPoolKey: TokenPoolCacheKey, tokenClaimRelease: TokenClaimRelease): ClaimRelease {
         return ClaimRelease(
             tokenClaimRelease.claimId,
+            tokenClaimRelease.requestContext.requestId,
             tokenClaimRelease.requestContext.flowId,
             tokenClaimRelease.usedTokenStateRefs.toSet(),
             avroPoolKey

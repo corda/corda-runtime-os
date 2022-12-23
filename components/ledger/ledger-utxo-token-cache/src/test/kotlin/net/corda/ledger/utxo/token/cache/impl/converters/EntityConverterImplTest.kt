@@ -65,6 +65,7 @@ class EntityConverterImplTest {
             .toClaimRelease(POOL_CACHE_KEY, tokenClaimRelease)
 
         assertThat(result.claimId).isEqualTo("c1")
+        assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.usedTokens).containsOnly("s1", "s2")
         assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)

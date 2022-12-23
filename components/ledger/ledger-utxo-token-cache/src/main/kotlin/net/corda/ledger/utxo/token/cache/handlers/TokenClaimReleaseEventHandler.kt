@@ -26,11 +26,11 @@ class TokenClaimReleaseEventHandler(
 
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
-        }else {
+        } else {
             tokenCache.removeAll(event.usedTokens)
             state.removeClaim(event.claimId)
         }
 
-        return recordFactory.getClaimReleaseAck(event.flowId, event.claimId)
+        return recordFactory.getClaimReleaseAck(event.flowId, event.externalEventRequestId)
     }
 }
