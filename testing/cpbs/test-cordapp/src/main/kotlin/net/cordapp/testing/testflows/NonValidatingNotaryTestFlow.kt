@@ -13,6 +13,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -55,6 +56,9 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     private companion object {
@@ -69,22 +73,28 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
             "The transaction must have at least one input OR output state"
         }
 
-        val notaryWorker = findNotaryParty()
+        val isIssuance = params.inputStateRefs.isEmpty()
 
         val stx = buildSignedTransaction(
-            notaryWorker,
+            findNotaryServiceParty(),
             params.outputStateCount,
             params.inputStateRefs,
             params.referenceStateRefs,
             Pair(params.timeWindowLowerBoundOffsetMs, params.timeWindowUpperBoundOffsetMs)
         )
 
-        val pluginClient = NonValidatingNotaryClientFlowImpl(
-            stx,
-            notaryWorker
-        )
-
-        flowEngine.subFlow(pluginClient)
+        if (isIssuance) {
+            // If we have an issuance it means we need to run it through finality flow, to make sure the issued state
+            // is saved to the vault so we can spend later on
+            utxoLedgerService.finalize(stx, emptyList())
+        } else {
+            // If we have a consume it means we can send it directly to the plugin, because we already have a valid state
+            // that we can spend
+            flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
+                stx,
+                findNotaryVNodeParty()
+            ))
+        }
 
         return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
             stx.outputStateAndRefs.map { it.ref.toString() },
@@ -131,10 +141,25 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     }
 
     /**
-     * A helper function that will find the notary party on the network.
+     * A helper function that will find the notary service party on the network. This is attached to the transaction
+     * and will be used by the finality flow to do the VNode selection itself.
      */
     @Suspendable
-    private fun findNotaryParty(): Party {
+    private fun findNotaryServiceParty(): Party {
+        // TODO CORE-6173 use proper notary key
+        val notary = notaryLookup.notaryServices.single()
+        val notaryKey = memberLookup.lookup().single {
+            it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
+        }.ledgerKeys.first()
+        return Party(notary.name, notaryKey)
+    }
+
+    /**
+     * A helper function that will find the notary VNode party on the network. This basically acts as a VNode selection
+     * logic like the one we have in the finality flow. When we call the plugin directly we must select a VNode
+     * beforehand as the plugin has no logic for VNode selection.
+     */
+    private fun findNotaryVNodeParty(): Party {
         // We cannot use the notary virtual node lookup service in this flow so we need to do this hack
         val notary = memberLookup.lookup().first {
             it.name.commonName?.contains("notary", ignoreCase = true) ?: false
