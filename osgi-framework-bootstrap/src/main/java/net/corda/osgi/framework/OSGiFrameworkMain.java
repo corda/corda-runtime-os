@@ -61,6 +61,7 @@ final class OSGiFrameworkMain {
      * Default directory with JDBC drivers
      */
     private static final String DEFAULT_JDBC_DRIVER_DIRECTORY = "/opt/jdbc-driver";
+    private static final String DEFAULT_ADDON_DIRECTORY = "/opt/corda-addon";
 
     /**
      * Location of the list of bundles to install in the {@link OSGiFrameworkWrap} instance.
@@ -156,13 +157,13 @@ final class OSGiFrameworkMain {
                     }
                 }, "shutdown"));
 
-                // WARNING:  comment this and the installFromDirectory line to disable loading of the
-                // jdbc driver specified on the command line as -ddatabase.jdbc.directory=/some/where
                 final Path driverDirectory = getDbDriverDirectory(args);
+                final Path addonDirectory = getAddonDirectory(args);
 
                 osgiFrameworkWrap
                     .start()
                     .installFromDirectory(driverDirectory)
+                    .installFromDirectory(addonDirectory)
                     .install(APPLICATION_BUNDLES)
                     .activate()
                     .startApplication(NO_TIMEOUT, args)
@@ -205,5 +206,28 @@ final class OSGiFrameworkMain {
         }
 
         return Paths.get(DEFAULT_JDBC_DRIVER_DIRECTORY);
+    }
+
+    /**
+     * Get the corda add-on path up front, rather than in the {@link net.corda.osgi.api.Application}
+     * <p/>
+     * We need this cli arg *before* the application parses the args
+     * as we need it to find the location of the addons so that
+     * we can install them here.
+     */
+    private static Path getAddonDirectory(String[] args) {
+        final List<String> jdbcValues = Arrays.stream(args)
+            .filter(a -> a.contains("addon.directory="))
+            .collect(toUnmodifiableList());
+
+        if (!jdbcValues.isEmpty()) {
+            final String jdbcValue = jdbcValues.get(0);
+            if (jdbcValue.indexOf('=') != -1) {
+                final String path = jdbcValue.split("=", 2)[1];
+                return Paths.get(path);
+            }
+        }
+
+        return Paths.get(DEFAULT_ADDON_DIRECTORY);
     }
 }
