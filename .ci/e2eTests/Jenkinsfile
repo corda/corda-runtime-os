@@ -105,12 +105,16 @@ pipeline {
     stages {
         stage ('Create namespace') {
             steps {
-                e2eTestHelpers.createNameSpace(env.NAMESPACE, env.E2E_WORKER_ARCH, env.E2E_BRANCH_LABEL)
+                script {
+                    e2eTestHelpers.createNameSpace(env.NAMESPACE, env.E2E_WORKER_ARCH, env.E2E_BRANCH_LABEL)
+                }
             }
         }
         stage('Install kafka as prereqs') {
             steps {
-                e2eTestHelpers.installPrereqs()
+                script {
+                    e2eTestHelpers.installPrereqs()
+                }
             }
             post {
                 unsuccessful {
@@ -124,17 +128,23 @@ pipeline {
            parallel {
                stage("Deploy Alice cluster") {
                   steps {
-                      e2eTestHelpers.deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    script {
+                        e2eTestHelpers.deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    }
                   }
                }
                stage("Deploy Bob cluster") {
                   steps {
-                      e2eTestHelpers.deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    script {                    
+                        e2eTestHelpers.deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    }
                   }
                }
                stage("Deploy Caroline cluster") {
                   steps {
-                      e2eTestHelpers.deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    script {                   
+                        e2eTestHelpers.deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
+                    }
                   }
                }
            }
