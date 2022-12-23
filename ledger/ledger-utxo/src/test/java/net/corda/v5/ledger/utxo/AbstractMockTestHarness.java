@@ -152,9 +152,9 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoLedgerTransaction.getInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerTransaction.getInputTransactionStates()).thenCallRealMethod();
         Mockito.when(utxoLedgerTransaction.getInputContractStates()).thenCallRealMethod();
-        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoLedgerTransaction.getReferenceInputTransactionStates()).thenCallRealMethod();
-        Mockito.when(utxoLedgerTransaction.getReferenceInputContractStates()).thenCallRealMethod();
+        Mockito.when(utxoLedgerTransaction.getReferenceStateAndRefs()).thenReturn(List.of(contractStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getReferenceTransactionStates()).thenCallRealMethod();
+        Mockito.when(utxoLedgerTransaction.getReferenceContractStates()).thenCallRealMethod();
         Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerTransaction.getOutputTransactionStates()).thenCallRealMethod();
         Mockito.when(utxoLedgerTransaction.getOutputContractStates()).thenCallRealMethod();
@@ -163,8 +163,8 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoLedgerTransaction.getCommands(Update.class)).thenReturn((List) List.of(updateCommand));
         Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(ContractState.class)).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerTransaction.getInputStates(ContractState.class)).thenReturn(List.of(contractState));
-        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(ContractState.class)).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(ContractState.class)).thenReturn(List.of(contractState));
+        Mockito.when(utxoLedgerTransaction.getReferenceStateAndRefs(ContractState.class)).thenReturn(List.of(contractStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getReferenceStates(ContractState.class)).thenReturn(List.of(contractState));
         Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(ContractState.class)).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerTransaction.getOutputStates(ContractState.class)).thenReturn(List.of(contractState));
     }
@@ -184,9 +184,9 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addInputStates(List.of(contractStateRef, contractStateRef))).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addInputStates(contractStateRef, contractStateRef)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateRef)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addReferenceInputStates(List.of(contractStateRef, contractStateRef))).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.addReferenceInputStates(contractStateRef, contractStateRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceState(contractStateRef)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceStates(List.of(contractStateRef, contractStateRef))).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.addReferenceStates(contractStateRef, contractStateRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputStates(List.of(contractState, contractState))).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputStates(contractState, contractState)).thenReturn(utxoTransactionBuilder);

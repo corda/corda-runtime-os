@@ -96,7 +96,7 @@ interface UtxoFilteredTransactionBuilder {
      * @return An updated copy of the [UtxoFilteredTransactionBuilder].
      */
     @Suspendable
-    fun withReferenceInputStatesSize(): UtxoFilteredTransactionBuilder
+    fun withReferenceStatesSize(): UtxoFilteredTransactionBuilder
 
     /**
      * Includes an audit proof of [UtxoSignedTransaction.referenceStateRefs] in the [UtxoFilteredTransaction].
@@ -104,7 +104,7 @@ interface UtxoFilteredTransactionBuilder {
      * @return An updated copy of the [UtxoFilteredTransactionBuilder].
      */
     @Suspendable
-    fun withReferenceInputStates(): UtxoFilteredTransactionBuilder
+    fun withReferenceStates(): UtxoFilteredTransactionBuilder
 
     /**
      * Includes an audit proof of [UtxoSignedTransaction.referenceStateRefs] in the [UtxoFilteredTransaction].
@@ -115,7 +115,7 @@ interface UtxoFilteredTransactionBuilder {
      * @return An updated copy of the [UtxoFilteredTransactionBuilder].
      */
     @Suspendable
-    fun withReferenceInputStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilder
+    fun withReferenceStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilder
 
     /**
      * Includes a size proof of [UtxoSignedTransaction.outputStateAndRefs] in the [UtxoFilteredTransaction].

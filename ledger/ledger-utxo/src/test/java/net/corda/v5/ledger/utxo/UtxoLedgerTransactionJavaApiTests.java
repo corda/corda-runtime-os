@@ -51,20 +51,20 @@ public final class UtxoLedgerTransactionJavaApiTests extends AbstractMockTestHar
     }
 
     @Test
-    public void getReferenceInputStateAndRefsShouldReturnTheExpectedValue() {
-        List<StateAndRef<?>> value = utxoLedgerTransaction.getReferenceInputStateAndRefs();
+    public void getReferenceStateAndRefsShouldReturnTheExpectedValue() {
+        List<StateAndRef<?>> value = utxoLedgerTransaction.getReferenceStateAndRefs();
         Assertions.assertEquals(List.of(contractStateAndRef), value);
     }
 
     @Test
-    public void getReferenceInputTransactionStatesShouldReturnTheExpectedValue() {
-        List<TransactionState<?>> value = utxoLedgerTransaction.getReferenceInputTransactionStates();
+    public void getReferenceTransactionStatesShouldReturnTheExpectedValue() {
+        List<TransactionState<?>> value = utxoLedgerTransaction.getReferenceTransactionStates();
         Assertions.assertEquals(List.of(contractTransactionState), value);
     }
 
     @Test
-    public void getReferenceInputContractStatesShouldReturnTheExpectedValue() {
-        List<ContractState> value = utxoLedgerTransaction.getReferenceInputContractStates();
+    public void getReferenceContractStatesShouldReturnTheExpectedValue() {
+        List<ContractState> value = utxoLedgerTransaction.getReferenceContractStates();
         Assertions.assertEquals(List.of(contractState), value);
     }
 
@@ -117,14 +117,14 @@ public final class UtxoLedgerTransactionJavaApiTests extends AbstractMockTestHar
     }
 
     @Test
-    public void getReferenceInputStateAndRefsOfTypeContractStateShouldReturnTheExpectedValue() {
-        List<StateAndRef<ContractState>> value = utxoLedgerTransaction.getReferenceInputStateAndRefs(ContractState.class);
+    public void getReferenceStateAndRefsOfTypeContractStateShouldReturnTheExpectedValue() {
+        List<StateAndRef<ContractState>> value = utxoLedgerTransaction.getReferenceStateAndRefs(ContractState.class);
         Assertions.assertEquals(List.of(contractStateAndRef), value);
     }
 
     @Test
-    public void getReferenceInputStatesOfTypeContractStateShouldReturnTheExpectedValue() {
-        List<ContractState> value = utxoLedgerTransaction.getReferenceInputStates(ContractState.class);
+    public void getReferenceStatesOfTypeContractStateShouldReturnTheExpectedValue() {
+        List<ContractState> value = utxoLedgerTransaction.getReferenceStates(ContractState.class);
         Assertions.assertEquals(List.of(contractState), value);
     }
 
