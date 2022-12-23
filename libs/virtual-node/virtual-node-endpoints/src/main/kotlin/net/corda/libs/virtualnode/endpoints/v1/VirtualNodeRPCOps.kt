@@ -5,6 +5,8 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -44,4 +46,21 @@ interface VirtualNodeRPCOps : RpcOps {
         responseDescription = "List of virtual node details."
     )
     fun getAllVirtualNodes(): VirtualNodes
+
+    /**
+     * Returns the VirtualNodeInfo for a given [HoldingIdentity].
+     *
+     * @throws 'ResourceNotFoundException' If the virtual node was not found.
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}",
+        title = "Gets the VirtualNodeInfo for a HoldingIdentity",
+        description = "This method returns the VirtualNodeInfo for a given Holding Identity.",
+        responseDescription = "VirtualNodeInfo for the specified virtual node."
+    )
+    fun getVirtualNode(
+        @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        holdingIdentityShortHash: String
+    ): VirtualNodeInfo
 }
