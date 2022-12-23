@@ -22,33 +22,33 @@ def S3_BUCKET_GROUP_ID_PROPERTY = 'maven.repo.groupId'
 def s3_upload_group_id = project.hasProperty(S3_BUCKET_GROUP_ID_PROPERTY) ? "${project.findProperty(S3_BUCKET_GROUP_ID_PROPERTY)}" : project.group
 
 def otherPluginsTasks = subprojects.collect {
-        it.tasks.matching {
-            task -> task.name == 'cliPluginTask' // Module `plugins-http-rpc` will not have this task
-        }
+    it.tasks.matching {
+        task -> task.name == 'cliPluginTask' // Module `plugins-http-rpc` will not have this task
     }
+}
 
 tasks.register('copyCliFiles') {
-        def otherPluginsTasksFlattened = otherPluginsTasks.collect {
-            it.collect()
-        }.flatten()
-        logger.info("otherPluginsTasksFlattened : $otherPluginsTasksFlattened")
-        dependsOn otherPluginsTasks
-        doLast {
-            copy {
-                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-                from configurations.named('cliHostDist')
-                into "$buildDir/cli"
-                rename('.*.jar', 'corda-cli.jar')
-            }
-            copy {
-                from otherPluginsTasks
-                into "$buildDir/cli/plugins"
-            }
-            copy {
-                from "$projectDir/installScripts"
-                into "$buildDir/cli"
-            }
+    def otherPluginsTasksFlattened = otherPluginsTasks.collect {
+        it.collect()
+    }.flatten()
+    logger.info("otherPluginsTasksFlattened : $otherPluginsTasksFlattened")
+    dependsOn otherPluginsTasks
+    doLast {
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            from configurations.named('cliHostDist')
+            into "$buildDir/cli"
+            rename('.*.jar', 'corda-cli.jar')
         }
+        copy {
+            from otherPluginsTasks
+            into "$buildDir/cli/plugins"
+        }
+        copy {
+            from "$projectDir/installScripts"
+            into "$buildDir/cli"
+        }
+    }
 }
 
 tasks.register("cliInstallArchive", Zip) {
@@ -69,15 +69,14 @@ tasks.register("cliS3Download", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        def s3Url = System.getenv('HTTPS_PATH') + '/'+ s3_upload_group_id.replace('.','/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
-        logger.info ("S3 Https URL: $s3Url")
+        def s3Url = System.getenv('HTTPS_PATH') + '/' + s3_upload_group_id.replace('.', '/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
+        logger.info("S3 Https URL: $s3Url")
         from 'templateScripts'
         into 'build/generatedScripts'
         filter {
             String line -> line.replaceAll("TEMPLATE_URL", s3Url)
         }
-    }
-    else {
+    } else {
         logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliS3Download")
     }
 }
@@ -90,7 +89,10 @@ tasks.named('jar').configure {
     }
 }
 
-tasks.register('publishBuildkitImage' , BuildkitBuild) {
+// Proposed alternative to publishOSGiImage
+// Currently in trial phase, being rolled out in Nightly and locally and planned to be deployed in phases down the line
+
+tasks.register('publishBuildkitImage', BuildkitBuild) {
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
     it.subDir = "plugins/"
@@ -111,12 +113,16 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
 
-    if(project.hasProperty('useBuildx')){
+    if (project.hasProperty('useBuildx')) {
         it.isBuildx = useBuildx.toBoolean()
     }
-    
-    if(project.hasProperty('tag')){
+
+    if (project.hasProperty('tag')) {
         it.containerTag = tag
+    }
+
+    if (project.hasProperty('repo')) {
+        it.containerRepo = repo
     }
 
     if (cordaCliIncluded && cordaApiIncluded) {

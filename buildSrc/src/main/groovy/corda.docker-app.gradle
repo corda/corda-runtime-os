@@ -27,7 +27,10 @@ if (enableProfiling.toBoolean()) {
     }
 }
 
-tasks.register('publishBuildkitImage' , BuildkitBuild) {
+// Proposed alternative to publishOSGiImage
+// Currently in trial phase, being rolled out in Nightly and locally and planned to be deployed in phases down the line
+
+tasks.register('publishBuildkitImage', BuildkitBuild) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)
     it.jdbcDriverFiles.setFrom(configurations.dockerImageJdbc)
@@ -38,12 +41,16 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         it.baseImageName = baseImage
     }
 
-    if(project.hasProperty('useBuildx')){
+    if (project.hasProperty('useBuildx')) {
         it.isBuildx = useBuildx.toBoolean()
     }
 
-    if(project.hasProperty('tag')){
+    if (project.hasProperty('tag')) {
         it.containerTag = tag
+    }
+
+    if (project.hasProperty('repo')) {
+        it.containerRepo = repo
     }
 
     if (project.hasProperty('isNightly')) {
@@ -53,7 +60,7 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
     if (project.hasProperty('isPreTest')) {
         preTest = isPreTest.toBoolean()
     }
-    
+
     if (project.hasProperty('isReleaseCandidate')) {
         releaseCandidate = isReleaseCandidate.toBoolean()
     }
