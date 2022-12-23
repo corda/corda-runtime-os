@@ -66,8 +66,11 @@ class ObligationContract : Contract {
         internal const val CONTRACT_RULE_HOLDER =
             "On state updating, the holder must not change."
 
-        internal const val CONTRACT_RULE_AMOUNT =
+        internal const val CONTRACT_RULE_AMOUNT_CONSERVATION =
             "On state updating, the output state amount must be less than the input state amount."
+
+        internal const val CONTRACT_RULE_AMOUNT_OUTPUT =
+            "On state updating, the amount must not be lower than zero."
 
         internal const val CONTRACT_RULE_SIGNATORIES =
             "On state updating, the holder must sign the transaction."
@@ -84,7 +87,8 @@ class ObligationContract : Contract {
 
             require(input.issuer == output.issuer) { CONTRACT_RULE_ISSUER }
             require(input.holder == output.holder) { CONTRACT_RULE_HOLDER }
-            require(input.amount > output.amount) { CONTRACT_RULE_AMOUNT }
+            require(input.amount > output.amount) { CONTRACT_RULE_AMOUNT_CONSERVATION }
+            require(output.amount >= BigDecimal.ZERO) { CONTRACT_RULE_AMOUNT_OUTPUT }
             require(output.holder in transaction.signatories) { CONTRACT_RULE_SIGNATORIES }
         }
     }
@@ -92,16 +96,16 @@ class ObligationContract : Contract {
     object Delete : TestUtxoContractCommand {
 
         internal const val CONTRACT_RULE_INPUTS =
-            "On state updating, only one input state must be consumed."
+            "On state deleting, only one input state must be consumed."
 
         internal const val CONTRACT_RULE_OUTPUTS =
-            "On state updating, zero output states must be created."
+            "On state deleting, zero output states must be created."
 
         internal const val CONTRACT_RULE_AMOUNT =
-            "On state updating, the amount must be zero."
+            "On state deleting, the amount must be zero."
 
         internal const val CONTRACT_RULE_SIGNATORIES =
-            "On state updating, the issuer and the holder must sign the transaction."
+            "On state deleting, the issuer and the holder must sign the transaction."
 
         override fun verify(transaction: UtxoLedgerTransaction) {
             val inputs = transaction.getInputStates(ObligationState::class.java)
