@@ -1,5 +1,8 @@
 package net.corda.sandboxgroupcontext.service.impl
 
+import java.time.Duration
+import java.util.Collections.unmodifiableList
+import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
@@ -15,7 +18,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
-import net.corda.sandboxgroupcontext.service.CacheConfiguration
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
@@ -27,7 +31,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
-import java.util.Collections.unmodifiableList
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -174,18 +177,29 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 
-    override fun flushCache() {
-        (sandboxGroupContextService as? CacheConfiguration)?.flushCache()
-            ?: throw IllegalStateException("Sandbox cache could not be flushed")
+    override fun flushCache(): CompletableFuture<*> {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Sandbox cache could not be flushed")).flushCache()
+    }
+
+    @Throws(InterruptedException::class)
+    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Sandbox cache unavailable for waiting")).waitFor(completion, duration)
+    }
+
+    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
+        return (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Sandbox could not be removed from cache")).remove(virtualNodeContext)
     }
 
     override fun initCache(capacity: Long) {
-        logger.info("Initialising Sandbox cache with capacity: $capacity")
+        logger.info("Initialising Sandbox cache with capacity: {}", capacity)
         resizeCache(capacity)
     }
 
     private fun resizeCache(capacity: Long) {
-        (sandboxGroupContextService as? CacheConfiguration)?.initCache(capacity)
-            ?: throw IllegalStateException("Sandbox cache could not be resized to $capacity")
+        (sandboxGroupContextService as? CacheControl
+            ?: throw IllegalStateException("Sandbox cache could not be resized to $capacity")).initCache(capacity)
     }
 }
