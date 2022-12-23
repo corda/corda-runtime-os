@@ -35,7 +35,7 @@ class VirtualNodeOperationStatusProcessorImpl(
             return
         }
         val status = newRecord.value!!
-        val key = VirtualNodeOperationStatusMap.Key(status.virtualNodeShortId, newRecord.key)
+        val key = VirtualNodeOperationStatusMap.Key(status.virtualNodeShortHash, newRecord.key)
         try {
             cache.put(key, status)
         } catch (exception: IllegalArgumentException) {

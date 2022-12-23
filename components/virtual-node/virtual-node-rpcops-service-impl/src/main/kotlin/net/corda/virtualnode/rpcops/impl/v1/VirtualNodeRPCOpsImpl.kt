@@ -10,14 +10,13 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.AsynchronousOperationState
 import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
-import net.corda.data.virtualnode.VirtualNodeCpiUpgradeRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeOperationType
-import net.corda.data.virtualnode.VirtualNodeUpgradeStatus
+import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.data.virtualnode.VirtualNodeUpgradeOperationStatus as AvroVirtualNodeUpgradeOperationStatus
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.asynchronous.v1.AsyncError
 import net.corda.httprpc.asynchronous.v1.AsyncOperationState
@@ -237,30 +236,28 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     private fun createAsyncOperationResponse(avroStatus: AvroVirtualNodeOperationStatus): ResponseEntity<AsyncOperationStatus> {
-        val status = when (avroStatus.operationType) {
-            VirtualNodeOperationType.VIRTUAL_NODE_UPGRADE_CPI -> {
-                val opData = avroStatus.operationData as VirtualNodeUpgradeOperationStatus
+        val status = when (avroStatus.operationData) {
+            is VirtualNodeUpgradeOperationStatus -> {
+                val avroOperationData = avroStatus.operationData as AvroVirtualNodeUpgradeOperationStatus
                 AsyncOperationStatus.ok(
                     "UPGRADE_VIRTUAL_NODE",
                     VirtualNodeUpgradeOperationStatus(
-                        opData.requestId,
-                        opData.originalCpiFileChecksum,
-                        opData.targetCpiFileChecksum,
-                        opData.virtualNodeShortHash,
-                        opData.actor,
-                        opData.stage
+                        avroStatus.requestId,
+                        avroOperationData.originalCpiFileChecksum,
+                        avroOperationData.targetCpiFileChecksum,
+                        avroStatus.virtualNodeShortHash,
+                        avroStatus.actor,
+                        avroOperationData.stage
                     ),
                     avroStatus.state.toEndpointType(),
                     avroStatus.requestTimestamp,
-                    avroStatus.completedTimestamp,
-                    avroStatus.errors.map{it.toEndpointType()},
-                    )
-            }
-            VirtualNodeOperationType.VIRTUAL_NODE_CREATION -> {
-                throw CordaRuntimeException("Virtual node async operation type not recognized: ${avroStatus.operationType}")
+                    avroStatus.latestUpdateTimestamp,
+                    avroStatus.heartbeatTimestamp,
+                    avroStatus.errors.map { it.toEndpointType() },
+                )
             }
             else -> {
-                throw CordaRuntimeException("Virtual node async operation type not recognized: ${avroStatus.operationType}")
+                throw CordaRuntimeException("Virtual node async operation type not recognized: ${avroStatus.operationData::class.java.simpleName}")
             }
         }
         return ResponseEntity.ok(status)
@@ -289,19 +286,13 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         actor: String
     ): String {
         val requestId = UUID.randomUUID().toString()
-        val request = VirtualNodeCpiUpgradeRequest(
-            requestId,
-            virtualNodeShortId,
-            cpiFileChecksum,
-            actor,
-        )
 
         sendAsync(
             virtualNodeShortId,
             VirtualNodeAsynchronousRequest(
                 requestTime,
                 requestId,
-                request
+                VirtualNodeUpgradeRequest(virtualNodeShortId, cpiFileChecksum, actor)
             )
         )
 
@@ -360,7 +351,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                         flowP2pOperationalStatus,
                         flowStartOperationalStatus,
                         flowOperationalStatus,
-                        vaultDbOperationalStatus
+                        vaultDbOperationalStatus,
+                        null
                     )
                 }
             }
@@ -386,7 +378,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             flowP2pOperationalStatus,
             flowStartOperationalStatus,
             flowOperationalStatus,
-            vaultDbOperationalStatus
+            vaultDbOperationalStatus,
+            operationInProgress
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

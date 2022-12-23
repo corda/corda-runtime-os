@@ -8,7 +8,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -43,18 +42,19 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
                         entity.cpiVersion,
                         signerSummaryHash
                     ),
-                    vaultDmlConnectionId = entity.holdingIdentity.vaultDMLConnectionId!!,
-                    cryptoDmlConnectionId = entity.holdingIdentity.cryptoDMLConnectionId!!,
-                    uniquenessDmlConnectionId = entity.holdingIdentity.uniquenessDMLConnectionId!!,
-                    vaultDdlConnectionId = entity.holdingIdentity.vaultDDLConnectionId,
-                    cryptoDdlConnectionId = entity.holdingIdentity.cryptoDDLConnectionId,
-                    uniquenessDdlConnectionId = entity.holdingIdentity.uniquenessDDLConnectionId,
+                    vaultDmlConnectionId = entity.vaultDMLConnectionId!!,
+                    cryptoDmlConnectionId = entity.cryptoDMLConnectionId!!,
+                    uniquenessDmlConnectionId = entity.uniquenessDMLConnectionId!!,
+                    vaultDdlConnectionId = entity.vaultDDLConnectionId,
+                    cryptoDdlConnectionId = entity.cryptoDDLConnectionId,
+                    uniquenessDdlConnectionId = entity.uniquenessDDLConnectionId,
                     version = entity.entityVersion,
-                    timestamp = entity.insertTimestamp.getOrNow(),
+                    timestamp = entity.insertTimestamp,
                     flowP2pOperationalStatus = entity.flowP2pOperationalStatus.name,
                     flowStartOperationalStatus = entity.flowStartOperationalStatus.name,
                     flowOperationalStatus = entity.flowOperationalStatus.name,
                     vaultDbOperationalStatus = entity.vaultDbOperationalStatus.name,
+                    operationInProgress = entity.operationInProgress?.id//todo conal - should this be requestId?
                 )
             }
         }

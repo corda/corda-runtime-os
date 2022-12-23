@@ -46,7 +46,6 @@ import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import java.lang.System.currentTimeMillis
@@ -342,19 +341,20 @@ internal class VirtualNodeWriterProcessor(
                 VirtualNodeInfo(
                     holdingIdentity,
                     cpiIdentifier,
-                    this.holdingIdentity.vaultDDLConnectionId,
-                    this.holdingIdentity.vaultDMLConnectionId!!,
-                    this.holdingIdentity.cryptoDDLConnectionId,
-                    this.holdingIdentity.cryptoDMLConnectionId!!,
-                    this.holdingIdentity.uniquenessDDLConnectionId,
-                    this.holdingIdentity.uniquenessDMLConnectionId!!,
+                    vaultDDLConnectionId,
+                    vaultDMLConnectionId!!,
+                    cryptoDDLConnectionId,
+                    cryptoDMLConnectionId!!,
+                    uniquenessDDLConnectionId,
+                    uniquenessDMLConnectionId!!,
                     this.holdingIdentity.hsmConnectionId,
-                    this.flowP2pOperationalStatus.name,
-                    this.flowStartOperationalStatus.name,
-                    this.flowOperationalStatus.name,
-                    this.vaultDbOperationalStatus.name,
-                    this.entityVersion,
-                    this.insertTimestamp!!
+                    flowP2pOperationalStatus.name,
+                    flowStartOperationalStatus.name,
+                    flowOperationalStatus.name,
+                    vaultDbOperationalStatus.name,
+                    operationInProgress?.id,
+                    entityVersion,
+                    insertTimestamp!!
                 )
             }.toAvro()
 
@@ -489,8 +489,8 @@ internal class VirtualNodeWriterProcessor(
                             putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor)!!,
                         )
-                    virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
-                    virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
+                    virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity)
+                    virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId, dbConnections)
                     dbConnections
                 }
         } catch (e: Exception) {

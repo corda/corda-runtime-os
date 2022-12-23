@@ -19,7 +19,6 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
  * @param uniquenessDdlConnectionId Uniqueness DB DDL connection ID.
  * @param uniquenessDmlConnectionId Uniqueness DB DML connection ID.
  * @param hsmConnectionId HSM connection ID.
- * @param state The state of the virtual node.
  */
 data class VirtualNodeInfo(
     val holdingIdentity: HoldingIdentity,
@@ -35,4 +34,5 @@ data class VirtualNodeInfo(
     val flowStartOperationalStatus: String,
     val flowOperationalStatus: String,
     val vaultDbOperationalStatus: String,
+    val operationInProgress: String? = null
 )

@@ -7,13 +7,13 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
-import net.corda.libs.virtualnode.common.exception.HoldingIdentityNotFoundException
 import net.corda.libs.virtualnode.common.exception.MgmGroupMismatchException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
+import net.corda.virtualnode.write.db.impl.writer.dto.VirtualNodeLite
 import net.corda.virtualnode.write.db.impl.writer.management.VirtualNodeManagementHandler
 import net.corda.virtualnode.write.db.impl.writer.management.common.VirtualNodeInfoRecordPublisher
 
@@ -44,20 +44,21 @@ internal class VirtualNodeUpgradeHandler(
             logger.info("Starting upgrade requested at $requestTimestamp")
             request.validateFields()
 
+            // all three of these "find" operations should be doable in one transaction.
             // todo work out which of these operations can be condensed into one transaction
 
             val currentVirtualNode = findCurrentVirtualNode(request.virtualNodeShortHash)
-
-            val upgradeCpiMetadata = findUpgradeCpi(request.cpiFileChecksum)
-            val (holdingId, connections) = findHoldingIdentityAndConnections(request.virtualNodeShortHash)
-
+            val targetCpiMetadata = findUpgradeCpi(request.cpiFileChecksum)
             val originalCpiMetadata = findCurrentCpiMetadata(currentVirtualNode.cpiName, currentVirtualNode.cpiVersion)
 
-            validateCpiInSameGroup(originalCpiMetadata, upgradeCpiMetadata)
+            validateCpiInSameGroup(originalCpiMetadata, targetCpiMetadata)
 
-            virtualNodeEntityRepository.updateVirtualNodeCpi(holdingId, upgradeCpiMetadata.id)
+            val updatedVirtualNode = virtualNodeEntityRepository.updateVirtualNodeCpi(
+                currentVirtualNode.holdingIdentityShortHash,
+                targetCpiMetadata.id
+            )
 
-            virtualNodeInfoPublisher.publishVNodeInfo(holdingId, upgradeCpiMetadata, connections, clock.instant())
+            virtualNodeInfoPublisher.publishVNodeInfo(updatedVirtualNode, targetCpiMetadata.id)
 
         } catch (e: Exception) {
             handleException(respFuture, e)
@@ -81,15 +82,11 @@ internal class VirtualNodeUpgradeHandler(
         }
     }
 
-    private fun findCurrentVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntityRepository.VirtualNodeLite {
+    private fun findCurrentVirtualNode(holdingIdentityShortHash: String): VirtualNodeLite {
         return virtualNodeEntityRepository.findByHoldingIdentity(holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
     }
 
-    private fun findHoldingIdentityAndConnections(holdingIdentityShortHash: String): VirtualNodeEntityRepository.HoldingIdentityAndConnections {
-        return virtualNodeEntityRepository.getHoldingIdentityAndConnections(holdingIdentityShortHash)
-            ?: throw HoldingIdentityNotFoundException(holdingIdentityShortHash)
-    }
 
     private fun findUpgradeCpi(cpiFileChecksum: String): CpiMetadataLite {
         return virtualNodeEntityRepository.getCpiMetadataByChecksum(cpiFileChecksum)

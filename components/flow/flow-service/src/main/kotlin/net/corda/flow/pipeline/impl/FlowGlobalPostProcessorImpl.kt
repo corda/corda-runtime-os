@@ -61,8 +61,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     private fun getFlowMapperSessionKilledEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
-        val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
+        val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO make this configurable as per CORE-7357 (pull/2264)
         return context.checkpoint.sessions
+            // not necessary to clean up sessions that are already closed or errored. What about CLOSING?
+            .filterNot { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
             .map {
                 it.hasScheduledCleanup = true
                 flowRecordFactory.createFlowMapperEventRecord(

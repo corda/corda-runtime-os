@@ -4,19 +4,19 @@ import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.CascadeType
 import javax.persistence.Column
-import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.EntityManager
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
 import javax.persistence.FetchType
 import javax.persistence.Id
-import javax.persistence.IdClass
 import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
+import javax.persistence.MapsId
+import javax.persistence.OneToOne
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -30,23 +30,25 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = VNODE_INSTANCE_DB_TABLE, schema = CONFIG)
-@IdClass(VirtualNodeEntityKey::class)
-data class VirtualNodeEntity(
-    @ManyToOne(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.PERSIST, CascadeType.MERGE]
-    )
+class VirtualNodeEntity(
+    @Id
+    @Column(name = "holding_identity_id")
+    val holdingIdentityId: String,
+
+    @MapsId
+    @OneToOne(cascade = [CascadeType.ALL])
     @JoinColumn(name = "holding_identity_id")
     val holdingIdentity: HoldingIdentityEntity,
-    @Id
+
     @Column(name = "cpi_name", nullable = false)
     var cpiName: String,
-    @Id
+
     @Column(name = "cpi_version", nullable = false)
     var cpiVersion: String,
-    @Id
+
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
+
     @Enumerated(value = EnumType.STRING)
     @Column(name = "flow_p2p_operational_status", nullable = false)
     var flowP2pOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
@@ -63,7 +65,29 @@ data class VirtualNodeEntity(
     @Column(name = "vault_db_operational_status", nullable = false)
     var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @Column(name = "insert_ts", insertable = false, updatable = true)
+    @Column(name = "vault_ddl_connection_id")
+    var vaultDDLConnectionId: UUID? = null,
+
+    @Column(name = "vault_dml_connection_id")
+    var vaultDMLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_ddl_connection_id")
+    var cryptoDDLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_dml_connection_id")
+    var cryptoDMLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_ddl_connection_id")
+    var uniquenessDDLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_dml_connection_id")
+    var uniquenessDMLConnectionId: UUID? = null,
+
+    @OneToOne(cascade = [CascadeType.MERGE], fetch = FetchType.LAZY)
+    @JoinColumn(name = "operation_in_progress")
+    var operationInProgress: VirtualNodeOperationEntity? = null,
+
+    @Column(name = "insert_ts", insertable = false)
     var insertTimestamp: Instant? = null,
 
     @Column(name = "is_deleted", nullable = false)
@@ -72,7 +96,8 @@ data class VirtualNodeEntity(
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0,
-) {
+): Serializable {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -80,35 +105,18 @@ data class VirtualNodeEntity(
         other as VirtualNodeEntity
 
         if (holdingIdentity != other.holdingIdentity) return false
-        if (cpiName != other.cpiName) return false
-        if (cpiVersion != other.cpiVersion) return false
-        if (cpiSignerSummaryHash != other.cpiSignerSummaryHash) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = holdingIdentity.hashCode()
-        result = 31 * result + cpiName.hashCode()
-        result = 31 * result + cpiVersion.hashCode()
-        result = 31 * result + cpiSignerSummaryHash.hashCode()
-        return result
+        return holdingIdentity.hashCode()
     }
 }
 
 enum class OperationalStatus {
     ACTIVE, INACTIVE
 }
-
-/** The composite primary key for a virtual node instance. */
-@Embeddable
-@Suppress("Unused")
-data class VirtualNodeEntityKey(
-    private val holdingIdentity: HoldingIdentityEntity,
-    private val cpiName: String,
-    private val cpiVersion: String,
-    private val cpiSignerSummaryHash: String
-) : Serializable
 
 /**
  * If you change this function ensure that you check the generated SQL from

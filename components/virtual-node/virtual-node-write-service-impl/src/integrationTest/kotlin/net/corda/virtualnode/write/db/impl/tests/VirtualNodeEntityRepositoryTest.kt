@@ -461,7 +461,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         entityManagerFactory.transaction {
-            repository.putVirtualNode(it, holdingIdentity, cpiId)
+            repository.putVirtualNode(it, holdingIdentity, cpiId, dbConnections)
         }
 
         val key = VirtualNodeEntityKey(holdingIdentityEntity, cpiId.name, cpiId.version, signerSummaryHash)
@@ -479,7 +479,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         // Save should be idempotent
         entityManagerFactory.transaction {
-            repository.putVirtualNode(it, holdingIdentity, cpiId)
+            repository.putVirtualNode(it, holdingIdentity, cpiId, dbConnections)
         }
     }
 }

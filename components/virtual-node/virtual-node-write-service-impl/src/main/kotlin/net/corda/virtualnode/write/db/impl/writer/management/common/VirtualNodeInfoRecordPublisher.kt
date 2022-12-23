@@ -1,15 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer.management.common
 
-import java.time.Instant
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.virtualnode.write.db.impl.writer.dto.VirtualNodeLite
 
 internal interface VirtualNodeInfoRecordPublisher {
-    fun publishVNodeInfo(
-        holdingIdentity: HoldingIdentity,
-        cpiMetadata: CpiMetadataLite,
-        dbConnections: VirtualNodeDbConnections,
-        completedInstant: Instant
-    )
+    fun publishVNodeInfo(updatedVirtualNode: VirtualNodeLite, cpiIdentifier: CpiIdentifier)
 }

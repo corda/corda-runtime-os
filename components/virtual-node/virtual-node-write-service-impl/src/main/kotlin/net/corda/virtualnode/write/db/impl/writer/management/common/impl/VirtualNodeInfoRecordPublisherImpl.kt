@@ -6,24 +6,16 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
+import net.corda.virtualnode.write.db.impl.writer.dto.VirtualNodeLite
 import net.corda.virtualnode.write.db.impl.writer.management.common.VirtualNodeInfoRecordPublisher
 
 internal class VirtualNodeInfoRecordPublisherImpl(
     private val vnodePublisher: Publisher
 ) : VirtualNodeInfoRecordPublisher {
 
-    override fun publishVNodeInfo(
-        holdingIdentity: HoldingIdentity,
-        cpiMetadata: CpiMetadataLite,
-        dbConnections: VirtualNodeDbConnections,
-        completedInstant: Instant
-    ) {
-        val virtualNodeRecord = createVirtualNodeRecord(holdingIdentity, cpiMetadata, dbConnections, completedInstant)
+    override fun publishVNodeInfo(updatedVirtualNode: VirtualNodeLite, cpiIdentifier: CpiIdentifier) {
+        val virtualNodeRecord = createVirtualNodeRecord(updatedVirtualNode, cpiIdentifier)
         try {
             // TODO - CORE-3319 - Strategy for DB and Kafka retries.
             val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
@@ -38,27 +30,33 @@ internal class VirtualNodeInfoRecordPublisherImpl(
     }
 
     private fun createVirtualNodeRecord(
-        holdingIdentity: HoldingIdentity,
-        cpiMetadata: CpiMetadataLite,
-        dbConnections: VirtualNodeDbConnections,
-        completedInstant: Instant
+        updatedVirtualNode: VirtualNodeLite,
+        cpiIdentifier: CpiIdentifier
     ): Record<net.corda.data.identity.HoldingIdentity, VirtualNodeInfo> {
 
-        val cpiIdentifier = CpiIdentifier(cpiMetadata.id.name, cpiMetadata.id.version, cpiMetadata.id.signerSummaryHash)
-        val virtualNodeInfo = with(dbConnections) {
-            net.corda.virtualnode.VirtualNodeInfo(
-                holdingIdentity,
-                cpiIdentifier,
+        val avroVnodeInfo = with(updatedVirtualNode) {
+            VirtualNodeInfo(
+                net.corda.data.identity.HoldingIdentity(
+                    holdingIdentity.holdingIdentityX500Name,
+                    holdingIdentity.groupId
+                ),
+                cpiIdentifier.toAvro(),
                 vaultDdlConnectionId,
                 vaultDmlConnectionId,
                 cryptoDdlConnectionId,
                 cryptoDmlConnectionId,
                 uniquenessDdlConnectionId,
                 uniquenessDmlConnectionId,
-                timestamp = completedInstant
+                holdingIdentity.hsmConnectionId,
+                flowP2pOperationalStatus,
+                flowStartOperationalStatus,
+                flowOperationalStatus,
+                vaultDbOperationalStatus,
+                entityVersion,
+                creationTimestamp
             )
-                .toAvro()
         }
-        return Record(Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
+
+        return Record(Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC, avroVnodeInfo.holdingIdentity, avroVnodeInfo)
     }
 }

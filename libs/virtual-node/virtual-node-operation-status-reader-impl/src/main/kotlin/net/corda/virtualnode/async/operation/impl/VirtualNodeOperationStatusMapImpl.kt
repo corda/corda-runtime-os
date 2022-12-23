@@ -41,7 +41,7 @@ class VirtualNodeOperationStatusMapImpl : VirtualNodeOperationStatusMap {
     }
 
     override fun putAll(incoming: Map<String, AvroVirtualNodeOperationStatus>) {
-        incoming.forEach { put(VirtualNodeOperationStatusMap.Key(it.value.virtualNodeShortId, it.key), it.value) }
+        incoming.forEach { put(VirtualNodeOperationStatusMap.Key(it.value.virtualNodeShortHash, it.key), it.value) }
     }
 
     private fun putValue(key: VirtualNodeOperationStatusMap.Key, value: AvroVirtualNodeOperationStatus) {
@@ -68,7 +68,7 @@ class VirtualNodeOperationStatusMapImpl : VirtualNodeOperationStatusMap {
             return
         }
 
-        remove(VirtualNodeOperationStatusMap.Key(removeByVnodeShortHash.virtualNodeShortId, requestId))
+        remove(VirtualNodeOperationStatusMap.Key(removeByVnodeShortHash.virtualNodeShortHash, requestId))
     }
 
     private fun remove(key: VirtualNodeOperationStatusMap.Key) {
