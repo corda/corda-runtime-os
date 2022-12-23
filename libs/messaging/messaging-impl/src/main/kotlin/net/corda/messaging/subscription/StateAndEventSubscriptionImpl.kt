@@ -141,7 +141,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
                 while (!threadLooper.loopStopped) {
                     stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                    processEvents()
+                    processBatchOfEvents()
                 }
 
             } catch (ex: Exception) {
@@ -176,19 +176,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    @Suppress("NestedBlockDepth")
-    private fun processEvents() {
+    private fun processBatchOfEvents() {
         var attempts = 0
-        var pollAndProcessSuccessful = false
-        while (!pollAndProcessSuccessful && !threadLooper.loopStopped) {
+        var keepProcessing = true
+        while (keepProcessing && !threadLooper.loopStopped) {
             try {
                 log.debug { "Polling and processing events" }
-                for (batch in getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT))) {
-                    if (!tryProcessBatchOfEvents(batch)) {
-                        return
-                    }
+                var rebalanceOccurred = false
+                val batches = getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT)).iterator()
+                while (!rebalanceOccurred && batches.hasNext()) {
+                    rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
                 }
-                pollAndProcessSuccessful = true
+                keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -208,13 +207,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Process a batch of events from the last poll and publish the outputs (including DLQd events)
+     *
+     * @return false if the batch had to be abandoned due to a repartition
+     */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         for (event in events) {
-            if (stateAndEventConsumer.resetPollInterval()) {
+            if (!stateAndEventConsumer.resetPollInterval()) {
                 log.debug { "Abandoning event processing due to repartition." }
                 return false
             }

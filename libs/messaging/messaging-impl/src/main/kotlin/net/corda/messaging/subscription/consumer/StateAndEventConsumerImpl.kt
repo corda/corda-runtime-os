@@ -228,10 +228,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
             if (partitionState.dirty) {
                 partitionState.dirty = false
-                return true
+                return false
             }
         }
-        return false
+        return true
     }
 
     /**
