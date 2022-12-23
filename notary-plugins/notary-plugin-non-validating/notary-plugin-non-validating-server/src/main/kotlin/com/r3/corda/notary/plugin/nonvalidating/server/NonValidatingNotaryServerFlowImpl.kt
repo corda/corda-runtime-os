@@ -176,8 +176,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             filteredTx.id,
             outputStates.size,
             filteredTx.timeWindow!!,
-            inputStates.values.values,
-            refStates.values.values,
+            inputStates.values.values.toList(),
+            refStates.values.values.toList(),
             filteredTx.notary!!
         )
     }
