@@ -152,10 +152,10 @@ private class CombinedWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
+    @Option(names = ["-r", "--rpc-params"], description = ["RPC parameters for the worker."])
     var rpcParams = emptyMap<String, String>()
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])

@@ -41,7 +41,7 @@ internal class TopicDumper(
         private val logger = LoggerFactory.getLogger("Console")
     }
     @Option(
-        names = ["-m", "--messagingParams"],
+        names = ["-m", "--messaging-params"],
         description = ["Messaging parameters for the topic dumper."]
     )
     var messagingParams = emptyMap<String, String>()
