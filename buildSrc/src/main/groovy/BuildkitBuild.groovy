@@ -56,71 +56,83 @@ abstract class BuildkitBuild extends Exec {
                     .orElse(getProviderFactory().systemProperty("corda.artifactory.password"))
             )
 
-    // Handles to determind build type
+    // Property to set images for release 
     @Input
     final Property<Boolean> releaseCandidate =
             getObjects().property(Boolean).convention(false)
 
+    //Property for nightly builds
     @Input
     final Property<Boolean> nightlyBuild =
             getObjects().property(Boolean).convention(false)
 
+    // Property for pre-test
     @Input
     final Property<Boolean> preTest =
             getObjects().property(Boolean).convention(false)
 
-    // Handle to set the build tool used to create an image
+    // Property to set the build tool used to create an image
     // Currently supported tools are docker buildx and native builkit 
     // NOTE: native buidkit requires port forwarding to the aws buildkit cluster
     @Input
     final Property<Boolean> isBuildx =
             getObjects().property(Boolean).convention(true)
 
-    // Handle for loading images into docker
+    // Property for loading images into docker
     @Input
     final Property<Boolean> useDocker =
             getObjects().property(Boolean).convention(false)
 
+    // The images contain shortened filenames if true
     @Input
     final Property<Boolean> useShortName =
             getObjects().property(Boolean).convention(false)
 
-    // Handles to set the output image's name:tag
+    // Property to set the output image's repository
+    @Input
+    final Property<String> containerRepo =
+            getObjects().property(String).convention('')
+
+    // Property used to set custom image tag
     @Input
     final Property<String> containerTag =
             getObjects().property(String).convention('')
 
+    // Property used to set custom image name
     @Input
     final Property<String> containerName =
             getObjects().property(String).convention('')
 
-    // Handles to set the base image's name:tag
+    // Property to set the base image's name
     @Input
     final Property<String> baseImageName =
             getObjects().property(String).convention('azul/zulu-openjdk')
-
+    
+    // Property to set the base image's tag
     @Input
     final Property<String> baseImageTag =
             getObjects().property(String).convention('11')
-    
+
     // Arguments passed to the image entrypoint
     @Input
     final ListProperty<String> arguments =
             getObjects().listProperty(String)
 
 
-    // Files generated in the build that need to be inside the container
+    // Source Files generated in the build that need to be inside the container
     @PathSensitive(RELATIVE)
     @SkipWhenEmpty
     @InputFiles
     final ConfigurableFileCollection sourceFiles =
             getObjects().fileCollection()
 
+    // Additional files (plugins for example) generated in the build that need to be inside the container
     @PathSensitive(RELATIVE)
     @InputFiles
     final ConfigurableFileCollection extraSourceFiles =
             getObjects().fileCollection()
 
+    // JDBC driver files generated in the build that need to be inside the container
     @PathSensitive(RELATIVE)
     @InputFiles
     final ConfigurableFileCollection jdbcDriverFiles =
@@ -144,16 +156,16 @@ abstract class BuildkitBuild extends Exec {
     BuildkitBuild() {
         group = 'publishing'
 
-        if(!isBuildx){
+        if (!isBuildx) {
             try {
-            (new Socket('127.0.0.1', 3476)).close();
-            logger.quiet("Buildkit daemon found")
+                (new Socket('127.0.0.1', 3476)).close();
+                logger.quiet("Buildkit daemon found")
             }
             catch (SocketException e) {
                 throw new GradleException("No daemon found. Please connect to available buildkit daemon (and port forward it to 3476) and start again")
             }
         }
-        
+
         gitTask = project.tasks.register("gitVersion", GetLatestGitRevision.class)
         super.dependsOn(gitTask)
 
@@ -196,14 +208,11 @@ abstract class BuildkitBuild extends Exec {
 
         def names = []
 
-        (sourceFiles+ extraSourceFiles).forEach {
-            names.add("${it.name}")
+        (sourceFiles + extraSourceFiles).forEach {
             if (Files.exists(Paths.get(it.path))) {
                 Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$it.name"), StandardCopyOption.REPLACE_EXISTING)
             }
         }
-
-        println("${names}")
 
         jdbcDriverFiles.forEach {
             if (Files.exists(Paths.get(it.path))) {
@@ -211,9 +220,14 @@ abstract class BuildkitBuild extends Exec {
             }
         }
 
-        if (!containerTag.get().isEmpty()) {
-            targetTags = ["${containerTag.get()}"]
-            imageRepo.add([name: targetRepo, tag: targetTags])
+        if (!containerRepo.get().isEmpty()) {
+            targetRepo = "${containerRepo.get()}"
+            if (!containerTag.get().isEmpty()) {
+                targetTags = ["${containerTag.get()}"]
+                imageRepo.add([name: targetRepo, tag: targetTags])
+            } else {
+                imageRepo.add([name: targetRepo, tag: ""])
+            }
         } else if (dockerHubPublish.get()) {
             targetRepo = "corda"
             targetTags = ["${version}"]
@@ -271,10 +285,10 @@ abstract class BuildkitBuild extends Exec {
 
         for (repo in imageRepo) {
             for (tag in repo.tag) {
-                if(isBuildx.get()){
+                if (isBuildx.get()) {
                     logger.info("\nUsing docker Buildx\n")
                     baseCommand = ['docker', 'buildx', "build", "--file ./docker/Dockerfile"]
-                    opts = ["--build-arg BASE_IMAGE=${baseImageName}", "--build-arg BUILD_PATH=${containerizationDir.toString().replace("${project.rootDir}",".")}", "--build-arg JAR_LOCATION=${containerLocation + subDir.get()}", "--build-arg JDBC_PATH=${driverDir.toString().replace("${project.rootDir}",".")}", "--build-arg JDBC_DRIVER_LOCATION=${driverLocation}", "--build-arg IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}*${entryName}**.jar\" "]
+                    opts = ["--build-arg BASE_IMAGE=${baseImageName}", "--build-arg BUILD_PATH=${containerizationDir.toString().replace("${project.rootDir}", ".")}", "--build-arg JAR_LOCATION=${containerLocation + subDir.get()}", "--build-arg JDBC_PATH=${driverDir.toString().replace("${project.rootDir}", ".")}", "--build-arg JDBC_DRIVER_LOCATION=${driverLocation}", "--build-arg IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}*${entryName}**.jar\" "]
                     commandTail = ["--${useDocker.get() ? "load" : "push"}", "--tag ${repo.name}/corda-os-${containerName.get()}:${tag}", "--cache-from ${repo.name}/corda-os-${containerName.get()}-cache", "--cache-to type=registry,ref=${repo.name}/corda-os-${containerName.get()}-cache", "."]
                 } else {
                     logger.info("\nUsing native buildkit client\n")
