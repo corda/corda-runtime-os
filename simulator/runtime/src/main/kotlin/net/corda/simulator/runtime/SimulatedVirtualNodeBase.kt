@@ -4,6 +4,7 @@ import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.SimulatedVirtualNode
 import net.corda.simulator.runtime.flows.BaseFlowManager
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
@@ -45,7 +46,12 @@ class SimulatedVirtualNodeBase(
         val flowClassName = input.flowClassName
         log.info("Calling flow $flowClassName for member \"$member\" with request: ${input.requestBody}")
         val flow = flowFactory.createInitiatingFlow(member, flowClassName)
-        injector.injectServices(flow, member, fiber, SimFlowContextProperties(contextPropertiesMap))
+        injector.injectServices(
+            FlowAndProtocol(flow),
+            member,
+            fiber,
+            SimFlowContextProperties(contextPropertiesMap)
+        )
         val result = flowManager.call(input.toRPCRequestData(), flow)
         log.info("Finished flow $flowClassName for member \"$member\"")
         return result
