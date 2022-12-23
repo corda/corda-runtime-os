@@ -106,7 +106,8 @@ data class UtxoSignedTransactionImpl(
         }.map { it.by }.toSet()
         if (signatories.any {
                 !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-            }) {
+            })
+        {
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }

@@ -42,13 +42,13 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         val inputStateAndRefs =
             wrappedUtxoWireTransaction.inputStateRefs.map { it ->
                 sourceTransactions[it.transactionHash]?.get(it.index)
-                    ?: throw (CordaRuntimeException("Input state not found ${it.transactionHash} ${it.index}"))
+                    ?: throw (CordaRuntimeException("Input state not found $it"))
             }
 
         val referenceStateAndRefs =
             wrappedUtxoWireTransaction.referenceStateRefs.map { it ->
                 sourceTransactions[it.transactionHash]?.get(it.index)
-                    ?: throw (CordaRuntimeException("Reference state not found ${it.transactionHash} ${it.index}"))
+                    ?: throw (CordaRuntimeException("Reference state not found $it"))
             }
 
         return UtxoLedgerTransactionImpl(
