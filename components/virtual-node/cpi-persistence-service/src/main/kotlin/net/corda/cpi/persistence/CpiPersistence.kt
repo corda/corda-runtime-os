@@ -1,12 +1,13 @@
-package net.corda.chunking.db.impl.persistence
+package net.corda.cpi.persistence
 
-import net.corda.chunking.RequestId
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.SecureHash
+import kotlin.jvm.Throws
 
-interface CpiPersistence {
+interface CpiPersistence: Lifecycle {
     /**
      * Check if we already have a cpk persisted with this checksum
      *
@@ -34,7 +35,7 @@ interface CpiPersistence {
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
-        requestId: RequestId,
+        requestId: String,
         groupId: String,
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
@@ -54,7 +55,7 @@ interface CpiPersistence {
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
-        requestId: RequestId,
+        requestId: String,
         groupId: String,
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
@@ -76,15 +77,14 @@ interface CpiPersistence {
      * @param cpiVersion version of the CPI
      * @param groupId the MGM group id that we want to use for this CPI
      * @param forceUpload flag indicating if this is part of a force upload operation
-     * @param requestId upload request ID
      */
     @Suppress("LongParameterList")
+    @Throws(CpiPersistenceValidationException::class, CpiPersistenceDuplicateCpiException::class)
     fun validateCanUpsertCpi(
         cpiName: String,
         cpiSignerSummaryHash: String,
         cpiVersion: String,
         groupId: String,
-        forceUpload: Boolean,
-        requestId: String
+        forceUpload: Boolean
     )
 }

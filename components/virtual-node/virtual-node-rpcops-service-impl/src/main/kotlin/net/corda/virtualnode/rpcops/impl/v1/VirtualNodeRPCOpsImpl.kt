@@ -15,6 +15,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.endpoints.v1.types.MGMVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -168,6 +169,56 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
+    override fun createMgmVirtualNode(
+        request: MGMVirtualNodeRequest
+    ): VirtualNodeInfo {
+        val instant = clock.instant()
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+        validateX500Name(request.x500Name)
+
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val rpcRequest = with(request) {
+            VirtualNodeManagementRequest(
+                instant,
+                VirtualNodeCreateRequest(
+                    x500Name,
+                    "NO_CPI",
+                    vaultDdlConnection,
+                    vaultDmlConnection,
+                    cryptoDdlConnection,
+                    cryptoDmlConnection,
+                    uniquenessDdlConnection,
+                    uniquenessDmlConnection,
+                    actor
+                )
+            )
+        }
+        val resp = sendAndReceive(rpcRequest)
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeCreateResponse -> {
+                // Convert response into expected type
+                resolvedResponse.run {
+                    VirtualNodeInfo(
+                        HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
+                        cpiIdentifier?.let { CpiIdentifier.fromAvro(it) },
+                        vaultDdlConnectionId,
+                        vaultDmlConnectionId,
+                        cryptoDdlConnectionId,
+                        cryptoDmlConnectionId,
+                        uniquenessDdlConnectionId,
+                        uniquenessDmlConnectionId,
+                        hsmConnectionId,
+                        virtualNodeState
+                    )
+                }
+            }
+            is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+
     /**
      * Retrieves the VirtualNodeInfo for a virtual node with the given ShortHash from the message bus
      *
@@ -228,7 +279,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                 resolvedResponse.run {
                     VirtualNodeInfo(
                         HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
-                        CpiIdentifier.fromAvro(cpiIdentifier),
+                        cpiIdentifier?.let { CpiIdentifier.fromAvro(it) },
                         vaultDdlConnectionId,
                         vaultDmlConnectionId,
                         cryptoDdlConnectionId,

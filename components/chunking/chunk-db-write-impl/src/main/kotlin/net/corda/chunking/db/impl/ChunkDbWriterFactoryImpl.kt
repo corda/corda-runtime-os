@@ -6,8 +6,8 @@ import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
-import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
+import net.corda.cpi.persistence.CpiPersistence
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
@@ -62,6 +62,7 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
+        cpiPersistence: CpiPersistence,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
         // Could be reused
@@ -75,6 +76,7 @@ class ChunkDbWriterFactoryImpl(
             messagingConfig,
             bootConfig,
             entityManagerFactory,
+            cpiPersistence,
             statusTopic,
             cpiInfoWriteService
         )
@@ -99,11 +101,11 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
+        cpiPersistence: CpiPersistence,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
-        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)

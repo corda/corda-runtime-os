@@ -7,6 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
+import net.corda.libs.virtualnode.endpoints.v1.types.MGMVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -62,5 +63,22 @@ interface VirtualNodeRPCOps : RpcOps {
     fun getVirtualNode(
         @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
+    ): VirtualNodeInfo
+
+    /**
+     * Creates a virtual node.
+     *
+     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node creation request could not be published.
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpRpcPOST(
+        path = "mgm",
+        title = "Create MGM virtual node",
+        description = "This method creates a new virtual node.",
+        responseDescription = "The details of the created virtual node."
+    )
+    fun createMgmVirtualNode(
+        @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
+        request: MGMVirtualNodeRequest
     ): VirtualNodeInfo
 }

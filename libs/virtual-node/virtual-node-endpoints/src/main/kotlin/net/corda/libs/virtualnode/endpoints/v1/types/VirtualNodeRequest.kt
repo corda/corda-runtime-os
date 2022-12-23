@@ -16,3 +16,13 @@ data class VirtualNodeRequest(
     val uniquenessDdlConnection: String?,
     val uniquenessDmlConnection: String?
 )
+
+data class MGMVirtualNodeRequest(
+    val x500Name: String,
+    val vaultDdlConnection: String?,
+    val vaultDmlConnection: String?,
+    val cryptoDdlConnection: String?,
+    val cryptoDmlConnection: String?,
+    val uniquenessDdlConnection: String?,
+    val uniquenessDmlConnection: String?
+)

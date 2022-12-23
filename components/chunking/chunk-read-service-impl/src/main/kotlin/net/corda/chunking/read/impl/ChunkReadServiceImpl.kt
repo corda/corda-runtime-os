@@ -5,6 +5,7 @@ import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpi.persistence.CpiPersistence
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
@@ -40,7 +41,9 @@ class ChunkReadServiceImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = CpiInfoWriteService::class)
-    private val cpiInfoWriteService: CpiInfoWriteService
+    private val cpiInfoWriteService: CpiInfoWriteService,
+    @Reference(service = CpiPersistence::class)
+    private val cpiPersistence: CpiPersistence
 ) : ChunkReadService, LifecycleEventHandler {
     companion object {
         val log: Logger = contextLogger()
@@ -109,7 +112,7 @@ class ChunkReadServiceImpl @Activate constructor(
         val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
+            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiPersistence, cpiInfoWriteService)
             .apply { start() }
 
         coordinator.updateStatus(LifecycleStatus.UP)

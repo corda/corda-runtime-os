@@ -1,0 +1,21 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "CPI Persistence"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api "net.corda:corda-crypto"
+
+    api project(":libs:lifecycle:lifecycle")
+    api project(":libs:packaging:packaging")
+    api project(":libs:virtual-node:cpi-datamodel")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

@@ -1,9 +1,6 @@
-package net.corda.chunking.db.impl.validation
+package net.corda.cpi.persistence.impl
 
-import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpiupload.DuplicateCpiUploadException
-import net.corda.libs.cpiupload.ValidationException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -24,11 +21,11 @@ class UpsertValidationTest {
         }
         val tx = mock<EntityTransaction>()
         val mockEntityManager = mock<EntityManager>() {
-            on { it.createQuery(any(), any<Class<CpiMetadataEntity>>()) } doReturn(query)
+            on { it.createQuery(any(), any<Class<CpiMetadataEntity>>()) } doReturn (query)
             on { it.transaction } doReturn (tx)
         }
         return mock<EntityManagerFactory>() {
-            on {  it.createEntityManager() } doReturn (mockEntityManager)
+            on { it.createEntityManager() } doReturn (mockEntityManager)
         }
     }
     @Test

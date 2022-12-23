@@ -3,10 +3,13 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.cpi.persistence.CpiPersistence
+import net.corda.cpi.persistence.CpiPersistenceDuplicateCpiException
+import net.corda.cpi.persistence.CpiPersistenceValidationException
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
@@ -78,14 +81,19 @@ class CpiValidatorImpl(
             requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
         )
 
-        cpiPersistence.validateCanUpsertCpi(
-            cpiName = cpi.metadata.cpiId.name,
-            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
-            cpiVersion = cpi.metadata.cpiId.version,
-            groupId = groupId,
-            forceUpload = fileInfo.forceUpload,
-            requestId = requestId
-        )
+        try {
+            cpiPersistence.validateCanUpsertCpi(
+                cpiName = cpi.metadata.cpiId.name,
+                cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+                cpiVersion = cpi.metadata.cpiId.version,
+                groupId = groupId,
+                forceUpload = fileInfo.forceUpload
+            )
+        } catch(ex: CpiPersistenceValidationException) {
+            throw ValidationException(ex.message ?: "CPI validation failed on upsert.", requestId)
+        } catch (ex: CpiPersistenceDuplicateCpiException) {
+            throw DuplicateCpiUploadException(ex.message ?: "CPI upsert failed due to duplicate CPI upload.")
+        }
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()

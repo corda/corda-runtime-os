@@ -15,5 +15,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    api project(':components:virtual-node:cpi-persistence-service')
     api project(':components:virtual-node:cpi-info-write-service')
 }

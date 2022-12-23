@@ -1,9 +1,9 @@
-package net.corda.chunking.db.impl.persistence.database
+package net.corda.cpi.persistence.impl
 
-import net.corda.chunking.RequestId
-import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.toCpkKey
+import net.corda.cpi.persistence.CpiPersistence
+import net.corda.cpi.persistence.CpiPersistenceDuplicateCpiException
+import net.corda.cpi.persistence.CpiPersistenceValidationException
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
@@ -20,29 +20,53 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
-import net.corda.libs.cpiupload.DuplicateCpiUploadException
-import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.nio.file.Files
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
 import javax.persistence.OptimisticLockException
+import kotlin.jvm.Throws
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
  */
-class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFactory) : CpiPersistence {
+@Component(service = [CpiPersistence::class])
+class DatabaseCpiPersistence @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager
+) : CpiPersistence {
 
     private companion object {
         val log = contextLogger()
     }
+
+    private val coordinator = coordinatorFactory.createCoordinator<CpiPersistence>(::processEvent)
+
+    private val entityManagerFactory: EntityManagerFactory
+        get() = dbConnectionManager.getClusterEntityManagerFactory()
 
     /**
      * Check if we already have a cpk persisted with this checksum
@@ -69,7 +93,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
-        requestId: RequestId,
+        requestId: String,
         groupId: String,
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
@@ -103,7 +127,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 )
             }
 
-            val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpiCpkEntities)
+            val cpiMetadataEntity =
+                createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpiCpkEntities)
 
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
 
@@ -148,7 +173,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
                     val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
-                        changelog.changesetId != inDb.changesetId
+                            changelog.changesetId != inDb.changesetId
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false
@@ -174,8 +199,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 if (ret != null) {
                     log.debug {
                         "Creating new audit entry for ${ret.id.cpkName}:${ret.id.cpkVersion} with signer summary " +
-                            "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion} " +
-                            "with checksum ${ret.fileChecksum}"
+                                "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion} " +
+                                "with checksum ${ret.fileChecksum}"
                     }
                     val audit = CpkDbChangeLogAuditEntity(ret)
                     em.persist(audit)
@@ -187,7 +212,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
-        requestId: RequestId,
+        requestId: String,
         groupId: String,
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
@@ -208,7 +233,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
-            val cpiCpkEntities = createOrUpdateCpiCpkEntities(cpi, existingMetadataEntity.cpks.associateBy { it.metadata.id })
+            val cpiCpkEntities =
+                createOrUpdateCpiCpkEntities(cpi, existingMetadataEntity.cpks.associateBy { it.metadata.id })
 
             val updatedMetadata = existingMetadataEntity.update(
                 fileUploadRequestId = requestId,
@@ -275,7 +301,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
-        requestId: RequestId,
+        requestId: String,
         groupId: String,
         cpiCpkEntities: Set<CpiCpkEntity>
     ): CpiMetadataEntity {
@@ -371,7 +397,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     if (updatedEntities < 1) {
                         throw OptimisticLockException(
                             "Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
-                                "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}."
+                                    "optimistic lock version mismatch. Expected entityVersion " +
+                                    "${existingCpkFile.entityVersion}."
                         )
                     }
                 }
@@ -384,13 +411,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
+    @Throws(CpiPersistenceValidationException::class, CpiPersistenceDuplicateCpiException::class)
     override fun validateCanUpsertCpi(
         cpiName: String,
         cpiSignerSummaryHash: String,
         cpiVersion: String,
         groupId: String,
-        forceUpload: Boolean,
-        requestId: String) {
+        forceUpload: Boolean
+    ) {
         val sameCPis = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
                 "FROM ${CpiMetadataEntity::class.simpleName} c " +
@@ -404,10 +432,10 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
         if (forceUpload) {
             if (!sameCPis.any { it.version == cpiVersion }) {
-                throw ValidationException("No instance of same CPI with previous version found", requestId)
+                throw CpiPersistenceValidationException("No instance of same CPI with previous version found")
             }
-            if(sameCPis.first().groupId != groupId) {
-                throw ValidationException("Cannot force update a CPI with a different group ID", requestId)
+            if (sameCPis.first().groupId != groupId) {
+                throw CpiPersistenceValidationException("Cannot force update a CPI with a different group ID")
             }
             // We can force-update this CPI because we found one with the same version
             return
@@ -415,14 +443,66 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
         // outside a force-update, anything goes except identical ID (name, signer and version)
         if (sameCPis.any { it.version == cpiVersion }) {
-            throw DuplicateCpiUploadException("CPI $cpiName, $cpiVersion, $cpiSignerSummaryHash already exists.")
+            throw CpiPersistenceDuplicateCpiException(
+                "CPI $cpiName, $cpiVersion, $cpiSignerSummaryHash already exists."
+            )
         }
 
         // NOTE: we may do additional validation here, such as validate that the group ID is not changing during a
         //  regular update. For now, just logging this as un-usual.
-        if(sameCPis.any { it.groupId != groupId }) {
-            log.info("CPI upload $requestId contains a CPI with the same name ($cpiName) and " +
-                    "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID.")
+        if (sameCPis.any { it.groupId != groupId }) {
+            log.info(
+                "CPI persistence contains a CPI with the same name ($cpiName) and " +
+                        "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID."
+            )
         }
     }
+
+    private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> onStartEvent(coordinator)
+            is StopEvent -> onStopEvent(coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
+        }
+    }
+
+    override val isRunning get() = coordinator.isRunning
+
+    override fun start() = coordinator.start()
+
+    override fun stop() = coordinator.stop()
+
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        coordinator.createManagedResource("${this::class.java.simpleName}-registration") {
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                )
+            )
+        }
+    }
+
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+        if (event.status == LifecycleStatus.UP) {
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } else {
+            coordinator.updateStatus(LifecycleStatus.DOWN)
+        }
+    }
+
+    private val CpiIdentifier.signerSummaryHashForDbQuery: String
+        get() {
+            return signerSummaryHash?.toString() ?: ""
+        }
+
+    private val CpkIdentifier.signerSummaryHashForDbQuery: String
+        get() {
+            return signerSummaryHash?.toString() ?: ""
+        }
+
+    private fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHashForDbQuery)
 }

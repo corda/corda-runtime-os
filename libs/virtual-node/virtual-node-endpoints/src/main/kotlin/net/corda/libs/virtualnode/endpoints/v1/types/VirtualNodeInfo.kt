@@ -23,7 +23,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
  */
 data class VirtualNodeInfo(
     val holdingIdentity: HoldingIdentity,
-    val cpiIdentifier: CpiIdentifier,
+    val cpiIdentifier: CpiIdentifier? = null,
     val vaultDdlConnectionId: String? = null,
     val vaultDmlConnectionId: String,
     val cryptoDdlConnectionId: String? = null,
