@@ -27,9 +27,9 @@ class ObligationDemoTests {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-obligation-demo-app"
-        const val TEST_CPB_LOCATION = "/META-INF/ledger-obligation-demo-workflow.cpb"
+        const val TEST_CPB_LOCATION = "/META-INF/ledger-obligation-demo-app.cpb"
 
-        val objectMapper = ObjectMapper().apply {
+        val objectMapper = ObjectMapper().apply {u
             registerModule(KotlinModule.Builder().build())
         }
     }
