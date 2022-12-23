@@ -210,7 +210,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * Process a batch of events from the last poll and publish the outputs (including DLQd events)
      *
-     * @return false if the batch had to be abandoned due to a repartition
+     * @return false if the batch had to be abandoned due to a rebalance
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
@@ -219,7 +219,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         for (event in events) {
             if (!stateAndEventConsumer.resetPollInterval()) {
-                log.debug { "Abandoning event processing due to repartition." }
+                log.debug { "Abandoning event processing due to rebalance." }
                 return false
             }
             processEvent(event, outputRecords, updatedStates)
