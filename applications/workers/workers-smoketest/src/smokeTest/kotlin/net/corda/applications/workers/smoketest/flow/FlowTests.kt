@@ -884,6 +884,7 @@ class FlowTests {
 
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
+        // Random unknown state
         val unknownTxId = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -910,8 +911,7 @@ class FlowTests {
         consumeStatesAndValidateResult(
             inputStates = listOf(issuedStates.first()),
             refStates = listOf(
-                // Random unknown state
-                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                unknownTxId
             )
         ) { consumeResult ->
             assertAll({
