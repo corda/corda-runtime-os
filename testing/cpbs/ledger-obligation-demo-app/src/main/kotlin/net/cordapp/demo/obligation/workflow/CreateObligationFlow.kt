@@ -90,6 +90,7 @@ class CreateObligationFlow(
             val holder = memberLookup.lookup(request.holder)
                 ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
 
+            // TODO CORE-6173 use proper notary keyand NotaryLookup service here.
             val notary = memberLookup.lookup(request.notary)?.let { _ ->
                 val notaryKey = memberLookup.lookup().single {
                     it.memberProvidedContext["corda.notary.service.name"] == request.notaryService.toString()
