@@ -55,8 +55,8 @@ interface VirtualNodeRPCOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        title = "Gets the VirtualNodeInfo for a HoldingIdentity",
-        description = "This method returns the VirtualNodeInfo for a given Holding Identity.",
+        title = "Gets the VirtualNodeInfo for a HoldingIdentityShortHash",
+        description = "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
         responseDescription = "VirtualNodeInfo for the specified virtual node."
     )
     fun getVirtualNode(
