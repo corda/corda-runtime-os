@@ -124,15 +124,12 @@ class ObligationDemoTests {
 
         // 4. Verify if all the three transactions are in both Alice's and Bob's vaults.
 
-        println(deleteFlowResult.flowResult!!)
-
         for (holdingId in listOf(aliceHoldingId, bobHoldingId)) {
             listOf(
                 TestCase(createResults.transactionId, 2, 1),
                 TestCase(updateResults.transactionId, 2, 1),
                 TestCase(deleteResults.transactionId, 0, 2)
             ). forEach {
-                println("Checking $holdingId $it.transactionId")
                 val findTransactionFlowRequestId = startRpcFlow(
                     holdingId,
                     mapOf("transactionId" to it.transactionId.toString()),
