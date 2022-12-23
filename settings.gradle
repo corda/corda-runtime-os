@@ -504,6 +504,3 @@ gradleEnterprise {
         }
     }
 }
-include 'testing:cpbs:ledger-utxo-demo-app'
-findProject(':testing:cpbs:ledger-utxo-demo-app')?.name = 'ledger-utxo-demo-app'
-
