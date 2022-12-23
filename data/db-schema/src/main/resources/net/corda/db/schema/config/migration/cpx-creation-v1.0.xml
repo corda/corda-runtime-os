@@ -156,6 +156,15 @@
                                  referencedTableSchemaName="${schema.name}"/>
         <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
         <createTable tableName="cpk_db_change_log_audit" schemaName="${schema.name}">
+            <column name="cpi_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -180,7 +189,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="cpk_file_checksum, changeset_id, entity_version, file_path"
+        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum, changeset_id, entity_version, file_path"
                        constraintName="cpk_db_change_log_audit_pk" schemaName="${schema.name}"/>
 
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
