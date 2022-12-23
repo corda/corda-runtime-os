@@ -26,14 +26,14 @@ class DbConfigSubcommand : Runnable {
     var connectionName: String? = null
 
     @Option(
-        names = ["-j", "--jdbcURL"],
+        names = ["-j", "--jdbc-url"],
         required = true,
         description = ["The JDBC URL for the connection. Required."]
     )
     var jdbcUrl: String? = null
 
     @Option(
-        names = ["--jdbcPoolMaxSize"],
+        names = ["--jdbc-pool-max-size"],
         description = ["The maximum size for the JDBC connection pool. Defaults to 10"]
     )
     var jdbcPoolMaxSize: Int = 10
@@ -53,7 +53,7 @@ class DbConfigSubcommand : Runnable {
     var password: String? = null
 
     @Option(
-        names = ["-a", "--isAdmin"],
+        names = ["-a", "--is-admin"],
         description = ["Whether this is an admin (DDL) connection. Defaults to false"]
     )
     var isAdmin: Boolean = false
