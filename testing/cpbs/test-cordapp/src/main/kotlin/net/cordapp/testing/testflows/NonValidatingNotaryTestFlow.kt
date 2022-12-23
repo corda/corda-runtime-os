@@ -87,9 +87,9 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
         flowEngine.subFlow(pluginClient)
 
         return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
-            stx.toLedgerTransaction().outputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref.toString() },
-            stx.toLedgerTransaction().referenceInputStateAndRefs.map { it.toString() }
+            stx.outputStateAndRefs.map { it.ref.toString() },
+            stx.inputStateRefs.map { it.toString() },
+            stx.referenceStateRefs.map { it.toString() }
         ))
     }
 
@@ -187,7 +187,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
                 }
 
                 referenceStateRefs.forEach {
-                    builder = builder.addReferenceInputState(StateRef.parse(it))
+                    builder = builder.addReferenceState(StateRef.parse(it))
                 }
                 builder = builder.addSignatories(listOf(myKey))
                 builder

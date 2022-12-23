@@ -80,7 +80,7 @@ class UtxoFilteredTransactionImpl(
             }
         }
 
-    override val referenceInputStateRefs: UtxoFilteredData<StateRef>
+    override val referenceStateRefs: UtxoFilteredData<StateRef>
         get() = getFilteredData(UtxoComponentGroup.REFERENCES.ordinal)
 
     override val signatories: UtxoFilteredData<PublicKey>
