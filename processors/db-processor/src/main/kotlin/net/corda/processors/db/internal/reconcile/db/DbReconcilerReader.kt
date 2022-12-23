@@ -13,7 +13,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
-import net.corda.utilities.mapNotNull
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
@@ -96,28 +95,22 @@ class DbReconcilerReader<K : Any, V : Any>(
      */
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
-        return try {
-            reconciliationContextFactory().mapNotNull { context ->
-                try {
-                    val currentTransaction = context.getOrCreateEntityManager().transaction
-                    currentTransaction.begin()
-                    doGetAllVersionedRecords(context).onClose {
-                        // This class only have access to this em and transaction. This is a read only transaction,
-                        // only used for making streaming DB data possible.
-                        currentTransaction.rollback()
-                        context.close()
-                    }
-                } catch (e: Exception) {
-                    logger.warn("Error while processing reconciliation record stream", e)
-                    coordinator.postEvent(GetRecordsErrorEvent(e))
-                    null
+        return reconciliationContextFactory().map { context ->
+            try {
+                val currentTransaction = context.getOrCreateEntityManager().transaction
+                currentTransaction.begin()
+                doGetAllVersionedRecords(context).onClose {
+                    // This class only have access to this em and transaction. This is a read only transaction,
+                    // only used for making streaming DB data possible.
+                    currentTransaction.rollback()
+                    context.close()
                 }
-            }.flatMap { i -> i }
-        } catch (e: Exception) {
-            logger.warn("Error while creating records stream for reconciliation", e)
-            coordinator.postEvent(GetRecordsErrorEvent(e))
-            null
-        }
+            } catch (e: Exception) {
+                logger.warn("Error while retrieving DB records for reconciliation", e)
+                coordinator.postEvent(GetRecordsErrorEvent(e))
+                throw e
+            }
+        }.flatMap { i -> i }
     }
 
     override val isRunning: Boolean

@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -311,64 +312,61 @@ class DbReconcilerReaderTest {
         private val errorMsg = "FOO-BAR"
 
         @Test
-        fun `Failure to create reconciliation posts error event`() {
+        fun `Failure to create reconciliation context throws exception`() {
             whenever(reconciliationContextFactory.invoke()) doThrow RuntimeException(errorMsg)
 
-            val output = assertDoesNotThrow {
+            val ex = assertThrows<RuntimeException> {
                 dbReconcilerReader.getAllVersionedRecords()
             }
-            val postedEvent = postEventCaptor.firstValue
 
             verify(reconciliationContextFactory).invoke()
-            assertThat(output).isNull()
-            assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
-            assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
+            assertThat(ex.message).isEqualTo(errorMsg)
         }
 
         @Test
-        fun `Failure to get entity transaction posts error event`() {
+        fun `Failure to get entity transaction posts error event and rethrows exception`() {
             whenever(em1.transaction) doThrow RuntimeException(errorMsg)
 
-            val numResults = assertDoesNotThrow {
+            val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
             val postedEvent = postEventCaptor.firstValue
 
             verify(em1).transaction
-            assertThat(numResults).isEqualTo(1)
+            assertThat(ex.message).isEqualTo(errorMsg)
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
 
         @Test
-        fun `Failure to start transaction posts error event`() {
+        fun `Failure to start transaction posts error event and rethrows exception`() {
             whenever(transaction1.begin()) doThrow RuntimeException(errorMsg)
 
-            val numResults = assertDoesNotThrow {
+            val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
             val postedEvent = postEventCaptor.firstValue
 
             verify(transaction1).begin()
-            assertThat(numResults).isEqualTo(1)
+            assertThat(ex.message).isEqualTo(errorMsg)
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
 
         @Test
-        fun `Failure to get all versioned records posts error event`() {
+        fun `Failure to get all versioned records posts error event and rethrows exception`() {
             whenever(getAllVersionRecordsMock.invoke(eq(reconciliationContext2))) doThrow RuntimeException(errorMsg)
 
-            val numResults = assertDoesNotThrow {
+            val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
                 dbReconcilerReader.getAllVersionedRecords()?.count()
             }
             val postedEvent = postEventCaptor.firstValue
 
             verify(getAllVersionRecordsMock, times(2)).invoke(any())
-            assertThat(numResults).isEqualTo(1)
+            assertThat(ex.message).isEqualTo(errorMsg)
             assertThat(postedEvent).isInstanceOf(GetRecordsErrorEvent::class.java)
             assertThat((postedEvent as GetRecordsErrorEvent).exception.message).isEqualTo(errorMsg)
         }
