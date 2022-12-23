@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@ronanb/e2e-test-helpers') _
 
 
 import groovy.transform.Field
@@ -105,35 +105,12 @@ pipeline {
     stages {
         stage ('Create namespace') {
             steps {
-                sh '''\
-                    kubectl create ns "${NAMESPACE}"
-                    kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
-                    kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
-                    kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
-                    kubectl label ns "${NAMESPACE}" JenkinsBuildNumber="${BUILD_NUMBER}" --overwrite=true
-                '''.stripIndent()
+                e2eTestHelpers.createNameSpace(env.NAMESPACE, env.E2E_WORKER_ARCH, env.E2E_BRANCH_LABEL)
             }
         }
         stage('Install kafka as prereqs') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
-                    sh '''#!/bin/bash
-                        echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
-                        helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
-                            -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
-                        KAFKA_PASSWORDS=$(kubectl get secret prereqs-kafka-jaas -n "${NAMESPACE}" -o go-template="{{ index .data \\\"client-passwords\\\" | base64decode }}")
-                        IFS=',' read -r -a KAFKA_PASSWORDS_ARRAY <<< "$KAFKA_PASSWORDS"
-                        kubectl create secret generic kafka-credentials -n "${NAMESPACE}" \
-                            --from-literal=bootstrap="${KAFKA_PASSWORDS_ARRAY[0]}" \
-                            --from-literal=crypto="${KAFKA_PASSWORDS_ARRAY[1]}" \
-                            --from-literal=db="${KAFKA_PASSWORDS_ARRAY[2]}" \
-                            --from-literal=flow="${KAFKA_PASSWORDS_ARRAY[3]}" \
-                            --from-literal=membership="${KAFKA_PASSWORDS_ARRAY[4]}" \
-                            --from-literal=p2pGateway="${KAFKA_PASSWORDS_ARRAY[5]}" \
-                            --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[6]}" \
-                            --from-literal=rpc="${KAFKA_PASSWORDS_ARRAY[7]}"
-                    '''
-                }
+                e2eTestHelpers.installPrereqs()
             }
             post {
                 unsuccessful {
@@ -147,17 +124,17 @@ pipeline {
            parallel {
                stage("Deploy Alice cluster") {
                   steps {
-                      deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
+                      e2eTestHelpers.deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
                   }
                }
                stage("Deploy Bob cluster") {
                   steps {
-                      deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
+                      e2eTestHelpers.deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
                   }
                }
                stage("Deploy Caroline cluster") {
                   steps {
-                      deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}")
+                      e2eTestHelpers.deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}", env.E2E_WORKER_ARCH)
                   }
                }
            }
@@ -233,23 +210,6 @@ def sanitizedBranchName(){
 // Helper to expose ports prior to test execution
 def portForwarding(def name, def port, def portMapping = null){
     sh "nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh ${NAMESPACE} $name $port $portMapping >> forward.txt 2>&1 &"
-}
-
-def deployCorda(def name, def namespace, def base_image){
-    sh """\
-       helm install $name-db oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
-           -f .ci/e2eTests/prereqs.yaml --set kafka.enabled=false -n $namespace --wait --timeout 600s
-       helm install corda-$name ./charts/corda \
-           -f .ci/e2eTests/corda.yaml \
-           --set image.tag=$base_image \
-           --set nodeSelector.kubernetes\\\\.io/os=linux \
-           --set nodeSelector.kubernetes\\\\.io/arch=${E2E_WORKER_ARCH} \
-           --set nameOverride=$name \
-           --set kafka.topicPrefix=$name \
-           --set db.cluster.host=$name-db-postgresql \
-           --set db.cluster.password.valueFrom.secretKeyRef.name=$name-db-postgresql \
-           -n $namespace --wait --timeout 600s
-    """.stripIndent()
 }
 
 def getBaseImage(def buildRev, def architectureTag) {
