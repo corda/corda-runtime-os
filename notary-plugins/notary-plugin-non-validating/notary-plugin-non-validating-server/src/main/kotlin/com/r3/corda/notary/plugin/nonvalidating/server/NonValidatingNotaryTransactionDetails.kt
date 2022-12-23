@@ -13,8 +13,8 @@ data class NonValidatingNotaryTransactionDetails(
     val id: SecureHash,
     val numOutputs: Int,
     val timeWindow: TimeWindow,
-    val inputs: Collection<StateRef>,
-    val references: Collection<StateRef>,
+    val inputs: List<StateRef>,
+    val references: List<StateRef>,
     // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
     val notary: Party
 )

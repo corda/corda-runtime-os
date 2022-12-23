@@ -128,8 +128,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {
-        return utxoSignedTransactionFactory.create(wireTransaction, signatures)
+    private fun SignedTransactionContainer.toSignedTransaction()
+    : UtxoSignedTransaction {
+        return utxoSignedTransactionFactory.create(wireTransaction, signatures, this@UtxoLedgerPersistenceServiceImpl)
     }
 
     private fun UtxoSignedTransaction.toContainer() =

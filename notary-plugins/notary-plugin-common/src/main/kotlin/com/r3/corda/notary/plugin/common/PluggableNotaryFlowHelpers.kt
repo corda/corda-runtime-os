@@ -57,9 +57,7 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
             expectedSignedBytes
         )
     } catch (e: Exception) {
-        throw IllegalStateException(
-            "Error while verifying request signature. Cause: $e"
-        )
+        throw IllegalStateException("Error while verifying request signature.", e)
     }
 }
 

@@ -129,7 +129,7 @@ class NonValidatingNotaryClientFlowImplTest {
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {
             on { withInputStates() } doReturn this.mock
-            on { withReferenceInputStates() } doReturn this.mock
+            on { withReferenceStates() } doReturn this.mock
             on { withOutputStatesSize() } doReturn this.mock
             on { withNotary() } doReturn this.mock
             on { withTimeWindow() } doReturn this.mock

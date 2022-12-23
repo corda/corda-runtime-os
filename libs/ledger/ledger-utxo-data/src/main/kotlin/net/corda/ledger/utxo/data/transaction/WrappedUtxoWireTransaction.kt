@@ -17,7 +17,7 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
 class WrappedUtxoWireTransaction(
-    private val wireTransaction: WireTransaction,
+    val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
 ) {
 
@@ -65,7 +65,7 @@ class WrappedUtxoWireTransaction(
         deserialize(UtxoComponentGroup.INPUTS)
     }
 
-    val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val referenceStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         deserialize(UtxoComponentGroup.REFERENCES)
     }
 
