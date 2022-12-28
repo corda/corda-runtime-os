@@ -218,9 +218,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         for (event in events) {
-            if (!stateAndEventConsumer.resetPollInterval()) {
+            if (stateAndEventConsumer.resetPollInterval()) {
                 log.debug { "Abandoning event processing due to rebalance." }
-                return false
+                return true
             }
             processEvent(event, outputRecords, updatedStates)
         }
@@ -241,7 +241,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Processing of events(size: ${events.size}) complete" }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
-        return true
+        return false
     }
 
     private fun processEvent(

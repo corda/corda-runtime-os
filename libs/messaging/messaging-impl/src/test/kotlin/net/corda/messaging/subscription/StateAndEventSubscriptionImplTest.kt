@@ -81,6 +81,7 @@ class StateAndEventSubscriptionImplTest {
         ).waitForFunctionToFinish(any(), any(), any())
         doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
         doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
+        doAnswer { false }.whenever(stateAndEventConsumer).resetPollInterval()
         doAnswer { producer }.whenever(builder).createProducer(any())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll(any())
@@ -518,9 +519,7 @@ class StateAndEventSubscriptionImplTest {
                     mutableListOf()
             }
         }.whenever(eventConsumer).poll(any())
-        doAnswer {
-            false
-        }.whenever(stateAndEventConsumer).resetPollInterval()
+        doAnswer { true }.whenever(stateAndEventConsumer).resetPollInterval()
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             config,
