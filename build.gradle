@@ -101,9 +101,11 @@ allprojects {
         }
     }
     
-    if(project.hasProperty('generateJavaDocWithBuild')) {
+    if (project.hasProperty('generateJavaDocWithBuild')) {
         pluginManager.withPlugin('corda.javadoc-generation') {
-            assemble.dependsOn javadocJar
+            artifacts {
+                archives javadocJar
+            }
         }
     }
 
