@@ -38,7 +38,6 @@ interface UtxoLedgerPersistenceService {
      * Persist a [UtxoSignedTransaction] to the store.
      *
      * @param transaction UTXO signed transaction to persist.
-     * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
      * @param relevantStatesIndexes Indexes of relevant states.
      *

@@ -85,6 +85,7 @@ class TransactionBackchainReceiverFlow(
             }
         }
 
+        // probably remove
         if (sortedTransactionIds.isNotEmpty()) {
             session.send(TransactionBackchainRequest.Stop)
         }

@@ -33,6 +33,16 @@
             <AppenderRef ref="Console" level="info"/>
         </logger>
 
+        <logger name="net.corda.ledger.utxo.flow.impl.flows.backchain" level="trace" additivity="false">
+            <AppenderRef ref="Console" level="trace"/>
+            <AppenderRef ref="App" level="trace"/>
+        </logger>
+
+        <logger name="net.corda.ledger.utxo.flow.impl.flows.finality" level="trace" additivity="false">
+            <AppenderRef ref="Console" level="trace"/>
+            <AppenderRef ref="App" level="trace"/>
+        </logger>
+
         <!-- log warn only for these 3rd party libs -->
         <Logger name="com.zaxxer.hikari" level="warn" />
         <Logger name="io.javalin.Javalin" level="warn" />

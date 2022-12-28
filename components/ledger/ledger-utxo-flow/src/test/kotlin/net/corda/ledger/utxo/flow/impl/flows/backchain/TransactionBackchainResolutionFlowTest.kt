@@ -108,6 +108,9 @@ class TransactionBackchainResolutionFlowTest {
         verify(flowEngine).subFlow(TransactionBackchainReceiverFlow(TX_ID_1, setOf(TX_ID_3), session))
         verifyNoMoreInteractions(flowEngine)
 
+//        probably readd
+//        verify(session).send(TransactionBackchainRequest.Stop)
+
         verify(transactionBackchainVerifier).verify(eq(TX_ID_1), any())
     }
 

@@ -104,7 +104,7 @@ class UtxoReceiveFinalityFlow(
         val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
             val message = "Notarisation failed. Failure received from ${session.counterparty} for transaction " +
                     "$transactionId with message: ${failure.message}"
-            log.warn( message )
+            log.warn(message)
             CordaRuntimeException(message)
         }
         if (notarySignatures.isEmpty()) {

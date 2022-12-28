@@ -72,7 +72,6 @@ class TransactionBackchainReceiverFlowTest {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequest.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequest.Get(setOf(TX_ID_2)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequest.Get(setOf(TX_ID_3)))
-        verify(session).send(TransactionBackchainRequest.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)

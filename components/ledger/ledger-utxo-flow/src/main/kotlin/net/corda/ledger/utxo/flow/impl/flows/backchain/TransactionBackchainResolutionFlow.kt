@@ -47,6 +47,10 @@ class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTran
                     session
                 )
             )
+
+            // probably readd
+//            session.send(TransactionBackchainRequest.Stop)
+
             log.debug {
                 "Backchain resolution of ${transaction.id} - Retrieved dependencies of $originalTransactionsToRetrieve from its " +
                         "backchain, beginning verification before storing the transactions locally"

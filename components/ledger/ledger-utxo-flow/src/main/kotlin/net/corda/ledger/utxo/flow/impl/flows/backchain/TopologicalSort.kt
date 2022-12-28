@@ -46,6 +46,7 @@ class TopologicalSort {
         return result.apply(Collections::reverse)
     }
 
+    // probably remove
     fun isNotEmpty(): Boolean {
         return transactionIds.isNotEmpty()
     }
