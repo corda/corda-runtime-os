@@ -8,8 +8,11 @@ import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -37,16 +40,15 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.linkmanager.utilities.mockMemberInfo
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -57,6 +59,7 @@ import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -70,8 +73,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -114,14 +119,18 @@ class SessionManagerTest {
 
         private val OUR_PARTY = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
-        private val OUR_MEMBER_INFO =
-            LinkManagerMembershipGroupReader.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
-                "http://alice.com")
+        private val OUR_MEMBER_INFO = mockMemberInfo(
+            OUR_PARTY,
+            "http://alice.com",
+            OUR_KEY.public,
+        )
         private val PEER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
-        private val PEER_MEMBER_INFO =
-            LinkManagerMembershipGroupReader.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
-                "http://bob.com")
+        private val PEER_MEMBER_INFO = mockMemberInfo(
+            PEER_PARTY,
+            "http://bob.com",
+            PEER_KEY.public,
+        )
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -183,15 +192,20 @@ class SessionManagerTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(OUR_PARTY) } doReturn groupPolicy
     }
-    private val members = mock<LinkManagerMembershipGroupReader> {
-        val membersDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        on { getMemberInfo(OUR_PARTY, OUR_PARTY) } doReturn OUR_MEMBER_INFO
-        on { getMemberInfo(OUR_PARTY, messageDigest.hash(OUR_KEY.public.encoded)) } doReturn OUR_MEMBER_INFO
-        on { getMemberInfo(OUR_PARTY, PEER_PARTY) } doReturn PEER_MEMBER_INFO
-        on { getMemberInfo(OUR_PARTY, messageDigest.hash(PEER_KEY.public.encoded)) } doReturn PEER_MEMBER_INFO
-        on { dominoTile } doReturn membersDominoTile
+    private val membershipGroupReader = mock<MembershipGroupReader> {
+        on { lookup(OUR_PARTY.x500Name) } doReturn OUR_MEMBER_INFO
+        on { lookupBySessionKey(
+            PublicKeyHash.parse(messageDigest.hash(OUR_KEY.public.encoded))
+        ) } doReturn OUR_MEMBER_INFO
+        on { lookup(PEER_PARTY.x500Name) } doReturn PEER_MEMBER_INFO
+        on { lookupBySessionKey(
+            PublicKeyHash.parse(messageDigest.hash(PEER_KEY.public.encoded))
+        ) } doReturn PEER_MEMBER_INFO
+    }
+    private val otherMembershipGroupReader = mock<MembershipGroupReader>()
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(OUR_PARTY) } doReturn membershipGroupReader
+        on { getGroupReader(argThat { this != OUR_PARTY }) } doReturn otherMembershipGroupReader
     }
     private val hostingIdentity = HostingMapListener.IdentityInfo(
         holdingIdentity = OUR_PARTY,
@@ -248,7 +262,7 @@ class SessionManagerTest {
 
     private val sessionManager = SessionManagerImpl(
         groupPolicyProvider,
-        members,
+        membershipGroupReaderProvider,
         cryptoOpsClient,
         pendingSessionMessageQueues,
         mock(),
@@ -381,7 +395,7 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         val anotherInitiatorHello = mock<InitiatorHelloMessage>()
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
-        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
+        whenever(membershipGroupReader.lookup(PEER_PARTY.x500Name)).thenReturn(null)
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
@@ -538,8 +552,9 @@ class SessionManagerTest {
 
         sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
-        verify(members).getMemberInfo(eq(carol), any<ByteArray>())
-        verify(members).getMemberInfo(eq(david), any<ByteArray>())
+        verify(otherMembershipGroupReader, times(2)).lookupBySessionKey(any())
+        verify(membershipGroupReaderProvider).getGroupReader(carol)
+        verify(membershipGroupReaderProvider).getGroupReader(david)
     }
 
     @Test
@@ -548,7 +563,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
-        whenever(members.getMemberInfo(OUR_PARTY, initiatorKeyHash)).thenReturn(null)
+        whenever(membershipGroupReader.lookupBySessionKey(PublicKeyHash.parse(initiatorKeyHash))).thenReturn(null)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -669,7 +684,7 @@ class SessionManagerTest {
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any())).thenReturn(initiatorHandshakeMsg)
         whenever(linkManagerHostingMap.getInfo(OUR_PARTY)).thenReturn(null)
-        whenever(members.getMemberInfo(OUR_PARTY, OUR_PARTY)).thenReturn(null)
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -688,7 +703,7 @@ class SessionManagerTest {
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any())).thenReturn(initiatorHandshakeMsg)
-        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
+        whenever(membershipGroupReader.lookup(PEER_PARTY.x500Name)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -810,8 +825,9 @@ class SessionManagerTest {
         whenever(protocolResponder.getSession()).thenReturn(session)
         sessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
 
-        verify(members, atLeast(1)).getMemberInfo(eq(carol), any<ByteArray>())
-        verify(members, atLeast(1)).getMemberInfo(eq(david), any<ByteArray>())
+        verify(otherMembershipGroupReader, atLeast(2)).lookupBySessionKey(any())
+        verify(membershipGroupReaderProvider, atLeastOnce()).getGroupReader(carol)
+        verify(membershipGroupReaderProvider, atLeastOnce()).getGroupReader(david)
     }
 
     @Test
@@ -921,7 +937,7 @@ class SessionManagerTest {
 
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(members.getMemberInfo(OUR_PARTY, initiatorPublicKeyHash)).thenReturn(null)
+        whenever(membershipGroupReader.lookupBySessionKey(PublicKeyHash.parse(initiatorPublicKeyHash))).thenReturn(null)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1164,7 +1180,7 @@ class SessionManagerTest {
                 SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
                 groupPolicyProvider,
-                members
+                membershipGroupReaderProvider
             )
     }
 
@@ -1188,7 +1204,7 @@ class SessionManagerTest {
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
+        whenever(membershipGroupReader.lookup(PEER_PARTY.x500Name)).thenReturn(null)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId " +
@@ -1266,7 +1282,7 @@ class SessionManagerTest {
         val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groupPolicyProvider,
-            members,
+            membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1319,7 +1335,7 @@ class SessionManagerTest {
     fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
         val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1393,7 +1409,7 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1457,7 +1473,7 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1520,7 +1536,7 @@ class SessionManagerTest {
         }
 
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1590,7 +1606,7 @@ class SessionManagerTest {
         }
 
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1661,7 +1677,7 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
@@ -1766,7 +1782,7 @@ class SessionManagerTest {
 
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
-            groupPolicyProvider, members,
+            groupPolicyProvider, membershipGroupReaderProvider,
             cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),

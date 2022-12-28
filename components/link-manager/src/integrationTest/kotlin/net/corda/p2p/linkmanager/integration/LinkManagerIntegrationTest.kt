@@ -20,7 +20,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.TestGroupPolicyProvider
-import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -89,9 +88,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-
-        @InjectService(timeout = 4000)
-        lateinit var groupParametersReaderService: GroupParametersReaderService
     }
 
     private val replayPeriod = 2000
@@ -186,7 +182,6 @@ class LinkManagerIntegrationTest {
             testGroupPolicyProvider,
             cryptoOpsClient,
             membershipGroupReaderProvider,
-            groupParametersReaderService
         )
 
         linkManager.usingLifecycle {

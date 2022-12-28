@@ -8,13 +8,14 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
+import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.utilities.time.Clock
@@ -29,7 +30,7 @@ internal class InMemorySessionReplayer(
     coordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
     private val groupPolicyProvider: GroupPolicyProvider,
-    private val members: LinkManagerMembershipGroupReader,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val clock: Clock
 ): LifecycleWithDominoTile {
 
@@ -56,7 +57,7 @@ internal class InMemorySessionReplayer(
             replayScheduler.dominoTile.coordinatorName,
             publisher.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-            members.dominoTile.coordinatorName
+            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
         ),
         managedChildren = setOf(replayScheduler.dominoTile.toNamedLifecycle(), publisher.dominoTile.toNamedLifecycle())
     )
@@ -93,7 +94,7 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val destinationMemberInfo = members.getMemberInfo(messageReplay.source, messageReplay.dest)
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(messageReplay.source, messageReplay.dest)
         if (destinationMemberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
                 " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")

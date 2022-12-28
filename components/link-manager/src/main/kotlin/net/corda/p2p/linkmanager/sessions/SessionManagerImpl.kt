@@ -13,11 +13,13 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -42,7 +44,6 @@ import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
@@ -52,6 +53,8 @@ import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOut
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.linkmanager.membership.lookupByKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
@@ -69,6 +72,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -87,7 +91,7 @@ import kotlin.concurrent.write
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class SessionManagerImpl(
     private val groupPolicyProvider: GroupPolicyProvider,
-    private val members: LinkManagerMembershipGroupReader,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val cryptoOpsClient: CryptoOpsClient,
     private val pendingOutboundSessionMessageQueues: PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
@@ -104,7 +108,7 @@ internal class SessionManagerImpl(
         coordinatorFactory,
         messagingConfiguration,
         groupPolicyProvider,
-        members,
+        membershipGroupReaderProvider,
         clock,
     ),
 
@@ -139,7 +143,7 @@ internal class SessionManagerImpl(
         coordinatorFactory,
         messagingConfiguration,
         groupPolicyProvider,
-        members,
+        membershipGroupReaderProvider,
         ::refreshOutboundSession,
         clock,
         executorServiceFactory
@@ -164,7 +168,7 @@ internal class SessionManagerImpl(
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-            members.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
@@ -430,7 +434,7 @@ internal class SessionManagerImpl(
             )
         }
 
-        val responderMemberInfo = members.getMemberInfo(counterparties.ourId, counterparties.counterpartyId)
+        val responderMemberInfo = membershipGroupReaderProvider.lookup(counterparties.ourId, counterparties.counterpartyId)
         if (responderMemberInfo == null) {
             logger.warn("Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in " +
                 "${counterparties.ourId}'s members map. The sessionInit message was not sent.")
@@ -491,7 +495,8 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val responderMemberInfo = members.getMemberInfo(sessionInfo.ourId, sessionInfo.counterpartyId)
+        val responderMemberInfo = membershipGroupReaderProvider
+            .lookup(sessionInfo.ourId, sessionInfo.counterpartyId)
         if (responderMemberInfo == null) {
             logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
@@ -509,7 +514,7 @@ internal class SessionManagerImpl(
         }
         val payload = try {
             session.generateOurHandshakeMessage(
-                responderMemberInfo.sessionPublicKey,
+                responderMemberInfo.sessionInitiationKey,
                 ourIdentityInfo.sessionCertificates,
                 signWithOurGroupId
             )
@@ -566,7 +571,8 @@ internal class SessionManagerImpl(
             }
         }
 
-        val memberInfo = members.getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId)
+        val memberInfo = membershipGroupReaderProvider
+            .lookup(sessionCounterparties.ourId, sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
             logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
@@ -590,7 +596,7 @@ internal class SessionManagerImpl(
                 sessionCounterparties,
                 authenticatedSession,
                 groupPolicyProvider,
-                members
+                membershipGroupReaderProvider
             )
         }
         logger.info(
@@ -628,7 +634,8 @@ internal class SessionManagerImpl(
         val sessionManagerConfig = config.get()
         val (hostedIdentityInSameGroup, peer) = hostedIdentitiesInSameGroup
             .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
-                val member = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
+                val member = membershipGroupReaderProvider
+                    .lookupByKey(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
                 if (member == null) {
                     null
                 } else {
@@ -685,7 +692,8 @@ internal class SessionManagerImpl(
 
         val peer = hostedIdentitiesInSameGroup
             .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
-                members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+                membershipGroupReaderProvider
+                    .lookupByKey(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
             }
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
@@ -753,13 +761,14 @@ internal class SessionManagerImpl(
 
     private fun AuthenticationProtocolResponder.validatePeerHandshakeMessageHandleError(
         message: InitiatorHandshakeMessage,
-        peer: LinkManagerMembershipGroupReader.MemberInfo): HandshakeIdentityData? {
+        peer: MemberInfo
+    ): HandshakeIdentityData? {
         return try {
             this.validatePeerHandshakeMessage(
                 message,
                 peer.holdingIdentity.x500Name,
-                peer.sessionPublicKey,
-                peer.publicKeyAlgorithm.getSignatureSpec()
+                peer.sessionInitiationKey,
+                peer.sessionInitiationKey.toKeyAlgorithm().getSignatureSpec(),
             )
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
@@ -775,15 +784,15 @@ internal class SessionManagerImpl(
 
     private fun AuthenticationProtocolInitiator.validatePeerHandshakeMessageHandleError(
         message: ResponderHandshakeMessage,
-        memberInfo: LinkManagerMembershipGroupReader.MemberInfo,
+        memberInfo: MemberInfo,
         sessionCounterparties: SessionCounterparties,
     ): Boolean {
         return try {
             this.validatePeerHandshakeMessage(
                 message,
                 sessionCounterparties.counterpartyId.x500Name,
-                memberInfo.sessionPublicKey,
-                memberInfo.publicKeyAlgorithm.getSignatureSpec()
+                memberInfo.sessionInitiationKey,
+                memberInfo.sessionInitiationKey.toKeyAlgorithm().getSignatureSpec(),
             )
             true
         } catch (exception: InvalidHandshakeResponderKeyHash) {
@@ -804,7 +813,7 @@ internal class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val groupPolicyProvider: GroupPolicyProvider,
-        private val members: LinkManagerMembershipGroupReader,
+        private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
         executorServiceFactory: () -> ScheduledExecutorService
@@ -865,7 +874,7 @@ internal class SessionManagerImpl(
             onClose = { executorService.shutdownNow() },
             dependentChildren = setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                members.dominoTile.coordinatorName,
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 publisher.dominoTile.coordinatorName
             ),
             managedChildren = setOf(publisher.dominoTile.toNamedLifecycle()),
@@ -1028,7 +1037,7 @@ internal class SessionManagerImpl(
                 heartbeatMessage,
                 session,
                 groupPolicyProvider,
-                members
+                membershipGroupReaderProvider
             )
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
@@ -1052,7 +1061,4 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
     }
-
-
-
 }

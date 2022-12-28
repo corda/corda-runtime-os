@@ -6,10 +6,10 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -18,7 +18,7 @@ internal class InboundLinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     commonComponents: CommonComponents,
     groupPolicyProvider: GroupPolicyProvider,
-    members: LinkManagerMembershipGroupReader,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     clock: Clock,
@@ -32,7 +32,7 @@ internal class InboundLinkManager(
             InboundMessageProcessor(
                 commonComponents.sessionManager,
                 groupPolicyProvider,
-                members,
+                membershipGroupReaderProvider,
                 commonComponents.inboundAssignmentListener,
                 clock
             ),
@@ -48,7 +48,7 @@ internal class InboundLinkManager(
         subscriptionConfig,
         dependentChildren = listOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-            members.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
         ),
         managedChildren = listOf(
             commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),

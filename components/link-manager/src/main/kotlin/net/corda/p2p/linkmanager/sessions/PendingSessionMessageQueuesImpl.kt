@@ -6,12 +6,12 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -58,7 +58,7 @@ internal class PendingSessionMessageQueuesImpl(
         counterparties: SessionManager.SessionCounterparties,
         session: Session,
         groupPolicyProvider: GroupPolicyProvider,
-        members: LinkManagerMembershipGroupReader,
+        membershipGroupReaderProvider: MembershipGroupReaderProvider,
     ) {
         publisher.withLifecycleLock {
             if (!isRunning) {
@@ -72,7 +72,14 @@ internal class PendingSessionMessageQueuesImpl(
                     "Sending queued message ${message.message.header.messageId} " +
                         "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
                 }
-                records.addAll(sessionManager.recordsForSessionEstablished(groupPolicyProvider, members, session, message))
+                records.addAll(
+                    sessionManager.recordsForSessionEstablished(
+                        groupPolicyProvider,
+                        membershipGroupReaderProvider,
+                        session,
+                        message
+                    )
+                )
             }
             publisher.publish(records)
         }

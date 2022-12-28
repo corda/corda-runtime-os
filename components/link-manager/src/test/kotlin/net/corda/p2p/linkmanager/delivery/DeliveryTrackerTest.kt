@@ -151,12 +151,6 @@ class DeliveryTrackerTest {
                 }
                 whenever(it.dominoTile).thenReturn(mockDominoTile)
             },
-            mock {
-                val mockDominoTile = mock<ComplexDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                whenever(it.dominoTile).thenReturn(mockDominoTile)
-            },
             mock(),
             ::processAuthenticatedMessage
         )

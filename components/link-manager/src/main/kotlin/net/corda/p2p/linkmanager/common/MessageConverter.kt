@@ -1,7 +1,10 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.HeartbeatMessage
@@ -13,15 +16,17 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.common.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.common.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.grouppolicy.networkType
+import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -43,7 +48,7 @@ class MessageConverter {
         internal fun createLinkOutMessage(
             payload: Any,
             source: HoldingIdentity,
-            dest: LinkManagerMembershipGroupReader.MemberInfo,
+            dest: MemberInfo,
             networkType: NetworkType
         ): LinkOutMessage {
             val header = generateLinkOutHeaderFromPeer(source, dest, networkType)
@@ -52,14 +57,15 @@ class MessageConverter {
 
         private fun generateLinkOutHeaderFromPeer(
             source: HoldingIdentity,
-            peer: LinkManagerMembershipGroupReader.MemberInfo,
+            peer: MemberInfo,
             networkType: NetworkType
         ): LinkOutHeader {
+            val endPoint = peer.endpoints.firstOrNull { it.protocolVersion == ProtocolConstants.PROTOCOL_VERSION }?.url
             return LinkOutHeader(
                 peer.holdingIdentity.toAvro(),
                 source.toAvro(),
                 networkType,
-                peer.endPoint,
+                endPoint,
             )
         }
 
@@ -89,7 +95,7 @@ class MessageConverter {
             destination: HoldingIdentity,
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
-            members: LinkManagerMembershipGroupReader,
+            membershipGroupReaderProvider: MembershipGroupReaderProvider,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 message.toByteBuffer()
@@ -97,14 +103,21 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
-            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, groupPolicyProvider, members)
+            return createLinkOutMessageFromPayload(
+                serializedMessage,
+                source,
+                destination,
+                session,
+                groupPolicyProvider,
+                membershipGroupReaderProvider,
+            )
         }
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
-            members: LinkManagerMembershipGroupReader,
+            membershipGroupReaderProvider: MembershipGroupReaderProvider,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -118,7 +131,7 @@ class MessageConverter {
                 message.message.header.destination.toCorda(),
                 session,
                 groupPolicyProvider,
-                members,
+                membershipGroupReaderProvider,
             )
         }
 
@@ -129,7 +142,7 @@ class MessageConverter {
             message: HeartbeatMessage,
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
-            members: LinkManagerMembershipGroupReader,
+            membershipGroupReaderProvider: MembershipGroupReaderProvider,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -143,13 +156,13 @@ class MessageConverter {
                 destination,
                 session,
                 groupPolicyProvider,
-                members,
+                membershipGroupReaderProvider,
             )
         }
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            destMemberInfo: LinkManagerMembershipGroupReader.MemberInfo,
+            destMemberInfo: MemberInfo,
             groupPolicy: GroupPolicy,
         ): LinkOutMessage {
             val source = message.header.source.toCorda()
@@ -169,7 +182,7 @@ class MessageConverter {
             destination: HoldingIdentity,
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
-            members: LinkManagerMembershipGroupReader,
+            membershipGroupReaderProvider: MembershipGroupReaderProvider,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -194,7 +207,7 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = members.getMemberInfo(source, destination)
+            val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null

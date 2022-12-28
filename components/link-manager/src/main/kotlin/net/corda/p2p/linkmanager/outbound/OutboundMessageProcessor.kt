@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -12,10 +13,10 @@ import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.p2p.markers.TtlExpiredMarker
@@ -40,7 +41,7 @@ internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val groupPolicyProvider: GroupPolicyProvider,
-    private val members: LinkManagerMembershipGroupReader,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock
@@ -143,7 +144,10 @@ internal class OutboundMessageProcessor(
             return emptyList()
         }
 
-        val destMemberInfo = members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda())
+        val destMemberInfo = membershipGroupReaderProvider.lookup(
+            message.header.source.toCorda(),
+            message.header.destination.toCorda()
+        )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
         } else if (destMemberInfo != null) {
@@ -217,7 +221,7 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (members.getMemberInfo(source, destination) != null) {
+        } else if (membershipGroupReaderProvider.lookup(source, destination) != null) {
             val markers = if (isReplay) {
                 emptyList()
             } else {
@@ -273,7 +277,12 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        val list = sessionManager.recordsForSessionEstablished(groupPolicyProvider, members, state.session, messageAndKey).toMutableList()
+        val list = sessionManager.recordsForSessionEstablished(
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+            state.session,
+            messageAndKey
+        ).toMutableList()
         list.add(recordForLMSentMarker(messageAndKey.message.header.messageId))
         return list
     }

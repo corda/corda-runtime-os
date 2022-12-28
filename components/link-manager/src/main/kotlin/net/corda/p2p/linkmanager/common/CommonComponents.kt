@@ -9,10 +9,10 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
@@ -26,7 +26,7 @@ internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     linkManagerHostingMap: LinkManagerHostingMap,
     groupPolicyProvider: GroupPolicyProvider,
-    members: LinkManagerMembershipGroupReader,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
     configurationReaderService: ConfigurationReadService,
     cryptoOpsClient: CryptoOpsClient,
     subscriptionFactory: SubscriptionFactory,
@@ -50,7 +50,7 @@ internal class CommonComponents(
 
     internal val sessionManager = SessionManagerImpl(
         groupPolicyProvider,
-        members,
+        membershipGroupReaderProvider,
         cryptoOpsClient,
         messagesPendingSession,
         publisherFactory,
@@ -87,7 +87,7 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-            members.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
             linkManagerHostingMap.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             messagesPendingSession.dominoTile.coordinatorName,
@@ -97,7 +97,7 @@ internal class CommonComponents(
         ),
         managedChildren = listOf(
             NamedLifecycle(groupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
-            members.dominoTile.toNamedLifecycle(),
+            NamedLifecycle(membershipGroupReaderProvider, LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>()),
             messagesPendingSession.dominoTile.toNamedLifecycle(),

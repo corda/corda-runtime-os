@@ -7,13 +7,14 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
@@ -207,15 +208,22 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The replaySchedular callback logs a warning when the responder is not in the network map`() {
-        val members = mock<LinkManagerMembershipGroupReader> {
-            on { getMemberInfo(US, COUNTER_PARTY) } doReturnConsecutively
-                listOf(null, groupsAndMembers.first.getMemberInfo(US, COUNTER_PARTY))
-            val mockDominoTile = mock<ComplexDominoTile> {
-                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-            }
-            whenever(mock.dominoTile).thenReturn(mockDominoTile)
+        val memberInfo = groupsAndMembers.first.getGroupReader(US).lookup(COUNTER_PARTY.x500Name)
+        val membershipGroupReader = mock<MembershipGroupReader> {
+            on { lookup(COUNTER_PARTY.x500Name) } doReturnConsecutively listOf(null, memberInfo)
         }
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, members, mockTimeFacilitiesProvider.clock)
+        val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
+            on { getGroupReader(US) } doReturn membershipGroupReader
+        }
+        InMemorySessionReplayer(
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            groupsAndMembers.second,
+            membershipGroupReaderProvider,
+            mockTimeFacilitiesProvider.clock,
+        )
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,

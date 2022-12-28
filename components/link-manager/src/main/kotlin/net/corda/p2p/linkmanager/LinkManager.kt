@@ -7,7 +7,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -15,8 +14,6 @@ import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
 import net.corda.p2p.linkmanager.inbound.InboundLinkManager
-import net.corda.p2p.linkmanager.membership.ForwardingMembershipGroupReader
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -32,7 +29,6 @@ class LinkManager(
     groupPolicyProvider: GroupPolicyProvider,
     cryptoOpsClient: CryptoOpsClient,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    groupParametersReaderService: GroupParametersReaderService,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -48,15 +44,11 @@ class LinkManager(
         }
     }
 
-    private val members: LinkManagerMembershipGroupReader = ForwardingMembershipGroupReader(
-        membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
-
-
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
-        members = members,
+        membershipGroupReaderProvider = membershipGroupReaderProvider,
         configurationReaderService = configurationReaderService,
         cryptoOpsClient = cryptoOpsClient,
         subscriptionFactory = subscriptionFactory,
@@ -69,7 +61,7 @@ class LinkManager(
         commonComponents = commonComponents,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
-        members = members,
+        membershipGroupReaderProvider = membershipGroupReaderProvider,
         configurationReaderService = configurationReaderService,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
@@ -80,7 +72,7 @@ class LinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
         groupPolicyProvider = groupPolicyProvider,
-        members = members,
+        membershipGroupReaderProvider = membershipGroupReaderProvider,
         subscriptionFactory = subscriptionFactory,
         messagingConfiguration = messagingConfiguration,
         clock = clock,

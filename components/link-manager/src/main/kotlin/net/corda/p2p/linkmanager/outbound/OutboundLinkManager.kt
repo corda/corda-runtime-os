@@ -6,12 +6,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
@@ -22,7 +22,7 @@ internal class OutboundLinkManager(
     commonComponents: CommonComponents,
     linkManagerHostingMap: LinkManagerHostingMap,
     groupPolicyProvider: GroupPolicyProvider,
-    members: LinkManagerMembershipGroupReader,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
@@ -36,7 +36,7 @@ internal class OutboundLinkManager(
         commonComponents.sessionManager,
         linkManagerHostingMap,
         groupPolicyProvider,
-        members,
+        membershipGroupReaderProvider,
         commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
         clock
@@ -47,7 +47,6 @@ internal class OutboundLinkManager(
         publisherFactory,
         messagingConfiguration,
         subscriptionFactory,
-        members,
         commonComponents.sessionManager,
         clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
