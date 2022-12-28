@@ -102,6 +102,13 @@ class UpdateObligationFlow(
             val updateObligationFlow = UpdateObligationFlow(oldObligation, newObligation, sessions)
 
             val transaction = flowEngine.subFlow(updateObligationFlow)
+            if(request.doubleSpend) {
+                val anotherSessions = flowMessaging.initiateFlows(issuer)
+                val anotherNewObligation = oldObligation.state.contractState.settle(request.amountToSettle)
+
+                val anotherUpdateObligationFlow = UpdateObligationFlow(oldObligation, anotherNewObligation, anotherSessions)
+                flowEngine.subFlow(anotherUpdateObligationFlow)
+            }
 
             val response = UpdateObligationResponseMessage(transaction.id)
 
