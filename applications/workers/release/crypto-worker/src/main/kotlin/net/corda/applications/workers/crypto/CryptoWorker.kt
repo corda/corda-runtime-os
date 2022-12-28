@@ -86,7 +86,7 @@ class CryptoWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @CommandLine.Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    @CommandLine.Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
     @CommandLine.Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])

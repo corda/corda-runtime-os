@@ -50,6 +50,18 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
         )
     }
 
+    fun createUtxoRelevantTransactionStateEntity(
+        utxoTransaction: Any,
+        groupIdx: Int,
+        leafIdx: Int,
+        consumed: Boolean,
+        created: Instant
+    ): Any {
+        return utxoRelevantTransactionState.constructors.single { it.parameterCount == 5 }.newInstance(
+            utxoTransaction, groupIdx, leafIdx, consumed, created
+        )
+    }
+
     fun createUtxoTransactionStatusEntity(
         utxoTransaction: Any,
         status: String,

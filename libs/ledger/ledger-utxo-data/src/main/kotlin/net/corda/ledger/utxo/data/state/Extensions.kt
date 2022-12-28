@@ -1,9 +1,11 @@
 package net.corda.ledger.utxo.data.state
 
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TransactionState
 
@@ -80,5 +82,12 @@ fun ContractState.getContractClassOrThrow(): Class<out Contract> {
     return requireNotNull(getContractClass()) {
         """Unable to infer Contract class. ${javaClass.canonicalName} is not annotated with @BelongsToContract, 
             |or does not have an enclosing class which implements Contract.""".trimMargin()
+    }
+}
+
+fun UtxoOutputInfoComponent.getEncumbranceGroup(): EncumbranceGroup? {
+     return encumbrance?.let{
+        require(encumbranceGroupSize != null)
+        EncumbranceGroupImpl(encumbranceGroupSize, encumbrance)
     }
 }

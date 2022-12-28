@@ -24,6 +24,7 @@ import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
@@ -33,8 +34,11 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
@@ -52,6 +56,8 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.nio.file.Path
+import java.security.KeyPairGenerator
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -74,6 +80,12 @@ class UtxoLedgerMessageProcessorTests {
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
+        private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
+        private val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("RSA")
+            .also {
+                it.initialize(512)
+            }.genKeyPair().public
+        private val notaryExample = Party(notaryX500Name, publicKeyExample)
         private val logger = contextLogger()
     }
 
@@ -153,6 +165,14 @@ class UtxoLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
+        val outputState = ctx.getSerializationService().serialize(
+            TestContractState()
+        ).bytes
+        val outputInfo = ctx.getSerializationService().serialize(
+            UtxoOutputInfoComponent(
+            null, null, notaryExample, TestContractState::class.java.name, "contract tag"
+            )
+        ).bytes
         val wireTransaction = getWireTransactionExample(
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
@@ -161,8 +181,13 @@ class UtxoLedgerMessageProcessorTests {
             componentGroupLists = listOf(
                 listOf("1".toByteArray()),
                 listOf("2".toByteArray()),
-                listOf("3".toByteArray()),
-                listOf("4".toByteArray())
+                listOf(outputInfo),
+                listOf("4".toByteArray()),
+                listOf("5".toByteArray()),
+                emptyList(),
+                listOf("7".toByteArray()),
+                listOf(outputState),
+                listOf("9".toByteArray())
             ),
             metadata = transactionMetadataExample(numberOfComponentGroups = UtxoComponentGroup.values().size)
         )
@@ -197,6 +222,11 @@ class UtxoLedgerMessageProcessorTests {
             assertThat(response.error).isNull()
         }
         return records
+    }
+
+    class TestContractState : ContractState {
+        override val participants: List<PublicKey>
+            get() = emptyList()
     }
 
     /* Simple wrapper to serialize bytes correctly during test */

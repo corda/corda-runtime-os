@@ -16,8 +16,8 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10002
         fsGroup: 1000
       containers:
         - name: fin
@@ -50,6 +50,9 @@ spec:
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-db-schemas
           image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
           command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -61,7 +64,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', '$(RBAC_DB_USER_USERNAME)', '-p', $(RBAC_DB_USER_PASSWORD), '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', '$(RBAC_DB_USER_USERNAME)', '-p', $(RBAC_DB_USER_PASSWORD), '--name', 'corda-rbac', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--jdbc-pool-max-size', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           workingDir: /tmp/working_dir
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -87,7 +90,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', '$(CRYPTO_DB_USER_USERNAME)', '-p', '$(CRYPTO_DB_USER_PASSWORD)', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', '$(CRYPTO_DB_USER_USERNAME)', '-p', '$(CRYPTO_DB_USER_PASSWORD)', '--name', 'corda-crypto', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbc-pool-max-size', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           workingDir: /tmp/working_dir
           volumeMounts:
             - mountPath: /tmp/working_dir

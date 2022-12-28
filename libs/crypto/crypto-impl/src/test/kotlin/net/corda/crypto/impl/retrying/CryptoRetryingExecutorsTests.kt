@@ -4,7 +4,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -18,7 +17,6 @@ import javax.persistence.PessimisticLockException
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertEquals
 
-@Disabled("See https://r3-cev.atlassian.net/browse/CORE-5888")
 class CryptoRetryingExecutorsTests {
     companion object {
         private val logger = contextLogger()

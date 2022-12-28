@@ -1,37 +1,58 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
+import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 @Suppress("DEPRECATION")
 internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
+
+        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = inputStateAndRef.ref
+        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateRef = referenceStateAndRef.ref
+
+        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
+        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
+
+        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
+        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
+        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
+            .thenReturn(mockSignedTxForInput)
+            .thenReturn(mockSignedTxForRef)
+
         val tx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(getUtxoInvalidStateAndRef().ref)
-            .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
+            .addInputState(inputStateRef)
+            .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
             .toSignedTransaction(publicKeyExample)
         assertIs<SecureHash>(tx.id)
-        assertEquals(getUtxoInvalidStateAndRef().ref, tx.inputStateRefs.single())
-        assertEquals(getUtxoInvalidStateAndRef().ref, tx.referenceStateRefs.single())
+        assertEquals(inputStateRef, tx.inputStateRefs.single())
+        assertEquals(referenceStateRef, tx.referenceStateRefs.single())
         assertEquals(utxoStateExample, tx.outputStateAndRefs.single().state.contractState)
         assertEquals(utxoNotaryExample, tx.notary)
         assertEquals(utxoTimeWindowExample, tx.timeWindow)
@@ -64,8 +85,6 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
-            .addInputState(getUtxoInvalidStateAndRef().ref)
-            .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
@@ -86,13 +105,13 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                "",
+                dummyCpkSignerSummaryHash.toHexString(),
                 "0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
@@ -106,8 +125,6 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
                 .setNotary(utxoNotaryExample)
                 .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
                 .addOutputState(utxoStateExample)
-                .addInputState(getUtxoInvalidStateAndRef().ref)
-                .addReferenceInputState(getUtxoInvalidStateAndRef().ref)
                 .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
@@ -115,5 +132,64 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             builder.toSignedTransaction(publicKeyExample)
             builder.toSignedTransaction(publicKeyExample)
         }
+    }
+
+    @Test
+    fun `Calculate encumbrance groups correctly`(){
+        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val inputStateRef = inputStateAndRef.ref
+        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateRef = referenceStateAndRef.ref
+
+        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
+        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
+
+        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
+        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
+        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
+            .thenReturn(mockSignedTxForInput)
+            .thenReturn(mockSignedTxForRef)
+
+        val tx = utxoTransactionBuilder
+            .setNotary(utxoNotaryExample)
+            .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+            .addEncumberedOutputStates("encumbrance 1",
+                UtxoStateClassExample("test 1", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 2", listOf(publicKeyExample)))
+            .addOutputState(utxoStateExample)
+            .addEncumberedOutputStates("encumbrance 2",
+                UtxoStateClassExample("test 3", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 4", listOf(publicKeyExample)),
+                UtxoStateClassExample("test 5", listOf(publicKeyExample)))
+            .addEncumberedOutputStates("encumbrance 1",
+                UtxoStateClassExample("test 6", listOf(publicKeyExample)))
+            .addInputState(inputStateRef)
+            .addReferenceState(referenceStateRef)
+            .addSignatories(listOf(publicKeyExample))
+            .addCommand(UtxoCommandExample())
+            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .toSignedTransaction(publicKeyExample)
+
+        assertThat(tx.outputStateAndRefs).hasSize(7)
+        assertThat(tx.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[2].state.encumbrance).isNull()
+
+        assertThat(tx.outputStateAndRefs[3].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[3].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[4].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[4].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[5].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 2")
+        assertThat(tx.outputStateAndRefs[5].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
+        assertThat(tx.outputStateAndRefs[6].state.encumbrance).isNotNull().extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(tx.outputStateAndRefs[6].state.encumbrance).isNotNull().extracting { it?.size }.isEqualTo(3)
+
     }
 }

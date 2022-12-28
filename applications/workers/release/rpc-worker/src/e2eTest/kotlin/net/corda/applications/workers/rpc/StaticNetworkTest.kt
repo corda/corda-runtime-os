@@ -11,10 +11,15 @@ import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 class StaticNetworkTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..5).map {
@@ -23,10 +28,9 @@ class StaticNetworkTest {
         )
     }
 
-
     @Test
     fun `register members`() {
-        onboardStaticGroup()
+        onboardStaticGroup(tempDir)
     }
 
     /*
@@ -38,7 +42,7 @@ class StaticNetworkTest {
     @Disabled("This test is disabled until CORE-6079 is ready")
     @Timeout(value = 10, unit = TimeUnit.MINUTES)
     fun `create a static network, register members and exchange messages between them via p2p`() {
-        val groupId = onboardStaticGroup()
+        val groupId = onboardStaticGroup(tempDir)
 
         assertP2pConnectivity(
             HoldingIdentity(cordaCluster.members[0].name, groupId),
@@ -47,7 +51,7 @@ class StaticNetworkTest {
         )
     }
 
-    private fun onboardStaticGroup(): String {
+    private fun onboardStaticGroup(tempDir: Path): String {
         val groupId = UUID.randomUUID().toString()
         val groupPolicy = createStaticMemberGroupPolicyJson(
             getCa(),
@@ -55,7 +59,7 @@ class StaticNetworkTest {
             cordaCluster
         )
 
-        cordaCluster.onboardStaticMembers(groupPolicy)
+        cordaCluster.onboardStaticMembers(groupPolicy, tempDir)
 
         // Assert all members can see each other in their member lists
         val allMembers = cordaCluster.members

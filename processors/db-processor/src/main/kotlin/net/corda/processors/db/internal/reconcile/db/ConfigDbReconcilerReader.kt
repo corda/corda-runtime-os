@@ -8,7 +8,7 @@ import net.corda.reconciliation.VersionedRecord
 
 val getAllConfigDBVersionedRecords
     : (ReconciliationContext) -> Stream<VersionedRecord<String, Configuration>> = { context ->
-    context.entityManager.findAllConfig().map { configEntity ->
+    context.getOrCreateEntityManager().findAllConfig().map { configEntity ->
         val config = Configuration(
             configEntity.config,
             configEntity.config,

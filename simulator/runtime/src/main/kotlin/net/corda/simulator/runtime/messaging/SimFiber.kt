@@ -5,6 +5,7 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
@@ -55,10 +56,12 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
      * @param flow for which FlowMessaging is required
      * @param member The member for whom to create the FlowMessaging service
      * @param injector for flow services
+     * @param contextProperties The [FlowContextProperties] for the flow.
      * @return A [FlowMessaging] services responsible for sending and receiving messages
      */
-    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow,
-                            member: MemberX500Name, injector: FlowServicesInjector): FlowMessaging
+    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow, member: MemberX500Name,
+                            injector: FlowServicesInjector, contextProperties: FlowContextProperties)
+    : FlowMessaging
 
     /**
      * @param alias The alias to use for the key.
@@ -68,6 +71,7 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
      * @return A generated key that is also registered with the member.
      */
     fun generateAndStoreKey(alias: String, hsmCategory: HsmCategory, scheme: String, member: MemberX500Name): PublicKey
+
 }
 
 /**

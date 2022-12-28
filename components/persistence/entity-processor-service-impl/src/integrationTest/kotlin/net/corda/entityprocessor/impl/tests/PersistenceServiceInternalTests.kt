@@ -204,7 +204,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `persist using two different sandboxes captures exception in response`() {
         // Having 2 different sandboxes requires setting up an additional virtual node and db connection manager
-        val virtualNodeInfoTwo = virtualNode.load(Resources.CALCULATOR_CPB)
+        val virtualNodeInfoTwo = virtualNode.load(Resources.FISH_CPB)
 
         val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")
         val calcDbConnection = Pair(virtualNodeInfoTwo.vaultDmlConnectionId, "calc-node")

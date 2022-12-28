@@ -169,25 +169,25 @@ class AppSimulator @Activate constructor(
 
 class CliParameters {
     @CommandLine.Option(
-        names = ["-m", "--messagingParams"],
+        names = ["-m", "--messaging-params"],
         description = ["Messaging parameters for the simulator."]
     )
     var messagingParams = emptyMap<String, String>()
 
     @CommandLine.Option(
-        names = ["-d", "--databaseParams"],
+        names = ["-d", "--database-params"],
         description = ["Database parameters for the simulator."]
     )
     var databaseParams = emptyMap<String, String>()
 
     @CommandLine.Option(
-        names = ["-l", "--loadGenerationParams"],
+        names = ["-l", "--load-generation-params"],
         description = ["Load generation parameters for the simulator."]
     )
     var loadGenerationParams = emptyMap<String, String>()
 
     @CommandLine.Option(
-        names = ["-t", "--topicCreationParams"],
+        names = ["-t", "--topic-creation-params"],
         description = ["Topic creation parameters for the simulator."]
     )
     var topicCreationParams = emptyMap<String, String>()

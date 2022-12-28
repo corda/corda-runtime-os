@@ -27,7 +27,7 @@ java -jar \
 
 The command parameters are: 
 ```
--m, --messagingParams=<String=String>
+-m, --messaging-params=<String=String>
                         Messaging parameters for the topic dumper.
                           Default: {}
 -o, --output=<output>   The output file.

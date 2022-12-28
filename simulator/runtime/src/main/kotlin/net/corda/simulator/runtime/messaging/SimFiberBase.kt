@@ -13,6 +13,7 @@ import net.corda.simulator.runtime.signing.keystoreFactoryBase
 import net.corda.simulator.runtime.signing.signingServiceFactoryBase
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
@@ -50,6 +51,7 @@ class SimFiberBase(
         memberInfos.putIfAbsent(member, BaseMemberInfo(member))
         keyStores.putIfAbsent(member, keystoreFactory.createKeyStore())
     }
+
     override fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService {
         persistenceServices.computeIfAbsent(member) { m -> persistenceServiceFactory.createPersistenceService(m) }
         return persistenceServices[member]!!
@@ -85,10 +87,11 @@ class SimFiberBase(
         configuration: SimulatorConfiguration,
         flow: Flow,
         member: MemberX500Name,
-        injector: FlowServicesInjector
+        injector: FlowServicesInjector,
+        contextProperties: FlowContextProperties
     ): FlowMessaging {
         return flowMessagingFactory
-            .createFlowMessaging(configuration, member, this, injector, flow)
+            .createFlowMessaging(configuration, member, this, injector, flow, contextProperties)
     }
     override fun close() {
         persistenceServices.values.forEach { it.close() }

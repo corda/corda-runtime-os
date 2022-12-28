@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.p2p.NetworkType
 import org.apache.commons.validator.routines.DomainValidator
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.slf4j.LoggerFactory
@@ -41,7 +40,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             val certificate = keyStore.getCertificate(alias).x509()
             if (isC4SNI(serverNameString)) {
                 val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
-                val c4SniValue = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
+                val c4SniValue = SniCalculator.calculateCorda4Sni(x500Name.toString())
                 if (serverNameString == c4SniValue) {
                     return matched(alias)
                 }

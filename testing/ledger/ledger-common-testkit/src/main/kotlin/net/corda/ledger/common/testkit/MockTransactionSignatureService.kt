@@ -10,6 +10,7 @@ private class MockTransactionSignatureService: TransactionSignatureService {
         signatureWithMetadataExample
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {}
+    override fun verifyNotarySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {}
 }
 
 fun mockTransactionSignatureService(): TransactionSignatureService {

@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
@@ -27,7 +28,9 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 ) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(),
     UsedByFlow, UsedByVerification {
 
@@ -50,6 +53,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
             return UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureService,
+                utxoLedgerTransactionFactory,
                 proxy.wireTransaction,
                 proxy.signatures
             )

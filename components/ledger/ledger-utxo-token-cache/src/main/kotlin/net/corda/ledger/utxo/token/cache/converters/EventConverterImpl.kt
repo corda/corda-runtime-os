@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.token.cache.converters
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
-import net.corda.data.ledger.utxo.token.selection.data.TokenTestLedgerChange
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 
@@ -25,10 +24,6 @@ class EventConverterImpl(private val entityConverter: EntityConverter) : EventCo
 
             is TokenLedgerChange -> {
                 entityConverter.toLedgerChange(key, payload)
-            }
-
-            is TokenTestLedgerChange -> {
-                entityConverter.toTestLedgerChange(key, payload)
             }
 
             else -> {

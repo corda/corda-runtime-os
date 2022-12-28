@@ -1,12 +1,13 @@
 package net.corda.simulator.runtime
 
-import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.factories.RequestDataFactory
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.simulator.runtime.signing.SimKeyStore
+import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import org.hamcrest.MatcherAssert.assertThat
@@ -29,7 +30,7 @@ class SimulatedVirtualNodeBaseTest {
     private lateinit var flowFactory : FlowFactory
     private lateinit var injector : FlowServicesInjector
     private lateinit var keyStore : SimKeyStore
-    private val holdingId = HoldingIdentity.create("IRunCordapps")
+    private val holdingId = HoldingIdentityBase(createMember("IRunCordapps"), "groupId")
 
     @Test
     fun `should be a RequestDataFactory`() {
@@ -49,6 +50,7 @@ class SimulatedVirtualNodeBaseTest {
         // Given a virtual node with dependencies
         val flowManager = mock<FlowManager>()
         val flow = mock<RPCStartableFlow>()
+        val contextProperties = SimFlowContextProperties(emptyMap())
         whenever(flowFactory.createInitiatingFlow(any(), any())).thenReturn(flow)
 
         val virtualNode = SimulatedVirtualNodeBase(
@@ -65,7 +67,8 @@ class SimulatedVirtualNodeBaseTest {
         virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber), eq(flowFactory))
+        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber),
+            eq(contextProperties))
 
         // And the flow should have been called
         verify(flowManager, times(1)).call(
@@ -95,6 +98,5 @@ class SimulatedVirtualNodeBaseTest {
         // Then it should be the one that was registered
         assertThat(result, `is`(persistenceService))
     }
-
 
 }

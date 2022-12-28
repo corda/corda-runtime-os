@@ -5,9 +5,11 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.cordapp.demo.utxo.contract.TestUtxoState
 
 data class FindTransactionParameters(val transactionId: String)
 
@@ -20,7 +22,7 @@ data class UtxoTransactionResult(
 )
 
 // hacky DTO to enable JSON serialization without custom serializers
-fun UtxoDemoFlow.TestUtxoState.toResult(): TestUtxoStateResult {
+fun TestUtxoState.toResult(): TestUtxoStateResult {
     return TestUtxoStateResult(this.testField, this.participants.map { it.encoded })
 }
 
@@ -29,7 +31,7 @@ fun UtxoLedgerTransaction.toResult(): UtxoTransactionResult {
     return this.let {
         UtxoTransactionResult(
             it.id,
-            it.outputContractStates.map { (it as UtxoDemoFlow.TestUtxoState).toResult() },
+            it.outputContractStates.map { (it as TestUtxoState).toResult() },
             it.signatories.map { it.encoded })
     }
 }
@@ -41,6 +43,10 @@ data class FindTransactionResponse(
 
 class FindTransactionFlow : RPCStartableFlow {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     @CordaInject
     lateinit var ledgerService: UtxoLedgerService
 
@@ -49,13 +55,18 @@ class FindTransactionFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
+        log.info("Utxo find transaction flow starting...")
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId
 
+        log.info("Utxo finding transaction $txId")
         val result = ledgerService.findLedgerTransaction(SecureHash.parse(txId))
             ?.let { FindTransactionResponse(it.toResult(), null) }
             ?: FindTransactionResponse(null, "Failed to find transaction with id $txId.")
 
-        return marshallingService.format(result)
+        val resultString = marshallingService.format(result)
+
+        log.info("Utxo finding transaction $txId's result: $resultString")
+        return resultString
     }
 }

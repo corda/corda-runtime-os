@@ -70,5 +70,12 @@ interface RequestData {
          */
         @JvmStatic
         fun create(jsonInput : String) = factory.create(jsonInput)
+
+        /**
+         * Creates a valid [RequestData] object that can be used for flows which ignore it. This can be useful for
+         * instance flows where the behaviour can be explicitly specified regardless of the input.
+         */
+        @JvmStatic
+        val IGNORED = create("r1", Flow::class.java, "")
     }
 }

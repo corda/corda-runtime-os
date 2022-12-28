@@ -23,7 +23,7 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
 class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
 
     @CommandLine.Option(
-        names = ["-v", "--vNodeId"],
+        names = ["-v", "--v-node-id"],
         description = ["vNode short hash identifier"],
         required = true
     )

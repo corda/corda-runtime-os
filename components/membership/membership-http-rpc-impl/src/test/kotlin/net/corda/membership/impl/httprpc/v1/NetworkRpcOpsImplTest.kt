@@ -19,11 +19,13 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.SignatureException
 
 class NetworkRpcOpsImplTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -39,7 +41,7 @@ class NetworkRpcOpsImplTest {
     )
 
     @Nested
-    inner class LifeCycleTests {
+    inner class LifecycleTests {
         @Test
         fun `isRunning returns the coordinator status`() {
             whenever(coordinator.status).doReturn(LifecycleStatus.UP)
@@ -109,7 +111,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     anyOrNull()
                 )
-            ).doThrow(CertificatesResourceNotFoundException("Nop"))
+            ).doThrow(CertificatesResourceNotFoundException("Mock failure"))
 
             assertThrows<ResourceNotFoundException> {
                 networkOps.setupHostedIdentities(
@@ -125,7 +127,7 @@ class NetworkRpcOpsImplTest {
         }
 
         @Test
-        fun `it catches bad request exception exception`() {
+        fun `it catches bad request exception`() {
             assertThrows<BadRequestException> {
                 networkOps.setupHostedIdentities(
                     "id",
@@ -140,7 +142,7 @@ class NetworkRpcOpsImplTest {
         }
 
         @Test
-        fun `it catches any other exception exception`() {
+        fun `it catches signature exception`() {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
                     any(),
@@ -150,7 +152,33 @@ class NetworkRpcOpsImplTest {
                     any(),
                     anyOrNull()
                 )
-            ).doThrow(RuntimeException("Nop"))
+            ).doAnswer { throw SignatureException("Mock failure") }
+
+            assertThrows<BadRequestException> {
+                networkOps.setupHostedIdentities(
+                    "id",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        false,
+                        true,
+                        "session"
+                    )
+                )
+            }
+        }
+
+        @Test
+        fun `it catches any other exception`() {
+            whenever(
+                certificatesClient.setupLocallyHostedIdentity(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    anyOrNull()
+                )
+            ).doThrow(RuntimeException("Mock failure"))
 
             assertThrows<InternalServerException> {
                 networkOps.setupHostedIdentities(

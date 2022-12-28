@@ -21,6 +21,8 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -182,8 +184,6 @@ class VirtualNodeWriterProcessorTests {
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
         on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
-        on { virtualNodeExists(any(), any()) }.doReturn(false)
-        on { getHoldingIdentity(any()) }.doReturn(null)
     }
     private val mgmMemberContextKey = "member-context-key"
     private val mgmMgmContextKey = "mgm-context-key"
@@ -236,6 +236,9 @@ class VirtualNodeWriterProcessorTests {
         return respFuture.get()
     }
 
+    private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock<VirtualNodeRepository>()
+    private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock<HoldingIdentityRepository>()
+
     @Test
     fun `publishes correct virtual node info to Kafka`() {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
@@ -247,11 +250,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )  { _, _ ->
-            listOf()
-        }
-
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         verify(publisher).publish(listOf(expectedRecord))
@@ -272,8 +275,11 @@ class VirtualNodeWriterProcessorTests {
                     vNodeRepo,
                     vNodeFactory,
                     groupPolicyParser,
-                    clock
-                ) { _, _ -> listOf(changeLog) }
+                    clock,
+                    getChangelogs = { _, _ -> listOf(changeLog) },
+                    holdingIdentityRepository = holdingIdentityRepositoryMock(),
+                    virtualNodeRepository = virtualNodeRepositoryMock()
+                )
 
                 processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -298,10 +304,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        ) { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
@@ -346,10 +353,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )  { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
@@ -397,10 +405,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )  { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), mgmVnodeCreationReq))
 
@@ -444,10 +453,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )  { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
@@ -467,8 +477,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        ) { _, _ -> listOf() }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         val resp = processRequest(
             processor,
             VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
@@ -492,10 +505,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )   { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
 
         assertEquals(expectedResp, resp)
@@ -670,10 +684,11 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )   { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock()
+        )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
@@ -695,7 +710,9 @@ class VirtualNodeWriterProcessorTests {
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
-            whenever(virtualNodeExists(any(), any())).thenReturn(true)
+        }
+        val vnodeRepo = mock<VirtualNodeRepository>() {
+            on { find(any(), any()) }.doReturn(mock())
         }
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
@@ -703,10 +720,11 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        )   { _, _ ->
-            listOf()
-        }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = vnodeRepo
+        )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
@@ -719,16 +737,15 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
-        val collisionHoldingIdentity = mock<HoldingIdentity>() {
-            on { x500Name }.thenReturn(MemberX500Name.parse("OU=LLC, O=Alice, L=Dublin, C=IE"))
-            on { groupId }.thenReturn("group_id")
-            on { shortHash }.thenReturn(holdingIdentity.shortHash)
-        }
-
         val entityRepository = mock<VirtualNodeEntityRepository>() {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
-            on { virtualNodeExists(any(), any()) }.doReturn(false)
-            on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
+        }
+
+        val holdingIdentityRepository = mock<HoldingIdentityRepository>() {
+            on { find(any(), any()) }.doReturn(mock<HoldingIdentity>())
+        }
+        val vnodeRepo = mock<VirtualNodeRepository>() {
+            on { find(any(), any()) }.doReturn(null)
         }
 
         val processor = VirtualNodeWriterProcessor(
@@ -737,8 +754,11 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
-        ) { _, _ -> listOf() }
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepository,
+            virtualNodeRepository = vnodeRepo
+        )
         val resp = processRequest(
             processor,
             VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)

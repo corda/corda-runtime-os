@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
@@ -36,8 +37,9 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService()
         )
         val persistenceService = UtxoPersistenceServiceImpl(
-            sandbox.getEntityManagerFactory().createEntityManager(),
+            sandbox.getEntityManagerFactory(),
             repository,
+            sandbox.getSandboxSingletonService(),
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )
@@ -51,8 +53,19 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     UtxoOutputRecordFactoryImpl(responseFactory)
                 )
             }
+            is FindUnconsumedStatesByType -> {
+                return UtxoFindUnconsumedStatesByTypeRequestHandler(
+                    req,
+                    sandbox,
+                    sandbox.getSerializationService(),
+                    request.flowExternalEventContext,
+                    persistenceService,
+                    UtxoOutputRecordFactoryImpl(responseFactory)
+                )
+            }
             is PersistTransaction -> {
                 UtxoPersistTransactionRequestHandler(
+                    sandbox.virtualNodeContext.holdingIdentity,
                     UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,

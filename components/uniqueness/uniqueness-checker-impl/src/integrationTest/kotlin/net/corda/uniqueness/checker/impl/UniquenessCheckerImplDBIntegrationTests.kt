@@ -163,19 +163,19 @@ class UniquenessCheckerImplDBIntegrationTests {
         // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
         // respect schema name
         defaultHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_default", defaultHoldingIdentityDbName),
+            TestDbInfo("uniq_test_default", defaultHoldingIdentityDbName, rewriteBatchedInserts = true),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
 
         bobHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_bob", bobHoldingIdentityDbName),
+            TestDbInfo("uniq_test_bob", bobHoldingIdentityDbName, rewriteBatchedInserts = true),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
 
         charlieHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_charlie", charlieHoldingIdentityDbName),
+            TestDbInfo("uniq_test_charlie", charlieHoldingIdentityDbName, rewriteBatchedInserts = true),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )

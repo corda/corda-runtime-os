@@ -5,7 +5,6 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
-import net.corda.data.ledger.utxo.token.selection.data.TokenTestLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
@@ -47,6 +46,7 @@ class EntityConverterImpl : EntityConverter {
     override fun toClaimRelease(avroPoolKey: TokenPoolCacheKey, tokenClaimRelease: TokenClaimRelease): ClaimRelease {
         return ClaimRelease(
             tokenClaimRelease.claimId,
+            tokenClaimRelease.requestContext.requestId,
             tokenClaimRelease.requestContext.flowId,
             tokenClaimRelease.usedTokenStateRefs.toSet(),
             avroPoolKey
@@ -59,22 +59,6 @@ class EntityConverterImpl : EntityConverter {
             // HACK: Added for testing will be removed by CORE-5722 (ledger integration)
             null,
             null,
-            tokenLedgerChange.consumedTokens.map { toCachedToken(it) },
-            tokenLedgerChange.producedTokens.map { toCachedToken(it) }
-        )
-    }
-
-    override fun toTestLedgerChange(
-        avroPoolKey: TokenPoolCacheKey,
-        tokenLedgerChange: TokenTestLedgerChange
-    ): LedgerChange {
-        return LedgerChange(
-            avroPoolKey,
-
-            // HACK: Added for testing will be removed by CORE-5722 (ledger integration)
-            tokenLedgerChange.requestContext.requestId,
-            tokenLedgerChange.requestContext.flowId,
-
             tokenLedgerChange.consumedTokens.map { toCachedToken(it) },
             tokenLedgerChange.producedTokens.map { toCachedToken(it) }
         )

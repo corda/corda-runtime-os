@@ -18,20 +18,21 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
-import java.lang.IllegalStateException
+import kotlin.IllegalStateException
 
 /**
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-// TODO CORE-7249 Currently we need to `spy` this flow because some of the logic is missing and we need to "mock" it.
-//  Mockito needs the class the be open to spy it. We need to remove `open` qualifier when we have an actual logic.
 @InitiatedBy(protocol = "non-validating-notary")
-open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
+class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
     private lateinit var clientService: LedgerUniquenessCheckerClientService
@@ -73,7 +74,7 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * 2. Run initial validation (signature etc.)
      * 3. Run verification
      * 4. Request uniqueness checking using the [LedgerUniquenessCheckerClientService]
-     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.response.NotarisationResponse]
+     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.NotarisationResponse]
      * back to the client including the specific
      * [NotaryError][net.corda.v5.ledger.notary.plugin.core.NotaryError] if applicable
      */
@@ -82,13 +83,13 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         try {
             val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
 
-            val txDetails = validateRequest(session, requestPayload)
+            val txDetails = validateRequest(requestPayload)
             val request = NotarisationRequest(txDetails.inputs, txDetails.id)
 
-            // TODO This shouldn't ever fail but should add an error handling
-            // TODO Discuss this with MGM team but should we able to look up members by X500 name?
-            val otherMemberInfo = memberLookup.lookup(session.counterparty)!!
-            val otherParty = Party(session.counterparty, otherMemberInfo.sessionInitiationKey)
+            val otherMemberInfo = memberLookup.lookup(session.counterparty)
+                ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
+
+            val otherParty = Party(otherMemberInfo.name, otherMemberInfo.sessionInitiationKey)
 
             validateRequestSignature(
                 request,
@@ -119,7 +120,7 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             logger.warn("Error while processing request from client. Cause: $e")
             session.send(NotarisationResponse(
                 emptyList(),
-                NotaryErrorGeneralImpl("Error while processing request from client. Reason: ${e.message}", e)
+                NotaryErrorGeneralImpl("Error while processing request from client.", e)
             ))
         }
     }
@@ -128,43 +129,56 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate the request payload received from the notary client.
      *
      * @throws IllegalStateException if the request could not be validated.
-     *
-     * TODO CORE-7249 This function doesn't do much now since we cannot pre-validate anymore, should we remove this?
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
-    //  order to be mockable (via spy).
-    internal open fun validateRequest(otherSideSession: FlowSession,
-                                      requestPayload: NonValidatingNotarisationPayload
-    ): NonValidatingNotaryTransactionDetails {
-
-        val transactionParts = extractParts(requestPayload)
-        logger.debug {
-            "Received a notarisation request for Tx [${transactionParts.id}] from [${otherSideSession.counterparty}]"
+    private fun validateRequest(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
+        val transactionParts = try {
+            extractParts(requestPayload)
+        } catch (e: Exception) {
+            logger.warn("Could not validate request. Reason: ${e.message}")
+            throw IllegalStateException("Could not validate request.", e)
         }
+
+        // TODO CORE-8976 Add check for notary identity
 
         return transactionParts
     }
 
     /**
      * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
-     *
-     * TODO CORE-7249 For now this is basically a dummy function. In the old C5 world this function extracted
-     *  the data from either the `NotaryChangeWireTransaction` or the `FilteredTransaction` which
-     *  do not exist for now.
      */
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
-        val signedTx = requestPayload.transaction as UtxoSignedTransaction
-        val ledgerTx = signedTx.toLedgerTransaction()
+        val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+        // The notary component is not needed by us but we validate that it is present just in case
+        requireNotNull(filteredTx.notary) {
+            "Notary component could not be found on the transaction"
+        }
+
+        requireNotNull(filteredTx.timeWindow) {
+            "Time window component could not be found on the transaction"
+        }
+
+        val inputStates = filteredTx.inputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
+            "Could not fetch input states from the filtered transaction"
+        }
+
+        val refStates = filteredTx.referenceStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
+            "Could not fetch reference states from the filtered transaction"
+        }
+
+        val outputStates = filteredTx.outputStateAndRefs.castOrThrow<UtxoFilteredData.SizeOnly<StateAndRef<*>>> {
+            "Could not fetch output states from the filtered transaction"
+        }
 
         return NonValidatingNotaryTransactionDetails(
-            signedTx.id,
-            requestPayload.numOutputs,
-            ledgerTx.timeWindow,
-            ledgerTx.inputStateAndRefs.map { it.ref },
-            ledgerTx.referenceInputStateAndRefs.map { it.ref }
+            filteredTx.id,
+            outputStates.size,
+            filteredTx.timeWindow!!,
+            inputStates.values.values.toList(),
+            refStates.values.values.toList(),
+            filteredTx.notary!!
         )
     }
 
@@ -172,18 +186,18 @@ open class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * A non-validating plugin specific verification logic.
      *
      * @throws IllegalStateException if the transaction could not be verified.
-     *
-     * TODO CORE-7249 This function is not doing anything for now, as FilteredTransaction doesn't exist
-     *  and that's the only verification logic we need in the plugin server.
      */
     @Suspendable
-    @Suppress(
-        "NestedBlockDepth",
-        "TooGenericExceptionCaught",
-        "ThrowsCount",
-        "Unused_Parameter" // TODO CORE-7249 Remove once this function is actually utilised
-    )
-    // TODO CORE-7249 Remove `open` qualifier when we have an actual logic. Mockito needs this function to be open in
-    //  order to be mockable (via spy).
-    internal open fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {}
+    @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
+    private fun verifyTransaction(requestPayload: NonValidatingNotarisationPayload) {
+        try {
+            (requestPayload.transaction as UtxoFilteredTransaction).verify()
+        } catch (e: Exception) {
+            logger.warn("Error while validating the transaction, reason: ${e.message}")
+            throw IllegalStateException("Error while validating the transaction", e)
+        }
+    }
+
+    private inline fun <reified T> Any.castOrThrow(error: () -> String) = this as? T
+        ?: throw java.lang.IllegalStateException(error())
 }

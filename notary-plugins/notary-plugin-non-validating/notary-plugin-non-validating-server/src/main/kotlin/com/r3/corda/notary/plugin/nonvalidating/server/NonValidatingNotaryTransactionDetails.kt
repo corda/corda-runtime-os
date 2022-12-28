@@ -1,6 +1,7 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 
@@ -13,5 +14,7 @@ data class NonValidatingNotaryTransactionDetails(
     val numOutputs: Int,
     val timeWindow: TimeWindow,
     val inputs: List<StateRef>,
-    val references: List<StateRef>
+    val references: List<StateRef>,
+    // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
+    val notary: Party
 )

@@ -38,7 +38,7 @@ foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.
   if ($restartCount -gt 0)
   {
     Write-Output "Pod ${podName} has restarted - collecting previous logs"
-    kubectl --namespace "${namespace}" logs "${podName}" --all-containers=true --ignore-errors --prefix=true --previous > (Join-Path $podDir "previous-logs.txt")
+    kubectl --namespace "${namespace}" logs "${podName}" --ignore-errors --prefix=true --previous > (Join-Path $podDir "previous-logs.txt")
   }
   if ($podName -match '.*-worker-.*')
   {

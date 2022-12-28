@@ -48,7 +48,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun getTransactionBuilder(): UtxoTransactionBuilder =
-        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, utxoLedgerPersistenceService)
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
         TODO("Not yet implemented")
@@ -72,6 +72,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal)
+    }
+
+    @Suspendable
+    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+        return utxoLedgerPersistenceService.findUnconsumedStatesByType(stateClass)
     }
 
     @Suspendable
