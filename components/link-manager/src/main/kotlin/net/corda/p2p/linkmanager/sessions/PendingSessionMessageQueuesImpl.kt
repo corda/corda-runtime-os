@@ -10,8 +10,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -57,8 +55,6 @@ internal class PendingSessionMessageQueuesImpl(
         sessionManager: SessionManager,
         counterparties: SessionManager.SessionCounterparties,
         session: Session,
-        groups: LinkManagerGroupPolicyProvider,
-        members: LinkManagerMembershipGroupReader,
     ) {
         publisher.withLifecycleLock {
             if (!isRunning) {

@@ -2,19 +2,13 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.NetworkType
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -57,20 +51,6 @@ class PendingSessionMessageQueuesImplTest {
         createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
         createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-2")
     )
-    private val members = mock<LinkManagerMembershipGroupReader> {
-        on { getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId) } doReturn
-                LinkManagerMembershipGroupReader.MemberInfo(sessionCounterparties.counterpartyId, mock(), KeyAlgorithm.ECDSA, "",)
-    }
-    private val groups = mock<LinkManagerGroupPolicyProvider> {
-        on { getGroupInfo(sessionCounterparties.ourId) } doReturn GroupPolicyListener.GroupInfo(
-            sessionCounterparties.ourId,
-            NetworkType.CORDA_5,
-            emptySet(),
-            emptyList(),
-            GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-            null
-        )
-    }
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
 
@@ -96,7 +76,7 @@ class PendingSessionMessageQueuesImplTest {
             queue.queueMessage(it)
         }
 
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
 
         assertThat(
             publishedRecords.firstValue
@@ -122,7 +102,7 @@ class PendingSessionMessageQueuesImplTest {
             queue.queueMessage(it)
         }
 
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
 
         messages.forEach {
             verify(sessionManager).recordsForSessionEstablished(session, it)
@@ -150,7 +130,7 @@ class PendingSessionMessageQueuesImplTest {
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
             createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
         )
-        queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
 
         assertThat(publishedRecords.allValues).isEmpty()
     }

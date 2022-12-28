@@ -1168,8 +1168,6 @@ class SessionManagerTest {
                 sessionManager,
                 SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
-                groups,
-                members
             )
     }
 
@@ -1887,7 +1885,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `recordsForSessionEstablished returns marker and message`() {
+    fun `recordsForSessionEstablished returns empty list if the message convertor can not create the link out message`() {
         val session = mock<Session> {
             on { sessionId } doReturn "sessionId"
         }
@@ -1905,7 +1903,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `recordsForSessionEstablished returns empty list if the message convertor can not create the link out message`() {
+    fun `recordsForSessionEstablished returns marker and message`() {
         whenever(authenticatedSession.sessionId).doReturn("sessionId")
         val initiatorHello = mock<InitiatorHelloMessage>()
         val header = CommonHeader(

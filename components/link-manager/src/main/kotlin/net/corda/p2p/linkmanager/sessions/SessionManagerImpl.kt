@@ -301,12 +301,12 @@ internal class SessionManagerImpl(
         session: Session,
         messageAndKey: AuthenticatedMessageAndKey,
     ): List<Record<String, *>> {
-        dataMessageSent(session)
         return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, groups, members)?.let { message ->
             val key = LinkManager.generateKey()
             val messageRecord = Record(LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
+            dataMessageSent(session)
             listOf(
                 messageRecord,
                 markerRecord,
@@ -604,8 +604,6 @@ internal class SessionManagerImpl(
                 this,
                 sessionCounterparties,
                 authenticatedSession,
-                groups,
-                members
             )
         }
         logger.info(
