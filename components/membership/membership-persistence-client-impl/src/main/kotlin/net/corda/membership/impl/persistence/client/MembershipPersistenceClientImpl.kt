@@ -3,11 +3,14 @@ package net.corda.membership.impl.persistence.client
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
+import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
@@ -16,6 +19,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
@@ -290,6 +294,36 @@ class MembershipPersistenceClientImpl(
             null -> MembershipPersistenceResult.success()
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun addApprovalRule(
+        viewOwningIdentity: HoldingIdentity,
+        rule: String,
+        ruleType: ApprovalRuleType,
+        label: String?
+    ): MembershipPersistenceResult<String> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            PersistApprovalRule(rule, ruleType, label)
+        ).execute()
+        return when (val payload = result.payload) {
+            is PersistApprovalRuleResponse -> MembershipPersistenceResult.Success(payload.ruleId)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun deleteApprovalRule(
+        viewOwningIdentity: HoldingIdentity, ruleId: String
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            DeleteApprovalRule(ruleId)
+        ).execute()
+        return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
+            null -> MembershipPersistenceResult.success()
+            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
 }

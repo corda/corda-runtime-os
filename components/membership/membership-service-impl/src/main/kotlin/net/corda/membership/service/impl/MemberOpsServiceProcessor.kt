@@ -3,6 +3,9 @@ package net.corda.membership.service.impl
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatusDetails
+import net.corda.data.membership.rpc.request.AddApprovalRuleRequest
+import net.corda.data.membership.rpc.request.DeleteApprovalRuleRequest
+import net.corda.data.membership.rpc.request.GetApprovalRulesRequest
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -40,6 +43,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -64,6 +68,7 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -79,6 +84,9 @@ class MemberOpsServiceProcessor(
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
             RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
+            AddApprovalRuleRequest::class.java to { it.AddApprovalRuleRequestHandler() },
+            GetApprovalRulesRequest::class.java to { it.GetApprovalRulesRequestHandler() },
+            DeleteApprovalRuleRequest::class.java to { it.DeleteApprovalRuleRequestHandler() },
         )
 
         /**
@@ -279,6 +287,24 @@ class MemberOpsServiceProcessor(
                 CIPHER_SUITE to emptyMap<String, String>()
             )
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))
+        }
+    }
+
+    private inner class AddApprovalRuleRequestHandler : RpcHandler<AddApprovalRuleRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: AddApprovalRuleRequest): Any {
+            TODO("Not yet implemented")
+        }
+    }
+
+    private inner class GetApprovalRulesRequestHandler : RpcHandler<GetApprovalRulesRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: GetApprovalRulesRequest): Any {
+            TODO("Not yet implemented")
+        }
+    }
+
+    private inner class DeleteApprovalRuleRequestHandler : RpcHandler<DeleteApprovalRuleRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: DeleteApprovalRuleRequest): Any {
+            TODO("Not yet implemented")
         }
     }
 }

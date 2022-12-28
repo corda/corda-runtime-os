@@ -1,6 +1,7 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -183,5 +184,36 @@ interface MembershipPersistenceClient : Lifecycle {
     fun mutualTlsRemoveCertificateFromAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
+    ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Persists the approval rule of the specified [ruleType].
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param rule The regular expression associated with the rule to be added.
+     * @param ruleType Can be `STANDARD` for group approval rules, or `PREAUTH` for pre-auth token rules.
+     * @param label Optional. A label describing the rule to be added.
+     *
+     * @return Membership persistence result with the ID of the newly added rule.
+     */
+    fun addApprovalRule(
+        viewOwningIdentity: HoldingIdentity,
+        rule: String,
+        ruleType: ApprovalRuleType,
+        label: String?
+    ): MembershipPersistenceResult<String>
+
+    /**
+     * Deletes a previously persisted approval rule.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param ruleId ID of the group approval rule to be deleted.
+     *
+     * @return Membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun deleteApprovalRule(
+        viewOwningIdentity: HoldingIdentity,
+        ruleId: String
     ): MembershipPersistenceResult<Unit>
 }

@@ -14,6 +14,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.dto.ApprovalRuleTypeDto
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
@@ -52,6 +53,12 @@ class MGMRpcOpsImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
+
+        fun addGroupApprovalRule(holdingIdentityShortHash: String, rule: String, label: String?): String?
+
+        fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<String>
+
+        fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String)
     }
 
     override val protocolVersion = 1
@@ -98,6 +105,15 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
+    override fun addGroupApprovalRule(holdingIdentityShortHash: String, rule: String, label: String?) =
+        impl.addGroupApprovalRule(holdingIdentityShortHash, rule, label)
+
+    override fun getGroupApprovalRules(holdingIdentityShortHash: String) =
+        impl.getGroupApprovalRules(holdingIdentityShortHash)
+
+    override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
+        impl.deleteGroupApprovalRule(holdingIdentityShortHash, ruleId)
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -137,6 +153,21 @@ class MGMRpcOpsImpl @Activate constructor(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
         }
+
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, rule: String, label: String?): String =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+
+        override fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<String> =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+
+        override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
@@ -237,5 +268,16 @@ class MGMRpcOpsImpl @Activate constructor(
                 )
             }
         }
+
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, rule: String, label: String?) =
+            mgmOpsClient.addApprovalRule(
+                ShortHash.parseOrThrow(holdingIdentityShortHash), rule, ApprovalRuleTypeDto.STANDARD, label
+            )
+
+        override fun getGroupApprovalRules(holdingIdentityShortHash: String) =
+            mgmOpsClient.getApprovalRules(ShortHash.parseOrThrow(holdingIdentityShortHash), ApprovalRuleTypeDto.STANDARD)
+
+        override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
+            mgmOpsClient.deleteApprovalRule(ShortHash.parseOrThrow(holdingIdentityShortHash), ruleId)
     }
 }

@@ -12,6 +12,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.rpc.request.ApprovalRuleType
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -274,6 +275,26 @@ class MembershipPersistenceTest {
             ) = safeCall {
                 membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                     mgmHoldingIdentity, subject
+                )
+            }
+
+            override fun addApprovalRule(
+                viewOwningIdentity: HoldingIdentity,
+                rule: String,
+                ruleType: ApprovalRuleType,
+                label: String?
+            ) = safeCall {
+                membershipPersistenceClient.addApprovalRule(
+                    viewOwningIdentity, rule, ruleType, label
+                )
+            }
+
+            override fun deleteApprovalRule(
+                viewOwningIdentity: HoldingIdentity,
+                ruleId: String
+            ) = safeCall {
+                membershipPersistenceClient.deleteApprovalRule(
+                    viewOwningIdentity, ruleId
                 )
             }
 
