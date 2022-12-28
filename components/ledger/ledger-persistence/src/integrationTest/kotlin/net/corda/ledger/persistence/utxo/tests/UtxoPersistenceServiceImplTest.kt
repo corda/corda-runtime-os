@@ -215,43 +215,31 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `find unconsumed relevant transaction states that match JPath expression`() {
         val createdTs = TEST_CLOCK.instant()
-        val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
         val transaction2 = createSignedTransaction(createdTs)
+
         entityManagerFactory.transaction { em ->
-
+            em.createNativeQuery("DELETE FROM {h-schema}utxo_transaction_output").executeUpdate()
             em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
+        }
 
-            val transaction1Entity = createTransactionEntity(entityFactory, transaction1)
-                .also { em.persist(it) }
-            val transaction2Entity = createTransactionEntity(entityFactory, transaction2)
-                .also { em.persist(it) }
+        persistenceService.persistTransaction(
+            TestUtxoTransactionReader(transaction1,  "Account", VERIFIED, listOf(1))
+        )
+        persistenceService.persistTransaction(
+            TestUtxoTransactionReader(transaction2,  "Account", VERIFIED, listOf(0, 1))
+        )
 
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction1Entity,
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                1,
-                false,
-                createdTs
-            ).also { em.persist(it) }
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction2Entity,
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                0,
-                false,
-                createdTs
-            ).also { em.persist(it) }
-            entityFactory.createUtxoRelevantTransactionStateEntity(
-                transaction2Entity,
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                1,
-                true,
-                createdTs
-            ).also { em.persist(it) }
+        entityManagerFactory.transaction { em ->
+            em.createNativeQuery("""
+                UPDATE {h-schema}utxo_relevant_transaction_state SET consumed = true
+                WHERE transaction_id = '${transaction2.id}'
+                AND leaf_idx = 1"""
+            ).executeUpdate()
         }
 
         val stateClass = TestContractState2::class.java
-        val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass, "\$ ? (@.name == \"state1\")")
+        val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass, "\$ ? (@.name == \"state2\")")
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
         val state = unconsumedStates.first()
@@ -546,7 +534,10 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
 
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            return listOf(stateAndRef<TestContract>(id, 0))
+            return listOf(
+                stateAndRef<TestContract>(TestContractState1(), id, 0),
+                stateAndRef<TestContract>(TestContractState2(), id, 1)
+            )
         }
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
@@ -557,12 +548,15 @@ class UtxoPersistenceServiceImplTest {
             return listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
         }
 
-        private inline fun <reified C : Contract> stateAndRef(transactionId: SecureHash, index: Int): StateAndRef<TestContractState1> {
-            val state = TestContractState1()
+        private inline fun <reified C : Contract> stateAndRef(
+            state: ContractState,
+            transactionId: SecureHash,
+            index: Int
+        ): StateAndRef<ContractState> {
             return StateAndRefImpl(
-                object : TransactionState<TestContractState1> {
-                    override val contractState: TestContractState1 = state
-                    override val contractStateType: Class<out TestContractState1> = state::class.java
+                object : TransactionState<ContractState> {
+                    override val contractState: ContractState = state
+                    override val contractStateType: Class<out ContractState> = state::class.java
                     override val contractType: Class<out Contract> = C::class.java
                     override val notary: Party = notaryExample
                     override val encumbrance: EncumbranceGroup? = null

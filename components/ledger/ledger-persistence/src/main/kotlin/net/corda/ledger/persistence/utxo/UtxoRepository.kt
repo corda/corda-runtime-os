@@ -25,6 +25,7 @@ interface UtxoRepository {
     /** Retrieves transaction component leafs related to relevant unspent states */
     fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
+        outputIndex: Int,
         groupIndices: List<Int>,
         jPath: String?
     ):  List<ComponentLeafDto>
@@ -92,6 +93,7 @@ interface UtxoRepository {
         tokenTag: String? = null,
         tokenOwnerHash: String? = null,
         tokenAmount: BigDecimal? = null,
+        jsonRepresentation: String? = null,
         timestamp: Instant
     )
 

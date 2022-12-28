@@ -42,7 +42,7 @@ class UtxoPersistenceServiceImpl constructor(
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManagerFactory.transaction { em ->
-            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx), jPath)
+            repository.findUnconsumedRelevantStatesByType(em, outputsIdx, listOf(outputsInfoIdx, outputsIdx), jPath)
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
             ?.associate { Pair(it.leafIndex, it.data) }
@@ -113,6 +113,7 @@ class UtxoPersistenceServiceImpl constructor(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     index,
                     stateAndRef.state.contractState::class.java.canonicalName,
+                    jsonRepresentation = stateAndRef.state.contractState.toJsonRepresentation(),
                     timestamp = nowUtc
                 )
             }

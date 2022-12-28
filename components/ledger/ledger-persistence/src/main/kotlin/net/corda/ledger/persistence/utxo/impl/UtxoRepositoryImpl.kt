@@ -82,6 +82,7 @@ class UtxoRepositoryImpl(
 
     override fun findUnconsumedRelevantStatesByType(
         entityManager: EntityManager,
+        outputIndex: Int,
         groupIndices: List<Int>,
         jPath: String?
     ): List<ComponentLeafDto> {
@@ -93,24 +94,22 @@ class UtxoRepositoryImpl(
             """
                 SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
                 FROM {h-schema}utxo_transaction_component AS tc
-                WHERE EXISTS (
-                    SELECT * FROM {h-schema}utxo_transaction_output AS out,
-                        {h-schema}utxo_relevant_transaction_state AS rts
-                    WHERE out.transaction_id = tc.transaction_id
-                    AND out.group_idx = tc.group_idx
+                JOIN {h-schema}utxo_transaction_output AS out
+                    ON out.transaction_id = tc.transaction_id
+                    AND out.group_idx = :outputIndex
                     AND out.leaf_idx = tc.leaf_idx
-                    AND jsonb_path_exists(out.json_representation, CAST(:jPath AS jsonpath)) 
-                    AND rts.transaction_id = tc.transaction_id
-                    AND rts.group_idx = tc.group_idx
+                JOIN {h-schema}utxo_relevant_transaction_state AS rts
+                    ON rts.transaction_id = tc.transaction_id
                     AND rts.leaf_idx = tc.leaf_idx
-                    AND rts.consumed = false
-                )
-                AND tc.group_idx IN (:groupIndices)
+                WHERE tc.group_idx IN (:groupIndices)
+                AND jsonb_path_exists(out.json_representation, CAST(:jPath AS jsonpath))
+                AND rts.consumed = false
                 ORDER BY tc.group_idx, tc.leaf_idx""",
             Tuple::class.java
         )
-            .setParameter("jPath", jPath)
+            .setParameter("outputIndex", outputIndex)
             .setParameter("groupIndices", groupIndices)
+            .setParameter("jPath", jPath)
             .resultListAsTuples()
             .map { t ->
                 ComponentLeafDto(
@@ -280,16 +279,17 @@ class UtxoRepositoryImpl(
         tokenTag: String?,
         tokenOwnerHash: String?,
         tokenAmount: BigDecimal?,
+        jsonRepresentation: String?,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created)
+                token_symbol, token_tag, token_owner_hash, token_amount, json_representation, created)
             VALUES(
                 :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
+                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:jsonRepresentation AS jsonb), :createdAt)
             ON CONFLICT DO NOTHING"""
         )
             .setParameter("transactionId", transactionId)
@@ -306,6 +306,7 @@ class UtxoRepositoryImpl(
             // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
             .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
+            .setParameter("jsonRepresentation", jsonRepresentation as Any)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
