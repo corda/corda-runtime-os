@@ -54,17 +54,7 @@ import java.security.cert.X509Certificate
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
-import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
-import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.p2p.gateway.messaging.TlsType
-import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.testing.p2p.certificates.Certificates
-import java.net.URL
 
 open class TestBase {
     companion object {
