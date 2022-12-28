@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.cpi.persistence.CpiPersistence
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -26,12 +27,16 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
+import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -89,6 +94,7 @@ internal class VirtualNodeWriterProcessor(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
+    private val cpiPersistence: CpiPersistence,
     private val clock: Clock,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
@@ -109,13 +115,16 @@ internal class VirtualNodeWriterProcessor(
                 }
             """.trimIndent()
 
-        private fun getMgmCpiShortHash(groupPolicy: String = mgmGroupPolicy) = ShortHash.of(
+        private fun getMgmCpiSecureHash(groupPolicy: String = mgmGroupPolicy) =
             with(DigestAlgorithmName.SHA2_256.name) {
                 SecureHash(
                     this,
                     MessageDigest.getInstance(this).digest(groupPolicy.toByteArray())
                 )
             }
+
+        private fun getMgmCpiShortHash(groupPolicy: String = mgmGroupPolicy) = ShortHash.of(
+            getMgmCpiSecureHash(groupPolicy)
         ).value
     }
 
@@ -123,14 +132,19 @@ internal class VirtualNodeWriterProcessor(
         return "NO_CPI" == cpiFileChecksum
     }
 
-    @Suppress("ReturnCount", "ComplexMethod")
+    @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
+
+        val mgmCpiSecureHash = when {
+            create.isMgmCpiRequest() -> getMgmCpiSecureHash()
+            else -> null
+        }
         val cpiShortHash = when {
-            create.isMgmCpiRequest() -> getMgmCpiShortHash()
+            create.isMgmCpiRequest() -> ShortHash.of(mgmCpiSecureHash!!).value
             else -> create.cpiFileChecksum
         }
 
@@ -151,6 +165,35 @@ internal class VirtualNodeWriterProcessor(
         }
 
         try {
+            if (create.isMgmCpiRequest()) {
+                val identifier = CpiIdentifier("MGM", "1.0", mgmCpiSecureHash)
+                val mgmCpiMetadata = CpiMetadata(
+                    identifier,
+                    mgmCpiSecureHash!!,
+                    emptyList(),
+                    mgmGroupPolicy,
+                    1,
+                    clock.instant()
+                )
+                val cpi = PocMgmCpi(mgmCpiMetadata)
+                val cpiExists = cpiPersistence.cpiExists(
+                    identifier.name,
+                    identifier.version,
+                    identifier.signerSummaryHash.toString()
+                )
+                logger.info("Charlie > MGM CPI exists: $cpiExists")
+                if (!cpiExists) {
+                    cpiPersistence.persistMetadataAndCpks(
+                        cpi,
+                        "mgm.cpi",
+                        mgmCpiSecureHash,
+                        "",
+                        "CREATE_ID",
+                        emptyList()
+                    )
+                }
+            }
+
             val cpiMetadata: CpiMetadataLite?
             measureTimeMillis {
                 cpiMetadata = oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(cpiShortHash)
@@ -299,21 +342,21 @@ internal class VirtualNodeWriterProcessor(
                 it.transaction { tx ->
                     // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
-                    if(null == virtualNodeInfo) {
-                            logger.warn("Could not find the virtual node: $shortHashString")
-                            respFuture.complete(
-                                VirtualNodeManagementResponse(
-                                    instant,
-                                    VirtualNodeManagementResponseFailure(
-                                        ExceptionEnvelope(
-                                            VirtualNodeNotFoundException::class.java.name,
-                                            "Could not find the virtual node: $shortHashString"
-                                        )
+                    if (null == virtualNodeInfo) {
+                        logger.warn("Could not find the virtual node: $shortHashString")
+                        respFuture.complete(
+                            VirtualNodeManagementResponse(
+                                instant,
+                                VirtualNodeManagementResponseFailure(
+                                    ExceptionEnvelope(
+                                        VirtualNodeNotFoundException::class.java.name,
+                                        "Could not find the virtual node: $shortHashString"
                                     )
                                 )
                             )
-                            return
-                        }
+                        )
+                        return
+                    }
 
                     // Retrieve CPI metadata
                     val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
@@ -725,5 +768,13 @@ internal class VirtualNodeWriterProcessor(
             )
         )
         return respFuture.complete(response)
+    }
+
+    internal class PocMgmCpi(override val metadata: CpiMetadata) : Cpi {
+
+        override val cpks: Collection<Cpk>
+            get() = emptyList()
+
+        override fun getCpkById(id: CpkIdentifier): Cpk? = null
     }
 }

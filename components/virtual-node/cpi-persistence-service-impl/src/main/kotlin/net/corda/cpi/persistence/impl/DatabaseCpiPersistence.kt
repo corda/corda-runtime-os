@@ -49,9 +49,11 @@ import javax.persistence.OptimisticLockException
 import kotlin.jvm.Throws
 
 /**
- * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
+ * This class provides some simple APIs to interact with the database for manipulating CPIs,
+ * CPKs and their associated metadata.
  */
 @Component(service = [CpiPersistence::class])
+@Suppress("TooManyFunctions")
 class DatabaseCpiPersistence @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -174,13 +176,7 @@ class DatabaseCpiPersistence @Activate constructor(
                     // Check prior to merge
                     val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
                             changelog.changesetId != inDb.changesetId
-                    if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
-                        // Mark as not deleted if this is one of the new entries
-                        changelog.isDeleted = false
-                    } else {
-                        // Otherwise we assume that it's out of date and should be marked as deleted
-                        changelog.isDeleted = true
-                    }
+                    changelog.isDeleted = !(changeLogUpdates.containsKey(changelogId) || hasChanged)
                     em.merge(changelog)
                     if (hasChanged) {
                         // Simulate entityVersion increase
@@ -501,7 +497,7 @@ class DatabaseCpiPersistence @Activate constructor(
 
     private val CpkIdentifier.signerSummaryHashForDbQuery: String
         get() {
-            return signerSummaryHash?.toString() ?: ""
+            return signerSummaryHash.toString()
         }
 
     private fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHashForDbQuery)

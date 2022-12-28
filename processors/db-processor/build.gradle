@@ -75,6 +75,7 @@ dependencies {
     runtimeOnly project(':components:virtual-node:cpk-write-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
+    runtimeOnly project(':components:virtual-node:cpi-persistence-service-impl')
 
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')

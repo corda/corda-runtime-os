@@ -29,7 +29,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Suppress("UNUSED")
+@Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkReadService::class])
 class ChunkReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -112,7 +112,7 @@ class ChunkReadServiceImpl @Activate constructor(
         val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiPersistence, cpiInfoWriteService)
+            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }
 
         coordinator.updateStatus(LifecycleStatus.UP)

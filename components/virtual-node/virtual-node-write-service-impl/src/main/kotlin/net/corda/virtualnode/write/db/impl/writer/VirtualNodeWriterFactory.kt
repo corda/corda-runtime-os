@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.cpi.persistence.CpiPersistence
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -29,6 +30,7 @@ internal class VirtualNodeWriterFactory(
     private val dbAdmin: DbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val cpiPersistence: CpiPersistence,
     private val getChangeLogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) {
 
@@ -81,6 +83,7 @@ internal class VirtualNodeWriterFactory(
             virtualNodeEntityRepository,
             vnodeDbFactory,
             groupPolicyParser,
+            cpiPersistence,
             UTCClock(),
             getChangeLogs
         )

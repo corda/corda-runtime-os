@@ -28,14 +28,15 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
-@Suppress("UNUSED")
+@Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
 class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
     private val tempPathProvider: PathProvider,
     private val certificatesService: CertificatesService,
-    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    private val cpiPersistence: CpiPersistence
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -47,8 +48,17 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = CertificatesService::class)
         certificatesService: CertificatesService,
         @Reference(service = MembershipSchemaValidatorFactory::class)
-        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory
-    ) : this(subscriptionFactory, publisherFactory, TempPathProvider(), certificatesService, membershipSchemaValidatorFactory)
+        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+        @Reference(service = CpiPersistence::class)
+        cpiPersistence: CpiPersistence
+    ) : this(
+        subscriptionFactory,
+        publisherFactory,
+        TempPathProvider(),
+        certificatesService,
+        membershipSchemaValidatorFactory,
+        cpiPersistence
+    )
 
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
@@ -62,7 +72,6 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
-        cpiPersistence: CpiPersistence,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
         // Could be reused
@@ -76,7 +85,6 @@ class ChunkDbWriterFactoryImpl(
             messagingConfig,
             bootConfig,
             entityManagerFactory,
-            cpiPersistence,
             statusTopic,
             cpiInfoWriteService
         )
@@ -101,7 +109,6 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
-        cpiPersistence: CpiPersistence,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {

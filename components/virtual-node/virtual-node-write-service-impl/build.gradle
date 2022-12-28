@@ -20,6 +20,7 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:db:db-connection-manager-impl')
     implementation project(':components:virtual-node:virtual-node-write-service')
+    implementation project(':components:virtual-node:cpi-persistence-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')
