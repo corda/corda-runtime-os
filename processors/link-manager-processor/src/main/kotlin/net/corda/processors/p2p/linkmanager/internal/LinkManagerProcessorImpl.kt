@@ -70,10 +70,10 @@ class LinkManagerProcessorImpl @Activate constructor(
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(::eventHandler)
 
-    override fun start(bootConfig: SmartConfig, useStubComponents: Boolean) {
+    override fun start(bootConfig: SmartConfig) {
         log.info("Link manager processor starting.")
         lifecycleCoordinator.start()
-        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig, useStubComponents))
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
@@ -143,4 +143,4 @@ class LinkManagerProcessorImpl @Activate constructor(
     }
 }
 
-data class BootConfigEvent(val config: SmartConfig, val useStubComponents: Boolean) : LifecycleEvent
+data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent

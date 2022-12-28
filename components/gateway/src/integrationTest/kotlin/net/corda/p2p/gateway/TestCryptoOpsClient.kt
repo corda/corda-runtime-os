@@ -9,9 +9,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
-import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
-import net.corda.p2p.test.stub.crypto.processor.CouldNotReadKey
-import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
@@ -124,7 +122,7 @@ class TestCryptoOpsClient(
                 }.filterNotNull()
                     .firstOrNull()
             }
-        } ?: throw CouldNotReadKey(pem)
+        } ?: throw CordaRuntimeException("Could not read PEM")
     }
 
     fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword) {
@@ -158,11 +156,11 @@ class TestCryptoOpsClient(
         val privateKey = tenantIdToKeys[tenantId]
             ?.publicKeyToPrivateKey
             ?.get(publicKey)
-            ?: throw CouldNotFindPrivateKey()
+            ?: throw CordaRuntimeException("Could not find private key")
         val providerName = when (publicKey.algorithm) {
             "RSA" -> "SunRsaSign"
             "EC" -> "SunEC"
-            else -> throw UnsupportedAlgorithm(publicKey)
+            else -> throw CordaRuntimeException("Unsupported Algorithm")
         }
         val signature = Signature.getInstance(
             signatureSpec.signatureName,

@@ -47,7 +47,7 @@ class LinkManagerWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator()
         )
 
-        linkManagerProcessor.start(config, !params.withoutStubs)
+        linkManagerProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -60,8 +60,4 @@ class LinkManagerWorker @Activate constructor(
 private class LinkManagerWorkerParams {
     @CommandLine.Mixin
     var defaultParams = DefaultWorkerParams()
-
-    //This is used to test the Link Manager without MGM/Crypto components. It will be removed in CORE-5782.
-    @CommandLine.Option(names = ["--without-stubs"])
-    var withoutStubs = false
 }

@@ -2,9 +2,11 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -58,8 +60,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
@@ -86,7 +86,7 @@ import kotlin.concurrent.write
 internal class SessionManagerImpl(
     private val groups: LinkManagerGroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
-    private val cryptoProcessor: CryptoProcessor,
+    private val cryptoOpsClient: CryptoOpsClient,
     private val pendingOutboundSessionMessageQueues: PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
@@ -161,7 +161,8 @@ internal class SessionManagerImpl(
         onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
-            members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
+            members.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
             revocationCheckerClient.dominoTile.coordinatorName,
@@ -494,12 +495,12 @@ internal class SessionManagerImpl(
         val tenantId = ourIdentityInfo.sessionKeyTenantId
 
         val signWithOurGroupId = { data: ByteArray ->
-            cryptoProcessor.sign(
+            cryptoOpsClient.sign(
                 tenantId,
                 ourIdentityInfo.sessionPublicKey,
                 ourIdentityInfo.sessionPublicKey.toKeyAlgorithm().getSignatureSpec(),
                 data
-            )
+            ).bytes
         }
         val payload = try {
             session.generateOurHandshakeMessage(
@@ -507,7 +508,7 @@ internal class SessionManagerImpl(
                 ourIdentityInfo.sessionCertificates,
                 signWithOurGroupId
             )
-        } catch (exception: CryptoProcessorException) {
+        } catch (exception: Exception) {
             logger.warn(
                 "${exception.message}. The ${message::class.java.simpleName} with sessionId ${message.header.sessionId}" +
                     " was discarded."
@@ -714,15 +715,15 @@ internal class SessionManagerImpl(
         val response = try {
             val ourPublicKey = ourIdentityInfo.sessionPublicKey
             val signData = { data: ByteArray ->
-                cryptoProcessor.sign(
+                cryptoOpsClient.sign(
                     tenantId,
                     ourIdentityInfo.sessionPublicKey,
                     ourIdentityInfo.sessionPublicKey.toKeyAlgorithm().getSignatureSpec(),
                     data
-                )
+                ).bytes
             }
             session.generateOurHandshakeMessage(ourPublicKey, ourIdentityInfo.sessionCertificates, signData)
-        } catch (exception: CryptoProcessorException) {
+        } catch (exception: Exception) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                     " The message was discarded."

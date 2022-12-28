@@ -14,7 +14,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.crypto.DelegatingCryptoService
 import net.corda.p2p.linkmanager.grouppolicy.ForwardingGroupPolicyProvider
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -23,7 +22,6 @@ import net.corda.p2p.linkmanager.inbound.InboundLinkManager
 import net.corda.p2p.linkmanager.membership.ForwardingMembershipGroupReader
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -62,8 +60,6 @@ class LinkManager(
         lifecycleCoordinatorFactory, groupPolicyProvider,
             virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient)
 
-    private val linkManagerCryptoProcessor: CryptoProcessor = DelegatingCryptoService(cryptoOpsClient)
-
     private val members: LinkManagerMembershipGroupReader = ForwardingMembershipGroupReader(
         membershipGroupReaderProvider, lifecycleCoordinatorFactory, groupParametersReaderService)
 
@@ -74,7 +70,7 @@ class LinkManager(
         groups = forwardingGroupPolicyProvider,
         members = members,
         configurationReaderService = configurationReaderService,
-        linkManagerCryptoProcessor = linkManagerCryptoProcessor,
+        cryptoOpsClient = cryptoOpsClient,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,
@@ -87,7 +83,6 @@ class LinkManager(
         groups = forwardingGroupPolicyProvider,
         members = members,
         configurationReaderService = configurationReaderService,
-        linkManagerCryptoProcessor = linkManagerCryptoProcessor,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,

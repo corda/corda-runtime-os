@@ -13,7 +13,6 @@ import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -25,7 +24,6 @@ internal class OutboundLinkManager(
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     configurationReaderService: ConfigurationReadService,
-    linkManagerCryptoProcessor: CryptoProcessor,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
@@ -51,7 +49,6 @@ internal class OutboundLinkManager(
         subscriptionFactory,
         groups,
         members,
-        linkManagerCryptoProcessor,
         commonComponents.sessionManager,
         clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }

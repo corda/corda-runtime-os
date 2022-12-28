@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -40,7 +40,6 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.crypto.DelegatingCryptoService
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
@@ -49,16 +48,16 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
-import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.toBase64
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -214,12 +213,11 @@ class SessionManagerTest {
         on { dominoTile } doReturn hostingMapDominoTile
         on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
-    private val cryptoService = mock<DelegatingCryptoService> {
-        on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
-        val namedLifecycle = mock<NamedLifecycle> {
-            whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(it.namedLifecycle) doReturn namedLifecycle
+    private val signature = mock<DigitalSignature.WithKey> {
+        on { bytes } doReturn "signature-from-A".toByteArray()
+    }
+    private val cryptoOpsClient = mock<CryptoOpsClient> {
+        on { sign(any(), eq(OUR_KEY.public), any<SignatureSpec>(), any(), any()) } doReturn signature
     }
     private val pendingSessionMessageQueues = mock<PendingSessionMessageQueues> {
         val pendingSessionMessageQueuesDominoTile = mock<ComplexDominoTile> {
@@ -252,7 +250,7 @@ class SessionManagerTest {
     private val sessionManager = SessionManagerImpl(
         groups,
         members,
-        cryptoService,
+        cryptoOpsClient,
         pendingSessionMessageQueues,
         mock(),
         mock(),
@@ -709,7 +707,7 @@ class SessionManagerTest {
         )
 
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any()))
-            .thenThrow(CouldNotFindPrivateKey())
+            .thenThrow(CordaRuntimeException("Nop"))
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -1101,7 +1099,7 @@ class SessionManagerTest {
             SignatureSpec.ECDSA_SHA256
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), eq(null), any()))
-            .thenThrow(UnsupportedAlgorithm(OUR_KEY.public))
+            .thenThrow(CordaRuntimeException("Nop"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -1270,7 +1268,7 @@ class SessionManagerTest {
         val sessionManager = SessionManagerImpl(
             groups,
             members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1323,7 +1321,7 @@ class SessionManagerTest {
         val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1397,7 +1395,7 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1461,7 +1459,7 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1524,7 +1522,7 @@ class SessionManagerTest {
 
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1594,7 +1592,7 @@ class SessionManagerTest {
 
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1665,7 +1663,7 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),
@@ -1770,7 +1768,7 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             groups, members,
-            cryptoService,
+            cryptoOpsClient,
             pendingSessionMessageQueues,
             mock(),
             mock(),

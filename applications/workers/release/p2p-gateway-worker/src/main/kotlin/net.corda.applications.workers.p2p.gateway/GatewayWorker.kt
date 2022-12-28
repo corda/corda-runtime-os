@@ -47,7 +47,7 @@ class GatewayWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator()
         )
 
-        gatewayProcessor.start(config, !params.withoutStubs)
+        gatewayProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -60,8 +60,4 @@ class GatewayWorker @Activate constructor(
 private class GatewayWorkerParams {
     @CommandLine.Mixin
     var defaultParams = DefaultWorkerParams()
-
-    //This is used to test the gateway without Crypto component. It will be removed in CORE-5782.
-    @CommandLine.Option(names = ["--without-stubs"])
-    var withoutStubs = false
 }

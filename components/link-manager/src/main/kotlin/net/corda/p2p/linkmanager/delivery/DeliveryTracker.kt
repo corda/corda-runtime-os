@@ -1,8 +1,10 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -24,7 +26,6 @@ import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
@@ -42,7 +43,6 @@ internal class DeliveryTracker(
     subscriptionFactory: SubscriptionFactory,
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
-    cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
     clock: Clock,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
@@ -80,7 +80,7 @@ internal class DeliveryTracker(
             replayScheduler.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName,
-            cryptoProcessor.namedLifecycle.name,
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             sessionManager.dominoTile.coordinatorName,
             appMessageReplayer.dominoTile.coordinatorName
         ),

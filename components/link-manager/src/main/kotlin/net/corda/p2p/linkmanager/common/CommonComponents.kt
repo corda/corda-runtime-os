@@ -1,10 +1,13 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
@@ -15,7 +18,6 @@ import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -26,7 +28,7 @@ internal class CommonComponents(
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     configurationReaderService: ConfigurationReadService,
-    linkManagerCryptoProcessor: CryptoProcessor,
+    cryptoOpsClient: CryptoOpsClient,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
@@ -46,7 +48,7 @@ internal class CommonComponents(
     internal val sessionManager = SessionManagerImpl(
         groups,
         members,
-        linkManagerCryptoProcessor,
+        cryptoOpsClient,
         messagesPendingSession,
         publisherFactory,
         configurationReaderService,
@@ -82,7 +84,7 @@ internal class CommonComponents(
             groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName,
-            linkManagerCryptoProcessor.namedLifecycle.name,
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             messagesPendingSession.dominoTile.coordinatorName,
             sessionManager.dominoTile.coordinatorName,
             trustStoresPublisher.dominoTile.coordinatorName,
@@ -92,7 +94,7 @@ internal class CommonComponents(
             groups.dominoTile.toNamedLifecycle(),
             members.dominoTile.toNamedLifecycle(),
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
-            linkManagerCryptoProcessor.namedLifecycle,
+            NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>()),
             messagesPendingSession.dominoTile.toNamedLifecycle(),
             sessionManager.dominoTile.toNamedLifecycle(),
             trustStoresPublisher.dominoTile.toNamedLifecycle(),

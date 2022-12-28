@@ -51,10 +51,10 @@ class GatewayProcessorImpl @Activate constructor(
     private var gateway: Gateway? = null
     private var registration: RegistrationHandle? = null
 
-    override fun start(bootConfig: SmartConfig, useStubComponents: Boolean) {
+    override fun start(bootConfig: SmartConfig) {
         logger.info("Gateway processor starting.")
         lifecycleCoordinator.start()
-        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig, useStubComponents))
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
@@ -101,5 +101,5 @@ class GatewayProcessorImpl @Activate constructor(
         }
     }
 
-    data class BootConfigEvent(val config: SmartConfig, val useStubComponents: Boolean) : LifecycleEvent
+    data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
 }
