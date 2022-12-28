@@ -309,8 +309,10 @@ class CPKTests {
         signJar(modifiedWorkflowCPK, modifiedWorkflowCPKSigned)
 
         assertThrows<DependencyMetadataException> {
-            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
-                cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
+            CpkLoaderV2().loadMetadata(
+                source = modifiedWorkflowCPKSigned.readAll(),
+                cpkLocation = modifiedWorkflowCPKSigned.toString(),
+                verifySignature = false
             )
         }
     }

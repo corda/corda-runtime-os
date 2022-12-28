@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.common
 
 
+import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
@@ -26,7 +27,12 @@ fun <T : Any?> withPermissionManager(
     return try {
         block.invoke(permissionManager)
 
-    } catch (e: UnexpectedPermissionResponseException) {
+    } catch (e: HttpApiException) {
+        // This is already a well-formed exception - rethrow
+        throw e
+
+    }
+    catch (e: UnexpectedPermissionResponseException) {
         logger.warn("Permission manager received an unexpected response: ${e::class.java.name}: ${e.message}")
         throw InternalServerException(
             details = buildExceptionCauseDetails(e)

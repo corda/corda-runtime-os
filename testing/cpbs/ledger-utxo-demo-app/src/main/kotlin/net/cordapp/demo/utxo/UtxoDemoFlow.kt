@@ -17,13 +17,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.Contract
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import java.security.PublicKey
+import net.cordapp.demo.utxo.contract.TestUtxoState
 import java.time.Instant
 
 /**
@@ -34,17 +30,6 @@ import java.time.Instant
 @InitiatingFlow("utxo-flow-protocol")
 class UtxoDemoFlow : RPCStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
-
-    class TestContract : Contract {
-        override fun verify(transaction: UtxoLedgerTransaction) {
-        }
-    }
-
-    @BelongsToContract(TestContract::class)
-    class TestUtxoState(
-        val testField: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
 
     class TestCommand : Command
 
@@ -84,8 +69,8 @@ class UtxoDemoFlow : RPCStartableFlow {
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
 
-            val notary = notaryLookup.notaryServices.first()
-            val notaryKey = memberLookup.lookup().first {
+            val notary = notaryLookup.notaryServices.single()
+            val notaryKey = memberLookup.lookup().single {
                 it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
             }.ledgerKeys.first()
             // TODO CORE-6173 use proper notary key
@@ -138,7 +123,7 @@ class UtxoResponderFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         try {
             val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
-                val state = ledgerTransaction.outputContractStates.first() as UtxoDemoFlow.TestUtxoState
+                val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
                 if (state.testField == "fail") {
                     log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
                     throw IllegalStateException("Failed verification")

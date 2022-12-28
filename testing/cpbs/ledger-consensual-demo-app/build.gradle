@@ -16,6 +16,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-ledger-consensual'
 
+    cordapp project(':testing:cpbs:ledger-consensual-demo-contract')
+
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

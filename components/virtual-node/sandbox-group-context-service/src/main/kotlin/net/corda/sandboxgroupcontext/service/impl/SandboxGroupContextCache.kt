@@ -10,5 +10,7 @@ interface SandboxGroupContextCache : AutoCloseable {
         virtualNodeContext: VirtualNodeContext,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext
-}
 
+    fun resize(newCapacity: Long): SandboxGroupContextCache
+    fun flush()
+}

@@ -88,11 +88,11 @@ Kafka arguments
 {{- else }}
 - "-msecurity.protocol=SSL"
 {{- end }}
-{{- if .Values.kafka.tls.truststore.secretRef.name }}
+{{- if .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - "-mssl.truststore.location=/certs/ca.crt"
 - "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
-{{- if .Values.kafka.tls.truststore.password }}
-- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
+{{- if or .Values.kafka.tls.truststore.password.value .Values.kafka.tls.truststore.password.valueFrom.secretKeyRef.name }}
+- "-mssl.truststore.password=$TRUSTSTORE_PASSWORD"
 {{- end }}
 {{- end }}
 {{- else }}
@@ -124,7 +124,7 @@ CLI image
 Volume mounts for the appSimulator
 */}}
 {{- define "appSimulator.volumeMounts" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - mountPath: "/certs"
   name: "certs"
   readOnly: true
@@ -144,17 +144,94 @@ Volume mounts for the appSimulator
 Volumes for the appSimulator
 */}}
 {{- define "appSimulator.volumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name }}
 - name: certs
   secret:
-    secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+    secretName: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.name | quote }}
     items:
-      - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+      - key: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
         path: "ca.crt"
 {{- end -}}
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
-  secret:
-    secretName: {{ .Values.kafka.sasl.secretName }}
+  emptyDir: {}
 {{- end }}
+{{- end }}
+
+{{/*
+Kafka SASL username and password environment variables
+*/}}
+{{- define "appSimulator.kafkaSaslUsernameAndPasswordEnv" -}}
+{{- if .Values.kafka.sasl.enabled }}
+  {{- $username := .Values.appSimulators.kafka.sasl.username }}
+- name: SASL_USERNAME
+  {{- if $username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify .Values.appSimulators.kafka.sasl.username.valueFrom.secretKeyRef.key") $username.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $username.value }}
+  value: {{ $username.value | quote }}
+  {{- else if .Values.kafka.sasl.username.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.username.valueFrom.secretKeyRef.key" .Values.kafka.sasl.username.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify .Values.appSimulators.kafka.sasl.username.value, appSimulators.kafka.sasl.username.valueFrom.secretKeyRef.name, kafka.sasl.username.value, or kafka.sasl.username.valueFrom.secretKeyRef.name") .Values.kafka.sasl.username.value }}
+  {{- end }}
+  {{- $password := .Values.appSimulators.kafka.sasl.password }}
+- name: SASL_PASSWORD
+  {{- if $password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required (printf "Must specify .Values.appSimulators.kafka.sasl.password.valueFrom.secretKeyRef.key") $password.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $password.value }}
+  value: {{ $password.value | quote }}
+  {{- else if .Values.kafka.sasl.password.valueFrom.secretKeyRef.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.kafka.sasl.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify kafka.sasl.password.valueFrom.secretKeyRef.key" .Values.kafka.sasl.password.valueFrom.secretKeyRef.key | quote }}
+  {{- else }}
+  value: {{ required (printf "Must specify .Values.appSimulators.kafka.sasl.password.value, .Values.appSimulators.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name") .Values.kafka.sasl.password.value }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+
+{{/*
+Kafka SASL init container
+*/}}
+{{- define "appSimulator.kafkaSaslInitContainer" -}}
+{{- if .Values.kafka.sasl.enabled }}
+- name: create-sasl-jaas-conf
+  image: {{ include "appSimulator.image" . }}
+  imagePullPolicy:  {{ .Values.imagePullPolicy }}
+  env:
+  {{- include "appSimulator.kafkaSaslUsernameAndPasswordEnv" . | nindent 2 }}
+  command:
+  - /bin/bash
+  - -c
+  args:
+    - |
+        cat <<EOF > /etc/config/jaas.conf
+        KafkaClient {
+            {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+            {{- else }}
+            org.apache.kafka.common.security.scram.ScramLoginModule required
+            {{- end }}
+            username="$SASL_USERNAME"
+            password="$SASL_PASSWORD";
+        };    
+        EOF
+  volumeMounts:
+  - mountPath: "/etc/config"
+    name: "jaas-conf"
+    readOnly: false
+  resources:
+  {{- toYaml .Values.resources | nindent 3 }}
+{{- end }}    
 {{- end }}

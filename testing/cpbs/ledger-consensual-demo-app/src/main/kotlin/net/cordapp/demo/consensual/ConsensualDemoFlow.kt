@@ -15,9 +15,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
-import net.corda.v5.ledger.consensual.ConsensualState
-import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import java.security.PublicKey
+import net.cordapp.demo.consensual.contract.TestConsensualState
 
 /**
  * Example consensual flow.
@@ -27,13 +25,6 @@ import java.security.PublicKey
 @InitiatingFlow("consensual-flow-protocol")
 class ConsensualDemoFlow : RPCStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
-
-    class TestConsensualState(
-        val testField: String,
-        override val participants: List<PublicKey>
-    ) : ConsensualState {
-        override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
-    }
 
     private companion object {
         val log = contextLogger()
@@ -112,7 +103,7 @@ class ConsensualResponderFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         try {
             val finalizedSignedTransaction = consensualLedgerService.receiveFinality(session) { ledgerTransaction ->
-                val state = ledgerTransaction.states.first() as ConsensualDemoFlow.TestConsensualState
+                val state = ledgerTransaction.states.first() as TestConsensualState
                 if (state.testField == "fail") {
                     log.info("Failed to verify the transaction - $ledgerTransaction")
                     throw IllegalStateException("Failed verification")

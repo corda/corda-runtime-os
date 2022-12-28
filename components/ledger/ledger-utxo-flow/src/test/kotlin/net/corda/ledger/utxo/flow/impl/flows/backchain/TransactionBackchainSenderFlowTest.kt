@@ -64,11 +64,11 @@ class TransactionBackchainSenderFlowTest {
             .thenReturn(TransactionBackchainRequest.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequest.Stop)
 
         whenever(ledgerTransaction1.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction1.referenceStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction2.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction2.referenceStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction3.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction3.referenceStateRefs).thenReturn(emptyList())
 
         flow.call()
 

@@ -10,7 +10,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
@@ -18,6 +17,7 @@ import net.corda.v5.base.util.toBase58
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
+import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
@@ -47,10 +47,6 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
         )
     }
 
-    // TODO CORE-3698: Review if this TODO is still valid
-    //  if requestSignature was generated over an old version of NotarisationRequest, we need to be able to
-    //  reserialize it in that version to get the exact same bytes. Modify the serialization logic once that's
-    //  available.
     val expectedSignedBytes = serializationService.serialize(notarisationRequest).bytes
 
     try {
@@ -61,9 +57,7 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
             expectedSignedBytes
         )
     } catch (e: Exception) {
-        throw IllegalStateException(
-            "Error while verifying request signature. Cause: $e"
-        )
+        throw IllegalStateException("Error while verifying request signature.", e)
     }
 }
 
@@ -88,7 +82,7 @@ fun generateRequestSignature(notarisationRequest: NotarisationRequest,
  * A helper function that will convert a [UniquenessCheckResponse] to a [NotarisationResponse].
  */
 @Suspendable
-fun UniquenessCheckResponse.toNotarisationResponse(): NotarisationResponse {
+fun LedgerUniquenessCheckResponse.toNotarisationResponse(): NotarisationResponse {
     return when (val uniquenessResult = result) {
         is UniquenessCheckResultSuccess -> NotarisationResponse(
             listOf(signature!!),

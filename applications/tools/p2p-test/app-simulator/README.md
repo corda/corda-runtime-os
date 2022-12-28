@@ -134,7 +134,7 @@ Below is a list of command line arguments you can use:
   -i, --instance-id=<instanceId>
                The instance ID. Defaults to the value of the env. variable
                  INSTANCE_ID or a random number, if that hasn't been set.
-  -m, --messagingParams=<String=String>
+  -m, --messaging-params=<String=String>
                Messaging parameters for the simulator.
       --receive-topic=<receiveTopic>
                Topic to receive messages from. Defaults to p2p.in, if not

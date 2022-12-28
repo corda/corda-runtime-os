@@ -14,7 +14,7 @@ import java.util.stream.Stream
  */
 val getAllCpiInfoDBVersionedRecords
         : (ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { context ->
-    context.entityManager.findAllCpiMetadata().map { cpiMetadataEntity ->
+    context.getOrCreateEntityManager().findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,
             cpiMetadataEntity.version,
