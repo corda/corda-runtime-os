@@ -102,6 +102,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    @Disabled("Will remain flaky until CORE-8204 is fixed")
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC1_TEMPLATE))
 
@@ -266,9 +267,9 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
-    @Disabled("Possibly triggers two rebalances. Needs a rework")
     @Test
     @Timeout(180)
+    @Disabled("Will remain flaky until CORE-8204 is fixed")
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC4_TEMPLATE))
 
