@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.TestCpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -21,7 +20,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.TestGroupPolicyProvider
-import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -39,7 +37,6 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.read.TestVirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -92,9 +89,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-
-        @InjectService(timeout = 4000)
-        lateinit var membershipQueryClient: MembershipQueryClient
 
         @InjectService(timeout = 4000)
         lateinit var groupParametersReaderService: GroupParametersReaderService
@@ -156,8 +150,6 @@ class LinkManagerIntegrationTest {
     @Test
     fun `Link Manager can recover from bad configuration`() {
         val testGroupPolicyProvider = TestGroupPolicyProvider(lifecycleCoordinatorFactory)
-        val testVirtualNodeInfoReadService = TestVirtualNodeInfoReadService(lifecycleCoordinatorFactory)
-        val testCpiInfoReadService = TestCpiInfoReadService(lifecycleCoordinatorFactory)
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -192,11 +184,8 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             testGroupPolicyProvider,
-            testVirtualNodeInfoReadService,
-            testCpiInfoReadService,
             cryptoOpsClient,
             membershipGroupReaderProvider,
-            membershipQueryClient,
             groupParametersReaderService
         )
 

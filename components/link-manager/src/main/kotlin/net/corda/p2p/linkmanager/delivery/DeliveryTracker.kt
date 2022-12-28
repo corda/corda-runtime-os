@@ -9,6 +9,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -19,7 +20,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
@@ -41,7 +41,6 @@ internal class DeliveryTracker(
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
     subscriptionFactory: SubscriptionFactory,
-    groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     sessionManager: SessionManager,
     clock: Clock,
@@ -78,7 +77,7 @@ internal class DeliveryTracker(
         subscriptionConfig,
         setOf(
             replayScheduler.dominoTile.coordinatorName,
-            groups.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             members.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             sessionManager.dominoTile.coordinatorName,

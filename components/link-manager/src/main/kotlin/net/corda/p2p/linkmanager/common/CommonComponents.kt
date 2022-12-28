@@ -8,9 +8,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
@@ -25,7 +25,7 @@ import net.corda.utilities.time.Clock
 internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     linkManagerHostingMap: LinkManagerHostingMap,
-    groups: LinkManagerGroupPolicyProvider,
+    groupPolicyProvider: GroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     configurationReaderService: ConfigurationReadService,
     cryptoOpsClient: CryptoOpsClient,
@@ -34,6 +34,9 @@ internal class CommonComponents(
     messagingConfiguration: SmartConfig,
     clock: Clock,
 ) : LifecycleWithDominoTile {
+    private companion object {
+        const val LISTENER_NAME = "link.manager.group.policy.listener"
+    }
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
         Schemas.P2P.LINK_IN_TOPIC
@@ -46,7 +49,7 @@ internal class CommonComponents(
     )
 
     internal val sessionManager = SessionManagerImpl(
-        groups,
+        groupPolicyProvider,
         members,
         cryptoOpsClient,
         messagesPendingSession,
@@ -65,7 +68,9 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
     ).also {
-        groups.registerListener(it)
+        groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
+            it.groupAdded(holdingIdentity, groupPolicy)
+        }
     }
 
     private val tlsCertificatesPublisher = TlsCertificatesPublisher(
@@ -81,7 +86,7 @@ internal class CommonComponents(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            groups.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             members.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
@@ -91,7 +96,7 @@ internal class CommonComponents(
             tlsCertificatesPublisher.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            groups.dominoTile.toNamedLifecycle(),
+            NamedLifecycle(groupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
             members.dominoTile.toNamedLifecycle(),
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>()),

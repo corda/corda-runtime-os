@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkOutMessage
@@ -13,7 +14,6 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
@@ -411,8 +411,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if group info is not available`() {
-        val groupPolicyProvider = mock<LinkManagerGroupPolicyProvider> {
-            whenever(it.getGroupInfo(localIdentity)).thenReturn(null)
+        val groupPolicyProvider = mock<GroupPolicyProvider> {
+            on { getGroupPolicy(localIdentity) } doReturn null
         }
 
         val processor = OutboundMessageProcessor(

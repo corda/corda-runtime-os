@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.inbound
 
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -23,7 +24,6 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 
 internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
-    private val groups: LinkManagerGroupPolicyProvider,
+    private val groupPolicyProvider: GroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val clock: Clock
@@ -228,7 +228,7 @@ internal class InboundMessageProcessor(
             ackSource,
             ackDest,
             session,
-            groups,
+            groupPolicyProvider,
             members,
         ) ?: return null
         return Record(
@@ -250,7 +250,7 @@ internal class InboundMessageProcessor(
             ackSource,
             ackDest,
             session,
-            groups,
+            groupPolicyProvider,
             members
         ) ?: return null
         return Record(

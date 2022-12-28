@@ -1,23 +1,22 @@
 package net.corda.p2p.linkmanager.utilities
 
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 
 fun mockMembersAndGroups(
     vararg members: HoldingIdentity
-): Pair<LinkManagerMembershipGroupReader, LinkManagerGroupPolicyProvider> {
+): Pair<LinkManagerMembershipGroupReader, GroupPolicyProvider> {
     return mockMembers(members.toList()) to mockGroups(members.toList())
 }
 fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGroupReader {
@@ -55,25 +54,32 @@ fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGrou
     }
 }
 
-fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroupPolicyProvider {
-    return object : LinkManagerGroupPolicyProvider {
-        override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): GroupPolicyProvider {
+    return object : GroupPolicyProvider {
+
+        override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy? {
             return if (holdingIdentities.contains(holdingIdentity)) {
-                GroupPolicyListener.GroupInfo(
-                    holdingIdentity,
-                    NetworkType.CORDA_5,
-                    setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-                    emptyList(),
-                    GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-                    null
-                )
+                val parameters = mock<GroupPolicy.P2PParameters> {
+                    on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+                }
+                mock {
+                    on { p2pParameters } doReturn parameters
+                }
+
             } else {
                 null
             }
         }
 
-        override fun registerListener(groupPolicyListener: GroupPolicyListener) {
+        override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         }
-        override val dominoTile = mock<DominoTile>()
+
+        override val isRunning = true
+
+        override fun start() {
+        }
+
+        override fun stop() {
+        }
     }
 }

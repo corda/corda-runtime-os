@@ -5,11 +5,11 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
@@ -21,7 +21,7 @@ internal class OutboundLinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     commonComponents: CommonComponents,
     linkManagerHostingMap: LinkManagerHostingMap,
-    groups: LinkManagerGroupPolicyProvider,
+    groupPolicyProvider: GroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
@@ -35,7 +35,7 @@ internal class OutboundLinkManager(
     private val outboundMessageProcessor = OutboundMessageProcessor(
         commonComponents.sessionManager,
         linkManagerHostingMap,
-        groups,
+        groupPolicyProvider,
         members,
         commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
@@ -47,7 +47,6 @@ internal class OutboundLinkManager(
         publisherFactory,
         messagingConfiguration,
         subscriptionFactory,
-        groups,
         members,
         commonComponents.sessionManager,
         clock = clock

@@ -3,16 +3,18 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.utilities.time.Clock
@@ -26,7 +28,7 @@ internal class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
-    private val groups: LinkManagerGroupPolicyProvider,
+    private val groupPolicyProvider: GroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
     private val clock: Clock
 ): LifecycleWithDominoTile {
@@ -50,8 +52,12 @@ internal class InMemorySessionReplayer(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        dependentChildren = setOf(replayScheduler.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
-            groups.dominoTile.coordinatorName, members.dominoTile.coordinatorName),
+        dependentChildren = setOf(
+            replayScheduler.dominoTile.coordinatorName,
+            publisher.dominoTile.coordinatorName,
+            LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+            members.dominoTile.coordinatorName
+        ),
         managedChildren = setOf(replayScheduler.dominoTile.toNamedLifecycle(), publisher.dominoTile.toNamedLifecycle())
     )
 
@@ -94,7 +100,7 @@ internal class InMemorySessionReplayer(
             return
         }
 
-        val networkType = groups.getGroupInfo(messageReplay.source)?.networkType
+        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.source)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
                 " could not find the network type in the GroupPolicyProvider for ${messageReplay.source}." +

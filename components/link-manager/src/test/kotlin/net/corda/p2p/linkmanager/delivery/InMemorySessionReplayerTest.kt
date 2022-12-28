@@ -4,15 +4,15 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -175,15 +175,14 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The replaySchedular callback logs a warning when our network type is not in the network map`() {
-        val groupInfo = mock<GroupPolicyListener.GroupInfo> {
-            on { networkType } doReturn NetworkType.CORDA_5
+        val parameters = mock<GroupPolicy.P2PParameters> {
+            on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
         }
-        val groups = mock<LinkManagerGroupPolicyProvider> {
-            on { getGroupInfo(any()) } doReturnConsecutively listOf(null, groupInfo)
-            val mockDominoTile = mock<ComplexDominoTile> {
-                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-            }
-            whenever(mock.dominoTile).thenReturn(mockDominoTile)
+        val groupPolicy = mock<GroupPolicy> {
+            on { p2pParameters } doReturn parameters
+        }
+        val groups = mock<GroupPolicyProvider> {
+            on {getGroupPolicy(any()) } doReturnConsecutively listOf(null, groupPolicy)
         }
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)

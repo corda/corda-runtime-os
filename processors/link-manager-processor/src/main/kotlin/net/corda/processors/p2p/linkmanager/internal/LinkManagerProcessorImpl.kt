@@ -2,7 +2,6 @@ package net.corda.processors.p2p.linkmanager.internal
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -16,7 +15,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,7 +24,6 @@ import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,16 +44,10 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
 ) : LinkManagerProcessor {
@@ -102,11 +93,8 @@ class LinkManagerProcessorImpl @Activate constructor(
                     configurationReadService,
                     configMerger.getMessagingConfig(event.config),
                     groupPolicyProvider,
-                    virtualNodeInfoReadService,
-                    cpiInfoReadService,
                     cryptoOpsClient,
                     membershipGroupReaderProvider,
-                    membershipQueryClient,
                     groupParametersReaderService
                     //This will be removed once integration with MGM/crypto has been completed.
                 )

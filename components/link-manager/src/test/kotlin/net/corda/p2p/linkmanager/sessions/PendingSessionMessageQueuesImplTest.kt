@@ -2,20 +2,19 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.NetworkType
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -61,15 +60,14 @@ class PendingSessionMessageQueuesImplTest {
         on { getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId) } doReturn
                 LinkManagerMembershipGroupReader.MemberInfo(sessionCounterparties.counterpartyId, mock(), KeyAlgorithm.ECDSA, "",)
     }
-    private val groups = mock<LinkManagerGroupPolicyProvider> {
-        on { getGroupInfo(sessionCounterparties.ourId) } doReturn GroupPolicyListener.GroupInfo(
-            sessionCounterparties.ourId,
-            NetworkType.CORDA_5,
-            emptySet(),
-            emptyList(),
-            GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-            null
-        )
+    private val parameters = mock<GroupPolicy.P2PParameters> {
+        on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+    }
+    private val groupPolicy = mock<GroupPolicy> {
+        on { p2pParameters } doReturn parameters
+    }
+    private val groupPolicyProvider = mock<GroupPolicyProvider> {
+        on { getGroupPolicy(sessionCounterparties.ourId) } doReturn groupPolicy
     }
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
@@ -96,7 +94,7 @@ class PendingSessionMessageQueuesImplTest {
             queue.queueMessage(it)
         }
 
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groupPolicyProvider, members)
 
         assertThat(
             publishedRecords.firstValue
@@ -127,7 +125,7 @@ class PendingSessionMessageQueuesImplTest {
             queue.queueMessage(it)
         }
 
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groupPolicyProvider, members)
 
         verify(sessionManager, times(count)).dataMessageSent(session)
     }
@@ -153,7 +151,7 @@ class PendingSessionMessageQueuesImplTest {
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
             createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
         )
-        queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session, groups, members)
+        queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session, groupPolicyProvider, members)
 
         assertThat(publishedRecords.allValues).isEmpty()
     }
