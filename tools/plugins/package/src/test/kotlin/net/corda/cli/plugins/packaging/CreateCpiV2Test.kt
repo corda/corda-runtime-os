@@ -132,6 +132,48 @@ class CreateCpiV2Test {
     }
 
     @Test
+    fun `cpi v2 can create CPI with only Group Policy and no CPB`() {
+        val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+        val errText = TestUtils.captureStdErr {
+            CommandLine(CreateCpiV2()).execute (
+                "--group-policy=${testGroupPolicy}",
+                "--cpi-name=testCpi",
+                "--cpi-version=5.0.0.0-SNAPSHOT",
+                "--file=$cpiOutputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=${SIGNING_KEY_1_ALIAS}",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        // Expect output to be silent on success
+        Assertions.assertEquals("", errText)
+        assertTrue(
+            jarEntriesExistInCpx(
+                cpiOutputFile,
+                listOf(
+                    "META-INF/MANIFEST.MF",
+                    "META-INF/$CPI_SIGNER_NAME.SF",
+                    "META-INF/$CPI_SIGNER_NAME.EC",
+                    "META-INF/GroupPolicy.json",
+                )
+            )
+        )
+
+        assertContainsAllManifestAttributes(
+            cpiOutputFile,
+            mapOf(
+                Attributes.Name.MANIFEST_VERSION to "1.0",
+                CPI_FORMAT_ATTRIBUTE_NAME to CPI_FORMAT_ATTRIBUTE,
+                CPI_NAME_ATTRIBUTE_NAME to "testCpi",
+                CPI_VERSION_ATTRIBUTE_NAME to "5.0.0.0-SNAPSHOT",
+                CPI_UPGRADE_ATTRIBUTE_NAME to "false"
+            )
+        )
+    }
+
+    @Test
     fun `cpi create tool handles group policy passed through standard input`() {
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
         val groupPolicyString = File(testGroupPolicy.toString()).readText(Charsets.UTF_8)

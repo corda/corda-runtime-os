@@ -4,7 +4,6 @@ import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.SimulatedInstanceNode
 import net.corda.simulator.runtime.flows.BaseFlowManager
-import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
@@ -25,7 +24,6 @@ class SimulatedInstanceNodeBase(
     private val flow: Flow,
     override val fiber: SimFiber,
     private val injector: FlowServicesInjector,
-    private val flowFactory: FlowFactory,
     private val flowManager: FlowManager = BaseFlowManager()
 ) : SimulatedNodeBase(), SimulatedInstanceNode {
 
@@ -33,9 +31,9 @@ class SimulatedInstanceNodeBase(
 
     init {
         fiber.registerMember(member)
-        if (ResponderFlow::class.java.isInstance(flow)) {
+        if (ResponderFlow::class.java.isInstance(flow) || RPCStartableFlow::class.java.isInstance(flow)) {
             fiber.registerFlowInstance(member, protocol, flow)
-        } else if (!RPCStartableFlow::class.java.isInstance(flow)) {
+        } else {
             error("The flow provided to this node was neither a `ResponderFlow` nor an `RPCStartableFlow`.")
         }
     }

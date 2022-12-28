@@ -53,7 +53,7 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                     notaryAndTimeWindow,
                     filteredTransactionBuilder.signatories,
                     filteredTransactionBuilder.inputStates,
-                    filteredTransactionBuilder.referenceInputStates,
+                    filteredTransactionBuilder.referenceStates,
                     (filteredTransactionBuilder.outputStates as? ComponentGroupFilterParameters.AuditProof<*>)?.let { _ ->
                         ComponentGroupFilterParameters.AuditProof(
                             UtxoComponentGroup.OUTPUTS_INFO.ordinal,

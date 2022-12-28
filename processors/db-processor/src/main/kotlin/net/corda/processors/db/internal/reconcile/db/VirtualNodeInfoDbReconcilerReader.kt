@@ -12,7 +12,7 @@ import java.util.stream.Stream
 val getAllVirtualNodesDBVersionedRecords
         : (ReconciliationContext) -> Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
     { context ->
-        virtualNodeEntitiesToVersionedRecords(VirtualNodeRepositoryImpl().findAll(context.entityManager))
+        virtualNodeEntitiesToVersionedRecords(VirtualNodeRepositoryImpl().findAll(context.getOrCreateEntityManager()))
     }
 
 fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeInfo>)

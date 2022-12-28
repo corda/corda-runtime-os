@@ -9,7 +9,7 @@ group 'com.example.securitymanager'
 
 cordapp {
     targetPlatformVersion 999 as Integer
-    workflow {
+    contract {
         name 'Security Manager One CPK'
         versionId 1
         vendor 'R3'

@@ -76,15 +76,15 @@ class UtxoFilteredTransactionBuilderImplTest {
     }
 
     @Test
-    fun withReferenceInputStatesSize() {
-        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceInputStatesSize().referenceInputStates
+    fun withReferenceStatesSize() {
+        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceStatesSize().referenceStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.REFERENCES.ordinal)
     }
 
     @Test
-    fun withReferenceInputStates() {
-        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceInputStates().referenceInputStates
+    fun withReferenceStates() {
+        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceStates().referenceStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.REFERENCES.ordinal)
         assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
@@ -92,8 +92,8 @@ class UtxoFilteredTransactionBuilderImplTest {
     }
 
     @Test
-    fun `withReferenceInputStates predicate`() {
-        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceInputStates { false }.referenceInputStates
+    fun `withReferenceStates predicate`() {
+        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceStates { false }.referenceStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.REFERENCES.ordinal)
         assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
@@ -156,7 +156,7 @@ class UtxoFilteredTransactionBuilderImplTest {
         assertThat(utxoFilteredTransactionBuilder.timeWindow).isFalse
         assertThat(utxoFilteredTransactionBuilder.signatories).isNull()
         assertThat(utxoFilteredTransactionBuilder.inputStates).isNull()
-        assertThat(utxoFilteredTransactionBuilder.referenceInputStates).isNull()
+        assertThat(utxoFilteredTransactionBuilder.referenceStates).isNull()
         assertThat(utxoFilteredTransactionBuilder.outputStates).isNull()
         assertThat(utxoFilteredTransactionBuilder.commands).isNull()
     }
@@ -168,14 +168,14 @@ class UtxoFilteredTransactionBuilderImplTest {
             .withTimeWindow()
             .withSignatoriesSize()
             .withInputStates()
-            .withReferenceInputStatesSize()
+            .withReferenceStatesSize()
             .withOutputStatesSize()
             .withCommands() as UtxoFilteredTransactionBuilderInternal
         assertThat(builder.notary).isTrue
         assertThat(builder.timeWindow).isTrue
         assertThat(builder.signatories).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat(builder.inputStates).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
-        assertThat(builder.referenceInputStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
+        assertThat(builder.referenceStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat(builder.outputStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat(builder.commands).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
     }
@@ -184,13 +184,13 @@ class UtxoFilteredTransactionBuilderImplTest {
     fun `miss some`() {
         val builder = utxoFilteredTransactionBuilder
             .withInputStates()
-            .withReferenceInputStatesSize()
+            .withReferenceStatesSize()
             .withCommands() as UtxoFilteredTransactionBuilderInternal
         assertThat(builder.notary).isFalse
         assertThat(builder.timeWindow).isFalse
         assertThat(builder.signatories).isNull()
         assertThat(builder.inputStates).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
-        assertThat(builder.referenceInputStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
+        assertThat(builder.referenceStates).isInstanceOf(ComponentGroupFilterParameters.SizeProof::class.java)
         assertThat(builder.outputStates).isNull()
         assertThat(builder.commands).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
     }

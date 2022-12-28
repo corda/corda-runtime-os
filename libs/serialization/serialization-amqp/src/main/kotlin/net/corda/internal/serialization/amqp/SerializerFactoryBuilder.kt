@@ -127,7 +127,7 @@ object SerializerFactoryBuilder {
                             overrideFingerPrinter: FingerPrinter?,
                             onlyCustomSerializers: Boolean,
                             mustPreserveDataWhenEvolving: Boolean): SerializerFactory {
-        val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
+        val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroup)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)

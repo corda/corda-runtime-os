@@ -5,26 +5,19 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
-import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 class UtxoPersistenceServiceImpl constructor(
-    private val entityManager: EntityManager,
+    private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
@@ -32,7 +25,7 @@ class UtxoPersistenceServiceImpl constructor(
 ) : UtxoPersistenceService {
 
     override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
-        return entityManager.transaction { em ->
+        return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
@@ -42,15 +35,14 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<List<ByteArray>> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManager.transaction { em ->
+        val componentGroups = entityManagerFactory.transaction { em ->
             repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associate { Pair(it.leafIndex, serializationService.deserialize<UtxoOutputInfoComponent>(it.data)) }
+            ?.associate { Pair(it.leafIndex, it.data) }
             ?: emptyMap()
         return componentGroups[outputsIdx]?.mapNotNull {
             val info = outputInfos[it.leafIndex]
@@ -59,10 +51,7 @@ class UtxoPersistenceServiceImpl constructor(
             }
             val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
-                StateAndRefImpl(
-                    state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
-                    ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
-                )
+                listOf(it.transactionId.toByteArray(), it.leafIndex.toString().toByteArray(), info, it.data)
             } else {
                 null
             }
@@ -72,7 +61,7 @@ class UtxoPersistenceServiceImpl constructor(
     override fun persistTransaction(transaction: UtxoTransactionReader) {
         val nowUtc = utcClock.instant()
 
-        entityManager.transaction { em ->
+        entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             // Insert the Transaction
@@ -153,7 +142,7 @@ class UtxoPersistenceServiceImpl constructor(
     ): Pair<String?, List<CordaPackageSummary>> {
         val nowUtc = utcClock.instant()
 
-        return entityManager.transaction { em ->
+        return entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             val status = repository.findTransactionStatus(em, transactionIdString)
@@ -214,7 +203,7 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
-        entityManager.transaction { em ->
+        entityManagerFactory.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
         }
     }

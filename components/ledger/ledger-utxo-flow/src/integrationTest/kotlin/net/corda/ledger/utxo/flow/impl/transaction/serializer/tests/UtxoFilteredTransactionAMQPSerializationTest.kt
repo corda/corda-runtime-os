@@ -37,6 +37,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
+            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories
@@ -95,6 +96,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
+            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories
@@ -143,4 +145,57 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly
         assertThat(outputs.size).isEqualTo(2)
     }
+
+    @Test
+    fun `can serialize and deserialize utxo filtered transaction with audit proof of empty list`() {
+        val utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
+            jsonMarshallingService,
+            jsonValidator,
+            wireTransactionFactory,
+            utxoLedgerPersistenceService,
+            componentGroups = listOf(
+                emptyList(), // Notary
+                emptyList(), // Signatories
+                listOf(
+                    serializationService.serialize(outputInfo).bytes,
+                    serializationService.serialize(outputInfo).bytes
+                ), // output infos
+                emptyList(), // command infos
+                emptyList(), // attachments
+                emptyList(), // inputs
+                emptyList(), // references
+                listOf(
+                    serializationService.serialize(UtxoStateClassExample("1", emptyList())).bytes,
+                    serializationService.serialize(UtxoStateClassExample("2", emptyList())).bytes
+                ), // outputs
+                emptyList(), // commands
+            )
+        )
+        val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
+            .withInputStates()
+            .withOutputStatesSize()
+            .build()
+
+        assertThat(utxoFilteredTransaction.id).isNotNull
+
+        val bytes = serializationService.serialize(utxoFilteredTransaction)
+        assertThat(bytes).isNotNull
+        val deserialized = serializationService.deserialize(bytes, UtxoFilteredTransaction::class.java)
+
+        // check that the deserialized UtxoFilteredTransaction is fully functional
+        assertThat(deserialized).isNotNull
+        assertThat(deserialized.id).isEqualTo(utxoSignedTransaction.id)
+
+        assertThat(deserialized.commands).isInstanceOf(UtxoFilteredData.Removed::class.java)
+
+        assertThat(deserialized.inputStateRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
+        val inputs = deserialized.inputStateRefs as UtxoFilteredData.Audit<StateRef>
+        assertThat(inputs.size).isEqualTo(0)
+        assertThat(inputs.values.size).isEqualTo(0)
+
+        assertThat(deserialized.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
+        val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly
+        assertThat(outputs.size).isEqualTo(2)
+    }
+
 }

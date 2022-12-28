@@ -21,7 +21,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     override val timeWindow: Boolean = false,
     override val signatories: ComponentGroupFilterParameters? = null,
     override val inputStates: ComponentGroupFilterParameters? = null,
-    override val referenceInputStates: ComponentGroupFilterParameters? = null,
+    override val referenceStates: ComponentGroupFilterParameters? = null,
     override val outputStates: ComponentGroupFilterParameters? = null,
     override val commands: ComponentGroupFilterParameters? = null
 ) : UtxoFilteredTransactionBuilder, UtxoFilteredTransactionBuilderInternal {
@@ -79,19 +79,19 @@ data class UtxoFilteredTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun withReferenceInputStatesSize(): UtxoFilteredTransactionBuilderInternal {
-        return copy(referenceInputStates = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.REFERENCES.ordinal))
+    override fun withReferenceStatesSize(): UtxoFilteredTransactionBuilderInternal {
+        return copy(referenceStates = ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.REFERENCES.ordinal))
     }
 
     @Suspendable
-    override fun withReferenceInputStates(): UtxoFilteredTransactionBuilderInternal {
-        return withReferenceInputStates { true }
+    override fun withReferenceStates(): UtxoFilteredTransactionBuilderInternal {
+        return withReferenceStates { true }
     }
 
     @Suspendable
-    override fun withReferenceInputStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilderInternal {
+    override fun withReferenceStates(predicate: Predicate<StateRef>): UtxoFilteredTransactionBuilderInternal {
         return copy(
-            referenceInputStates = ComponentGroupFilterParameters.AuditProof(
+            referenceStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.REFERENCES.ordinal,
                 StateRef::class.java,
                 predicate

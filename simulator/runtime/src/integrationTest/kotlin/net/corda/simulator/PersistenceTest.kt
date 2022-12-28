@@ -1,6 +1,5 @@
 package net.corda.simulator
 
-import net.corda.simulator.factories.JsonMarshallingServiceFactory
 import net.corda.simulator.runtime.persistence.GreetingEntity
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject

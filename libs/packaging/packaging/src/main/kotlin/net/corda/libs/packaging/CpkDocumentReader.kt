@@ -96,7 +96,7 @@ class CpkDocumentReader {
 
                 val signers = dependencySignersElements.item(0) as Element
 
-                val publicKeySummaryHash: SecureHash? =
+                val publicKeySummaryHash: SecureHash =
                     ElementIterator(signers.getElementsByTagName(DEPENDENCY_SIGNER_TAG)).asSequence().map { signer ->
                         val algorithm = signer.getAttribute("algorithm").trim()
                         if (algorithm.isNullOrEmpty()) {
@@ -114,7 +114,7 @@ class CpkDocumentReader {
                         // Use this until we can determine this CPK's own certificates.
                         SAME_SIGNER_PLACEHOLDER
                     } else {
-                        null
+                        throw IllegalStateException("No \"$DEPENDENCY_SIGNER_TAG\" or \"$DEPENDENCY_SAME_SIGNER_TAG\" elements found")
                     }
                 CpkIdentifier(
                     dependencyNameElements.item(0).textContent,

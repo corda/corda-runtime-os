@@ -6,7 +6,7 @@ NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
 CORDA_CHART_VERSION="^0.1.0-beta"
-DOCKER_IMAGE_VERSION=5.0.0.0-beta-1668587506287
+DOCKER_IMAGE_VERSION=5.0.0.0-beta-1671430089563
 # K8s namespaces
 A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
 B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-b
@@ -35,6 +35,8 @@ CA_JAR=$CA_DIR/build/bin/corda-fake-ca*.jar
 APP_SIMULATOR_DIR=$REPO_TOP_LEVEL_DIR/applications/tools/p2p-test/app-simulator/
 APP_SIMULATOR_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator
 APP_SIMULATOR_DB_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator-db
+
+CORDA_CLI_DIR=$REPO_TOP_LEVEL_DIR/../corda-cli-plugin-host/
 
 # X500Names
 MGM_X500_NAME="C=GB,L=London,O=MGM"

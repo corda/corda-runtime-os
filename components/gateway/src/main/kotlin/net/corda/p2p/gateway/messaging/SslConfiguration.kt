@@ -11,11 +11,17 @@ data class SslConfiguration(
      * Property determining how the revocation check will be made for the server certificate
      */
     val revocationCheck: RevocationConfig,
+
+    /**
+     * What type of TLS connections to establish with gateways in other clusters.
+     */
+    val tlsType: TlsType
 )
 
 internal fun Config.toSslConfiguration(): SslConfiguration {
     val revocationCheckMode = this.getEnum(RevocationConfigMode::class.java, "revocationCheck.mode")
     return SslConfiguration(
-        revocationCheck = RevocationConfig(revocationCheckMode)
+        revocationCheck = RevocationConfig(revocationCheckMode),
+        tlsType = this.getEnum(TlsType::class.java, "tlsType")
     )
 }

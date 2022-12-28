@@ -29,7 +29,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     private val dependencies: Set<LifecycleCoordinatorName>,
-    private val reconciliationContextFactory: () -> Collection<ReconciliationContext>,
+    private val reconciliationContextFactory: () -> Stream<out ReconciliationContext>,
     private val doGetAllVersionedRecords: (ReconciliationContext) -> Stream<VersionedRecord<K, V>>
 ) : ReconcilerReader<K, V>, Lifecycle {
 
@@ -95,9 +95,9 @@ class DbReconcilerReader<K : Any, V : Any>(
      */
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
-        return try {
-            val streams = reconciliationContextFactory.invoke().map { context ->
-                val currentTransaction = context.entityManager.transaction
+        return reconciliationContextFactory().map { context ->
+            try {
+                val currentTransaction = context.getOrCreateEntityManager().transaction
                 currentTransaction.begin()
                 doGetAllVersionedRecords(context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,
@@ -105,13 +105,12 @@ class DbReconcilerReader<K : Any, V : Any>(
                     currentTransaction.rollback()
                     context.close()
                 }
+            } catch (e: Exception) {
+                logger.warn("Error while retrieving DB records for reconciliation", e)
+                coordinator.postEvent(GetRecordsErrorEvent(e))
+                throw e
             }
-            Stream.of(*streams.toTypedArray()).flatMap { i -> i }
-        } catch (e: Exception) {
-            logger.warn("Error while retrieving records for reconciliation", e)
-            coordinator.postEvent(GetRecordsErrorEvent(e))
-            null
-        }
+        }.flatMap { i -> i }
     }
 
     override val isRunning: Boolean

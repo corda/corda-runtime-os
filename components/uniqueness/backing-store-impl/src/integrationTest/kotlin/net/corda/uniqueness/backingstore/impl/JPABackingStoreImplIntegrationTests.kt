@@ -17,6 +17,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
@@ -35,6 +36,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.Session
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Nested
@@ -51,6 +53,8 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.never
 import java.time.Instant
@@ -94,7 +98,7 @@ class JPABackingStoreImplIntegrationTests {
         JpaEntitiesRegistryImpl()
     )
     private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
-        TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName),
+        TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName, rewriteBatchedInserts = true),
         "vnode-uniqueness",
         JPABackingStoreEntities.classes
     )
@@ -382,15 +386,17 @@ class JPABackingStoreImplIntegrationTests {
             )
         }
 
-        @Disabled("Review with CORE-7278. This test fails because it fails to persist an error message with " +
-                  "1024 bytes.")
         @Test
         fun `Persisting an error throws if the size is bigger than the maximum`() {
-            val txId = SecureHashUtils.randomSecureHash()
-            val internalRequest = generateRequestInternal(txId)
+            // We need to establish the object size without any message (i.e. a blank message) to
+            // see how much space we need to fill in order to hit our maximum valid  size.
+            val baseObjectSize = jpaBackingStoreObjectMapper()
+                .writeValueAsBytes(UniquenessCheckErrorMalformedRequestImpl("")).size
 
-            // 1024 is the expected maximum size of an error message.
-            val maxErrMsgLength = 1024
+            // Available characters that need filling is the hard-coded limit minus fixed size
+            val maxErrMsgLength =
+                UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH - baseObjectSize
+
             val validErrorMessage = "e".repeat(maxErrMsgLength)
             assertDoesNotThrow {
                 backingStoreImpl.session(aliceIdentity) { session ->
@@ -398,8 +404,10 @@ class JPABackingStoreImplIntegrationTests {
                         txnOps.commitTransactions(
                             listOf(
                                 Pair(
-                                    internalRequest, UniquenessCheckResultFailureImpl(
-                                        testClock.instant(), UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
+                                    generateRequestInternal(SecureHashUtils.randomSecureHash()),
+                                    UniquenessCheckResultFailureImpl(
+                                        testClock.instant(),
+                                        UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
                                     )
                                 )
                             )
@@ -410,14 +418,16 @@ class JPABackingStoreImplIntegrationTests {
 
             // Persisting this error should throw because its size if bigger than 1024.
             val invalidErrorMessage = "e".repeat(maxErrMsgLength + 1)
-            assertThrows<IllegalStateException> {
+            assertThrows<IllegalArgumentException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.commitTransactions(
                             listOf(
                                 Pair(
-                                    internalRequest, UniquenessCheckResultFailureImpl(
-                                        testClock.instant(), UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
+                                    generateRequestInternal(SecureHashUtils.randomSecureHash()),
+                                    UniquenessCheckResultFailureImpl(
+                                        testClock.instant(),
+                                        UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
                                     )
                                 )
                             )
@@ -586,11 +596,11 @@ class JPABackingStoreImplIntegrationTests {
             val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
-            val queryName = "UniquenessTransactionDetailEntity.select"
-            val resultClass = UniquenessTransactionDetailEntity::class.java
-            // Actual execution of the query happens at invoking resultList of the query.
-            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic (e.g. Hibernate).
-            Mockito.doThrow(EntityExistsException()).whenever(spyEm).createNamedQuery(queryName, resultClass)
+            val mockSession = mock<Session> {
+                on { byMultipleIds(eq(UniquenessTransactionDetailEntity::class.java)) } doThrow EntityExistsException()
+            }
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+            Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
@@ -601,7 +611,6 @@ class JPABackingStoreImplIntegrationTests {
                     session.getTransactionDetails(txIds)
                 }
             }
-            Mockito.verify(spyEm, times(1)).createNamedQuery(queryName, resultClass)
         }
 
         // Review with CORE-4983 for different types of exceptions such as PersistenceException.
@@ -666,10 +675,10 @@ class JPABackingStoreImplIntegrationTests {
 
     @Disabled(
         "Review with CORE-7201. While this test produces an error saying 'user lacks privilege or object not found'," +
-        "the reason is not clearly understood thus it can be misleading. Knowing exactly what exception will be " +
-        "thrown due to lack of privilege will be useful. But at the same time, reproducing it with the DB testing" +
-        "framework is not straightforward, and such scenario is less likely to happen in real life. Therefore there " +
-        "is a low risk and this shouldn't be a blocker to deliver other tests."
+                "the reason is not clearly understood thus it can be misleading. Knowing exactly what exception will be " +
+                "thrown due to lack of privilege will be useful. But at the same time, reproducing it with the DB testing" +
+                "framework is not straightforward, and such scenario is less likely to happen in real life. Therefore there " +
+                "is a low risk and this shouldn't be a blocker to deliver other tests."
     )
     @Test
     fun `Persisting with an incorrect DB set up throws a rollback exception at committing`() {

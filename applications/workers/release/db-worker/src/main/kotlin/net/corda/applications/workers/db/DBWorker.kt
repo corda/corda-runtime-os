@@ -79,6 +79,6 @@ private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 }

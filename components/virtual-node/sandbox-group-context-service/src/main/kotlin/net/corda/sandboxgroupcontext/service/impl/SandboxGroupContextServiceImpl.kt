@@ -111,7 +111,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             try {
                 action()
             } catch (e: Exception) {
-                logger.warn("Ignoring exception", e)
+                logger.debug("Ignoring exception", e)
             }
         }
 
@@ -127,6 +127,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
             ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
 
+            override fun resize(newCapacity: Long): SandboxGroupContextCache {
+                return SandboxGroupContextCacheImpl(newCapacity)
+            }
+            override fun flush() {}
             override fun close() {}
         }
     }
@@ -136,10 +140,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     override fun initCache(capacity: Long) {
         if (capacity != cache.capacity) {
             val oldCache = cache
-            cache = SandboxGroupContextCacheImpl(capacity)
+            cache = oldCache.resize(capacity)
             oldCache.close()
             logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacity, capacity)
         }
+    }
+
+    override fun flushCache() {
+        cache.flush()
     }
 
     fun remove(virtualNodeContext: VirtualNodeContext) {
@@ -168,6 +176,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     )
                     throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($vnc)")
                 }
+                if (cpks.isEmpty()) {
+                    throw CordaRuntimeException("No CPKs in this virtual node context. " +
+                            "State and contract classes must be defined inside a contract CPK. ($vnc)")
+                }
 
                 val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, vnc.sandboxGroupType.name)
 
@@ -189,7 +201,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
                 CloseableSandboxGroupContextImpl(sandboxGroupContext) {
                     // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                    initializerAutoCloseable.close()
+                    runIgnoringExceptions(initializerAutoCloseable::close)
 
                     // Remove this sandbox's common services.
                     commonServiceRegistrations?.forEach { closeable ->

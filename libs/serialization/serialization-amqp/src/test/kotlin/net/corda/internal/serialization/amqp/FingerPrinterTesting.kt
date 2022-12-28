@@ -9,6 +9,7 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
@@ -36,7 +37,7 @@ class FingerPrinterTestingTests {
     fun testingTest() {
         val fpt = FingerPrinterTesting()
         val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
-        val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
+        val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
         val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
 
         assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java)))

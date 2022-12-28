@@ -132,14 +132,13 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         COMPOSITE_KEY
     )
 
-    val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
+    private val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
         scheme.algorithmOIDs.map { identifier -> identifier to scheme }
     }.toMap()
 
-
     fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
-            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
@@ -173,8 +172,8 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun toSupportedPublicKey(key: PublicKey): PublicKey {
-        return when {
-            key is CompositeKey -> key
+        return when (key) {
+            is CompositeKey -> key
             else -> decodePublicKey(key.encoded)
         }
     }

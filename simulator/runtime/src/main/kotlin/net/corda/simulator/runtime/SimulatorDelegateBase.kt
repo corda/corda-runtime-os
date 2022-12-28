@@ -91,7 +91,7 @@ class SimulatorDelegateBase  (
                 "flow instance provided for protocol $protocol")
 
         val holdingIdentity = HoldingIdentityBase(member, groupId)
-        return SimulatedInstanceNodeBase(holdingIdentity, protocol, flow, fiber, injector, flowFactory)
+        return SimulatedInstanceNodeBase(holdingIdentity, protocol, flow, fiber, injector)
     }
 
     override fun close() {

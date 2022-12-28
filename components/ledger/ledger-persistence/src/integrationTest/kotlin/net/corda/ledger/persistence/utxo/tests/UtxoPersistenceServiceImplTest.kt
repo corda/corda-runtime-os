@@ -119,7 +119,7 @@ class UtxoPersistenceServiceImplTest {
             entityManagerFactory = ctx.getEntityManagerFactory()
             val repository = UtxoRepositoryImpl(digestService, serializationService, wireTransactionFactory)
             persistenceService = UtxoPersistenceServiceImpl(
-                entityManagerFactory.createEntityManager(),
+                entityManagerFactory,
                 repository,
                 serializationService,
                 digestService,
@@ -196,8 +196,15 @@ class UtxoPersistenceServiceImplTest {
         val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass)
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
-        assertThat(unconsumedStates.first().state.contractState::class.java).isEqualTo(stateClass)
-        assertThat(unconsumedStates.first().ref).isEqualTo(StateRef(transaction1.id, 1))
+        val state = unconsumedStates.first()
+        val transactionId = state[0].decodeToString()
+        assertThat(transactionId).isEqualTo(transaction1.id.toString())
+        val leafIndex = state[1].decodeToString().toInt()
+        assertThat(leafIndex).isEqualTo(1)
+        val outputInfo = state[2]
+        assertThat(outputInfo).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
+        val output = state[3]
+        assertThat(output).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
     }
 
     @Test

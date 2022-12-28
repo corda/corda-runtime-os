@@ -42,6 +42,7 @@ import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
@@ -929,7 +930,7 @@ class GatewayIntegrationTest : TestBase() {
             val gatewayMessage = GatewayMessage(UUID.randomUUID().toString(), linkInMessage.payload)
             HttpClient(
                 serverInfo,
-                SslConfiguration(RevocationConfig(RevocationConfigMode.OFF)),
+                SslConfiguration(RevocationConfig(RevocationConfigMode.OFF), TlsType.ONE_WAY),
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),

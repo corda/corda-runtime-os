@@ -37,7 +37,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSandboxSingletonService()
         )
         val persistenceService = UtxoPersistenceServiceImpl(
-            sandbox.getEntityManagerFactory().createEntityManager(),
+            sandbox.getEntityManagerFactory(),
             repository,
             sandbox.getSandboxSingletonService(),
             sandbox.getSandboxSingletonService(),
@@ -56,6 +56,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             is FindUnconsumedStatesByType -> {
                 return UtxoFindUnconsumedStatesByTypeRequestHandler(
                     req,
+                    sandbox,
                     sandbox.getSerializationService(),
                     request.flowExternalEventContext,
                     persistenceService,
@@ -64,6 +65,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             }
             is PersistTransaction -> {
                 UtxoPersistTransactionRequestHandler(
+                    sandbox.virtualNodeContext.holdingIdentity,
                     UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
                     request.flowExternalEventContext,

@@ -1,6 +1,5 @@
 package net.corda.chunking.db.impl.cpi.liquibase
 
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.db.admin.LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
@@ -111,7 +110,7 @@ class LiquibaseExtractorHelpers {
      */
     private fun createEntity(cpk: Cpk, path: String, xmlContent: String, changesetID: UUID): CpkDbChangeLogEntity {
         val cpkId = cpk.metadata.cpkId
-        val id = CpkDbChangeLogKey(cpkId.name, cpkId.version, cpkId.signerSummaryHashForDbQuery, path)
+        val id = CpkDbChangeLogKey(cpkId.name, cpkId.version, cpkId.signerSummaryHash.toString(), path)
         return CpkDbChangeLogEntity(id, cpk.metadata.fileChecksum.toString(), xmlContent, changesetID)
     }
 }

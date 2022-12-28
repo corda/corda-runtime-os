@@ -14,11 +14,16 @@ import net.corda.applications.workers.rpc.utils.onboardMgm
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
 class MultiClusterDynamicNetworkTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
             listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.uniqueName}"))
@@ -66,13 +71,13 @@ class MultiClusterDynamicNetworkTest {
         val mgm = clusterC.members[0]
 
         clusterC.disableCLRChecks()
-        clusterC.onboardMgm(mgm)
+        clusterC.onboardMgm(mgm, tempDir)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.disableCLRChecks()
-            cordaCluster.onboardMembers(mgm, memberGroupPolicy)
+            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir)
         }
 
         // Assert all members can see each other in their member lists.

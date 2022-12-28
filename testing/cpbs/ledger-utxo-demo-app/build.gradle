@@ -16,6 +16,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-ledger-utxo'
 
+    cordapp project(':testing:cpbs:ledger-utxo-demo-contract')
+
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:sandbox-types")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

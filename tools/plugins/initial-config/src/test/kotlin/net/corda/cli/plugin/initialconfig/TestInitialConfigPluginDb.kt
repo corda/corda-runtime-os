@@ -18,7 +18,7 @@ class TestInitialConfigPluginDb {
         }
         assertThat(outText).startsWith(
             "Missing required options: '--name=<connectionName>'," +
-                " '--jdbcURL=<jdbcUrl>', '--user=<username>', '--password=<password>'," +
+                " '--jdbc-url=<jdbcUrl>', '--user=<username>', '--password=<password>'," +
                 " '--salt=<salt>', '--passphrase=<passphrase>'"
         )
     }
@@ -35,7 +35,7 @@ class TestInitialConfigPluginDb {
                 "create-db-config",
                 "-n", "connection name",
                 "-j", "jdbd:postgres://testurl",
-                "--jdbcPoolMaxSize", "3",
+                "--jdbc-pool-max-size", "3",
                 "-u", "testuser",
                 "-p", "password",
                 "-s", "not so secure",

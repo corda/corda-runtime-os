@@ -16,6 +16,18 @@ disable_revocation () {
    curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d '{ "section" : "corda.p2p.gateway" , "config": "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }", "schemaVersion": {"major": 1, "minor": 0}, "version": 0}' https://$1/api/v1/config
 }
 
+build_cli_tool() {
+   local WORKING_DIR=$PWD
+   cd $CORDA_CLI_DIR
+   ./gradlew build
+
+   cd $WORKING_DIR/$REPO_TOP_LEVEL_DIR
+   ./gradlew :tools:plugins:package:build :tools:plugins:mgm:build
+   cd $WORKING_DIR
+   cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/mgm/build/libs/mgm-cli*.jar $CORDA_CLI_DIR/build/plugins/
+}
+
+
 build_cpi() {
    local WORKING_DIR=$PWD
    cd $REPO_TOP_LEVEL_DIR
@@ -26,7 +38,19 @@ build_cpi() {
 
    cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-5.0.0.0-SNAPSHOT-package.cpb ./
 
-   zip test-cordapp-5.0.0.0-SNAPSHOT-package.cpb -j $1
+   rm -f test-cordapp-5.0.0.0-SNAPSHOT-package.cpi
+
+   rm -f signingkeys.pfx
+   keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+   keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
+
+   $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb test-cordapp-5.0.0.0-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp" --cpi-version "1.0.0.0-SNAPSHOT" --file test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore signingkeys.pfx --storepass "keystore password" --key "signing key 1" 
+}
+
+trust_cpi_keys() {
+   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@gradle-plugin-default-key.pem https://$1/api/v1/certificates/cluster/code-signer
+   keytool -exportcert -rfc -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -file signingkey1.pem
+   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@signingkey1.pem https://$1/api/v1/certificates/cluster/code-signer
 }
 
 upload_cpi() {
@@ -142,7 +166,9 @@ on_board_mgm() {
 
    build_cpi ./GroupPolicy.json
 
-   CPI_ID=$(upload_cpi $MGM_RPC ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb)
+   trust_cpi_keys $MGM_RPC
+
+   CPI_ID=$(upload_cpi $MGM_RPC ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "MGM CPI ID $CPI_ID"
    sleep 120
@@ -197,7 +223,9 @@ on_board_node() {
 
    build_cpi ./GroupPolicy.json
 
-   CPI_ID=$(upload_cpi $1 ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb)
+   trust_cpi_keys $1
+
+   CPI_ID=$(upload_cpi $1 ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "NODE $2 CPI ID $CPI_ID"
    sleep 120
@@ -250,6 +278,8 @@ kubectl port-forward --namespace $B_CLUSTER_NAMESPACE deployment/corda-rpc-worke
 kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rpc-worker $MGM_RPC_PORT:8888 &
 
 sleep 15
+
+build_cli_tool
 
 # Create CA
 java -jar $CA_JAR --home=./ca create-ca

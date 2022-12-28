@@ -27,6 +27,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
+import net.corda.libs.permissions.manager.response.RoleResponseDto
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 import net.corda.permissions.management.PermissionManagementService
@@ -59,6 +60,8 @@ internal class UserEndpointImplTest {
         emptyList(),
         emptyList(),
     )
+
+    private val roleResponseDto = RoleResponseDto("roleId1", 1, Instant.now(), "Role Name", null, emptyList())
 
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
@@ -208,6 +211,8 @@ internal class UserEndpointImplTest {
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
         whenever(permissionManager.removeRoleFromUser(capture.capture())).thenReturn(userResponseDto)
+        whenever(permissionManager.getRole(any())).thenReturn(roleResponseDto)
+        whenever(permissionManager.getUser(any())).thenReturn(userResponseDto)
 
         endpoint.start()
         val response = endpoint.removeRole("userLogin1", "roleId1")
@@ -237,6 +242,8 @@ internal class UserEndpointImplTest {
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
         whenever(permissionManager.removeRoleFromUser(any())).thenThrow(IllegalArgumentException("Exc"))
+        whenever(permissionManager.getRole(any())).thenReturn(roleResponseDto)
+        whenever(permissionManager.getUser(any())).thenReturn(userResponseDto)
 
         endpoint.start()
         val e = assertThrows<InternalServerException> {

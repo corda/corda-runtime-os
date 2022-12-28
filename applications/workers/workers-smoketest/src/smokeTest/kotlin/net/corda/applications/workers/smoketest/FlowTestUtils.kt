@@ -145,13 +145,27 @@ fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
         }.toJson()
 
         val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(x500)) {
-            vNodeList().toJson()["virtualNodes"].toList().first { it["holdingIdentity"]["x500Name"].textValue() == x500 }
+            vNodeList().toJson()["virtualNodes"].toList().first {
+                it["holdingIdentity"]["x500Name"].textValue() == x500
+            }
         } else {
-            assertWithRetry {
+            val vNodeInfo = assertWithRetry {
                 command { vNodeCreate(hash, x500) }
                 condition { it.code == 200 }
                 failMessage("Failed to create the virtual node for '$x500'")
             }.toJson()
+            val holdingId = vNodeInfo["holdingIdentity"]["shortHash"].textValue()
+
+            // Wait for the vNode creation to propagate through the system before moving on
+            eventually {
+                assertThat(
+                    vNodeList().toJson()["virtualNodes"].toList().firstOrNull {
+                        it["holdingIdentity"]["shortHash"].textValue() == holdingId
+                    }
+                ).isNotNull
+            }
+
+            vNodeInfo
         }
 
         val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()

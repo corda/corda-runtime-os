@@ -1,0 +1,9 @@
+ALLOW {
+[org.osgi.service.condpermadmin.BundleLocationCondition "TEST/*"]
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "TEST")
+} "allows custom serializers defined in test sandboxes for types also defined in test sandboxes"
+
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "TEST/*"]
+(net.corda.internal.serialization.amqp.CustomSerializerPermission "*")
+} "denies custom serializers defined in test sandboxes for types defined outside test sandboxes(e.g. platform types)"

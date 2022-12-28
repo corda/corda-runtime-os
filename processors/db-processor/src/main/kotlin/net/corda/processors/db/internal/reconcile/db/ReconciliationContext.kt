@@ -4,6 +4,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 /**
  * Additional context to be included during reconciliation.
@@ -11,38 +12,54 @@ import javax.persistence.EntityManager
  * Context instances must be closed after use to close any created resources.
  */
 interface ReconciliationContext : AutoCloseable {
-    val entityManager: EntityManager
+    /**
+     * Return existing [EntityManager] or create one if one does not already exist.
+     */
+    fun getOrCreateEntityManager(): EntityManager
 }
 
 /**
  * Context required for reconciling cluster DBs
  */
 class ClusterReconciliationContext(
-    dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager
 ) : ReconciliationContext {
-    private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
-    override val entityManager: EntityManager = entityManagerFactory.createEntityManager()
+    private var entityManager: EntityManager? = null
 
-    override fun close() = entityManager.close()
+    override fun getOrCreateEntityManager(): EntityManager = entityManager
+        ?: dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+            .also { entityManager = it }
+
+    override fun close() {
+        entityManager?.close()
+        entityManager = null
+    }
 }
 
 /**
  * Context required for reconciling virtual node DBs
  */
 class VirtualNodeReconciliationContext(
-    dbConnectionManager: DbConnectionManager,
-    jpaEntitiesSet: JpaEntitiesSet,
+    private val dbConnectionManager: DbConnectionManager,
+    private val jpaEntitiesSet: JpaEntitiesSet,
     val virtualNodeInfo: VirtualNodeInfo
 ) : ReconciliationContext {
 
-    private val entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
-        virtualNodeInfo.vaultDmlConnectionId,
-        jpaEntitiesSet
-    )
-    override val entityManager: EntityManager = entityManagerFactory.createEntityManager()
+    private var entityManagerFactory: EntityManagerFactory? = null
+    private var entityManager: EntityManager? = null
+
+    private fun getOrCreateEntityManagerFactory() = entityManagerFactory
+        ?: dbConnectionManager.createEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
+            .also { entityManagerFactory = it }
+
+    override fun getOrCreateEntityManager(): EntityManager = entityManager
+        ?: getOrCreateEntityManagerFactory().createEntityManager()
+            .also { entityManager = it }
 
     override fun close() {
-        entityManager.close()
-        entityManagerFactory.close()
+        entityManager?.close()
+        entityManagerFactory?.close()
+        entityManager = null
+        entityManagerFactory = null
     }
 }
