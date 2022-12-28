@@ -107,7 +107,7 @@ pipeline {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-*.jar"
                 JDBC_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/drivers"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
-                LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
+                LOG4J_PARAMETERS = "-Dlog4j.configurationFile=log4j2-console.xml"
                 PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH}"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
