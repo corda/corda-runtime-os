@@ -16,7 +16,6 @@ import java.util.Objects
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
-
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
@@ -27,19 +26,6 @@ class ConsensualSignedTransactionImpl(
         }
         // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ConsensualSignedTransactionImpl) return false
-        if (other.wireTransaction != wireTransaction) return false
-        if (other.signatures.size != signatures.size) return false
-
-        return other.signatures.withIndex().all{
-            it.value == signatures[it.index]
-        }
-    }
-
-    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash
         get() = wireTransaction.id
@@ -105,4 +91,23 @@ class ConsensualSignedTransactionImpl(
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ConsensualSignedTransactionImpl) return false
+        if (other.wireTransaction != wireTransaction) return false
+        if (other.signatures.size != signatures.size) return false
+
+        return other.signatures.withIndex().all{
+            it.value == signatures[it.index]
+        }
+    }
+
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
+
+    override fun toString(): String {
+        return "ConsensualSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
+    }
+
+
 }

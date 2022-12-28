@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
+import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -23,6 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
     service = [UtxoFilteredTransactionFactory::class, UsedByFlow::class],
+    property = [SandboxConstants.CORDA_UNINJECTABLE_SERVICE],
     scope = ServiceScope.PROTOTYPE
 )
 class UtxoFilteredTransactionFactoryImpl @Activate constructor(

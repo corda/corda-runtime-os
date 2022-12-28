@@ -76,4 +76,23 @@ class UtxoLedgerTransactionImpl(
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UtxoLedgerTransactionImpl
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return javaClass.hashCode()
+    }
+
+    override fun toString(): String {
+        return "UtxoLedgerTransactionImpl(id=$id, wireTransaction=${wrappedWireTransaction.wireTransaction})"
+    }
 }

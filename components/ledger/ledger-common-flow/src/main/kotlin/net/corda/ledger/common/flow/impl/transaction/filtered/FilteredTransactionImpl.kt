@@ -142,4 +142,28 @@ class FilteredTransactionImpl(
             throw FilteredTransactionVerificationException(id, message())
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FilteredTransactionImpl
+
+        if (id != other.id) return false
+        if (topLevelMerkleProof != other.topLevelMerkleProof) return false
+        if (filteredComponentGroups != other.filteredComponentGroups) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + topLevelMerkleProof.hashCode()
+        result = 31 * result + filteredComponentGroups.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "FilteredTransactionImpl(id=$id, topLevelMerkleProof=$topLevelMerkleProof, filteredComponentGroups=$filteredComponentGroups)"
+    }
 }
