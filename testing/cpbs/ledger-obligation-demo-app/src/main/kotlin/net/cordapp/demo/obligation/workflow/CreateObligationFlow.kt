@@ -27,7 +27,9 @@ import java.time.Instant
 class CreateObligationFlow(
     private val obligation: ObligationState,
     private val notary: Party,
-    private val sessions: Set<FlowSession>
+    private val sessions: Set<FlowSession>,
+    private val fromDayOffset: Int,
+    private val toDayOffset: Int,
 ) : SubFlow<UtxoSignedTransaction> {
 
     internal companion object {
@@ -49,7 +51,10 @@ class CreateObligationFlow(
             .setNotary(notary)
             .addOutputState(obligation)
             .addCommand(ObligationContract.Create)
-            .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
+            .setTimeWindowBetween(
+                Instant.now().plusMillis(fromDayOffset.days.toMillis()),
+                Instant.now().plusMillis(toDayOffset.days.toMillis())
+            )
             .addSignatories(listOf(obligation.issuer))
 
         @Suppress("DEPRECATION")
@@ -107,7 +112,8 @@ class CreateObligationFlow(
 
             val obligationState = ObligationState(issuerKey, holderKey, request.amount)
 
-            val createObligationFlow = CreateObligationFlow(obligationState, notary, sessions)
+            val createObligationFlow =
+                CreateObligationFlow(obligationState, notary, sessions, request.fromDayOffset, request.toDayOffset)
 
             val transaction = flowEngine.subFlow(createObligationFlow)
 

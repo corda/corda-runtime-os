@@ -8,5 +8,15 @@ data class CreateObligationRequestMessage(
     val holder: MemberX500Name,
     val amount: BigDecimal,
     val notary: MemberX500Name,
-    val notaryService: MemberX500Name
+    val notaryService: MemberX500Name,
+    // For testing
+    val fromDayOffset: Int = 0,
+    val toDayOffset: Int = 1,
+    // These will be used like this:
+    /*
+    .setTimeWindowBetween(
+        Instant.now().plusMillis(fromDayOffset.days.toMillis()),
+        Instant.now().plusMillis(toDayOffset.days.toMillis())
+    )
+     */
 )
