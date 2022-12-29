@@ -1,7 +1,7 @@
 @Library('corda-shared-build-pipeline-steps@beta-program') _
 
 cordaPipeline(
-    dailyBuildCron: 'H H/3 * * *',
+    dailyBuildCron: 'H 07 * * *',
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     createPostgresDb: true,
