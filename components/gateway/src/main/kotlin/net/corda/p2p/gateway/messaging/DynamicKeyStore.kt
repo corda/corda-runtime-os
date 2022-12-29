@@ -84,7 +84,7 @@ internal class DynamicKeyStore(
         ),
         managedChildren = listOf(
             subscriptionTile.toNamedLifecycle(),
-            NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>()),
+            NamedLifecycle.of(cryptoOpsClient),
             blockingDominoTile.toNamedLifecycle()
         ),
     )

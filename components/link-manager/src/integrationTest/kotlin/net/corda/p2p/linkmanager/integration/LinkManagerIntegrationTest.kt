@@ -19,7 +19,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.grouppolicy.TestGroupPolicyProvider
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -28,6 +28,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.integration.test.components.TestCpiInfoReadService
+import net.corda.p2p.linkmanager.integration.test.components.TestGroupPolicyProvider
+import net.corda.p2p.linkmanager.integration.test.components.TestMembershipQueryClient
+import net.corda.p2p.linkmanager.integration.test.components.TestVirtualNodeInfoReadService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -88,6 +92,10 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+
+        @InjectService(timeout = 4000)
+        lateinit var  groupParametersReaderService: GroupParametersReaderService
+
     }
 
     private val replayPeriod = 2000
@@ -146,6 +154,9 @@ class LinkManagerIntegrationTest {
     @Test
     fun `Link Manager can recover from bad configuration`() {
         val testGroupPolicyProvider = TestGroupPolicyProvider(lifecycleCoordinatorFactory)
+        val testVirtualNodeInfoReadService = TestVirtualNodeInfoReadService(lifecycleCoordinatorFactory)
+        val testCpiInfoReadService = TestCpiInfoReadService(lifecycleCoordinatorFactory)
+        val testMembershipQueryClient = TestMembershipQueryClient(lifecycleCoordinatorFactory)
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -180,8 +191,12 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             testGroupPolicyProvider,
+            testVirtualNodeInfoReadService,
+            testCpiInfoReadService,
             cryptoOpsClient,
             membershipGroupReaderProvider,
+            testMembershipQueryClient,
+            groupParametersReaderService,
         )
 
         linkManager.usingLifecycle {
