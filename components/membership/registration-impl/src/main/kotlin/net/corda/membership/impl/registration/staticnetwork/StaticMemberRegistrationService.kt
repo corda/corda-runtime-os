@@ -64,6 +64,7 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
+import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -231,16 +232,18 @@ class StaticMemberRegistrationService @Activate constructor(
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
         if (memberInfo.notaryDetails != null) {
-            staticMemberList
-                .parallelStream()
-                .map { MemberX500Name.parse(it.name!!) }
-                .filter { it != memberInfo.name }
-                .map { HoldingIdentity(it, memberInfo.groupId) }
-                .filter { virtualNodeInfoReadService.get(it) != null }
-                .forEach {
-                    persistenceClient.persistGroupParameters(it, groupParameters)
-                    groupParametersWriterService.put(it, groupParameters)
-                }
+            SecManagerForkJoinPool.pool.submit {
+                staticMemberList
+                    .parallelStream()
+                    .map { MemberX500Name.parse(it.name!!) }
+                    .filter { it != memberInfo.name }
+                    .map { HoldingIdentity(it, memberInfo.groupId) }
+                    .filter { virtualNodeInfoReadService.get(it) != null }
+                    .forEach {
+                        persistenceClient.persistGroupParameters(it, groupParameters)
+                        groupParametersWriterService.put(it, groupParameters)
+                    }
+            }
         }
     }
 
