@@ -13,5 +13,11 @@ data class StateAndEventPartitionState<K : Any, S : Any>(
     /**
      * Map of partition id to offset. The offset is the latest offset for the partition.
      */
-    val partitionsToSync: MutableMap<Int, Long>
+    val partitionsToSync: MutableMap<Int, Long>,
+
+    /**
+     * Used to indicate the values have changed.
+     */
+    var dirty: Boolean = false
+
 )

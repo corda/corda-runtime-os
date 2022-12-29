@@ -21,7 +21,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
-    partitionState: StateAndEventPartitionState<K, S>,
+    private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
@@ -195,7 +195,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
-    override fun resetPollInterval() {
+    override fun resetPollInterval(): Boolean {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             // Here we pause each consumer in order to mark a poll to avoid a Kafka timeout without actually consuming
             // any records.
@@ -207,6 +207,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerPausePartitions"}
             stateConsumer.pause(stateConsumerPausePartitions)
 
+            partitionState.dirty = false
             val eventRecords = eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             eventRecords.forEach { event ->
                 log.warn("Resetting polling interval has lost event with key: ${event.key}, this will likely cause execution" +
@@ -224,7 +225,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerPausePartitions" }
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
+
+            if (partitionState.dirty) {
+                partitionState.dirty = false
+                return true
+            }
         }
+        return false
     }
 
     /**
