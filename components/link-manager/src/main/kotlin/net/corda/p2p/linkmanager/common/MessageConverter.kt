@@ -60,7 +60,11 @@ class MessageConverter {
             peer: MemberInfo,
             networkType: NetworkType
         ): LinkOutHeader {
-            val endPoint = peer.endpoints.firstOrNull { it.protocolVersion == ProtocolConstants.PROTOCOL_VERSION }?.url
+            val endPoint = peer.endpoints
+                .filter {
+                    it.protocolVersion == ProtocolConstants.PROTOCOL_VERSION
+                }.shuffled().firstOrNull()
+                ?.url
             return LinkOutHeader(
                 peer.holdingIdentity.toAvro(),
                 source.toAvro(),
