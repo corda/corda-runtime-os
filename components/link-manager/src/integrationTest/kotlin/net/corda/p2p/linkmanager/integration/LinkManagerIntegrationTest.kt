@@ -19,7 +19,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -30,7 +32,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.integration.test.components.TestGroupPolicyProvider
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -154,7 +155,12 @@ class LinkManagerIntegrationTest {
 
     @Test
     fun `Link Manager can recover from bad configuration`() {
-        val testGroupPolicyProvider = TestGroupPolicyProvider(lifecycleCoordinatorFactory)
+        val groupPolicyProviderName = LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
+        val groupPolicyProviderCoordinator = lifecycleCoordinatorFactory.createCoordinator(groupPolicyProviderName) { _, coordinator ->
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+        groupPolicyProviderCoordinator.start()
+
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -188,7 +194,7 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            testGroupPolicyProvider,
+            mock(GroupPolicyProvider::class.java),
             mock(VirtualNodeInfoReadService::class.java),
             mock(CpiInfoReadService::class.java),
             cryptoOpsClient,
