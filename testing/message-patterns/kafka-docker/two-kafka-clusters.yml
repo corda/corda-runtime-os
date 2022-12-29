@@ -36,7 +36,7 @@ services:
   ## Kafka cluster 1
 
   cluster1-broker1:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster1-broker1
     container_name: cluster1-broker1
@@ -54,7 +54,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   cluster1-broker2:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster1-broker2
     container_name: cluster1-broker2
@@ -72,7 +72,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   cluster1-broker3:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster1-broker3
     container_name: cluster1-broker3
@@ -93,7 +93,7 @@ services:
   ## Kafka cluster 2
 
   cluster2-broker1:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster2-broker1
     container_name: cluster2-broker1
@@ -111,7 +111,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   cluster2-broker2:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster2-broker2
     container_name: cluster2-broker2
@@ -129,7 +129,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   cluster2-broker3:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: cluster2-broker3
     container_name: cluster2-broker3
