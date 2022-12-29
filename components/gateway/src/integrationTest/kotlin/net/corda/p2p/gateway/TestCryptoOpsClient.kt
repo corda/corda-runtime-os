@@ -23,7 +23,7 @@ import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
 
-class TestCryptoOpsClient(
+internal class TestCryptoOpsClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
 ) : CryptoOpsClient {
 

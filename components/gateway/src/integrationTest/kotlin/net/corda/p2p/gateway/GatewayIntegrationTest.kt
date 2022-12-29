@@ -28,6 +28,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
@@ -69,6 +70,7 @@ import net.corda.v5.base.util.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -76,6 +78,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import java.io.StringWriter
 import java.net.ConnectException
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
 import java.net.InetSocketAddress
@@ -102,12 +105,12 @@ import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
 class GatewayIntegrationTest : TestBase() {
-    companion object {
-        private val logger = contextLogger()
+    private companion object {
+        val logger = contextLogger()
         const val GROUP_ID = "Group - 1"
 
-        val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+        const val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        const val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         const val MAX_REQUEST_SIZE = 50_000_000L
     }
 
@@ -128,6 +131,7 @@ class GatewayIntegrationTest : TestBase() {
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
+        val cryptoOpsClient = TestCryptoOpsClient(lifecycleCoordinatorFactory)
 
         fun stop() {
             publisher.close()
@@ -165,6 +169,35 @@ class GatewayIntegrationTest : TestBase() {
             }
             return records
         }
+        fun publishKeyStoreCertificatesAndKeys(keyStoreWithPassword: KeyStoreWithPassword) {
+            val tenantId = "tenantId"
+            val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
+                val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
+                val pems = certificateChain.map { certificate ->
+                    StringWriter().use { str ->
+                        JcaPEMWriter(str).use { writer ->
+                            writer.writeObject(certificate)
+                        }
+                        str.toString()
+                    }
+                }
+                val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
+                val certificateRecord = Record(
+                    Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
+                    name,
+                    GatewayTlsCertificates(tenantId, pems)
+                )
+
+                listOf(certificateRecord)
+            }
+
+            publisher.publish(records).forEach {
+                it.join()
+            }
+
+            cryptoOpsClient.createTenantKeys(keyStoreWithPassword, tenantId)
+        }
+
     }
 
     private val alice = Node("alice")
@@ -181,7 +214,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `gateway response to invalid request`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
 
@@ -209,10 +241,10 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
                 it.startAndWaitForStarted()
                 val httpClient = JavaHttpClient.newBuilder()
                     .sslContext(sslContext)
@@ -232,7 +264,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
@@ -252,10 +283,10 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
@@ -289,7 +320,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
@@ -310,10 +340,10 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
@@ -333,7 +363,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with ip address`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val ipAddress = "127.0.0.1"
@@ -354,10 +383,10 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                publishKeyStoreCertificatesAndKeys(alice.publisher, ipKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(ipKeyStore)
 
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(
@@ -400,7 +429,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(100)
         fun `gateway reconfiguration`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             alice.publish(
@@ -451,7 +479,7 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 aliceKeyStore,
             ).use { recipientServer ->
-                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
                 listenToOutboundMessages.server = recipientServer
                 recipientServer.startAndWaitForStarted()
                 Gateway(
@@ -460,8 +488,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
-                avroSchemaRegistry
+                    alice.cryptoOpsClient,
+                    avroSchemaRegistry,
                 ).usingLifecycle { gateway ->
                     gateway.start()
 
@@ -519,13 +547,12 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `multiple clients to gateway`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
             val serverAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+            alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -540,7 +567,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
                 it.startAndWaitForStarted()
@@ -583,7 +610,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to multiple servers`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val messageCount = 100
             val serversCount = 4
             alice.publish(
@@ -641,10 +667,10 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore, testCryptoOpsClient)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
                 serverUrls.forEach { url ->
@@ -677,8 +703,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - dual stream`() {
-            val testCryptoOpsClientAlice = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
-            val testCryptoOpsClientBob = TestCryptoOpsClient(bob.lifecycleCoordinatorFactory)
             val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
             val messageCount = 100
@@ -686,8 +710,8 @@ class GatewayIntegrationTest : TestBase() {
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
             bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
-            publishKeyStoreCertificatesAndKeys(alice.publisher, chipKeyStore, testCryptoOpsClientAlice)
-            publishKeyStoreCertificatesAndKeys(bob.publisher, daleKeyStore, testCryptoOpsClientBob)
+            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore)
+            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -755,8 +779,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClientAlice,
-                avroSchemaRegistry
+                    alice.cryptoOpsClient,
+                    avroSchemaRegistry
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -773,7 +797,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                    testCryptoOpsClientBob,
+                    bob.cryptoOpsClient,
                     avroSchemaRegistry,
                 )
             ).onEach {
@@ -838,7 +862,6 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(120)
         fun `Gateway can recover from bad configuration`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
             Gateway(
@@ -847,7 +870,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle { gateway ->
                 val port = getOpenPort()
@@ -966,7 +989,6 @@ class GatewayIntegrationTest : TestBase() {
             val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
             val server = Node("server")
-            val testCryptoOpsClient = TestCryptoOpsClient(server.lifecycleCoordinatorFactory)
             val configPublisher = ConfigPublisher()
             configPublisher.publishConfig(
                 GatewayConfiguration(
@@ -986,7 +1008,7 @@ class GatewayIntegrationTest : TestBase() {
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                testCryptoOpsClient,
+                server.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle { gateway ->
                 gateway.startAndWaitForStarted()
@@ -1010,7 +1032,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Publish the first key pair
                 val keyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
-                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(keyStore)
 
 
                 // Client should now pass
@@ -1019,7 +1041,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Delete the first pair
-                testCryptoOpsClient.removeTenantKeys()
+                server.cryptoOpsClient.removeTenantKeys()
 
 
                 // Client should fail again...
@@ -1030,7 +1052,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // publish the same pair again
-                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(keyStore)
 
 
                 // Client should now pass
@@ -1056,7 +1078,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // publish it again
-                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(keyStore)
                 eventually {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                 }
@@ -1065,7 +1087,7 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(bobKeyStore)
 
                 // Client should pass with new host
                 eventually {
@@ -1082,7 +1104,7 @@ class GatewayIntegrationTest : TestBase() {
                 // replace the first pair
                 val newKeyStore =
                     secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(newKeyStore)
 
                 eventually {
                     testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
@@ -1105,7 +1127,7 @@ class GatewayIntegrationTest : TestBase() {
                 // publish new pair with new alias
                 val newerKeyStore =
                     thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore, testCryptoOpsClient)
+                server.publishKeyStoreCertificatesAndKeys(newerKeyStore)
 
                 eventually {
                     testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())

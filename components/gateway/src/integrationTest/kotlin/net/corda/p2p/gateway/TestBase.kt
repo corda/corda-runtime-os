@@ -218,33 +218,4 @@ open class TestBase {
             assertThat(this.isRunning).isTrue
         }
     }
-
-    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword, testCryptoOpsClient: TestCryptoOpsClient) {
-        val tenantId = "tenantId"
-        val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
-            val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
-            val pems = certificateChain.map { certificate ->
-                StringWriter().use { str ->
-                    JcaPEMWriter(str).use { writer ->
-                        writer.writeObject(certificate)
-                    }
-                    str.toString()
-                }
-            }
-            val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
-            val certificateRecord = Record(
-                Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
-                name,
-                GatewayTlsCertificates(tenantId, pems)
-            )
-
-            listOf(certificateRecord)
-        }
-
-        publisher.publish(records).forEach {
-            it.join()
-        }
-
-        testCryptoOpsClient.createTenantKeys(keyStoreWithPassword, tenantId)
-    }
 }
