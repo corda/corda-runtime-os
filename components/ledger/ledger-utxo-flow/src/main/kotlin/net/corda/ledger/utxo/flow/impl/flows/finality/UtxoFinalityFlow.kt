@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -67,7 +68,7 @@ class UtxoFinalityFlow(
             val signatures = signaturesPayload.getOrThrow { failure ->
                 val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
-                log.debug { message }
+                log.warn(message)
                 CordaRuntimeException(message)
             }
 
@@ -83,7 +84,26 @@ class UtxoFinalityFlow(
         }.toMap()
 
         log.debug { "Verifying all signatures for transaction $transactionId." }
-        transaction.verifySignatures() // TODO CORE-8935 Add better logging if the transaction is not fully signed
+
+        try {
+            transaction.verifySignatures()
+        } catch (e: TransactionMissingSignaturesException) {
+            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
+                        signatures.map { it.by.encoded }
+            }
+            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+            } else {
+                "[]"
+            }
+            val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
+                    "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
+                    "the transaction: $counterpartiesToSignatoriesMessage"
+            log.warn(message)
+            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
+        }
+
         val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED, relevantStatesIndexes)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
