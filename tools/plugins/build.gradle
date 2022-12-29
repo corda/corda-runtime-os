@@ -91,7 +91,6 @@ tasks.named('jar').configure {
 
 // Proposed alternative to publishOSGiImage
 // Currently in trial phase, being rolled out in Nightly and locally and planned to be deployed in phases down the line
-
 tasks.register('publishBuildkitImage', BuildkitBuild) {
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
