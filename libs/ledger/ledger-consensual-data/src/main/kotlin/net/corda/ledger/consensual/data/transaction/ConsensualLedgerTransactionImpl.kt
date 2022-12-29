@@ -55,7 +55,7 @@ class ConsensualLedgerTransactionImpl(
     override fun hashCode(): Int = wireTransaction.hashCode()
 
     override fun toString(): String {
-        return "ConsensualLedgerTransactionImpl( id=$id, requiredSignatories=$requiredSignatories, wireTransaction=$wireTransaction)"
+        return "ConsensualLedgerTransactionImpl(id=$id, requiredSignatories=$requiredSignatories, wireTransaction=$wireTransaction)"
     }
 
 

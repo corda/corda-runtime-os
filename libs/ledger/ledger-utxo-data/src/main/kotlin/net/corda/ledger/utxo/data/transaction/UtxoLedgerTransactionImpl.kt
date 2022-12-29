@@ -83,13 +83,13 @@ class UtxoLedgerTransactionImpl(
 
         other as UtxoLedgerTransactionImpl
 
-        if (id != other.id) return false
+        if (wrappedWireTransaction != other.wrappedWireTransaction) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return javaClass.hashCode()
+        return wrappedWireTransaction.hashCode()
     }
 
     override fun toString(): String {

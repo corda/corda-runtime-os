@@ -22,6 +22,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.Base64
+import java.util.Objects
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
@@ -157,10 +158,7 @@ class FilteredTransactionImpl(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + topLevelMerkleProof.hashCode()
-        result = 31 * result + filteredComponentGroups.hashCode()
-        return result
+        return Objects.hash(id, topLevelMerkleProof, filteredComponentGroups)
     }
 
     override fun toString(): String {
