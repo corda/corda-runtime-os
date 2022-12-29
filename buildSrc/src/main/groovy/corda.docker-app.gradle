@@ -29,7 +29,6 @@ if (enableProfiling.toBoolean()) {
 
 // Proposed alternative to publishOSGiImage
 // Currently in trial phase, being rolled out in Nightly and locally and planned to be deployed in phases down the line
-
 tasks.register('publishBuildkitImage', BuildkitBuild) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)
