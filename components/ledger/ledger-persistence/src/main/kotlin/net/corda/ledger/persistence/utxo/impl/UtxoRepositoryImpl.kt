@@ -306,7 +306,9 @@ class UtxoRepositoryImpl(
             // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
             .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
-            .setParameter("jsonRepresentation", jsonRepresentation as Any)
+            // Same workaround as above
+            .setParameter("jsonRepresentation", "")
+            .setParameter("jsonRepresentation", jsonRepresentation)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
