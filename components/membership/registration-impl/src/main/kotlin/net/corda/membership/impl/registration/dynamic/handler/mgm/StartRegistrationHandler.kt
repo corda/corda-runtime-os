@@ -211,9 +211,6 @@ internal class StartRegistrationHandler(
     private fun validateRoleInformation(member: MemberInfo) {
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
-            validateRegistrationRequest(
-                notary.keys.isNotEmpty()
-            ) { "Registering member has role set to 'notary', but has missing notary key details." }
             notary.servicePlugin?.let {
                 validateRegistrationRequest(
                     it.isNotBlank()
