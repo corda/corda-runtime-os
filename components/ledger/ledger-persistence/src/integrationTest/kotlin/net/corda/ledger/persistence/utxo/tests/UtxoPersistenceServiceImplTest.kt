@@ -47,6 +47,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -140,7 +141,17 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `Postgres version`() {
+        val version = entityManagerFactory.transaction { em ->
+            em.createNativeQuery("SELECT version()")
+                .resultList
+        }
+        Assertions.fail<Nothing>("$version")
+    }
+
+    @Test
     fun `find signed transaction that matches input status`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
@@ -151,6 +162,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find signed transaction with different status returns null`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
@@ -161,6 +173,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed relevant transaction states`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val createdTs = TEST_CLOCK.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
@@ -214,6 +227,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed relevant transaction states that match JPath expression`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val createdTs = TEST_CLOCK.instant()
         val transaction1 = createSignedTransaction(createdTs)
         val transaction2 = createSignedTransaction(createdTs)
