@@ -93,11 +93,15 @@ internal class CommonComponents(
         NamedLifecycle.of(groupPolicyProvider),
         NamedLifecycle.of(membershipGroupReaderProvider),
         NamedLifecycle.of(cryptoOpsClient),
+    )
+
+    private val externalManagedDependencies = listOf(
         NamedLifecycle.of(virtualNodeInfoReadService),
         NamedLifecycle.of(cpiInfoReadService),
         NamedLifecycle.of(membershipQueryClient),
         NamedLifecycle.of(groupParametersReaderService)
-    )
+    ) + externalDependencies
+
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -117,6 +121,6 @@ internal class CommonComponents(
             sessionManager.dominoTile.toNamedLifecycle(),
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
-        ) + externalDependencies
+        ) + externalManagedDependencies
     )
 }
