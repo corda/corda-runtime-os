@@ -243,7 +243,7 @@ class StaticMemberRegistrationService @Activate constructor(
                         persistenceClient.persistGroupParameters(it, groupParameters)
                         groupParametersWriterService.put(it, groupParameters)
                     }
-            }
+            }.join()
         }
     }
 
