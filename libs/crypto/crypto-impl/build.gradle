@@ -28,10 +28,10 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
-    testImplementation project(":testing:layered-property-map-testkit")
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
+    testImplementation project(":testing:layered-property-map-testkit")
     testImplementation "javax.persistence:javax.persistence-api"
-    testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
