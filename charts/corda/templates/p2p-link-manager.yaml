@@ -55,6 +55,7 @@ spec:
           - name: profiling
             containerPort: 10045
         {{- end }}
+        {{- if not .Values.workers.p2pLinkManager.debug.enabled }}
         readinessProbe:
           httpGet:
             path: /status
@@ -73,6 +74,7 @@ spec:
             port: monitor
           periodSeconds: 5
           failureThreshold: 20
+        {{- end }}
       initContainers:
       {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:

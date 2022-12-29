@@ -44,14 +44,9 @@ class DynamicKeyStoreTest {
     private val nodeConfiguration = mock<SmartConfig>()
     private val subscription = mock<CompactedSubscription<String, GatewayTlsCertificates>>()
 
-    private val processorForKeystoreWithStubs = argumentCaptor<CompactedProcessor<String, GatewayTlsCertificates>>()
-    private val subscriptionFactoryForKeystoreWithStubs = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(any(), processorForKeystoreWithStubs.capture(), eq(nodeConfiguration)) } doReturn subscription
-    }
-
-    private val processorForKeystoreWithoutStubs = argumentCaptor<CompactedProcessor<String, GatewayTlsCertificates>>()
-    private val subscriptionFactoryForKeystoreWithoutStubs = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(any(), processorForKeystoreWithoutStubs.capture(), eq(nodeConfiguration)) } doReturn subscription
+    private val processorForKeystore = argumentCaptor<CompactedProcessor<String, GatewayTlsCertificates>>()
+    private val subscriptionFactoryForKeystore = mock<SubscriptionFactory> {
+        on { createCompactedSubscription(any(), processorForKeystore.capture(), eq(nodeConfiguration)) } doReturn subscription
     }
 
     private val certificateFactory = mock<CertificateFactory>()
@@ -70,17 +65,9 @@ class DynamicKeyStoreTest {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
 
-    private val dynamicKeyStoreWithStubs = DynamicKeyStore(
+    private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
-        subscriptionFactoryForKeystoreWithStubs,
-        nodeConfiguration,
-        cryptoOpsClient,
-        certificateFactory,
-    )
-
-    private val dynamicKeystoreWithoutStubs = DynamicKeyStore(
-        lifecycleCoordinatorFactory,
-        subscriptionFactoryForKeystoreWithoutStubs,
+        subscriptionFactoryForKeystore,
         nodeConfiguration,
         cryptoOpsClient,
         certificateFactory
@@ -105,8 +92,7 @@ class DynamicKeyStoreTest {
 
         @Test
         fun `create resources will complete with snapshots`() {
-            processorForKeystoreWithStubs.firstValue.onSnapshot(emptyMap())
-            processorForKeystoreWithoutStubs.firstValue.onSnapshot(emptyMap())
+            processorForKeystore.firstValue.onSnapshot(emptyMap())
 
             futures.forEach {
                 assertThat(it).isCompleted
@@ -131,24 +117,24 @@ class DynamicKeyStoreTest {
 
         @Test
         fun `onSnapshot save the correct data`() {
-            processorForKeystoreWithStubs.firstValue.onSnapshot(
+            processorForKeystore.firstValue.onSnapshot(
                 mapOf(
                     "one" to GatewayTlsCertificates("id", certificates.keys.toList())
                 )
             )
 
-            assertThat(dynamicKeyStoreWithStubs.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
         }
 
         @Test
         fun `onNext remove data with null value`() {
-            processorForKeystoreWithStubs.firstValue.onSnapshot(
+            processorForKeystore.firstValue.onSnapshot(
                 mapOf(
                     "one" to GatewayTlsCertificates("id", certificates.keys.toList())
                 )
             )
 
-            processorForKeystoreWithStubs.firstValue.onNext(
+            processorForKeystore.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
@@ -158,12 +144,12 @@ class DynamicKeyStoreTest {
                 emptyMap()
             )
 
-            assertThat(dynamicKeyStoreWithStubs.aliasToCertificates["one"]).isNull()
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).isNull()
         }
 
         @Test
         fun `onNext add data with valid value`() {
-            processorForKeystoreWithStubs.firstValue.onNext(
+            processorForKeystore.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
@@ -173,7 +159,7 @@ class DynamicKeyStoreTest {
                 emptyMap()
             )
 
-            assertThat(dynamicKeyStoreWithStubs.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
         }
     }
 
@@ -206,26 +192,24 @@ class DynamicKeyStoreTest {
                 }
             }
 
-            listOf(processorForKeystoreWithStubs.firstValue, processorForKeystoreWithoutStubs.firstValue).forEach {
-                it.onSnapshot(
-                    mapOf(
-                        "one" to GatewayTlsCertificates(
-                            tenantIdOne,
-                            listOf("1")
-                        ),
-                        "three" to GatewayTlsCertificates(
-                            tenantIdOne,
-                            listOf("3")
-                        ),
-                    )
+            processorForKeystore.firstValue.onSnapshot(
+                mapOf(
+                    "one" to GatewayTlsCertificates(
+                        tenantIdOne,
+                        listOf("1")
+                    ),
+                    "three" to GatewayTlsCertificates(
+                        tenantIdOne,
+                        listOf("3")
+                    ),
                 )
-            }
+            )
         }
 
         @Test
         fun `sign with unknown publicKey will throw an exception`() {
             assertThrows<InvalidKeyException> {
-                dynamicKeyStoreWithStubs.sign(mock(), spec, data)
+                dynamicKeyStore.sign(mock(), spec, data)
             }
         }
 
@@ -235,7 +219,7 @@ class DynamicKeyStoreTest {
             val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
-            dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)
+            dynamicKeyStore.sign(publicKeyOne, spec, data)
 
             verify(cryptoOpsClient).sign(tenantIdOne, publicKeyOne, spec, data)
         }
@@ -247,12 +231,12 @@ class DynamicKeyStoreTest {
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
 
-            assertThat(dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
+            assertThat(dynamicKeyStore.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
         }
 
         @Test
         fun `onNext will remove the public key`() {
-            processorForKeystoreWithStubs.firstValue.onNext(
+            processorForKeystore.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
@@ -263,7 +247,7 @@ class DynamicKeyStoreTest {
             )
 
             assertThrows<InvalidKeyException> {
-                dynamicKeyStoreWithStubs.sign(publicKeyOne, spec, data)
+                dynamicKeyStore.sign(publicKeyOne, spec, data)
             }
         }
 
@@ -273,7 +257,7 @@ class DynamicKeyStoreTest {
             val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
             whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
-            processorForKeystoreWithoutStubs.firstValue.onNext(
+            processorForKeystore.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
@@ -287,7 +271,7 @@ class DynamicKeyStoreTest {
             )
 
             assertDoesNotThrow {
-                dynamicKeystoreWithoutStubs.sign(publicKeyTwo, spec, data)
+                dynamicKeyStore.sign(publicKeyTwo, spec, data)
             }
         }
     }
@@ -297,7 +281,7 @@ class DynamicKeyStoreTest {
         @Test
         fun `keyStore creates a new keystore`() {
             mockConstruction(KeyStoreFactory::class.java).use {
-                dynamicKeyStoreWithStubs.keyStore
+                dynamicKeyStore.keyStore
 
                 verify(it.constructed().first()).createDelegatedKeyStore()
             }

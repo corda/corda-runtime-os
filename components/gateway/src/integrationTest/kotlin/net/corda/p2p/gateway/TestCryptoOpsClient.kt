@@ -10,7 +10,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ParameterizedSignatureSpec
@@ -18,7 +17,7 @@ import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.openssl.PEMKeyPair
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
-import java.security.KeyPair
+import java.security.Key
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -26,119 +25,45 @@ import java.util.concurrent.ConcurrentHashMap
 
 class TestCryptoOpsClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    keyStoreWithPasswordList: List<KeyStoreWithPassword>,
 ) : CryptoOpsClient {
 
-    private val tenantIdToKeys = ConcurrentHashMap<String, TenantKeyMap>()
-    init {
-        keyStoreWithPasswordList.forEach { createTenantKeys(it) }
-    }
+    private val tenantIdToKeys = ConcurrentHashMap<String, MutableMap<PublicKey, PrivateKey>>()
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoOpsClient>{ event, coordinator ->
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoOpsClient> { event, coordinator ->
         if(event is StartEvent) { coordinator.updateStatus(LifecycleStatus.UP) }
     }
 
-    companion object {
-        val logger = contextLogger()
-        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-    }
+    private fun Key.publicKey(): PublicKey? =
+        this.toPem()
+            .reader()
+            .use {
+                PEMParser(it).use { parser ->
+                    generateSequence {
+                        parser.readObject()
+                    }.map {
+                        if (it is PEMKeyPair) {
+                            JcaPEMKeyConverter().getKeyPair(it)
+                        } else {
+                            null
+                        }
+                    }.filterNotNull()
+                        .firstOrNull()
+                }
+            }?.public
 
-    override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun generateKeyPair(
-        tenantId: String,
-        category: String,
-        alias: String,
-        scheme: String,
-        context: Map<String, String>
-    ): PublicKey {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun generateKeyPair(
-        tenantId: String,
-        category: String,
-        alias: String,
-        externalId: String,
-        scheme: String,
-        context: Map<String, String>
-    ): PublicKey {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun freshKey(tenantId: String, category: String, scheme: String, context: Map<String, String>): PublicKey {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun freshKey(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: Map<String, String>
-    ): PublicKey {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    private class TenantKeyMap {
-        val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
-    }
-
-    private fun toKeyPair(pem: String): KeyPair {
-        return pem.reader().use {
-            PEMParser(it).use { parser ->
-                generateSequence {
-                    parser.readObject()
-                }.map {
-                    if (it is PEMKeyPair) {
-                        JcaPEMKeyConverter().getKeyPair(it)
-                    } else {
-                        null
-                    }
-                }.filterNotNull()
-                    .firstOrNull()
-            }
-        } ?: throw CordaRuntimeException("Could not read PEM")
-    }
-
-    fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword) {
-        val records = keyStoreWithPassword.keyStore.aliases().toList()
-        for ((i, _) in records.withIndex()) {
-            val tenantId = "tenantId"
+    fun createTenantKeys(keyStoreWithPassword: KeyStoreWithPassword, tenantId: String) {
+        keyStoreWithPassword.keyStore.aliases().toList().forEach { alias ->
             val privateKey = keyStoreWithPassword
                 .keyStore
-                .getKey(records[i], keyStoreWithPassword.password.toCharArray())
-                .toPem()
+                .getKey(
+                    alias,
+                    keyStoreWithPassword.password.toCharArray()
+                ) as? PrivateKey ?:  throw CordaRuntimeException("Missing private key")
+            val publicKey = privateKey.publicKey() ?: throw CordaRuntimeException("Can not read public key")
 
-            val tenantKeyMap = tenantIdToKeys.computeIfAbsent(tenantId) {
-                TenantKeyMap()
-            }
-            val pair = toKeyPair(privateKey)
-            tenantKeyMap.publicKeyToPrivateKey[pair.public] = pair.private
+            tenantIdToKeys.computeIfAbsent(tenantId) {
+                ConcurrentHashMap()
+            }[publicKey] = privateKey
         }
     }
 
@@ -151,10 +76,9 @@ class TestCryptoOpsClient(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): DigitalSignature.WithKey {
         val privateKey = tenantIdToKeys[tenantId]
-            ?.publicKeyToPrivateKey
             ?.get(publicKey)
             ?: throw CordaRuntimeException("Could not find private key")
         val providerName = when (publicKey.algorithm) {
@@ -177,12 +101,9 @@ class TestCryptoOpsClient(
         publicKey: PublicKey,
         digest: DigestAlgorithmName,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): DigitalSignature.WithKey {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
+        throw UnsupportedOperationException()
     }
 
     override fun lookup(
@@ -192,17 +113,54 @@ class TestCryptoOpsClient(
         orderBy: CryptoKeyOrderBy,
         filter: Map<String, String>
     ): List<CryptoSigningKey> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
+        throw UnsupportedOperationException()
+    }
+
+    override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
+        throw UnsupportedOperationException()
+    }
+
+    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+        throw UnsupportedOperationException()
+    }
+
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
+        throw UnsupportedOperationException()
+    }
+
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
+        throw UnsupportedOperationException()
+    }
+
+    override fun freshKey(tenantId: String, category: String, scheme: String, context: Map<String, String>): PublicKey {
+        throw UnsupportedOperationException()
+    }
+
+    override fun freshKey(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
+        throw UnsupportedOperationException()
     }
 
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
+        throw UnsupportedOperationException()
     }
 
     override fun createWrappingKey(
@@ -211,10 +169,7 @@ class TestCryptoOpsClient(
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
+        throw UnsupportedOperationException()
     }
 
     override fun deriveSharedSecret(
@@ -223,10 +178,7 @@ class TestCryptoOpsClient(
         otherPublicKey: PublicKey,
         context: Map<String, String>
     ): ByteArray {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
+        throw UnsupportedOperationException()
     }
 
     override val isRunning: Boolean

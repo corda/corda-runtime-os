@@ -181,7 +181,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `gateway response to invalid request`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
 
@@ -232,7 +232,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
@@ -289,7 +289,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
@@ -333,7 +333,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with ip address`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val ipAddress = "127.0.0.1"
@@ -400,7 +400,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(100)
         fun `gateway reconfiguration`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             alice.publish(
@@ -519,7 +519,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `multiple clients to gateway`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
@@ -583,7 +583,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to multiple servers`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val messageCount = 100
             val serversCount = 4
             alice.publish(
@@ -677,8 +677,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - dual stream`() {
-            val testCryptoOpsClientAlice = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(chipKeyStore))
-            val testCryptoOpsClientBob = TestCryptoOpsClient(bob.lifecycleCoordinatorFactory, listOf(daleKeyStore))
+            val testCryptoOpsClientAlice = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
+            val testCryptoOpsClientBob = TestCryptoOpsClient(bob.lifecycleCoordinatorFactory)
             val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
             val messageCount = 100
@@ -774,7 +774,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     testCryptoOpsClientBob,
-                avroSchemaRegistry
+                    avroSchemaRegistry,
                 )
             ).onEach {
                 it.startAndWaitForStarted()
@@ -838,7 +838,7 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(120)
         fun `Gateway can recover from bad configuration`() {
-            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory, listOf(aliceKeyStore))
+            val testCryptoOpsClient = TestCryptoOpsClient(alice.lifecycleCoordinatorFactory)
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
             Gateway(
@@ -966,7 +966,7 @@ class GatewayIntegrationTest : TestBase() {
             val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
             val server = Node("server")
-            val testCryptoOpsClient = TestCryptoOpsClient(server.lifecycleCoordinatorFactory, emptyList())
+            val testCryptoOpsClient = TestCryptoOpsClient(server.lifecycleCoordinatorFactory)
             val configPublisher = ConfigPublisher()
             configPublisher.publishConfig(
                 GatewayConfiguration(
@@ -1076,7 +1076,7 @@ class GatewayIntegrationTest : TestBase() {
                 val secondCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore("$aliceX500name")),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore(aliceX500name)),
                 )
 
                 // replace the first pair
@@ -1099,7 +1099,7 @@ class GatewayIntegrationTest : TestBase() {
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore("$aliceX500name")),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore(aliceX500name)),
                 )
 
                 // publish new pair with new alias
