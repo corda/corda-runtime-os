@@ -44,7 +44,7 @@ class UtxoFinalityFlow(
         log.trace("Starting finality flow for transaction: $transactionId")
         verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
-        sendTransactionAndBackchain()
+        sendTransactionAndBackchainToCounterparties()
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
@@ -63,7 +63,7 @@ class UtxoFinalityFlow(
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchain() {
+    private fun sendTransactionAndBackchainToCounterparties() {
         sessions.forEach {
             it.send(initialTransaction)
             flowEngine.subFlow(TransactionBackchainSenderFlow(it))
