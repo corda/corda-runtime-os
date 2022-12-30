@@ -47,7 +47,6 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -138,15 +137,6 @@ class UtxoPersistenceServiceImplTest {
     @AfterAll
     fun cleanup() {
         emConfig.close()
-    }
-
-    @Test
-    fun `Postgres version`() {
-        val version = entityManagerFactory.transaction { em ->
-            em.createNativeQuery("SELECT version()")
-                .resultList
-        }
-        Assertions.fail<Nothing>("$version")
     }
 
     @Test
@@ -253,7 +243,10 @@ class UtxoPersistenceServiceImplTest {
         }
 
         val stateClass = TestContractState2::class.java
-        val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass, "\$ ? (@.name == \"state2\")")
+        val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(
+            stateClass,
+            "\$.transactions[*].payments[*] ? (@.amount > 40 && @.amount < 90) ? (@.currency == \"EUR\")"
+        )
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
         val state = unconsumedStates.first()
@@ -591,7 +584,27 @@ class UtxoPersistenceServiceImplTest {
 
         override fun toJsonRepresentation() = """
             {
-                "name" : "state1"
+                "info": {
+                    "name": "State 1",
+                    "date": "01-12-2022 09:28:34 +00"
+                },
+                "transactions": [
+                    {
+                      "fromAccount": "463786324",
+                      "payments": [
+                        {"toAccount": "115625626", "amount": 140, "currency": "EUR"},
+                        {"toAccount": "783231123", "amount": 20, "currency": "EUR"},
+                        {"toAccount": "407938210", "amount": 90, "currency": "EUR"}
+                      ]
+                    },
+                    {
+                      "fromAccount": "209431954",
+                      "payments": [
+                        {"toAccount": "383836521", "amount": 100, "currency": "GBP"},
+                        {"toAccount": "221012653", "amount": 60, "currency": "GBP"}
+                      ]
+                    }
+                ]
             }
         """.trimIndent()
     }
@@ -601,7 +614,20 @@ class UtxoPersistenceServiceImplTest {
             get() = emptyList()
         override fun toJsonRepresentation() = """
             {
-                "name" : "state2"
+                "info": {
+                    "name": "State 2",
+                    "date": "03-12-2022 09:28:34 +00"
+                },
+                "transactions": [
+                    {
+                      "fromAccount": "278942243",
+                      "payments": [
+                        {"toAccount": "463786324", "amount": 40, "currency": "EUR"},
+                        {"toAccount": "893926326", "amount": 80, "currency": "EUR"},
+                        {"toAccount": "662828223", "amount": 60, "currency": "EUR"}
+                      ]                      
+                    }
+                ]
             }
         """.trimIndent()
     }
