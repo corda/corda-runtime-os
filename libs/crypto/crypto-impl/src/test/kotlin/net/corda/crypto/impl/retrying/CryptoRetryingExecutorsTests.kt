@@ -15,9 +15,10 @@ import javax.persistence.OptimisticLockException
 import javax.persistence.PersistenceException
 import javax.persistence.PessimisticLockException
 import javax.persistence.QueryTimeoutException
-import kotlin.test.assertEquals
 
 class CryptoRetryingExecutorsTests {
+    private val defaultRetryTimeout = Duration.ofSeconds(5)
+
     companion object {
         private val logger = contextLogger()
 
@@ -83,8 +84,9 @@ class CryptoRetryingExecutorsTests {
             called++
             "Hello World!"
         }
-        assertEquals("Hello World!", result)
-        assertEquals(1, called)
+
+        assertThat(called).isEqualTo(1)
+        assertThat(result).isEqualTo("Hello World!")
     }
 
     @Test
@@ -93,13 +95,14 @@ class CryptoRetryingExecutorsTests {
         val result = CryptoRetryingExecutorWithTimeout(
             logger,
             BackoffStrategy.createBackoff(3, listOf(100L)),
-            Duration.ofSeconds(5)
+            defaultRetryTimeout
         ).executeWithRetry {
             called++
             "Hello World!"
         }
-        assertEquals("Hello World!", result)
-        assertEquals(1, called)
+
+        assertThat(called).isEqualTo(1)
+        assertThat(result).isEqualTo("Hello World!")
     }
 
     @Test
@@ -115,7 +118,8 @@ class CryptoRetryingExecutorsTests {
                 Thread.sleep(100)
             }
         }
-        assertEquals(1, called)
+
+        assertThat(called).isEqualTo(1)
     }
 
     @ParameterizedTest
@@ -126,14 +130,15 @@ class CryptoRetryingExecutorsTests {
             CryptoRetryingExecutorWithTimeout(
                 logger,
                 BackoffStrategy.createBackoff(3, listOf(100L)),
-                Duration.ofMillis(10)
+                defaultRetryTimeout
             ).executeWithRetry {
                 called++
                 throw e
             }
         }
-        assertEquals(e::class.java, actual::class.java)
-        assertEquals(1, called)
+
+        assertThat(called).isEqualTo(1)
+        assertThat(actual::class.java).isEqualTo(e::class.java)
     }
 
     @Test
@@ -142,13 +147,14 @@ class CryptoRetryingExecutorsTests {
         assertThrows<CryptoException> {
             CryptoRetryingExecutorWithTimeout(
                 logger, BackoffStrategy.createBackoff(3, listOf(100L)),
-                Duration.ofMillis(10)
+                defaultRetryTimeout
             ).executeWithRetry {
                 called++
                 throw CryptoException("error")
             }
         }
-        assertEquals(1, called)
+
+        assertThat(called).isEqualTo(1)
     }
 
     @Test
@@ -163,7 +169,8 @@ class CryptoRetryingExecutorsTests {
                 throw TimeoutException()
             }
         }
-        assertEquals(3, called)
+
+        assertThat(called).isEqualTo(3)
         assertThat(actual.cause).isInstanceOf(TimeoutException::class.java)
     }
 
@@ -180,8 +187,9 @@ class CryptoRetryingExecutorsTests {
             }
             "Hello World!"
         }
-        assertEquals("Hello World!", result)
-        assertEquals(3, called)
+
+        assertThat(called).isEqualTo(3)
+        assertThat(result).isEqualTo("Hello World!")
     }
 
     @ParameterizedTest
@@ -200,8 +208,9 @@ class CryptoRetryingExecutorsTests {
             }
             "Hello World!"
         }
-        assertEquals("Hello World!", result)
-        assertEquals(3, called)
+
+        assertThat(called).isEqualTo(3)
+        assertThat(result).isEqualTo("Hello World!")
     }
 
     @ParameterizedTest
@@ -218,7 +227,8 @@ class CryptoRetryingExecutorsTests {
             }
             "Hello World!"
         }
-        assertEquals("Hello World!", result)
-        assertEquals(2, called)
+
+        assertThat(called).isEqualTo(2)
+        assertThat(result).isEqualTo("Hello World!")
     }
 }

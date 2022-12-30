@@ -21,27 +21,24 @@ class ConsensualLedgerTransactionImpl(
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroup.TIMESTAMP.ordinal).first()
         serializationService.deserialize(timeStampBytes)
     }
+
     override val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroup.SIGNATORIES.ordinal)
             .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
     }
+
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal)
             .map { serializationService.deserialize(it) }
     }
+
     override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
             .map { serializationService.deserialize(it) }
     }
-
-    override fun equals(other: Any?): Boolean {
-        return (other === this) || ((other is ConsensualLedgerTransactionImpl) && (other.wireTransaction == wireTransaction))
-    }
-
-    override fun hashCode(): Int = wireTransaction.hashCode()
 
     init{
         check(wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATES.ordinal].size ==
@@ -50,4 +47,16 @@ class ConsensualLedgerTransactionImpl(
             "The length of the output states and output state types component groups needs to be the same."
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        return (other === this) || ((other is ConsensualLedgerTransactionImpl) && (other.wireTransaction == wireTransaction))
+    }
+
+    override fun hashCode(): Int = wireTransaction.hashCode()
+
+    override fun toString(): String {
+        return "ConsensualLedgerTransactionImpl(id=$id, requiredSignatories=$requiredSignatories, wireTransaction=$wireTransaction)"
+    }
+
+
 }

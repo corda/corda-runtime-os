@@ -15,7 +15,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, Pair<Long, S>>,
     stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
-    partitionState: StateAndEventPartitionState<K, S>,
+    private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
 ) : StateAndEventConsumerRebalanceListener {
 
@@ -52,6 +52,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
                 mapFactory.createMap()
             }
         }
+
+        partitionState.dirty = true
     }
 
     /**
@@ -76,6 +78,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
                 mapFactory.destroyMap(partitionStates)
             }
         }
+
+        partitionState.dirty = true
     }
 
 

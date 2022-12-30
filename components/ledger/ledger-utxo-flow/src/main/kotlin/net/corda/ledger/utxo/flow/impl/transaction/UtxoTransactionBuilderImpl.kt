@@ -155,6 +155,10 @@ data class UtxoTransactionBuilderImpl(
         return tx
     }
 
+    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
+        return ContractStateAndEncumbranceTag(this, tag)
+    }
+
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         return this === other
@@ -179,7 +183,16 @@ data class UtxoTransactionBuilderImpl(
         outputStates,
     )
 
-    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
-        return ContractStateAndEncumbranceTag(this, tag)
+    override fun toString(): String {
+        return "UtxoTransactionBuilderImpl(" +
+                "notary=$notary, " +
+                "timeWindow=$timeWindow, " +
+                "attachments=$attachments, " +
+                "commands=$commands, " +
+                "signatories=$signatories, " +
+                "inputStateRefs=$inputStateRefs, " +
+                "referenceStateRefs=$referenceStateRefs, " +
+                "outputStates=$outputStates" +
+                ")"
     }
 }

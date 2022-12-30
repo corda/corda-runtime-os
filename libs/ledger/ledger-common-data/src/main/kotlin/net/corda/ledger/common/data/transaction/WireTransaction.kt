@@ -135,15 +135,23 @@ class WireTransaction(
 
         return (other.componentGroupLists.withIndex().all { i ->
             i.value.size == componentGroupLists[i.index].size &&
-                i.value.withIndex().all { j ->
-                    j.value contentEquals componentGroupLists[i.index][j.index]
-                }
-            })
+                    i.value.withIndex().all { j ->
+                        j.value contentEquals componentGroupLists[i.index][j.index]
+                    }
+        })
     }
 
     override fun hashCode(): Int = Objects.hash(privacySalt, componentGroupLists)
 
     override fun toString(): String {
-        return "WireTransaction(id=$id, privacySalt=$privacySalt, metadata=$metadata, componentGroupLists=$componentGroupLists)"
+        return "WireTransaction(" +
+                "id=$id, " +
+                "privacySalt=$privacySalt, " +
+                "metadata=$metadata, componentGroupLists=${
+                    componentGroupLists.map { group ->
+                        group.map { component -> "(size=${component.size}, sum=${component.sum()})" }
+                    }
+                }" +
+                ")"
     }
 }

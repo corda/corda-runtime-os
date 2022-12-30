@@ -243,6 +243,17 @@ class StateAndEventConsumerImplTest {
             .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
     }
 
+    @Test
+    fun `test repartition during poll returns false`() {
+        val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
+        val consumer = StateAndEventConsumerImpl(
+            config, eventConsumer, stateConsumer, StateAndEventPartitionState
+                (mutableMapOf(), mutableMapOf(), true), stateAndEventListener
+        )
+
+        assertThat(consumer.resetPollInterval()).isFalse
+    }
+
     private fun setupMocks(): Mocks {
         val listener: StateAndEventListener<String, String> = mock()
         val eventConsumer: CordaConsumer<String, String> = mock()
