@@ -37,6 +37,8 @@ class UtxoReceiveFinalityFlow(
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction, transactionId)
+            persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
             transaction
         } else {
@@ -114,9 +116,6 @@ class UtxoReceiveFinalityFlow(
             }.second
         }
 
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
-
         return transaction to Payload.Success(mySignatures)
     }
 
@@ -148,7 +147,6 @@ class UtxoReceiveFinalityFlow(
         return signedTransaction
     }
 
-    @Suspendable
     private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal, transactionId: SecureHash) {
         log.debug { "Verifying signatures of transaction: $transactionId" }
         transaction.verifySignatures()
