@@ -9,8 +9,6 @@ import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -26,8 +24,6 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -60,24 +56,6 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             )
         }.firstOrNull()?.let {
             serializationService.deserialize<SignedTransactionContainer>(it.array()).toSignedTransaction()
-        }
-    }
-
-    @Suspendable
-    @Suppress("UNCHECKED_CAST")
-    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
-        return wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                FindUnconsumedStatesByTypeExternalEventFactory::class.java,
-                FindUnconsumedStatesByTypeParameters(stateClass)
-            )
-        }.map {
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
-            )
         }
     }
 
@@ -128,7 +106,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     private fun SignedTransactionContainer.toSignedTransaction()
     : UtxoSignedTransaction {
-        return utxoSignedTransactionFactory.create(wireTransaction, signatures, this@UtxoLedgerPersistenceServiceImpl)
+        return utxoSignedTransactionFactory.create(wireTransaction, signatures)
     }
 
     private fun UtxoSignedTransaction.toContainer() =

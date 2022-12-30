@@ -14,6 +14,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -97,6 +98,37 @@ class UtxoRepositoryImpl(
             Tuple::class.java
         )
             .setParameter("groupIndices", groupIndices)
+            .resultListAsTuples()
+            .map { t ->
+                ComponentLeafDto(
+                    t[0] as String, // transactionId
+                    (t[1] as Number).toInt(), // groupIndex
+                    (t[2] as Number).toInt(), // leafIndex
+                    t[3] as ByteArray // data
+                )
+            }
+    }
+
+    override fun resolveStateRefs(
+        entityManager: EntityManager,
+        stateRefs: List<StateRef>,
+        groupIndices: List<Int>
+    ): List<ComponentLeafDto> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                WHERE tc.group_idx IN (:groupIndices) AND
+                tc.transaction_id in (:transactionIds) AND
+                (tc.transaction_id||':'|| tc.leaf_idx) in (:stateRefs)
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            Tuple::class.java
+        )
+            .setParameter("groupIndices", groupIndices)
+            .setParameter(
+                "transactionIds",
+                stateRefs.map { it.transactionHash.toString() })
+            .setParameter("stateRefs", stateRefs.map { it.toString() })
             .resultListAsTuples()
             .map { t ->
                 ComponentLeafDto(

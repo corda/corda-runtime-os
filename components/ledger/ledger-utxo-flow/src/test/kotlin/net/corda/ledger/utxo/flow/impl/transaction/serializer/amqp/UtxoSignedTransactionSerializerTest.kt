@@ -11,12 +11,10 @@ import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
 
@@ -45,14 +43,8 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
         val referenceStateAndRef = getUtxoInvalidStateAndRef()
         val referenceStateRef = referenceStateAndRef.ref
 
-        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
-        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
-
-        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
-        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
-        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
-            .thenReturn(mockSignedTxForInput)
-            .thenReturn(mockSignedTxForRef)
+        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
+            .thenReturn(listOf(inputStateAndRef))
 
         val signedTx = utxoTransactionBuilder
             .setNotary(utxoNotaryExample)

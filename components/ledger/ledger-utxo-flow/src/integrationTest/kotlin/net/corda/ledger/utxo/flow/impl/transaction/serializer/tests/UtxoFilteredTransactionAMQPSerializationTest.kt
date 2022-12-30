@@ -37,7 +37,6 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
-            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories
@@ -96,7 +95,6 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
-            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories
@@ -152,7 +150,6 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
-            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 emptyList(), // Notary
                 emptyList(), // Signatories

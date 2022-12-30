@@ -76,6 +76,7 @@ import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
+@Suppress("FunctionName")
 class UtxoPersistenceServiceImplTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -209,6 +210,35 @@ class UtxoPersistenceServiceImplTest {
         assertThat(transactionOutput.leafIndex).isEqualTo(1)
         assertThat(transactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
         assertThat(transactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+    }
+
+    @Test
+    fun `resolve staterefs`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transactions = listOf(
+            persistTransactionViaEntity(entityFactory),
+            persistTransactionViaEntity(entityFactory)
+        )
+
+        val stateRefs = listOf(
+            StateRef(transactions[0].id, 0),
+            StateRef(transactions[1].id, 1),
+        )
+        val stateAndRefs = persistenceService.resolveStateRefs(stateRefs)
+        assertThat(stateAndRefs).isNotNull
+        assertThat(stateAndRefs.size).isEqualTo(2)
+
+        for (i in 0..1) {
+            val state = stateAndRefs[i]
+            val transactionId = state[0].decodeToString()
+            assertThat(transactionId).isEqualTo(transactions[i].id.toString())
+            val leafIndex = state[1].decodeToString().toInt()
+            assertThat(leafIndex).isEqualTo(i)
+            val outputInfo = state[2]
+            assertThat(outputInfo).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
+            val output = state[3]
+            assertThat(output).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
+        }
     }
 
     @Test

@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
@@ -22,8 +22,8 @@ import org.osgi.service.component.annotations.ServiceScope
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = UtxoLedgerPersistenceService::class)
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    @Reference(service = UtxoLedgerStateQueryService::class)
+    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -31,24 +31,22 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         wireTransaction: WireTransaction
     ): UtxoLedgerTransaction {
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
-        val sourceTransactions =
+        val allStateRefs =
             (wrappedUtxoWireTransaction.inputStateRefs + wrappedUtxoWireTransaction.referenceStateRefs)
-                .map { it.transactionHash }
-                .toSet()
-                .associateWith { it ->
-                    utxoLedgerPersistenceService.find(it)?.outputStateAndRefs
-                        ?: throw (CordaRuntimeException("Could not find transaction $it when fetching input states."))
-                }
+                .distinct()
+
+        val stateRefsToStateAndRefs =
+            utxoLedgerStateQueryService.resolveStateRefs(allStateRefs).associateBy { it.ref }
         val inputStateAndRefs =
-            wrappedUtxoWireTransaction.inputStateRefs.map { it ->
-                sourceTransactions[it.transactionHash]?.get(it.index)
-                    ?: throw (CordaRuntimeException("Input state not found $it"))
+            wrappedUtxoWireTransaction.inputStateRefs.map {
+                stateRefsToStateAndRefs[it]
+                    ?: throw (CordaRuntimeException("Could not find StateRef $it when resolving input states."))
             }
 
         val referenceStateAndRefs =
-            wrappedUtxoWireTransaction.referenceStateRefs.map { it ->
-                sourceTransactions[it.transactionHash]?.get(it.index)
-                    ?: throw (CordaRuntimeException("Reference state not found $it"))
+            wrappedUtxoWireTransaction.referenceStateRefs.map {
+                stateRefsToStateAndRefs[it]
+                    ?: throw (CordaRuntimeException("Could not find StateRef $it when resolving reference states."))
             }
 
         return UtxoLedgerTransactionImpl(
