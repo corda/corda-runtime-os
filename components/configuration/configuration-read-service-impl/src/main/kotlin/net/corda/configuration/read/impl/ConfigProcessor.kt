@@ -75,6 +75,10 @@ internal class ConfigProcessor(
         return configCache[section]?.value
     }
 
+    fun getSmartConfig(section: String): SmartConfig? {
+        return get(section)?.toSmartConfig()
+    }
+
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
         val config = currentData.mapValues { config ->
             config.value.toSmartConfig().also { smartConfig ->

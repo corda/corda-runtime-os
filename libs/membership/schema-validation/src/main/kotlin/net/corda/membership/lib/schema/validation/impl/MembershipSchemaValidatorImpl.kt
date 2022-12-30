@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.uri.URIFetcher
+import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.p2p.TlsType
 import net.corda.membership.lib.schema.validation.MembershipSchemaFetchException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -31,7 +33,8 @@ class MembershipSchemaValidatorImpl(
     override fun validateGroupPolicy(
         schema: MembershipSchema.GroupPolicySchema,
         version: Version,
-        groupPolicy: String
+        groupPolicy: String,
+        configurationGetService: ((String) -> SmartConfig?)?,
     ) {
 
         val schemaInput = try {
@@ -49,7 +52,24 @@ class MembershipSchemaValidatorImpl(
             throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
         validateJson(schema, schemaInput, groupPolicyJson)
+
+        val groupPolicyTlsType = groupPolicyJson.get("p2pParameters")?.get("tlsType")?.asText()
+        if ((configurationGetService != null) && (groupPolicyTlsType != null)) {
+            // groupPolicyTlsType will be null for MGM group policies
+            val clusterTlsType = TlsType.getClusterType(configurationGetService)
+            if (groupPolicyTlsType != clusterTlsType.groupPolicyName) {
+                throw MembershipSchemaValidationException(
+                    VALIDATION_ERROR,
+                    null,
+                    schema,
+                    listOf(
+                        "Group policy TLS type must be the same as the cluster group policy",
+                    )
+                )
+            }
+        }
     }
+
 
     override fun validateRegistrationContext(
         schema: MembershipSchema.RegistrationContextSchema,

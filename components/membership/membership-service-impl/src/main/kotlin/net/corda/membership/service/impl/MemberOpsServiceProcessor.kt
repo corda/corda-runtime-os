@@ -1,6 +1,7 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -25,6 +26,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
@@ -38,6 +40,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.lib.p2p.TlsType
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -62,6 +65,7 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -239,6 +243,7 @@ class MemberOpsServiceProcessor(
             val sessionPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.SESSION_PKI_MODE)
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
+            val tlsType = TlsType.getClusterType(configurationGetService)
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)
@@ -263,7 +268,8 @@ class MemberOpsServiceProcessor(
                     SESSION_PKI to sessionPkiMode,
                     TLS_PKI to tlsPkiMode,
                     TLS_VERSION to tlsVersion,
-                    PROTOCOL_MODE to p2pMode
+                    PROTOCOL_MODE to p2pMode,
+                    TLS_TYPE to tlsType.groupPolicyName,
                 ).apply {
                     sessionTrustroots?.let {
                         put(SESSION_TRUST_ROOTS, it)

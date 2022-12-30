@@ -72,6 +72,10 @@ class ConfigurationReadServiceImpl @Activate constructor(
         return configProcessor.get(section)
     }
 
+    override fun invoke(section: String): SmartConfig? {
+        return configProcessor.getSmartConfig(section)
+    }
+
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 

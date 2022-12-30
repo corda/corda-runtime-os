@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -17,6 +18,7 @@ import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -25,6 +27,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
@@ -46,6 +49,7 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -148,12 +152,20 @@ class MemberOpsServiceProcessorTest {
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
     }
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "ONE_WAY"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { invoke(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+    }
 
     private var processor = MemberOpsServiceProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        configurationGetService,
         clock,
     )
 
@@ -251,6 +263,7 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"$MGM_INFO\"")
             it.assertThat(groupPolicy).contains("\"corda.groupId\":\"$MGM_GROUP_ID\"")
             it.assertThat(groupPolicy).contains("\"$CIPHER_SUITE\"")
+            it.assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"OneWay\"")
         }
     }
 

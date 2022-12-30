@@ -1,5 +1,6 @@
 package net.corda.membership.lib.schema.validation
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.versioning.Version
 
@@ -14,13 +15,16 @@ interface MembershipSchemaValidator {
      * @param schema the schema to validate against.
      * @param version the schema version to validate against.
      * @param groupPolicy the GroupPolicy as a JSON string.
+     * @param configurationGetService A service to get the cluster configuration. Set to null
+     * to skip the TLS type validation
      *
      * @throws MembershipSchemaValidationException if validation fails.
      */
     fun validateGroupPolicy(
         schema: MembershipSchema.GroupPolicySchema,
         version: Version,
-        groupPolicy: String
+        groupPolicy: String,
+        configurationGetService : ((String) -> SmartConfig?)?,
     )
 
     /**

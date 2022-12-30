@@ -61,6 +61,8 @@ class GroupPolicyConstants {
             const val TLS_VERSION = "tlsVersion"
 
             const val PROTOCOL_MODE = "protocolMode"
+
+            const val TLS_TYPE = "tlsType"
         }
     }
 
