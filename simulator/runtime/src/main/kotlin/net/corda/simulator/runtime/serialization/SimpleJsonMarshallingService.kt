@@ -59,9 +59,9 @@ class SimpleJsonMarshallingService(
             val node: JsonNode = p.codec.readTree(p)
             val clientRequestId = node.get("clientRequestId").asText()
             val flowClassName = node.get("flowClassName").asText()
-            val requestBody = node.get("requestBody").asText()
+            val requestData = node.get("requestData").asText()
 
-            return RPCRequestDataWrapper(clientRequestId, flowClassName, requestBody)
+            return RPCRequestDataWrapper(clientRequestId, flowClassName, requestData)
         }
 
     }

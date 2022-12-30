@@ -16,7 +16,7 @@ class RPCRequestDataWrapperFactoryTest {
           "httpStartFlow": {
             "clientRequestId": "r1",
             "flowClassName": "${HelloFlow::class.java.name}",
-            "requestBody":  "{ \"a\" : 6, \"b\" : 7 }"
+            "requestData":  "{ \"a\" : 6, \"b\" : 7 }"
           }
         }
         """.trimIndent()
