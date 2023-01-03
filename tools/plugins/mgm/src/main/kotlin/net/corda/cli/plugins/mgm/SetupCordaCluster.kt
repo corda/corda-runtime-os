@@ -108,7 +108,7 @@ class SetupCordaCluster : Runnable {
 
         helm(
             "install", "prereqs", "oci://corda-os-docker.software.r3.com/helm-charts/corda-dev",
-            "--set", "kafka.replicaCount=$kafkaReplicas,kafka.zookeeper.replicaCount=$zooKeeperReplicas",
+            "--set", "kafka.replicaCount=$kafkaReplicas,kafka.zookeeper.replicaCount=$zooKeeperReplicas,kafka.auth.clientProtocol=tls",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
 
