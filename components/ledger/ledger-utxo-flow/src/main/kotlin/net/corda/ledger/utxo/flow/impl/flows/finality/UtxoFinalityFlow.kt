@@ -53,7 +53,7 @@ class UtxoFinalityFlow(
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
         log.trace { "Finalisation of transaction $transactionId has been finished." }
-        return transaction
+        return notarizedTransaction
     }
 
     @Suspendable
@@ -177,7 +177,7 @@ class UtxoFinalityFlow(
         var notarizedTransaction = transaction
         notarySignatures.forEach { signature ->
             notarizedTransaction = try {
-                verifyAndAddNotarySignature(transaction, signature)
+                verifyAndAddNotarySignature(notarizedTransaction, signature)
             } catch (e: Exception) {
                 val message = e.message ?: "Notary signature verification failed."
                 flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())

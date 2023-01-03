@@ -98,7 +98,6 @@ class UtxoReceiveFinalityFlow(
         initialTransaction: UtxoSignedTransactionInternal,
         transactionId: SecureHash
     ): Pair<UtxoSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
-        var transaction = initialTransaction
         val myKeys = memberLookup.getMyLedgerKeys()
         // Which of our keys are required.
         val myExpectedSigningKeys = initialTransaction
@@ -109,6 +108,7 @@ class UtxoReceiveFinalityFlow(
             log.debug { "We are not required signer of $transactionId." }
         }
 
+        var transaction = initialTransaction
         val mySignatures = myExpectedSigningKeys.map { publicKey ->
             log.debug { "Signing transaction: $transactionId with $publicKey" }
             transaction.sign(publicKey).also {
@@ -136,12 +136,11 @@ class UtxoReceiveFinalityFlow(
     ): UtxoSignedTransactionInternal {
         log.debug { "Waiting for other parties' signatures for transaction: $transactionId" }
         val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
-
         var signedTransaction = transaction
         otherPartiesSignatures
             .filter { it !in transaction.signatures }
             .forEach {
-                signedTransaction = transaction.addSignature(it)
+                signedTransaction = signedTransaction.addSignature(it)
             }
 
         return signedTransaction
@@ -177,7 +176,7 @@ class UtxoReceiveFinalityFlow(
 
         var notarizedTransaction = transaction
         notarySignatures.forEach {
-            notarizedTransaction = verifyAndAddNotarySignature(transaction, it)
+            notarizedTransaction = verifyAndAddNotarySignature(notarizedTransaction, it)
         }
 
         return notarizedTransaction

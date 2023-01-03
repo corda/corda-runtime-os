@@ -101,7 +101,6 @@ class ConsensualReceiveFinalityFlow(
         initialTransaction: ConsensualSignedTransactionInternal,
         transactionId: SecureHash
     ): Pair<ConsensualSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
-        var transaction = initialTransaction
         val myKeys = memberLookup.myInfo()
             .ledgerKeys
             .toSet()
@@ -114,6 +113,7 @@ class ConsensualReceiveFinalityFlow(
             log.debug { "We are not required signer of $transactionId." }
         }
 
+        var transaction = initialTransaction
         val mySignatures = myExpectedSigningKeys.map { publicKey ->
             log.debug { "Signing transaction: $transactionId with $publicKey" }
             transaction.sign(publicKey).also {
