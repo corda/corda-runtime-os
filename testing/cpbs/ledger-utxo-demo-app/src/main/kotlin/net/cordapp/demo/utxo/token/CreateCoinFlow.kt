@@ -79,7 +79,7 @@ class CreateCoinFlow : RPCStartableFlow {
             }
 
             val notary = notaryLookup.notaryServices.first()
-            val notaryKey = memberLookup.lookup().first {
+            val notaryKey = memberLookup.lookup().single {
                 it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
             }.ledgerKeys.first()
 

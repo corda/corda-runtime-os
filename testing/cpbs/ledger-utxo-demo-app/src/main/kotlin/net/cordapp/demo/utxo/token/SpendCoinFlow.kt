@@ -35,7 +35,7 @@ class SpendCoinFlow : RPCStartableFlow {
         try {
             val spendRequest = requestBody.getRequestBodyAs<SpendCoinMessage>(jsonMarshallingService)
             val bankX500 = MemberX500Name.parse(spendRequest.issuerBankX500)
-            val notary = notaryLookup.notaryServices.first()
+            val notary = notaryLookup.notaryServices.single()
 
             val selectionCriteria = TokenClaimCriteria(
                 tokenType = CoinState.tokenType,
