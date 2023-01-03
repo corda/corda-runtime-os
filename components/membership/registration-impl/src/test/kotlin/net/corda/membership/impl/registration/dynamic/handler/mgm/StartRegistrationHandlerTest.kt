@@ -398,6 +398,20 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `declined if role is set to notary but notary keys are missing`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            null,
+            emptyList()
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
     fun `declined if role is set to notary and notary service plugin type is specified but blank`() {
         val notaryDetails = MemberNotaryDetails(
             x500Name,
