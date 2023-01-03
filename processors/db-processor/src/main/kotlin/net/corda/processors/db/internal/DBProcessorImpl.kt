@@ -7,6 +7,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.publish.ConfigPublishService
+import net.corda.cpi.persistence.CpiPersistence
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
@@ -111,6 +112,8 @@ class DBProcessorImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
+    @Reference(service = CpiPersistence::class)
+    private val cpiPersistence: CpiPersistence
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -157,6 +160,7 @@ class DBProcessorImpl @Activate constructor(
         ::membershipPersistenceService,
         ::groupParametersWriterService,
         ::groupParametersReaderService,
+        ::cpiPersistence,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
