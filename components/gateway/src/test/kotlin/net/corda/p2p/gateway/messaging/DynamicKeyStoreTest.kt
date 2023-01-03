@@ -1,6 +1,8 @@
 package net.corda.p2p.gateway.messaging
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.delegated.signing.DelegatedCertificateStore
+import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +16,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.v5.crypto.DigitalSignature
@@ -71,6 +74,10 @@ class DynamicKeyStoreTest {
         }
         whenever(mock.namedLifecycle).doReturn(mockNamedLifecycle)
     }
+    private val keyStoreWithPassword = mock<KeyStoreWithPassword>()
+    private val keyStoreFactory = mock<KeyStoreFactory> {
+        on { createDelegatedKeyStore() } doReturn keyStoreWithPassword
+    }
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private var futures: MutableList<CompletableFuture<Unit>> = mutableListOf()
     private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
@@ -83,14 +90,21 @@ class DynamicKeyStoreTest {
         "group"
     )
 
+    private var keyStoreCreationSigner: DelegatedSigner? = null
+    private var keyStoreCreationCertificatesStore: DelegatedCertificateStore? = null
+
     private val dynamicKeyStoreWithStubs = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithStubs,
         nodeConfiguration,
         SigningMode.STUB,
         cryptoOpsClient,
-        certificateFactory,
-    )
+        certificateFactory
+    ) { signer, certificatesStore ->
+        keyStoreCreationSigner = signer
+        keyStoreCreationCertificatesStore = certificatesStore
+        keyStoreFactory
+    }
 
     private val dynamicKeystoreWithoutStubs = DynamicKeyStore(
         lifecycleCoordinatorFactory,
@@ -98,8 +112,12 @@ class DynamicKeyStoreTest {
         nodeConfiguration,
         SigningMode.REAL,
         cryptoOpsClient,
-        certificateFactory
-    )
+        certificateFactory,
+    ) { signer, certificatesStore ->
+        keyStoreCreationSigner = signer
+        keyStoreCreationCertificatesStore = certificatesStore
+        keyStoreFactory
+    }
 
     @AfterEach
     fun cleanUp() {
@@ -329,11 +347,138 @@ class DynamicKeyStoreTest {
     inner class KeyStoreTest {
         @Test
         fun `keyStore creates a new keystore`() {
-            mockConstruction(KeyStoreFactory::class.java).use {
-                dynamicKeyStoreWithStubs.keyStore
+            dynamicKeyStoreWithStubs.keyStore
 
-                verify(it.constructed().first()).createDelegatedKeyStore()
+            verify(keyStoreFactory).createDelegatedKeyStore()
+        }
+    }
+
+    @Nested
+    inner class ClientKeyStoreTests {
+        private val certificates = (1..4).associate {
+            "certificate$it" to mock<PublicKey>()
+        }.mapValues { (_, key) ->
+            mock<Certificate> {
+                on { publicKey } doReturn key
             }
+        }
+
+        @BeforeEach
+        fun setUp() {
+            whenever(certificateFactory.generateCertificate(any())).doAnswer {
+                val inputStream = it.arguments[0] as InputStream
+                val name = inputStream.reader().readText()
+                certificates[name]
+            }
+            processorForKeystoreWithoutStubs.firstValue.onNext(
+                Record(
+                    GATEWAY_TLS_CERTIFICATES,
+                    "one",
+                    GatewayTlsCertificates("id", id, certificates.keys.toList()),
+                ),
+                null,
+                emptyMap()
+            )
+        }
+
+
+        @Test
+        fun `getClientKeyStore returns null if certificates are unknown`() {
+            assertThat(
+                dynamicKeystoreWithoutStubs.getClientKeyStore(
+                    HoldingIdentity(
+                        "another-name",
+                        "group"
+                    )
+                )
+            ).isNull()
+        }
+
+        @Test
+        fun `getClientKeyStore returns the correct key store when the correct ID is used`() {
+            assertThat(
+                dynamicKeystoreWithoutStubs.getClientKeyStore(
+                    id,
+                )
+            ).isSameAs(keyStoreWithPassword)
+        }
+
+        @Test
+        fun `getClientKeyStore uses the correct aliasToCertificates`() {
+            dynamicKeystoreWithoutStubs.getClientKeyStore(
+                id
+            )
+
+            assertThat(keyStoreCreationCertificatesStore?.aliasToCertificates)
+                .hasSize(1)
+                .allSatisfy { tenantId, certs ->
+                    assertThat(tenantId).isEqualTo("id")
+                    assertThat(certs).containsExactlyInAnyOrderElementsOf(certificates.values)
+                }
+        }
+
+        @Test
+        fun `getClientKeyStore throw exception when wrong public key is used`() {
+            dynamicKeystoreWithoutStubs.getClientKeyStore(
+                id
+            )
+
+            assertThrows<InvalidKeyException> {
+                keyStoreCreationSigner?.sign(
+                    mock(),
+                    mock(),
+                    "hello".toByteArray()
+                )
+            }
+        }
+
+        @Test
+        fun `getClientKeyStore sign the data when the correct public key is used`() {
+            val spec = mock<SignatureSpec>()
+            val data = "hello".toByteArray()
+            val returnedData = "ok".toByteArray()
+            val publicKey = certificates["certificate1"]?.publicKey!!
+            val signatureWithKey = DigitalSignature.WithKey(publicKey, returnedData, emptyMap())
+            whenever(
+                cryptoOpsClient.sign(
+                    "id",
+                    publicKey,
+                    spec,
+                    data,
+                    emptyMap(),
+                )
+            ).doReturn(signatureWithKey)
+
+            dynamicKeystoreWithoutStubs.getClientKeyStore(
+                id
+            )
+
+            assertThat(
+                keyStoreCreationSigner?.sign(
+                    publicKey,
+                    spec,
+                    data,
+                )
+            ).isEqualTo(returnedData)
+        }
+
+        @Test
+        fun `onNext will remove the client if the value is null`() {
+            processorForKeystoreWithoutStubs.firstValue.onNext(
+                Record(
+                    GATEWAY_TLS_CERTIFICATES,
+                    "one",
+                    null,
+                ),
+                GatewayTlsCertificates("id", id, certificates.keys.toList()),
+                emptyMap()
+            )
+
+            assertThat(
+                dynamicKeystoreWithoutStubs.getClientKeyStore(
+                    id,
+                )
+            ).isNull()
         }
     }
 }
