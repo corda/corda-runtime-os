@@ -32,28 +32,28 @@ class UtxoReceiveFinalityFlow(
     override fun call(): UtxoSignedTransaction {
         val initialTransaction = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
-        verifyExistingSignatures(initialTransaction, transactionId)
+        verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
-            val (transaction, payload) = signTransaction(initialTransaction, transactionId)
+            val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
             transaction
         } else {
-            persistInvalidTransaction(initialTransaction, transactionId)
+            persistInvalidTransaction(initialTransaction)
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
             )
             session.send(payload)
             throw CordaRuntimeException(payload.message)
         }
-        transaction = receiveSignaturesAndAddToTransaction(transaction, transactionId)
-        verifyAllReceivedSignatures(transaction, transactionId)
+        transaction = receiveSignaturesAndAddToTransaction(transaction)
+        verifyAllReceivedSignatures(transaction)
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-        transaction = receiveNotarySignaturesAndAddToTransaction(transaction, transactionId)
-        persistNotarizedTransaction(transaction, transactionId)
+        transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
+        persistNotarizedTransaction(transaction)
         return transaction
     }
 
@@ -66,12 +66,10 @@ class UtxoReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun verifyExistingSignatures(initialTransaction: UtxoSignedTransactionInternal, transactionId: SecureHash) {
+    private fun verifyExistingSignatures(initialTransaction: UtxoSignedTransactionInternal) {
         initialTransaction.signatures.forEach {
-            verifySignature(transactionId, it) { message ->
-                session.send(
-                    Payload.Failure<List<DigitalSignatureAndMetadata>>(message)
-                )
+            verifySignature(initialTransaction.id, it) { message ->
+                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             }
         }
     }
@@ -96,7 +94,6 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     private fun signTransaction(
         initialTransaction: UtxoSignedTransactionInternal,
-        transactionId: SecureHash
     ): Pair<UtxoSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
         val myKeys = memberLookup.getMyLedgerKeys()
         // Which of our keys are required.
@@ -105,12 +102,12 @@ class UtxoReceiveFinalityFlow(
             .intersect(myKeys)
 
         if (myExpectedSigningKeys.isEmpty()) {
-            log.debug { "We are not required signer of $transactionId." }
+            log.debug { "We are not required signer of ${initialTransaction.id}." }
         }
 
         var transaction = initialTransaction
         val mySignatures = myExpectedSigningKeys.map { publicKey ->
-            log.debug { "Signing transaction: $transactionId with $publicKey" }
+            log.debug { "Signing transaction: ${initialTransaction.id} with $publicKey" }
             transaction.sign(publicKey).also {
                 transaction = it.first
             }.second
@@ -120,21 +117,15 @@ class UtxoReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun persistInvalidTransaction(
-        initialTransaction: UtxoSignedTransactionInternal,
-        transactionId: SecureHash
-    ) {
-        log.warn("Failed to validate transaction: $transactionId")
-        persistenceService.persist(initialTransaction, TransactionStatus.INVALID)
-        log.debug { "Recorded transaction as invalid: $transactionId" }
+    private fun persistInvalidTransaction(transaction: UtxoSignedTransactionInternal) {
+        log.warn("Failed to validate transaction: ${transaction.id}")
+        persistenceService.persist(transaction, TransactionStatus.INVALID)
+        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
 
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(
-        transaction: UtxoSignedTransactionInternal,
-        transactionId: SecureHash
-    ): UtxoSignedTransactionInternal {
-        log.debug { "Waiting for other parties' signatures for transaction: $transactionId" }
+    private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
+        log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
         val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
         var signedTransaction = transaction
         otherPartiesSignatures
@@ -146,33 +137,30 @@ class UtxoReceiveFinalityFlow(
         return signedTransaction
     }
 
-    private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal, transactionId: SecureHash) {
-        log.debug { "Verifying signatures of transaction: $transactionId" }
+    private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal) {
+        log.debug { "Verifying signatures of transaction: ${transaction.id}" }
         transaction.verifySignatures()
     }
 
     @Suspendable
-    private fun receiveNotarySignaturesAndAddToTransaction(
-        transaction: UtxoSignedTransactionInternal,
-        transactionId: SecureHash
-    ): UtxoSignedTransactionInternal {
-        log.debug { "Waiting for Notary's signature for transaction: $transactionId" }
+    private fun receiveNotarySignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
+        log.debug { "Waiting for Notary's signature for transaction: ${transaction.id}" }
         val notarySignaturesPayload = session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
 
         val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
             val message = "Notarisation failed. Failure received from ${session.counterparty} for transaction " +
-                    "$transactionId with message: ${failure.message}"
+                    "${transaction.id} with message: ${failure.message}"
             log.warn(message)
             CordaRuntimeException(message)
         }
 
         if (notarySignatures.isEmpty()) {
-            val message = "No notary signature received for transaction: $transactionId"
+            val message = "No notary signature received for transaction: ${transaction.id}"
             log.warn(message)
             throw CordaRuntimeException(message)
 
         }
-        log.debug { "Verifying and adding notary signatures for transaction: $transactionId" }
+        log.debug { "Verifying and adding notary signatures for transaction: ${transaction.id}" }
 
         var notarizedTransaction = transaction
         notarySignatures.forEach {
@@ -183,9 +171,9 @@ class UtxoReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun persistNotarizedTransaction(notarizedTransaction: UtxoSignedTransactionInternal, transactionId: SecureHash) {
+    private fun persistNotarizedTransaction(notarizedTransaction: UtxoSignedTransactionInternal) {
         val relevantStatesIndexes = notarizedTransaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
         persistenceService.persist(notarizedTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
-        log.debug { "Recorded transaction with all parties' and the notary's signature $transactionId" }
+        log.debug { "Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}" }
     }
 }

@@ -51,9 +51,9 @@ class ConsensualReceiveFinalityFlow(
         // TODO [CORE-5982] Verify already added signatures.
          if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
-            val (transaction, payload) = signTransaction(initialTransaction, transactionId)
+            val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
+            log.debug { "Recorded transaction with the initial and our signatures: ${transaction.id}" }
             session.send(payload)
         } else {
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
@@ -69,7 +69,7 @@ class ConsensualReceiveFinalityFlow(
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction $transactionId" }
 
-        acknowledgeFinalizedTransaction(transactionId)
+        acknowledgeFinalizedTransaction(transaction)
 
         return transaction
     }
@@ -99,7 +99,6 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun signTransaction(
         initialTransaction: ConsensualSignedTransactionInternal,
-        transactionId: SecureHash
     ): Pair<ConsensualSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
         val myKeys = memberLookup.myInfo()
             .ledgerKeys
@@ -110,12 +109,12 @@ class ConsensualReceiveFinalityFlow(
             .intersect(myKeys)
 
         if (myExpectedSigningKeys.isEmpty()) {
-            log.debug { "We are not required signer of $transactionId." }
+            log.debug { "We are not required signer of ${initialTransaction.id}." }
         }
 
         var transaction = initialTransaction
         val mySignatures = myExpectedSigningKeys.map { publicKey ->
-            log.debug { "Signing transaction: $transactionId with $publicKey" }
+            log.debug { "Signing transaction: ${transaction.id} with $publicKey" }
             transaction.sign(publicKey).also {
                 transaction = it.first
             }.second
@@ -127,7 +126,6 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun receiveFinalizedTransaction(transactionId: SecureHash): ConsensualSignedTransactionInternal {
         val transaction = session.receive<ConsensualSignedTransactionInternal>()
-
         // A [require] block isn't the correct option if we want to do something with the error on the peer side
         require(transaction.id == transactionId) {
             "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
@@ -138,8 +136,8 @@ class ConsensualReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun acknowledgeFinalizedTransaction(transactionId: SecureHash) {
+    private fun acknowledgeFinalizedTransaction(transaction: ConsensualSignedTransactionInternal) {
         session.send(Unit)
-        log.trace { "Sent acknowledgement to initiator of finality for signed transaction $transactionId" }
+        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${transaction.id}" }
     }
 }
