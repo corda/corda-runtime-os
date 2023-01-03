@@ -56,7 +56,7 @@ class ConsolePrinterTest {
     fun `when printLine just print`() {
         val printer = ConsolePrinter(this::mockPrinter)
 
-        printer.printLine("hello world")
+        printer.println("hello world")
 
         assertThat(printed).contains("hello world")
     }

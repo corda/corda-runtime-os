@@ -193,19 +193,8 @@ final class OSGiFrameworkMain {
      * we can install them here.
      */
     private static Path getDbDriverDirectory(String[] args) {
-        final List<String> jdbcValues = Arrays.stream(args)
-            .filter(a -> a.contains("database.jdbc.directory="))
-            .collect(toUnmodifiableList());
-
-        if (!jdbcValues.isEmpty()) {
-            final String jdbcValue = jdbcValues.get(0);
-            if (jdbcValue.indexOf('=') != -1) {
-                final String path = jdbcValue.split("=", 2)[1];
-                return Paths.get(path);
-            }
-        }
-
-        return Paths.get(DEFAULT_JDBC_DRIVER_DIRECTORY);
+        final Path path = getPathFromCmdArgs(args, "database.jdbc.directory");
+        return null != path ? path : Paths.get(DEFAULT_JDBC_DRIVER_DIRECTORY);
     }
 
     /**
@@ -216,18 +205,23 @@ final class OSGiFrameworkMain {
      * we can install them here.
      */
     private static Path getAddonDirectory(String[] args) {
-        final List<String> jdbcValues = Arrays.stream(args)
-            .filter(a -> a.contains("addon.directory="))
-            .collect(toUnmodifiableList());
+        final Path path = getPathFromCmdArgs(args, "addon.directory");
+        return null != path ? path : Paths.get(DEFAULT_ADDON_DIRECTORY);
+    }
 
-        if (!jdbcValues.isEmpty()) {
-            final String jdbcValue = jdbcValues.get(0);
-            if (jdbcValue.indexOf('=') != -1) {
-                final String path = jdbcValue.split("=", 2)[1];
+    private static Path getPathFromCmdArgs(String[] args, String argName) {
+        final List<String> values = Arrays.stream(args)
+                .filter(a -> a.contains(argName + "="))
+                .collect(toUnmodifiableList());
+
+        if (!values.isEmpty()) {
+            final String arg = values.get(0);
+            if (arg.indexOf('=') != -1) {
+                final String path = arg.split("=", 2)[1];
                 return Paths.get(path);
             }
         }
 
-        return Paths.get(DEFAULT_ADDON_DIRECTORY);
+        return null;
     }
 }

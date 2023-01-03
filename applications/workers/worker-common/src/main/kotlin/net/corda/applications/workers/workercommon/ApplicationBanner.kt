@@ -30,7 +30,7 @@ class ApplicationBanner(
     }
 
     fun show(name: String, platformInfoProvider: PlatformInfoProvider) {
-        consolePrinter.printLine(
+        consolePrinter.println(
             startupBanner.get(name, platformInfoProvider.localWorkerSoftwareVersion))
         if(addons.isEmpty()) return
 
@@ -41,7 +41,7 @@ class ApplicationBanner(
             consolePrinter.printEmptyLine()
             consolePrinter.printPaddedLine("${it.name} (${it.version})")
             consolePrinter.printLeftPad("${it.description}")
-            println()
+            consolePrinter.println()
             consolePrinter.printLeftPad("${it.vendor}")
             consolePrinter.printLeftPad("${it.licence}")
         }
