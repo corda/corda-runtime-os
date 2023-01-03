@@ -53,7 +53,7 @@ class ConsensualReceiveFinalityFlow(
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.debug { "Recorded transaction with the initial and our signatures: ${transaction.id}" }
+            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
         } else {
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
