@@ -120,18 +120,4 @@ interface UtxoLedgerService {
         session: FlowSession,
         validator: UtxoTransactionValidator
     ): UtxoSignedTransaction
-
-    // TODO CORE-7327 Add verify(signedTx) verify(ledgerTx)
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    fun persistTransaction(signedTransaction: UtxoSignedTransaction)
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    fun resolveBackchain(signedTransaction: UtxoSignedTransaction, session: FlowSession)
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    fun sendBackchain(session: FlowSession)
 }
