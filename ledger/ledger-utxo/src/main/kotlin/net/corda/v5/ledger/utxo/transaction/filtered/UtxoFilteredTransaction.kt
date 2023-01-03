@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.utxo.transaction.filtered
 
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -39,7 +39,7 @@ interface UtxoFilteredTransaction {
     val id: SecureHash
 
     /**
-     * @property metadata the metadata for this transaction
+     * @property metadata The metadata for this transaction
      */
     val metadata: TransactionMetadata
 
@@ -70,8 +70,7 @@ interface UtxoFilteredTransaction {
 
     /**
      * @property outputStateAndRefs Potentially filtered list of outputs
-     * @throws FilteredDataInconsistencyException Throws if the output states and state type information
-     * have been filtered inconsistently
+     * @throws FilteredDataInconsistencyException If the output states and state type information have been filtered inconsistently
      */
     val outputStateAndRefs: UtxoFilteredData<StateAndRef<*>>
 
@@ -83,7 +82,7 @@ interface UtxoFilteredTransaction {
     /**
      * Verifies the current [UtxoFilteredTransaction].
      *
-     * @throws TransactionVerificationException if the current [UtxoFilteredTransaction] fails to verify correctly.
+     * @throws CordaRuntimeException If the current [UtxoFilteredTransaction] fails to verify correctly.
      */
     fun verify()
 }

@@ -8,5 +8,5 @@ import net.corda.v5.crypto.SecureHash
  *
  * @property txId the Merkle root hash (identifier) of the transaction that failed verification.
  */
-class TransactionVerificationException(val txId: SecureHash, message: String, cause: Throwable?)
-    : CordaRuntimeException("$message, transaction: $txId", cause)
+open class TransactionVerificationException(val txId: SecureHash, message: String, cause: Throwable?)
+    : CordaRuntimeException(message, cause)

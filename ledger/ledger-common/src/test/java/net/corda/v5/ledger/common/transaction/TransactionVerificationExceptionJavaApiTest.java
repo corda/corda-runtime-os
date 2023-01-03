@@ -24,7 +24,7 @@ public class TransactionVerificationExceptionJavaApiTest {
         String result = transactionVerificationException.getMessage();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo("testMessage, transaction: SHA-256:313233");
+        Assertions.assertThat(result).isEqualTo("testMessage");
     }
 
     @Test
