@@ -16,6 +16,7 @@ import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -108,6 +109,7 @@ class TlsCertificatesPublisherTest {
                         "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
                         GatewayTlsCertificates(
                             "id1",
+                            identityInfo.holdingIdentity.toAvro(),
                             listOf("one", "two"),
                         )
                     )
@@ -156,9 +158,9 @@ class TlsCertificatesPublisherTest {
 
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
-                    GatewayTlsCertificates("id1", identityInfo.tlsCertificates))),
+                    GatewayTlsCertificates("id1", identityInfo.holdingIdentity.toAvro(), identityInfo.tlsCertificates))),
                 listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
-                    GatewayTlsCertificates("id1", certificatesTwo))),
+                    GatewayTlsCertificates("id1", identityInfo.holdingIdentity.toAvro(), certificatesTwo))),
             )
         }
 
@@ -232,6 +234,7 @@ class TlsCertificatesPublisherTest {
                 mapOf(
                     "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}" to GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
+                        identityInfo.holdingIdentity.toAvro(),
                         identityInfo.tlsCertificates,
                     )
                 )
@@ -248,6 +251,7 @@ class TlsCertificatesPublisherTest {
                 mapOf(
                     "Group1-Alice" to GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
+                        identityInfo.holdingIdentity.toAvro(),
                         identityInfo.tlsCertificates,
                     )
                 )
@@ -276,6 +280,7 @@ class TlsCertificatesPublisherTest {
                     "Group1-Alice",
                     GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
+                        identityInfo.holdingIdentity.toAvro(),
                         identityInfo.tlsCertificates,
                     )
                 ),

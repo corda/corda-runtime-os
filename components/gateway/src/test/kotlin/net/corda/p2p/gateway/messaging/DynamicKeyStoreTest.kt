@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -77,6 +78,10 @@ class DynamicKeyStoreTest {
         futures.add(context.arguments()[2] as CompletableFuture<Unit>)
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
+    private val id = HoldingIdentity(
+        "name",
+        "group"
+    )
 
     private val dynamicKeyStoreWithStubs = DynamicKeyStore(
         lifecycleCoordinatorFactory,
@@ -144,7 +149,7 @@ class DynamicKeyStoreTest {
         fun `onSnapshot save the correct data`() {
             processorForKeystoreWithStubs.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList())
                 )
             )
 
@@ -155,7 +160,7 @@ class DynamicKeyStoreTest {
         fun `onNext remove data with null value`() {
             processorForKeystoreWithStubs.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList())
                 )
             )
 
@@ -178,7 +183,7 @@ class DynamicKeyStoreTest {
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
-                    GatewayTlsCertificates("id", certificates.keys.toList()),
+                    GatewayTlsCertificates("id", id, certificates.keys.toList()),
                 ),
                 null,
                 emptyMap()
@@ -222,10 +227,12 @@ class DynamicKeyStoreTest {
                     mapOf(
                         "one" to GatewayTlsCertificates(
                             tenantIdOne,
+                            id,
                             listOf("1")
                         ),
                         "three" to GatewayTlsCertificates(
                             tenantIdOne,
+                            id,
                             listOf("3")
                         ),
                     )
@@ -304,6 +311,7 @@ class DynamicKeyStoreTest {
                     "one",
                     GatewayTlsCertificates(
                         tenantIdTwo,
+                        id,
                         listOf("2")
                     ),
                 ),

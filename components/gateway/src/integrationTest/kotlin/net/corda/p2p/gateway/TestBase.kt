@@ -49,6 +49,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.p2p.gateway.messaging.TlsType
@@ -223,7 +224,11 @@ open class TestBase {
         }
     }
 
-    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
+    protected fun publishKeyStoreCertificatesAndKeys(
+        publisher: Publisher,
+        keyStoreWithPassword: KeyStoreWithPassword,
+        holdingIdentity: HoldingIdentity,
+    ) {
         val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
             val tenantId = "tenantId"
             val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
@@ -239,7 +244,11 @@ open class TestBase {
             val certificateRecord = Record(
                 Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                 name,
-                GatewayTlsCertificates(tenantId, pems)
+                GatewayTlsCertificates(
+                    tenantId,
+                    holdingIdentity,
+                    pems,
+                )
             )
             val privateKey = keyStoreWithPassword
                 .keyStore
