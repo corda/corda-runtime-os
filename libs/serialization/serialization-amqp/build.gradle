@@ -4,6 +4,7 @@ plugins {
     id 'corda.osgi-test-conventions'
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.javadoc-generation'
 }
 
 
