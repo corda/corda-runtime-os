@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.exceptions.NoRegisteredResponderException
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.flows.FlowContextProperties
@@ -90,7 +91,12 @@ class ConcurrentFlowMessaging(
             }?:
             copyFlowContextProperties(contextProperties)
 
-        injector.injectServices(responderFlow, x500Name, fiber, updatedContextProperties)
+        injector.injectServices(
+            FlowAndProtocol(responderFlow, protocol),
+            x500Name,
+            fiber,
+            updatedContextProperties
+        )
 
         val sessions = sessionFactory.createSessions(x500Name, flowContext,
             flowContextProperties = updatedContextProperties as SimFlowContextProperties)

@@ -70,7 +70,7 @@ class SimulatedCordaNetworkBaseTest {
         corda.createInstanceNode(member, "ping-ack", responder)
 
         // Then it should have registered the responder with the fiber
-        verify(fiber, times(1)).registerFlowInstance(member,"ping-ack", responder)
+        verify(fiber, times(1)).registerResponderInstance(member,"ping-ack", responder)
     }
 
     @Test

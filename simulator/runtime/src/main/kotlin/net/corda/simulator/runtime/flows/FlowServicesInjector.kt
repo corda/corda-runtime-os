@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.messaging.SimFiber
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.base.types.MemberX500Name
 
@@ -16,7 +15,7 @@ interface FlowServicesInjector {
      * @param contextProperties The [FlowContextProperties] for the flow.
      */
     fun injectServices(
-        flow: Flow,
+        flowAndProtocol: FlowAndProtocol,
         member: MemberX500Name,
         fiber: SimFiber,
         contextProperties: FlowContextProperties

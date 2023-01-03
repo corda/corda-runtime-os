@@ -50,11 +50,13 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
      * @param flowFactory A factory for constructing flows.
      */
     override fun injectServices(
-        flow: Flow,
+        flowAndProtocol: FlowAndProtocol,
         member: MemberX500Name,
         fiber: SimFiber,
         contextProperties: FlowContextProperties
     ) {
+        val flow = flowAndProtocol.flow
+
         log.info("Injecting services into ${flow.javaClass} for \"$member\"")
         checkAPIAvailability(flow, configuration)
         
@@ -68,7 +70,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
             userContextProperties = flowEngine.flowContextProperties
         }
         doInject(member, flow, FlowMessaging::class.java) {
-            createFlowMessaging(configuration, flow, member, fiber, userContextProperties)
+            createFlowMessaging(configuration, flowAndProtocol, member, fiber, userContextProperties)
         }
         doInject(member, flow, MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
         doInject(member, flow, SigningService::class.java) {
@@ -174,7 +176,7 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
 
     private fun createFlowMessaging(
         configuration: SimulatorConfiguration,
-        flow: Flow,
+        flow: FlowAndProtocol,
         member: MemberX500Name,
         fiber: SimFiber,
         contextProperties: FlowContextProperties
