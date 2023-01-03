@@ -11,9 +11,10 @@ import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.endpoints.v1.types.MGMVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.KeysRpcOps
@@ -147,6 +148,27 @@ fun E2eCluster.createVirtualNode(
                 VirtualNodeRequest(
                     x500Name = member.name,
                     cpiFileChecksum = cpiCheckSum,
+                    vaultDdlConnection = null,
+                    vaultDmlConnection = null,
+                    cryptoDdlConnection = null,
+                    cryptoDmlConnection = null,
+                    uniquenessDdlConnection = null,
+                    uniquenessDmlConnection = null
+                )
+            ).holdingIdentity.shortHash.also {
+                member.holdingId = it
+            }
+        }
+}
+
+fun E2eCluster.createMgmVirtualNode(
+    member: E2eClusterMember
+) {
+    clusterHttpClientFor(VirtualNodeRPCOps::class.java)
+        .use { client ->
+            client.start().proxy.createMgmVirtualNode(
+                MGMVirtualNodeRequest(
+                    x500Name = member.name,
                     vaultDdlConnection = null,
                     vaultDmlConnection = null,
                     cryptoDdlConnection = null,
@@ -355,11 +377,9 @@ fun E2eCluster.onboardMembers(
 }
 
 fun E2eCluster.onboardMgm(
-    mgm: E2eClusterMember,
-    tempDir: Path
+    mgm: E2eClusterMember
 ) {
-    val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
-    createVirtualNode(mgm, cpiChecksum)
+    createMgmVirtualNode(mgm)
     assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
     assignSoftHsm(mgm.holdingId, HSM_CAT_PRE_AUTH)
 

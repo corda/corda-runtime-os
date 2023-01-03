@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.cpi.persistence.CpiPersistence
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -95,6 +96,7 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val cpiPersistence: CpiPersistence,
+    private val cpiInfoWriteService: CpiInfoWriteService,
     private val clock: Clock,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
@@ -122,10 +124,6 @@ internal class VirtualNodeWriterProcessor(
                     MessageDigest.getInstance(this).digest(groupPolicy.toByteArray())
                 )
             }
-
-        private fun getMgmCpiShortHash(groupPolicy: String = mgmGroupPolicy) = ShortHash.of(
-            getMgmCpiSecureHash(groupPolicy)
-        ).value
     }
 
     private fun VirtualNodeCreateRequest.isMgmCpiRequest(): Boolean {
@@ -191,6 +189,7 @@ internal class VirtualNodeWriterProcessor(
                         "CREATE_ID",
                         emptyList()
                     )
+                    cpiInfoWriteService.put(mgmCpiMetadata.cpiId, mgmCpiMetadata)
                 }
             }
 

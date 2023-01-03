@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.cpi.persistence.CpiPersistence
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.SecureHash
@@ -209,6 +210,7 @@ class VirtualNodeWriterProcessorTests {
     }
 
     private val cpiPersistence: CpiPersistence = mock()
+    private val cpiInfoWriteService: CpiInfoWriteService = mock()
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn "1234".toByteArray()
@@ -254,6 +256,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -280,6 +283,7 @@ class VirtualNodeWriterProcessorTests {
                     vNodeFactory,
                     groupPolicyParser,
                     cpiPersistence,
+                    cpiInfoWriteService,
                     clock,
                     getChangelogs = { _, _ -> listOf(changeLog) },
                     holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -310,6 +314,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -360,6 +365,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -413,6 +419,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -462,6 +469,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -487,6 +495,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -516,6 +525,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -696,6 +706,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -733,6 +744,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
@@ -768,6 +780,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             cpiPersistence,
+            cpiInfoWriteService,
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepository,
@@ -784,21 +797,5 @@ class VirtualNodeWriterProcessorTests {
                 "New holding identity $holdingIdentity has a short hash that collided with existing holding identity"
             )
         )
-
-        fun getAny(): Any { return 1}
-        fun doIntThing(y: Int) {}
-        fun doStringThing(y: String) {}
-        fun doThing(y: Any) {}
-
-        val x: Any = getAny()
-        when(x) {
-            is Int -> doIntThing(x)
-            is String -> doStringThing(x)
-            else -> doThing(x)
-        }
-
-        if(x is Int) {
-            doIntThing(x)
-        }
     }
 }

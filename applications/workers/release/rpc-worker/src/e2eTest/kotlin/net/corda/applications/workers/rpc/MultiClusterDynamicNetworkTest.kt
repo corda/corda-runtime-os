@@ -71,7 +71,7 @@ class MultiClusterDynamicNetworkTest {
         val mgm = clusterC.members[0]
 
         clusterC.disableCLRChecks()
-        clusterC.onboardMgm(mgm, tempDir)
+        clusterC.onboardMgm(mgm)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 

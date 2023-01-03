@@ -57,7 +57,7 @@ class SingleClusterDynamicNetworkTest {
      * Onboard group and return group ID
      */
     private fun onboardSingleClusterGroup(): String {
-        cordaCluster.onboardMgm(mgm, tempDir)
+        cordaCluster.onboardMgm(mgm)
 
         val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgm.holdingId)
 
