@@ -38,6 +38,7 @@ class UtxoFinalityFlow(
     @CordaInject
     lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
 
+    @Suppress("ComplexMethod")
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
