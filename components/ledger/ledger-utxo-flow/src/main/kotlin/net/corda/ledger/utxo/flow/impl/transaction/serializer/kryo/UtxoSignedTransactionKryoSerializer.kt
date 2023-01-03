@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
@@ -26,7 +27,9 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serialisationService: SerializationService,
     @Reference(service = TransactionSignatureService::class)
-    private val transactionSignatureService: TransactionSignatureService
+    private val transactionSignatureService: TransactionSignatureService,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 ) : CheckpointInternalCustomSerializer<UtxoSignedTransactionInternal>, UsedByFlow {
     override val type: Class<UtxoSignedTransactionInternal> get() = UtxoSignedTransactionInternal::class.java
 
@@ -41,6 +44,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
         return UtxoSignedTransactionImpl(
             serialisationService,
             transactionSignatureService,
+            utxoLedgerTransactionFactory,
             wireTransaction,
             signatures
         )

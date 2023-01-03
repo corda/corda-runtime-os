@@ -302,9 +302,9 @@ class NonValidatingNotaryServerFlowImplTest {
                     ?: mockStateRefUtxoFilteredData
             }
 
-            on { referenceInputStateRefs } doAnswer {
+            on { referenceStateRefs } doAnswer {
                 @Suppress("unchecked_cast")
-                filteredTxContents["referenceInputStateRefs"] as? UtxoFilteredData<StateRef>
+                filteredTxContents["referenceStateRefs"] as? UtxoFilteredData<StateRef>
                     ?: mockStateAndRefUtxoFilteredData
             }
             on { outputStateAndRefs } doAnswer {

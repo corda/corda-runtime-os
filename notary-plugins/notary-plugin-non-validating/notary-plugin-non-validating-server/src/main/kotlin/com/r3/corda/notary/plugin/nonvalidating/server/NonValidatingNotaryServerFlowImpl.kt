@@ -164,8 +164,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Could not fetch input states from the filtered transaction"
         }
 
-        val refStates = filteredTx.referenceInputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
-            "Could not fetch reference input states from the filtered transaction"
+        val refStates = filteredTx.referenceStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
+            "Could not fetch reference states from the filtered transaction"
         }
 
         val outputStates = filteredTx.outputStateAndRefs.castOrThrow<UtxoFilteredData.SizeOnly<StateAndRef<*>>> {
@@ -176,8 +176,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             filteredTx.id,
             outputStates.size,
             filteredTx.timeWindow!!,
-            inputStates.values.values,
-            refStates.values.values,
+            inputStates.values.values.toList(),
+            refStates.values.values.toList(),
             filteredTx.notary!!
         )
     }

@@ -100,6 +100,14 @@ allprojects {
             }
         }
     }
+    
+    if (project.hasProperty('generateJavaDocWithBuild')) {
+        pluginManager.withPlugin('corda.javadoc-generation') {
+            artifacts {
+                archives javadocJar
+            }
+        }
+    }
 
     tasks.register('compileAll') { task ->
         description = "Compiles all the Kotlin and Java classes, including all of the test classes."

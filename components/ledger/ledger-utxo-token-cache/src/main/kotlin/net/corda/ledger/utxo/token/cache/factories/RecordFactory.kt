@@ -45,14 +45,14 @@ interface RecordFactory {
     /**
      * Creates a [Record] to acknowledge the release of a claim
      *
-     * @param flowId The unique identifier of the flow that requested the claim
-     * @param claimId The unique ID of the claim that was released
+     * @param flowId The unique identifier of the flow that requested the claim release
+     * @param externalEventRequestId The unique ID of the flow request event of the claim release
 
      * @return A [FlowEvent] response record for the release acknowledgement
      */
     fun getClaimReleaseAck(
         flowId: String,
-        claimId: String
+        externalEventRequestId: String
     ): Record<String, FlowEvent>
 }
 

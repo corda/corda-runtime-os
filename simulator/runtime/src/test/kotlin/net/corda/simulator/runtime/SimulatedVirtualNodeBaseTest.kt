@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime
 
 import net.corda.simulator.factories.RequestDataFactory
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowManager
 import net.corda.simulator.runtime.flows.FlowServicesInjector
@@ -67,8 +68,12 @@ class SimulatedVirtualNodeBaseTest {
         virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(eq(flow), eq(holdingId.member), eq(fiber),
-            eq(contextProperties))
+        verify(injector, times(1)).injectServices(
+            eq(FlowAndProtocol(flow, null)),
+            eq(holdingId.member),
+            eq(fiber),
+            eq(contextProperties)
+        )
 
         // And the flow should have been called
         verify(flowManager, times(1)).call(

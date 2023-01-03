@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -23,6 +23,7 @@ import java.util.Objects
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransactionInternal {
@@ -44,7 +45,7 @@ data class UtxoSignedTransactionImpl(
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() = wrappedWireTransaction.outputStateAndRefs
     override val referenceStateRefs: List<StateRef>
-        get() = wrappedWireTransaction.referenceInputStateRefs
+        get() = wrappedWireTransaction.referenceStateRefs
     override val timeWindow: TimeWindow
         get() = wrappedWireTransaction.timeWindow
     override val signatories: List<PublicKey>
@@ -59,6 +60,7 @@ data class UtxoSignedTransactionImpl(
             UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureService,
+                utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignature
             ),
@@ -67,7 +69,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
-        UtxoSignedTransactionImpl(serializationService, transactionSignatureService,
+        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
             wireTransaction, signatures + signature)
 
     @Suspendable
@@ -84,8 +86,7 @@ data class UtxoSignedTransactionImpl(
                 false
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = toLedgerTransaction().signatories
-        return requiredSignatories.filter {
+        return signatories.filter {
             !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
         }.toSet()
     }
@@ -103,15 +104,16 @@ data class UtxoSignedTransactionImpl(
                 )
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = this.toLedgerTransaction().signatories
-        if (requiredSignatories.any {
+        if (signatories.any {
                 !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-            }){
+            })
+        {
             throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
+    @Suspendable
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
-        return UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+        return utxoLedgerTransactionFactory.create(wireTransaction)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -130,6 +132,5 @@ data class UtxoSignedTransactionImpl(
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
     }
-
 
 }

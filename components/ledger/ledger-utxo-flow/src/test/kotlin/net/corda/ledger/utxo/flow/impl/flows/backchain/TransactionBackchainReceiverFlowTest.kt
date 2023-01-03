@@ -7,11 +7,9 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -44,17 +42,6 @@ class TransactionBackchainReceiverFlowTest {
     private val retrievedTransaction2 = mock<UtxoSignedTransaction>()
     private val retrievedTransaction3 = mock<UtxoSignedTransaction>()
 
-    private val ledgerTransaction1 = mock<UtxoLedgerTransaction>()
-    private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
-    private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
-
-    @BeforeEach
-    fun beforeEach() {
-        whenever(retrievedTransaction1.toLedgerTransaction()).thenReturn(ledgerTransaction1)
-        whenever(retrievedTransaction2.toLedgerTransaction()).thenReturn(ledgerTransaction2)
-        whenever(retrievedTransaction3.toLedgerTransaction()).thenReturn(ledgerTransaction3)
-    }
-
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
         whenever(utxoLedgerPersistenceService.find(any(), any())).thenReturn(null)
@@ -69,16 +56,16 @@ class TransactionBackchainReceiverFlowTest {
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
-        whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_2))
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2))
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_2))
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2))
 
         whenever(retrievedTransaction3.id).thenReturn(TX_ID_3)
-        whenever(ledgerTransaction3.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction3.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction3.referenceStateRefs).thenReturn(emptyList())
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_3, TX_ID_2, TX_ID_1))
 
@@ -113,16 +100,16 @@ class TransactionBackchainReceiverFlowTest {
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
-        whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_2))
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2))
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_2))
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2))
 
         whenever(retrievedTransaction3.id).thenReturn(TX_ID_3)
-        whenever(ledgerTransaction3.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction3.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction3.referenceStateRefs).thenReturn(emptyList())
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_3, TX_ID_2, TX_ID_1))
 
@@ -150,12 +137,12 @@ class TransactionBackchainReceiverFlowTest {
             .thenReturn(TransactionExistenceStatus.VERIFIED to listOf(PACKAGE_SUMMARY))
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
-        whenever(ledgerTransaction2.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_2))
 
@@ -180,8 +167,8 @@ class TransactionBackchainReceiverFlowTest {
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
 
