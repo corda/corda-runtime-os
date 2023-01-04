@@ -130,17 +130,17 @@ class ConsensualFinalityFlow(
     }
 
     @Suspendable
-    private fun persistTransactionWithCounterpartySignatures(fullySignedTransaction: ConsensualSignedTransactionInternal) {
-        persistenceService.persist(fullySignedTransaction, TransactionStatus.VERIFIED)
+    private fun persistTransactionWithCounterpartySignatures(transaction: ConsensualSignedTransactionInternal) {
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded transaction $transactionId" }
     }
 
     @Suspendable
-    private fun sendFullySignedTransactionToCounterparties(fullySignedTransaction: ConsensualSignedTransactionInternal) {
+    private fun sendFullySignedTransactionToCounterparties(transaction: ConsensualSignedTransactionInternal) {
         // TODO Consider removing
         for (session in sessions) {
             // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            session.send(fullySignedTransaction)
+            session.send(transaction)
             // Do we want a situation where a boolean can be received to execute some sort of failure logic?
             // Or would that always be covered by an exception as it always indicates something wrong occurred.
             // Returning a context map might be appropriate in case we want to do any sort of handling in the future
