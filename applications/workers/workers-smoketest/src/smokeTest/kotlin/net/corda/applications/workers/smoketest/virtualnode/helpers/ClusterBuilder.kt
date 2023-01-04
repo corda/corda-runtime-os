@@ -117,6 +117,9 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
+    /** List all virtual nodes */
+    fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/v1/virtualnode/$holdingIdentityShortHash")
+
     /**
      * Register a member to the network
      */

@@ -314,6 +314,23 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(61)
+    fun `get a virtual node`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { getVNode(aliceHoldingId) }
+                condition { response ->
+                    val vNodeInfo = response.toJson()["holdingIdentity"]["x500Name"].textValue()
+                    response.code == 200 && vNodeInfo.contains(aliceX500)
+                }
+            }
+        }
+    }
+
+    @Test
+    @Order(62)
     fun `set virtual node state`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
