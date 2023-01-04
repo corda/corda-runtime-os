@@ -200,13 +200,15 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     @Test
     fun `Verify permission check is performed on entity retrieval`() {
 
-        val fullUrl = "testentity/1234"
-        val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
+        val fullUrlWithSlashes = "testentity/1234/"
+        val fullUrlWithoutSlash = "testentity/1234"
+        val helloResponse = client.call(GET, WebRequest<Any>(fullUrlWithSlashes), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
         assertEquals("Retrieved using id: 1234", helloResponse.body)
 
         // Check full URL received by the Security Manager
-        assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
+        assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1)
+            .allMatch { it == "GET:/api/v1/$fullUrlWithoutSlash" }
     }
 
     @Test
