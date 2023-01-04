@@ -62,6 +62,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.math.BigDecimal
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -100,6 +101,8 @@ class UtxoPersistenceServiceImplTest {
                 it.initialize(512)
             }.genKeyPair().public
         private val notaryExample = Party(notaryX500Name, publicKeyExample)
+        private val transactionInputs = listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+        private val transactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
 
     @BeforeAll
@@ -295,6 +298,43 @@ class UtxoPersistenceServiceImplTest {
                         }
                 }
 
+            val dbTransactionSources = em.createNamedQuery("UtxoTransactionSourceEntity.findByTransactionId", entityFactory.utxoTransactionSource)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbTransactionSources).isNotNull
+                .hasSameSizeAs(transactionInputs)
+            dbTransactionSources
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(transactionInputs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionHash.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                    assertThat(dbInput.field<Boolean>("isRefInput")).isEqualTo(false)
+                }
+
+            val dbTransactionOutputs = em.createNamedQuery("UtxoTransactionOutputEntity.findByTransactionId", entityFactory.utxoTransactionOutput)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbTransactionOutputs).isNotNull
+                .hasSameSizeAs(componentGroupLists.get(UtxoComponentGroup.OUTPUTS.ordinal))
+            dbTransactionOutputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(transactionOutputs)
+                .forEachIndexed { leafIndex, (dbInput, transactionOutput) ->
+                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("type")).isEqualTo(transactionOutput::class.java.canonicalName)
+                    assertThat(dbInput.field<String>("tokenType")).isNull()
+                    assertThat(dbInput.field<String>("tokenIssuerHash")).isNull()
+                    assertThat(dbInput.field<String>("tokenNotaryX500Name")).isNull()
+                    assertThat(dbInput.field<String>("tokenSymbol")).isNull()
+                    assertThat(dbInput.field<String>("tokenTag")).isNull()
+                    assertThat(dbInput.field<String>("tokenOwnerHash")).isNull()
+                    assertThat(dbInput.field<BigDecimal>("tokenAmount")).isNull()
+                }
+
             val dbRelevancyData = em.createNamedQuery("UtxoRelevantTransactionStateEntity.findByTransactionId", entityFactory.utxoRelevantTransactionState)
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
@@ -445,9 +485,9 @@ class UtxoPersistenceServiceImplTest {
             ),
             listOf("group4_component1".toByteArray()),
             listOf("group5_component1".toByteArray()),
-            listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1).toBytes()),
+            transactionInputs.map{ it.toBytes() },
             listOf("group7_component1".toByteArray()),
-            listOf(TestContractState1().toBytes(), TestContractState2().toBytes()),
+            transactionOutputs.map{ it.toBytes() },
             listOf("group9_component1".toByteArray())
 
         )
