@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
@@ -12,7 +13,6 @@ import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.signing.keystoreFactoryBase
 import net.corda.simulator.runtime.signing.signingServiceFactoryBase
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -85,7 +85,7 @@ class SimFiberBase(
 
     override fun createFlowMessaging(
         configuration: SimulatorConfiguration,
-        flow: Flow,
+        flow: FlowAndProtocol,
         member: MemberX500Name,
         injector: FlowServicesInjector,
         contextProperties: FlowContextProperties

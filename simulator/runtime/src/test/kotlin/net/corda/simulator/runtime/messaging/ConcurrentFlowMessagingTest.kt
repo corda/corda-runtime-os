@@ -3,6 +3,7 @@ package net.corda.simulator.runtime.messaging
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.exceptions.SessionAlreadyClosedException
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.testflows.PingAckMessage
@@ -83,7 +84,7 @@ class ConcurrentFlowMessagingTest {
 
         // Then it should have injected the services into the responder
         verify(injector, times(1)).injectServices(
-            eq(responderFlow),
+            eq(FlowAndProtocol(responderFlow, "ping-ack")),
             eq(receiverX500),
             eq(fiber),
             eq(contextProperties)
@@ -131,7 +132,7 @@ class ConcurrentFlowMessagingTest {
 
         // Then it should have injected the services into the responder
         verify(injector, times(1)).injectServices(
-            eq(responderFlow),
+            eq(FlowAndProtocol(responderFlow, "ping-ack")),
             eq(receiverX500),
             eq(flowAndServiceLookUp),
             eq(contextProperties)

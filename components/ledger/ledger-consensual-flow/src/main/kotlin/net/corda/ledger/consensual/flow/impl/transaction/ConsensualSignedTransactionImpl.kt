@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -78,17 +79,25 @@ class ConsensualSignedTransactionImpl(
                 transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(id,
-                    "Failed to verify signature of ${it.signature}. " +
-                            "Message: ${e.message}", e
+                throw TransactionVerificationException(
+                    id,
+                    "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
+                    e
                 )
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        if (requiredSignatories.any {
-            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-        }){
-            throw TransactionVerificationException(id, "There are missing signatures", null)
+
+        // isFulfilledBy() helps to make this working with CompositeKeys.
+        val missingSignatories = toLedgerTransaction()
+            .requiredSignatories
+            .filterNot { it.isFulfilledBy(appliedSignatories) }
+            .toSet()
+        if (missingSignatories.isNotEmpty()) {
+            throw TransactionMissingSignaturesException(
+                id,
+                missingSignatories,
+                "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+            )
         }
     }
 

@@ -52,7 +52,12 @@ class InjectingFlowEngine(
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         log.info("Running subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
         flowChecker.check(subFlow.javaClass)
-        injector.injectServices(subFlow, virtualNodeName, fiber, copyFlowContextProperties(userContextProperties))
+        injector.injectServices(
+            FlowAndProtocol(subFlow),
+            virtualNodeName,
+            fiber,
+            copyFlowContextProperties(userContextProperties)
+        )
         val result = flowManager.call(subFlow)
         log.info("Finished subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
         return result

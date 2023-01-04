@@ -2,9 +2,9 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -59,7 +59,7 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
      * @param contextProperties The [FlowContextProperties] for the flow.
      * @return A [FlowMessaging] services responsible for sending and receiving messages
      */
-    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: Flow, member: MemberX500Name,
+    fun createFlowMessaging(configuration: SimulatorConfiguration, flow: FlowAndProtocol, member: MemberX500Name,
                             injector: FlowServicesInjector, contextProperties: FlowContextProperties)
     : FlowMessaging
 

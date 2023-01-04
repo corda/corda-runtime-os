@@ -86,7 +86,7 @@ interface ClientRequestContext {
         // Examples of strings will look like:
         // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
         // POST:/api/v1/user/createuser
-        return method + METHOD_SEPARATOR + path + if (!queryString.isNullOrBlank()) "?$queryString" else ""
+        return method + METHOD_SEPARATOR + path.trimEnd('/') + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
     /**

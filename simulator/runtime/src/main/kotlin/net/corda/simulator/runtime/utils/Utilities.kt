@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.utils
 
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -92,12 +91,11 @@ fun checkAPIAvailability(flow: Flow, configuration: SimulatorConfiguration){
 }
 
 /**
- * Return the protocol of the flow
+ * Return the protocol of the flow, if any
  */
-fun Flow.getProtocol() : String =
-    this.javaClass.getAnnotation(InitiatingFlow::class.java)?.protocol
-        ?: this.javaClass.getAnnotation(InitiatedBy::class.java)?.protocol
-        ?: throw NoProtocolAnnotationException(this.javaClass)
+fun Flow.getProtocolOrNull() =
+    (this.javaClass.getAnnotation(InitiatingFlow::class.java)?.protocol
+        ?: this.javaClass.getAnnotation(InitiatedBy::class.java)?.protocol)
 
 
 val availableAPIs = setOf(

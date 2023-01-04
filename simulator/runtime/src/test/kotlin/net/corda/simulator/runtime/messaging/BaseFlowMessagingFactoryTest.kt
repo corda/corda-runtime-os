@@ -1,6 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.runtime.config.DefaultConfigurationBuilder
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.testflows.PingAckFlow
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
@@ -23,15 +24,26 @@ class BaseFlowMessagingFactoryTest {
         val injector = mock<FlowServicesInjector>()
         val fiber = SimFiberBase()
 
-        fiber.registerFlowInstance(memberA, "protocol", initiator)
-        fiber.registerFlowInstance(memberA, "protocol", responder)
+        fiber.registerResponderInstance(memberA, "protocol", responder)
 
         // When we call the factory create method for the flow
         val flowMessagingA =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator, mock())
+            DefaultConfigurationBuilder().build(),
+            memberA,
+            fiber,
+            injector,
+            FlowAndProtocol(initiator, "protocol"),
+            mock()
+        )
 
         val flowMessagingB =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder, mock())
+            DefaultConfigurationBuilder().build(),
+            memberA,
+            fiber,
+            injector,
+            FlowAndProtocol(responder, "protocol"),
+            mock()
+        )
 
         // Then the factory should return a flow messaging object
         assertThat(flowMessagingA is ConcurrentFlowMessaging)
@@ -49,9 +61,22 @@ class BaseFlowMessagingFactoryTest {
 
         // When we call the factory create method for the flow
         val flowMessagingA =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, initiator, mock())
+            DefaultConfigurationBuilder().build(),
+            memberA,
+            fiber,
+            injector,
+            FlowAndProtocol(initiator),
+            mock()
+        )
+
         val flowMessagingB =  BaseFlowMessagingFactory().createFlowMessaging(
-            DefaultConfigurationBuilder().build(), memberA, fiber, injector, responder, mock())
+            DefaultConfigurationBuilder().build(),
+            memberA,
+            fiber,
+            injector,
+            FlowAndProtocol(responder),
+            mock()
+        )
 
         // Then the factory should return a flow messaging object
         assertThat(flowMessagingA is ConcurrentFlowMessaging)
