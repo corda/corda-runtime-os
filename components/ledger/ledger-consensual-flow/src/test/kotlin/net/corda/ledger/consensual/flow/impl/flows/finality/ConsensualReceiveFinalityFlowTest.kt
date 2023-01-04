@@ -109,7 +109,7 @@ class ConsensualReceiveFinalityFlowTest {
     fun `receiving a transaction that fails verification with an IllegalArgumentException sends a failure payload and throws an exception`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw IllegalArgumentException() } }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Transaction verification failed for transaction")
+            .hasMessageContaining("Transaction validation failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
@@ -119,7 +119,7 @@ class ConsensualReceiveFinalityFlowTest {
     fun `receiving a transaction that fails verification with an IllegalStateException sends a failure payload and throws an exception`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw IllegalStateException() } }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Transaction verification failed for transaction")
+            .hasMessageContaining("Transaction validation failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
@@ -129,7 +129,7 @@ class ConsensualReceiveFinalityFlowTest {
     fun `receiving a transaction that fails verification with a CordaRuntimeException sends a failure payload and throws an exception`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw CordaRuntimeException("") } }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Transaction verification failed for transaction")
+            .hasMessageContaining("Transaction validation failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)

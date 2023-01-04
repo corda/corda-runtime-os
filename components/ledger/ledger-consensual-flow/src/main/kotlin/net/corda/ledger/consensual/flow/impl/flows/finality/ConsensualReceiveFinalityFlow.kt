@@ -6,6 +6,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersist
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -17,6 +18,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 
@@ -41,69 +43,39 @@ class ConsensualReceiveFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
-        val signedTransaction = session.receive<ConsensualSignedTransactionInternal>()
-        val transactionId = signedTransaction.id
+        val initialTransaction = session.receive<ConsensualSignedTransactionInternal>()
+        val transactionId = initialTransaction.id
 
-        // TODO [CORE-5982] Verify Ledger Transaction
-
-        // Verify the transaction.
-        verifyTransaction(signedTransaction)
+        verifyTransaction(initialTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
-        val signaturesPayload = if (verify(signedTransaction)) {
-            persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
-
-            // We check which of our keys are required.
-            val myExpectedSigningKeys = signedTransaction
-                .getMissingSignatories()
-                .intersect(
-                    memberLookup
-                        .myInfo()
-                        .ledgerKeys
-                        .toSet()
-                )
-
-            if (myExpectedSigningKeys.isEmpty()) {
-                log.debug { "We are not required signer of $transactionId." }
-            }
-
-            // We sign the transaction with all of our keys which is required.
-            val newSignatures = myExpectedSigningKeys.map {
-                signedTransaction.sign(it).second
-            }
-
-            Payload.Success(newSignatures)
+         if (validateTransaction(initialTransaction)) {
+            log.trace { "Successfully validated transaction: $transactionId" }
+            val (transaction, payload) = signTransaction(initialTransaction)
+            persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+            log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
+            session.send(payload)
         } else {
-            Payload.Failure("Transaction verification failed for transaction $transactionId when signature was requested")
+            val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Transaction validation failed for transaction $transactionId when signature was requested"
+            )
+            session.send(payload)
+            throw CordaRuntimeException(payload.message)
         }
 
-        session.send(signaturesPayload)
+        val transaction = receiveFinalizedTransaction(transactionId)
+        transaction.verifySignatures()
 
-        if (signaturesPayload is Payload.Failure) {
-            throw CordaRuntimeException(signaturesPayload.message)
-        }
-
-        val signedTransactionToFinalize = session.receive<ConsensualSignedTransactionInternal>()
-
-        // A [require] block isn't the correct option if we want to do something with the error on the peer side
-        require(signedTransactionToFinalize.id == transactionId) {
-            "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
-                    "${signedTransactionToFinalize.id} instead"
-        }
-
-        signedTransactionToFinalize.verifySignatures()
-
-        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction $transactionId" }
 
-        session.send(Unit)
-        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${signedTransactionToFinalize.id}" }
+        acknowledgeFinalizedTransaction(transaction)
 
-        return signedTransactionToFinalize
+        return transaction
     }
 
     @Suspendable
-    private fun verify(signedTransaction: ConsensualSignedTransaction): Boolean {
+    private fun validateTransaction(signedTransaction: ConsensualSignedTransaction): Boolean {
         return try {
             validator.checkTransaction(signedTransaction.toLedgerTransaction())
             true
@@ -122,5 +94,50 @@ class ConsensualReceiveFinalityFlow(
     private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction){
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
         ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+    }
+
+    @Suspendable
+    private fun signTransaction(
+        initialTransaction: ConsensualSignedTransactionInternal,
+    ): Pair<ConsensualSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
+        val myKeys = memberLookup.myInfo()
+            .ledgerKeys
+            .toSet()
+        // Which of our keys are required.
+        val myExpectedSigningKeys = initialTransaction
+            .getMissingSignatories()
+            .intersect(myKeys)
+
+        if (myExpectedSigningKeys.isEmpty()) {
+            log.debug { "We are not required signer of ${initialTransaction.id}." }
+        }
+
+        var transaction = initialTransaction
+        val mySignatures = myExpectedSigningKeys.map { publicKey ->
+            log.debug { "Signing transaction: ${transaction.id} with $publicKey" }
+            transaction.sign(publicKey).also {
+                transaction = it.first
+            }.second
+        }
+
+        return transaction to Payload.Success(mySignatures)
+    }
+
+    @Suspendable
+    private fun receiveFinalizedTransaction(transactionId: SecureHash): ConsensualSignedTransactionInternal {
+        val transaction = session.receive<ConsensualSignedTransactionInternal>()
+        // A [require] block isn't the correct option if we want to do something with the error on the peer side
+        require(transaction.id == transactionId) {
+            "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
+                    "${transaction.id} instead"
+        }
+
+        return transaction
+    }
+
+    @Suspendable
+    private fun acknowledgeFinalizedTransaction(transaction: ConsensualSignedTransactionInternal) {
+        session.send(Unit)
+        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${transaction.id}" }
     }
 }

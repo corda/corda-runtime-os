@@ -2,6 +2,7 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
+    id 'corda.javadoc-generation'
 }
 
 ext {

@@ -43,10 +43,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -400,8 +402,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
-            context.keys.filter { notaryIdRegex.matches(it) }.apply {
-                require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+            if (context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }) {
+                context.keys.filter { notaryIdRegex.matches(it) }.apply {
+                    require(isNotEmpty()) { "No notary key ID was provided." }
+                    require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+                }
             }
         }
 

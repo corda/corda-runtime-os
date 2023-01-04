@@ -110,7 +110,7 @@ class ConsensualLedgerTests {
         )
         val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
         assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(consensualFlowResult.flowResult).contains("Transaction verification failed for transaction")
+        assertThat(consensualFlowResult.flowResult).contains("Transaction validation failed for transaction")
         assertThat(consensualFlowResult.flowResult).contains("when signature was requested")
     }
 
