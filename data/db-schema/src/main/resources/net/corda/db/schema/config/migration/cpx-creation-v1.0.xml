@@ -127,10 +127,10 @@
             <column name="file_path" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="content" type="TEXT">
+            <column name="changeset_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
-            <column name="changeset_id" type="UUID">
+            <column name="content" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <!-- audit -->
@@ -146,7 +146,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path"
+        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path, changeset_id"
                        constraintName="cpk_db_change_log_pk" schemaName="${schema.name}"/>
 
         <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
