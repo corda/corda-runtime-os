@@ -1631,54 +1631,6 @@
         }
       }
     },
-    "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
-      "put" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "This method updates the state of a new virtual node to one of the pre-defined values.",
-        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
-        "parameters" : [ {
-          "name" : "virtualnodeshortid",
-          "in" : "path",
-          "description" : "Short ID of the virtual node instance to update",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Short ID of the virtual node instance to update",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "newstate",
-          "in" : "path",
-          "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Complete information about updated virtual node which will also contain the updated state.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/maintenance/virtualnode/{virtualnodeshortid}/vault-schema/force-resync" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
@@ -2920,6 +2872,43 @@
         }
       }
     },
+    "/virtualnode/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
+        "operationId" : "get_virtualnode__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VirtualNodeInfo for the specified virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node API" ],
@@ -2955,43 +2944,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/virtualnode/{holdingidentityshorthash}" : {
-      "get" : {
-        "tags" : [ "Virtual Node API" ],
-        "description" : "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
-        "operationId" : "get_virtualnode__holdingidentityshorthash_",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "The short hash of the holding identity; obtained during node registration",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The short hash of the holding identity; obtained during node registration",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "VirtualNodeInfo for the specified virtual node.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/VirtualNodeInfo"
                 }
               }
             }
