@@ -101,12 +101,11 @@ class UtxoPersistenceServiceImpl constructor(
             }
 
             // Mark inputs as consumed
-            transaction.getConsumedStateRefs().forEach { inputStateRef ->
+            val inputStateRefs = transaction.getConsumedStateRefs()
+            if (inputStateRefs.isNotEmpty()) {
                 repository.markTransactionRelevantStatesConsumed(
                     em,
-                    inputStateRef.transactionHash.toString(),
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    inputStateRef.index
+                    inputStateRefs
                 )
             }
 
