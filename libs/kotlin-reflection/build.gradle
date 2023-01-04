@@ -7,6 +7,7 @@ import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
 plugins {
     id 'corda.common-publishing'
     id 'biz.aQute.bnd.builder'
+    id 'corda.javadoc-generation'
 }
 
 ext {
