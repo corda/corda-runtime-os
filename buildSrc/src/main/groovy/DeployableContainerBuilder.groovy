@@ -123,6 +123,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             getObjects().property(String).convention('11.0.15-11.56.19')
 
     @Input
+    final Property<String> dockerRepo =
+            getObjects().property(String).convention('corda-os-docker-dev.software.r3.com')
+
+    @Input
     final Property<String> subDir =
             getObjects().property(String).convention('')
 
@@ -281,42 +285,36 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             // Default JIB configuration no specific action needed
         }
 
-        def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
+        def containerName = "corda-os-${overrideContainerName.get().empty ? projectName : overrideContainerName.get()}"
 
         if (dockerHubPublish.get()) {
-            targetRepo = "corda/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             tagContainer(builder, version)
         } else if (preTest.get()) {
-            targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             tagContainer(builder, "preTest-${tagPrefix}"+version)
             tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
-            targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             tagContainer(builder, "${tagPrefix}latest")
             tagContainer(builder, "${tagPrefix}${version}")
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
-            targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             tagContainer(builder, "${tagPrefix}unstable-fox") // not to be merged back to release/os/5.0
             gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
-            targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             gitAndVersionTag(builder, "${tagPrefix}${gitRevision}")
         } else if (releaseType == 'BETA' && nightlyBuild.get()){
-            targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/-${containerName}"
             tagContainer(builder, "${tagPrefix}nightly")
             tagContainer(builder, "${tagPrefix}nightly" + "-" + timeStamp)
         } else if (releaseType == 'ALPHA' && nightlyBuild.get()) {
-            targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${containerName}"
-            if (!jiraTicket.isEmpty()) {
-                tagContainer(builder, "${tagPrefix}nightly-" + jiraTicket)
-                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + timeStamp)
-                tagContainer(builder, "${tagPrefix}nightly" + "-" + jiraTicket + "-" + gitRevision)
-            }else{
-                gitAndVersionTag(builder, "${tagPrefix}nightly-" + version)
-                gitAndVersionTag(builder, "${tagPrefix}nightly-" + gitRevision)
-            }
+            targetRepo = "${dockerRepo.get()}/${containerName}"
+            gitAndVersionTag(builder, "${tagPrefix}nightly-" + version)
+            gitAndVersionTag(builder, "${tagPrefix}nightly-" + gitRevision)
         } else{
-            targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
+            targetRepo = "${dockerRepo.get()}/${containerName}"
             tagContainer(builder, "latest-local")
             gitAndVersionTag(builder, gitRevision)
         }
