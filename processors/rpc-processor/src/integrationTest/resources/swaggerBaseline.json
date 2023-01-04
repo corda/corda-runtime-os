@@ -2919,6 +2919,43 @@
           }
         }
       }
+    },
+    "/virtualnode/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
+        "operationId" : "get_virtualnode__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VirtualNodeInfo for the specified virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
     }
   },
   "components" : {
