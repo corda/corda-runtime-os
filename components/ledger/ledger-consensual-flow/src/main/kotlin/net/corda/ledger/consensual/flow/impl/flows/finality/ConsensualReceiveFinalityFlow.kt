@@ -26,7 +26,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
     private val validator: ConsensualTransactionValidator
-) : SubFlow<ConsensualSignedTransaction> {
+) : ConsensualFinalityBase() {
 
     private companion object {
         val log = contextLogger()
@@ -46,6 +46,7 @@ class ConsensualReceiveFinalityFlow(
         val initialTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = initialTransaction.id
 
+        verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
@@ -64,6 +65,8 @@ class ConsensualReceiveFinalityFlow(
         }
 
         val transaction = receiveFinalizedTransaction(transactionId)
+
+        log.debug { "Verifying signatures of transaction: $transactionId" }
         transaction.verifySignatures()
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
@@ -72,6 +75,15 @@ class ConsensualReceiveFinalityFlow(
         acknowledgeFinalizedTransaction(transaction)
 
         return transaction
+    }
+
+    @Suspendable
+    private fun verifyExistingSignatures(initialTransaction: ConsensualSignedTransactionInternal) {
+        initialTransaction.signatures.forEach {
+            verifySignature(initialTransaction.id, it) { message ->
+                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+            }
+        }
     }
 
     @Suspendable

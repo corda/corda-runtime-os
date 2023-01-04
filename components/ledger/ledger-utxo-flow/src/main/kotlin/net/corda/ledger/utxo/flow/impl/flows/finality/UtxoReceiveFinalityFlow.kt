@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
@@ -21,7 +20,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 class UtxoReceiveFinalityFlow(
     private val session: FlowSession,
     private val validator: UtxoTransactionValidator
-) : SubFlow<UtxoSignedTransaction>, UtxoFinalityBase() {
+) : UtxoFinalityBase() {
 
     private companion object {
         val log = contextLogger()

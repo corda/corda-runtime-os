@@ -24,7 +24,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 class UtxoFinalityFlow(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>
-) : SubFlow<UtxoSignedTransaction>, UtxoFinalityBase() {
+) : UtxoFinalityBase() {
 
     private companion object {
         val log = contextLogger()
@@ -72,12 +72,12 @@ class UtxoFinalityFlow(
     @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
-        val signaturesPayloads = sessions.associateWith {
+        val signaturesPayloads = sessions.associateWith { session ->
             try {
-                log.debug { "Requesting signatures from ${it.counterparty} for transaction $transactionId" }
-                it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+                log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
+                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signatures from ${it.counterparty} for transaction $transactionId")
+                log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 throw e
             }
         }
@@ -95,6 +95,10 @@ class UtxoFinalityFlow(
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
+                log.debug {
+                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+                            transactionId
+                }
             }
             session to signatures
         }.toMap()
