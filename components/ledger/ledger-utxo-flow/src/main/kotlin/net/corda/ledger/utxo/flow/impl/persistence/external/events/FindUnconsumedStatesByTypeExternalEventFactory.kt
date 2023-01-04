@@ -26,12 +26,17 @@ import org.osgi.service.component.annotations.Reference
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindUnconsumedStatesByTypeExternalEventFactory @Activate constructor(
-    @Reference(service = SerializationService::class)
+class FindUnconsumedStatesByTypeExternalEventFactory(
     private val serializationService: SerializationService,
     private val clock: Clock = Clock.systemUTC()
 ) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, TransactionOutputs, List<StateAndRef<ContractState>>>
 {
+    @Activate
+    constructor(
+        @Reference(service = SerializationService::class)
+        serializationService: SerializationService,
+    ) : this(serializationService, Clock.systemUTC())
+
     override val responseType = TransactionOutputs::class.java
 
     override fun createExternalEvent(
