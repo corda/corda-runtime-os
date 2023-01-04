@@ -4,7 +4,7 @@ plugins {
 }
 
 ext {
-    releasable = true
+    releasable = false
 }
 
 description 'Custom converter for layered property map intergration tests'
