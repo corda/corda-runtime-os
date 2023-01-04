@@ -2920,6 +2920,43 @@
         }
       }
     },
+    "/virtualnode/mgm" : {
+      "post" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method creates a new virtual node.",
+        "operationId" : "post_virtualnode_mgm",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MGMVirtualNodeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The details of the created virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
