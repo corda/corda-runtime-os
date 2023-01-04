@@ -19,17 +19,29 @@ class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
 ) : MerkleTreeFactory, UsedByFlow, SingletonSerializeAsToken {
-    override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest): MerkleTree =
-        when (digest) {
+
+    override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest): MerkleTree {
+        return when (digest) {
             is MerkleTreeHashDigestProvider -> merkleTreeProvider.createTree(leaves, digest)
-            else -> throw CordaRuntimeException("An instance of MerkleTreeHashDigestProvider is required when " +
-                    "creating a Merkle tree, but received ${digest.javaClass.name} instead.")
+            else -> throw CordaRuntimeException(
+                "An instance of ${MerkleTreeHashDigestProvider::class.java.name} is required when creating a Merkle tree, but received " +
+                        "${digest.javaClass.name} instead"
+            )
         }
+    }
+
+    override fun createHashDigest(
+        merkleTreeHashDigestProviderName: String,
+        digestAlgorithmName: DigestAlgorithmName
+    ): MerkleTreeHashDigest {
+        return createHashDigest(merkleTreeHashDigestProviderName, digestAlgorithmName, emptyMap())
+    }
 
     override fun createHashDigest(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
         options: Map<String, Any>,
-    ): MerkleTreeHashDigest =
-        merkleTreeProvider.createHashDigestProvider(merkleTreeHashDigestProviderName, digestAlgorithmName, options)
+    ): MerkleTreeHashDigest {
+        return merkleTreeProvider.createHashDigestProvider(merkleTreeHashDigestProviderName, digestAlgorithmName, options)
+    }
 }
