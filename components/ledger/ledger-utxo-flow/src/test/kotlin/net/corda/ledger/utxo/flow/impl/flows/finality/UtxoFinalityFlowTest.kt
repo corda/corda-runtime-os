@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
@@ -25,6 +26,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -45,6 +47,7 @@ import java.time.Instant
 class UtxoFinalityFlowTest {
 
     private companion object {
+        val TX_ID = SecureHash("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
@@ -94,11 +97,13 @@ class UtxoFinalityFlowTest {
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfoAlice)
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
+        whenever(memberInfoAlice.toString()).thenReturn(ALICE.toString())
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
+        whenever(memberInfoBob.toString()).thenReturn(BOB.toString())
 
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
 
-        whenever(initialTx.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
+        whenever(initialTx.id).thenReturn(TX_ID)
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -111,14 +116,14 @@ class UtxoFinalityFlowTest {
         whenever(initialTx.notary).thenReturn(utxoNotaryExample)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
 
-        whenever(updatedTxSomeSigs.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
+        whenever(updatedTxSomeSigs.id).thenReturn(TX_ID)
         whenever(updatedTxSomeSigs.addSignature(signatureAlice2)).thenReturn(
             updatedTxSomeSigs
         )
         whenever(updatedTxSomeSigs.addSignature(signatureBob)).thenReturn(
             updatedTxAllSigs
         )
-        whenever(updatedTxAllSigs.id).thenReturn(SecureHash("algo", byteArrayOf(1, 2, 3)))
+        whenever(updatedTxAllSigs.id).thenReturn(TX_ID)
         whenever(updatedTxAllSigs.notary).thenReturn(notaryService)
         whenever(updatedTxAllSigs.addSignature(signatureNotary)).thenReturn(
             notarisedTx
@@ -568,6 +573,57 @@ class UtxoFinalityFlowTest {
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)
         verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+    }
+
+    @Test
+    fun `missing signatures when verifying all signatures rethrows exception with useful message`() {
+        val aliceSignatures = listOf(signatureAlice1, signatureAlice2)
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(aliceSignatures))
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                emptyList<Payload<DigitalSignatureAndMetadata>>()
+            )
+        )
+
+        whenever(updatedTxSomeSigs.verifySignatures()).thenThrow(
+            TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
+        )
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .hasMessageContainingAll(
+                "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
+                "The following counterparties provided signatures while finalizing the transaction:",
+                "$ALICE provided 2 signature(s) to satisfy the signatories (encoded) ${aliceSignatures.map { it.by.encoded }}",
+                "$BOB provided 0 signature(s) to satisfy the signatories (encoded) []"
+            )
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
+        verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+    }
+
+    @Test
+    fun `failing to verify all signatures throws exception`() {
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
+
+        whenever(updatedTxAllSigs.verifySignatures()).thenThrow(TransactionVerificationException(TX_ID, "failed", null))
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("failed")
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
+        verify(updatedTxSomeSigs).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
