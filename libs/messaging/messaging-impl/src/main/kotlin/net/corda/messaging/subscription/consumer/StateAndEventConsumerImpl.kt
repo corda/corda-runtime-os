@@ -28,7 +28,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-        //short timeout for state polling so as to not starve the event poller
+
+        //short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
     }
 
@@ -150,8 +151,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $assignment"}
-        eventConsumer.resume(assignment)
+        // A rebalance might have been executed while waiting for the future to complete, and we might have lost
+        // ownership of some partitions, so we need to resume the consumer for the current assignment (otherwise we
+        // might end up polling from an unassigned partition, resulting in IllegalStateException being thrown by Kafka)
+        val currentAssignment = eventConsumer.assignment()
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $currentAssignment" }
+        eventConsumer.resume(currentAssignment)
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
