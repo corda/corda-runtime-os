@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@beta-program') _
+@Library('corda-shared-build-pipeline-steps@ronanb/NOTICK/add-ability-to-chose-repo') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/8 * * *',
