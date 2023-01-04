@@ -2924,7 +2924,7 @@
       "put" : {
         "tags" : [ "Virtual Node API" ],
         "description" : "This method updates the state of a new virtual node to one of the pre-defined values.",
-        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
+        "operationId" : "put_virtualnode__virtualnodeshortid__state__newstate_",
         "parameters" : [ {
           "name" : "virtualnodeshortid",
           "in" : "path",
