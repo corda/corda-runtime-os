@@ -96,7 +96,9 @@ class ConsensualFinalityFlow(
     }
 
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(sessionPublicKeys: Map<FlowSession, List<PublicKey>>): ConsensualSignedTransactionInternal {
+    private fun receiveSignaturesAndAddToTransaction(
+        sessionPublicKeys: Map<FlowSession, List<PublicKey>>
+    ): ConsensualSignedTransactionInternal {
         var signedByParticipantsTransaction = signedTransaction
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below

@@ -38,7 +38,6 @@ class UtxoFinalityFlow(
     @CordaInject
     lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
 
-    @Suppress("ComplexMethod")
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         log.trace("Starting finality flow for transaction: $transactionId")
@@ -70,6 +69,7 @@ class UtxoFinalityFlow(
         }
     }
 
+    @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
         val signaturesPayloads = sessions.associateWith {
@@ -152,6 +152,7 @@ class UtxoFinalityFlow(
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
     }
 
+    @Suppress("ThrowsCount")
     @Suspendable
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
