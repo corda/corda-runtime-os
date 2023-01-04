@@ -1,8 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -111,23 +109,5 @@ class UtxoLedgerServiceImpl @Activate constructor(
             throw e.exception
         }
         return flowEngine.subFlow(utxoReceiveFinalityFlow)
-    }
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    override fun persistTransaction(signedTransaction: UtxoSignedTransaction) {
-        utxoLedgerPersistenceService.persist(signedTransaction, TransactionStatus.VERIFIED)
-    }
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    override fun resolveBackchain(signedTransaction: UtxoSignedTransaction, session: FlowSession) {
-        flowEngine.subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
-    }
-
-    @Deprecated("Temporary until finality flow is completed")
-    @Suspendable
-    override fun sendBackchain(session: FlowSession) {
-        flowEngine.subFlow(TransactionBackchainSenderFlow(session))
     }
 }

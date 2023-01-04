@@ -2,6 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
     id 'net.corda.plugins.cordapp-cpb2'
+    id 'corda.javadoc-generation'
 }
 
 ext {
