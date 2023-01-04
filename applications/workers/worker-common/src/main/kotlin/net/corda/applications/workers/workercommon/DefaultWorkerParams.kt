@@ -47,4 +47,7 @@ class DefaultWorkerParams {
 
     @Option(names = ["--temp-dir"], description = ["Corda temp directory."])
     var tempDir = ConfigDefaults.TEMP_DIR
+
+    @Option(names = ["-a", "--addon"], description = ["Add-on configuration"])
+    var addonParams = emptyMap<String, String>()
 }

@@ -22,7 +22,7 @@ class ConsolePrinterTest {
 
         printer.printPaddedLine("test", 12)
 
-        assertThat(printed).contains("--- test ---")
+        assertThat(printed).contains("*** test ***")
     }
 
     @Test
@@ -31,7 +31,7 @@ class ConsolePrinterTest {
 
         printer.printPaddedLine("test", 13)
 
-        assertThat(printed).contains("--- test  ---")
+        assertThat(printed).contains("*** test  ***")
     }
 
     @Test
@@ -40,7 +40,7 @@ class ConsolePrinterTest {
 
         printer.printPaddedLine("testy", 12)
 
-        assertThat(printed).contains("-- testy  --")
+        assertThat(printed).contains("** testy  **")
     }
 
     @Test
@@ -49,7 +49,7 @@ class ConsolePrinterTest {
 
         printer.printEmptyLine(5)
 
-        assertThat(printed).contains("-----")
+        assertThat(printed).contains("*****")
     }
 
     @Test
@@ -68,5 +68,19 @@ class ConsolePrinterTest {
         printer.printLeftPad("hello world", 4)
 
         assertThat(printed).contains("    hello world")
+    }
+
+    @Test
+    fun `when printLeftPad print multiline`() {
+        val printer = ConsolePrinter(this::mockPrinter)
+
+        printer.printLeftPad("""
+hello world
+and mars
+        """.trimIndent(), 4)
+
+        assertThat(printed).contains(
+            """    hello world
+    and mars""")
     }
 }

@@ -43,6 +43,7 @@ class ApplicationBanner(
             consolePrinter.printLeftPad("${it.description}")
             consolePrinter.println()
             consolePrinter.printLeftPad("${it.vendor}")
+            consolePrinter.println()
             consolePrinter.printLeftPad("${it.licence}")
         }
         consolePrinter.printEmptyLine()
