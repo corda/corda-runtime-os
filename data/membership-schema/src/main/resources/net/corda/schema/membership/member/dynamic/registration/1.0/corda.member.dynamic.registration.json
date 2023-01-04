@@ -64,7 +64,6 @@
       ]
     }
   },
-  "minProperties": 4,
   "required": [
     "corda.session.key.id"
   ],
