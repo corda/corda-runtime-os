@@ -60,10 +60,9 @@ class UtxoPersistenceServiceImpl constructor(
 
     override fun persistTransaction(transaction: UtxoTransactionReader) {
         val nowUtc = utcClock.instant()
+        val transactionIdString = transaction.id.toString()
 
         entityManagerFactory.transaction { em ->
-            val transactionIdString = transaction.id.toString()
-
             // Insert the Transaction
             repository.persistTransaction(
                 em,
@@ -86,6 +85,33 @@ class UtxoPersistenceServiceImpl constructor(
                         nowUtc
                     )
                 }
+            }
+
+            // Insert inputs data
+            val inputs = transaction.getConsumedStateRefs()
+            inputs.forEachIndexed  { index, input ->
+                repository.persistTransactionSource(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    index,
+                    input.transactionHash.toString(),
+                    input.index,
+                    false,
+                    nowUtc
+                )
+            }
+
+            // Insert outputs data
+            transaction.getProducedStates().forEachIndexed { index, stateAndRef ->
+                repository.persistTransactionOutput(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    index,
+                    stateAndRef.state.contractState::class.java.canonicalName,
+                    timestamp = nowUtc
+                )
             }
 
             // Insert relevancy information for outputs

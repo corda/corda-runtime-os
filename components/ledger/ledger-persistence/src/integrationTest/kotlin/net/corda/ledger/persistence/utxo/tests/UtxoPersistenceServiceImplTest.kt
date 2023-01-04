@@ -17,6 +17,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
@@ -39,9 +40,13 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -488,7 +493,10 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
 
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            TODO("Not yet implemented")
+            return listOf(
+                stateAndRef<TestContract>(TestContractState1(), id, 0),
+                stateAndRef<TestContract>(TestContractState2(), id, 1)
+            )
         }
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
@@ -497,6 +505,28 @@ class UtxoPersistenceServiceImplTest {
 
         override fun getConsumedStateRefs(): List<StateRef> {
             return listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+        }
+
+        private inline fun <reified C : Contract> stateAndRef(
+            state: ContractState,
+            transactionId: SecureHash,
+            index: Int
+        ): StateAndRef<ContractState> {
+            return StateAndRefImpl(
+                object : TransactionState<ContractState> {
+                    override val contractState: ContractState = state
+                    override val contractStateType: Class<out ContractState> = state::class.java
+                    override val contractType: Class<out Contract> = C::class.java
+                    override val notary: Party = notaryExample
+                    override val encumbrance: EncumbranceGroup? = null
+                },
+                StateRef(transactionId, index)
+            )
+        }
+    }
+
+    class TestContract : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
         }
     }
 
