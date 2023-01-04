@@ -322,8 +322,8 @@ class VirtualNodeRpcTest {
                 timeout(Duration.of(30, ChronoUnit.SECONDS))
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
-                    val vNodeInfo = response.toJson()["holdingIdentity"]["x500Name"].textValue()
-                    response.code == 200 && vNodeInfo.contains(aliceX500)
+                    response.code == 200 &&
+                        response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
         }
