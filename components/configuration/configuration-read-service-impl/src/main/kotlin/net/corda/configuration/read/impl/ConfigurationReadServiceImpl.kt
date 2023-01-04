@@ -72,7 +72,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         return configProcessor.get(section)
     }
 
-    override fun invoke(section: String): SmartConfig? {
+    override fun getSmartConfig(section: String): SmartConfig? {
         return configProcessor.getSmartConfig(section)
     }
 

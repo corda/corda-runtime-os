@@ -8,7 +8,7 @@ import net.corda.libs.configuration.SmartConfig
  *
  * Used to view "active" configuration.
  */
-interface ConfigurationGetService : (String) -> SmartConfig? {
+interface ConfigurationGetService {
     /**
      * Get [Configuration] for a given [section], return null if section does not exist
      *
@@ -21,5 +21,5 @@ interface ConfigurationGetService : (String) -> SmartConfig? {
      *
      * @param section
      */
-    override fun invoke(section: String): SmartConfig?
+    fun getSmartConfig(section: String): SmartConfig?
 }

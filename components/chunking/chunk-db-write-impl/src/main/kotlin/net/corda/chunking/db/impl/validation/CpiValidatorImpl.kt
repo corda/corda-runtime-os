@@ -68,7 +68,7 @@ class CpiValidatorImpl(
                 GroupPolicySchema.Default,
                 Version(cpi.validateAndGetGroupPolicyFileVersion(), 0),
                 cpi.metadata.groupPolicy!!,
-                configurationGetService,
+                configurationGetService::getSmartConfig,
             )
         } catch (ex: MembershipSchemaValidationException) {
             throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)

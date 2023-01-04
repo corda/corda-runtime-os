@@ -157,7 +157,7 @@ class MemberOpsServiceProcessorTest {
         on { getString("tlsType") } doReturn "ONE_WAY"
     }
     private val configurationGetService = mock<ConfigurationGetService> {
-        on { invoke(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+        on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
 
     private var processor = MemberOpsServiceProcessor(
