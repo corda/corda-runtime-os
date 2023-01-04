@@ -1,6 +1,7 @@
 plugins {
     id 'biz.aQute.bnd.builder'
     id 'corda.common-publishing'
+    id 'corda.javadoc-generation'
 }
 
 ext {
