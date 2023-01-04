@@ -26,11 +26,11 @@ class UtxoFinalityFlow(
     private val sessions: List<FlowSession>
 ) : SubFlow<UtxoSignedTransaction>, UtxoFinalityBase() {
 
-    private val transactionId = initialTransaction.id
-
     private companion object {
         val log = contextLogger()
     }
+
+    private val transactionId = initialTransaction.id
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -91,10 +91,7 @@ class UtxoFinalityFlow(
                 CordaRuntimeException(message)
             }
 
-            log.debug {
-                "Received ${signatures.size} signatures from ${session.counterparty}" +
-                        " for transaction $transactionId"
-            }
+            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)

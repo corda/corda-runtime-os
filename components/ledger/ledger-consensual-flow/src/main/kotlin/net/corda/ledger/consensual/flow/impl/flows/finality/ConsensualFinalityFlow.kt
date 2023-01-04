@@ -18,17 +18,18 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import java.security.PublicKey
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
-    private val signedTransaction: ConsensualSignedTransactionInternal,
+    private val initialTransaction: ConsensualSignedTransactionInternal,
     private val sessions: List<FlowSession>
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
         val log = contextLogger()
     }
+
+    private val transactionId = initialTransaction.id
 
     @CordaInject
     lateinit var transactionSignatureService: TransactionSignatureService
@@ -53,7 +54,7 @@ class ConsensualFinalityFlow(
         sendFullySignedTransactionToCounterparties(fullySignedTransaction)
 
         if (sessions.isNotEmpty()) {
-            log.debug { "All sessions received and acknowledged storage of transaction ${signedTransaction.id}" }
+            log.debug { "All sessions received and acknowledged storage of transaction $transactionId" }
         }
 
         return fullySignedTransaction
@@ -61,64 +62,63 @@ class ConsensualFinalityFlow(
 
     @Suspendable
     private fun persistUnverifiedTransaction() {
-        persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with initial signatures ${signedTransaction.id}" }
+        persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
+        log.debug { "Recorded transaction with initial signatures $transactionId" }
     }
 
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): ConsensualSignedTransactionInternal {
 
-        var signedByParticipantsTransaction = signedTransaction
+        var transaction = initialTransaction
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
         sessions.forEach { session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            log.debug { "Requesting signatures from ${session.counterparty} for transaction ${signedTransaction.id}" }
-            session.send(signedTransaction)
+            log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
+            session.send(initialTransaction)
 
             val signaturesPayload = try {
                 session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signature from ${session.counterparty} for transaction ${signedTransaction.id}")
+                log.warn("Failed to receive signature from ${session.counterparty} for transaction $transactionId")
                 throw e
             }
 
             val signatures = signaturesPayload.getOrThrow { failure ->
                 val message = "Failed to receive signature from ${session.counterparty} for transaction " +
-                        "${signedTransaction.id} with message: ${failure.message}"
+                        "$transactionId with message: ${failure.message}"
                 log.warn(message)
                 CordaRuntimeException(message)
             }
 
-            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction ${signedTransaction.id}" }
+            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }
 
             signatures.forEach { signature ->
                 try {
-                    transactionSignatureService.verifySignature(signedTransaction.id, signature)
+                    transactionSignatureService.verifySignature(transactionId, signature)
                     log.debug {
-                        "Successfully verified signature from ${session.counterparty} of $signature for transaction " +
-                                "${signedTransaction.id}"
+                        "Successfully verified signature from ${session.counterparty} of $signature for transaction $transactionId"
                     }
                 } catch (e: Exception) {
                     log.warn(
-                        "Failed to verify signature from ${session.counterparty} of $signature for transaction " +
-                                "${signedTransaction.id}. Message: ${e.message}"
+                        "Failed to verify signature from ${session.counterparty} of $signature for transaction $transactionId. Message: " +
+                                e.message
                     )
 
                     throw e
                 }
-                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
-                log.debug { "Added signature from ${session.counterparty} of $signature for transaction ${signedTransaction.id}" }
+                transaction = transaction.addSignature(signature)
+                log.debug { "Added signature from ${session.counterparty} of $signature for transaction $transactionId" }
             }
         }
 
-        return signedByParticipantsTransaction
+        return transaction
     }
 
     @Suspendable
     private fun persistFullySignedTransaction(fullySignedTransaction: ConsensualSignedTransactionInternal) {
         persistenceService.persist(fullySignedTransaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded transaction ${signedTransaction.id}" }
+        log.debug { "Recorded transaction $transactionId" }
     }
 
     @Suspendable
@@ -132,7 +132,7 @@ class ConsensualFinalityFlow(
             // Returning a context map might be appropriate in case we want to do any sort of handling in the future
             // without having to worry about backwards compatibility.
             session.receive<Unit>()
-            log.debug { "${session.counterparty} received and acknowledged storage of transaction ${signedTransaction.id}" }
+            log.debug { "${session.counterparty} received and acknowledged storage of transaction $transactionId" }
         }
     }
 }
