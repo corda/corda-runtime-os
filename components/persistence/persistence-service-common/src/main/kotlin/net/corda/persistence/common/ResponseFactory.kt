@@ -2,13 +2,12 @@ package net.corda.persistence.common
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.persistence.EntityResponse
 import net.corda.messaging.api.records.Record
 
 interface ResponseFactory {
     fun successResponse(
         flowExternalEventContext: ExternalEventContext,
-        entityResponse: EntityResponse
+        payload: Any
     ): Record<String, FlowEvent>
 
     fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception): Record<String, FlowEvent>

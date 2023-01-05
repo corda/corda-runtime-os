@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.persistence.common.TransactionOutputDto
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -35,7 +36,7 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<List<ByteArray>> {
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<TransactionOutputDto> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManagerFactory.transaction { em ->
@@ -51,7 +52,7 @@ class UtxoPersistenceServiceImpl constructor(
             }
             val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
-                listOf(it.transactionId.toByteArray(), it.leafIndex.toString().toByteArray(), info, it.data)
+                TransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
             } else {
                 null
             }

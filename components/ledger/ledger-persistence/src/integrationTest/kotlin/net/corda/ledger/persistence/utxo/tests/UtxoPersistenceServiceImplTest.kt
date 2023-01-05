@@ -204,15 +204,11 @@ class UtxoPersistenceServiceImplTest {
         val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass)
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
-        val state = unconsumedStates.first()
-        val transactionId = state[0].decodeToString()
-        assertThat(transactionId).isEqualTo(transaction1.id.toString())
-        val leafIndex = state[1].decodeToString().toInt()
-        assertThat(leafIndex).isEqualTo(1)
-        val outputInfo = state[2]
-        assertThat(outputInfo).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
-        val output = state[3]
-        assertThat(output).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
+        val transactionOutput = unconsumedStates.first()
+        assertThat(transactionOutput.transactionId).isEqualTo(transaction1.id.toString())
+        assertThat(transactionOutput.leafIndex).isEqualTo(1)
+        assertThat(transactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(transactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
     }
 
     @Test
