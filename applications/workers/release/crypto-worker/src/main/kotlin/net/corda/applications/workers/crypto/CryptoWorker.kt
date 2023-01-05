@@ -1,5 +1,6 @@
 package net.corda.applications.workers.crypto
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
@@ -26,7 +27,7 @@ import picocli.CommandLine
 import picocli.CommandLine.Mixin
 
 /** The worker for interacting with the key material. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class CryptoWorker @Activate constructor(
     @Reference(service = CryptoProcessor::class)
@@ -38,7 +39,9 @@ class CryptoWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider
+    val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -48,6 +51,8 @@ class CryptoWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("Crypto Worker", platformInfoProvider)
 
         JavaSerialisationFilter.install()
         val params = getParams(args, CryptoWorkerParams())

@@ -1,8 +1,10 @@
 package net.corda.applications.workers.db.test
 
 import com.typesafe.config.Config
+import net.corda.application.banner.StartupBanner
 import java.io.InputStream
 import net.corda.applications.workers.db.DBWorker
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -38,7 +40,8 @@ class ConfigTests {
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
-            DummyPlatformInfoProvider()
+            DummyPlatformInfoProvider(),
+            ApplicationBanner(DummyStartupBanner(), emptyList())
         )
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
@@ -76,7 +79,8 @@ class ConfigTests {
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
-            DummyPlatformInfoProvider()
+            DummyPlatformInfoProvider(),
+            ApplicationBanner(DummyStartupBanner(), emptyList())
         )
 
         val args = arrayOf(
@@ -106,7 +110,8 @@ class ConfigTests {
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
-            DummyPlatformInfoProvider()
+            DummyPlatformInfoProvider(),
+            ApplicationBanner(DummyStartupBanner(), emptyList())
         )
 
         val args = arrayOf<String>()
@@ -135,7 +140,8 @@ class ConfigTests {
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
-            DummyPlatformInfoProvider()
+            DummyPlatformInfoProvider(),
+            ApplicationBanner(DummyStartupBanner(), emptyList())
         )
 
         val args = arrayOf(
@@ -158,7 +164,8 @@ class ConfigTests {
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
-            DummyPlatformInfoProvider()
+            DummyPlatformInfoProvider(),
+            ApplicationBanner(DummyStartupBanner(), emptyList())
         )
         val args = arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
@@ -215,5 +222,10 @@ class ConfigTests {
         override val localWorkerSoftwareVersion: String
             get() = "5.0.0.0"
 
+    }
+    private class DummyStartupBanner : StartupBanner {
+        override fun get(name: String, version: String): String {
+            return "foo"
+        }
     }
 }
