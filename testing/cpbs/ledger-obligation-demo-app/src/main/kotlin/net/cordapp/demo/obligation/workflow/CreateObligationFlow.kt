@@ -89,13 +89,11 @@ class CreateObligationFlow(
 
             val request = requestBody.getRequestBodyAs<CreateObligationRequestMessage>(jsonMarshallingService)
 
-            val issuer = memberLookup.lookup(request.issuer)
-                ?: throw IllegalArgumentException("Unknown issuer: ${request.issuer}.")
+            val issuer = requireNotNull(memberLookup.lookup(request.issuer)) { "Unknown issuer: ${request.issuer}." }
 
-            val holder = memberLookup.lookup(request.holder)
-                ?: throw IllegalArgumentException("Unknown holder: ${request.holder}.")
+            val holder = requireNotNull(memberLookup.lookup(request.holder)) { "Unknown holder: ${request.holder}." }
 
-            // TODO CORE-6173 use proper notary keyand NotaryLookup service here.
+            // TODO CORE-6173 use proper notary key and NotaryLookup service here.
             val notary = memberLookup.lookup(request.notary)?.let { _ ->
                 val notaryKey = memberLookup.lookup().single {
                     it.memberProvidedContext["corda.notary.service.name"] == request.notaryService.toString()

@@ -94,20 +94,18 @@ class UpdateObligationFlow(
 
             val newObligation = oldObligation.state.contractState.settle(request.amountToSettle)
 
-            val issuer = memberLookup.lookup(newObligation.issuer)
-                ?: throw IllegalArgumentException("Unknown issuer: ${newObligation.issuer}.")
+            val issuer =
+                requireNotNull(memberLookup.lookup(newObligation.issuer)) { "Unknown issuer: ${newObligation.issuer}." }
 
             val sessions = flowMessaging.initiateFlows(issuer)
 
-            val updateObligationFlow = UpdateObligationFlow(oldObligation, newObligation, sessions)
+            val transaction = flowEngine.subFlow(UpdateObligationFlow(oldObligation, newObligation, sessions))
 
-            val transaction = flowEngine.subFlow(updateObligationFlow)
             if(request.doubleSpend) {
                 val anotherSessions = flowMessaging.initiateFlows(issuer)
                 val anotherNewObligation = oldObligation.state.contractState.settle(request.amountToSettle)
 
-                val anotherUpdateObligationFlow = UpdateObligationFlow(oldObligation, anotherNewObligation, anotherSessions)
-                flowEngine.subFlow(anotherUpdateObligationFlow)
+                flowEngine.subFlow(UpdateObligationFlow(oldObligation, anotherNewObligation, anotherSessions))
             }
 
             val response = UpdateObligationResponseMessage(transaction.id)
