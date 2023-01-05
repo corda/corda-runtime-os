@@ -250,7 +250,7 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
     }
 
-    protected fun register(skipWaitingForApproval: Boolean = false) {
+    protected fun register(skipWaitingForFinalStatus: Boolean = false) {
         val response = Unirest.post("/membership/$holdingId")
             .body(
                 mapOf(
@@ -266,22 +266,28 @@ abstract class BaseOnboard : Runnable {
         if (submissionStatus != "SUBMITTED") {
             throw OnboardException("Could not submit MGM registration: ${response.body}")
         }
-        val id = body.get("registrationId")
+        val id = body.get("registrationId").toString()
         println("Registration ID of $x500Name is $id")
-        if (!skipWaitingForApproval) {
-            val end = System.currentTimeMillis() + 5 * 60 * 1000
-            while (System.currentTimeMillis() < end) {
-                val status = Unirest.get("/membership/$holdingId/$id").asJson()
-                val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
-                if (registrationStatus == "APPROVED") {
-                    return
-                } else {
-                    println("Status of $x500Name registration is $registrationStatus")
-                    Thread.sleep(400)
-                }
-            }
-            throw OnboardException("Registration had failed!")
+        if (!skipWaitingForFinalStatus) {
+            waitForFinalStatus(id)
         }
+    }
+
+    private fun waitForFinalStatus(id: String) {
+        val end = System.currentTimeMillis() + 5 * 60 * 1000
+        while (System.currentTimeMillis() < end) {
+            val status = Unirest.get("/membership/$holdingId/$id").asJson()
+            val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
+            if (registrationStatus == "APPROVED") {
+                return
+            } else if (registrationStatus =="DECLINED") {
+                throw OnboardException("Registration got declined!")
+            } else {
+                println("Status of $x500Name registration is $registrationStatus")
+                Thread.sleep(400)
+            }
+        }
+        throw OnboardException("Registration had failed!")
     }
 
     protected fun disableClrChecks() {

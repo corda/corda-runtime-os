@@ -68,10 +68,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
     var preAuthToken: String? = null
 
     @Option(
-        names = ["--skip-approval"],
-        description = ["Skip waiting until member gets approved, this should be used in manual-approval mode. False, by default."]
+        names = ["--ignore-status"],
+        description = ["Skip waiting until member gets approved/declined, this should be used in manual-approval mode. False, by default."]
     )
-    var skipWaitingForApproval: Boolean = false
+    var skipWaitingForFinalStatus: Boolean = false
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
@@ -235,9 +235,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
         println("Provided registration context: ")
         println(registrationContext)
 
-        register(skipWaitingForApproval)
+        register(skipWaitingForFinalStatus)
 
-        if (skipWaitingForApproval) {
+        if (skipWaitingForFinalStatus) {
             println("Member can be approved/declined by using it's registration ID.")
         } else {
             println("Member $x500Name was onboarded.")
