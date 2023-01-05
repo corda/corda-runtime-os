@@ -151,9 +151,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
-        // A rebalance might have been executed while waiting for the future to complete, and we might have lost
-        // ownership of some partitions, so we need to resume the consumer for the current assignment (otherwise we
-        // might end up polling from an unassigned partition, resulting in IllegalStateException being thrown by Kafka)
+        // A rebalance might have been executed while waiting for the future to complete and the consumer might have
+        // lost ownership of some previously owned partitions. Make sure to resume only those partitions currently
+        // assigned to prevent IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
         val currentAssignment = eventConsumer.assignment()
         log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $currentAssignment" }
         eventConsumer.resume(currentAssignment)
