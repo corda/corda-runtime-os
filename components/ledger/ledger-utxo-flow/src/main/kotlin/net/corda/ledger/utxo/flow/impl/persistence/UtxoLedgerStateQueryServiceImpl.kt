@@ -59,16 +59,13 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
                 ResolveStateRefsExternalEventFactory::class.java,
                 ResolveStateRefsParameters(stateRefs)
             )
-        }.chunked(4).map {// CORE-9012 use proper response format
-            val transactionId = it[0].array().decodeToString()
-            val leafIndex = it[1].array().decodeToString().toInt()
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it[2].array())
-            val contractState = serializationService.deserialize<ContractState>(it[3].array())
+        }.map {
+            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
+            val contractState = serializationService.deserialize<ContractState>(it.data)
             StateAndRefImpl(
                 state = TransactionStateImpl(contractState, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(transactionId), leafIndex)
+                ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
             )
         }
     }
-
 }

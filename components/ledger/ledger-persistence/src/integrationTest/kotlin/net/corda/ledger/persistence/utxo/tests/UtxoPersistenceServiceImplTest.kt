@@ -229,15 +229,12 @@ class UtxoPersistenceServiceImplTest {
         assertThat(stateAndRefs.size).isEqualTo(2)
 
         for (i in 0..1) {
-            val state = stateAndRefs[i]
-            val transactionId = state[0].decodeToString()
-            assertThat(transactionId).isEqualTo(transactions[i].id.toString())
-            val leafIndex = state[1].decodeToString().toInt()
-            assertThat(leafIndex).isEqualTo(i)
-            val outputInfo = state[2]
-            assertThat(outputInfo).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
-            val output = state[3]
-            assertThat(output).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
+            val transactionOutput = stateAndRefs[i]
+
+            assertThat(transactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
+            assertThat(transactionOutput.leafIndex).isEqualTo(i)
+            assertThat(transactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
+            assertThat(transactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
         }
     }
 

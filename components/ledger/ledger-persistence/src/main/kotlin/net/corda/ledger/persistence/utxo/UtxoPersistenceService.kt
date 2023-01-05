@@ -12,7 +12,7 @@ interface UtxoPersistenceService {
 
     fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
 
-    fun resolveStateRefs(stateRefs: List<StateRef>): List<List<ByteArray>>
+    fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
 
     fun persistTransaction(transaction: UtxoTransactionReader)
 

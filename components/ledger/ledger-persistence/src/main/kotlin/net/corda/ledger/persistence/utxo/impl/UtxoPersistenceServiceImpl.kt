@@ -59,7 +59,7 @@ class UtxoPersistenceServiceImpl constructor(
         } ?: emptyList()
     }
 
-    override fun resolveStateRefs(stateRefs: List<StateRef>): List<List<ByteArray>> {
+    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
         val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
         val componentGroups = entityManagerFactory.transaction { em ->
@@ -73,7 +73,7 @@ class UtxoPersistenceServiceImpl constructor(
             requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
-            listOf(it.transactionId.toByteArray(), it.leafIndex.toString().toByteArray(), info, it.data)
+            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
         } ?: emptyList()
     }
 

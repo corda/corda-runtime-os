@@ -34,7 +34,7 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
 
         // Return output records
         return listOf(
-            utxoOutputRecordFactory.getFindUnconsumedStatesByTypeSuccessRecord(
+            utxoOutputRecordFactory.getStatesSuccessRecord(
                 relevantStates,
                 externalEventContext,
                 serializationService

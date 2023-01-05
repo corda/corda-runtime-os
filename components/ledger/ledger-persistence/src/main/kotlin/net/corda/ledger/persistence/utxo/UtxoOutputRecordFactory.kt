@@ -25,8 +25,8 @@ interface UtxoOutputRecordFactory {
         serializationService: SerializationService
     ): Record<String, FlowEvent>
 
-    fun getFindUnconsumedStatesByTypeSuccessRecord(
-        relevantStates: List<UtxoTransactionOutputDto>,
+    fun getStatesSuccessRecord(
+        states: List<UtxoTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent>
