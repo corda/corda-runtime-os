@@ -109,6 +109,10 @@ class WorkerHelpers {
             }
         }
 
+        fun startBanner() {
+
+        }
+
         /**
          * Prints help if `params.helpRequested` is true. Else prints version if `params.versionRequested` is true.
          *

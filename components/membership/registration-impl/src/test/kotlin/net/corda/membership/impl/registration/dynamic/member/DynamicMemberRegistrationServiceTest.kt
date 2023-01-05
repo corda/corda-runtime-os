@@ -691,6 +691,7 @@ class DynamicMemberRegistrationServiceTest {
                 context + mapOf(
                     "corda.roles" to "notary",
                     "corda.notary.service.name" to "Hello world",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
                 )
             registrationService.start()
 
@@ -706,12 +707,29 @@ class DynamicMemberRegistrationServiceTest {
                 context + mapOf(
                     "corda.roles.0" to "notary",
                     "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                    "corda.notary.keys.0.id" to NOTARY_KEY_ID,
                 )
             registrationService.start()
 
             val result = registrationService.register(registrationResultId, member, testProperties)
 
             assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+        }
+
+        @Test
+        fun `registration fails when notary keys are not provided`() {
+            postConfigChangedEvent()
+            val testProperties =
+                context + mapOf(
+                    "corda.roles.0" to "notary",
+                    "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                )
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, testProperties)
+
+            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThat(result.message).contains("notary key")
         }
     }
 

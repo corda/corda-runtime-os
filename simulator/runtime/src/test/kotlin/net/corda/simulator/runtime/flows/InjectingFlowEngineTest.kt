@@ -33,7 +33,15 @@ class InjectingFlowEngineTest {
         val contextProperties = SimFlowContextProperties(emptyMap())
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(mock(), member, fiber,contextProperties, injector, CordaFlowChecker(), flowManager)
+        val engine = InjectingFlowEngine(
+            mock(),
+            member,
+            fiber,
+            contextProperties,
+            injector,
+            CordaFlowChecker(),
+            flowManager
+        )
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()
@@ -43,7 +51,7 @@ class InjectingFlowEngineTest {
 
         // Then it should inject those
         verify(injector, times(1))
-            .injectServices(eq(flow), eq(member), eq(fiber), any())
+            .injectServices(eq(FlowAndProtocol(flow, null)), eq(member), eq(fiber), any())
 
         // And it should call the subFlow
         assertThat(response, `is`("Yo!"))

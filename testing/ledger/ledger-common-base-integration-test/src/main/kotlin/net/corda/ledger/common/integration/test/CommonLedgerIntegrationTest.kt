@@ -36,7 +36,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 
-const val TIMEOUT_MILLIS = 10000L
+const val TIMEOUT_MILLIS = 30000L
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -58,7 +58,7 @@ abstract class CommonLedgerIntegrationTest {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = 10000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
