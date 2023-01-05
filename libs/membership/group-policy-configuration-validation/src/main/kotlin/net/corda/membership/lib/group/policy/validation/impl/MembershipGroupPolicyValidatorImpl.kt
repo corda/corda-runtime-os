@@ -5,7 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.group.policy.validation.MembershipInvalidGroupPolicyException
 import net.corda.membership.lib.group.policy.validation.MembershipInvalidTlsTypeException
-import net.corda.membership.lib.p2p.TlsType
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 
 internal class MembershipGroupPolicyValidatorImpl: MembershipGroupPolicyValidator {
     private val objectMapper = ObjectMapper()

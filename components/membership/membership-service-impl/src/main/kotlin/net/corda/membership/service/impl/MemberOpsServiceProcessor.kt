@@ -38,9 +38,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
-import net.corda.membership.lib.p2p.TlsType
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
