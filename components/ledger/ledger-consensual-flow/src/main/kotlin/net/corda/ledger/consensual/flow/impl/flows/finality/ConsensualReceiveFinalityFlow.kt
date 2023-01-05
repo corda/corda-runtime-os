@@ -50,14 +50,15 @@ class ConsensualReceiveFinalityFlow(
         verifyTransaction(initialTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
-         var transaction = if (validateTransaction(initialTransaction)) {
+        var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
-             transaction
+            transaction
         } else {
+            persistInvalidTransaction(initialTransaction)
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
             )
@@ -104,7 +105,7 @@ class ConsensualReceiveFinalityFlow(
         }
     }
 
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction){
+    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction) {
         val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
         ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
     }
@@ -134,6 +135,13 @@ class ConsensualReceiveFinalityFlow(
         }
 
         return transaction to Payload.Success(mySignatures)
+    }
+
+    @Suspendable
+    private fun persistInvalidTransaction(transaction: ConsensualSignedTransactionInternal) {
+        log.warn("Failed to validate transaction: ${transaction.id}")
+        persistenceService.persist(transaction, TransactionStatus.INVALID)
+        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
 
     @Suspendable

@@ -239,6 +239,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.UNVERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -250,6 +251,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.UNVERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -261,6 +263,7 @@ class UtxoReceiveFinalityFlowTest {
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.UNVERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 

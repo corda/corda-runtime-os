@@ -121,6 +121,7 @@ class ConsensualReceiveFinalityFlowTest {
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
 
@@ -131,6 +132,7 @@ class ConsensualReceiveFinalityFlowTest {
             .hasMessageContaining("Transaction validation failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
@@ -142,6 +144,7 @@ class ConsensualReceiveFinalityFlowTest {
             .hasMessageContaining("Transaction validation failed for transaction")
 
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
@@ -153,6 +156,7 @@ class ConsensualReceiveFinalityFlowTest {
             .hasMessage("message!")
 
         verify(session, never()).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+        verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
     }
