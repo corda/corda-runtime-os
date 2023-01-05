@@ -138,7 +138,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
-        val assignment = eventConsumer.assignment() - eventConsumer.paused()
+        val assignment = eventConsumer.assignment()
         log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout

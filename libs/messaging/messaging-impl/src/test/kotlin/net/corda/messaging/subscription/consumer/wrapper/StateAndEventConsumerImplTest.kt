@@ -198,7 +198,6 @@ class StateAndEventConsumerImplTest {
         }, 200L, "test ")
         latch.countDown()
 
-        verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(2)).assignment()
         verify(eventConsumer, times(1)).pause(any())
         verify(eventConsumer, times(1)).resume(any())
@@ -278,7 +277,6 @@ class StateAndEventConsumerImplTest {
         latch.countDown()
 
         verify(eventConsumer, times(2)).assignment()
-        verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(1)).pause(assignedTopicPartitions)
         verify(eventConsumer, times(1)).resume(assignedTopicPartitionsAfterRebalance)
         verify(stateConsumer, atLeast(1)).poll(any())
