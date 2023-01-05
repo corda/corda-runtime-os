@@ -74,13 +74,8 @@ class ConsolePrinterTest {
     fun `when printLeftPad print multiline`() {
         val printer = ConsolePrinter(this::mockPrinter)
 
-        printer.printLeftPad("""
-hello world
-and mars
-        """.trimIndent(), 4)
+        printer.printLeftPad("hello world${System.lineSeparator()}and mars", 4)
 
-        assertThat(printed).contains(
-            """    hello world
-    and mars""")
+        assertThat(printed).contains("    hello world${System.lineSeparator()}    and mars",)
     }
 }
