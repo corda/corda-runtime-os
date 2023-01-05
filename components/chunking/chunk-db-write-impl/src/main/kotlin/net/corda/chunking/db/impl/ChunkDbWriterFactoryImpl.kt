@@ -13,6 +13,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.certificate.service.CertificatesService
+import net.corda.membership.lib.group.policy.validation.MembershipGroupPolicyValidatorFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -37,6 +38,7 @@ class ChunkDbWriterFactoryImpl(
     private val tempPathProvider: PathProvider,
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    private val membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidatorFactory,
     private val configurationGetService: ConfigurationGetService,
 ) : ChunkDbWriterFactory {
 
@@ -50,6 +52,8 @@ class ChunkDbWriterFactoryImpl(
         certificatesService: CertificatesService,
         @Reference(service = MembershipSchemaValidatorFactory::class)
         membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+        @Reference(service = MembershipGroupPolicyValidatorFactory::class)
+        membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidatorFactory,
         @Reference(service = ConfigurationGetService::class)
         configurationGetService: ConfigurationGetService,
     ) : this(
@@ -58,6 +62,7 @@ class ChunkDbWriterFactoryImpl(
         TempPathProvider(),
         certificatesService,
         membershipSchemaValidatorFactory,
+        membershipGroupPolicyValidatorFactory,
         configurationGetService,
     )
 
@@ -120,12 +125,14 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
+        val membershipGroupPolicyValidator = membershipGroupPolicyValidatorFactory.createValidator()
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
             cpiPersistence,
             cpiInfoWriteService,
             membershipSchemaValidator,
+            membershipGroupPolicyValidator,
             configurationGetService,
             cpiCacheDir,
             cpiPartsDir,
