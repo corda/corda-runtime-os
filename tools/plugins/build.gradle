@@ -131,15 +131,19 @@ tasks.register('publishBuildkitImage', BuildkitBuild) {
     }
 
     if (project.hasProperty('isReleaseCandidate')) {
-        releaseCandidate = isReleaseCandidate.toBoolean()
+        it.releaseCandidate = isReleaseCandidate.toBoolean()
     }
 
     if (project.hasProperty('isNightly')) {
-        nightlyBuild = isNightly.toBoolean()
+        it.nightlyBuild = isNightly.toBoolean()
     }
 
     if (project.hasProperty('isPreTest')) {
-        preTest = isPreTest.toBoolean()
+        it.preTest = isPreTest.toBoolean()
+    }
+
+    if (project.hasProperty('isDocker')) {
+        it.useDocker = isDocker.toBoolean()
     }
 }
 
