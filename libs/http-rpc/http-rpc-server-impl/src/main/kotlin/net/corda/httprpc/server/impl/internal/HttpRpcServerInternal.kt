@@ -45,7 +45,7 @@ import java.nio.file.Path
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
 import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
-import java.util.*
+import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class HttpRpcServerInternal(
@@ -94,7 +94,6 @@ internal class HttpRpcServerInternal(
             it.enableDevLogging()
         }
         it.server {
-
             configurationsProvider.getSSLKeyStorePath()
                 ?.let { createSecureServer() }
                 ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
@@ -107,7 +106,7 @@ internal class HttpRpcServerInternal(
                     createInsecureServer()
                 }
         }
-                it.defaultContentType = contentTypeApplicationJson
+        it.defaultContentType = contentTypeApplicationJson
         it.enableCorsForAllOrigins()
     }.apply {
         addRoutes()
