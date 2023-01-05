@@ -4,7 +4,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
-import net.corda.data.ledger.persistence.TransactionOutputs
+import net.corda.data.ledger.persistence.UtxoTransactionOutputs
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
@@ -29,7 +29,7 @@ import java.time.Clock
 class FindUnconsumedStatesByTypeExternalEventFactory(
     private val serializationService: SerializationService,
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, TransactionOutputs, List<StateAndRef<ContractState>>>
+) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<StateAndRef<ContractState>>>
 {
     @Activate
     constructor(
@@ -37,7 +37,7 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
         serializationService: SerializationService,
     ) : this(serializationService, Clock.systemUTC())
 
-    override val responseType = TransactionOutputs::class.java
+    override val responseType = UtxoTransactionOutputs::class.java
 
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
@@ -60,13 +60,13 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
         return FindUnconsumedStatesByType(parameters.stateClass.canonicalName)
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: TransactionOutputs): List<StateAndRef<ContractState>> {
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<StateAndRef<ContractState>> {
         return response.transactionOutputs.map {
             val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info.array())
             val contractState = serializationService.deserialize<ContractState>(it.data.array())
             StateAndRefImpl(
                 state = TransactionStateImpl(contractState, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(it.id), it.index)
+                ref = StateRef(SecureHash.parse(it.transactionId), it.index)
             )
         }
     }

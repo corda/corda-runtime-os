@@ -1,5 +1,7 @@
 package net.corda.ledger.persistence.common
 
+import java.util.Objects
+
 data class TransactionOutputDto(
     val transactionId: String,
     val leafIndex: Int,
@@ -20,11 +22,5 @@ data class TransactionOutputDto(
         return true
     }
 
-    override fun hashCode(): Int {
-        var result = transactionId.hashCode()
-        result = 31 * result + leafIndex
-        result = 31 * result + info.contentHashCode()
-        result = 31 * result + data.contentHashCode()
-        return result
-    }
+    override fun hashCode(): Int = Objects.hash(transactionId, leafIndex, info, data)
 }

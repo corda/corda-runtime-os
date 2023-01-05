@@ -2,8 +2,8 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.persistence.TransactionOutput
-import net.corda.data.ledger.persistence.TransactionOutputs
+import net.corda.data.ledger.persistence.UtxoTransactionOutput
+import net.corda.data.ledger.persistence.UtxoTransactionOutputs
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
@@ -76,9 +76,9 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-                TransactionOutputs(
+                UtxoTransactionOutputs(
                 relevantStates.map {
-                    TransactionOutput(
+                    UtxoTransactionOutput(
                         it.transactionId,
                         it.leafIndex,
                         ByteBuffer.wrap(it.info),
