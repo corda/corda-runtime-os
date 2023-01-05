@@ -15,8 +15,8 @@ dependencies {
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"
 
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-application:$cordaApiVersion"
