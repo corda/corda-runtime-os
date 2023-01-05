@@ -50,12 +50,13 @@ class ConsensualReceiveFinalityFlow(
         verifyTransaction(initialTransaction)
 
         // TODO [CORE-5982] Verify already added signatures.
-         if (validateTransaction(initialTransaction)) {
+         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
+             transaction
         } else {
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
@@ -64,7 +65,7 @@ class ConsensualReceiveFinalityFlow(
             throw CordaRuntimeException(payload.message)
         }
 
-        val transaction = receiveFinalizedTransaction(transactionId)
+        transaction = receiveSignaturesAndAddToTransaction(transaction)
 
         log.debug { "Verifying signatures of transaction: $transactionId" }
         transaction.verifySignatures()
@@ -136,15 +137,19 @@ class ConsensualReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun receiveFinalizedTransaction(transactionId: SecureHash): ConsensualSignedTransactionInternal {
-        val transaction = session.receive<ConsensualSignedTransactionInternal>()
-        // A [require] block isn't the correct option if we want to do something with the error on the peer side
-        require(transaction.id == transactionId) {
-            "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
-                    "${transaction.id} instead"
-        }
+    private fun receiveSignaturesAndAddToTransaction(
+        transaction: ConsensualSignedTransactionInternal
+    ): ConsensualSignedTransactionInternal {
+        log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
+        val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        var signedTransaction = transaction
+        otherPartiesSignatures
+            .filter { it !in transaction.signatures }
+            .forEach {
+                signedTransaction = signedTransaction.addSignature(it)
+            }
 
-        return transaction
+        return signedTransaction
     }
 
     @Suspendable

@@ -9,6 +9,7 @@ import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransac
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -39,6 +40,7 @@ class ConsensualFinalityFlowTest {
         val BOB = MemberX500Name("Bob", "London", "GB")
     }
 
+    private val flowMessaging = mock<FlowMessaging>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<ConsensualLedgerPersistenceService>()
@@ -64,9 +66,7 @@ class ConsensualFinalityFlowTest {
     @BeforeEach
     fun beforeEach() {
         whenever(sessionAlice.counterparty).thenReturn(ALICE)
-        whenever(sessionAlice.receive(Unit::class.java)).thenReturn(Unit)
         whenever(sessionBob.counterparty).thenReturn(BOB)
-        whenever(sessionBob.receive(Unit::class.java)).thenReturn(Unit)
 
         whenever(memberLookup.lookup(ALICE)).thenReturn(memberInfoAlice)
         whenever(memberLookup.lookup(BOB)).thenReturn(memberInfoBob)
@@ -90,6 +90,8 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
+        whenever(updatedSignedTransaction.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
         callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob))
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
@@ -102,10 +104,12 @@ class ConsensualFinalityFlowTest {
 
         verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
 
-        verify(sessionAlice).send(signedTransaction)
-        verify(sessionAlice).send(updatedSignedTransaction)
-        verify(sessionBob).send(signedTransaction)
-        verify(sessionBob).send(updatedSignedTransaction)
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
     }
 
     @Test
@@ -165,28 +169,6 @@ class ConsensualFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a session error instead of an acknowledgement of Unit after distributing the transaction throws an exception`() {
-        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
-        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
-
-        whenever(sessionBob.receive(Unit::class.java)).thenThrow(CordaRuntimeException("session error"))
-
-        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("session error")
-
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
-        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-
-        verify(signedTransaction).addSignature(signatureAlice1)
-        verify(updatedSignedTransaction).addSignature(signatureAlice2)
-        verify(updatedSignedTransaction).addSignature(signatureBob)
-
-        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
-    }
-
-    @Test
     fun `missing signatures when verifying all signatures rethrows exception with useful message`() {
         val aliceSignatures = listOf(signatureAlice1, signatureAlice2)
 
@@ -239,6 +221,7 @@ class ConsensualFinalityFlowTest {
     
     private fun callFinalityFlow(signedTransaction: ConsensualSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = ConsensualFinalityFlow(signedTransaction, sessions)
+        flow.flowMessaging = flowMessaging
         flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService

@@ -151,6 +151,7 @@ class UtxoFinalityFlow(
             }
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
+        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
 
     @Suppress("ThrowsCount")

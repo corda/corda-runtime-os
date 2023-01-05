@@ -9,6 +9,7 @@ import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
@@ -31,6 +32,9 @@ class ConsensualFinalityFlow(
     private val transactionId = initialTransaction.id
 
     @CordaInject
+    lateinit var flowMessaging: FlowMessaging
+
+    @CordaInject
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
@@ -48,7 +52,7 @@ class ConsensualFinalityFlow(
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
-        sendFullySignedTransactionToCounterparties(transaction)
+        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
 
         if (sessions.isNotEmpty()) {
             log.debug { "All sessions received and acknowledged storage of transaction $transactionId" }
@@ -136,17 +140,17 @@ class ConsensualFinalityFlow(
     }
 
     @Suspendable
-    private fun sendFullySignedTransactionToCounterparties(transaction: ConsensualSignedTransactionInternal) {
-        // TODO Consider removing
-        for (session in sessions) {
-            // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            session.send(transaction)
-            // Do we want a situation where a boolean can be received to execute some sort of failure logic?
-            // Or would that always be covered by an exception as it always indicates something wrong occurred.
-            // Returning a context map might be appropriate in case we want to do any sort of handling in the future
-            // without having to worry about backwards compatibility.
-            session.receive<Unit>()
-            log.debug { "${session.counterparty} received and acknowledged storage of transaction $transactionId" }
-        }
+    private fun sendUnseenSignaturesToCounterparties(
+        transaction: ConsensualSignedTransactionInternal,
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
+    ) {
+        val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
+            session to transaction.signatures.filter {
+                it !in initialTransaction.signatures &&             // These have already been distributed with the first go
+                it !in signatures                                   // These came from that party
+            }
+        }.toMap()
+        flowMessaging.sendAllMap(notSeenSignaturesBySessions)
+        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
 }
