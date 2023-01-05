@@ -3,7 +3,6 @@ package net.corda.persistence.common
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
@@ -28,9 +27,9 @@ class ResponseFactoryImpl @Activate constructor(
 
     override fun successResponse(
         flowExternalEventContext: ExternalEventContext,
-        entityResponse: EntityResponse
+        payload: Any
     ): Record<String, FlowEvent> {
-        return externalEventResponseFactory.success(flowExternalEventContext, entityResponse)
+        return externalEventResponseFactory.success(flowExternalEventContext, payload)
     }
 
     override fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
