@@ -50,7 +50,7 @@ class CreateObligationFlow(
             .getTransactionBuilder()
             .setNotary(notary)
             .addOutputState(obligation)
-            .addCommand(ObligationContract.Create)
+            .addCommand(ObligationContract.Create())
             .setTimeWindowBetween(
                 Instant.now().plusMillis(fromDayOffset.days.toMillis()),
                 Instant.now().plusMillis(toDayOffset.days.toMillis())
@@ -115,7 +115,7 @@ class CreateObligationFlow(
 
             val transaction = flowEngine.subFlow(createObligationFlow)
 
-            val response = CreateObligationResponseMessage(transaction.id, obligationState.id)
+            val response = CreateObligationResponseMessage(transaction.id.toString(), obligationState.id)
 
             log.info("CreateObligationFlow: finishing.")
             return jsonMarshallingService.format(response)

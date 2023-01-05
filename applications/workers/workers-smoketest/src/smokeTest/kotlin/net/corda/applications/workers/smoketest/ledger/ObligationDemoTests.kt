@@ -132,7 +132,7 @@ class ObligationDemoTests {
             ). forEach {
                 val findTransactionFlowRequestId = startRpcFlow(
                     holdingId,
-                    mapOf("transactionId" to it.transactionId.toString()),
+                    mapOf("transactionId" to it.transactionId),
                     "net.cordapp.demo.obligation.workflow.FindTransactionFlow"
                 )
                 val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
@@ -145,18 +145,18 @@ class ObligationDemoTests {
                 assertThat(parsedResult.transaction).withFailMessage {
                     "Member with holding identity $holdingId did not receive the transaction $it.transactionId"
                 }.isNotNull
-                assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(it.transactionId.toString())
+                assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(it.transactionId)
                 assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(it.expectedParticipantSize)
                 assertThat(parsedResult.transaction.signatories).hasSize(it.expectedSignatoriesSize)
             }
         }
     }
 
-    data class TestCase(val transactionId: SecureHash, val expectedParticipantSize: Int, val expectedSignatoriesSize: Int)
+    data class TestCase(val transactionId: String, val expectedParticipantSize: Int, val expectedSignatoriesSize: Int)
 
-    data class CreateObligationResult(val transactionId: SecureHash, val obligationId: UUID)
-    data class UpdateObligationResult(val transactionId: SecureHash)
-    data class DeleteObligationResult(val transactionId: SecureHash)
+    data class CreateObligationResult(val transactionId: String, val obligationId: UUID)
+    data class UpdateObligationResult(val transactionId: String)
+    data class DeleteObligationResult(val transactionId: String)
 
     data class ObligationStateResult(val amount: BigDecimal, val id: UUID, val participants: List<ByteArray>)
 
