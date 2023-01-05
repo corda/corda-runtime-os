@@ -250,7 +250,7 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
     }
 
-    protected fun register() {
+    protected fun register(skipWaitingForApproval: Boolean = false) {
         val response = Unirest.post("/membership/$holdingId")
             .body(
                 mapOf(
@@ -268,18 +268,20 @@ abstract class BaseOnboard : Runnable {
         }
         val id = body.get("registrationId")
         println("Registration ID of $x500Name is $id")
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
-        while (System.currentTimeMillis() < end) {
-            val status = Unirest.get("/membership/$holdingId/$id").asJson()
-            val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
-            if (registrationStatus == "APPROVED") {
-                return
-            } else {
-                println("Status of $x500Name registration is $registrationStatus")
-                Thread.sleep(400)
+        if (!skipWaitingForApproval) {
+            val end = System.currentTimeMillis() + 5 * 60 * 1000
+            while (System.currentTimeMillis() < end) {
+                val status = Unirest.get("/membership/$holdingId/$id").asJson()
+                val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
+                if (registrationStatus == "APPROVED") {
+                    return
+                } else {
+                    println("Status of $x500Name registration is $registrationStatus")
+                    Thread.sleep(400)
+                }
             }
+            throw OnboardException("Registration had failed!")
         }
-        throw OnboardException("Registration had failed!")
     }
 
     protected fun disableClrChecks() {
