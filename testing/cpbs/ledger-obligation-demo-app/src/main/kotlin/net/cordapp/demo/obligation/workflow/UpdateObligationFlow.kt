@@ -49,7 +49,7 @@ class UpdateObligationFlow(
             .setNotary(oldObligation.state.notary)
             .addInputState(oldObligation.ref)
             .addOutputState(newObligation)
-            .addCommand(ObligationContract.Update)
+            .addCommand(ObligationContract.Update())
             .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
             .addSignatories(listOf(newObligation.holder))
 

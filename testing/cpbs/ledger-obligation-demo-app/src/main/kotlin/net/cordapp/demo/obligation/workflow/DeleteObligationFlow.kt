@@ -46,7 +46,7 @@ class DeleteObligationFlow(
             utxoLedgerService.getTransactionBuilder()
                 .setNotary(obligation.state.notary)
                 .addInputState(obligation.ref)
-                .addCommand(ObligationContract.Delete)
+                .addCommand(ObligationContract.Delete())
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
                 .addSignatories(listOf(obligation.state.contractState.issuer, obligation.state.contractState.holder))
 
