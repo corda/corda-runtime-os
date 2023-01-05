@@ -106,7 +106,7 @@ class DeleteObligationFlow(
 
             val transaction = flowEngine.subFlow(deleteObligationFlow)
 
-            val response = DeleteObligationResponseMessage(transaction.id)
+            val response = DeleteObligationResponseMessage(transaction.id.toString())
 
             log.info("DeleteObligationFlow: finishing.")
             return jsonMarshallingService.format(response)

@@ -108,7 +108,7 @@ class UpdateObligationFlow(
                 flowEngine.subFlow(UpdateObligationFlow(oldObligation, anotherNewObligation, anotherSessions))
             }
 
-            val response = UpdateObligationResponseMessage(transaction.id)
+            val response = UpdateObligationResponseMessage(transaction.id.toString())
 
             log.info("UpdateObligationFlow: finishing.")
             return jsonMarshallingService.format(response)

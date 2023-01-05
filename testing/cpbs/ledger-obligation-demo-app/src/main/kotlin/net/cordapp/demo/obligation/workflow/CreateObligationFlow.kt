@@ -115,7 +115,7 @@ class CreateObligationFlow(
 
             val transaction = flowEngine.subFlow(createObligationFlow)
 
-            val response = CreateObligationResponseMessage(transaction.id, obligationState.id)
+            val response = CreateObligationResponseMessage(transaction.id.toString(), obligationState.id)
 
             log.info("CreateObligationFlow: finishing.")
             return jsonMarshallingService.format(response)
