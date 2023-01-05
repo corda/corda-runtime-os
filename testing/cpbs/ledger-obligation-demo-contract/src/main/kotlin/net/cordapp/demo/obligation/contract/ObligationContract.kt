@@ -76,7 +76,7 @@ class ObligationContract : Contract {
                 "On state updating, the output state amount must be less than the input state amount."
 
             internal const val CONTRACT_RULE_AMOUNT_OUTPUT =
-                "On state updating, the amount must not be lower than zero."
+                "On state updating, the remaining amount must be more than or equal zero."
 
             internal const val CONTRACT_RULE_SIGNATORIES =
                 "On state updating, the holder must sign the transaction."
