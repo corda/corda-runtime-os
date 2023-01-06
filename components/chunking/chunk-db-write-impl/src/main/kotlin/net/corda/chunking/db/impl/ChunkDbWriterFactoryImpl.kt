@@ -51,14 +51,14 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = MembershipSchemaValidatorFactory::class)
         membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
         @Reference(service = MembershipGroupPolicyValidator::class)
-        membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidator,
+        membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     ) : this(
         subscriptionFactory,
         publisherFactory,
         TempPathProvider(),
         certificatesService,
         membershipSchemaValidatorFactory,
-        membershipGroupPolicyValidatorFactory,
+        membershipGroupPolicyValidator,
     )
 
     companion object {

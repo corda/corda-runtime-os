@@ -113,7 +113,7 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = MembershipGroupPolicyValidator::class)
-    private val membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidator,
+    private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -160,7 +160,7 @@ class DBProcessorImpl @Activate constructor(
         ::membershipPersistenceService,
         ::groupParametersWriterService,
         ::groupParametersReaderService,
-        ::membershipGroupPolicyValidatorFactory,
+        ::membershipGroupPolicyValidator,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
