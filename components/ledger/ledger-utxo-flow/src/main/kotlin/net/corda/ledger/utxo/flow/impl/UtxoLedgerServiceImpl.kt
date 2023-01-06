@@ -51,12 +51,15 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun getTransactionBuilder(): UtxoTransactionBuilder =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 
+    @Suppress("UNCHECKED_CAST")
+    @Suspendable
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
-        TODO("Not yet implemented")
+        return utxoLedgerStateQueryService.resolveStateRefs(stateRefs) as List<StateAndRef<T>>
     }
 
+    @Suspendable
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
-        TODO("Not yet implemented")
+        return resolve<T>(listOf(stateRef)).first()
     }
 
     @Suspendable
@@ -66,7 +69,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
-        // TODO resolve, etc
         return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
     }
 

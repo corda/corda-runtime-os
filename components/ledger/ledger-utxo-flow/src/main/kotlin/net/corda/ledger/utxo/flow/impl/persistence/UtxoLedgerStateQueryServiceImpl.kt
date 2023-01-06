@@ -53,7 +53,7 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun resolveStateRefs(stateRefs: List<StateRef>): List<StateAndRef<*>> {
+    override fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 ResolveStateRefsExternalEventFactory::class.java,

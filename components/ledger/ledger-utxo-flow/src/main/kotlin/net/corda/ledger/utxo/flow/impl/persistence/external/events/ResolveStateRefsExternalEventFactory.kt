@@ -64,5 +64,5 @@ class ResolveStateRefsExternalEventFactory(
 }
 
 data class ResolveStateRefsParameters(
-    val stateRefs: List<StateRef>
+    val stateRefs: Iterable<StateRef>
 )

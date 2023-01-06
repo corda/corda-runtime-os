@@ -30,5 +30,5 @@ interface UtxoLedgerStateQueryService {
      * @throws CordaPersistenceException if an error happens during resolve operation.
      */
     @Suspendable
-    fun resolveStateRefs(stateRefs: List<StateRef>): List<StateAndRef<*>>
+    fun resolveStateRefs(stateRefs: Iterable<StateRef>): List<StateAndRef<*>>
 }
