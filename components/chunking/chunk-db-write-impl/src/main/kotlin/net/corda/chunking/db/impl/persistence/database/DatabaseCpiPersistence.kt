@@ -79,8 +79,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 val cpiCpkKey = CpiCpkKey(
                     cpi.metadata.cpiId.name,
                     cpi.metadata.cpiId.version,
-                    cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
-                    // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
+                    cpi.metadata.cpiId.signerSummaryHash.toString(),
                     cpk.metadata.cpkId.name,
                     cpk.metadata.cpkId.version,
                     cpk.metadata.cpkId.signerSummaryHash.toString()

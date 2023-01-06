@@ -41,7 +41,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "UNNECESSARY_SAFE_CALL")
 internal class MGMRegistrationMemberInfoHandler(
     private val clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -126,9 +126,7 @@ internal class MGMRegistrationMemberInfoHandler(
             throw MGMRegistrationContextValidationException("ECDH key must be created with an EC schema.", null)
         }
         val now = clock.instant().toString()
-        val optionalContext = cpi.signerSummaryHash?.let {
-            mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
-        } ?: emptyMap()
+        val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
         val memberContext = context.filterKeys {
             !keyIdList.contains(it)
         }.filterKeys {

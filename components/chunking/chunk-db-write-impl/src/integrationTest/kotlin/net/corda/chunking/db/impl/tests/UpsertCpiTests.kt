@@ -239,7 +239,7 @@ class UpsertCpiTests {
         assertDoesNotThrow {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version,
                 groupId,
                 forceUpload = true,
@@ -259,7 +259,7 @@ class UpsertCpiTests {
         assertThrows<ValidationException> {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version,
                 groupId + "_2",
                 forceUpload = true,
@@ -279,7 +279,7 @@ class UpsertCpiTests {
         assertThrows<DuplicateCpiUploadException> {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version,
                 groupId + "_2",
                 forceUpload = false,
@@ -299,7 +299,7 @@ class UpsertCpiTests {
         assertDoesNotThrow {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name + UUID.randomUUID().toString(),
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version,
                 groupId,
                 forceUpload = false,
@@ -319,7 +319,7 @@ class UpsertCpiTests {
         assertDoesNotThrow {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version + UUID.randomUUID().toString(),
                 groupId,
                 forceUpload = false,
@@ -359,7 +359,7 @@ class UpsertCpiTests {
         assertThrows<DuplicateCpiUploadException> {
             cpiPersistence.validateCanUpsertCpi(
                 cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.signerSummaryHash!!.toString(),
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
                 cpi.metadata.cpiId.version,
                 groupId,
                 forceUpload = false,

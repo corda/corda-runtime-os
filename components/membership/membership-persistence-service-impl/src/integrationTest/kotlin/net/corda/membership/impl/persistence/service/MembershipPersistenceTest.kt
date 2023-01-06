@@ -71,6 +71,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -349,7 +350,7 @@ class MembershipPersistenceTest {
             )
             val vnodeInfo = VirtualNodeInfo(
                 viewOwningHoldingIdentity,
-                CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", null),
+                CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", TestRandom.secureHash()),
                 vaultDmlConnectionId = connectionID,
                 cryptoDmlConnectionId = connectionID,
                 uniquenessDmlConnectionId = connectionID,

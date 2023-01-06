@@ -16,13 +16,13 @@ import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 data class CpiIdentifier(
     override val name: String,
     override val version: String,
-    override val signerSummaryHash: SecureHash?,
+    override val signerSummaryHash: SecureHash,
 ) : Identifier, Comparable<CpiIdentifier> {
     companion object {
         fun fromAvro(other: CpiIdentifierAvro) = CpiIdentifier(
             other.name,
             other.version,
-            other.signerSummaryHash?.let { SecureHash(it.algorithm, it.serverHash.array()) },
+            other.signerSummaryHash.let { SecureHash(it.algorithm, it.serverHash.array()) },
         )
     }
 
@@ -32,7 +32,7 @@ data class CpiIdentifier(
         return CpiIdentifierAvro(
             name,
             version,
-            signerSummaryHash?.let { hash ->
+            signerSummaryHash.let { hash ->
                 net.corda.data.crypto.SecureHash(
                     hash.algorithm,
                     ByteBuffer.wrap(hash.bytes)

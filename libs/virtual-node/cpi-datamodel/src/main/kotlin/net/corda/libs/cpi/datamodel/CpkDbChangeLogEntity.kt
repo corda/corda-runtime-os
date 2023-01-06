@@ -84,5 +84,5 @@ fun findDbChangeLogForCpi(
 )
     .setParameter("name", cpi.name)
     .setParameter("version", cpi.version)
-    .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString()?:"")
+    .setParameter("signerSummaryHash", cpi.signerSummaryHash.toString())
     .resultList
