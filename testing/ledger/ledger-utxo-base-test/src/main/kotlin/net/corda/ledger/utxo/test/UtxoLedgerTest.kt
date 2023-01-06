@@ -5,6 +5,7 @@ import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.mockTransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
@@ -16,6 +17,7 @@ import org.mockito.kotlin.mock
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
@@ -25,7 +27,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     )
     private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
         serializationServiceWithWireTx,
-        mockUtxoLedgerPersistenceService
+        mockUtxoLedgerStateQueryService
     )
     val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
         currentSandboxGroupContext,
@@ -34,13 +36,15 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         serializationServiceNullCfg,
         mockTransactionSignatureService(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        utxoLedgerTransactionFactory
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,
         utxoSignedTransactionFactory,
         flowEngine,
-        mockUtxoLedgerPersistenceService
+        mockUtxoLedgerPersistenceService,
+        mockUtxoLedgerStateQueryService
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
@@ -60,9 +64,9 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         jsonMarshallingService,
         jsonValidator,
         mockTransactionSignatureService(),
-        mockUtxoLedgerPersistenceService
+        utxoLedgerTransactionFactory
     )
     
     // This is the only not stateless.
-    val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockUtxoLedgerPersistenceService)
+    val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 }

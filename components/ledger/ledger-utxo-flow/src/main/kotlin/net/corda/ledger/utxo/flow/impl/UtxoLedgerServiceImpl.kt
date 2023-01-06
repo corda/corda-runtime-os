@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -41,19 +42,24 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine,
     @Reference(service = UtxoLedgerPersistenceService::class)
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
+    @Reference(service = UtxoLedgerStateQueryService::class)
+    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun getTransactionBuilder(): UtxoTransactionBuilder =
-        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, utxoLedgerPersistenceService)
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 
+    @Suppress("UNCHECKED_CAST")
+    @Suspendable
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
-        TODO("Not yet implemented")
+        return utxoLedgerStateQueryService.resolveStateRefs(stateRefs) as List<StateAndRef<T>>
     }
 
+    @Suspendable
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
-        TODO("Not yet implemented")
+        return resolve<T>(listOf(stateRef)).first()
     }
 
     @Suspendable
@@ -63,7 +69,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
-        // TODO resolve, etc
         return utxoLedgerPersistenceService.find(id)?.toLedgerTransaction()
     }
 
@@ -74,7 +79,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
-        return utxoLedgerPersistenceService.findUnconsumedStatesByType(stateClass)
+        return utxoLedgerStateQueryService.findUnconsumedStatesByType(stateClass)
     }
 
     @Suspendable

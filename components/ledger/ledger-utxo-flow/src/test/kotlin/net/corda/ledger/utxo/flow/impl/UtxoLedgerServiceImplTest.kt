@@ -15,7 +15,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
@@ -37,14 +36,8 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         val referenceStateAndRef = getUtxoInvalidStateAndRef()
         val referenceStateRef = referenceStateAndRef.ref
 
-        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
-        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
-
-        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
-        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
-        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
-            .thenReturn(mockSignedTxForInput)
-            .thenReturn(mockSignedTxForRef)
+        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
+            .thenReturn(listOf(inputStateAndRef))
 
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
