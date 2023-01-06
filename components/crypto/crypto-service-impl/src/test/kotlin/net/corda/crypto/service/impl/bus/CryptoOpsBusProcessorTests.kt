@@ -42,6 +42,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec
@@ -68,6 +69,8 @@ import kotlin.test.assertTrue
 
 class CryptoOpsBusProcessorTests {
     companion object {
+        private val logger = contextLogger()
+
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
             mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
@@ -418,6 +421,49 @@ class CryptoOpsBusProcessorTests {
         assertNull(info.externalId)
         // signing
         testSigning(publicKey, data)
+    }
+
+    @Test
+    fun `Should handle generating fresh keys twice without external id`() {
+        setup()
+        // generate
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
+        )
+        logger.info("Making key 1")
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
+                    null,
+                    ECDSA_SECP256R1_CODE_NAME,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        val future2 = CompletableFuture<RpcOpsResponse>()
+        logger.info("Making key 2")
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
+                    null,
+                    ECDSA_SECP256R1_CODE_NAME,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future2
+        )
+        val result2 = future2.get()
+        logger.info("got both keys $result1 $result2")
+        assertThat(result1.response).isNotEqualTo(result2.response)
     }
 
     @Test
