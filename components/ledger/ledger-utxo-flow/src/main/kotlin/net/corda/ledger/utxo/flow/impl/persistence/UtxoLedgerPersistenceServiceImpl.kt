@@ -3,6 +3,10 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.getEncumbranceGroup
+import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
@@ -24,6 +28,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -66,7 +71,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 FindUnconsumedStatesByTypeExternalEventFactory::class.java,
                 FindUnconsumedStatesByTypeParameters(stateClass)
             )
-        } as List<StateAndRef<T>>
+        }.map {
+            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info)
+            val contractState = serializationService.deserialize<ContractState>(it.data)
+            StateAndRefImpl(
+                state = TransactionStateImpl(contractState as T, info.notary, info.getEncumbranceGroup()),
+                ref = StateRef(SecureHash.parse(it.transactionId), it.leafIndex)
+            )
+        }
     }
 
     @Suspendable

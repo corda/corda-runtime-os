@@ -11,7 +11,6 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.persistence.common.TransactionOutputDto
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
@@ -70,7 +69,7 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     }
 
     override fun getFindUnconsumedStatesByTypeSuccessRecord(
-        relevantStates: List<TransactionOutputDto>,
+        relevantStates: List<UtxoTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent> {
