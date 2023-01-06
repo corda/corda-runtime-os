@@ -466,6 +466,53 @@ class CryptoOpsBusProcessorTests {
         assertThat(result1.response).isNotEqualTo(result2.response)
     }
 
+
+    @Test
+    fun `Should handle generating fresh keys twice with external id`() {
+        setup()
+        val externalId = UUID.randomUUID()
+
+        // generate
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
+        )
+        logger.info("Making key 1")
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
+                    externalId.toString(),
+                    ECDSA_SECP256R1_CODE_NAME,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        val future2 = CompletableFuture<RpcOpsResponse>()
+        logger.info("Making key 2")
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
+                    externalId.toString(),
+                    ECDSA_SECP256R1_CODE_NAME,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future2
+        )
+        val result2 = future2.get()
+        logger.info("got both keys $result1 $result2")
+        assertThat(result1.response).isNotEqualTo(result2.response)
+    }
+
+
     @Test
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
         setup()
