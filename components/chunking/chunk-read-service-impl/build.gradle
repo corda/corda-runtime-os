@@ -24,6 +24,7 @@ dependencies {
     implementation project(':components:chunking:chunk-db-write')
     implementation project(":components:db:db-connection-manager")
     implementation project(':components:virtual-node:cpi-info-write-service')
+    implementation project(':components:membership:group-policy-configuration-validation')
 
     implementation project(':libs:chunking:chunking-core')
     implementation project(':libs:chunking:chunking-datamodel')

@@ -8,12 +8,11 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
-import net.corda.configuration.read.ConfigurationGetService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.membership.lib.group.policy.validation.MembershipGroupPolicyValidatorFactory
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -38,8 +37,7 @@ class ChunkDbWriterFactoryImpl(
     private val tempPathProvider: PathProvider,
     private val certificatesService: CertificatesService,
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
-    private val membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidatorFactory,
-    private val configurationGetService: ConfigurationGetService,
+    private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -52,10 +50,8 @@ class ChunkDbWriterFactoryImpl(
         certificatesService: CertificatesService,
         @Reference(service = MembershipSchemaValidatorFactory::class)
         membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
-        @Reference(service = MembershipGroupPolicyValidatorFactory::class)
-        membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidatorFactory,
-        @Reference(service = ConfigurationGetService::class)
-        configurationGetService: ConfigurationGetService,
+        @Reference(service = MembershipGroupPolicyValidator::class)
+        membershipGroupPolicyValidatorFactory: MembershipGroupPolicyValidator,
     ) : this(
         subscriptionFactory,
         publisherFactory,
@@ -63,7 +59,6 @@ class ChunkDbWriterFactoryImpl(
         certificatesService,
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidatorFactory,
-        configurationGetService,
     )
 
     companion object {
@@ -125,7 +120,6 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
-        val membershipGroupPolicyValidator = membershipGroupPolicyValidatorFactory.createValidator()
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
@@ -133,7 +127,6 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService,
             membershipSchemaValidator,
             membershipGroupPolicyValidator,
-            configurationGetService,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

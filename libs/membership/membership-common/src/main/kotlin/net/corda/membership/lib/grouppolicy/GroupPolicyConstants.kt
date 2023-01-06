@@ -207,6 +207,10 @@ class GroupPolicyConstants {
                             .getString(PolicyKeys.P2PParameters.TLS_TYPE)
                         return valueOf(tlsType)
                     }
+                    fun fromString(str: String?): TlsType = values()
+                        .firstOrNull {
+                        it.groupPolicyName.equals(str, ignoreCase = true)
+                    } ?: ONE_WAY
                 }
 
                 class FailToReadClusterTlsTypeException(message: String)  : CordaRuntimeException(message)
@@ -227,5 +231,6 @@ class GroupPolicyConstants {
         const val SESSION_TRUST_ROOTS = "truststore.session"
         const val TLS_TRUST_ROOTS = "truststore.tls"
         const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
+        const val TLS_TYPE = "tls.type"
     }
 }

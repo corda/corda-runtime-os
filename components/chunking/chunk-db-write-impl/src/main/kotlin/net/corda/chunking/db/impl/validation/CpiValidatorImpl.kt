@@ -6,7 +6,6 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
-import net.corda.configuration.read.ConfigurationGetService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
@@ -14,8 +13,8 @@ import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.membership.lib.group.policy.validation.MembershipGroupPolicyValidator
-import net.corda.membership.lib.group.policy.validation.MembershipInvalidGroupPolicyException
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
+import net.corda.membership.group.policy.validation.MembershipInvalidGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -37,7 +36,6 @@ class CpiValidatorImpl(
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val membershipSchemaValidator: MembershipSchemaValidator,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
-    private val configurationGetService: ConfigurationGetService,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
@@ -78,7 +76,6 @@ class CpiValidatorImpl(
         try {
             membershipGroupPolicyValidator.validateGroupPolicy(
                 cpi.metadata.groupPolicy!!,
-                configurationGetService::getSmartConfig,
             )
         } catch (ex: MembershipInvalidGroupPolicyException) {
             throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)
