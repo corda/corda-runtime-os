@@ -28,7 +28,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-        //short timeout for state polling so as to not starve the event poller
+
+        //short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
     }
 
@@ -137,7 +138,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
-        val assignment = eventConsumer.assignment() - eventConsumer.paused()
+        val assignment = eventConsumer.assignment()
         log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout
@@ -150,8 +151,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $assignment"}
-        eventConsumer.resume(assignment)
+        // A rebalance might have been executed while waiting for the future to complete and the consumer might have
+        // lost ownership of some previously owned partitions. Make sure to resume only those partitions currently
+        // assigned to prevent IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
+        val currentAssignment = eventConsumer.assignment()
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $currentAssignment" }
+        eventConsumer.resume(currentAssignment)
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
