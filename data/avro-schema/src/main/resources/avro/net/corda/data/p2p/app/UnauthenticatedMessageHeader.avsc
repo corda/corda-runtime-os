@@ -17,6 +17,11 @@
       "doc": "This value identifies the upstream user of the p2p layer that this message is sent from and should be received by. It can be used to filter incoming messages from the p2p layer and process only the ones destined for a specific system.",
       "name": "subsystem",
       "type": "string"
+    },
+    {
+      "doc": "A unique identifier for this message. This will be used by the p2p layer to identify the message in the logs.",
+      "name": "messageId",
+      "type": "string"
     }
   ]
 }
