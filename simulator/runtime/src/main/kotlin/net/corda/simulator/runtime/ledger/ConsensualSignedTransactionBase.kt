@@ -118,7 +118,10 @@ class ConsensualSignedTransactionBase(
 
     private fun signWithMetadata(key: PublicKey, timestamp: Instant) : DigitalSignatureAndMetadata {
         val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
-        return DigitalSignatureAndMetadata(signature, DigitalSignatureMetadata(timestamp, mapOf()))
+        return DigitalSignatureAndMetadata(
+            signature,
+            DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
+        )
     }
 
     override fun equals(other: Any?): Boolean {
