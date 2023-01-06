@@ -31,7 +31,7 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
         signatureData: ByteArray,
         clearData: ByteArray
     ) {
-        return signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
+        signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
     }
 
     @Suspendable
