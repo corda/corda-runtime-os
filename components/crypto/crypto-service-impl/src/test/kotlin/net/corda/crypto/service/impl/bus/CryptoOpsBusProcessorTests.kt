@@ -42,6 +42,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -51,7 +52,9 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -69,6 +72,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CryptoOpsBusProcessorTests {
     companion object {
         private val logger = contextLogger()
@@ -86,7 +90,8 @@ class CryptoOpsBusProcessorTests {
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsBusProcessor
 
-    private fun setup() {
+    @BeforeAll
+    fun setup() {
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
         schemeMetadata = factory.schemeMetadata
@@ -133,7 +138,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return empty list for unknown key id`() {
-        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -156,7 +160,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return empty list for look up when the filter does not match`() {
-        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -180,7 +183,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate key pair and be able to find and lookup and then sign using default and custom schemes`() {
-        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -265,7 +267,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
-        setup()
         val alias = newAlias()
         // generate
         val context1 = createRequestContext()
@@ -314,7 +315,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate key pair and be able to find and lookup and then sign with parameterised signature params`() {
-        setup()
         val signatureSpec4 = ParameterizedSignatureSpec(
             "RSASSA-PSS",
             PSSParameterSpec(
@@ -435,7 +435,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
-        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -477,7 +476,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should handle generating fresh keys twice without external id`() {
-        setup()
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
@@ -521,7 +519,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should handle generating fresh keys twice with external id`() {
-        setup()
         val externalId = UUID.randomUUID()
 
         // generate
@@ -567,7 +564,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
-        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -610,7 +606,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate wrapping key`() {
-        setup()
         val context1 = createRequestContext()
         val operationContext = listOf(
             KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
@@ -645,7 +640,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should derive shared secret key`() {
-        setup()
         val context1 = createRequestContext()
         val operationContext = listOf(
             KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
@@ -685,7 +679,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should complete future exceptionally in case of service failure`() {
-        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -750,7 +743,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
-        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -769,7 +761,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return all supported scheme codes`() {
-        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -797,7 +788,6 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return all supported scheme codes for fresh keys`() {
-        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
