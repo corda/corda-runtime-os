@@ -11,13 +11,9 @@ interface UtxoPersistenceService {
 
     fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<TransactionOutputDto>
 
-    fun persistTransaction(transaction: UtxoTransactionReader)
+    fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary>
 
-    fun persistTransactionIfDoesNotExist(
-        transaction: SignedTransactionContainer,
-        transactionStatus: TransactionStatus,
-        account: String
-    ): Pair<String?, List<CordaPackageSummary>>
+    fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 
     fun updateStatus(id: String, transactionStatus: TransactionStatus)
 }

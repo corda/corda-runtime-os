@@ -75,7 +75,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             }
             is PersistTransactionIfDoesNotExist -> {
                 UtxoPersistTransactionIfDoesNotExistRequestHandler(
-                    req,
+                    UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
                     request.flowExternalEventContext,
                     externalEventResponseFactory,
                     sandbox.getSandboxSingletonService(),
