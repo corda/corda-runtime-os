@@ -54,9 +54,9 @@ internal class DynamicKeyStore(
 
     private val publicKeyToTenantId = ConcurrentHashMap<PublicKey, String>()
 
-    private val holdingIdentityToKeyStore = ConcurrentHashMap<HoldingIdentity, ClientKeyStore>()
+    private val holdingIdentityToClientKeyStore = ConcurrentHashMap<HoldingIdentity, ClientKeyStore>()
 
-    val keyStore by lazy {
+    val serverKeyStore by lazy {
         keyStoreFactory(this, this).createDelegatedKeyStore()
     }
 
@@ -82,7 +82,7 @@ internal class DynamicKeyStore(
     }
 
     fun getClientKeyStore(clientIdentity: HoldingIdentity) : KeyStoreWithPassword?  =
-        holdingIdentityToKeyStore[clientIdentity]?.keyStore
+        holdingIdentityToClientKeyStore[clientIdentity]?.keyStore
 
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES)
     private val subscription = {
@@ -155,7 +155,7 @@ internal class DynamicKeyStore(
                         certificates.firstOrNull()?.publicKey?.also { publicKey ->
                             publicKeyToTenantId[publicKey] = entry.value.tenantId
                         }
-                        holdingIdentityToKeyStore[entry.value.holdingIdentity] = ClientKeyStore(
+                        holdingIdentityToClientKeyStore[entry.value.holdingIdentity] = ClientKeyStore(
                             certificates,
                             entry.value.tenantId,
                         )
@@ -179,7 +179,7 @@ internal class DynamicKeyStore(
                     }
                 }
                 if(oldValue != null) {
-                    holdingIdentityToKeyStore.remove(oldValue.holdingIdentity)
+                    holdingIdentityToClientKeyStore.remove(oldValue.holdingIdentity)
                 }
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
@@ -191,7 +191,7 @@ internal class DynamicKeyStore(
                     certificates.firstOrNull()?.publicKey?.also { publicKey ->
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
-                    holdingIdentityToKeyStore[chain.holdingIdentity] = ClientKeyStore(
+                    holdingIdentityToClientKeyStore[chain.holdingIdentity] = ClientKeyStore(
                         certificates,
                         chain.tenantId,
                     )

@@ -347,7 +347,7 @@ class DynamicKeyStoreTest {
     inner class KeyStoreTest {
         @Test
         fun `keyStore creates a new keystore`() {
-            dynamicKeyStoreWithStubs.keyStore
+            dynamicKeyStoreWithStubs.serverKeyStore
 
             verify(keyStoreFactory).createDelegatedKeyStore()
         }
@@ -463,7 +463,7 @@ class DynamicKeyStoreTest {
         }
 
         @Test
-        fun `onNext will remove the client if the value is null`() {
+        fun `onNext will remove the client keystore if the value is null`() {
             processorForKeystoreWithoutStubs.firstValue.onNext(
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
