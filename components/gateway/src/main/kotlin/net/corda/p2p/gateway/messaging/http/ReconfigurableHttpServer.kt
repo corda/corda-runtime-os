@@ -89,7 +89,7 @@ class ReconfigurableHttpServer(
                         val newServer = HttpServer(
                             listener,
                             newConfiguration,
-                            dynamicKeyStore.keyStore
+                            dynamicKeyStore.serverKeyStore
                         )
                         newServer.start()
                         resources.keep(newServer)
@@ -103,7 +103,7 @@ class ReconfigurableHttpServer(
                     val newServer = HttpServer(
                         listener,
                         newConfiguration,
-                        dynamicKeyStore.keyStore
+                        dynamicKeyStore.serverKeyStore
                     )
                     newServer.start()
                     resources.keep(newServer)
