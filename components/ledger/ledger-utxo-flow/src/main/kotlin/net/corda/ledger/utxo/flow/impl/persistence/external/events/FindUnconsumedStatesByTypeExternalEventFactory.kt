@@ -16,10 +16,13 @@ import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindUnconsumedStatesByTypeExternalEventFactory @Activate constructor(
-    private val clock: Clock = Clock.systemUTC()
+class FindUnconsumedStatesByTypeExternalEventFactory(
+    private val clock: Clock
 ) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoTransactionOutputDto>>
 {
+    @Activate
+    constructor() : this(Clock.systemUTC())
+
     override val responseType = UtxoTransactionOutputs::class.java
 
     override fun createExternalEvent(
