@@ -6,6 +6,7 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -31,5 +32,15 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
         clearData: ByteArray
     ) {
         return signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
+    }
+
+    @Suspendable
+    override fun verify(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        signature: DigitalSignature,
+        clearData: ByteArray
+    ) {
+        verify(publicKey, signatureSpec, signature.bytes, clearData)
     }
 }
