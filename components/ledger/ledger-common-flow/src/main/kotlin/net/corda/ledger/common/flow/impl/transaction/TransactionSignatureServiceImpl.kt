@@ -27,8 +27,6 @@ import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 import java.time.Instant
 
-const val SIGNATURE_METADATA_SIGNATURE_SPEC_KEY = "signatureSpec"
-
 @Suppress("Unused", "LongParameterList")
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
@@ -76,9 +74,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     }
 
     private fun extractSignatureSpec(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
-        val signatureSpecStr = signatureWithMetadata.metadata.properties[SIGNATURE_METADATA_SIGNATURE_SPEC_KEY]
-        requireNotNull(signatureSpecStr) { "There are no signature spec in the Signature's metadata $signatureWithMetadata" }
-        val signatureSpec = SignatureSpec(signatureSpecStr)
+        val signatureSpec = signatureWithMetadata.metadata.signatureSpec
 
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
         require(signatureSpec in compatibleSpecs) {
@@ -131,11 +127,11 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val cpiSummary = getCpiSummary()
         return DigitalSignatureMetadata(
             Instant.now(),
+            signatureSpec,
             linkedMapOf(
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
-                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString(),
-                SIGNATURE_METADATA_SIGNATURE_SPEC_KEY to signatureSpec.signatureName
+                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
             )
         )
     }
