@@ -202,7 +202,7 @@ class PluggableNotaryClientFlowFactoryImplTest {
         }
 
         assertThat(exception.message)
-            .contains("Plugin class could not be retrieved.")
+            .contains("Plugin class not found for notary service")
     }
 
     @Test
