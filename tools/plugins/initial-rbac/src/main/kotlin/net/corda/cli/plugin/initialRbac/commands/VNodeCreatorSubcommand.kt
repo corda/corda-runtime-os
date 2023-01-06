@@ -2,9 +2,9 @@ package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
-import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
+import net.corda.rbac.schema.RbacKeys.VNODE_STATE_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
@@ -30,7 +30,7 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
         "Get all vNodes" to "GET:/api/v1/virtualnode",
         "Get a vNode" to "GET:/api/v1/virtualnode/$VNODE_SHORT_HASH_REGEX",
         "Update vNode" to "PUT:/api/v1/virtualnode/$VNODE_SHORT_HASH_REGEX", // TBC
-        "Update virtual node state" to "PUT:/api/v1/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${RbacKeys.VNODE_STATE_REGEX}"
+        "Update virtual node state" to "PUT:/api/v1/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${VNODE_STATE_REGEX}"
     ).toMap()
 
     override fun call(): Int {
