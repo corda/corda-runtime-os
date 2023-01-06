@@ -243,6 +243,8 @@ class MemberOpsServiceProcessor(
             val sessionPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.SESSION_PKI_MODE)
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
+            // The TLS type will be added to the MGM registration context in CORE-8860, at that point we
+            // will be able to get it like the other properties.
             val tlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==

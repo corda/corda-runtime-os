@@ -7,7 +7,7 @@ import net.corda.lifecycle.Lifecycle
  */
 interface MembershipGroupPolicyValidator: Lifecycle {
     /**
-     * Validate a GroupPolicy with the cluster configuration. Throws exception if validation fails.
+     * Validate of a GroupPolicy with the cluster configuration. Throws exception if validation fails.
      *
      * @param groupPolicy the GroupPolicy as a JSON string.
      *
