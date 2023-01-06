@@ -34,6 +34,8 @@ class PluggableNotaryClientFlowFactoryImplTest {
         val FIRST_NOTARY_SERVICE_PARTY = createNotaryService(1)
         val SECOND_NOTARY_SERVICE_PARTY = createNotaryService(2)
 
+        val NON_EXISTING_NOTARY_SERVICE_PARTY = createNotaryService(3)
+
         fun createNotaryService(serviceNumber: Int): Party {
             return Party(
                 MemberX500Name(
@@ -91,7 +93,7 @@ class PluggableNotaryClientFlowFactoryImplTest {
 
     @Test
     fun `Plugin provider that is not present on the network cannot be loaded`() {
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<CordaRuntimeException> {
             clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
@@ -174,7 +176,7 @@ class PluggableNotaryClientFlowFactoryImplTest {
     @Test
     fun `Plugin provider with no @PluggableNotaryType will not be installed`() {
         clientFactoryImpl.accept(createPluginProviderSandboxContext(NoAnnotationProvider()))
-        val exception = assertThrows<IllegalStateException> {
+        val exception = assertThrows<CordaRuntimeException> {
             clientFactoryImpl.create(
                 FIRST_NOTARY_SERVICE_PARTY,
                 mock()
@@ -183,6 +185,24 @@ class PluggableNotaryClientFlowFactoryImplTest {
 
         assertThat(exception.message)
             .contains("Notary flow provider not found for type: $FIRST_NOTARY_SERVICE_PLUGIN_TYPE")
+    }
+
+    @Test
+    fun `Plugin class cannot be retrieved if the given notary is not present on the network`() {
+        clientFactoryImpl.accept(
+            createPluginProviderSandboxContext(
+                FirstNotaryServicePluginProvider { _, _ -> mock() }
+            )
+        )
+        val exception = assertThrows<CordaRuntimeException> {
+            clientFactoryImpl.create(
+                NON_EXISTING_NOTARY_SERVICE_PARTY,
+                mock()
+            )
+        }
+
+        assertThat(exception.message)
+            .contains("Plugin class could not be retrieved.")
     }
 
     @Test
