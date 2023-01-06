@@ -11,6 +11,7 @@ import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
@@ -63,6 +64,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -258,6 +260,56 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         // signing
         testSigning(publicKey, data)
+    }
+
+
+    @Test
+    fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
+        setup()
+        val alias = newAlias()
+        // generate
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
+        )
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateKeyPairCommand(
+                    CryptoConsts.Categories.LEDGER,
+                    alias,
+                    null,
+                    ECDSA_SECP256R1_CODE_NAME,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
+        // generate again
+        val context2 = createRequestContext()
+        val future2 = CompletableFuture<RpcOpsResponse>()
+        val e = assertFailsWith<ExecutionException> {
+            processor.onNext(
+                RpcOpsRequest(
+                    context2,
+                    GenerateKeyPairCommand(
+                        CryptoConsts.Categories.LEDGER,
+                        alias,
+                        null,
+                        ECDSA_SECP256R1_CODE_NAME,
+                        KeyValuePairList(operationContext)
+                    )
+                ),
+                future2
+            )
+            val result2 = future2.get()
+            assertThat(result2.response).isInstanceOf(CryptoPublicKey::class.java)
+        }
+        assertThat(e.cause).isInstanceOf(KeyAlreadyExistsException::class.java)
     }
 
     @Test
