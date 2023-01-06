@@ -7,7 +7,6 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,7 +28,6 @@ class FindUnconsumedStatesByTypeExternalEventFactoryTest {
     @Test
     fun `creates a record containing an UtxoLedgerRequest with a FindUnconsumedStatesByType payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val serializationService = mock<SerializationService>()
         val stateClass = TestContractState()::class.java
         val externalEventContext = ExternalEventContext(
             "request id",
@@ -40,7 +38,7 @@ class FindUnconsumedStatesByTypeExternalEventFactoryTest {
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
-        val externalEventRecord = FindUnconsumedStatesByTypeExternalEventFactory(serializationService, testClock).createExternalEvent(
+        val externalEventRecord = FindUnconsumedStatesByTypeExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
             FindUnconsumedStatesByTypeParameters(stateClass)
