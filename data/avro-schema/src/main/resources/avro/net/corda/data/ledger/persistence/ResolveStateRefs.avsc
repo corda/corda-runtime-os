@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "ResolveStateRefs",
+  "doc": "Retrieve states for a list of StateRefs. One of several types of ledger persistence request {@link LedgerPersistenceRequest}",
+  "namespace": "net.corda.data.ledger.persistence",
+  "fields": [
+    {
+      "name": "stateRefs",
+      "type": {
+        "type" : "array",
+        "items" : "net.corda.data.ledger.utxo.StateRef"
+      },
+      "doc": "stateRefs to be resolved"
+    }
+  ]
+}

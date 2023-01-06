@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "StateRef",
+  "namespace": "net.corda.data.ledger.utxo",
+  "doc": "StateRef",
+  "fields": [
+    {
+      "name": "transactionHash",
+      "type": "net.corda.data.crypto.SecureHash",
+      "doc": "The hash of the transaction in which the referenced state was created."
+    },
+    {
+      "name": "index",
+      "type": "int",
+      "doc": "The index of the state in the transaction's outputs in which the referenced state was created."
+    }
+  ]
+}
