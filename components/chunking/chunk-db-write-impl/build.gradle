@@ -43,7 +43,6 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
-    implementation project(':components:configuration:configuration-read-service')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
