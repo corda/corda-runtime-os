@@ -1,18 +1,20 @@
 package net.corda.db.admin.impl
 
+import liquibase.resource.AbstractResource
 import liquibase.resource.AbstractResourceAccessor
 import liquibase.resource.ClassLoaderResourceAccessor
 import liquibase.resource.InputStreamList
+import liquibase.resource.Resource
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.io.StringWriter
 import java.net.URI
 import java.util.SortedSet
-import java.util.TreeSet
 import javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD
 import javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET
 import javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING
@@ -59,6 +61,10 @@ class StreamResourceAccessor(
         }
     }
 
+    override fun close() {
+        classLoaderResourceAccessor.close()
+    }
+
     /**
      * Return the streams for each resource mapped by the given path.
      * The path is often a URL but does not have to be.
@@ -72,6 +78,7 @@ class StreamResourceAccessor(
      * @throws IOException if there is an error reading an existing path.
      * @throws UnsupportedOperationException if streamPath is null
      */
+    @Deprecated("Deprecated on base class ResourceAccessor")
     override fun openStreams(relativeTo: String?, streamPath: String?): InputStreamList {
         if (relativeTo != null) {
             log.error("openStreams relativeTo was $relativeTo on streamPath $streamPath; reject")
@@ -80,23 +87,8 @@ class StreamResourceAccessor(
                         "stream path '$streamPath' not supported"
             )
         }
-        if (streamPath == null) {
-            log.error("openStreams with null reject")
-            throw UnsupportedOperationException("openStreams with null '$streamPath' not supported")
-        }
 
-        // if we are accessing the specific path masterChangeLogFileName, we synthesise an XML file
-        // which causes Liquibase to include all the changelogs we know about.
-        if (masterChangeLogFileName == streamPath)
-            return createCompositeMasterChangeLog()
-
-        if (streamPath.contains("www.liquibase.org")) {
-            // NOTE: this is needed for fetching the XML schemas
-            log.debug("'$streamPath' looks like an XML schema ... delegating to ClassLoaderResourceAccessor")
-            return classLoaderResourceAccessor.openStreams(null, streamPath)
-        }
-        log.debug("Fetching change log from: $streamPath relative")
-        return InputStreamList(URI(streamPath), dbChange.fetch(streamPath))
+        return InputStreamList().also { isl -> getAll(streamPath).forEach { isl.add(it.uri, it.openInputStream() ) } }
     }
 
     private fun createCompositeMasterChangeLog(): InputStreamList {
@@ -167,12 +159,62 @@ class StreamResourceAccessor(
         TODO("Not yet implemented")
     }
 
+    override fun search(path: String?, recursive: Boolean): MutableList<Resource> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAll(path: String?): MutableList<Resource> {
+        if (path == null) {
+            val msg = "getAll with null '$path' is not supported"
+            log.error(msg)
+            throw UnsupportedOperationException(msg)
+        }
+
+        // if we are accessing the specific path masterChangeLogFileName, we synthesise an XML file
+        // which causes Liquibase to include all the changelogs we know about.
+        if (masterChangeLogFileName == path)
+            return createCompositeMasterChangeLog().map {
+                StreamResource(masterChangeLogFileName, URI(masterChangeLogFileName), it) }.toMutableList()
+
+        if (path.contains("www.liquibase.org")) {
+            // NOTE: this is needed for fetching the XML schemas
+            log.debug("'$path' looks like an XML schema ... delegating to ClassLoaderResourceAccessor")
+            return classLoaderResourceAccessor.getAll(path)
+        }
+        log.debug("Fetching change log from: $path relative")
+        return mutableListOf(StreamResource(path, URI(path), dbChange.fetch(path)))
+    }
+
     /**
      * Returns a description of the places this classloader will look for paths.
      * Used in error messages and other troubleshooting cases.
      */
-    override fun describeLocations(): SortedSet<String> {
+    override fun describeLocations(): MutableList<String> {
         return (dbChange.changeLogFileList + masterChangeLogFileName)
-            .mapTo(TreeSet()) { "[${dbChange.javaClass.simpleName}]$it" }
+            .map { "[${dbChange.javaClass.simpleName}]$it" }
+            .toMutableList()
+    }
+
+    class StreamResource(
+        path: String,
+        uri: URI,
+        private val inputStream: InputStream
+    ) : AbstractResource(path, uri) {
+        override fun openInputStream(): InputStream {
+            return inputStream
+        }
+
+        override fun exists(): Boolean {
+            return true
+        }
+
+        override fun resolve(other: String?): Resource {
+            TODO("Not yet implemented")
+        }
+
+        override fun resolveSibling(other: String?): Resource {
+            TODO("Not yet implemented")
+        }
+
     }
 }
