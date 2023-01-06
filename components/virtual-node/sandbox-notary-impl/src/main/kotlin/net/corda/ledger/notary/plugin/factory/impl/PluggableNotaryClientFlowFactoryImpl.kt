@@ -56,7 +56,7 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
         if (pluginClass == null) {
             throw CordaRuntimeException(
                 "Plugin class could not be retrieved. That either means there's no notary registered on the network, " +
-                        "or the provided notary party is not matching with the one registered on the network."
+                        "or the provided notary party is not matching the one registered on the network."
             )
         }
 
@@ -64,7 +64,7 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
             ?: throw CordaRuntimeException(
                 "Notary flow provider not found for type: $pluginClass. This means no plugin has been installed for " +
                         "the given type. Please make sure you have a plugin provider class and it is annotated with " +
-                        "the @PluggableNotaryType annotation."
+                        "the proper @PluggableNotaryType annotation."
             )
 
         return try {
