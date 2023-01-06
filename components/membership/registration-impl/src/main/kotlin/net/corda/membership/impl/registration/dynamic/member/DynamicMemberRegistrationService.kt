@@ -314,7 +314,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val messageHeader = UnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
-                    MEMBERSHIP_P2P_SUBSYSTEM
+                    MEMBERSHIP_P2P_SUBSYSTEM,
+                    "Register-${member.shortHash.value}-${UUID.randomUUID()}",
                 )
                 val request = UnauthenticatedRegistrationRequest(
                     latestHeader,

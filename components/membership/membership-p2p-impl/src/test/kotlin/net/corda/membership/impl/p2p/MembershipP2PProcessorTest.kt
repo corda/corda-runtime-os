@@ -369,7 +369,7 @@ class MembershipP2PProcessorTest {
         return AppMessage(
             UnauthenticatedMessage(
                 UnauthenticatedMessageHeader(
-                    destination, source, subsystem
+                    destination, source, subsystem, "messageId"
                 ),
                 this
             )

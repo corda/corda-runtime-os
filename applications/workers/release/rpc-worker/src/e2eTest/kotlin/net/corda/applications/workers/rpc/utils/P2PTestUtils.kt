@@ -52,14 +52,15 @@ fun assertP2pConnectivity(
 
     // Create unauthenticated messages
     val numberOfUnauthenticatedMessages = 3
-    val unauthenticatedMessagesContent = (1..numberOfUnauthenticatedMessages).map {
-        senderKafkaTestToolKit.uniqueName
+    val unauthenticatedMessagesContent = (1..numberOfUnauthenticatedMessages).associate {
+        senderKafkaTestToolKit.uniqueName to senderKafkaTestToolKit.uniqueName
     }
-    val unauthenticatedRecords = unauthenticatedMessagesContent.map { content ->
+    val unauthenticatedRecords = unauthenticatedMessagesContent.map { (messageId, content) ->
         val messageHeader = UnauthenticatedMessageHeader.newBuilder()
             .setDestination(receiver)
             .setSource(sender)
             .setSubsystem(subSystem)
+            .setMessageId(messageId)
             .build()
         val message = UnauthenticatedMessage.newBuilder()
             .setHeader(messageHeader)
@@ -70,7 +71,7 @@ fun assertP2pConnectivity(
 
     // Accept messages
     val receivedAuthenticatedMessages = ConcurrentHashMap<String, String>()
-    val receivedUnauthenticatedMessages = ConcurrentHashMap.newKeySet<String>()
+    val receivedUnauthenticatedMessages = ConcurrentHashMap<String, String>()
     val countDown = CountDownLatch(numberOfUnauthenticatedMessages + numberOfAuthenticatedMessages)
     receiverKafkaTestToolKit.acceptRecordsFromKafka<String, AppMessage>(P2P_IN_TOPIC) { record ->
         val message = record.value?.message
@@ -111,7 +112,7 @@ fun assertP2pConnectivity(
             if (message.header.subsystem != subSystem) {
                 return@acceptRecordsFromKafka
             }
-            receivedUnauthenticatedMessages.add(String(message.payload.array()))
+            receivedUnauthenticatedMessages[message.header.messageId] = String(message.payload.array())
             countDown.countDown()
         }
     }.use {
@@ -121,7 +122,7 @@ fun assertP2pConnectivity(
     }
 
     assertThat(receivedAuthenticatedMessages).containsAllEntriesOf(authenticatedMessagesIdToContent)
-    assertThat(receivedUnauthenticatedMessages).containsAll(unauthenticatedMessagesContent)
+    assertThat(receivedUnauthenticatedMessages).containsAllEntriesOf(unauthenticatedMessagesContent)
 }
 
 fun String.clearX500Name(): String {

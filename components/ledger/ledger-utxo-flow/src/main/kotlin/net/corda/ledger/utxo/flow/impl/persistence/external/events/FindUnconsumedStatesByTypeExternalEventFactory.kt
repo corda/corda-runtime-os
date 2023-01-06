@@ -8,34 +8,20 @@ import net.corda.data.ledger.persistence.UtxoTransactionOutputs
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.state.getEncumbranceGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoTransactionOutputDto
 import net.corda.schema.Schemas
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
 class FindUnconsumedStatesByTypeExternalEventFactory(
-    private val serializationService: SerializationService,
-    private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<StateAndRef<ContractState>>>
+    private val clock: Clock
+) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoTransactionOutputDto>>
 {
     @Activate
-    constructor(
-        @Reference(service = SerializationService::class)
-        serializationService: SerializationService,
-    ) : this(serializationService, Clock.systemUTC())
+    constructor() : this(Clock.systemUTC())
 
     override val responseType = UtxoTransactionOutputs::class.java
 
@@ -60,14 +46,9 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
         return FindUnconsumedStatesByType(parameters.stateClass.canonicalName)
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<StateAndRef<ContractState>> {
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<UtxoTransactionOutputDto> {
         return response.transactionOutputs.map {
-            val info = serializationService.deserialize<UtxoOutputInfoComponent>(it.info.array())
-            val contractState = serializationService.deserialize<ContractState>(it.data.array())
-            StateAndRefImpl(
-                state = TransactionStateImpl(contractState, info.notary, info.getEncumbranceGroup()),
-                ref = StateRef(SecureHash.parse(it.transactionId), it.index)
-            )
+            UtxoTransactionOutputDto(it.transactionId, it.index, it.info.array(), it.data.array())
         }
     }
 }

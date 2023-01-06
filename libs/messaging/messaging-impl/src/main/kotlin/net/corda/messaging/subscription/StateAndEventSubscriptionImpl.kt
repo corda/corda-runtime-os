@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -316,8 +316,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * Handle retries for event processing.
      * Reset [nullableEventConsumer] position and retry poll and process of eventRecords
-     * Retry a max of [consumerPollAndProcessMaxRetries] times.
-     * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
+     * Retry a max of [ResolvedSubscriptionConfig.processorRetries] times.
+     * If [ResolvedSubscriptionConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */
     private fun handleProcessEventRetries(
         attempts: Int,

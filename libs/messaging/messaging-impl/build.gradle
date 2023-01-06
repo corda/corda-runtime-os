@@ -32,5 +32,5 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly 'org.osgi:osgi.core'
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
-
