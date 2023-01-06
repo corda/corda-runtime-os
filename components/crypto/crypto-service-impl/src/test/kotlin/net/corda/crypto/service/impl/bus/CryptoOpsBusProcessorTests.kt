@@ -9,6 +9,9 @@ import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.CI
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
@@ -42,7 +45,6 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -136,23 +138,29 @@ class CryptoOpsBusProcessorTests {
         )
     }
 
+    data class ProcessResult(val result: RpcOpsResponse, val context: CryptoRequestContext)
+
+    private fun process(
+        request: Any,
+        context: CryptoRequestContext? = null,
+    ): ProcessResult {
+        val contextDef = context ?: createRequestContext()
+        val future = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(RpcOpsRequest(contextDef, request), future)
+        val result = future.get() ?: throw UnsupportedOperationException()
+        assertResponseContext(contextDef, result.context)
+        return ProcessResult(result, contextDef)
+    }
+
+
     @Test
     fun `Should return empty list for unknown key id`() {
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                ByIdsRpcQuery(
-                    listOf(
-                        publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-                    )
-                )
-            ),
-            future
+        val request = ByIdsRpcQuery(
+            listOf(
+                publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+            )
         )
-        val result = future.get()
-        assertResponseContext(context, result.context)
+        val (result, _) = process(request)
         assertNotNull(result.response)
         assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
@@ -160,22 +168,14 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return empty list for look up when the filter does not match`() {
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                KeysRpcQuery(
-                    0,
-                    10,
-                    CryptoKeyOrderBy.NONE,
-                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
-                )
-            ),
-            future
+        val (result, _) = process(
+            KeysRpcQuery(
+                0,
+                10,
+                CryptoKeyOrderBy.NONE,
+                KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
+            )
         )
-        val result = future.get()
-        assertResponseContext(context, result.context)
         assertNotNull(result.response)
         assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
@@ -186,76 +186,39 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val context1 = createRequestContext()
         val operationContext = listOf(
             KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    alias,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
+        val request = GenerateKeyPairCommand(
+            LEDGER,
+            alias,
+            null,
+            ECDSA_SECP256R1_CODE_NAME,
+            KeyValuePairList(operationContext)
         )
-        val result1 = future1.get()
+        val (result1, _) = process(request)
         val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
         assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
-        assertResponseContext(context1, result1.context)
+        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val context2 = createRequestContext()
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context2,
-                ByIdsRpcQuery(
-                    listOf(
-                        publicKeyIdFromBytes(info.publicKey)
-                    )
-                )
-            ),
-            future2
-        )
-        val result2 = future2.get()
-        assertResponseContext(context2, result2.context)
+        val (result2, _) = process(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
         assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key = result2.response as CryptoSigningKeys
         assertEquals(1, key.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
         // lookup
-        val context3 = createRequestContext()
-        val future3 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context3,
-                KeysRpcQuery(
-                    0,
-                    20,
-                    CryptoKeyOrderBy.NONE,
-                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
-                )
-            ),
-            future3
-        )
-        val result3 = future3.get()
-        assertResponseContext(context3, result3.context)
+        val l3 = KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
+        val (result3, _) = process(KeysRpcQuery(0, 20, CryptoKeyOrderBy.NONE, l3))
         assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key3 = result3.response as CryptoSigningKeys
         assertEquals(1, key3.keys.size)
@@ -269,46 +232,17 @@ class CryptoOpsBusProcessorTests {
     fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
         val alias = newAlias()
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
-        )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    alias,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
-        // generate again
-        val context2 = createRequestContext()
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        val e = assertFailsWith<ExecutionException> {
-            processor.onNext(
-                RpcOpsRequest(
-                    context2,
-                    GenerateKeyPairCommand(
-                        CryptoConsts.Categories.LEDGER,
-                        alias,
-                        null,
-                        ECDSA_SECP256R1_CODE_NAME,
-                        KeyValuePairList(operationContext)
-                    )
-                ),
-                future2
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
             )
-            val result2 = future2.get()
-            assertThat(result2.response).isInstanceOf(CryptoPublicKey::class.java)
+        )
+        val out1 = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
+        assertThat(out1.result.response).isInstanceOf(CryptoPublicKey::class.java)
+        // generate again
+        val e = assertFailsWith<ExecutionException> {
+            process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
         }
         assertThat(e.cause).isInstanceOf(KeyAlreadyExistsException::class.java)
     }
@@ -328,105 +262,51 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l1 = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    alias,
-                    null,
-                    RSA_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val (result1, _) = process(GenerateKeyPairCommand(LEDGER, alias, null, RSA_CODE_NAME, l1))
+        val operationContextMap = factory.recordedCryptoContexts[l1.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l1.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l1.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
-        assertResponseContext(context1, result1.context)
+        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val context2 = createRequestContext()
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context2,
-                ByIdsRpcQuery(
-                    listOf(
-                        publicKeyIdFromBytes(info.publicKey)
-                    )
-                )
-            ),
-            future2
-        )
-        val result2 = future2.get()
-        assertResponseContext(context2, result2.context)
+        val (result2, _) = process(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
         assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key = result2.response as CryptoSigningKeys
         assertEquals(1, key.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
+
         // lookup
-        val context3 = createRequestContext()
-        val future3 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context3,
-                KeysRpcQuery(
-                    0,
-                    20,
-                    CryptoKeyOrderBy.NONE,
-                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
-                )
-            ),
-            future3
-        )
-        val result3 = future3.get()
-        assertResponseContext(context3, result3.context)
+        val l3 = KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
+        val (result3, _) = process(KeysRpcQuery(0, 20, CryptoKeyOrderBy.NONE, l3))
         assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key3 = result3.response as CryptoSigningKeys
         assertEquals(1, key3.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         //
-        val context4 = createRequestContext()
-        val future4 = CompletableFuture<RpcOpsResponse>()
+        val encKey4 = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))
         val serializedParams4 = schemeMetadata.serialize(signatureSpec4.params)
-        processor.onNext(
-            RpcOpsRequest(
-                context4,
-                SignRpcCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    CryptoSignatureSpec(
-                        signatureSpec4.signatureName,
-                        null,
-                        CryptoSignatureParameterSpec(
-                            serializedParams4.clazz,
-                            ByteBuffer.wrap(serializedParams4.bytes)
-                        )
-                    ),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future4
+        val css4 = CryptoSignatureSpec(
+            signatureSpec4.signatureName,
+            null,
+            CryptoSignatureParameterSpec(
+                serializedParams4.clazz,
+                ByteBuffer.wrap(serializedParams4.bytes)
+            )
         )
-        val result4 = future4.get()
-        assertResponseContext(context4, result4.context)
+        val (result4, _) = process(SignRpcCommand(encKey4, css4, ByteBuffer.wrap(data), KeyValuePairList(emptyList())))
         assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature4.publicKey.array()))
@@ -437,33 +317,20 @@ class CryptoOpsBusProcessorTests {
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val (result1, _) = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.CI, operationContextMap[CRYPTO_CATEGORY])
-        assertResponseContext(context1, result1.context)
+        assertEquals(CI, operationContextMap[CRYPTO_CATEGORY])
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -476,89 +343,30 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should handle generating fresh keys twice without external id`() {
-        // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
-        )
-        logger.info("Making key 1")
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        logger.info("Making key 2")
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future2
-        )
-        val result2 = future2.get()
-        logger.info("got both keys $result1 $result2")
-        assertThat(result1.response).isNotEqualTo(result2.response)
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
+        ) // TODO: remove me?
+        val out1 = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
+        val out2 = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
+        assertThat(out1.result.response).isNotEqualTo(out2.result.response)
     }
-
 
     @Test
     fun `Should handle generating fresh keys twice with external id`() {
         val externalId = UUID.randomUUID()
-
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
-        )
-        logger.info("Making key 1")
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    externalId.toString(),
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        logger.info("Making key 2")
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    externalId.toString(),
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future2
-        )
-        val result2 = future2.get()
-        logger.info("got both keys $result1 $result2")
-        assertThat(result1.response).isNotEqualTo(result2.response)
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
+        ) // TODO: remove me?
+        val out1 = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
+        val out2 = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
+        assertThat(out1.result.response).isNotEqualTo(out2.result.response)
     }
 
 
@@ -566,34 +374,21 @@ class CryptoOpsBusProcessorTests {
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
         val externalId = UUID.randomUUID()
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateFreshKeyRpcCommand(
-                    CryptoConsts.Categories.CI,
-                    externalId.toString(),
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val (result1, _) = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.CI, operationContextMap[CRYPTO_CATEGORY])
-        assertResponseContext(context1, result1.context)
+        assertEquals(CI, operationContextMap[CRYPTO_CATEGORY])
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -606,75 +401,48 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate wrapping key`() {
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!"),
-            KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!"),
+                KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+            )
         )
         val masterKeyAlias = UUID.randomUUID().toString()
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateWrappingKeyRpcCommand(
-                    SOFT_HSM_ID,
-                    masterKeyAlias,
-                    true,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val out1 = process(GenerateWrappingKeyRpcCommand(SOFT_HSM_ID, masterKeyAlias, true, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(3, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertResponseContext(context1, result1.context)
-        assertThat(result1.response).isInstanceOf(CryptoNoContentValue::class.java)
+        assertThat(out1.result.response).isInstanceOf(CryptoNoContentValue::class.java)
         assertThat(factory.wrappingKeyStore.keys).containsKey(masterKeyAlias)
     }
 
     @Test
     fun `Should derive shared secret key`() {
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!"),
-            KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!"),
+                KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+            )
         )
         val otherKeyPair = generateKeyPair(schemeMetadata, X25519_CODE_NAME)
-        val publicKey = factory.signingService.generateKeyPair(
-            tenantId,
-            CryptoConsts.Categories.SESSION_INIT,
-            "ecd-key",
-            schemeMetadata.findKeyScheme(X25519_CODE_NAME)
-        )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                DeriveSharedSecretCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(otherKeyPair.public)),
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val ks = schemeMetadata.findKeyScheme(X25519_CODE_NAME)
+        val publicKey = factory.signingService.generateKeyPair(tenantId, SESSION_INIT, "ecd-key", ks)
+        val keyEnc = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))
+        val otherKeyEnc = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(otherKeyPair.public))
+        val out = process(DeriveSharedSecretCommand(keyEnc, otherKeyEnc, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(3, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertResponseContext(context1, result1.context)
-        assertThat(result1.response).isInstanceOf(CryptoDerivedSharedSecret::class.java)
-        assertThat((result1.response as CryptoDerivedSharedSecret).secret.array()).isNotEmpty
+        assertThat(out.result.response).isInstanceOf(CryptoDerivedSharedSecret::class.java)
+        assertThat((out.result.response as CryptoDerivedSharedSecret).secret.array()).isNotEmpty
     }
 
     @Test
@@ -682,60 +450,30 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val context1 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
-        val future1 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context1,
-                GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    alias,
-                    null,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future1
-        )
-        val result1 = future1.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val out1 = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
-        assertResponseContext(context1, result1.context)
-        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
-        val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
+        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertThat(out1.result.response).isInstanceOf(CryptoPublicKey::class.java)
+        val publicKey = schemeMetadata.decodePublicKey((out1.result.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // sign using invalid custom scheme
-        val context3 = createRequestContext()
-        val future3 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context3,
-                SignRpcCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    CryptoSignatureSpec(
-                        "BAD-SIGNATURE-ALGORITHM",
-                        "BAD-DIGEST-ALGORITHM",
-                        null
-                    ),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future3
-        )
+        val encKey = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))
+        val css = CryptoSignatureSpec("BAD-SIGNATURE-ALGORITHM", "BAD-DIGEST-ALGORITHM", null)
         val exception = assertThrows<ExecutionException> {
-            future3.get()
+            process(SignRpcCommand(encKey, css, ByteBuffer.wrap(data), KeyValuePairList(emptyList())))
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
@@ -743,17 +481,8 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                AssignHSMCommand(CryptoConsts.Categories.LEDGER, KeyValuePairList())
-            ),
-            future
-        )
         val exception = assertThrows<ExecutionException> {
-            future.get()
+            process(AssignHSMCommand(LEDGER, KeyValuePairList()))
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
@@ -761,25 +490,10 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return all supported scheme codes`() {
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                SupportedSchemesRpcQuery(
-                    CryptoConsts.Categories.LEDGER
-                )
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
+        val (result, _) = process(SupportedSchemesRpcQuery(LEDGER))
         assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
         val actualSchemes = result.response as CryptoKeySchemes
-        val expectedSchemes = factory.signingService.getSupportedSchemes(
-            tenantId,
-            CryptoConsts.Categories.LEDGER
-        )
+        val expectedSchemes = factory.signingService.getSupportedSchemes(tenantId, LEDGER)
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
             assertTrue(actualSchemes.codes.contains(it))
@@ -788,24 +502,12 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should return all supported scheme codes for fresh keys`() {
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                SupportedSchemesRpcQuery(
-                    CryptoConsts.Categories.CI
-                )
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
+        val (result, _) = process(SupportedSchemesRpcQuery(CI))
         assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
         val actualSchemes = result.response as CryptoKeySchemes
         val expectedSchemes = factory.signingService.getSupportedSchemes(
             tenantId,
-            CryptoConsts.Categories.LEDGER
+            LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
@@ -815,34 +517,29 @@ class CryptoOpsBusProcessorTests {
 
     private fun testSigning(publicKey: PublicKey, data: ByteArray) {
         // sign using public key and default scheme
-        val context2 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
-        val future2 = CompletableFuture<RpcOpsResponse>()
         val signatureSpec2 = schemeMetadata.supportedSignatureSpec(
             schemeMetadata.findKeyScheme(publicKey)
         ).first()
-        processor.onNext(
-            RpcOpsRequest(
-                context2,
-                SignRpcCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    signatureSpec2.toWire(schemeMetadata),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future2
+        val encKey2 = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))
+        val (result2, _) = process(
+            SignRpcCommand(
+                encKey2,
+                signatureSpec2.toWire(schemeMetadata),
+                ByteBuffer.wrap(data),
+                l
+            )
         )
-        val result2 = future2.get()
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
-        assertResponseContext(context2, result2.context)
+        assertEquals(2, l.items.size)
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertThat(result2.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature2 = result2.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
@@ -852,26 +549,9 @@ class CryptoOpsBusProcessorTests {
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_512
         )
-        val context3 = createRequestContext()
-        val future3 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context3,
-                SignRpcCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    CryptoSignatureSpec(
-                        signatureSpec3.signatureName,
-                        signatureSpec3.customDigestName.name,
-                        null
-                    ),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future3
-        )
-        val result3 = future3.get()
-        assertResponseContext(context3, result3.context)
+        val encKey = ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))
+        val css3 = CryptoSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName.name, null)
+        val (result3, _) = process(SignRpcCommand(encKey, css3, ByteBuffer.wrap(data), KeyValuePairList(emptyList())))
         assertThat(result3.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature3 = result3.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
@@ -880,26 +560,12 @@ class CryptoOpsBusProcessorTests {
         val signatureSpec4 = SignatureSpec(
             signatureName = "SHA512withECDSA"
         )
-        val context4 = createRequestContext()
-        val future4 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context4,
-                SignRpcCommand(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    CryptoSignatureSpec(
-                        signatureSpec4.signatureName,
-                        null,
-                        null
-                    ),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future4
+        val css4 = CryptoSignatureSpec(
+            signatureSpec4.signatureName,
+            null,
+            null
         )
-        val result4 = future4.get()
-        assertResponseContext(context4, result4.context)
+        val (result4, _) = process(SignRpcCommand(encKey, css4, ByteBuffer.wrap(data), KeyValuePairList(emptyList())))
         assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
