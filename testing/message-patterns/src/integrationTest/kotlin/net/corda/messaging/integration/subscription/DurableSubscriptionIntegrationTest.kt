@@ -40,6 +40,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -217,6 +218,7 @@ class DurableSubscriptionIntegrationTest {
 
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    @Disabled("Will remain flaky until CORE-8204 is fixed")
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)

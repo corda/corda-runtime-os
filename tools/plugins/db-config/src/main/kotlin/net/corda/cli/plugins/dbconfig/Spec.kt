@@ -23,7 +23,7 @@ class Spec(
     private val deleteFile: (Path) -> Unit = { path -> deleteIfExists(path) }
 ) : Runnable {
     @CommandLine.Option(
-        names = ["-c", "--clearChangeLog"],
+        names = ["-c", "--clear-change-log"],
         description = ["Automatically delete the changelogCSV in the PWD to force generation of the sql files"]
     )
     var clearChangeLog: Boolean? = false

@@ -50,7 +50,7 @@ dependencies {
 
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
-    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+    cpis project(path: ':testing:bundles:testing-fish', configuration: 'cordaCPB')
 
     // IMPORTANT: do NOT include cpbs (or cpks) as dependencies of the integration test.
     // This would cause OSGi to load the bundle twice (once as part of the test) and again

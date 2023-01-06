@@ -1,8 +1,10 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
@@ -19,13 +21,14 @@ import java.util.Objects
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     override val notary: Party? = null,
     override val timeWindow: TimeWindow? = null,
     override val attachments: List<SecureHash> = emptyList(),
     override val commands: List<Command> = emptyList(),
     override val signatories: List<PublicKey> = emptyList(),
     override val inputStateRefs: List<StateRef> = emptyList(),
-    override val referenceInputStateRefs: List<StateRef> = emptyList(),
+    override val referenceStateRefs: List<StateRef> = emptyList(),
     override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
@@ -60,16 +63,16 @@ data class UtxoTransactionBuilderImpl(
         return addInputStates(stateRefs.toList())
     }
 
-    override fun addReferenceInputState(stateRef: StateRef): UtxoTransactionBuilder {
-        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRef)
+    override fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder {
+        return copy(referenceStateRefs = referenceStateRefs + stateRef)
     }
 
-    override fun addReferenceInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
-        return copy(referenceInputStateRefs = referenceInputStateRefs + stateRefs)
+    override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        return copy(referenceStateRefs = referenceStateRefs + stateRefs)
     }
 
-    override fun addReferenceInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
-        return addReferenceInputStates(stateRefs.toList())
+    override fun addReferenceStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
+        return addReferenceStates(stateRefs.toList())
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
@@ -147,9 +150,13 @@ data class UtxoTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         UtxoTransactionBuilderVerifier(this).verify()
-        val tx = utxoSignedTransactionFactory.create(this, signatories)
+        val tx = utxoSignedTransactionFactory.create(this, signatories, utxoLedgerPersistenceService)
         alreadySigned = true
         return tx
+    }
+
+    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
+        return ContractStateAndEncumbranceTag(this, tag)
     }
 
     @Suppress("ComplexMethod")
@@ -160,7 +167,7 @@ data class UtxoTransactionBuilderImpl(
                 && other.attachments == attachments
                 && other.commands == commands
                 && other.inputStateRefs == inputStateRefs
-                && other.referenceInputStateRefs == referenceInputStateRefs
+                && other.referenceStateRefs == referenceStateRefs
                 && other.outputStates == outputStates
                 && other.signatories == signatories
     }
@@ -172,11 +179,20 @@ data class UtxoTransactionBuilderImpl(
         commands,
         signatories,
         inputStateRefs,
-        referenceInputStateRefs,
+        referenceStateRefs,
         outputStates,
     )
 
-    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
-        return ContractStateAndEncumbranceTag(this, tag)
+    override fun toString(): String {
+        return "UtxoTransactionBuilderImpl(" +
+                "notary=$notary, " +
+                "timeWindow=$timeWindow, " +
+                "attachments=$attachments, " +
+                "commands=$commands, " +
+                "signatories=$signatories, " +
+                "inputStateRefs=$inputStateRefs, " +
+                "referenceStateRefs=$referenceStateRefs, " +
+                "outputStates=$outputStates" +
+                ")"
     }
 }

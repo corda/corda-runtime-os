@@ -7,13 +7,15 @@ description 'Worker Common'
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
 
+    implementation project(':libs:application:addon')
+    implementation project(':libs:application:banner')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:messaging:message-bus')
-
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:lifecycle:registry')
     implementation project(':libs:metrics')
@@ -39,6 +41,8 @@ dependencies {
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

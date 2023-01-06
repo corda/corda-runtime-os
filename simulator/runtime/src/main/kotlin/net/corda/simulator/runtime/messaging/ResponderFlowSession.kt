@@ -8,8 +8,9 @@ interface ResponderFlowSession : FlowSession
 class BaseResponderFlowSession(
     flowDetails: FlowContext,
     from: BlockingQueue<Any>,
-    to: BlockingQueue<Any>
-): BlockingQueueFlowSession(flowDetails, from, to), ResponderFlowSession {
+    to: BlockingQueue<Any>,
+    flowContextProperties: SimFlowContextProperties,
+): BlockingQueueFlowSession(flowDetails, from, to, flowContextProperties), ResponderFlowSession {
     override fun rethrowAnyResponderError() {}
 
     override fun close() {

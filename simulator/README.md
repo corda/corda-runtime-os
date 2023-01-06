@@ -105,6 +105,26 @@ val config = SimulatorConfigurationBuilder.create()
   .build()
 ```
 
+### Custom Serializer
+Simulator provides the ability to register custom serializers. You could register your own
+serializers using Simulator configuration as shown below.
+
+```kotlin
+val config = SimulatorConfigurationBuilder.create()
+  .withCustomSerializer(myCustomSerializer)
+  .build()
+```
+
+You could also register custom JSON serializer/ deserializer as shown below.
+
+```kotlin
+val config = SimulatorConfigurationBuilder.create()
+  .withCustomJsonSerializer(myCustomJsonSerializer, MyType::class.java)
+  .withCustomJsonDeserializer(myCustomJsonDeserializer, MyType::class.java)
+  .build()
+```
+
+
 ## RequestData
 
 Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted
@@ -201,8 +221,8 @@ in a readable JSON wrapper, using the key, alias, HSM category and signature sch
 
 The equivalent `DigitalVerificationService` simply looks to see if the clear data, signature spec and key are a match.
 
-Note that as with real Corda, private keys are contained within their own node, so keys generated in one 
-node cannot be used to sign data in another (though all public keys are accessible through `MemberInfo`).
+Note that as with real Corda, all public keys are accessible through `MemberInfo`, and that even though Simulator does 
+not perform any actual crypto, a member cannot use another member's key in signing.
 
 Note also that Simulator does not check to see if any given scheme is supported, and will only
 ever generate an ECDSA key, regardless of parameters. To verify that your chosen key scheme and signature spec

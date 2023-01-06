@@ -80,7 +80,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
     }
 
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
-        TODO("Not yet implemented - getById")
+        TODO("Not yet implemented - getByHoldingIdentityShortHash")
     }
 
     private fun put(virtualNodeInfo: VirtualNodeInfo) {
@@ -94,7 +94,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
     }
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
-        TODO("Not yet implemented")
+        TODO("Not yet implemented - getAllVersionedRecords")
     }
 
     override val lifecycleCoordinatorName: LifecycleCoordinatorName

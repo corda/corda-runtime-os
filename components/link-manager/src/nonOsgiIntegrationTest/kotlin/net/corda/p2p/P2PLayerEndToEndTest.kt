@@ -48,6 +48,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
@@ -373,7 +374,8 @@ class P2PLayerEndToEndTest {
     ) : AutoCloseable {
 
         private val sslConfig = SslConfiguration(
-            revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
+            revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF),
+            tlsType = TlsType.ONE_WAY,
         )
         private val keyPairs = ourIdentities.map {
             KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
@@ -427,6 +429,7 @@ class P2PLayerEndToEndTest {
                 .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
+                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(sslConfig.tlsType.toString()))
         }
 
         private val linkManager =
@@ -517,7 +520,7 @@ class P2PLayerEndToEndTest {
             MemberInfoEntry(
                 HoldingIdentity(identity.x500Name, identity.groupId),
                 keyPairs[i].public.toPem(),
-                "http://$p2pAddress:$p2pPort$URL_PATH",
+                "https://$p2pAddress:$p2pPort$URL_PATH",
             )
         }
 

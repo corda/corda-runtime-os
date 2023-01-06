@@ -15,6 +15,9 @@ const val USERNAME = "admin"
 val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"
 const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 
+// Code signer certificate
+const val CODE_SIGNER_CERT = "/cordadevcodesign.pem"
+
 // The CPB and CPI used in smoke tests
 const val TEST_CPI_NAME = "test-cordapp"
 const val TEST_CPB_LOCATION = "/META-INF/test-cordapp.cpb"

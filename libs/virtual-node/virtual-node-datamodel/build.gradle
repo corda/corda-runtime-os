@@ -13,13 +13,16 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:virtual-node:virtual-node-info')
 
+    integrationTestImplementation project(':libs:configuration:configuration-datamodel')
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
-    integrationTestImplementation project(':libs:db:db-orm')
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':libs:virtual-node:cpi-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

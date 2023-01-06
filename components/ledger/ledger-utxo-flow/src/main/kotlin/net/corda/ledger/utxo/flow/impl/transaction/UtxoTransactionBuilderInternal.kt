@@ -14,6 +14,6 @@ interface UtxoTransactionBuilderInternal {
     val commands: List<Command>
     val signatories: List<PublicKey>
     val inputStateRefs: List<StateRef>
-    val referenceInputStateRefs: List<StateRef>
+    val referenceStateRefs: List<StateRef>
     val outputStates: List<ContractStateAndEncumbranceTag>
 }

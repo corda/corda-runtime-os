@@ -205,7 +205,8 @@ class GroupParametersReconcilerTest {
         fun `processing versioned records stream calls expected functions`() {
             groupParametersReconciler.updateInterval(1000)
 
-            groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
+            // call terminal operation to process stream
+            groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
 
             verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
             verify(em1).criteriaBuilder

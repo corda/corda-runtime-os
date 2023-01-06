@@ -103,7 +103,7 @@ class UtxoLedgerTests {
                 .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
 
             assertThat(parsedResult.transaction).withFailMessage {
-                "Member with holding identity $holdingId did not receive the transaction"
+                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
             }.isNotNull
             assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
             assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
@@ -113,16 +113,16 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - creating a transaction that fails custom verification causes finality to fail`() {
+    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
             "net.cordapp.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(utxoFlowResult.flowError?.message).contains("Transaction verification failed for transaction")
-        assertThat(utxoFlowResult.flowError?.message).contains("when signature was requested")
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)

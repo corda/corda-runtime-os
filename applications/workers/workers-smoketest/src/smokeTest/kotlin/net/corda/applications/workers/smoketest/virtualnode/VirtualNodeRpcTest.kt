@@ -9,6 +9,7 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.USERNAME
+import net.corda.applications.workers.smoketest.CODE_SIGNER_CERT
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
@@ -26,8 +27,6 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
-
-const val CODESIGNER_CERT = "/cordadevcodesign.pem"
 
 /**
  * Any 'unordered' tests are run *last*
@@ -71,7 +70,7 @@ class VirtualNodeRpcTest {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(1))
-                command { importCertificate(CODESIGNER_CERT, "code-signer", "cordadev") }
+                command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
                 condition { it.code == 204 }
             }
         }
@@ -315,6 +314,23 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(61)
+    fun `get a virtual node`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { getVNode(aliceHoldingId) }
+                condition { response ->
+                    response.code == 200 &&
+                        response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
+                }
+            }
+        }
+    }
+
+    @Test
+    @Order(62)
     fun `set virtual node state`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)

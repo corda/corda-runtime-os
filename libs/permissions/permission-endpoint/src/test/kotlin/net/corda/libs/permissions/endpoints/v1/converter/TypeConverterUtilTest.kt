@@ -32,7 +32,7 @@ class TypeConverterUtilTest {
     fun `convert CreateUserType to CreateUserRequestDto`() {
         val now = Instant.now()
         val parentGroup = UUID.randomUUID().toString()
-        val type = CreateUserType("name1", "login1", true, "pass", now, parentGroup)
+        val type = CreateUserType("name1", "login1", true, "password", now, parentGroup)
 
         val dto = type.convertToDto("me")
 
@@ -40,7 +40,7 @@ class TypeConverterUtilTest {
         assertEquals("name1", dto.fullName)
         assertEquals("login1", dto.loginName)
         assertTrue(dto.enabled)
-        assertEquals("pass", dto.initialPassword)
+        assertEquals("password", dto.initialPassword)
         assertEquals(now, dto.passwordExpiry)
         assertEquals(parentGroup, dto.parentGroup)
     }

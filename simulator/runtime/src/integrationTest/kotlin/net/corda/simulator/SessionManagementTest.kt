@@ -1,7 +1,5 @@
 package net.corda.simulator
 
-import net.corda.simulator.RequestData
-import net.corda.simulator.Simulator
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -97,7 +95,6 @@ class SessionManagementTest {
         // Then it shouldn't finish until Charlie's does
         assertTrue(charliesInstanceFlow.finished)
     }
-
 
 
 

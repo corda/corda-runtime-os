@@ -26,7 +26,7 @@ import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -97,45 +97,67 @@ internal class OutboundMessageHandler(
             }
 
             val peerMessage = event.value
-            return@withLifecycleLock if (peerMessage != null) {
-                try {
-                    val trustStore = trustStoresMap.getTrustStore(
-                        MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
-                        peerMessage.header.destinationIdentity.groupId
-                    )
-
-                    val sni = SniCalculator.calculateSni(
-                        peerMessage.header.destinationIdentity.x500Name,
-                        peerMessage.header.destinationNetworkType,
-                        peerMessage.header.address
-                    )
-                    val messageId = UUID.randomUUID().toString()
-                    val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
-                    val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                        X500Name(peerMessage.header.destinationIdentity.x500Name)
-                    } else {
-                        null
-                    }
-                    val destinationInfo = DestinationInfo(
-                        URI.create(peerMessage.header.address),
-                        sni,
-                        expectedX500Name,
-                        trustStore,
-                    )
-                    val responseFuture = sendMessage(destinationInfo, gatewayMessage)
-                        .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                    responseFuture.whenCompleteAsync({ response, error ->
-                        handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
-                    }, retryThreadPool).thenApply { Unit }
-                } catch (e: IllegalArgumentException) {
-                    logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
-                    CompletableFuture.completedFuture(Unit)
-                }
-            } else {
-                logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
+            try {
+                sendMessage(peerMessage)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")
                 CompletableFuture.completedFuture(Unit)
             }
         }
+    }
+
+    private fun sendMessage(peerMessage: LinkOutMessage?): CompletableFuture<Unit> {
+        if (peerMessage == null) {
+            logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
+            return CompletableFuture.completedFuture(Unit)
+        }
+        val (uri, sni, trustStore) = try {
+            val uri = URI.create(peerMessage.header.address)
+            val trustStore = trustStoresMap.getTrustStore(
+                MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
+                peerMessage.header.destinationIdentity.groupId
+            )
+            val sni = when (peerMessage.header.destinationNetworkType) {
+                NetworkType.CORDA_4 -> {
+                    SniCalculator.calculateCorda4Sni(peerMessage.header.destinationIdentity.x500Name)
+                }
+                NetworkType.CORDA_5 -> {
+                    SniCalculator.calculateCorda5Sni(uri)
+                }
+                else -> {
+                    throw IllegalArgumentException("Invalid network type: ${peerMessage.header.destinationNetworkType}.")
+                }
+            }
+            Triple(uri, sni, trustStore)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
+            return CompletableFuture.completedFuture(Unit)
+        }
+        if (uri.scheme != "https") {
+            logger.warn("Can't send message to destination ${peerMessage.header.address}. Only HTTPS endpoints supported.")
+            return CompletableFuture.completedFuture(Unit)
+        }
+
+
+        val messageId = UUID.randomUUID().toString()
+        val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
+        val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
+            X500Name(peerMessage.header.destinationIdentity.x500Name)
+        } else {
+            null
+        }
+        val destinationInfo = DestinationInfo(
+            uri,
+            sni,
+            expectedX500Name,
+            trustStore,
+        )
+        val responseFuture = sendMessage(destinationInfo, gatewayMessage)
+            .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        return responseFuture.whenCompleteAsync({ response, error ->
+            handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
+        }, retryThreadPool).thenApply {  }
+
     }
 
     private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {

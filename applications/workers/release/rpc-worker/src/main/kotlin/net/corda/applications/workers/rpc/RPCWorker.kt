@@ -1,5 +1,6 @@
 package net.corda.applications.workers.rpc
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
@@ -20,7 +21,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
 /** The worker for handling RPC requests. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class RPCWorker @Activate constructor(
     @Reference(service = RPCProcessor::class)
@@ -32,7 +33,9 @@ class RPCWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -43,6 +46,8 @@ class RPCWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("RPC worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("RPC Worker", platformInfoProvider)
 
         JavaSerialisationFilter.install()
 

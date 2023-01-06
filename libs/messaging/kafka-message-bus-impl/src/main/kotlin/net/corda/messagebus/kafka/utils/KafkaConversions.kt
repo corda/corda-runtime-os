@@ -29,7 +29,11 @@ fun CordaConsumerRecord<*, *>.toKafkaRecord():
 }
 
 fun CordaTopicPartition.toTopicPartition(topicPrefix: String): TopicPartition {
-    return TopicPartition(topicPrefix + topic, partition)
+    return if (topic.startsWith(topicPrefix)) {
+        TopicPartition(topic, partition)
+    } else {
+        TopicPartition(topicPrefix + topic, partition)
+    }
 }
 
 fun TopicPartition.toCordaTopicPartition(topicPrefix: String): CordaTopicPartition {
@@ -38,4 +42,3 @@ fun TopicPartition.toCordaTopicPartition(topicPrefix: String): CordaTopicPartiti
 
 fun Collection<CordaTopicPartition>.toTopicPartitions(topicPrefix: String) = this.map { it.toTopicPartition(topicPrefix) }
 fun Collection<TopicPartition>.toCordaTopicPartitions(topicPrefix: String ) = this.map { it.toCordaTopicPartition(topicPrefix) }
-

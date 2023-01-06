@@ -12,7 +12,7 @@ group 'com.r3.testing'
 
 cordapp {
     targetPlatformVersion platformVersion.toInteger()
-    workflow {
+    contract {
         name 'Testing Cats CPK'
         versionId 1
         vendor 'R3'

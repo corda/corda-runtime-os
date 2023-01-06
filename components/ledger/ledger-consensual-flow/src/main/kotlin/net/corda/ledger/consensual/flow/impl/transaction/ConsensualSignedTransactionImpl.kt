@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -16,7 +17,6 @@ import java.util.Objects
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureService: TransactionSignatureService,
-
     override val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
@@ -27,19 +27,6 @@ class ConsensualSignedTransactionImpl(
         }
         // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ConsensualSignedTransactionImpl) return false
-        if (other.wireTransaction != wireTransaction) return false
-        if (other.signatures.size != signatures.size) return false
-
-        return other.signatures.withIndex().all{
-            it.value == signatures[it.index]
-        }
-    }
-
-    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override val id: SecureHash
         get() = wireTransaction.id
@@ -92,17 +79,44 @@ class ConsensualSignedTransactionImpl(
                 transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(id,
-                    "Failed to verify signature of ${it.signature}. " +
-                            "Message: ${e.message}", e
+                throw TransactionVerificationException(
+                    id,
+                    "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
+                    e
                 )
             }
         }.map { it.by }.toSet()
-        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
-        if (requiredSignatories.any {
-            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-        }){
-            throw TransactionVerificationException(id, "There are missing signatures", null)
+
+        // isFulfilledBy() helps to make this working with CompositeKeys.
+        val missingSignatories = toLedgerTransaction()
+            .requiredSignatories
+            .filterNot { it.isFulfilledBy(appliedSignatories) }
+            .toSet()
+        if (missingSignatories.isNotEmpty()) {
+            throw TransactionMissingSignaturesException(
+                id,
+                missingSignatories,
+                "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+            )
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ConsensualSignedTransactionImpl) return false
+        if (other.wireTransaction != wireTransaction) return false
+        if (other.signatures.size != signatures.size) return false
+
+        return other.signatures.withIndex().all{
+            it.value == signatures[it.index]
+        }
+    }
+
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
+
+    override fun toString(): String {
+        return "ConsensualSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
+    }
+
+
 }

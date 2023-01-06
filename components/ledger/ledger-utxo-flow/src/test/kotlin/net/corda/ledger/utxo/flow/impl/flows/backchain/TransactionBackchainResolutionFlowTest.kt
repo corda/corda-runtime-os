@@ -7,7 +7,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -40,19 +39,17 @@ class TransactionBackchainResolutionFlowTest {
 
     private val session = mock<FlowSession>()
     private val transaction = mock<UtxoSignedTransaction>()
-    private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID_1)
-        whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(transactionBackchainVerifier.verify(any(), any())).thenReturn(true)
     }
 
     @Test
     fun `does nothing when the transaction has no dependencies`() {
-        whenever(ledgerTransaction.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(transaction.inputStateRefs).thenReturn(emptyList())
+        whenever(transaction.referenceStateRefs).thenReturn(emptyList())
 
         callTransactionBackchainResolutionFlow()
 
@@ -63,14 +60,14 @@ class TransactionBackchainResolutionFlowTest {
 
     @Test
     fun `does nothing when the transactions dependencies are already verified`() {
-        whenever(ledgerTransaction.inputStateRefs).thenReturn(
+        whenever(transaction.inputStateRefs).thenReturn(
             listOf(
                 TX_2_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_2
             )
         )
-        whenever(ledgerTransaction.referenceInputStateRefs).thenReturn(
+        whenever(transaction.referenceStateRefs).thenReturn(
             listOf(
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2
@@ -87,14 +84,14 @@ class TransactionBackchainResolutionFlowTest {
 
     @Test
     fun `retrieves and verifies transactions dependencies that are not verified`() {
-        whenever(ledgerTransaction.inputStateRefs).thenReturn(
+        whenever(transaction.inputStateRefs).thenReturn(
             listOf(
                 TX_2_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_2
             )
         )
-        whenever(ledgerTransaction.referenceInputStateRefs).thenReturn(
+        whenever(transaction.referenceStateRefs).thenReturn(
             listOf(
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2
@@ -116,14 +113,14 @@ class TransactionBackchainResolutionFlowTest {
 
     @Test
     fun `throws exception when verification fails`() {
-        whenever(ledgerTransaction.inputStateRefs).thenReturn(
+        whenever(transaction.inputStateRefs).thenReturn(
             listOf(
                 TX_2_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_DEPENDENCY_STATE_REF_2
             )
         )
-        whenever(ledgerTransaction.referenceInputStateRefs).thenReturn(
+        whenever(transaction.referenceStateRefs).thenReturn(
             listOf(
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1,
                 TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2

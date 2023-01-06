@@ -66,7 +66,7 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
     @Suppress("DEPRECATION", "LongMethod")
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        log.info("UTXO flow demo starting!!...")
+        log.info("UTXO backchain resolution demo flow starting!!...")
         try {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
 
@@ -227,7 +227,7 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
             utxoLedgerService.finalize(tx11, sessions)
             return "SUCCESS"
         } catch (e: Exception) {
-            log.warn("Failed to process consensual flow for request body '$requestBody' because:'${e.message}'")
+            log.warn("Failed to process UTXO backchain resolution demo flow for request body '$requestBody' because:'${e.message}'")
             throw e
         }
     }

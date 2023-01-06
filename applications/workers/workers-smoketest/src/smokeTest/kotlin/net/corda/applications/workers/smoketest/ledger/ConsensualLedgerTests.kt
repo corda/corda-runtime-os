@@ -109,9 +109,9 @@ class ConsensualLedgerTests {
             "net.cordapp.demo.consensual.ConsensualDemoFlow"
         )
         val consensualFlowResult = awaitRpcFlowFinished(aliceHoldingId, consensualFlowRequestId)
-        assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(consensualFlowResult.flowError?.message).contains("Transaction verification failed for transaction")
-        assertThat(consensualFlowResult.flowError?.message).contains("when signature was requested")
+        assertThat(consensualFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(consensualFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(consensualFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestConsensualStateResult(val testField: String, val participants: List<ByteArray>)

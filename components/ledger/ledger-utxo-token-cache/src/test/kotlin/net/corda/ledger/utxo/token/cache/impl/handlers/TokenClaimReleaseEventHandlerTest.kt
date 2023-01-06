@@ -24,12 +24,13 @@ class TokenClaimReleaseEventHandlerTest {
 
     private val tokenRef1 = "r1"
     private val claimId = "r1"
+    private val externalEventRequestId = "ext1"
     private val flowId = "f1"
 
     @Test
     fun `release returns an ack response event`() {
         val response = Record<String, FlowEvent>("", "", null)
-        whenever(recordFactory.getClaimReleaseAck(flowId, claimId)).thenReturn(response)
+        whenever(recordFactory.getClaimReleaseAck(flowId, externalEventRequestId)).thenReturn(response)
 
         val target = TokenClaimReleaseEventHandler(recordFactory)
         val claimRelease = createClaimRelease()
@@ -74,6 +75,6 @@ class TokenClaimReleaseEventHandlerTest {
     }
 
     private fun createClaimRelease(): ClaimRelease {
-        return ClaimRelease(claimId, flowId, setOf(tokenRef1), POOL_CACHE_KEY)
+        return ClaimRelease(claimId, externalEventRequestId,flowId, setOf(tokenRef1), POOL_CACHE_KEY)
     }
 }

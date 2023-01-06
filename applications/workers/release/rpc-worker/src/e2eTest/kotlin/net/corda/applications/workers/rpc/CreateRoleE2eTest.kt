@@ -2,14 +2,18 @@ package net.corda.applications.workers.rpc
 
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
+import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -147,6 +151,37 @@ class CreateRoleE2eTest {
                     assertTrue(proxy.getRole(roleId).permissions.isEmpty())
                 }
             }
+        }
+    }
+
+    @Test
+    @Order(3)
+    fun `test unable to un-associate protected role`() {
+        val protectedRole = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+            proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
+        }
+
+        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+
+            assertThatThrownBy {
+                proxy.removeRole(adminUser, protectedRole.id)
+            }.isInstanceOf(RequestErrorException::class.java)
+             .hasMessageContaining("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME")
+        }
+    }
+
+    @Test
+    @Order(4)
+    fun `test cannot change protected role`() {
+        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+            val protectedRole = proxy.getRoles().first { it.roleName == DEFAULT_SYSTEM_ADMIN_ROLE }
+            assertThatThrownBy {
+                proxy.removePermission(protectedRole.id, protectedRole.permissions.first().id)
+            }.isInstanceOf(RequestErrorException::class.java)
+                .hasMessageContaining("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be changed")
         }
     }
 }

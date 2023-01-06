@@ -60,6 +60,7 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     testRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project('test-impl-one')
     integrationTestImplementation project('test-impl-two')

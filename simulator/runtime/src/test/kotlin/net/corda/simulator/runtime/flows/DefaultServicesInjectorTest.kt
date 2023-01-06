@@ -3,6 +3,7 @@ package net.corda.simulator.runtime.flows
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.messaging.SimFiberBase
+import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.MerkleTreeFactory
@@ -41,6 +42,7 @@ class DefaultServicesInjectorTest {
     fun `should inject sensible defaults for services`() {
         // Given a flow
         val flow = HelloFlow()
+        val contextProperties = SimFlowContextProperties(emptyMap())
 
         // With some helpful classes to use in services
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
@@ -49,7 +51,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(flow, member, it)
+            DefaultServicesInjector(mock()).injectServices(FlowAndProtocol(flow), member, it, contextProperties)
 
             // Then it should have constructed useful things for us
             assertNotNull(flow.flowEngine)
@@ -75,7 +77,7 @@ class DefaultServicesInjectorTest {
             // When we inject services into it
             // Then it should throw an exception
             assertThrows<NotImplementedError> {
-                DefaultServicesInjector(mock()).injectServices(flow, member, it)
+                DefaultServicesInjector(mock()).injectServices(FlowAndProtocol(flow), member, it, mock())
             }
         }
     }
@@ -112,7 +114,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(config).injectServices(flow, member, it)
+            DefaultServicesInjector(config).injectServices(FlowAndProtocol(flow), member, it, mock())
         }
 
         // Then the flow should have the overridden services
@@ -173,12 +175,17 @@ class DefaultServicesInjectorTest {
 
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
         val fiber = SimFiberBase()
+        val contextProperties = SimFlowContextProperties(emptyMap())
         fiber.registerMember(member)
-        fiber.registerFlowInstance(member, "protocol", responder)
+        fiber.registerResponderInstance(member, "protocol", responder)
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(responder, member, it)
+            DefaultServicesInjector(mock()).injectServices(
+                FlowAndProtocol(responder, "protocol"),
+                member,
+                it,
+                contextProperties)
 
             // Then it should have constructed useful things for us
             assertNotNull(responder.flowMessaging)
@@ -226,12 +233,17 @@ class DefaultServicesInjectorTest {
         // With some helpful classes to use in services
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
         val fiber = SimFiberBase()
+        val contextProperties = SimFlowContextProperties(emptyMap())
         fiber.registerMember(member)
-        fiber.registerFlowInstance(member, "protocol", flow)
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(flow, member, it)
+            DefaultServicesInjector(mock()).injectServices(
+                FlowAndProtocol(flow, "a protocol"),
+                member,
+                it,
+                contextProperties
+            )
 
             // Then it should have constructed useful things for us
             assertNotNull(flow.flowEngine)
@@ -250,6 +262,7 @@ class DefaultServicesInjectorTest {
         // Given a flow
         val flow = HelloFlow()
         val fiber = SimFiberBase()
+        val contextProperties = SimFlowContextProperties(emptyMap())
 
         // When we inject the services
         val injector: FlowServicesInjector = DefaultServicesInjector(
@@ -266,9 +279,10 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             injector.injectServices(
-                flow,
+                FlowAndProtocol(flow),
                 MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB"),
-                it
+                it,
+                contextProperties
             )
 
             // Then sensible defaults should have been set

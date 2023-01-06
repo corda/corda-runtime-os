@@ -22,8 +22,9 @@ interface InitiatorFlowSession : FlowSession {
 class BaseInitiatorFlowSession(
     private val flowDetails: FlowContext,
     from: BlockingQueue<Any>,
-    to: BlockingQueue<Any>
-) : BlockingQueueFlowSession(flowDetails, from, to), InitiatorFlowSession {
+    to: BlockingQueue<Any>,
+    flowContextProperties: SimFlowContextProperties
+) : BlockingQueueFlowSession(flowDetails, from, to, flowContextProperties), InitiatorFlowSession {
 
     companion object {
         val log = contextLogger()

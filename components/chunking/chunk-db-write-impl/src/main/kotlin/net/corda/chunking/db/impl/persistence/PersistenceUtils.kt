@@ -11,10 +11,5 @@ object PersistenceUtils {
             return signerSummaryHash?.toString() ?: ""
         }
 
-    val CpkIdentifier.signerSummaryHashForDbQuery: String
-        get() {
-            return signerSummaryHash?.toString() ?: ""
-        }
-
-    fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHashForDbQuery)
+    fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHash.toString())
 }

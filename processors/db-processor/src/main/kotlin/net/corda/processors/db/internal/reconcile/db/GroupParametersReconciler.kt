@@ -111,7 +111,7 @@ class GroupParametersReconciler(
     }
 
     private val reconciliationContextFactory = {
-        virtualNodeInfoReadService.getAll().map {
+        virtualNodeInfoReadService.getAll().stream().map {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
         }
     }
@@ -121,7 +121,7 @@ class GroupParametersReconciler(
         require(context is VirtualNodeReconciliationContext) {
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
-        return context.entityManager.getCurrentGroupParameters()?.let { entity ->
+        return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
             val deserializedParams = cordaAvroDeserializer.deserialize(entity.parameters)
                 ?: throw CordaRuntimeException("Could not deserialize group parameters from the database entity.")
 

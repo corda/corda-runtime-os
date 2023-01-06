@@ -6,12 +6,14 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
@@ -134,10 +136,13 @@ class UtxoLedgerPersistenceServiceImplTest {
     @Test
     fun `find executes successfully`() {
         val wireTransaction = mock<WireTransaction>()
+        whenever(wireTransaction.componentGroupLists).thenReturn(List(UtxoComponentGroup.values().size) { listOf() })
+
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
         val expectedObj = UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
+            mock<UtxoLedgerTransactionFactory>(),
             wireTransaction,
             signatures
         )
@@ -146,7 +151,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(serializationService.deserialize<SignedTransactionContainer>(any<ByteArray>(), any()))
             .thenReturn(SignedTransactionContainer(wireTransaction, signatures))
 
-        whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
+        whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any(), any())).thenReturn(expectedObj)
 
         assertThat(utxoLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 

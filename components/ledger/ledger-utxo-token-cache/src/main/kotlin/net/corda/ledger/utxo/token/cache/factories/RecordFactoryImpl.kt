@@ -34,6 +34,7 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
     ): Record<String, FlowEvent> {
         val payload = TokenClaimQueryResult().apply {
             this.poolKey = poolKey
+            this.claimId = externalEventRequestId
             this.resultType = TokenClaimResultStatus.NONE_AVAILABLE
             this.claimedTokens = listOf()
         }
@@ -43,8 +44,8 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
 
     override fun getClaimReleaseAck(
         flowId: String,
-        claimId: String
+        externalEventRequestId: String
     ): Record<String, FlowEvent> {
-        return externalEventResponseFactory.success(claimId, flowId, TokenClaimReleaseAck())
+        return externalEventResponseFactory.success(externalEventRequestId, flowId, TokenClaimReleaseAck())
     }
 }

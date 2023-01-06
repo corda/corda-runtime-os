@@ -1,10 +1,11 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.simulator.runtime.flows.BaseFlowFactory
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
-import net.corda.simulator.runtime.utils.getProtocol
-import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 
@@ -15,22 +16,17 @@ class BaseFlowMessagingFactory: FlowMessagingFactory {
         member: MemberX500Name,
         fiber: SimFiber,
         injector: FlowServicesInjector,
-        flow: Flow
+        flow: FlowAndProtocol,
+        contextProperties: FlowContextProperties
     ): FlowMessaging {
-
-        val instanceFlowMap = fiber.lookupFlowInstance(member)
-
-        val protocol: String = if(instanceFlowMap ==null || instanceFlowMap[flow] == null) {
-            flow.getProtocol()
-        }else{
-            instanceFlowMap[flow]!!
-        }
+        if(flow.protocol == null) throw NoProtocolAnnotationException(flow::class.java)
 
         return ConcurrentFlowMessaging(
-            FlowContext(configuration, member, protocol),
+            FlowContext(configuration, member, flow.protocol),
             fiber,
             injector,
-            BaseFlowFactory()
+            BaseFlowFactory(),
+            contextProperties
         )
     }
 }

@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.javadoc-generation'
 }
 description 'Utilities'
 
@@ -25,4 +26,6 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly 'org.osgi:osgi.core'
 }

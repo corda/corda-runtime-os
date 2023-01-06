@@ -7,7 +7,9 @@ import java.time.Duration
 import java.util.LinkedList
 import net.corda.applications.workers.smoketest.contextLogger
 import net.corda.applications.workers.smoketest.getOrThrow
+import net.corda.test.util.consistently
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.api.CloseStatus
@@ -16,8 +18,6 @@ import org.eclipse.jetty.websocket.api.StatusCode
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 
 fun useWebsocketConnection(
     path: String,
@@ -29,14 +29,22 @@ fun useWebsocketConnection(
     client.use {
         it.start()
         it.connect(path, wsHandler)
-        eventually {
-            assertTrue(wsHandler.isConnected)
+        consistently(
+            duration = Duration.ofSeconds(5),
+            waitBefore = Duration.ofMillis(500)
+        ) {
+            assertThat(wsHandler.isConnected)
+                .withFailMessage("web-socket-client should be connected")
+                .isTrue
         }
+
         block.invoke(wsHandler)
     }
 
     eventually {
-        assertFalse(wsHandler.isConnected)
+        assertThat(wsHandler.isConnected)
+            .withFailMessage("web-socket-client should be disconnected")
+            .isFalse
     }
 }
 

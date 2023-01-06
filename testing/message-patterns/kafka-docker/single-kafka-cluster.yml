@@ -41,7 +41,7 @@ services:
       ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
 
   broker1:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: broker1
     container_name: broker1
@@ -61,7 +61,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   broker2:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: broker2
     container_name: broker2
@@ -81,7 +81,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
 
   broker3:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka
     restart: "no"
     hostname: broker3
     container_name: broker3

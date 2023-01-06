@@ -8,7 +8,10 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.defaultComponentGroups
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -19,10 +22,12 @@ fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     wireTransactionFactory: WireTransactionFactory,
-    componentGroups: List<List<ByteArray>> = defaultComponentGroups
+    utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups +
+            List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator, componentGroups)
-    return create(wireTransaction, listOf(signatureWithMetadataExample))
+    return create(wireTransaction, listOf(signatureWithMetadataExample), utxoLedgerPersistenceService)
 }
 
 @Suppress("LongParameterList")
@@ -32,7 +37,8 @@ fun getUtxoSignedTransactionExample(
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    transactionSignatureService: TransactionSignatureService
+    transactionSignatureService: TransactionSignatureService,
+    utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 ): UtxoSignedTransaction {
     val wireTransaction = getWireTransactionExample(
         digestService,
@@ -44,6 +50,7 @@ fun getUtxoSignedTransactionExample(
     return UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
+        UtxoLedgerTransactionFactoryImpl(serializationService, utxoLedgerPersistenceService),
         wireTransaction,
         listOf(signatureWithMetadataExample)
     )

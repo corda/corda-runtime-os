@@ -3,6 +3,7 @@ package net.corda.simulator.runtime.messaging
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.exceptions.SessionAlreadyClosedException
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.testflows.PingAckMessage
@@ -13,6 +14,7 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -67,11 +69,13 @@ class ConcurrentFlowMessagingTest {
         val injector = mock<FlowServicesInjector>()
 
         // When we initiate the flow
+        val contextProperties = SimFlowContextProperties(emptyMap())
         val flowMessaging = ConcurrentFlowMessaging(
             FlowContext(configuration, senderX500, "ping-ack"),
             fiber,
             injector,
-            flowFactory
+            flowFactory,
+            contextProperties
         )
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
@@ -80,10 +84,10 @@ class ConcurrentFlowMessagingTest {
 
         // Then it should have injected the services into the responder
         verify(injector, times(1)).injectServices(
-            eq(responderFlow),
+            eq(FlowAndProtocol(responderFlow, "ping-ack")),
             eq(receiverX500),
             eq(fiber),
-            eq(flowFactory)
+            eq(contextProperties)
         )
 
         // When we send and receive the message
@@ -116,20 +120,22 @@ class ConcurrentFlowMessagingTest {
         val injector = mock<FlowServicesInjector>()
 
         // When we initiate the flow
+        val contextProperties = SimFlowContextProperties(emptyMap())
         val flowMessaging = ConcurrentFlowMessaging(
             FlowContext(configuration, senderX500, "ping-ack"),
             flowAndServiceLookUp,
             injector,
-            flowFactory
+            flowFactory,
+            contextProperties
         )
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
         // Then it should have injected the services into the responder
         verify(injector, times(1)).injectServices(
-            eq(responderFlow),
+            eq(FlowAndProtocol(responderFlow, "ping-ack")),
             eq(receiverX500),
             eq(flowAndServiceLookUp),
-            eq(flowFactory)
+            eq(contextProperties)
         )
 
         // When we send and receive the message
@@ -157,11 +163,13 @@ class ConcurrentFlowMessagingTest {
         whenever(flowAndServiceLookUp.lookUpResponderInstance(receiverX500, "ping-ack"))
             .thenReturn(responderFlow)
 
+        val contextProperties = SimFlowContextProperties(emptyMap())
         val flowMessaging = ConcurrentFlowMessaging(
             FlowContext(configuration, senderX500, "ping-ack"),
             flowAndServiceLookUp,
             injector,
-            flowFactory
+            flowFactory,
+            contextProperties
         )
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
@@ -181,8 +189,9 @@ class ConcurrentFlowMessagingTest {
 
         val sessionPair1 = SessionPair(mock(), mock())
         val sessionPair2 = SessionPair(mock(), mock())
+        val contextProperties = SimFlowContextProperties(emptyMap())
         val sessionFactory = mock<SessionFactory>()
-        whenever(sessionFactory.createSessions(any(), any())).thenReturn(sessionPair1, sessionPair2)
+        whenever(sessionFactory.createSessions(any(), any(), any())).thenReturn(sessionPair1, sessionPair2)
 
         // And instance flows (just because they're easier and not what we care about here)
         val flowAndServiceLookUp = mock<SimFiber>()
@@ -195,6 +204,7 @@ class ConcurrentFlowMessagingTest {
             flowAndServiceLookUp,
             mock(),
             mock(),
+            contextProperties,
             sessionFactory
         )
 
@@ -217,6 +227,7 @@ class ConcurrentFlowMessagingTest {
     fun `should close responder session when responder call completes`() {
         // Given an instance flow
         val flowAndServiceLookUp = mock<SimFiber>()
+        val contextProperties = SimFlowContextProperties(emptyMap())
         val responderFlow = SendingResponderFlow()
         whenever(flowAndServiceLookUp.lookUpResponderInstance(any(), eq("ping-ack")))
             .thenReturn(responderFlow)
@@ -226,7 +237,8 @@ class ConcurrentFlowMessagingTest {
             FlowContext(configuration, senderX500, "ping-ack"),
             flowAndServiceLookUp,
             mock(),
-            mock()
+            mock(),
+            contextProperties
         )
 
         // When we call the responder session and wait for it to close (closing our initiator session will wait)
@@ -252,7 +264,7 @@ class ConcurrentFlowMessagingTest {
         // And flow messaging service
         val flowMessaging = ConcurrentFlowMessaging(
             FlowContext(configuration, sender, "protocol"),
-            mock(), mock(), mock()
+            mock(), mock(), mock(), mock()
         )
         val payload = PingAckMessage("Ping")
 
@@ -297,10 +309,11 @@ class ConcurrentFlowMessagingTest {
         val sender2AndReceiverSessions =  constructSessions(sender2, receiver)
         val sender3AndReceiverSessions =  constructSessions(sender3, receiver)
 
+
         // And flow messaging service
         val flowMessaging = ConcurrentFlowMessaging(
             FlowContext(configuration, receiver, "protocol"),
-            mock(), mock(), mock()
+            mock(), mock(), mock(), mock()
         )
 
         // When we send messages from different sender
@@ -344,20 +357,63 @@ class ConcurrentFlowMessagingTest {
     private fun constructSessions(sender: MemberX500Name, receiver: MemberX500Name) : Pair<FlowSession, FlowSession>{
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
+        val flowContextProperties = SimFlowContextProperties(emptyMap())
 
         val sendingSession = BaseInitiatorFlowSession(
             FlowContext(configuration, sender, "protocol"),
             fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            flowContextProperties
         )
 
         val receivingSession = BaseResponderFlowSession(
             FlowContext(configuration, receiver, "protocol"),
             fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            flowContextProperties
         )
 
         return Pair(sendingSession, receivingSession)
+    }
+
+    @Test
+    fun `should append flow context properties passed using flow context properties builder`(){
+        // Given a flow context property
+        val contextProperties = SimFlowContextProperties(mapOf("key-1" to "val-1"))
+        val flowFactory = mock<FlowFactory>()
+        val injector = mock<FlowServicesInjector>()
+
+        val responderFlow = YuckResponderFlow()
+
+        // And flow messaging that can open sessions to the other side,
+        // looking them up in the fiber
+        val flowAndServiceLookUp = mock<SimFiber>()
+
+        // And a sender and receiver that will be returned by the fiber
+        whenever(flowAndServiceLookUp.lookUpResponderInstance(receiverX500, "ping-ack"))
+            .thenReturn(responderFlow)
+
+        val flowMessaging = ConcurrentFlowMessaging(
+            FlowContext(configuration, senderX500, "ping-ack"),
+            flowAndServiceLookUp,
+            injector,
+            flowFactory,
+            contextProperties
+        )
+
+        // When we pass a flow context properties builder
+        val session = flowMessaging.initiateFlow(receiverX500){flowContextProperties ->
+            flowContextProperties.put("key-2", "val-2")
+        }
+
+        // Then the new property should be appended to the flow context properties
+        assertEquals("val-1",session.contextProperties["key-1"])
+        assertEquals("val-2",session.contextProperties["key-2"])
+
+        val anotherSession = flowMessaging.initiateFlow(receiverX500)
+        assertEquals("val-1",anotherSession.contextProperties["key-1"])
+        assertEquals(null ,anotherSession.contextProperties["key-2"])
+
     }
 
     class IckResponderFlow : ResponderFlow {

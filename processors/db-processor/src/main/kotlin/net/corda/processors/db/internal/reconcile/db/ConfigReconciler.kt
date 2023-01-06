@@ -9,6 +9,7 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.util.contextLogger
+import java.util.stream.Stream
 
 class ConfigReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -28,7 +29,7 @@ class ConfigReconciler(
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
-        listOf(ClusterReconciliationContext(dbConnectionManager))
+        Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
 
     override fun close() {

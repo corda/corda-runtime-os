@@ -110,7 +110,8 @@ class JPABackingStoreImplBenchmark {
             TestDbInfo(
                 name = holdingIdentityDbName,
                 schemaName = holdingIdentityDbName,
-                showSql = false),
+                showSql = false,
+                rewriteBatchedInserts = true),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )

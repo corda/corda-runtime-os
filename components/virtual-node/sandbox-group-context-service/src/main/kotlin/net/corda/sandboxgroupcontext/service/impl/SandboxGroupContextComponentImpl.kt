@@ -36,8 +36,6 @@ import java.util.Collections.unmodifiableList
 @Suppress("Unused", "LongParameterList")
 @Component(service = [ SandboxGroupContextComponent::class ])
 class SandboxGroupContextComponentImpl @Activate constructor(
-    @Reference(service = CpkReadService::class)
-    private val cpkReadService: CpkReadService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SandboxCreationService::class)
@@ -84,8 +82,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         //  when configuration default handling is complete (CORE-3780), this should be moved
         //  and changed to a sensible default, while keeping 2 as a default for our test environments.
         //  2 is good for a test environment as it is likely to validate both caching and eviction.
-        // TODO - revert this back to 2 once CORE-8691 is fixed.
-        const val SANDBOX_CACHE_SIZE_DEFAULT = 15L
+        const val SANDBOX_CACHE_SIZE_DEFAULT = 2L
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
@@ -96,7 +93,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        cpkReadService.start()
         coordinator.start()
     }
 
@@ -105,7 +101,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Deactivate
     override fun close() {
         coordinator.close()
-        cpkReadService.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -177,6 +172,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
         }
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
+    }
+
+    override fun flushCache() {
+        (sandboxGroupContextService as? CacheConfiguration)?.flushCache()
+            ?: throw IllegalStateException("Sandbox cache could not be flushed")
     }
 
     override fun initCache(capacity: Long) {

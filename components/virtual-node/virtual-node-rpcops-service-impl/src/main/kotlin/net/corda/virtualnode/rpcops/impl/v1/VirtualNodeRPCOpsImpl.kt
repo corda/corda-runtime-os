@@ -10,6 +10,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
@@ -34,6 +35,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
@@ -113,9 +116,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    //val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofSeconds(60) // Temporary change till CORE-7646 properly resolved
+                        // Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -162,6 +166,25 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+    }
+
+    /**
+     * Retrieves the VirtualNodeInfo for a virtual node with the given ShortHash from the message bus
+     *
+     * @throws ResourceNotFoundException is thrown if no Virtual node with the given ShortHash was found.
+     * @return [VirtualNodeInfo] for the corresponding ShortHash
+     *
+     * @see VirtualNodes
+     * @see VirtualNodeInfo
+     */
+    override fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
+        val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
+        val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)
+
+        if (virtualNode == null) {
+            throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
+        }
+        return virtualNode.toEndpointType()
     }
 
     /**

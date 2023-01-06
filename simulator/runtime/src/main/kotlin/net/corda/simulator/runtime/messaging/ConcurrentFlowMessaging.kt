@@ -1,8 +1,10 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.exceptions.NoRegisteredResponderException
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -26,16 +28,19 @@ interface CloseableFlowMessaging: FlowMessaging, Closeable
  *
  * @see [FlowMessaging] for method docs.
  *
- * @flowContext The context of the flow in which the messaging is taking place
- * @fiber The "fiber" in which Simulator registered responder flow classes or instances and persistence
- * @injector The injector for @CordaInject flow services
- * @flowFactory The factory which will initialize and inject services into the responder flow.
+ * @param flowContext The context of the flow in which the messaging is taking place
+ * @param fiber The "fiber" in which Simulator registered responder flow classes or instances and persistence
+ * @param injector The injector for @CordaInject flow services
+ * @param flowFactory The factory which will initialize and inject services into the responder flow.
+ * @param contextProperties The [FlowContextProperties] for the flow
  */
+@Suppress("LongParameterList")
 class ConcurrentFlowMessaging(
     private val flowContext: FlowContext,
     private val fiber: SimFiber,
     private val injector: FlowServicesInjector,
     private val flowFactory: FlowFactory,
+    private val contextProperties: FlowContextProperties,
     private val sessionFactory: SessionFactory = BaseSessionFactory()
 ) : CloseableFlowMessaging {
 
@@ -56,23 +61,45 @@ class ConcurrentFlowMessaging(
      * @throws NoRegisteredResponderException if no responder has been registered.
      */
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
+        return doInitiate(x500Name, null)
+    }
+
+    private fun doInitiate(
+        x500Name: MemberX500Name,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?): FlowSession {
+
         val protocol = flowContext.protocol
 
         log.info("Initiating flow for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
 
         val responderClass = fiber.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
-            log.info("Matched protocol with responder instance")
-            fiber.lookUpResponderInstance(x500Name, protocol)
+            val foundResponder = fiber.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
+            log.info("Matched protocol with responder instance $foundResponder")
+            foundResponder
         } else {
             log.info("Matched protocol with responder class $responderClass")
             flowFactory.createResponderFlow(x500Name, responderClass)
         }
 
-        injector.injectServices(responderFlow, x500Name, fiber, flowFactory)
+        val updatedContextProperties =
+            flowContextPropertiesBuilder?.let { contextBuilder ->
+                copyFlowContextProperties(contextProperties).also {
+                    contextBuilder.apply(it)
+                }
+            }?:
+            copyFlowContextProperties(contextProperties)
 
-        val sessions = sessionFactory.createSessions(x500Name, flowContext)
+        injector.injectServices(
+            FlowAndProtocol(responderFlow, protocol),
+            x500Name,
+            fiber,
+            updatedContextProperties
+        )
+
+        val sessions = sessionFactory.createSessions(x500Name, flowContext,
+            flowContextProperties = updatedContextProperties as SimFlowContextProperties)
         openedSessions.add(sessions)
 
         val (initiatorSession, responderSession) = sessions
@@ -92,16 +119,16 @@ class ConcurrentFlowMessaging(
         return initiatorSession
     }
 
-    /**
-     * Not yet implemented.
-     */
     override fun initiateFlow(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        TODO("Not yet implemented")
+        return doInitiate(x500Name, flowContextPropertiesBuilder)
     }
 
+    /**
+     * Not yet implemented.
+     */
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
         return sessions.map { it.receive(receiveType) }

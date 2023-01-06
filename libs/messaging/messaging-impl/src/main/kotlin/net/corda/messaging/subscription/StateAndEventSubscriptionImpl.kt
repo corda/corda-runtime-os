@@ -1,9 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.*
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,6 +30,10 @@ import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.time.Duration
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -97,7 +97,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         get() = threadLooper.lifecycleCoordinatorName
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config}" }
+        log.debug { "Starting subscription with config: $config" }
         threadLooper.start()
     }
 
@@ -141,7 +141,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
                 while (!threadLooper.loopStopped) {
                     stateAndEventConsumerTmp.pollAndUpdateStates(true)
-                    processEvents()
+                    processBatchOfEvents()
                 }
 
             } catch (ex: Exception) {
@@ -176,15 +176,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         nullableStateAndEventConsumer = null
     }
 
-    private fun processEvents() {
+    private fun processBatchOfEvents() {
         var attempts = 0
-        var pollAndProcessSuccessful = false
-        while (!pollAndProcessSuccessful && !threadLooper.loopStopped) {
+        var keepProcessing = true
+        while (keepProcessing && !threadLooper.loopStopped) {
             try {
-                for (batch in getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT))) {
-                    tryProcessBatchOfEvents(batch)
+                log.debug { "Polling and processing events" }
+                var rebalanceOccurred = false
+                val batches = getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT)).iterator()
+                while (!rebalanceOccurred && batches.hasNext()) {
+                    rebalanceOccurred = tryProcessBatchOfEvents(batches.next())
                 }
-                pollAndProcessSuccessful = true
+                keepProcessing = false // We only want to do one batch at a time
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -204,13 +207,21 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>) {
+    /**
+     * Process a batch of events from the last poll and publish the outputs (including DLQd events)
+     *
+     * @return false if the batch had to be abandoned due to a rebalance
+     */
+    private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
-        log.debug { "Processing events(size: ${events.size})" }
+        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
         for (event in events) {
-            stateAndEventConsumer.resetPollInterval()
+            if (stateAndEventConsumer.resetPollInterval()) {
+                log.debug { "Abandoning event processing due to rebalance." }
+                return true
+            }
             processEvent(event, outputRecords, updatedStates)
         }
 
@@ -230,6 +241,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Processing of events(size: ${events.size}) complete" }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
+        return false
     }
 
     private fun processEvent(
@@ -245,14 +257,20 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         when {
             thisEventUpdates == null -> {
-                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+                log.warn(
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                            "Processor failed to complete."
+                )
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
             }
 
             thisEventUpdates.markForDLQ -> {
-                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor marked event for the dead letter queue")
+                log.warn(
+                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                            "Processor marked event for the dead letter queue"
+                )
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -298,8 +316,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * Handle retries for event processing.
      * Reset [nullableEventConsumer] position and retry poll and process of eventRecords
-     * Retry a max of [consumerPollAndProcessMaxRetries] times.
-     * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
+     * Retry a max of [ResolvedSubscriptionConfig.processorRetries] times.
+     * If [ResolvedSubscriptionConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */
     private fun handleProcessEventRetries(
         attempts: Int,

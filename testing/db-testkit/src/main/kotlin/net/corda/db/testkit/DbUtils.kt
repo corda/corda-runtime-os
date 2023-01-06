@@ -42,20 +42,21 @@ object DbUtils {
     @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
         inMemoryDbName: String,
-        dbUser:String? = null,
+        dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
-        showSql: Boolean = true
+        showSql: Boolean = true,
+        rewriteBatchedInserts: Boolean = false
     ): EntityManagerConfiguration {
         val port = System.getProperty("postgresPort")
         return if (!port.isNullOrBlank()) {
-            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema)
+            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
             DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
             TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
-                if(createSchema) {
+                if (createSchema) {
                     it.dataSource.connection.createSchema(schemaName)
                 }
             }
@@ -71,10 +72,11 @@ object DbUtils {
      *                   If system property is not set then value "password" is used
      */
     fun createPostgresDataSource(
-        dbUser:String? = null,
+        dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
-        createSchema: Boolean = false
+        createSchema: Boolean = false,
+        rewriteBatchedInserts: Boolean = false
     ): CloseableDataSource {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
@@ -85,12 +87,16 @@ object DbUtils {
 
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        if(!schemaName.isNullOrBlank()) {
+        if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
-            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+            jdbcUrl = if (rewriteBatchedInserts) {
+                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+            } else {
+                "$jdbcUrl?currentSchema=$schemaName"
+            }
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
@@ -99,18 +105,18 @@ object DbUtils {
 
     fun createConfig(
         inMemoryDbName: String,
-        dbUser:String? = null,
+        dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null
     ): Config {
         val port = System.getProperty("postgresPort")
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        if(!port.isNullOrBlank()) {
+        if (!port.isNullOrBlank()) {
             val postgresDb = getPostgresDatabase()
             val host = getPropertyNonBlank("postgresHost", "localhost")
             var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
-            if(!schemaName.isNullOrBlank()) {
+            if (!schemaName.isNullOrBlank()) {
                 jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
             }
             return ConfigFactory.empty()
