@@ -84,13 +84,13 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         type: String,
-        tokenType: String,
-        tokenIssuerHash: String,
-        tokenNotaryX500Name: String,
-        tokenSymbol: String,
-        tokenTag: String,
-        tokenOwnerHash: String,
-        tokenAmount: BigDecimal,
+        tokenType: String? = null,
+        tokenIssuerHash: String? = null,
+        tokenNotaryX500Name: String? = null,
+        tokenSymbol: String? = null,
+        tokenTag: String? = null,
+        tokenOwnerHash: String? = null,
+        tokenAmount: BigDecimal? = null,
         timestamp: Instant
     )
 

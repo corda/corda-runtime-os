@@ -11,8 +11,8 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
 
     api project(':components:domino-logic')
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
     
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-avro-schema'
