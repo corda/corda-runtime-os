@@ -307,7 +307,8 @@ class MembershipP2PIntegrationTest {
         val messageHeader = UnauthenticatedMessageHeader(
             destination.toAvro(),
             source.toAvro(),
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            "messageId",
         )
         val message = MembershipRegistrationRequest(
             registrationId,
