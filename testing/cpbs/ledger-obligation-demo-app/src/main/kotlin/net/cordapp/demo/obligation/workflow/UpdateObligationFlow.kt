@@ -90,7 +90,8 @@ class UpdateObligationFlow(
 
             val oldObligation: StateAndRef<ObligationState> =
                 utxoLedgerService.findUnconsumedStatesByType(ObligationState::class.java)
-                    .first { it.state.contractState.id == request.id }
+                    .firstOrNull { it.state.contractState.id == request.id }
+                    ?: throw IllegalArgumentException("Obligation not found: ${request.id}.")
 
             val newObligation = oldObligation.state.contractState.settle(request.amountToSettle)
 
