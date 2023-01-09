@@ -52,9 +52,7 @@ interface UtxoRepository {
     /** Marks relevant states of transactions consumed */
     fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int
+        stateRefs: List<StateRef>
     )
 
     /** Persists transaction (operation is idempotent) */
