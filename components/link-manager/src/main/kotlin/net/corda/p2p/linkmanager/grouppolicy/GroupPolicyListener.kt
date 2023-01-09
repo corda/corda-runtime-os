@@ -2,8 +2,8 @@ package net.corda.p2p.linkmanager.grouppolicy
 
 import net.corda.crypto.utils.PemCertificate
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.HoldingIdentity
 
 interface GroupPolicyListener {

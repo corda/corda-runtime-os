@@ -25,7 +25,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.ShortHash

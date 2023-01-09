@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.MemberInfoEntry
+import net.corda.data.p2p.test.MemberInfoEntry
 import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option

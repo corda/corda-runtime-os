@@ -30,8 +30,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo

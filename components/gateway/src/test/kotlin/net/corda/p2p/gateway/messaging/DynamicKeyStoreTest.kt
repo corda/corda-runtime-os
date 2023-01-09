@@ -15,7 +15,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.GatewayTlsCertificates
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES

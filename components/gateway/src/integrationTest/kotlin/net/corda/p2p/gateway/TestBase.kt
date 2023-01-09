@@ -22,7 +22,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.GatewayTlsCertificates
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -30,8 +30,8 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.TenantKeys
+import net.corda.data.p2p.test.KeyPairEntry
+import net.corda.data.p2p.test.TenantKeys
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.test.util.eventually

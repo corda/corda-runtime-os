@@ -60,7 +60,7 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema

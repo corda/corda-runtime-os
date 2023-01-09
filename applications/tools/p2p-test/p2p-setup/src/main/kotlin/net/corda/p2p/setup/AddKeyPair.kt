@@ -4,8 +4,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.TenantKeys
+import net.corda.data.p2p.test.KeyPairEntry
+import net.corda.data.p2p.test.TenantKeys
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option

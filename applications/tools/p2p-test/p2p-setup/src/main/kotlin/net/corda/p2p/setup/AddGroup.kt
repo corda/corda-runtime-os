@@ -5,9 +5,9 @@ import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.test.GroupPolicyEntry
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.test.GroupPolicyEntry
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option

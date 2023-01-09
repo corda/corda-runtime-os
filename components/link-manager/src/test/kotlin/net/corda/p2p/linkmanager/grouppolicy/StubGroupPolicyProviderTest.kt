@@ -10,10 +10,10 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.linkmanager.grouppolicy.StubGroupPolicyProvider.Companion.toGroupInfo
-import net.corda.p2p.test.GroupPolicyEntry
+import net.corda.data.p2p.test.GroupPolicyEntry
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat

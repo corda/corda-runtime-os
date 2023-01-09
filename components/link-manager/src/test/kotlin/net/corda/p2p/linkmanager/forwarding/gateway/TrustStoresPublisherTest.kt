@@ -13,9 +13,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.GatewayTruststore
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.GatewayTruststore
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.test.util.identity.createTestHoldingIdentity

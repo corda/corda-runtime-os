@@ -1,16 +1,16 @@
 package net.corda.p2p.linkmanager.common
 
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.DataMessagePayload
-import net.corda.p2p.HeartbeatMessage
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutHeader
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.MessageAck
-import net.corda.p2p.NetworkType
-import net.corda.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.DataMessagePayload
+import net.corda.data.p2p.HeartbeatMessage
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutHeader
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.MessageAck
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError

@@ -2,8 +2,8 @@ package net.corda.p2p.linkmanager.utilities
 
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener

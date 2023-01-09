@@ -8,7 +8,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.GatewayTruststore
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.p2p.gateway.TestBase
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually

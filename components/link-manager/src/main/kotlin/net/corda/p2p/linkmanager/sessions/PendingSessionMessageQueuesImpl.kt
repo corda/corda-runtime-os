@@ -8,7 +8,7 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader

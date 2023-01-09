@@ -2,9 +2,9 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutMessage
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider

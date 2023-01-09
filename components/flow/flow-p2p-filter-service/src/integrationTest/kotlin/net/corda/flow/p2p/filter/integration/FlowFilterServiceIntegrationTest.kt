@@ -21,9 +21,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC

@@ -13,7 +13,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
-import net.corda.p2p.test.MemberInfoEntry
+import net.corda.data.p2p.test.MemberInfoEntry
 import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
