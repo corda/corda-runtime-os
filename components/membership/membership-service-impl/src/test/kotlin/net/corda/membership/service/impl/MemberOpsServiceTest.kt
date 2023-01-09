@@ -158,6 +158,7 @@ class MemberOpsServiceTest {
                 membershipGroupReaderProvider,
                 membershipQueryClient,
                 mock(),
+                mock(),
             )
         }
     }

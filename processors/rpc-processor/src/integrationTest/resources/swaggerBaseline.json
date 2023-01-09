@@ -2029,6 +2029,129 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allow-client" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method list the allowed  client certificates subjects to be used in mutual TLS connections.",
+        "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allow_client",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of the allowed client certificate subjects",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allow-client/{subject}" : {
+      "put" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method allows a client certificate with a given subject to be used in mutual TLS connections.",
+        "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allow_client__subject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "subject",
+          "in" : "path",
+          "description" : "The certificate subject.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate subject.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method disallows a client certificate with a given subject to be used in mutual TLS connections.",
+        "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allow_client__subject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "subject",
+          "in" : "path",
+          "description" : "The certificate subject.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate subject.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/network/getprotocolversion" : {
       "get" : {
         "tags" : [ "Network API" ],
