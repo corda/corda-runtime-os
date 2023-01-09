@@ -62,7 +62,8 @@ fun createStaticMemberGroupPolicyJson(
             "sessionPki" to "NoPKI",
             "tlsPki" to "Standard",
             "tlsVersion" to "1.3",
-            "protocolMode" to "Authenticated_Encryption"
+            "protocolMode" to "Authenticated_Encryption",
+            "tlsType" to "OneWay"
         ),
         "cipherSuite" to emptyMap<String, String>()
     )

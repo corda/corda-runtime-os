@@ -1,6 +1,7 @@
 package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
@@ -49,6 +50,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -166,7 +169,8 @@ class MemberOpsServiceImpl @Activate constructor(
                     registrationProxy,
                     virtualNodeInfoReadService,
                     membershipGroupReaderProvider,
-                    membershipQueryClient
+                    membershipQueryClient,
+                    configurationGetService,
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }

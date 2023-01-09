@@ -13,6 +13,8 @@ import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
+import net.corda.membership.group.policy.validation.MembershipInvalidGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -33,6 +35,7 @@ class CpiValidatorImpl(
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val membershipSchemaValidator: MembershipSchemaValidator,
+    private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
@@ -65,9 +68,16 @@ class CpiValidatorImpl(
             membershipSchemaValidator.validateGroupPolicy(
                 GroupPolicySchema.Default,
                 Version(cpi.validateAndGetGroupPolicyFileVersion(), 0),
-                cpi.metadata.groupPolicy!!
+                cpi.metadata.groupPolicy!!,
             )
         } catch (ex: MembershipSchemaValidationException) {
+            throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)
+        }
+        try {
+            membershipGroupPolicyValidator.validateGroupPolicy(
+                cpi.metadata.groupPolicy!!,
+            )
+        } catch (ex: MembershipInvalidGroupPolicyException) {
             throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)
         }
 

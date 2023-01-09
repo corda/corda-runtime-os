@@ -51,6 +51,7 @@ dependencies {
     implementation project(":components:reconciliation:reconciliation")
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:membership:schema-validation")
+    implementation project(':components:membership:group-policy-configuration-validation')
 
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')
