@@ -410,7 +410,6 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
             jsonMarshallingService,
             jsonValidator,
             wireTransactionFactory,
-            utxoLedgerPersistenceService,
             componentGroups = listOf(
                 // Notary
                 listOf(

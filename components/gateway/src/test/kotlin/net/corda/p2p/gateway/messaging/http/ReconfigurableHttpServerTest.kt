@@ -153,6 +153,6 @@ class ReconfigurableHttpServerTest {
     fun `applyNewConfiguration creates new key store`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
-        verify(dynamicKeyStore.constructed().first()).keyStore
+        verify(dynamicKeyStore.constructed().first()).serverKeyStore
     }
 }

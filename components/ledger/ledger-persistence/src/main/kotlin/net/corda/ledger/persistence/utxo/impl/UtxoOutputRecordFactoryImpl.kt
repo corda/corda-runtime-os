@@ -68,15 +68,15 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
         )
     }
 
-    override fun getFindUnconsumedStatesByTypeSuccessRecord(
-        relevantStates: List<UtxoTransactionOutputDto>,
+    override fun getStatesSuccessRecord(
+        states: List<UtxoTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
         serializationService: SerializationService
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
                 UtxoTransactionOutputs(
-                relevantStates.map {
+                states.map {
                     UtxoTransactionOutput(
                         it.transactionId,
                         it.leafIndex,

@@ -1,41 +1,39 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
+import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
 
 @Suppress("LongParameterList")
-class UtxoFindUnconsumedStatesByTypeRequestHandler(
-    private val findUnconsumedStatesByType: FindUnconsumedStatesByType,
-    private val sandbox: SandboxGroupContext,
+class UtxoResolveStateRefsRequestHandler(
+    private val resolveStateRefs: ResolveStateRefs,
     private val serializationService: SerializationService,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val utxoOutputRecordFactory: UtxoOutputRecordFactory
 ) : RequestHandler {
 
-    @Suppress("UNCHECKED_CAST")
     override fun execute(): List<Record<*, *>> {
-        val stateType = sandbox.sandboxGroup.loadClassFromMainBundles(findUnconsumedStatesByType.stateClassName)
-        require(ContractState::class.java.isAssignableFrom(stateType)) {
-            "Provided ${findUnconsumedStatesByType.stateClassName} is not type of ContractState"
-        }
-
-        // Find the relevant states of transaction
-        val relevantStates = persistenceService.findUnconsumedRelevantStatesByType(
-            stateType as Class<out ContractState>
+        // Find the states
+        val stateAndRefs = persistenceService.resolveStateRefs(
+            resolveStateRefs.stateRefs.map {
+                StateRef(
+                    SecureHash(it.transactionHash.algorithm, it.transactionHash.serverHash.array()),
+                    it.index
+                )
+            }
         )
 
         // Return output records
         return listOf(
             utxoOutputRecordFactory.getStatesSuccessRecord(
-                relevantStates,
+                stateAndRefs,
                 externalEventContext,
                 serializationService
             )

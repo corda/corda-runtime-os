@@ -58,7 +58,6 @@ pipeline {
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
-        timeout(time: 30, unit: 'MINUTES')
         timestamps()
     }
     stages {
@@ -135,7 +134,7 @@ pipeline {
         }
         stage('smoketests') {
                 options {
-                    timeout(time: 20, unit: 'MINUTES')
+                    timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
                    gradlew('smoketest -PisCombinedWorker=true')

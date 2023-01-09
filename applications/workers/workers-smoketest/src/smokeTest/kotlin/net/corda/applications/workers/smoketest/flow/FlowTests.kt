@@ -33,7 +33,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -884,8 +883,8 @@ class FlowTests {
 
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
-        // Random unknown state
-        val unknownTxId = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+        // Random unknown StateRef
+        val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
@@ -911,7 +910,7 @@ class FlowTests {
         consumeStatesAndValidateResult(
             inputStates = listOf(issuedStates.first()),
             refStates = listOf(
-                unknownTxId
+                unknownStateRef
             )
         ) { consumeResult ->
             assertAll({
@@ -919,8 +918,8 @@ class FlowTests {
                 // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
                 // expect notarisation error here
                 assertThat(consumeResult.flowError?.message).contains(
-                    "Could not find transaction ${unknownTxId.substringBeforeLast(":")} " +
-                            "when fetching input states"
+                    "Could not find StateRef $unknownStateRef " +
+                            "when resolving reference states."
                 )
             })
         }
@@ -969,11 +968,11 @@ class FlowTests {
 
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
-        // Random unknown state
-        val unknownTxId = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+        // Random unknown StateRef
+        val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
         consumeStatesAndValidateResult(
             inputStates = listOf(
-                unknownTxId
+                unknownStateRef
             ),
             refStates = emptyList()
         ) { consumeResult ->
@@ -982,8 +981,9 @@ class FlowTests {
                 // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
                 // expect notarisation error here
                 assertThat(consumeResult.flowError?.message).contains(
-                    "Could not find transaction ${unknownTxId.substringBeforeLast(":")} " +
-                            "when fetching input states"
+                    "Could not find StateRef $unknownStateRef " +
+                            "when resolving input states."
+
                 )
             })
         }

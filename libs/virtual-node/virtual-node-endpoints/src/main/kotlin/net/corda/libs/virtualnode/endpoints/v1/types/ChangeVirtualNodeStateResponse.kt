@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.maintenance.endpoints.v1.types
+package net.corda.libs.virtualnode.endpoints.v1.types
 
 /**
  * The data object received via HTTP in response to a request to update the state of a virtual node.
