@@ -16,7 +16,7 @@ interface UtxoFilteredTransactionBuilderInternal : UtxoFilteredTransactionBuilde
 
     val inputStates: ComponentGroupFilterParameters?
 
-    val referenceInputStates: ComponentGroupFilterParameters?
+    val referenceStates: ComponentGroupFilterParameters?
 
     val outputStates: ComponentGroupFilterParameters?
 

@@ -1,8 +1,9 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
-import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 
@@ -12,13 +13,18 @@ import net.corda.v5.base.types.MemberX500Name
 interface FlowMessagingFactory {
 
     /**
-     * @param flowDetails The [FlowContext] for the flow
-     * @param fiber The [SimFiber] of simulator
-     * @param injector to inject flow services
+     * @param configuration The configuration for the simulator.
+     * @param member The name of the "virtual node".
+     * @param fiber The [SimFiber] of simulator.
+     * @param injector to inject flow services.
+     * @param flow for which the messaging service is to be created.
+     * @param contextProperties The [FlowContextProperties] for the flow.
      */
+    @Suppress("LongParameterList")
     fun createFlowMessaging(configuration: SimulatorConfiguration,
                             member: MemberX500Name,
                             fiber: SimFiber,
                             injector: FlowServicesInjector,
-                            flow: Flow): FlowMessaging
+                            flow: FlowAndProtocol,
+                            contextProperties: FlowContextProperties): FlowMessaging
 }

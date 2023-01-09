@@ -15,6 +15,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
+import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
@@ -742,7 +743,12 @@ class InboundMessageProcessorTest {
 
     @Test
     fun `UnauthenticatedMessage will produce message in P2P in topic`() {
-        val unauthenticatedMessage = mock<UnauthenticatedMessage>()
+        val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
+            on { messageId } doReturn "messageId"
+        }
+        val unauthenticatedMessage = mock<UnauthenticatedMessage> {
+            on { header } doReturn unauthenticatedMessageHeader
+        }
         val message = LinkInMessage(unauthenticatedMessage)
 
         val records = processor.onNext(

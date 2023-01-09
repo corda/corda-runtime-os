@@ -8,6 +8,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.ServiceScope
 @Suppress("unused")
 @Component(
     service = [ UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
-    property = [ "corda.marker.only:Boolean=true" ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = ServiceScope.PROTOTYPE
 )
 class AMQPSerializationProvider @Activate constructor(

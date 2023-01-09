@@ -2,11 +2,14 @@ package net.corda.ledger.persistence.utxo
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
 
+@Suppress("TooManyFunctions")
 interface UtxoRepository {
 
     /** Retrieves transaction by [id] */
@@ -21,6 +24,19 @@ interface UtxoRepository {
         transactionId: String
     ): Map<Int, List<ByteArray>>
 
+    /** Retrieves transaction component leafs related to relevant unspent states */
+    fun findUnconsumedRelevantStatesByType(
+        entityManager: EntityManager,
+        groupIndices: List<Int>
+    ):  List<ComponentLeafDto>
+
+    /** Retrieves transaction component leafs related to specific StateRefs */
+    fun resolveStateRefs(
+        entityManager: EntityManager,
+        stateRefs: List<StateRef>,
+        groupIndices: List<Int>
+    ):  List<ComponentLeafDto>
+
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(
         entityManager: EntityManager,
@@ -32,6 +48,14 @@ interface UtxoRepository {
         entityManager: EntityManager,
         id: String,
     ): String?
+
+    /** Marks relevant states of transactions consumed */
+    fun markTransactionRelevantStatesConsumed(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
+    )
 
     /** Persists transaction (operation is idempotent) */
     fun persistTransaction(
@@ -69,13 +93,13 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         type: String,
-        tokenType: String,
-        tokenIssuerHash: String,
-        tokenNotaryX500Name: String,
-        tokenSymbol: String,
-        tokenTag: String,
-        tokenOwnerHash: String,
-        tokenAmount: BigDecimal,
+        tokenType: String? = null,
+        tokenIssuerHash: String? = null,
+        tokenNotaryX500Name: String? = null,
+        tokenSymbol: String? = null,
+        tokenTag: String? = null,
+        tokenOwnerHash: String? = null,
+        tokenAmount: BigDecimal? = null,
         timestamp: Instant
     )
 

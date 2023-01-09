@@ -33,7 +33,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -95,8 +94,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
-            "net.cordapp.testing.testflows.ledger.TokenSelectionFlow",
-            "net.cordapp.testing.testflows.ledger.CreateTokenFlow"
+            "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         val jacksonObjectMapper = jacksonObjectMapper()
@@ -789,8 +787,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
-    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
     fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -838,9 +834,7 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
-    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
-    fun `Notary - Non-validating plugin returns error when using reference state that is spent in same tx`() {
+    fun `Notary - Non-validating plugin returns error on double spend`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
         issueStatesAndValidateResult(1) { issuanceResult ->
@@ -862,54 +856,183 @@ class FlowTests {
             })
         }
 
-        // 4. Include one of the issued states twice in the same TX (as input and as ref)
+        // 4. Spend the issued state
         val toConsume = issuedStates.first()
 
         consumeStatesAndValidateResult(
             inputStates = listOf(toConsume),
-            refStates = listOf(toConsume)
+            refStates = emptyList()
         ) { consumeResult ->
-            // 5. Make sure the request failed due to double spend error
             assertAll({
-                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             })
         }
-    }
 
-    @Test
-    @Disabled
-    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution
-    fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
+        // 5. Try to spend the state again, and expect the error
         consumeStatesAndValidateResult(
-            inputStates = listOf(
-                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
-            ),
+            inputStates = listOf(toConsume),
             refStates = emptyList()
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateConflict")
             })
         }
     }
 
     @Test
-    @Disabled
-    // TODO CORE-7939 For now it's impossible to test this scenario as there's no back-chain resolution.
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
+        // Random unknown StateRef
+        val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+        // 1. Issue 1 state
+        val issuedStates = mutableListOf<String>()
+        issueStatesAndValidateResult(1) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
+
+            @Suppress("unchecked_cast")
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+
+            assertThat(issuedStateRefs).hasSize(1)
+
+            issuedStates.addAll(issuedStateRefs)
+
+            // 3. Make sure no states were consumed
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
+        }
+
+        // 4. Spend a valid state and reference an unknown state
         consumeStatesAndValidateResult(
-            inputStates = emptyList(),
+            inputStates = listOf(issuedStates.first()),
             refStates = listOf(
-                "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+                unknownStateRef
             )
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
+                // expect notarisation error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "Could not find StateRef $unknownStateRef " +
+                            "when resolving reference states."
+                )
+            })
+        }
+    }
+
+    @Test
+    fun `Notary - Non-validating plugin executes successfully when using the same state for input and ref`() {
+        // 1. Issue 1 state
+        val issuedStates = mutableListOf<String>()
+        issueStatesAndValidateResult(1) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
+
+            @Suppress("unchecked_cast")
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+
+            assertThat(issuedStateRefs).hasSize(1)
+
+            issuedStates.addAll(issuedStateRefs)
+
+            // 3. Make sure no states were consumed
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
+        }
+
+        // 4. Make sure we consumed the state and managed to reference it
+        // Since the state we are trying to spend and reference is not spent yet (not persisted) we should be able
+        // to spend it and reference at the same time
+        consumeStatesAndValidateResult(
+            inputStates = listOf(issuedStates.first()),
+            refStates = listOf(issuedStates.first())
+        ) { consumeResult ->
+            val flowResultMap = consumeResult.mapFlowJsonResult()
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+                assertAll({
+                    assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(1)
+                    assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(1)
+                })
+            })
+        }
+    }
+
+    @Test
+    fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
+        // Random unknown StateRef
+        val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
+        consumeStatesAndValidateResult(
+            inputStates = listOf(
+                unknownStateRef
+            ),
+            refStates = emptyList()
+        ) { consumeResult ->
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+                // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
+                // expect notarisation error here
+                assertThat(consumeResult.flowError?.message).contains(
+                    "Could not find StateRef $unknownStateRef " +
+                            "when resolving input states."
+
+                )
+            })
+        }
+    }
+
+    @Test
+    fun `Notary - Non-validating plugin returns error when referencing spent state`() {
+        // 1. Issue 2 states
+        val issuedStates = mutableListOf<String>()
+        issueStatesAndValidateResult(2) { issuanceResult ->
+            // 2. Make sure the states were issued
+            assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val flowResultMap = issuanceResult.mapFlowJsonResult()
+
+            @Suppress("unchecked_cast")
+            val issuedStateRefs = flowResultMap["issuedStateRefs"] as List<String>
+
+            assertThat(issuedStateRefs).hasSize(2)
+
+            issuedStates.addAll(issuedStateRefs)
+
+            // 3. Make sure no states were consumed
+            assertAll({
+                assertThat(flowResultMap["consumedInputStateRefs"] as List<*>).hasSize(0)
+                assertThat(flowResultMap["consumedReferenceStateRefs"] as List<*>).hasSize(0)
+            })
+        }
+
+        // 4. Spend the issued state
+        consumeStatesAndValidateResult(
+            inputStates = listOf(issuedStates.first()),
+            refStates = emptyList()
+        ) { consumeResult ->
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            })
+        }
+
+        // 5. Try to reference the spent state.
+        // Note we MUST spend or issue a state otherwise it is not a valid transaction. In this case we choose to spend
+        // it because it's easier to do with `consumeStatesAndValidateResult`.
+        consumeStatesAndValidateResult(
+            inputStates = listOf(issuedStates[1]),
+            refStates = listOf(issuedStates.first())
+        ) { consumeResult ->
+            assertAll({
+                assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateUnknown")
+                assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
             })
         }
     }
@@ -1036,8 +1159,8 @@ class FlowTests {
         val consumeRequestID = startRpcFlow(
             bobHoldingId,
             mapOf(
-                "inputStateRefs" to inputStates,
-                "referenceStateRefs" to refStates
+                "inputStateRefs" to jacksonObjectMapper.writeValueAsString(inputStates),
+                "referenceStateRefs" to jacksonObjectMapper.writeValueAsString(refStates)
             ),
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow"
         )

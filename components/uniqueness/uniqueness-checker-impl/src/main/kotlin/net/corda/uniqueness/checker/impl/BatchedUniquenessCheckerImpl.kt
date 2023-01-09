@@ -160,7 +160,7 @@ class BatchedUniquenessCheckerImpl(
         // the tx id)
         var numMalformed = 0
 
-        // TODO CORE-7250 We have no way to pre-check the number of reference input states in the plugin
+        // TODO CORE-7250 We have no way to pre-check the number of reference states in the plugin
         //  server anymore, so we need to make sure that not having the 10k limit for reference states is,
         //  okay, if not, we need to re-add the check in this class.
 

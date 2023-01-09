@@ -45,14 +45,6 @@ class ConsensualTransactionBuilderImpl(
         return tx
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ConsensualTransactionBuilderImpl) return false
-        return other.states == states
-    }
-
-    override fun hashCode(): Int = Objects.hash(states)
-
     private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
             consensualSignedTransactionFactory,
@@ -66,4 +58,18 @@ class ConsensualTransactionBuilderImpl(
         // The metadata, states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
         // transaction is assembled there.
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ConsensualTransactionBuilderImpl) return false
+        return other.states == states
+    }
+
+    override fun hashCode(): Int = Objects.hash(states)
+
+    override fun toString(): String {
+        return "ConsensualTransactionBuilderImpl(states=$states)"
+    }
+
+
 }

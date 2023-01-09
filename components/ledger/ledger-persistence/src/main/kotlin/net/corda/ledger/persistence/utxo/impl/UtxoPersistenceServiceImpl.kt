@@ -2,26 +2,31 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import javax.persistence.EntityManager
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateRef
+import javax.persistence.EntityManagerFactory
 
 class UtxoPersistenceServiceImpl constructor(
-    private val entityManager: EntityManager,
+    private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
+    private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
     private val utcClock: Clock
 ) : UtxoPersistenceService {
 
     override fun findTransaction(id: String, transactionStatus: TransactionStatus): SignedTransactionContainer? {
-        return entityManager.transaction { em ->
+        return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
@@ -31,12 +36,52 @@ class UtxoPersistenceServiceImpl constructor(
         }
     }
 
+    override fun <T: ContractState> findUnconsumedRelevantStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
+        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
+        val componentGroups = entityManagerFactory.transaction { em ->
+            repository.findUnconsumedRelevantStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
+        }.groupBy { it.groupIndex }
+        val outputInfos = componentGroups[outputsInfoIdx]
+            ?.associate { Pair(it.leafIndex, it.data) }
+            ?: emptyMap()
+        return componentGroups[outputsIdx]?.mapNotNull {
+            val info = outputInfos[it.leafIndex]
+            requireNotNull(info) {
+                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
+            }
+            val contractState = serializationService.deserialize<ContractState>(it.data)
+            if (stateClass.isInstance(contractState)) {
+                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+            } else {
+                null
+            }
+        } ?: emptyList()
+    }
+
+    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
+        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
+        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
+        val componentGroups = entityManagerFactory.transaction { em ->
+            repository.resolveStateRefs(em, stateRefs, listOf(outputsInfoIdx, outputsIdx))
+        }.groupBy { it.groupIndex }
+        val outputInfos = componentGroups[outputsInfoIdx]
+            ?.associate { Pair(it.leafIndex, it.data) }
+            ?: emptyMap()
+        return componentGroups[outputsIdx]?.map {
+            val info = outputInfos[it.leafIndex]
+            requireNotNull(info) {
+                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
+            }
+            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+        } ?: emptyList()
+    }
+
     override fun persistTransaction(transaction: UtxoTransactionReader) {
         val nowUtc = utcClock.instant()
+        val transactionIdString = transaction.id.toString()
 
-        entityManager.transaction { em ->
-            val transactionIdString = transaction.id.toString()
-
+        entityManagerFactory.transaction { em ->
             // Insert the Transaction
             repository.persistTransaction(
                 em,
@@ -61,15 +106,52 @@ class UtxoPersistenceServiceImpl constructor(
                 }
             }
 
-            // Insert relevancy information
+            // Insert inputs data
+            val inputs = transaction.getConsumedStateRefs()
+            inputs.forEachIndexed  { index, input ->
+                repository.persistTransactionSource(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    index,
+                    input.transactionHash.toString(),
+                    input.index,
+                    false,
+                    nowUtc
+                )
+            }
+
+            // Insert outputs data
+            transaction.getProducedStates().forEachIndexed { index, stateAndRef ->
+                repository.persistTransactionOutput(
+                    em,
+                    transactionIdString,
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    index,
+                    stateAndRef.state.contractState::class.java.canonicalName,
+                    timestamp = nowUtc
+                )
+            }
+
+            // Insert relevancy information for outputs
             transaction.relevantStatesIndexes.forEach { relevantStateIndex ->
                 repository.persistTransactionRelevantStates(
                     em,
                     transactionIdString,
-                    ConsensualComponentGroup.OUTPUT_STATES.ordinal,
+                    UtxoComponentGroup.OUTPUTS.ordinal,
                     relevantStateIndex,
                     consumed = false,
                     nowUtc
+                )
+            }
+
+            // Mark inputs as consumed
+            transaction.getConsumedStateRefs().forEach { inputStateRef ->
+                repository.markTransactionRelevantStatesConsumed(
+                    em,
+                    inputStateRef.transactionHash.toString(),
+                    UtxoComponentGroup.OUTPUTS.ordinal,
+                    inputStateRef.index
                 )
             }
 
@@ -105,7 +187,7 @@ class UtxoPersistenceServiceImpl constructor(
     ): Pair<String?, List<CordaPackageSummary>> {
         val nowUtc = utcClock.instant()
 
-        return entityManager.transaction { em ->
+        return entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
             val status = repository.findTransactionStatus(em, transactionIdString)
@@ -166,7 +248,7 @@ class UtxoPersistenceServiceImpl constructor(
     }
 
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
-        entityManager.transaction { em ->
+        entityManagerFactory.transaction { em ->
             repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
         }
     }

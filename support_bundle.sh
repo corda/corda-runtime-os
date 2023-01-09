@@ -35,7 +35,7 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   restartCount=$(kubectl --namespace "$namespace" get pod "${podName}" -o jsonpath="{.status.containerStatuses[0].restartCount}")
   if [[ $restartCount -gt 0 ]]; then
     echo "Pod ${podName} has restarted - collecting previous logs"
-    kubectl --namespace "${namespace}" logs "${podName}" --all-containers=true --ignore-errors --prefix=true --previous > "${podDir}/previous-logs.txt"
+    kubectl --namespace "${namespace}" logs "${podName}" --ignore-errors --prefix=true --previous > "${podDir}/previous-logs.txt"
   fi
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"

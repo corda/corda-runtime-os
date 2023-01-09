@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.v5.application.crypto.DigestService
@@ -13,6 +14,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -79,6 +81,65 @@ class UtxoRepositoryImpl(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
+    override fun findUnconsumedRelevantStatesByType(
+        entityManager: EntityManager,
+        groupIndices: List<Int>
+    ):  List<ComponentLeafDto> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                JOIN {h-schema}utxo_relevant_transaction_state AS rts
+                    ON rts.transaction_id = tc.transaction_id
+                    AND rts.leaf_idx = tc.leaf_idx
+                WHERE tc.group_idx IN (:groupIndices)
+                AND rts.consumed = false
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            Tuple::class.java
+        )
+            .setParameter("groupIndices", groupIndices)
+            .resultListAsTuples()
+            .map { t ->
+                ComponentLeafDto(
+                    t[0] as String, // transactionId
+                    (t[1] as Number).toInt(), // groupIndex
+                    (t[2] as Number).toInt(), // leafIndex
+                    t[3] as ByteArray // data
+                )
+            }
+    }
+
+    override fun resolveStateRefs(
+        entityManager: EntityManager,
+        stateRefs: List<StateRef>,
+        groupIndices: List<Int>
+    ): List<ComponentLeafDto> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
+                FROM {h-schema}utxo_transaction_component AS tc
+                WHERE tc.group_idx IN (:groupIndices) AND
+                tc.transaction_id in (:transactionIds) AND
+                (tc.transaction_id||':'|| tc.leaf_idx) in (:stateRefs)
+                ORDER BY tc.group_idx, tc.leaf_idx""",
+            Tuple::class.java
+        )
+            .setParameter("groupIndices", groupIndices)
+            .setParameter(
+                "transactionIds",
+                stateRefs.map { it.transactionHash.toString() })
+            .setParameter("stateRefs", stateRefs.map { it.toString() })
+            .resultListAsTuples()
+            .map { t ->
+                ComponentLeafDto(
+                    t[0] as String, // transactionId
+                    (t[1] as Number).toInt(), // groupIndex
+                    (t[2] as Number).toInt(), // leafIndex
+                    t[3] as ByteArray // data
+                )
+            }
+    }
+
     override fun findTransactionSignatures(
         entityManager: EntityManager,
         transactionId: String
@@ -109,6 +170,26 @@ class UtxoRepositoryImpl(
             .resultListAsTuples()
             .map { r -> r.get(0) as String }
             .singleOrNull()
+    }
+
+    override fun markTransactionRelevantStatesConsumed(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int
+    ) {
+        entityManager.createNativeQuery(
+        """
+            UPDATE {h-schema}utxo_relevant_transaction_state
+            SET consumed = true
+            WHERE transaction_id = :transactionId
+            AND group_idx = :groupIndex
+            AND leaf_idx = :leafIndex"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .executeUpdate()
     }
 
     override fun persistTransaction(
@@ -182,13 +263,13 @@ class UtxoRepositoryImpl(
         groupIndex: Int,
         leafIndex: Int,
         type: String,
-        tokenType: String,
-        tokenIssuerHash: String,
-        tokenNotaryX500Name: String,
-        tokenSymbol: String,
-        tokenTag: String,
-        tokenOwnerHash: String,
-        tokenAmount: BigDecimal,
+        tokenType: String?,
+        tokenIssuerHash: String?,
+        tokenNotaryX500Name: String?,
+        tokenSymbol: String?,
+        tokenTag: String?,
+        tokenOwnerHash: String?,
+        tokenAmount: BigDecimal?,
         timestamp: Instant
     ) {
         entityManager.createNativeQuery(
@@ -211,6 +292,9 @@ class UtxoRepositoryImpl(
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)
+            // This is a workaround for avoiding error when tokenAmount is null, see:
+            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
+            .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
             .setParameter("createdAt", timestamp)
             .executeUpdate()

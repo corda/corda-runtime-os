@@ -77,8 +77,12 @@ data class CreateUserType(
         }
 
         if (initialPassword != null) {
+            if (initialPassword.length < 5) {
+                errors[nextErrKey()] = "Password is too short. Minimum length is 5."
+            }
+
             if (initialPassword.length > 255) {
-                errors[nextErrKey()] = "Password name exceed maximum length of 255."
+                errors[nextErrKey()] = "Password exceed maximum length of 255."
             }
         }
 

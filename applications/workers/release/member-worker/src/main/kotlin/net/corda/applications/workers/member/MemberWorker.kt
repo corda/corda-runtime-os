@@ -1,5 +1,6 @@
 package net.corda.applications.workers.member
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
@@ -19,7 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
 /** The worker for handling member services. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class MemberWorker @Activate constructor(
     @Reference(service = MemberProcessor::class)
@@ -31,7 +32,9 @@ class MemberWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider
+    val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -42,6 +45,8 @@ class MemberWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Member worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("Member Worker", platformInfoProvider)
 
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return

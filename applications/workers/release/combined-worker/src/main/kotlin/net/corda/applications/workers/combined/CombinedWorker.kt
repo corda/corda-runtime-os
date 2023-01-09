@@ -1,6 +1,7 @@
 package net.corda.applications.workers.combined
 
 import net.corda.application.dbsetup.PostgresDbSetup
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
@@ -61,7 +62,9 @@ class CombinedWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider
+    val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -73,6 +76,8 @@ class CombinedWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("Combined Worker", platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")
@@ -152,10 +157,10 @@ private class CombinedWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
+    @Option(names = ["-r", "--rpc-params"], description = ["RPC parameters for the worker."])
     var rpcParams = emptyMap<String, String>()
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])

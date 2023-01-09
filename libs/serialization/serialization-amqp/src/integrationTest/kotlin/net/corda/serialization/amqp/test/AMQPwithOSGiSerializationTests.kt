@@ -2,6 +2,7 @@ package net.corda.serialization.amqp.test
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
@@ -9,6 +10,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.securitymanager.SecurityManagerService
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -19,6 +21,7 @@ import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toByteSequence
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.OpaqueBytes
+import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -54,6 +58,9 @@ class AMQPwithOSGiSerializationTests {
 
     private lateinit var sandboxFactory: SandboxFactory
 
+    @InjectService(timeout = 1000)
+    lateinit var securityManagerService: SecurityManagerService
+
     @BeforeAll
     fun setUp(
         @InjectService(timeout = 1000)
@@ -63,6 +70,7 @@ class AMQPwithOSGiSerializationTests {
         @TempDir
         testDirectory: Path
     ) {
+        applyPolicyFile("security-deny-platform-serializers.policy")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             sandboxFactory = setup.fetchService(timeout = 1500)
@@ -200,6 +208,58 @@ class AMQPwithOSGiSerializationTests {
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
+    }
+
+    @Test
+    fun `sandbox external custom serializers targeting platform types are denied`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
+        try {
+            // Corda platform type custom serializer
+            val factory = testDefaultFactory(sandboxGroup)
+            val serializer =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
+            assertThrows<IllegalCustomSerializerException> {
+                factory.registerExternal(serializer, factory)
+            }
+
+            // JDK type custom serializer
+            val factory1 = testDefaultFactory(sandboxGroup)
+            val serializer1 =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
+            assertThrows<IllegalCustomSerializerException> {
+                factory1.registerExternal(serializer1, factory1)
+            }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @Test
+    fun `sandbox external custom serializers targeting sandbox types are allowed`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val serializer =
+                sandboxGroup
+                    .loadClassFromMainBundles("net.cordapp.bundle.SandboxTypeSerializer")
+                    .getConstructor()
+                    .newInstance() as SerializationCustomSerializer<*, *>
+            factory.registerExternal(serializer, factory)
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    private fun applyPolicyFile(fileName: String) {
+        val url = this::class.java.classLoader.getResource(fileName) ?: fail("Resource $fileName not found")
+        val policy = securityManagerService.readPolicy(url.openConnection().getInputStream())
+        securityManagerService.updatePermissions(policy, clear = false)
     }
 
     @CordaSerializable

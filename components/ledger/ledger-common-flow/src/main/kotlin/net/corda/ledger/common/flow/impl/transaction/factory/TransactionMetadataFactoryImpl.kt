@@ -38,8 +38,6 @@ class TransactionMetadataFactoryImpl @Activate constructor(
         return TransactionMetadataImpl(metadata)
     }
 
-    // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
-    // available.
     private fun getCpkSummaries() = currentSandboxGroupContext
         .get()
         .sandboxGroup
@@ -50,7 +48,7 @@ class TransactionMetadataFactoryImpl @Activate constructor(
             CordaPackageSummaryImpl(
                 name = cpk.cpkId.name,
                 version = cpk.cpkId.version,
-                signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
+                signerSummaryHash = cpk.cpkId.signerSummaryHash.toHexString(),
                 fileChecksum = cpk.fileChecksum.toHexString()
             )
         }

@@ -1,9 +1,11 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.NON_BUNDLE
 import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalProxySerializer
@@ -14,8 +16,12 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.framework.FrameworkUtil
 import java.io.NotSerializableException
 import java.lang.reflect.Type
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.security.BasicPermission
 import java.security.PrivateKey
 
 /**
@@ -23,9 +29,18 @@ import java.security.PrivateKey
  * it should be handled by standard serialisation methods (or not serialised at all) and there is no valid use case for
  * a custom method.
  */
-class IllegalCustomSerializerException(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
-        Exception("Custom serializer ${customSerializer::class.qualifiedName} registered " +
-                "to serialize non-custom-serializable type $clazz")
+class IllegalCustomSerializerException
+private constructor(customSerializerQualifiedName: String?, clazz: Class<*>, cause: Exception?) : Exception(
+    "Custom serializer $customSerializerQualifiedName " +
+            "to serialize non-custom-serializable type $clazz",
+    cause
+) {
+    constructor(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
+            this(customSerializer::class.qualifiedName, clazz, null)
+
+    constructor(customSerializer: SerializationCustomSerializer<*, *>, clazz: Class<*>, cause: Exception) :
+            this(customSerializer::class.qualifiedName, clazz, cause)
+}
 
 /**
  * Thrown when more than one [SerializationCustomSerializer] offers to serialize the same type, which may indicate a malicious attempt
@@ -88,9 +103,13 @@ interface CustomSerializerRegistry {
 
 class CachingCustomSerializerRegistry(
         private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        private val allowedFor: Set<Class<*>>
+        private val allowedFor: Set<Class<*>>,
+        private val sandboxGroup: SandboxGroup
 ) : CustomSerializerRegistry {
-    constructor(descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry) : this(descriptorBasedSerializerRegistry, emptySet())
+    constructor(
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+        sandboxGroup: SandboxGroup
+    ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
 
     companion object {
         val logger = contextLogger()
@@ -133,6 +152,26 @@ class CachingCustomSerializerRegistry(
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
         val customSerializer = CorDappCustomSerializer(serializer, factory)
+
+        val sm = System.getSecurityManager()
+        if (sm != null) {
+            val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
+            val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
+            try {
+                sm.checkPermission(
+                    CustomSerializerPermission(
+                        customSerializerTargetBundle
+                            ?.location
+                            ?.substringBefore('/')
+                            ?: NON_BUNDLE
+                    ),
+                    accessControlContext
+                )
+            } catch (ace: AccessControlException) {
+                logger.warn("Illegal custom serializer detected for ${customSerializer.type}", ace)
+                throw IllegalCustomSerializerException(serializer, serializer::class.java, ace)
+            }
+        }
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
     }
@@ -223,5 +262,31 @@ class CachingCustomSerializerRegistry(
         allowedFor.any { it.isAssignableFrom(this) } -> false
         isAnnotationPresent(CordaSerializable::class.java) -> true
         else -> false
+    }
+}
+
+/**
+ * [CustomSerializerPermission] is used to allow/ block external custom serializers registration. A register-able
+ * external custom serializer should a serializer which is defined within a sandbox type X (X = FLOW or VERIFICATION or PERSISTENCE)
+ * whose target type also exists in the same sandbox type X. Look for uses of this class in .policy files for example uses.
+ *
+ * @param [targetBundleLocation] is the external custom serializer target type.
+ */
+class CustomSerializerPermission(targetBundleLocation: String) : BasicPermission(targetBundleLocation) {
+    init {
+        // `BasicPermission` parsing of passed in `targetBundleLocation`, if it is to contain a wildcard ('*')
+        // `BasicPermission` expects it to either be a single character ('*') or ending in (".*"). In our case, where we want
+        // to pass in bundle locations, the passed in string would look like for e.g. "FLOW/*". But according to the above rule
+        // this will not get parsed properly. So with using `BasicPermission` it means we should be using wildcard only
+        // as a single character.
+        // For cases like for e.g. "FLOW/*" we should only be passing in just "FLOW".
+        if (targetBundleLocation.length > 1 && targetBundleLocation.endsWith('*')) {
+            throw IllegalArgumentException("Permission name cannot end with *")
+        }
+    }
+
+    companion object {
+        // `BasicPermission` doesn't allow an empty name so using "NON_BUNDLE" if class is non bundled
+        const val NON_BUNDLE = "NON_BUNDLE"
     }
 }

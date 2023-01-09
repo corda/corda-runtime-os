@@ -1,5 +1,6 @@
 package net.corda.applications.workers.db
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
@@ -38,7 +39,9 @@ class DBWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider
+    val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -49,6 +52,8 @@ class DBWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("DB Worker", platformInfoProvider)
 
         JavaSerialisationFilter.install()
 
@@ -79,6 +84,6 @@ private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 }

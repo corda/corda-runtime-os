@@ -13,9 +13,20 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  */
 interface UtxoLedgerPersistenceService {
     /**
+     * Find a UTXO signed transaction in the persistence context given it's [id].
+     *
+     * @param id UTXO signed transaction ID.
+     *
+     * @return The found UTXO signed transaction, null if it could not be found in the persistence context.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
+
+    /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
-     * @param transaction Consensual signed transaction to persist.
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
      * @param relevantStatesIndexes Indexes of relevant states.
@@ -49,16 +60,4 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
-
-    /**
-     * Find a UTXO signed transaction in the persistence context given it's [id].
-     *
-     * @param id UTXO signed transaction ID.
-     *
-     * @return The found UTXO signed transaction, null if it could not be found in the persistence context.
-     *
-     * @throws CordaPersistenceException if an error happens during find operation.
-     */
-    @Suspendable
-    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 }

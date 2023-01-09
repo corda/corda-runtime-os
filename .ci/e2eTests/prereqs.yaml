@@ -27,8 +27,12 @@ kafka:
     limits:
       memory: 800Mi
       cpu: 1000m
+  startupProbe:
+    enabled: true
   zookeeper:
     replicaCount: 3
+    startupProbe:
+      enabled: true
   offsetsTopicReplicationFactor: 3
   transactionStateLogReplicationFactor: 3
 

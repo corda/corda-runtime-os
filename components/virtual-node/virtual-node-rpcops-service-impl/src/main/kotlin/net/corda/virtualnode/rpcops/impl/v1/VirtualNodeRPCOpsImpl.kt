@@ -3,17 +3,23 @@ package net.corda.virtualnode.rpcops.impl.v1
 import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
+import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -34,6 +40,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
@@ -113,9 +121,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    //val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofSeconds(60) // Temporary change till CORE-7646 properly resolved
+                        // Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
@@ -162,6 +171,25 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+    }
+
+    /**
+     * Retrieves the VirtualNodeInfo for a virtual node with the given ShortHash from the message bus
+     *
+     * @throws ResourceNotFoundException is thrown if no Virtual node with the given ShortHash was found.
+     * @return [VirtualNodeInfo] for the corresponding ShortHash
+     *
+     * @see VirtualNodes
+     * @see VirtualNodeInfo
+     */
+    override fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
+        val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
+        val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)
+
+        if (virtualNode == null) {
+            throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
+        }
+        return virtualNode.toEndpointType()
     }
 
     /**
@@ -220,6 +248,56 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
+    }
+
+    // Lookup and update the virtual node for the given virtual node short ID.
+    //  This will update the last instance of said virtual node, sorted by CPI version
+    @Suppress("ForbiddenComment")
+    override fun updateVirtualNodeState(
+        virtualNodeShortId: String,
+        newState: String
+    ): ChangeVirtualNodeStateResponse {
+        val instant = clock.instant()
+        // Lookup actor to keep track of which RPC user triggered an update
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+        // TODO: Validate newState
+        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeStateChangeRequest(
+                virtualNodeShortId,
+                newState,
+                actor
+            )
+        )
+        // Actually send request and await response message on bus
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeStateChangeResponse -> {
+                resolvedResponse.run {
+                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
+                }
+            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+
+    private fun handleFailure(exception: ExceptionEnvelope?): java.lang.Exception {
+        if (exception == null) {
+            logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+            return InternalServerException("Request was unsuccessful but no exception was provided.")
+        }
+        logger.warn(
+            "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
+        )
+        return InternalServerException(exception.errorMessage)
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =

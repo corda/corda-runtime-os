@@ -21,14 +21,15 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
-    partitionState: StateAndEventPartitionState<K, S>,
+    private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-        //short timeout for state polling so as to not starve the event poller
+
+        //short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
     }
 
@@ -66,19 +67,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             return
         }
 
-        val partitionsSynced = mutableSetOf<CordaTopicPartition>()
-        val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
-        if (partitionsToSync.isNotEmpty()) {
-            log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
-        }
-        for (state in states) {
+        stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
-            partitionsSynced.addAll(getSyncedEventPartitions())
         }
 
-        if (syncPartitions && partitionsSynced.isNotEmpty()) {
-            resumeConsumerAndExecuteListener(partitionsSynced)
+        if (syncPartitions && partitionsToSync.isNotEmpty()) {
+            log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
+            resumeConsumerAndExecuteListener(removeAndReturnSyncedPartitions())
         }
     }
 
@@ -88,7 +84,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         executor.shutdown()
     }
 
-    private fun getSyncedEventPartitions(): Set<CordaTopicPartition> {
+    private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
         val statePartitionsToSync = partitionsToSync.toMap()
         for (partition in statePartitionsToSync) {
@@ -111,6 +107,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<CordaTopicPartition>) {
+        if (partitionsSynced.isEmpty()) {
+            return
+        }
+
         log.info("State consumer in group ${config.group} is up to date for $partitionsSynced.  Resuming event feed.")
         eventConsumer.resume(partitionsSynced)
 
@@ -138,7 +138,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
-        val assignment = eventConsumer.assignment() - eventConsumer.paused()
+        val assignment = eventConsumer.assignment()
         log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout
@@ -151,8 +151,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $assignment"}
-        eventConsumer.resume(assignment)
+        // A rebalance might have been executed while waiting for the future to complete and the consumer might have
+        // lost ownership of some previously owned partitions. Make sure to resume only those partitions currently
+        // assigned to prevent IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
+        val currentAssignment = eventConsumer.assignment()
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $currentAssignment" }
+        eventConsumer.resume(currentAssignment)
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
@@ -196,17 +200,43 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
-    override fun resetPollInterval() {
+    override fun resetPollInterval(): Boolean {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
-            val assignment = eventConsumer.assignment() - eventConsumer.paused()
-            log.debug { "Resetting poll interval. Pausing assignment: $assignment"}
-            eventConsumer.pause(assignment)
-            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
-            stateConsumer.poll(PAUSED_POLL_TIMEOUT)
+            // Here we pause each consumer in order to mark a poll to avoid a Kafka timeout without actually consuming
+            // any records.
+            val eventConsumerPausePartitions = eventConsumer.assignment() - eventConsumer.paused()
+            val stateConsumerPausePartitions = stateConsumer.assignment() - stateConsumer.paused()
+
+            log.debug { "Resetting poll interval. Pausing event consumer partitions: $eventConsumerPausePartitions"}
+            eventConsumer.pause(eventConsumerPausePartitions)
+            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerPausePartitions"}
+            stateConsumer.pause(stateConsumerPausePartitions)
+
+            partitionState.dirty = false
+            val eventRecords = eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            eventRecords.forEach { event ->
+                log.warn("Resetting polling interval has lost event with key: ${event.key}, this will likely cause execution" +
+                        " problems with the Flow with this id")
+            }
+            val stateRecords = stateConsumer.poll(PAUSED_POLL_TIMEOUT)
+            stateRecords.forEach { state ->
+                log.warn("Resetting polling interval has lost state with key: ${state.key}, this will likely cause execution" +
+                        " problems with the Flow with this id")
+            }
+
+            eventConsumer.resume(eventConsumerPausePartitions)
+            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerPausePartitions" }
+            stateConsumer.resume(stateConsumerPausePartitions)
+            log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerPausePartitions" }
+
             pollIntervalCutoff = getNextPollIntervalCutoff()
-            log.debug { "Reset of poll interval complete. Resuming assignment: $assignment"}
-            eventConsumer.resume(assignment)
+
+            if (partitionState.dirty) {
+                partitionState.dirty = false
+                return true
+            }
         }
+        return false
     }
 
     /**

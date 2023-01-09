@@ -17,14 +17,14 @@ import net.corda.data.packaging.CpkIdentifier as CpkIdentifierAvro
 data class CpkIdentifier(
     override val name: String,
     override val version: String,
-    override val signerSummaryHash: SecureHash?
+    override val signerSummaryHash: SecureHash
 ) : Identifier, Comparable<CpkIdentifier> {
     companion object {
         fun fromAvro(other: CpkIdentifierAvro): CpkIdentifier {
             return CpkIdentifier(
                 other.name,
                 other.version,
-                other.signerSummaryHash?.let { SecureHash(it.algorithm, it.serverHash.array()) }
+                SecureHash(other.signerSummaryHash.algorithm, other.signerSummaryHash.serverHash.array())
             )
         }
     }
@@ -35,12 +35,10 @@ data class CpkIdentifier(
         return CpkIdentifierAvro(
             name,
             version,
-            signerSummaryHash?.let { hash ->
-                net.corda.data.crypto.SecureHash(
-                    hash.algorithm,
-                    ByteBuffer.wrap(hash.bytes)
-                )
-            }
+            net.corda.data.crypto.SecureHash(
+                signerSummaryHash.algorithm,
+                ByteBuffer.wrap(signerSummaryHash.bytes)
+            )
         )
     }
 }

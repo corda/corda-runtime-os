@@ -13,9 +13,9 @@ import java.util.TreeMap
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
-import net.corda.sandbox.CORDA_SYSTEM
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.RequireCordaSystem
+import net.corda.sandbox.RequireCordaSystem.CORDA_SYSTEM_NAMESPACE
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -82,6 +82,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 ) : SandboxGroupContextService, CacheConfiguration {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
+        private const val CORDA_UNINJECTABLE_FILTER = "(corda.uninjectable=*)"
         private const val CORDA_MARKER_ONLY_FILTER = "(corda.marker.only=*)"
 
         private val MARKER_INTERFACES: Set<String> = unmodifiableSet(
@@ -89,6 +90,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 .mapTo(mutableSetOf(), SandboxGroupType::serviceMarkerType)
                 .mapTo(mutableSetOf(), Class<*>::getName)
         )
+        private val uninjectableFilter = FrameworkUtil.createFilter(CORDA_UNINJECTABLE_FILTER)
         private val markerOnlyFilter = FrameworkUtil.createFilter(CORDA_MARKER_ONLY_FILTER)
         private val systemFilter = FrameworkUtil.createFilter(CORDA_SYSTEM_FILTER)
         private val logger = loggerFor<SandboxGroupContextServiceImpl>()
@@ -109,7 +111,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             try {
                 action()
             } catch (e: Exception) {
-                logger.warn("Ignoring exception", e)
+                logger.debug("Ignoring exception", e)
             }
         }
 
@@ -125,6 +127,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
             ) = throw IllegalStateException("get: SandboxGroupContextService is not ready.")
 
+            override fun resize(newCapacity: Long): SandboxGroupContextCache {
+                return SandboxGroupContextCacheImpl(newCapacity)
+            }
+            override fun flush() {}
             override fun close() {}
         }
     }
@@ -134,10 +140,14 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     override fun initCache(capacity: Long) {
         if (capacity != cache.capacity) {
             val oldCache = cache
-            cache = SandboxGroupContextCacheImpl(capacity)
+            cache = oldCache.resize(capacity)
             oldCache.close()
             logger.info("Sandbox cache capacity changed from {} to {}", oldCache.capacity, capacity)
         }
+    }
+
+    override fun flushCache() {
+        cache.flush()
     }
 
     fun remove(virtualNodeContext: VirtualNodeContext) {
@@ -166,6 +176,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     )
                     throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($vnc)")
                 }
+                if (cpks.isEmpty()) {
+                    throw CordaRuntimeException("No CPKs in this virtual node context. " +
+                            "State and contract classes must be defined inside a contract CPK. ($vnc)")
+                }
 
                 val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, vnc.sandboxGroupType.name)
 
@@ -187,7 +201,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
                 CloseableSandboxGroupContextImpl(sandboxGroupContext) {
                     // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                    initializerAutoCloseable.close()
+                    runIgnoringExceptions(initializerAutoCloseable::close)
 
                     // Remove this sandbox's common services.
                     commonServiceRegistrations?.forEach { closeable ->
@@ -212,8 +226,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * must all advertise a compatible "corda.system" capability.
      */
     private fun getCordaSystemBundles(sandboxGroupType: SandboxGroupType): Set<Bundle> {
-        return bundleContext.bundle.adapt(BundleWiring::class.java).getRequiredWires(CORDA_SYSTEM)
-            ?.filter { it.capability.attributes[CORDA_SYSTEM] == sandboxGroupType.toString() }
+        return bundleContext.bundle.adapt(BundleWiring::class.java).getRequiredWires(CORDA_SYSTEM_NAMESPACE)
+            ?.filter { it.capability.attributes[CORDA_SYSTEM_NAMESPACE] == sandboxGroupType.toString() }
             ?.mapTo(linkedSetOf()) { wire ->
                 wire.provider.bundle
             } ?: emptySet()
@@ -250,7 +264,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         if (systemFilter.match(serviceRef)) {
                             // We always load interfaces for system services.
                             serviceRef.loadCommonService(serviceType)
-                        } else if (accessControlContext.checkServicePermission(serviceType)) {
+                        } else if (!uninjectableFilter.match(serviceRef) && accessControlContext.checkServicePermission(serviceType)) {
                             // Only accept those service types for which this sandbox also has a bundle wiring.
                             sandboxBundles.loadCommonService(serviceType)
                         } else {

@@ -2,6 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
     id 'net.corda.plugins.cordapp-cpb2'
+    id 'corda.javadoc-generation'
 }
 
 ext {
@@ -38,7 +39,6 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    testImplementation project(":components:ledger:ledger-utxo-flow")
     testImplementation project(":libs:uniqueness:common")
     testImplementation project(":testing:crypto-testkit")
 }

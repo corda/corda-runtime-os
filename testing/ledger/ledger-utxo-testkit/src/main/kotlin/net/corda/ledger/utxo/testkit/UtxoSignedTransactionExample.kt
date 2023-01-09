@@ -8,7 +8,9 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.defaultComponentGroups
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -19,7 +21,8 @@ fun UtxoSignedTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     wireTransactionFactory: WireTransactionFactory,
-    componentGroups: List<List<ByteArray>> = defaultComponentGroups
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups +
+            List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator, componentGroups)
     return create(wireTransaction, listOf(signatureWithMetadataExample))
@@ -32,7 +35,8 @@ fun getUtxoSignedTransactionExample(
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    transactionSignatureService: TransactionSignatureService
+    transactionSignatureService: TransactionSignatureService,
+    utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 ): UtxoSignedTransaction {
     val wireTransaction = getWireTransactionExample(
         digestService,
@@ -44,6 +48,7 @@ fun getUtxoSignedTransactionExample(
     return UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
+        utxoLedgerTransactionFactory,
         wireTransaction,
         listOf(signatureWithMetadataExample)
     )

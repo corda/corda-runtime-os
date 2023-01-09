@@ -38,6 +38,7 @@ dependencies {
 
     testImplementation 'org.osgi:osgi.core'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(':libs:application:banner')
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

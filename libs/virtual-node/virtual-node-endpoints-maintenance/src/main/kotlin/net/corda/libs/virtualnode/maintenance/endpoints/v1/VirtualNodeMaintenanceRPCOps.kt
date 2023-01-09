@@ -3,11 +3,9 @@ package net.corda.libs.virtualnode.maintenance.endpoints.v1
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
 
 /**
  * Maintenance RPC operations for virtual node management.
@@ -51,24 +49,4 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         @HttpRpcPathParameter(description = "Short ID of the virtual node instance to rollback")
         virtualNodeShortId: String
     )
-
-    /**
-     * Updates a virtual nodes state.
-     *
-     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node update request could not be published.
-     * @throws `HttpApiException` If the request returns an exceptional response.
-     */
-    @HttpRpcPUT(
-        path = "{virtualNodeShortId}/state/{newState}",
-        title = "Update virtual node state",
-        description = "This method updates the state of a new virtual node to one of the pre-defined values.",
-        responseDescription = "Complete information about updated virtual node which will also contain the updated state."
-    )
-    fun updateVirtualNodeState(
-        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
-        virtualNodeShortId: String,
-        @HttpRpcPathParameter(description = "State to transition virtual node instance into. " +
-                "Possible values are: IN_MAINTENANCE and ACTIVE.")
-        newState: String
-    ): ChangeVirtualNodeStateResponse
 }

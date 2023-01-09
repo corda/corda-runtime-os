@@ -1,5 +1,6 @@
 package net.corda.applications.workers.flow
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
@@ -20,7 +21,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
 /** The worker for handling flows. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
@@ -33,6 +34,8 @@ class FlowWorker @Activate constructor(
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
     val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -43,6 +46,8 @@ class FlowWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
+
+        applicationBanner.show("Flow Worker", platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")

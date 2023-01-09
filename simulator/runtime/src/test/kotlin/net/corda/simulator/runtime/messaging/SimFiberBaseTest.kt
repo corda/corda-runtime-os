@@ -7,9 +7,7 @@ import net.corda.simulator.runtime.signing.KeyStoreFactory
 import net.corda.simulator.runtime.signing.SigningServiceFactory
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -122,8 +120,6 @@ class SimFiberBaseTest {
         assertThrows<IllegalStateException> { fiber.createSigningService(member) }
     }
 
-    class Flow1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
-    class Flow2 : ResponderFlow { override fun call(session: FlowSession) = Unit }
-    class Flow3InitBy1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
-    class Flow4InitBy2 : ResponderFlow { override fun call(session: FlowSession) = Unit }
+
+
 }

@@ -143,10 +143,17 @@ class VirtualNodeDbFactory(
                 DDL -> ddlMaxPoolSize
                 DML -> dmlMaxPoolSize
             }
+
+            // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
+            var jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityShortHash))
+            if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")){
+                jdbcUrl += "&reWriteBatchedInserts=true"
+            }
+
             // TODO support for CharArray passwords in SmartConfig
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
-                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityShortHash)),
+                jdbcUrl = jdbcUrl,
                 maxPoolSize = maxPoolSize
             )
             return DbConnection(

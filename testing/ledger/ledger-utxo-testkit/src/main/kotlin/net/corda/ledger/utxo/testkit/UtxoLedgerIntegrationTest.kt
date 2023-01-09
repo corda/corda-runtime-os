@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.testkit
 
 import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.testing.sandboxes.SandboxSetup
@@ -12,6 +13,7 @@ abstract class UtxoLedgerIntegrationTest: CommonLedgerIntegrationTest() {
 
     lateinit var utxoSignedTransactionFactory: UtxoSignedTransactionFactory
     lateinit var utxoLedgerService: UtxoLedgerService
+    lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
     lateinit var utxoSignedTransaction: UtxoSignedTransaction
 
     override fun initialize(setup: SandboxSetup){
@@ -19,6 +21,7 @@ abstract class UtxoLedgerIntegrationTest: CommonLedgerIntegrationTest() {
 
         utxoSignedTransactionFactory = sandboxGroupContext.getSandboxSingletonService()
         utxoLedgerService = sandboxGroupContext.getSandboxSingletonService()
+        utxoLedgerPersistenceService = sandboxGroupContext.getSandboxSingletonService()
         utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
             jsonValidator,

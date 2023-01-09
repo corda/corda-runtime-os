@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
@@ -19,6 +20,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
     service = [InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class],
+    property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
 class ConsensualSignedTransactionSerializer @Activate constructor(

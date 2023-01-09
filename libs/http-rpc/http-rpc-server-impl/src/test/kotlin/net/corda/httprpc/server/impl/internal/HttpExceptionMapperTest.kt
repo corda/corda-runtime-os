@@ -1,12 +1,10 @@
 package net.corda.httprpc.server.impl.internal
 
-import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ForbiddenException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.NotAuthenticatedException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -19,8 +17,6 @@ class HttpExceptionMapperTest {
         val response = HttpExceptionMapper.mapToResponse(e)
 
         assertEquals(400, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.BAD_REQUEST.name, response.details["code"])
         assertEquals("Invalid id.", response.message)
     }
 
@@ -32,9 +28,8 @@ class HttpExceptionMapperTest {
 
         assertEquals(400, response.status)
         assertEquals("Invalid id.", response.message)
-        assertEquals(2, response.details.size)
+        assertEquals(1, response.details.size)
         assertEquals("def", response.details["abc"])
-        assertEquals(ResponseCode.BAD_REQUEST.name, response.details["code"])
     }
 
     @Test
@@ -44,8 +39,6 @@ class HttpExceptionMapperTest {
         val response = HttpExceptionMapper.mapToResponse(e)
 
         assertEquals(403, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.FORBIDDEN.name, response.details["code"])
         assertEquals("User not authorized.", response.message)
     }
 
@@ -56,8 +49,6 @@ class HttpExceptionMapperTest {
         val response = HttpExceptionMapper.mapToResponse(e)
 
         assertEquals(403, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.FORBIDDEN.name, response.details["code"])
         assertEquals("mess", response.message)
     }
 
@@ -68,8 +59,6 @@ class HttpExceptionMapperTest {
         val response = HttpExceptionMapper.mapToResponse(e)
 
         assertEquals(401, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.NOT_AUTHENTICATED.name, response.details["code"])
         assertEquals("User authentication failed.", response.message)
     }
 
@@ -80,46 +69,7 @@ class HttpExceptionMapperTest {
         val response = HttpExceptionMapper.mapToResponse(e)
 
         assertEquals(401, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.NOT_AUTHENTICATED.name, response.details["code"])
         assertEquals("auth failed", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with no parameters response`() {
-        val e = UnexpectedErrorException()
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.UNEXPECTED_ERROR.name, response.details["code"])
-        assertEquals("Unexpected internal error occurred.", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with message response`() {
-        val e = UnexpectedErrorException("message")
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.UNEXPECTED_ERROR.name, response.details["code"])
-        assertEquals("message", response.message)
-    }
-
-    @Test
-    fun `test UnexpectedErrorException with message and details response`() {
-        val e = UnexpectedErrorException("message", mapOf("key" to "value"))
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(500, response.status)
-        assertEquals("message", response.message)
-        assertEquals(2, response.details.size)
-        assertEquals("value", response.details["key"])
-        assertEquals(ResponseCode.UNEXPECTED_ERROR.name, response.details["code"])
     }
 
     @Test
@@ -130,8 +80,6 @@ class HttpExceptionMapperTest {
 
         assertEquals(404, response.status)
         assertEquals("User 'userlogin123' not found.", response.message)
-        assertEquals(1, response.details.size)
-        assertEquals(ResponseCode.RESOURCE_NOT_FOUND.name, response.details["code"])
     }
 
     @Test
@@ -142,8 +90,7 @@ class HttpExceptionMapperTest {
 
         assertEquals(500, response.status)
         assertEquals("message", response.message)
-        assertEquals(2, response.details.size)
+        assertEquals(1, response.details.size)
         assertEquals("someinfo", response.details["detail"])
-        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR.name, response.details["code"])
     }
 }

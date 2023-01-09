@@ -6,12 +6,18 @@ import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.SMOKE_TEST_CLASS_NAME
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.CLUSTER_URI
+import net.corda.applications.workers.smoketest.USERNAME
+import net.corda.applications.workers.smoketest.PASSWORD
+import net.corda.applications.workers.smoketest.CODE_SIGNER_CERT
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.startRpcFlow
+import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
+import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
 import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
@@ -19,7 +25,6 @@ import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -27,8 +32,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.time.Duration
 
-// This test relies on `VirtualNodeRpcTest` and `FlowTest` to run first which will create vNodes necessary to run this test
-@Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
 
@@ -43,7 +46,18 @@ class FlowStatusFeedSmokeTest {
 
         @BeforeAll
         @JvmStatic
-        internal fun beforeAll() {
+        fun beforeAll() {
+            // Certificate upload can be slow in the combined worker, especially after it has just started up.
+            cluster {
+                endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+                assertWithRetry {
+                    timeout(Duration.ofSeconds(100))
+                    interval(Duration.ofSeconds(1))
+                    command { importCertificate(CODE_SIGNER_CERT, "code-signer", "cordadev") }
+                    condition { it.code == 204 }
+                }
+            }
+
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
 

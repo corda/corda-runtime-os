@@ -15,31 +15,31 @@ class DefaultWorkerParams {
     var versionRequested = false
 
     @Option(
-        names = ["-i", "--instanceId"],
+        names = ["-i", "--instance-id"],
         description = ["The Kafka instance ID for this worker. Defaults to a random value."]
     )
     var instanceId = Random.nextInt().absoluteValue
 
     @Option(
-        names = ["-t", "--topicPrefix"],
+        names = ["-t", "--topic-prefix"],
         description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
     )
     // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
-    @Option(names = ["-n", "--noWorkerMonitor"], description = ["Disables the worker monitor."])
+    @Option(names = ["-n", "--no-worker-monitor"], description = ["Disables the worker monitor."])
     var disableWorkerMonitor = false
 
     @Option(
-        names = ["-p", "--workerMonitorPort"],
+        names = ["-p", "--worker-monitor-port"],
         description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
     )
     var workerMonitorPort = WORKER_MONITOR_PORT
 
-    @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the worker."])
+    @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
 
-    @Option(names = ["-s", "--secretsParams"], description = ["Secrets parameters for the worker."])
+    @Option(names = ["-s", "--secrets-params"], description = ["Secrets parameters for the worker."])
     var secretsParams = emptyMap<String, String>()
 
     @Option(names = ["--workspace-dir"], description = ["Corda workspace directory."])
@@ -47,4 +47,7 @@ class DefaultWorkerParams {
 
     @Option(names = ["--temp-dir"], description = ["Corda temp directory."])
     var tempDir = ConfigDefaults.TEMP_DIR
+
+    @Option(names = ["-a", "--addon"], description = ["Add-on configuration"])
+    var addonParams = emptyMap<String, String>()
 }

@@ -102,12 +102,12 @@ class ConsensualSignedTransactionBase(
         timestamp: Instant = config.clock.instant()
     ): ConsensualSignedTransactionBase {
         val signature = signWithMetadata(publicKey, timestamp)
-        return addSignature(signature)
+        return addSignatures(listOf(signature))
     }
 
-    internal fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionBase {
+    internal fun addSignatures(signatures: List<DigitalSignatureAndMetadata>): ConsensualSignedTransactionBase {
         return ConsensualSignedTransactionBase(
-            signatures = this.signatures.plus(signature),
+            signatures = this.signatures.plus(signatures),
             ledgerTransactionInfo,
             signingService,
             config

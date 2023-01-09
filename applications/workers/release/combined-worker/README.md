@@ -107,7 +107,7 @@ Run the worker using:
 ```bash
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
-  --instanceId=0 -mbus.busType=DATABASE  \
+  --instance-id=0 -mbus.busType=DATABASE  \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
@@ -118,7 +118,7 @@ Or if you want to connect to "real" Kafka:
 ```bash
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
-  --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
+  --instance-id=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
@@ -191,4 +191,5 @@ See [metrics](../../../../metrics/readme.md) for further documentation.
 
 Security Manager can get in the way when debugging the code that runs inside the sandbox. For example, evaluating an expression while debugging a flow might result with access denied error. 
 To initialize Security Manager with all permissions enabled, start the worker with command line argument `-DsecurityPolicyAllPermissions=true`.
-Note that this argument should be used only for development purposes.  
+To disable Security Manager, start the worker with command line argument `-DsecurityMangerEnabled=false`.
+Note that these arguments should be used only for development purposes.  

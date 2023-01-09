@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.p2p.NetworkType
 import net.corda.testing.p2p.certificates.Certificates
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -17,7 +17,7 @@ class HostnameMatcherTest {
             it.load(Certificates.c4KeyStoreFile.openStream(), "cordacadevpass".toCharArray())
         }
         val x500Name = X500Name.getInstance(X500Principal("O=PartyA,L=London,C=GB").encoded)
-        val calculatedSNI = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
+        val calculatedSNI = SniCalculator.calculateCorda4Sni(x500Name.toString())
         val matcher = HostnameMatcher(keyStore)
         assertTrue(matcher.matches(SNIHostName(calculatedSNI)))
         assertFalse(matcher.matches(SNIHostName("PartyA.net")))
@@ -28,6 +28,16 @@ class HostnameMatcherTest {
         assertFalse(matcher.matches(SNIHostName("b597e8858a2fa87424f5e8c39d.p2p.corda.net")))
         // Invalid C4 style SNI - invalid hash (not hex)
         assertFalse(matcher.matches(SNIHostName("n597q8858z2fm87424f5e8c39dc4f93c.p2p.corda.net")))
+    }
+
+    @Test
+    fun `C5 SNI match with ip address`() {
+        val ipAddress = "127.0.0.1"
+        val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
+            it.load(Certificates.ipKeyStore.openStream(), "password".toCharArray())
+        }
+        val matcher = HostnameMatcher(keyStore)
+        assertThat(matcher.matches(SNIHostName(ipAddress + SniCalculator.IP_SNI_SUFFIX))).isTrue
     }
 
     @Test

@@ -23,7 +23,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.GatewayTlsCertificates
-import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -50,15 +49,16 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.testing.p2p.certificates.Certificates
-import java.net.URI
 import java.net.URL
 
 open class TestBase {
@@ -108,27 +108,32 @@ open class TestBase {
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
-    protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
+    protected val partyASNI = SniCalculator.calculateCorda4Sni("O=PartyA, L=London, C=GB")
     protected val aliceKeyStore = readKeyStore(Certificates.aliceKeyStoreFile)
+    protected val ipKeyStore = readKeyStore(Certificates.ipKeyStore)
     protected val aliceSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val chipKeyStore = readKeyStore(Certificates.chipKeyStoreFile)
     protected val chipSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
     protected val daleSslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-
+        revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
+        tlsType = TlsType.ONE_WAY,
     )
     protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
+        revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
+        tlsType = TlsType.ONE_WAY,
     )
 
     protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -175,6 +180,7 @@ open class TestBase {
                 .withValue("urlPath", ConfigValueFactory.fromAnyRef(configuration.urlPath))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
+                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
@@ -218,7 +224,11 @@ open class TestBase {
         }
     }
 
-    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
+    protected fun publishKeyStoreCertificatesAndKeys(
+        publisher: Publisher,
+        keyStoreWithPassword: KeyStoreWithPassword,
+        holdingIdentity: HoldingIdentity,
+    ) {
         val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
             val tenantId = "tenantId"
             val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
@@ -234,7 +244,11 @@ open class TestBase {
             val certificateRecord = Record(
                 Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                 name,
-                GatewayTlsCertificates(tenantId, pems)
+                GatewayTlsCertificates(
+                    tenantId,
+                    holdingIdentity,
+                    pems,
+                )
             )
             val privateKey = keyStoreWithPassword
                 .keyStore

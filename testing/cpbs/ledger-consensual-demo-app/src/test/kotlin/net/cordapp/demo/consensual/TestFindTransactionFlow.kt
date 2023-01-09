@@ -8,6 +8,7 @@ import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.cordapp.demo.consensual.contract.TestConsensualState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -49,7 +50,7 @@ class TestFindTransactionFlow {
         val keyGenerator = KeyPairGenerator.getInstance("EC")
 
         val participantKey = keyGenerator.generateKeyPair().public
-        val testState = ConsensualDemoFlow.TestConsensualState("text", listOf(participantKey) )
+        val testState = TestConsensualState("text", listOf(participantKey) )
 
         val ledgerTx = mock<ConsensualLedgerTransaction>().apply {
             whenever(id).thenReturn(txIdGood)

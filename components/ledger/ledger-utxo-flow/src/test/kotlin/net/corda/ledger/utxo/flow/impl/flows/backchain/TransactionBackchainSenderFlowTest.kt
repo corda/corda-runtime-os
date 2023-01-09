@@ -3,12 +3,10 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -21,12 +19,6 @@ class TransactionBackchainSenderFlowTest {
         val TX_ID_1 = SecureHash("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHash("SHA", byteArrayOf(3, 3, 3, 3))
         val TX_ID_3 = SecureHash("SHA", byteArrayOf(4, 4, 4, 4))
-
-        val TX_3_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
-        val TX_3_INPUT_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
-
-        val TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
-        val TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
     }
 
     private val session = mock<FlowSession>()
@@ -72,51 +64,16 @@ class TransactionBackchainSenderFlowTest {
             .thenReturn(TransactionBackchainRequest.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequest.Stop)
 
         whenever(ledgerTransaction1.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction1.referenceStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction2.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction2.referenceStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction3.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.referenceInputStateRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction3.referenceStateRefs).thenReturn(emptyList())
 
         flow.call()
 
         verify(session).send(listOf(transaction1))
         verify(session).send(listOf(transaction2))
         verify(session).send(listOf(transaction3))
-    }
-
-    @Test
-    fun `finds and caches the input transactions of the originally requested transactions using them when next requested`() {
-        whenever(session.receive(TransactionBackchainRequest::class.java))
-            .thenReturn(TransactionBackchainRequest.Get(setOf(TX_ID_1, TX_ID_2)), TransactionBackchainRequest.Stop)
-
-        whenever(transaction1.id).thenReturn(TX_ID_1)
-        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(ledgerTransaction1.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
-
-        whenever(transaction2.id).thenReturn(TX_ID_2)
-        whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_2))
-        whenever(ledgerTransaction2.referenceInputStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2))
-
-        flow.call()
-
-        verify(session).send(listOf(transaction1))
-        verify(session).send(listOf(transaction2))
-
-        clearInvocations(session, utxoLedgerPersistenceService)
-
-        whenever(session.receive(TransactionBackchainRequest::class.java))
-            .thenReturn(TransactionBackchainRequest.Get(setOf(TX_ID_3)), TransactionBackchainRequest.Stop)
-
-        whenever(transaction3.id).thenReturn(TX_ID_3)
-        whenever(ledgerTransaction3.inputStateRefs).thenReturn(emptyList())
-        whenever(ledgerTransaction3.referenceInputStateRefs).thenReturn(emptyList())
-
-        flow.call()
-
-        verify(session).send(listOf(transaction3))
-        verify(utxoLedgerPersistenceService).find(TX_ID_3)
-        verifyNoMoreInteractions(utxoLedgerPersistenceService)
-
     }
 }

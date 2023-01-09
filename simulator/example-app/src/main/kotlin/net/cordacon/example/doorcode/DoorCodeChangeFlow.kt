@@ -12,7 +12,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
@@ -69,10 +68,6 @@ class DoorCodeChangeFlow : RPCStartableFlow {
             result.signatures.map { getMemberFromSignature(it) }.toSet()
         )
 
-        @Suppress("ForbiddenComment")
-        // TODO: This can be removed along with corresponding send once CORE-8641 is done
-        sessions.forEach { it.receive() }
-
         return jsonMarshallingService.format(output)
     }
 
@@ -118,7 +113,6 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
             "and got:\n    " + actualSignatories.joinToString("\n    ")
         }
         log.info("Finished responder flow - $finalizedSignedTransaction")
-        session.send(Unit)
     }
 }
 

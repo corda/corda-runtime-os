@@ -82,4 +82,22 @@ class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTran
             session.send(TransactionBackchainRequest.Stop)
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TransactionBackchainResolutionFlow
+
+        if (transaction != other.transaction) return false
+        if (session != other.session) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = transaction.hashCode()
+        result = 31 * result + session.hashCode()
+        return result
+    }
 }

@@ -4,8 +4,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -18,6 +19,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.KeysFactory
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
@@ -46,6 +48,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -61,11 +64,11 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
+import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -228,18 +231,19 @@ class StaticMemberRegistrationService @Activate constructor(
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
-        memberInfo.notaryDetails?.let {
-            val groupId = memberInfo.groupId
-            staticMemberList
-                .filterNot { it.name == memberInfo.name.toString() }
-                .forEach { staticMember ->
-                val name = MemberX500Name.parse(staticMember.name!!)
-                virtualNodeInfoReadService.get(HoldingIdentity(name, groupId))?.let {
-                    val peer = it.holdingIdentity
-                    persistenceClient.persistGroupParameters(peer, groupParameters)
-                    groupParametersWriterService.put(peer, groupParameters)
-                }
-            }
+        if (memberInfo.notaryDetails != null) {
+            SecManagerForkJoinPool.pool.submit {
+                staticMemberList
+                    .parallelStream()
+                    .map { MemberX500Name.parse(it.name!!) }
+                    .filter { it != memberInfo.name }
+                    .map { HoldingIdentity(it, memberInfo.groupId) }
+                    .filter { virtualNodeInfoReadService.get(it) != null }
+                    .forEach {
+                        persistenceClient.persistGroupParameters(it, groupParameters)
+                        groupParametersWriterService.put(it, groupParameters)
+                    }
+            }.join()
         }
     }
 
@@ -274,28 +278,35 @@ class StaticMemberRegistrationService @Activate constructor(
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
-        val groupId = groupPolicy.groupId
-
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
         val memberId = registeringMember.shortHash.value
-
-        assignSoftHsm(memberId)
 
         val staticMemberInfo = staticMemberList.firstOrNull {
             MemberX500Name.parse(it.name!!) == memberName
         } ?: throw IllegalArgumentException("Our membership $memberName is not listed in the static member list.")
 
         validateStaticMemberDeclaration(staticMemberInfo)
-        // single key used as both session and ledger key
+        // single key scheme used for both session and ledger key
         val keysFactory = KeysFactory(
             cryptoOpsClient,
             keyEncodingService,
             keyScheme,
             memberId,
         )
-        val memberKey = keysFactory.getOrGenerateKeyPair(CryptoConsts.Categories.LEDGER)
+        hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
+        val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
+
+        val sessionKey = when(groupPolicy.protocolParameters.sessionKeyPolicy) {
+            SessionKeyPolicy.DISTINCT -> {
+                hsmRegistrationClient.assignSoftHSM(memberId, SESSION_INIT)
+                keysFactory.getOrGenerateKeyPair(SESSION_INIT)
+            }
+            SessionKeyPolicy.COMBINED -> {
+                ledgerKey
+            }
+        }
 
         val cpi = virtualNodeInfoReadService.get(registeringMember)?.cpiIdentifier
             ?: throw CordaRuntimeException("Could not find virtual node info for member ${registeringMember.shortHash}")
@@ -303,18 +314,22 @@ class StaticMemberRegistrationService @Activate constructor(
         val optionalContext = cpi.signerSummaryHash?.let {
             mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
         } ?: emptyMap()
+
+        fun configureNotaryKey(): List<KeyDetails> {
+            hsmRegistrationClient.assignSoftHSM(memberId, NOTARY)
+            return listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
+        }
+
         @Suppress("SpreadOperator")
         val memberContext = mapOf(
             PARTY_NAME to memberName.toString(),
-            PARTY_SESSION_KEY to memberKey.pem,
-            GROUP_ID to groupId,
-            *generateLedgerKeys(memberKey.pem).toTypedArray(),
-            *generateLedgerKeyHashes(memberKey.hash).toTypedArray(),
+            PARTY_SESSION_KEY to sessionKey.pem,
+            SESSION_KEY_HASH to sessionKey.hash.toString(),
+            GROUP_ID to groupPolicy.groupId,
+            LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
+            LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
             *convertEndpoints(staticMemberInfo).toTypedArray(),
-            *roles.toMemberInfo {
-                listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
-            }.toTypedArray(),
-            SESSION_KEY_HASH to memberKey.hash.toString(),
+            *roles.toMemberInfo(::configureNotaryKey).toTypedArray(),
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,
@@ -331,8 +346,7 @@ class StaticMemberRegistrationService @Activate constructor(
         )
 
         return memberInfo to staticMemberList.map {
-            val owningMemberName = MemberX500Name.parse(it.name!!).toString()
-            val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(owningMemberName), groupId)
+            val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(it.name!!), groupPolicy.groupId)
             Record(
                 MEMBER_LIST_TOPIC,
                 "${owningMemberHoldingIdentity.shortHash}-$memberId",
@@ -393,17 +407,6 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     /**
-     * Assigns soft HSM to the registering member.
-     */
-    private fun assignSoftHsm(memberId: String) {
-        CryptoConsts.Categories.all.forEach {
-            if (hsmRegistrationClient.findHSM(memberId, it) == null) {
-                hsmRegistrationClient.assignSoftHSM(memberId, it)
-            }
-        }
-    }
-
-    /**
      * Mapping the keys from the json format to the keys expected in the [MemberInfo].
      */
     private fun convertEndpoints(member: StaticMember): List<Pair<String, String>> {
@@ -429,37 +432,5 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         return result
-    }
-
-    /**
-     * Only going to contain the common session and ledger key for passing the checks on the MemberInfo creation side.
-     * For the static network we don't need the rotated keys.
-     */
-    private fun generateLedgerKeys(
-        memberKey: String
-    ): List<Pair<String, String>> {
-        val ledgerKeys = listOf(memberKey)
-        return ledgerKeys.mapIndexed { index, ledgerKey ->
-            String.format(
-                LEDGER_KEYS_KEY,
-                index
-            ) to ledgerKey
-        }
-    }
-
-    /**
-     * Only going to contain hash of the common session and ledger key for passing the checks on the MemberInfo creation side.
-     * For the static network we don't need hashes of the rotated keys.
-     */
-    private fun generateLedgerKeyHashes(
-        memberKeyHash: PublicKeyHash
-    ): List<Pair<String, String>> {
-        val ledgerKeys = listOf(memberKeyHash)
-        return ledgerKeys.mapIndexed { index, ledgerKeyHash ->
-            String.format(
-                LEDGER_KEY_HASHES_KEY,
-                index
-            ) to ledgerKeyHash.toString()
-        }
     }
 }

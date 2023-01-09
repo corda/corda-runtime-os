@@ -1,11 +1,11 @@
 package net.corda.libs.permissions.endpoints.common
 
 
+import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import java.util.concurrent.TimeoutException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
@@ -27,7 +27,12 @@ fun <T : Any?> withPermissionManager(
     return try {
         block.invoke(permissionManager)
 
-    } catch (e: UnexpectedPermissionResponseException) {
+    } catch (e: HttpApiException) {
+        // This is already a well-formed exception - rethrow
+        throw e
+
+    }
+    catch (e: UnexpectedPermissionResponseException) {
         logger.warn("Permission manager received an unexpected response: ${e::class.java.name}: ${e.message}")
         throw InternalServerException(
             details = buildExceptionCauseDetails(e)
@@ -63,7 +68,7 @@ fun <T : Any?> withPermissionManager(
 
     } catch (e: Exception) {
         logger.warn("Unexpected error during permission management operation.", e)
-        throw UnexpectedErrorException(
+        throw InternalServerException(
             "Unexpected permission management error occurred.",
             details = buildExceptionCauseDetails(e)
         )
