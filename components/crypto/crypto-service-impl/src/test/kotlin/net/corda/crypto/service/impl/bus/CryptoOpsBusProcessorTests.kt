@@ -185,23 +185,18 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val operationContext = listOf(
-            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
+        val l = KeyValuePairList(
+            listOf(
+                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+                KeyValuePair("reason", "Hello World!")
+            )
         )
-        val request = GenerateKeyPairCommand(
-            LEDGER,
-            alias,
-            null,
-            ECDSA_SECP256R1_CODE_NAME,
-            KeyValuePairList(operationContext)
-        )
-        val (result1, _) = process(request)
-        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        val (result1, _) = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
         assertNotNull(operationContextMap)
         assertEquals(4, operationContextMap.size)
-        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
         assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
