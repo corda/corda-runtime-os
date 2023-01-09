@@ -427,7 +427,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(90)
-    fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
+    fun `can force upload the CPI with a new set of CPKs`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -460,7 +460,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
-    fun `Can sync DB and persist fish`() {
+    fun `can sync the virtual node's DB and run a flow on the force uploaded CPI to persist a fish entity`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             // Status 204 indicates a non-error but no response data
@@ -472,7 +472,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(100)
-    fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
+    fun `can force upload the original CPI back again and run a flow that does not interact with the database`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -497,7 +497,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(101)
-    fun `Can sync DB again and persist dog`() {
+    fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)

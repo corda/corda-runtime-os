@@ -97,7 +97,7 @@ fun CpiPersistence.persistCpiToDatabase(
     groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
-    cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
+    changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>,
     log: Logger
 ): CpiMetadataEntity {
     // Cannot compare the CPI.metadata.hash to our checksum above
@@ -119,7 +119,7 @@ fun CpiPersistence.persistCpiToDatabase(
                 fileInfo.checksum,
                 requestId,
                 groupId,
-                cpkDbChangeLogEntities
+                changelogsExtractedFromCpi
             )
         } else if (!cpiExists) {
             log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
@@ -129,7 +129,7 @@ fun CpiPersistence.persistCpiToDatabase(
                 fileInfo.checksum,
                 requestId,
                 groupId,
-                cpkDbChangeLogEntities
+                changelogsExtractedFromCpi
             )
         } else {
             throw UnsupportedOperationException(

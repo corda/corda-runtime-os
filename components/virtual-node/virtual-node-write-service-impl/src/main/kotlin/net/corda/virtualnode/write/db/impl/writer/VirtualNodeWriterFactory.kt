@@ -7,8 +7,7 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
-import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -29,7 +28,8 @@ internal class VirtualNodeWriterFactory(
     private val dbAdmin: DbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
-    private val getChangeLogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
+    private val getCurrentChangeLogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
+        ::findCurrentCpkChangeLogsForCpi
 ) {
 
     /**
@@ -82,7 +82,7 @@ internal class VirtualNodeWriterFactory(
             vnodeDbFactory,
             groupPolicyParser,
             UTCClock(),
-            getChangeLogs
+            getCurrentChangeLogsForCpi
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

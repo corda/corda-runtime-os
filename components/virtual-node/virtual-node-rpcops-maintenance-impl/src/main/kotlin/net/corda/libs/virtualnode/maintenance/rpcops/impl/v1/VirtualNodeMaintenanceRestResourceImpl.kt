@@ -135,9 +135,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
     }
 
     override fun resyncVirtualNodeDb(virtualNodeShortId: String) {
-        logger.info(
-            "Resyncing back the virtual node vault database for the following virtual node: $virtualNodeShortId"
-        )
+        logger.info("Requesting synchronization of vault schema for virtual node '$virtualNodeShortId' with its current CPI.")
 
         val instant = clock.instant()
         val actor = CURRENT_RPC_CONTEXT.get().principal

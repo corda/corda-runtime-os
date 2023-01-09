@@ -105,9 +105,8 @@ class UpsertCpiTests {
             .joinToString("")
     }
 
-    private val random = Random(Instant.now().epochSecond)
-
     private fun newRandomSecureHash(): SecureHash {
+        val random = Random()
         return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     }
 
@@ -145,6 +144,7 @@ class UpsertCpiTests {
         val metadata = mock<CpiMetadata>().also {
             whenever(it.cpiId).thenReturn(cpiId)
             whenever(it.groupPolicy).thenReturn("{}")
+            whenever(it.fileChecksum).thenReturn(newRandomSecureHash())
         }
 
         val cpi = mock<Cpi>().also {
