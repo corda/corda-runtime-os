@@ -16,6 +16,7 @@ import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -254,7 +255,7 @@ class GroupParametersReconcilerTest {
             cpiIdentifier = CpiIdentifier(
                 "myCpi.cpi",
                 "1.1",
-                null
+                TestRandom.secureHash()
             ),
             vaultDmlConnectionId = UUID(incrementingUuidSeed++, incrementingUuidSeed++),
             cryptoDmlConnectionId = UUID(incrementingUuidSeed++, incrementingUuidSeed++),

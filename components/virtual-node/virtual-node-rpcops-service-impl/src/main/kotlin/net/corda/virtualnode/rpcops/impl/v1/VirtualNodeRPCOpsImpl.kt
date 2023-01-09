@@ -318,7 +318,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =
-        CpiIdentifier(name, version, signerSummaryHash?.toString())
+        CpiIdentifier(name, version, signerSummaryHash.toString())
 
     /** Validates the [x500Name]. */
     private fun validateX500Name(x500Name: String) = try {

@@ -1,12 +1,5 @@
-global:
-  imageRegistry: docker-remotes.software.r3.com
-  imagePullSecrets:
-    - docker-registry-cred
-  storageClass: corda-sc
-
 kafka:
   auth:
-    clientProtocol: sasl_tls
     sasl:
       jaas:
         clientUsers:
@@ -18,30 +11,3 @@ kafka:
           - "p2pGateway"
           - "p2pLinkManager"
           - "rpc"
-        clientPasswords:
-  replicaCount: 7
-  resources:
-    requests:
-      memory: 390Mi
-      cpu: 1000m
-    limits:
-      memory: 800Mi
-      cpu: 1000m
-  startupProbe:
-    enabled: true
-  zookeeper:
-    replicaCount: 3
-    startupProbe:
-      enabled: true
-  offsetsTopicReplicationFactor: 3
-  transactionStateLogReplicationFactor: 3
-
-postgresql:
-  primary:
-    resources:
-      requests:
-        memory: 256Mi
-        cpu: 300m
-      limits:  
-        memory: 512Mi
-        cpu: 600m

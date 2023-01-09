@@ -19,6 +19,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -77,6 +78,7 @@ class ChunkReadServiceImpl @Activate constructor(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupPolicyValidator>(),
                     LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
                 )
             )

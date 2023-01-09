@@ -16,6 +16,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
@@ -122,6 +123,12 @@ class MGMGroupPolicyImpl(
             ProtocolMode.fromString(
                 getPersistedString(PropertyKeys.P2P_PROTOCOL_MODE)
             ) ?: AUTH_ENCRYPT
+        }
+        override val tlsType by lazy {
+            // CORE-8860 - Verify this works
+            TlsType.fromString(
+                getPersistedString(PropertyKeys.TLS_TYPE)
+            )
         }
     }
 

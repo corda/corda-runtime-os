@@ -13,6 +13,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
@@ -78,7 +79,7 @@ class QueryGroupPolicyHandlerTest {
 
     private val virtualNodeInfo = VirtualNodeInfo(
         holdingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", null),
+        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
         vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         uniquenessDmlConnectionId = UUID(0, 0),

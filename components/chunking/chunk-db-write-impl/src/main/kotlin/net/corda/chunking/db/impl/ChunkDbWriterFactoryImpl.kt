@@ -12,6 +12,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.certificate.service.CertificatesService
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -28,14 +29,15 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
-@Suppress("UNUSED")
+@Suppress("UNUSED", "LongParameterList")
 @Component(service = [ChunkDbWriterFactory::class])
 class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
     private val tempPathProvider: PathProvider,
     private val certificatesService: CertificatesService,
-    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -47,8 +49,17 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = CertificatesService::class)
         certificatesService: CertificatesService,
         @Reference(service = MembershipSchemaValidatorFactory::class)
-        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory
-    ) : this(subscriptionFactory, publisherFactory, TempPathProvider(), certificatesService, membershipSchemaValidatorFactory)
+        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+        @Reference(service = MembershipGroupPolicyValidator::class)
+        membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    ) : this(
+        subscriptionFactory,
+        publisherFactory,
+        TempPathProvider(),
+        certificatesService,
+        membershipSchemaValidatorFactory,
+        membershipGroupPolicyValidator,
+    )
 
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
@@ -115,6 +126,7 @@ class ChunkDbWriterFactoryImpl(
             cpiPersistence,
             cpiInfoWriteService,
             membershipSchemaValidator,
+            membershipGroupPolicyValidator,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

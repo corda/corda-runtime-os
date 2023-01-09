@@ -1,10 +1,4 @@
-imagePullSecrets:
-  - "docker-registry-cred"
-
 bootstrap:
-  db:
-    clientImage:
-      registry: docker-remotes.software.r3.com
   kafka:
     sasl:
       username:
@@ -39,14 +33,6 @@ kafka:
           key: "ca.crt"
   sasl:
     enabled: true
-
-resources:
-  requests:
-    memory: "620Mi"
-    cpu: "500m"
-  limits:
-    memory: "1250Mi"
-    cpu: "1000m"
 
 workers:
   crypto:

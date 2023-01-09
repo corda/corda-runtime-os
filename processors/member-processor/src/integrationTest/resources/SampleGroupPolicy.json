@@ -45,7 +45,8 @@
     "sessionPki": "Standard",
     "tlsPki": "Standard",
     "tlsVersion" : "1.3",
-    "protocolMode": "Authenticated_Encryption"
+    "protocolMode": "Authenticated_Encryption",
+    "tlsType": "OneWay"
   },
   "cipherSuite": {
     "corda.provider": "default",
