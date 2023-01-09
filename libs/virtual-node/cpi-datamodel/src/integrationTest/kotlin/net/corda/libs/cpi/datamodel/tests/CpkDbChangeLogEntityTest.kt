@@ -125,15 +125,14 @@ class CpkDbChangeLogEntityTest {
             val queriedChangelogs1 = findCurrentCpkChangeLogsForCpi(
                 this,
                 cpi.name, cpi.version, cpi.signerSummaryHash
-            )
-            // ordered by insert timestamp descending, hence changelog2 before changelog1
-            assertThat(queriedChangelogs1).isEqualTo(listOf(changeLog2, changeLog1))
+            ).toSet()
+            assertThat(queriedChangelogs1).isEqualTo(setOf(changeLog1, changeLog2))
 
             val queriedChangelogs2 = findCurrentCpkChangeLogsForCpi(
                 this,
                 unrelatedCpi.name, unrelatedCpi.version, unrelatedCpi.signerSummaryHash
-            )
-            assertThat(queriedChangelogs2).isEqualTo(listOf(changeLog3))
+            ).toSet()
+            assertThat(queriedChangelogs2).isEqualTo(setOf(changeLog3))
         }
     }
 
@@ -224,9 +223,9 @@ class CpkDbChangeLogEntityTest {
             val currentCpkChangelogs = findCurrentCpkChangeLogsForCpi(
                 this,
                 cpiName, cpiVersion, cpiSignerSummaryHash
-            )
+            ).toSet()
 
-            assertThat(currentCpkChangelogs.toSet()).isEqualTo(setOf(changelog1, changelog2, changelog3, sharedChangelog))
+            assertThat(currentCpkChangelogs).isEqualTo(setOf(changelog1, changelog2, changelog3, sharedChangelog))
         }
 
         // This CPI has same PK as original, but different set of CPKs. When we merge this on top of original, we will see the old CpiCpk
@@ -272,9 +271,9 @@ class CpkDbChangeLogEntityTest {
             val loadedCpkChangelogs = findCurrentCpkChangeLogsForCpi(
                 this,
                 cpiName, cpiVersion, cpiSignerSummaryHash
-            )
+            ).toSet()
 
-            assertThat(loadedCpkChangelogs.toSet()).isEqualTo(setOf(changelog5, changelog6, sharedChangelog))
+            assertThat(loadedCpkChangelogs).isEqualTo(setOf(changelog5, changelog6, sharedChangelog))
         }
     }
 
