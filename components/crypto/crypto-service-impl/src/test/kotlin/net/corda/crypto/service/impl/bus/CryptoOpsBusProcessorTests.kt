@@ -92,6 +92,9 @@ class CryptoOpsBusProcessorTests {
 
     @BeforeAll
     fun setup() {
+        // none of these services store critical state, so we are safe to share them between
+        // test runs. This test class takes 1.7s for me if this is @BeforeAll, compared with 15s
+        // if this is @BeforeEach.
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
         schemeMetadata = factory.schemeMetadata
@@ -322,12 +325,7 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should handle generating fresh keys twice without external id`() {
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        ) // TODO: remove me?
+        val l = KeyValuePairList(emptyList())
         val result1 = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
         val result2 = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
         assertThat(result1.response).isNotEqualTo(result2.response)
@@ -335,19 +333,12 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should handle generating fresh keys twice with external id`() {
-        val externalId = UUID.randomUUID()
-        // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        ) // TODO: remove me?
-        val result1 = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
-        val result2 = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
+        val externalId = UUID.randomUUID().toString()
+        val l = KeyValuePairList(emptyList())
+        val result1 = process(GenerateFreshKeyRpcCommand(CI, externalId, ECDSA_SECP256R1_CODE_NAME, l))
+        val result2 = process(GenerateFreshKeyRpcCommand(CI, externalId, ECDSA_SECP256R1_CODE_NAME, l))
         assertThat(result1.response).isNotEqualTo(result2.response)
     }
-
 
     @Test
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
