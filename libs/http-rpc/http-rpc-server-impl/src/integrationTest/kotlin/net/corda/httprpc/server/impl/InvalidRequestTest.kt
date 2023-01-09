@@ -14,6 +14,7 @@ import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -69,6 +70,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         assertNotNull(pingResponse.body)
         assertEquals("application/json", pingResponse.headers["Content-Type"])
         assertThat(pingResponse.body).contains("Duplicate field 'data'")
+        assertThat(pingResponse.body).doesNotContain("\"type\":")
     }
 
     @Test
@@ -83,6 +85,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         assertEquals(HttpStatus.SC_BAD_REQUEST, plusDoubleResponse.responseStatus)
         assertNotNull(plusDoubleResponse.body)
         assertThat(plusDoubleResponse.body).contains("Unexpected character ('0' (code 48))")
+        assertThat(plusDoubleResponse.body).doesNotContain("\"type\":")
     }
 
     @Test
@@ -98,6 +101,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         val responseBody = negateIntResponse.body
         assertNotNull(responseBody)
         assertTrue(responseBody.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
+        assertFalse(responseBody.contains("\"type\":"))
     }
 
     @Test
