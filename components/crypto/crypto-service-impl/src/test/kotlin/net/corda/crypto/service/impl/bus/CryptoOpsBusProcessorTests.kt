@@ -142,14 +142,13 @@ class CryptoOpsBusProcessorTests {
 
     private fun process(
         request: Any,
-        context: CryptoRequestContext? = null,
     ): ProcessResult {
-        val contextDef = context ?: createRequestContext()
+        val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(RpcOpsRequest(contextDef, request), future)
+        processor.onNext(RpcOpsRequest(context, request), future)
         val result = future.get() ?: throw UnsupportedOperationException()
-        assertResponseContext(contextDef, result.context)
-        return ProcessResult(result, contextDef)
+        assertResponseContext(context, result.context)
+        return ProcessResult(result, context)
     }
 
 
