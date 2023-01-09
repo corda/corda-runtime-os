@@ -314,7 +314,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val messageHeader = UnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
-                    MEMBERSHIP_P2P_SUBSYSTEM
+                    MEMBERSHIP_P2P_SUBSYSTEM,
+                    "Register-${member.shortHash.value}-${UUID.randomUUID()}",
                 )
                 val request = UnauthenticatedRegistrationRequest(
                     latestHeader,
@@ -382,9 +383,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 SERIAL to SERIAL_CONST,
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
-            val optionalContext = cpi.signerSummaryHash?.let {
-                mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
-            } ?: emptyMap()
+            val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
             return filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +

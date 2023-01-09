@@ -5,6 +5,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import kotlin.jvm.Throws
 
@@ -151,6 +152,14 @@ interface GroupPolicy {
          */
         @get:Throws(BadGroupPolicyException::class)
         val protocolMode: ProtocolMode
+
+        /**
+         * The P2P TLS type.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
+         */
+        @get:Throws(BadGroupPolicyException::class)
+        val tlsType: TlsType
     }
 
     /**

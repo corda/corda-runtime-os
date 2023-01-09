@@ -23,6 +23,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
@@ -69,7 +70,7 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
     private val virtualNodeInfo = VirtualNodeInfo(
         vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
-            "", "", null
+            "", "", TestRandom.secureHash()
         ),
         cryptoDmlConnectionId = UUID(0, 0),
         uniquenessDmlConnectionId = UUID(0, 0),

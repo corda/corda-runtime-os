@@ -34,6 +34,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.membership.datamodel.MembershipEntities
+import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.persistence.service.MembershipPersistenceService
@@ -111,6 +112,8 @@ class DBProcessorImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
+    @Reference(service = MembershipGroupPolicyValidator::class)
+    private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -157,6 +160,7 @@ class DBProcessorImpl @Activate constructor(
         ::membershipPersistenceService,
         ::groupParametersWriterService,
         ::groupParametersReaderService,
+        ::membershipGroupPolicyValidator,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 

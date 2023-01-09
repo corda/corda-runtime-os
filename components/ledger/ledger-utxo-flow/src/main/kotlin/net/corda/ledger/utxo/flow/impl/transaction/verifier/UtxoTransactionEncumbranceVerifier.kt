@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.StateAndRef
-import java.lang.IllegalArgumentException
 
 
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)

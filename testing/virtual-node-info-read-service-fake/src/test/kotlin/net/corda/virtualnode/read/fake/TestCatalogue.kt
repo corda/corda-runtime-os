@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read.fake
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -25,7 +26,7 @@ object TestCatalogue {
 
     object CpiId {
         fun version5Snapshot(id: String): CpiIdentifier {
-            return CpiIdentifier(id, "5.0.0.0-SNAPSHOT", null)
+            return CpiIdentifier(id, "5.0.0.0-SNAPSHOT", TestRandom.secureHash())
         }
     }
 

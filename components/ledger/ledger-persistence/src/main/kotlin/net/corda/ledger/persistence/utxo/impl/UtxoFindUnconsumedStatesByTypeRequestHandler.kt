@@ -9,7 +9,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
-import java.nio.ByteBuffer
 
 @Suppress("LongParameterList")
 class UtxoFindUnconsumedStatesByTypeRequestHandler(
@@ -35,8 +34,8 @@ class UtxoFindUnconsumedStatesByTypeRequestHandler(
 
         // Return output records
         return listOf(
-            utxoOutputRecordFactory.getFindUnconsumedStatesByTypeSuccessRecord(
-                relevantStates.flatten().map(ByteBuffer::wrap),
+            utxoOutputRecordFactory.getStatesSuccessRecord(
+                relevantStates,
                 externalEventContext,
                 serializationService
             )

@@ -90,17 +90,6 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
             verify(mockDownCoordinator).isRunning
         }
-
-        @Test
-        fun `verify exception throw if updateVirtualNodeState is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
-            assertThrows<IllegalStateException> {
-                vnodeMaintenanceRpcOps.updateVirtualNodeState("someId", "someState")
-            }
-
-            verify(mockDownCoordinator).isRunning
-        }
     }
 
     @Nested

@@ -20,8 +20,8 @@ dependencies {
     api 'net.corda:corda-crypto'
     api 'net.corda:corda-crypto-extensions'
 
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

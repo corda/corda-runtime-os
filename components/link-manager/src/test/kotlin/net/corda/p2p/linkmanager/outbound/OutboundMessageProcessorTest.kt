@@ -237,7 +237,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray())
         )
@@ -266,7 +267,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -301,7 +303,8 @@ class OutboundMessageProcessorTest {
                     "Invalid name",
                     remoteIdentity.groupId,
                 ),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -332,7 +335,8 @@ class OutboundMessageProcessorTest {
                     myIdentity.groupId,
                 ),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -360,7 +364,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.copy(groupId = "Group-other").toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -388,7 +393,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -430,7 +436,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -984,7 +991,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )

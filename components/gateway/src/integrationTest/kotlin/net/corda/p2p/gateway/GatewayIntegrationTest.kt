@@ -112,6 +112,8 @@ class GatewayIntegrationTest : TestBase() {
         const val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         const val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         const val MAX_REQUEST_SIZE = 50_000_000L
+        private val aliceHoldingIdentity = HoldingIdentity(aliceX500name, GROUP_ID)
+        private val bobHoldingIdentity = HoldingIdentity(bobX500Name, GROUP_ID)
     }
 
     private val sessionId = "session-1"
@@ -169,7 +171,10 @@ class GatewayIntegrationTest : TestBase() {
             }
             return records
         }
-        fun publishKeyStoreCertificatesAndKeys(keyStoreWithPassword: KeyStoreWithPassword) {
+        fun publishKeyStoreCertificatesAndKeys(
+            keyStoreWithPassword: KeyStoreWithPassword,
+            holdingIdentity: HoldingIdentity,
+        ) {
             val tenantId = "tenantId"
             val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
                 val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
@@ -185,7 +190,7 @@ class GatewayIntegrationTest : TestBase() {
                 val certificateRecord = Record(
                     Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                     name,
-                    GatewayTlsCertificates(tenantId, pems)
+                    GatewayTlsCertificates(tenantId, holdingIdentity, pems)
                 )
 
                 listOf(certificateRecord)
@@ -244,7 +249,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
                 val httpClient = JavaHttpClient.newBuilder()
                     .sslContext(sslContext)
@@ -286,7 +291,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
@@ -343,7 +348,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
@@ -386,8 +391,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                alice.publishKeyStoreCertificatesAndKeys(ipKeyStore)
-
+                alice.publishKeyStoreCertificatesAndKeys(ipKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(
                     serverAddress,
@@ -432,15 +436,15 @@ class GatewayIntegrationTest : TestBase() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             alice.publish(
-                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
+                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(aliceHoldingIdentity, listOf(truststoreCertificatePem)))
             )
             val recipientServerUrl = URI.create("https://www.alice.net:${getOpenPort()}")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader(
-                    HoldingIdentity(bobX500Name, GROUP_ID),
-                    HoldingIdentity(aliceX500name, GROUP_ID),
+                    bobHoldingIdentity,
+                    aliceHoldingIdentity,
                     NetworkType.CORDA_5,
                     recipientServerUrl.toString(),
                 )
@@ -479,7 +483,7 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 aliceKeyStore,
             ).use { recipientServer ->
-                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 listenToOutboundMessages.server = recipientServer
                 recipientServer.startAndWaitForStarted()
                 Gateway(
@@ -552,7 +556,7 @@ class GatewayIntegrationTest : TestBase() {
             val threadPool = NioEventLoopGroup(clientNumber)
             val serverAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+            alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -613,7 +617,7 @@ class GatewayIntegrationTest : TestBase() {
             val messageCount = 100
             val serversCount = 4
             alice.publish(
-                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
+                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(aliceHoldingIdentity, listOf(truststoreCertificatePem)))
             )
 
             // We first produce some messages which will be consumed by the Gateway.
@@ -670,15 +674,15 @@ class GatewayIntegrationTest : TestBase() {
                 alice.cryptoOpsClient,
                 avroSchemaRegistry
             ).usingLifecycle {
-                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore)
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
                 serverUrls.forEach { url ->
                     repeat(messageCount) {
                         val msg = LinkOutMessage.newBuilder().apply {
                             header = LinkOutHeader(
-                                HoldingIdentity(bobX500Name, GROUP_ID),
-                                HoldingIdentity(aliceX500name, GROUP_ID),
+                                bobHoldingIdentity,
+                                aliceHoldingIdentity,
                                 NetworkType.CORDA_5,
                                 url,
                             )
@@ -710,8 +714,8 @@ class GatewayIntegrationTest : TestBase() {
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
             bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
-            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore)
-            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore)
+            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore, aliceHoldingIdentity)
+            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore, bobHoldingIdentity)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -807,8 +811,8 @@ class GatewayIntegrationTest : TestBase() {
             val messagesFromAlice = (1..messageCount).map {
                 val msg = LinkOutMessage.newBuilder().apply {
                     header = LinkOutHeader(
-                        HoldingIdentity(bobX500Name, GROUP_ID),
-                        HoldingIdentity(aliceX500name, GROUP_ID),
+                        bobHoldingIdentity,
+                        aliceHoldingIdentity,
                         NetworkType.CORDA_5,
                         bobGatewayAddress.toString()
                     )
@@ -819,8 +823,8 @@ class GatewayIntegrationTest : TestBase() {
             val messagesFromBob = (1..messageCount).map {
                 val msg = LinkOutMessage.newBuilder().apply {
                     header = LinkOutHeader(
-                        HoldingIdentity(aliceX500name, GROUP_ID),
-                        HoldingIdentity(bobX500Name, GROUP_ID),
+                        aliceHoldingIdentity,
+                        bobHoldingIdentity,
                         NetworkType.CORDA_5,
                         aliceGatewayAddress.toString()
                     )
@@ -1032,8 +1036,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Publish the first key pair
                 val keyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
-                server.publishKeyStoreCertificatesAndKeys(keyStore)
-
+                server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
 
                 // Client should now pass
                 eventually {
@@ -1052,8 +1055,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // publish the same pair again
-                server.publishKeyStoreCertificatesAndKeys(keyStore)
-
+                server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
 
                 // Client should now pass
                 eventually {
@@ -1078,7 +1080,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // publish it again
-                server.publishKeyStoreCertificatesAndKeys(keyStore)
+                server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
                 eventually {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                 }
@@ -1087,7 +1089,7 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, "/", aliceSslConfig, MAX_REQUEST_SIZE))
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                server.publishKeyStoreCertificatesAndKeys(bobKeyStore)
+                server.publishKeyStoreCertificatesAndKeys(bobKeyStore, aliceHoldingIdentity)
 
                 // Client should pass with new host
                 eventually {
@@ -1104,7 +1106,7 @@ class GatewayIntegrationTest : TestBase() {
                 // replace the first pair
                 val newKeyStore =
                     secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                server.publishKeyStoreCertificatesAndKeys(newKeyStore)
+                server.publishKeyStoreCertificatesAndKeys(newKeyStore, aliceHoldingIdentity)
 
                 eventually {
                     testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
@@ -1127,7 +1129,7 @@ class GatewayIntegrationTest : TestBase() {
                 // publish new pair with new alias
                 val newerKeyStore =
                     thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
-                server.publishKeyStoreCertificatesAndKeys(newerKeyStore)
+                server.publishKeyStoreCertificatesAndKeys(newerKeyStore, aliceHoldingIdentity)
 
                 eventually {
                     testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())

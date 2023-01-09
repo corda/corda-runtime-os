@@ -22,6 +22,7 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-service")
     implementation project(":components:membership:membership-persistence-client")
+    implementation project(":components:membership:membership-p2p")
     implementation project(":components:membership:registration")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 

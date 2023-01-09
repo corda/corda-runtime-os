@@ -133,14 +133,17 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
+        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
         )
         if (discardReason != null) {
-            logger.warn("Dropping outbound unauthenticated message from ${message.header.source} to ${message.header.destination} as the " +
-                    discardReason)
+            logger.warn(
+                "Dropping outbound unauthenticated message ${message.header.messageId} " +
+                "from ${message.header.source} to ${message.header.destination} as the " +
+                discardReason
+            )
             return emptyList()
         }
 
@@ -154,14 +157,17 @@ internal class OutboundMessageProcessor(
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
             if (groupPolicy == null) {
-                logger.warn("Could not find the group information in the GroupPolicyProvider for $source. The message was discarded.")
+                logger.warn(
+                    "Could not find the group information in the GroupPolicyProvider for $source. " +
+                    "The message ${message.header.messageId} was discarded."
+                )
                 return emptyList()
             }
 
             val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupPolicy)
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
-            logger.warn("Trying to send unauthenticated message from ${message.header.source.toCorda()} " +
+            logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
                     "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
             return emptyList()
         }

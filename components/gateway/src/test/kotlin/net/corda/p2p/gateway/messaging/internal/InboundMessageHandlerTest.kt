@@ -493,6 +493,7 @@ class InboundMessageHandlerTest {
             HoldingIdentity("A", "B"),
             HoldingIdentity("C", "D"),
             "subsystem",
+            "messageId",
         )
         payload = ByteBuffer.wrap(content.toByteArray())
     }.build()

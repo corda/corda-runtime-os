@@ -1,0 +1,15 @@
+imagePullSecrets:
+  - "docker-registry-cred"
+
+bootstrap:
+  db:
+    clientImage:
+      registry: docker-remotes.software.r3.com
+
+resources:
+  requests:
+    memory: "620Mi"
+    cpu: "500m"
+  limits:
+    memory: "1250Mi"
+    cpu: "1000m"

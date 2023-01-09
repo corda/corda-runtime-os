@@ -14,6 +14,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
@@ -90,6 +91,30 @@ class GroupPolicyParserImpl @Activate constructor(
             ?: throw BadGroupPolicyException(
                 "No supported version of the group policy file available for version $version"
             )
+    }
+
+    override fun parseMember(groupPolicy: String): MemberGroupPolicy? {
+        val node = when {
+            groupPolicy.isBlank() -> {
+                logger.error(EMPTY_GROUP_POLICY)
+                throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
+            }
+            else -> {
+                try {
+                    objectMapper.readTree(groupPolicy)
+                } catch (e: Exception) {
+                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                }
+            }
+        }
+        if (MGM_DEFAULT_GROUP_ID == node.getGroupId()) {
+            return null
+        }
+        val version = node.getFileFormatVersion()
+        return memberVersions[version]?.invoke(node) ?: throw BadGroupPolicyException(
+            "No supported version of the group policy file available for version $version"
+        )
     }
 
     private fun JsonNode.getFileFormatVersion() = this[FILE_FORMAT_VERSION]?.let {

@@ -114,6 +114,23 @@ class ConfigProcessorTest {
         assertThat(configProcessor.get("bar")).isEqualTo(config)
     }
 
+    @Test
+    fun `getSmartConfig returns the correct value`() {
+        val configProcessor = ConfigProcessor(
+            mock(),
+            smartConfigFactory,
+            BOOT_CONFIG_STRING.toSmartConfig(),
+            configMerger,
+        )
+        val config = Configuration(CONFIG_STRING, SOURCE_CONFIG_STRING, 0, schemaVersion)
+        configProcessor.onNext(Record("topic", "bar", config), null, mapOf("bar" to config))
+
+        assertThat(
+            configProcessor.getSmartConfig("bar")
+                ?.getString("bar")
+        ).isEqualTo("foo")
+    }
+
     private fun String.toSmartConfig(): SmartConfig {
         return SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(this))
     }

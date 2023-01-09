@@ -11,8 +11,6 @@ import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
-import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
@@ -20,7 +18,6 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -190,45 +187,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
         return InternalServerException(exception.errorMessage)
-    }
-
-    // Lookup and update the virtual node for the given virtual node short ID.
-    //  This will update the last instance of said virtual node, sorted by CPI version
-    @Suppress("ForbiddenComment")
-    override fun updateVirtualNodeState(
-        virtualNodeShortId: String,
-        newState: String
-    ): ChangeVirtualNodeStateResponse {
-        val instant = clock.instant()
-        // Lookup actor to keep track of which RPC user triggered an update
-        val actor = CURRENT_RPC_CONTEXT.get().principal
-        logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
-        if (!isRunning) throw IllegalStateException(
-            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
-        )
-        // TODO: Validate newState
-        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
-        val rpcRequest = VirtualNodeManagementRequest(
-            instant,
-            VirtualNodeStateChangeRequest(
-                virtualNodeShortId,
-                newState,
-                actor
-            )
-        )
-        // Actually send request and await response message on bus
-        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
-        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
-
-        return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeStateChangeResponse -> {
-                resolvedResponse.run {
-                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
-                }
-            }
-            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
-            else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
-        }
     }
 
     // Mandatory lifecycle methods - def to coordinator

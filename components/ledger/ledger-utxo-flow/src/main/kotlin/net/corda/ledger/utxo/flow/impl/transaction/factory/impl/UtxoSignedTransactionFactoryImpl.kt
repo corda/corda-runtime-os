@@ -10,11 +10,11 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -53,16 +53,16 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
     @Reference(service = WireTransactionFactory::class)
-    private val wireTransactionFactory: WireTransactionFactory
+    private val wireTransactionFactory: WireTransactionFactory,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun create(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
-        signatories: Iterable<PublicKey>,
-        utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+        signatories: Iterable<PublicKey>
     ): UtxoSignedTransaction {
-        val utxoLedgerTransactionFactory= UtxoLedgerTransactionFactoryImpl(serializationService, utxoLedgerPersistenceService)
         val metadata = transactionMetadataFactory.create(utxoMetadata())
 
         UtxoTransactionMetadataVerifier(metadata).verify()
@@ -86,12 +86,11 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
     override fun create(
         wireTransaction: WireTransaction,
-        signaturesWithMetaData: List<DigitalSignatureAndMetadata>,
-        utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+        signaturesWithMetaData: List<DigitalSignatureAndMetadata>
     ): UtxoSignedTransaction = UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
-        UtxoLedgerTransactionFactoryImpl(serializationService, utxoLedgerPersistenceService),
+        utxoLedgerTransactionFactory,
         wireTransaction,
         signaturesWithMetaData
     )
