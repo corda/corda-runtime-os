@@ -91,12 +91,16 @@ class UtxoRepositoryImpl(
                 JOIN {h-schema}utxo_relevant_transaction_state AS rts
                     ON rts.transaction_id = tc.transaction_id
                     AND rts.leaf_idx = tc.leaf_idx
+                JOIN {h-schema}utxo_transaction_status AS ts
+                    ON ts.transaction_id = tc.transaction_id
                 WHERE tc.group_idx IN (:groupIndices)
                 AND rts.consumed = false
+                AND ts.status = :verified
                 ORDER BY tc.group_idx, tc.leaf_idx""",
             Tuple::class.java
         )
             .setParameter("groupIndices", groupIndices)
+            .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
                 ComponentLeafDto(
