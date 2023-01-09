@@ -43,7 +43,8 @@ class VirtualNodeRpcTest {
             "Holding id could not be created - this test needs to be run on a clean cluster."
 
         // Server side messages
-        private const val EXPECTED_ERROR_NO_GROUP_POLICY = "CPI is missing a group policy file"
+        private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Unexpected exception when unpacking CPI.  " +
+                "Summary Hash cannot be null. There must be at least one valid signature"
 
         private val testRunUniqueId = UUID.randomUUID()
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
@@ -131,7 +132,7 @@ class VirtualNodeRpcTest {
      */
     @Test
     @Order(20)
-    fun `cannot upload CPI without group policy file aka CPB`() {
+    fun `cannot upload a CPB`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -145,7 +146,7 @@ class VirtualNodeRpcTest {
                         if (it.code == 400) {
                             val json = it.toJson()["details"]
                             json.has("errorMessage")
-                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
+                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_CPB_INSTEAD_OF_CPI
                         } else {
                             false
                         }
