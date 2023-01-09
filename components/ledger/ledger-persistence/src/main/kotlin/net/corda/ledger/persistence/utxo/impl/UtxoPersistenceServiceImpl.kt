@@ -101,13 +101,15 @@ class UtxoPersistenceServiceImpl constructor(
             }
 
             // Mark inputs as consumed
-            transaction.getConsumedStateRefs().forEach { inputStateRef ->
-                repository.markTransactionRelevantStatesConsumed(
-                    em,
-                    inputStateRef.transactionHash.toString(),
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    inputStateRef.index
-                )
+            if (transaction.status == TransactionStatus.VERIFIED) {
+                transaction.getConsumedStateRefs().forEach { inputStateRef ->
+                    repository.markTransactionRelevantStatesConsumed(
+                        em,
+                        inputStateRef.transactionHash.toString(),
+                        UtxoComponentGroup.OUTPUTS.ordinal,
+                        inputStateRef.index
+                    )
+                }
             }
 
             // Insert the Transactions signatures
