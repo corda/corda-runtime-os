@@ -206,16 +206,9 @@ class CryptoOpsBusProcessorTests {
     @Test
     fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
         val alias = newAlias()
-        // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = KeyValuePairList(emptyList())
         val result = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
         assertThat(result.response).isInstanceOf(CryptoPublicKey::class.java)
-        // generate again
         val e = assertFailsWith<ExecutionException> {
             process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
         }
