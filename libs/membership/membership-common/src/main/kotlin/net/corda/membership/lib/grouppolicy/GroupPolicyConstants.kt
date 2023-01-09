@@ -1,5 +1,9 @@
 package net.corda.membership.lib.grouppolicy
 
+import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
+
 /**
  * Constants for [GroupPolicy]. For example, expected keys and default values.
  */
@@ -61,6 +65,8 @@ class GroupPolicyConstants {
             const val TLS_VERSION = "tlsVersion"
 
             const val PROTOCOL_MODE = "protocolMode"
+
+            const val TLS_TYPE = "tlsType"
         }
     }
 
@@ -179,6 +185,36 @@ class GroupPolicyConstants {
                     return mode
                 }
             }
+
+            /**
+             * Enum defining the TLS type values.
+             */
+            enum class TlsType(
+                val groupPolicyName: String,
+            ) {
+                ONE_WAY("OneWay"),
+                MUTUAL("Mutual");
+
+                companion object {
+                    fun getClusterType(configurationGetter: (String)-> SmartConfig?) : TlsType {
+                        val gatewayConfiguration =
+                            configurationGetter.invoke(ConfigKeys.P2P_GATEWAY_CONFIG) ?:
+                            throw FailToReadClusterTlsTypeException(
+                                "Could not get the Gateway configuration"
+                            )
+                        val tlsType = gatewayConfiguration
+                            .getConfig("sslConfig")
+                            .getString(PolicyKeys.P2PParameters.TLS_TYPE)
+                        return valueOf(tlsType)
+                    }
+                    fun fromString(str: String?): TlsType = values()
+                        .firstOrNull {
+                        it.groupPolicyName.equals(str, ignoreCase = true)
+                    } ?: ONE_WAY
+                }
+
+                class FailToReadClusterTlsTypeException(message: String)  : CordaRuntimeException(message)
+            }
         }
     }
 
@@ -195,5 +231,6 @@ class GroupPolicyConstants {
         const val SESSION_TRUST_ROOTS = "truststore.session"
         const val TLS_TRUST_ROOTS = "truststore.tls"
         const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
+        const val TLS_TYPE = "tls.type"
     }
 }

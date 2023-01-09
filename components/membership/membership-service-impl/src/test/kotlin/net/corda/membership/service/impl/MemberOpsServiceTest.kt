@@ -156,7 +156,8 @@ class MemberOpsServiceTest {
                 registrationProxy,
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
-                membershipQueryClient
+                membershipQueryClient,
+                mock(),
             )
         }
     }
