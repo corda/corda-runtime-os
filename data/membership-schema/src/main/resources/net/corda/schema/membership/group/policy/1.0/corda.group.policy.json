@@ -172,7 +172,8 @@
         "tlsTrustRoots",
         "tlsPki",
         "tlsVersion",
-        "protocolMode"
+        "protocolMode",
+        "tlsType"
       ],
       "properties": {
         "sessionTrustRoots": {
@@ -218,6 +219,13 @@
           "enum": [
             "Authentication",
             "Authenticated_Encryption"
+          ]
+        },
+        "tlsType": {
+          "description": "What kind of TLS connections the group supports.",
+          "enum": [
+            "OneWay",
+            "Mutual"
           ]
         }
       },
