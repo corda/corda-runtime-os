@@ -32,12 +32,10 @@ data class CpiIdentifier(
         return CpiIdentifierAvro(
             name,
             version,
-            signerSummaryHash.let { hash ->
-                net.corda.data.crypto.SecureHash(
-                    hash.algorithm,
-                    ByteBuffer.wrap(hash.bytes)
-                )
-            },
+            net.corda.data.crypto.SecureHash(
+                signerSummaryHash.algorithm,
+                ByteBuffer.wrap(signerSummaryHash.bytes)
+            )
         )
     }
 }
