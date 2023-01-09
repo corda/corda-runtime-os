@@ -1,9 +1,13 @@
 package net.corda.httprpc.server.impl.internal
 
 import io.javalin.Javalin
+import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
+import io.javalin.http.ContentType
 import io.javalin.http.HandlerType
+import io.javalin.http.HttpResponseException
 import io.javalin.http.staticfiles.Location
+import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
@@ -38,10 +42,10 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
-import java.util.LinkedList
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
 import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
+import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class HttpRpcServerInternal(
@@ -117,6 +121,32 @@ internal class HttpRpcServerInternal(
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
                     1024))
+        }
+    }
+
+    private fun addExceptionHandlers(app: Javalin) {
+
+        app.exception(HttpResponseException::class.java) { e, ctx ->
+            if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+                ctx.status(e.status).result("""{
+                |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
+                |    "status": ${e.status},
+                |    "details": {${e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")}}
+                |}""".trimMargin()
+                ).contentType(ContentType.APPLICATION_JSON)
+            } else {
+                val result = if (e.details.isEmpty()) "${e.message}" else """
+                |${e.message}
+                |${
+                    e.details.map {
+                        """
+                |${it.key}:
+                |${it.value}
+                |"""
+                    }.joinToString("")
+                }""".trimMargin()
+                ctx.status(e.status).result(result)
+            }
         }
     }
 
@@ -256,6 +286,7 @@ internal class HttpRpcServerInternal(
             } else {
                 server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
             }
+            addExceptionHandlers(server)
             log.trace { "Starting the Javalin server completed." }
         } catch (e: Exception) {
             "Error when starting the Javalin server".let {

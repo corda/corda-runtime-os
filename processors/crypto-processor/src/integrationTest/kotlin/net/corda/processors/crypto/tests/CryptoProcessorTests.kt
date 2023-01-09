@@ -61,6 +61,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.contextLogger
@@ -318,7 +319,7 @@ class CryptoProcessorTests {
                     cpiIdentifier = CpiIdentifier(
                         name = "cpi",
                         version = "1",
-                        signerSummaryHash = null
+                        signerSummaryHash = TestRandom.secureHash()
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
                     uniquenessDmlConnectionId = UUID.randomUUID(),

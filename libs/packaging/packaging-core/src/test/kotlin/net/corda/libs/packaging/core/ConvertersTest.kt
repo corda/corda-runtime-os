@@ -115,19 +115,6 @@ class ConvertersTest {
     }
 
     @Test
-    fun `CPI․Identifier without signerSummaryHash round trip`() {
-        val original = CpiIdentifier(
-            "SomeName",
-            "1.0",
-            null
-        )
-        val avroObject = original.toAvro()
-        val cordaObject = CpiIdentifier.fromAvro(avroObject)
-        Assertions.assertEquals(original, cordaObject)
-    }
-
-
-    @Test
     fun `CPI․Metadata round trip`() {
         val original = CpiMetadata(
             CpkMetaTestData.cpiId,

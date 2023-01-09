@@ -7,16 +7,13 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -74,14 +71,13 @@ class TrustStoresPublisherTest {
     }
 
     private val certificates = listOf("one", "two")
-    private val groupInfo = GroupPolicyListener.GroupInfo(
-        createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "groupOne"),
-        NetworkType.CORDA_5,
-        setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-        certificates,
-        GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-        null
-    )
+    private val holdingIdentity = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "groupOne")
+    private val parameters = mock<GroupPolicy.P2PParameters> {
+        on { tlsTrustRoots } doReturn certificates
+    }
+    private val groupPolicy = mock<GroupPolicy> {
+        on { p2pParameters } doReturn parameters
+    }
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -106,12 +102,12 @@ class TrustStoresPublisherTest {
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(emptyMap())
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(Record(GATEWAY_TLS_TRUSTSTORES,
-                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
+                    "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates)
                 ))
             )
         }
@@ -120,23 +116,26 @@ class TrustStoresPublisherTest {
         fun `groupAdded will not republish certificates`() {
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(emptyMap())
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first(), times(1)).publish(any())
         }
 
         @Test
         fun `groupAdded will not republish certificates in different order`() {
+            val parameters = mock<GroupPolicy.P2PParameters> {
+                on { tlsTrustRoots } doReturn certificates.reversed()
+            }
+            whenever(groupPolicy.p2pParameters).doReturn(parameters)
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(emptyMap())
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             trustStoresPublisher.groupAdded(
-                groupInfo.copy(
-                    trustedCertificates = certificates.reversed()
-                )
+                holdingIdentity,
+                groupPolicy,
             )
 
             verify(mockPublisher.constructed().first(), times(1)).publish(any())
@@ -146,25 +145,27 @@ class TrustStoresPublisherTest {
         fun `groupAdded will republish new certificates`() {
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(emptyMap())
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
             val certificatesTwo = listOf("two", "three")
+            val parameters = mock<GroupPolicy.P2PParameters> {
+                on { tlsTrustRoots } doReturn certificatesTwo
+            }
+            whenever(groupPolicy.p2pParameters).doReturn(parameters)
 
             trustStoresPublisher.groupAdded(
-                groupInfo.copy(
-                    trustedCertificates = certificatesTwo
-                )
+                holdingIdentity, groupPolicy
             )
 
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
-                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates))
+                    "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates))
                 ),
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
-                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificatesTwo))
+                    "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+                    GatewayTruststore(holdingIdentity.toAvro(), certificatesTwo))
                 ),
             )
         }
@@ -176,14 +177,14 @@ class TrustStoresPublisherTest {
             val future = mock<CompletableFuture<Unit>>()
             whenever(mockPublisher.constructed().first().publish(any())).doReturn(listOf(future))
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(future).join()
         }
 
         @Test
         fun `groupAdded will not publish before the subscription started`() {
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
         }
@@ -192,7 +193,7 @@ class TrustStoresPublisherTest {
         fun `groupAdded will not publish before it has the snapshots`() {
             trustStoresPublisher.start()
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
         }
@@ -203,14 +204,14 @@ class TrustStoresPublisherTest {
             whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
             processor.firstValue.onSnapshot(emptyMap())
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
         }
 
         @Test
         fun `groupAdded will publish after it has the snapshot`() {
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
             trustStoresPublisher.start()
 
             processor.firstValue.onSnapshot(emptyMap())
@@ -237,12 +238,12 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
+                    "${holdingIdentity.x500Name}-${holdingIdentity.groupId}" to
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates)
                 )
             )
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
         }
@@ -252,20 +253,20 @@ class TrustStoresPublisherTest {
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
+                    "${holdingIdentity.x500Name}-${holdingIdentity.groupId}" to
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates)
                 )
             )
 
             processor.firstValue.onNext(
                 Record(
-                    "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
+                    "", "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
                     null
                 ),
                 null, emptyMap()
             )
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
 
             verify(mockPublisher.constructed().first()).publish(any())
         }
@@ -276,13 +277,13 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onNext(
                 Record(
-                    "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
+                    "", "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates)
                 ),
                 null, emptyMap()
             )
 
-            trustStoresPublisher.groupAdded(groupInfo)
+            trustStoresPublisher.groupAdded(holdingIdentity, groupPolicy)
             verify(mockPublisher.constructed().first(), never()).publish(any())
         }
     }

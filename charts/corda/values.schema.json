@@ -1226,9 +1226,6 @@
                             "$ref": "#/$defs/worker"
                         },
                         {
-                            "required": [
-                                "useStubs"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "image": {},
@@ -1239,15 +1236,7 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
-                                "kafka": {},
-                                "useStubs": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "use stubbed crypto processor, membership group reader and group policy provider",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
+                                "kafka": {}
                             },
                             "examples": [
                                 {
@@ -1257,7 +1246,6 @@
                                         "tag": ""
                                     },
                                     "replicaCount": 1,
-                                    "useStubs": false,
                                     "debug": {
                                         "enabled": false,
                                         "suspend": false
@@ -1289,9 +1277,6 @@
                             "$ref": "#/$defs/worker"
                         },
                         {
-                            "required": [
-                                "useStubs"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "image": {},
@@ -1303,14 +1288,6 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "useStubs": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "use stubbed crypto processor",
-                                    "examples": [
-                                        false
-                                    ]
-                                },
                                 "service": {
                                     "type": "object",
                                     "default": {},
@@ -1341,7 +1318,6 @@
                                     "tag": ""
                                 },
                                 "replicaCount": 1,
-                                "useStubs": false,
                                 "debug": {
                                     "enabled": false,
                                     "suspend": false
@@ -1527,7 +1503,6 @@
                         "tag": ""
                     },
                     "replicaCount": 1,
-                    "useStubs": false,
                     "debug": {
                         "enabled": false,
                         "suspend": false
@@ -1556,7 +1531,6 @@
                         "tag": ""
                     },
                     "replicaCount": 1,
-                    "useStubs": false,
                     "debug": {
                         "enabled": false,
                         "suspend": false

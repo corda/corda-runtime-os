@@ -18,10 +18,7 @@ val getAllCpiInfoDBVersionedRecords
         val cpiId = CpiIdentifier(
             cpiMetadataEntity.name,
             cpiMetadataEntity.version,
-            if (cpiMetadataEntity.signerSummaryHash != "")
-                SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
-            else
-                null
+            SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
         )
         object : VersionedRecord<CpiIdentifier, CpiMetadata> {
             override val version = cpiMetadataEntity.entityVersion

@@ -77,7 +77,7 @@ class UtxoPersistenceServiceImpl constructor(
         } ?: emptyList()
     }
 
-    override fun persistTransaction(transaction: UtxoTransactionReader) {
+    override fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
@@ -146,12 +146,11 @@ class UtxoPersistenceServiceImpl constructor(
             }
 
             // Mark inputs as consumed
-            transaction.getConsumedStateRefs().forEach { inputStateRef ->
+            val inputStateRefs = transaction.getConsumedStateRefs()
+            if (inputStateRefs.isNotEmpty()) {
                 repository.markTransactionRelevantStatesConsumed(
                     em,
-                    inputStateRef.transactionHash.toString(),
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    inputStateRef.index
+                    inputStateRefs
                 )
             }
 
@@ -177,16 +176,11 @@ class UtxoPersistenceServiceImpl constructor(
             // Insert the CPK details liked to this transaction
             // TODOs: The CPK file meta does not exist yet, this will be implemented by
             // https://r3-cev.atlassian.net/browse/CORE-7626
+            return emptyList()
         }
     }
 
-    override fun persistTransactionIfDoesNotExist(
-        transaction: SignedTransactionContainer,
-        transactionStatus: TransactionStatus,
-        account: String
-    ): Pair<String?, List<CordaPackageSummary>> {
-        val nowUtc = utcClock.instant()
-
+    override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
         return entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
 
@@ -196,54 +190,9 @@ class UtxoPersistenceServiceImpl constructor(
                 return@transaction status to emptyList()
             }
 
-            // Insert the Transaction
-            repository.persistTransaction(
-                em,
-                transactionIdString,
-                transaction.wireTransaction.privacySalt.bytes,
-                account,
-                nowUtc
-            )
+            val cpkDetails = persistTransaction(transaction)
 
-            // Insert the Transactions components
-            transaction.wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
-                leaves.mapIndexed { leafIndex, data ->
-                    repository.persistTransactionComponentLeaf(
-                        em,
-                        transactionIdString,
-                        groupIndex,
-                        leafIndex,
-                        data,
-                        sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
-                        nowUtc
-                    )
-                }
-            }
-
-            // Insert the Transactions signatures
-            transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-                repository.persistTransactionSignature(
-                    em,
-                    transactionIdString,
-                    index,
-                    digitalSignatureAndMetadata,
-                    nowUtc
-                )
-            }
-
-            // Insert the transactions current status
-            repository.persistTransactionStatus(
-                em,
-                transactionIdString,
-                transactionStatus,
-                nowUtc
-            )
-
-            // Insert the CPK details liked to this transaction
-            // TODOs: The CPK file meta does not exist yet, this will be implemented by
-            // https://r3-cev.atlassian.net/browse/CORE-7626
-
-            return null to emptyList()
+            return null to cpkDetails
         }
     }
 

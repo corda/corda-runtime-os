@@ -240,7 +240,7 @@ class MemberInfoExtension {
             get() = CpiIdentifier(
                 memberProvidedContext.parse(MEMBER_CPI_NAME),
                 memberProvidedContext.parse(MEMBER_CPI_VERSION),
-                memberProvidedContext.parseOrNull<String>(MEMBER_CPI_SIGNER_HASH)?.let {
+                memberProvidedContext.parse<String>(MEMBER_CPI_SIGNER_HASH).let {
                     SecureHash.parse(it)
                 }
             )

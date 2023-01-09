@@ -56,7 +56,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
      * @param cpiId CPI identifier
      */
     override fun put(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
-        val signerSummaryHash = cpiId.signerSummaryHash?.toString() ?: ""
+        val signerSummaryHash = cpiId.signerSummaryHash.toString()
         val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value)
             ?: throw CordaRuntimeException("Could not find holding identity")
 

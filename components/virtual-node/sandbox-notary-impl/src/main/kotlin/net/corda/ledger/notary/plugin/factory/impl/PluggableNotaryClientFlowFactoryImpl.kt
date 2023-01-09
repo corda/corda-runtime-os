@@ -53,8 +53,19 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
             }
         }
 
+        if (pluginClass == null) {
+            throw CordaRuntimeException(
+                "Plugin class not found for notary service ${notaryService.name}. This means that no notary service " +
+                        "matching this name has been registered on the network."
+            )
+        }
+
         val provider = pluggableNotaryClientFlowProviders[pluginClass]
-            ?: throw IllegalStateException("Notary flow provider not found for type: $pluginClass")
+            ?: throw CordaRuntimeException(
+                "Notary flow provider not found for type: $pluginClass. This means no plugin has been installed for " +
+                        "the given type. Please make sure you have a plugin provider class and it is annotated with " +
+                        "the proper @PluggableNotaryType annotation."
+            )
 
         return try {
             val selected = virtualNodeSelectorService.selectVirtualNode(notaryService)

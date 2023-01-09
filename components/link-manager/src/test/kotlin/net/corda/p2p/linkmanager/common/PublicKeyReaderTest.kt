@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.common
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
-import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
@@ -71,7 +70,7 @@ class PublicKeyReaderTest {
     fun `toKeyAlgorithm throws exception for unsupported algorithm`() {
         val key = KeyPairGenerator.getInstance("DSA").genKeyPair().public
 
-        assertThrows<UnsupportedAlgorithm> {
+        assertThrows<PublicKeyReader.UnsupportedAlgorithm> {
             key.toKeyAlgorithm()
         }
     }
