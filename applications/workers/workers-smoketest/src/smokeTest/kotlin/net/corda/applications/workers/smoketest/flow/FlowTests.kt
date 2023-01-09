@@ -743,17 +743,6 @@ class FlowTests {
     }
 
     @Test
-    fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
-        val requestID = startRpcFlow(
-            bobHoldingId,
-            mapOf(),
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
-        )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-    }
-
-    @Test
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued

@@ -146,12 +146,8 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
      */
     @Suspendable
     private fun findNotaryServiceParty(): Party {
-        // TODO CORE-6173 use proper notary key
         val notary = notaryLookup.notaryServices.single()
-        val notaryKey = memberLookup.lookup().single {
-            it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
-        }.ledgerKeys.first()
-        return Party(notary.name, notaryKey)
+        return Party(notary.name, notary.publicKey)
     }
 
     /**

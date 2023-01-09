@@ -1,6 +1,7 @@
 package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryKeys
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigestService
@@ -113,12 +114,16 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 
         val myInfo = memberLookup.myInfo()
 
-        // FIXME CORE-6173 this key should be replaced with the notary key
-        val signingLedgerKey = myInfo.ledgerKeys.first()
+        require(myInfo.notaryKeys.isNotEmpty()) {
+            "Could not find notary keys to sign with."
+        }
+
+        // Always use the latest registered notary key. Even if key was rotated, the first element will be the latest.
+        val signingNotaryKey = myInfo.notaryKeys.first()
 
         val sig = signingService.sign(
             merkleTree.root.bytes,
-            signingLedgerKey,
+            signingNotaryKey,
             SignatureSpec.ECDSA_SHA256
         )
 
