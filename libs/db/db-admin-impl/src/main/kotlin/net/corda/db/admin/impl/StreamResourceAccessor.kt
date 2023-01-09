@@ -3,7 +3,6 @@ package net.corda.db.admin.impl
 import liquibase.resource.AbstractResource
 import liquibase.resource.AbstractResourceAccessor
 import liquibase.resource.ClassLoaderResourceAccessor
-import liquibase.resource.InputStreamList
 import liquibase.resource.Resource
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
@@ -14,7 +13,6 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.StringWriter
 import java.net.URI
-import java.util.SortedSet
 import javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD
 import javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET
 import javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING
@@ -65,33 +63,7 @@ class StreamResourceAccessor(
         classLoaderResourceAccessor.close()
     }
 
-    /**
-     * Return the streams for each resource mapped by the given path.
-     * The path is often a URL but does not have to be.
-     * Should accept both / and \ chars for file paths to be platform-independent.
-     * If path points to a compressed resource, return a stream of the uncompressed contents of the file.
-     * Returns [InputStreamList] since multiple resources can map to the same path, such as "META-INF/MAINFEST.MF".
-     * Remember to close streams when finished with them.
-     *
-     * @param relativeTo Location that streamPath should be found relative to. If null, streamPath is an absolute path
-     * @return Empty list if the resource does not exist.
-     * @throws IOException if there is an error reading an existing path.
-     * @throws UnsupportedOperationException if streamPath is null
-     */
-    @Deprecated("Deprecated on base class ResourceAccessor")
-    override fun openStreams(relativeTo: String?, streamPath: String?): InputStreamList {
-        if (relativeTo != null) {
-            log.error("openStreams relativeTo was $relativeTo on streamPath $streamPath; reject")
-            throw UnsupportedOperationException(
-                "openStreams with relativeTo non-null '$relativeTo' on " +
-                        "stream path '$streamPath' not supported"
-            )
-        }
-
-        return InputStreamList().also { isl -> getAll(streamPath).forEach { isl.add(it.uri, it.openInputStream() ) } }
-    }
-
-    private fun createCompositeMasterChangeLog(): InputStreamList {
+    private fun createCompositeMasterChangeLog(): MutableList<Resource> {
         log.info("Creating composite master changelog XML file $masterChangeLogFileName with: ${dbChange.masterChangeLogFiles}")
         // dynamically create the master file by combining the specified.
         ByteArrayOutputStream().use {
@@ -125,38 +97,12 @@ class StreamResourceAccessor(
                 }
             }
 
-            return InputStreamList(URI(masterChangeLogFileName), ByteArrayInputStream(it.toByteArray()))
+            return mutableListOf(
+                StreamResource(
+                    masterChangeLogFileName,
+                    URI(masterChangeLogFileName),
+                    ByteArrayInputStream(it.toByteArray())))
         }
-    }
-
-    /**
-     * Returns the path to all resources contained in the given path.
-     * The passed path is not included in the returned set.
-     * Returned strings should use "/" for file path separators, regardless of the OS and should accept both / and \
-     * chars for file paths to be platform-independent.
-     * Returned set is sorted, normally alphabetically but subclasses can use different comparators.
-     * The values returned should be able to be passed into [.openStreams] and return the contents.
-     * Returned paths should normally be root-relative and therefore not be an absolute path, unless there is a good
-     * reason to be absolute.
-     *
-     *
-     * @param relativeTo Location that streamPath should be found relative to. If null, path is an absolute path
-     * @param path The path to lookup resources in.
-     * @param recursive Set to true and will return paths to contents in sub directories as well.
-     * @param includeFiles Set to true and will return paths to files.
-     * @param includeDirectories Set to true and will return paths to directories.
-     * @return empty set if nothing was found
-     * @throws IOException if there is an error reading an existing root.
-     */
-    override fun list(
-        relativeTo: String?,
-        path: String?,
-        recursive: Boolean,
-        includeFiles: Boolean,
-        includeDirectories: Boolean
-    ): SortedSet<String> {
-        // NOTE: this method doesn't seem to be used by Liquibase internally, hence not implemented.
-        TODO("Not yet implemented")
     }
 
     override fun search(path: String?, recursive: Boolean): MutableList<Resource> {
@@ -173,8 +119,7 @@ class StreamResourceAccessor(
         // if we are accessing the specific path masterChangeLogFileName, we synthesise an XML file
         // which causes Liquibase to include all the changelogs we know about.
         if (masterChangeLogFileName == path)
-            return createCompositeMasterChangeLog().map {
-                StreamResource(masterChangeLogFileName, URI(masterChangeLogFileName), it) }.toMutableList()
+            return createCompositeMasterChangeLog()
 
         if (path.contains("www.liquibase.org")) {
             // NOTE: this is needed for fetching the XML schemas
@@ -195,7 +140,7 @@ class StreamResourceAccessor(
             .toMutableList()
     }
 
-    class StreamResource(
+    private class StreamResource(
         path: String,
         uri: URI,
         private val inputStream: InputStream
