@@ -132,6 +132,23 @@ class CryptoOpsBusProcessorTests {
         )
     }
 
+    private fun makeSimpleKV() = KeyValuePairList(
+        listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
+        )
+    )
+
+    private fun assertOperationContextMap(l: KeyValuePairList, category: String) {
+        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(4, operationContextMap.size)
+        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(l.items[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(category, operationContextMap[CRYPTO_CATEGORY])
+    }
+
     private fun process(
         request: Any,
     ): RpcOpsResponse {
@@ -140,14 +157,13 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(RpcOpsRequest(context, request), future)
         val result = future.get() ?: throw UnsupportedOperationException()
         assertResponseContext(context, result.context)
+        assertNotNull(result.response)
         return result
     }
-
 
     @Test
     fun `Should return empty list for unknown key id`() {
         val result = process(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))))
-        assertNotNull(result.response)
         assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
@@ -156,7 +172,6 @@ class CryptoOpsBusProcessorTests {
     fun `Should return empty list for look up when the filter does not match`() {
         val l = KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
         val result = process(KeysRpcQuery(0, 10, CryptoKeyOrderBy.NONE, l))
-        assertNotNull(result.response)
         assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
@@ -166,20 +181,9 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = makeSimpleKV()
         val result1 = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
-        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(4, operationContextMap.size)
-        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(l.items[1].value, operationContextMap["reason"])
-        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertOperationContextMap(l, LEDGER)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = factory.schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -230,20 +234,9 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val l1 = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l1 = makeSimpleKV()
         val result1 = process(GenerateKeyPairCommand(LEDGER, alias, null, RSA_CODE_NAME, l1))
-        val operationContextMap = factory.recordedCryptoContexts[l1.items[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(4, operationContextMap.size)
-        assertEquals(l1.items[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(l1.items[1].value, operationContextMap["reason"])
-        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertOperationContextMap(l1, LEDGER)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = factory.schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -283,30 +276,16 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
-        val data = UUID.randomUUID().toString().toByteArray()
-        // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = makeSimpleKV()
         val result1 = process(GenerateFreshKeyRpcCommand(CI, null, ECDSA_SECP256R1_CODE_NAME, l))
-        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(4, operationContextMap.size)
-        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(l.items[1].value, operationContextMap["reason"])
-        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CI, operationContextMap[CRYPTO_CATEGORY])
+        assertOperationContextMap(l, CI)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = factory.schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertNull(info.externalId)
-        // signing
-        testSigning(publicKey, data)
+        testSigning(publicKey, UUID.randomUUID().toString().toByteArray())
     }
 
     @Test
@@ -330,21 +309,10 @@ class CryptoOpsBusProcessorTests {
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = makeSimpleKV()
         val externalId = UUID.randomUUID()
         val result1 = process(GenerateFreshKeyRpcCommand(CI, externalId.toString(), ECDSA_SECP256R1_CODE_NAME, l))
-        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(4, operationContextMap.size)
-        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(l.items[1].value, operationContextMap["reason"])
-        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CI, operationContextMap[CRYPTO_CATEGORY])
+        assertOperationContextMap(l, CI)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = factory.schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -406,20 +374,9 @@ class CryptoOpsBusProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = makeSimpleKV()
         val result1 = process(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, l))
-        val operationContextMap = factory.recordedCryptoContexts[l.items[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(4, operationContextMap.size)
-        assertEquals(l.items[0].value, operationContextMap[CTX_TRACKING])
-        assertEquals(l.items[1].value, operationContextMap["reason"])
-        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertOperationContextMap(l, LEDGER)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = factory.schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.signingKeyStore.find(tenantId, publicKey)
@@ -434,6 +391,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
+
 
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
@@ -473,12 +431,7 @@ class CryptoOpsBusProcessorTests {
 
     private fun testSigning(publicKey: PublicKey, data: ByteArray) {
         // sign using public key and default scheme
-        val l = KeyValuePairList(
-            listOf(
-                KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
-                KeyValuePair("reason", "Hello World!")
-            )
-        )
+        val l = makeSimpleKV()
         val signatureSpec2 = factory.schemeMetadata.supportedSignatureSpec(
             factory.schemeMetadata.findKeyScheme(publicKey)
         ).first()
@@ -521,4 +474,5 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         factory.verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
     }
+
 }
