@@ -43,6 +43,7 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
@@ -308,7 +309,12 @@ internal class SessionManagerImpl(
         session: Session,
         messageAndKey: AuthenticatedMessageAndKey,
     ): List<Record<String, *>> {
-        return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, groups, members)?.let { message ->
+        return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
+            messageAndKey,
+            session,
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+        )?.let { message ->
             val key = LinkManager.generateKey()
             val messageRecord = Record(LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())

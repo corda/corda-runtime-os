@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.utilities
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -10,6 +11,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -33,9 +35,13 @@ fun mockMemberInfo(
     endPoint: String,
     publicKey: PublicKey,
 ): MemberInfo {
+    val endpoints = mock<EndpointInfo> {
+        on { url } doReturn endPoint
+        on { protocolVersion } doReturn ProtocolConstants.PROTOCOL_VERSION
+    }
     val context = mock<MemberContext> {
         on { parse(GROUP_ID, String::class.java) } doReturn holdingIdentity.groupId
-        on { parseList(ENDPOINTS, String::class.java) } doReturn listOf(endPoint)
+        on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpoints)
     }
     return mock {
         on { memberProvidedContext } doReturn context
