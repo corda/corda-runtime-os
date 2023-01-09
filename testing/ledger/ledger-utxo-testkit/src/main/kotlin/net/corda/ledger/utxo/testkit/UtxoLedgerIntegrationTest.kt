@@ -25,8 +25,7 @@ abstract class UtxoLedgerIntegrationTest: CommonLedgerIntegrationTest() {
         utxoSignedTransaction = utxoSignedTransactionFactory.createExample(
             jsonMarshallingService,
             jsonValidator,
-            wireTransactionFactory,
-            utxoLedgerPersistenceService
+            wireTransactionFactory
         )
     }
 }

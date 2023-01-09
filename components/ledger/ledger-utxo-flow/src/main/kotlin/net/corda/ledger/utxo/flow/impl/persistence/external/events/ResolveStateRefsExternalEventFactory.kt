@@ -1,24 +1,27 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
+import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UtxoTransactionOutputs
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoTransactionOutputDto
 import net.corda.schema.Schemas
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import java.nio.ByteBuffer
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindUnconsumedStatesByTypeExternalEventFactory(
-    private val clock: Clock
-) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoTransactionOutputDto>>
+class ResolveStateRefsExternalEventFactory(
+    private val clock: Clock = Clock.systemUTC()
+) : ExternalEventFactory<ResolveStateRefsParameters, UtxoTransactionOutputs, List<UtxoTransactionOutputDto>>
 {
     @Activate
     constructor() : this(Clock.systemUTC())
@@ -28,7 +31,7 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
-        parameters: FindUnconsumedStatesByTypeParameters
+        parameters: ResolveStateRefsParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
             topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
@@ -42,8 +45,15 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
         )
     }
 
-    private fun createRequest(parameters: FindUnconsumedStatesByTypeParameters): Any {
-        return FindUnconsumedStatesByType(parameters.stateClass.canonicalName)
+    private fun createRequest(parameters: ResolveStateRefsParameters): Any {
+        return ResolveStateRefs(parameters.stateRefs.map {
+            net.corda.data.ledger.utxo.StateRef(
+                SecureHash(
+                    it.transactionHash.algorithm,
+                    ByteBuffer.wrap(it.transactionHash.bytes)
+                ), it.index
+            )
+        })
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<UtxoTransactionOutputDto> {
@@ -53,6 +63,6 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
     }
 }
 
-data class FindUnconsumedStatesByTypeParameters(
-    val stateClass: Class<*>
+data class ResolveStateRefsParameters(
+    val stateRefs: Iterable<StateRef>
 )

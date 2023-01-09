@@ -1,8 +1,8 @@
-package net.corda.ledger.persistence.common
+package net.corda.ledger.persistence.utxo.impl
 
 import java.util.Objects
 
-data class TransactionOutputDto(
+data class UtxoTransactionOutputDto(
     val transactionId: String,
     val leafIndex: Int,
     val info: ByteArray,
@@ -12,7 +12,7 @@ data class TransactionOutputDto(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionOutputDto
+        other as UtxoTransactionOutputDto
 
         if (transactionId != other.transactionId) return false
         if (leafIndex != other.leafIndex) return false
