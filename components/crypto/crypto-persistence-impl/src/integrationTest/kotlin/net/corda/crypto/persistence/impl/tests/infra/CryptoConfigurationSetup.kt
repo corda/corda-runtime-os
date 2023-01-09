@@ -14,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.TestRandom
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import java.time.Instant
@@ -62,7 +63,7 @@ object CryptoConfigurationSetup {
             cpiIdentifier = CpiIdentifier(
                 name = "cpi",
                 version = "1",
-                signerSummaryHash = null
+                signerSummaryHash = TestRandom.secureHash()
             ),
             cryptoDmlConnectionId = CryptoDBSetup.connectionId(CryptoDBSetup.vnodeDb.name),
             uniquenessDmlConnectionId = UUID.randomUUID(),
