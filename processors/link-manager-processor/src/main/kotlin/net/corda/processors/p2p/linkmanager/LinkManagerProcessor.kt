@@ -8,7 +8,7 @@ import net.corda.p2p.linkmanager.LinkManager
  * */
 interface LinkManagerProcessor {
 
-    fun start(bootConfig: SmartConfig, useStubComponents: Boolean)
+    fun start(bootConfig: SmartConfig)
 
     fun stop()
 }

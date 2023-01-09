@@ -16,10 +16,10 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
-
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -32,7 +32,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.common.ThirdPartyComponentsMode
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -48,7 +47,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
@@ -57,6 +56,25 @@ import org.osgi.test.junit5.service.ServiceExtension
 class LinkManagerIntegrationTest {
 
     companion object {
+        private const val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
+        private const val cryptoConf = """
+        dummy=1
+    """
         private val logger = contextLogger()
 
         @InjectService(timeout = 4000)
@@ -78,10 +96,8 @@ class LinkManagerIntegrationTest {
         lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
         @InjectService(timeout = 4000)
-        lateinit var membershipQueryClient: MembershipQueryClient
+        lateinit var  groupParametersReaderService: GroupParametersReaderService
 
-        @InjectService(timeout = 4000)
-        lateinit var groupParametersReaderService: GroupParametersReaderService
     }
 
     private val replayPeriod = 2000
@@ -139,26 +155,52 @@ class LinkManagerIntegrationTest {
 
     @Test
     fun `Link Manager can recover from bad configuration`() {
+        val groupPolicyProviderName = LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
+        val groupPolicyProviderCoordinator = lifecycleCoordinatorFactory.createCoordinator(groupPolicyProviderName) { _, coordinator ->
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+        groupPolicyProviderCoordinator.start()
+
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
 
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
-
+        configPublisher.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.MESSAGING_CONFIG,
+                    Configuration(messagingConf, messagingConf, 0,
+                        ConfigurationSchemaVersion(1, 0)
+                    )
+                )
+            )
+        )
+        configPublisher.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.CRYPTO_CONFIG,
+                    Configuration(cryptoConf, cryptoConf, 0,
+                        ConfigurationSchemaVersion(1, 0)
+                    )
+                )
+            )
+        )
         val linkManager = LinkManager(
             subscriptionFactory,
             publisherFactory,
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            Mockito.mock(GroupPolicyProvider::class.java),
-            Mockito.mock(VirtualNodeInfoReadService::class.java),
-            Mockito.mock(CpiInfoReadService::class.java),
+            mock(GroupPolicyProvider::class.java),
+            mock(VirtualNodeInfoReadService::class.java),
+            mock(CpiInfoReadService::class.java),
             cryptoOpsClient,
             membershipGroupReaderProvider,
-            membershipQueryClient,
+            mock(MembershipQueryClient::class.java),
             groupParametersReaderService,
-            ThirdPartyComponentsMode.STUB
         )
 
         linkManager.usingLifecycle {

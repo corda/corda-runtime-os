@@ -132,8 +132,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
-        linkManagerProcessor.start(config, false)
-        gatewayProcessor.start(config, false)
+        linkManagerProcessor.start(config)
+        gatewayProcessor.start(config)
     }
 
     override fun shutdown() {

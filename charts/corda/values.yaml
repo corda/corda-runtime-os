@@ -719,9 +719,7 @@ workers:
     annotations: {}
     # -- additional Java options for the P2P link manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
-    # -- Use stubbed crypto processor, membership group reader and group policy provider
-    useStubs: false
-    # P2P link manager worker debug configuration
+    # p2p-link-manager worker debug configuration
     debug:
       # -- run P2P link manager worker with debug enabled
       enabled: false
@@ -787,9 +785,7 @@ workers:
     annotations: {}
     # -- additional Java options for the P2P gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
-    # -- Use stub P2P link manager processor
-    useStubs: false
-    # P2P gateway worker debug configuration
+    # p2p-gateway worker debug configuration
     debug:
       # -- run P2P gateway worker with debug enabled
       enabled: false
