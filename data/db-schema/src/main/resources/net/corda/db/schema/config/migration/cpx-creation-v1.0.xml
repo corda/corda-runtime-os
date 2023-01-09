@@ -127,9 +127,6 @@
             <column name="file_path" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="changeset_id" type="UUID">
-                <constraints nullable="false"/>
-            </column>
             <column name="content" type="TEXT">
                 <constraints nullable="false"/>
             </column>
@@ -146,7 +143,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path, changeset_id"
+        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path"
                        constraintName="cpk_db_change_log_pk" schemaName="${schema.name}"/>
 
         <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
@@ -156,22 +153,13 @@
                                  referencedTableSchemaName="${schema.name}"/>
         <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
         <createTable tableName="cpk_db_change_log_audit" schemaName="${schema.name}">
-            <column name="changeset_id" type="UUID">
+            <column name="id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="file_path" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="content" type="TEXT">
@@ -186,7 +174,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="changeset_id, cpk_file_checksum, file_path"
+        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="id"
                        constraintName="cpk_db_change_log_audit_pk" schemaName="${schema.name}"/>
 
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
