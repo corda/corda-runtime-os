@@ -37,35 +37,39 @@ tasks.register('publishBuildkitImage', BuildkitBuild) {
     it.containerName = project.name
 
     if (project.hasProperty('baseImage')) {
-        it.baseImageName = baseImage
+        baseImageName = baseImage
     }
 
     if (project.hasProperty('useBuildx')) {
-        it.isBuildx = useBuildx.toBoolean()
+        isBuildx = useBuildx.toBoolean()
     }
 
     if (project.hasProperty('tag')) {
-        it.containerTag = tag
+        containerTag = tag
+    }
+
+    if (project.hasProperty('appendTag')) {
+        appendContainerTag = appendTag
     }
 
     if (project.hasProperty('repo')) {
-        it.containerRepo = repo
+        containerRepo = repo
     }
 
     if (project.hasProperty('isNightly')) {
-        it.nightlyBuild = isNightly.toBoolean()
+        nightlyBuild = isNightly.toBoolean()
     }
 
     if (project.hasProperty('isPreTest')) {
-        it.preTest = isPreTest.toBoolean()
+        preTest = isPreTest.toBoolean()
     }
 
     if (project.hasProperty('isReleaseCandidate')) {
-        it.releaseCandidate = isReleaseCandidate.toBoolean()
+        releaseCandidate = isReleaseCandidate.toBoolean()
     }
 
-    if (project.hasProperty('isDocker')) {
-        it.useDocker = isDocker.toBoolean()
+    if (project.hasProperty('publishToDockerDaemon')) {
+        useDockerDaemon = publishToDockerDaemon.toBoolean()
     }
 }
 

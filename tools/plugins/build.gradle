@@ -101,28 +101,32 @@ tasks.register('publishBuildkitImage', BuildkitBuild) {
     it.sourceFiles.setFrom(otherPluginsTasks)
 
     if (project.hasProperty('cliBaseImage')) {
-        it.baseImageName = cliBaseImage
+        baseImageName = cliBaseImage
     } else {
         // cater for local composite build
-        it.baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
     if (project.hasProperty('baseTag')) {
-        it.baseImageTag = baseTag
+        baseImageTag = baseTag
     } else {
-        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+        baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
 
     if (project.hasProperty('useBuildx')) {
-        it.isBuildx = useBuildx.toBoolean()
+        isBuildx = useBuildx.toBoolean()
+    }
+
+    if (project.hasProperty('appendTag')) {
+        appendContainerTag = appendTag
     }
 
     if (project.hasProperty('tag')) {
-        it.containerTag = tag
+        containerTag = tag
     }
 
     if (project.hasProperty('repo')) {
-        it.containerRepo = repo
+        containerRepo = repo
     }
 
     if (cordaCliIncluded && cordaApiIncluded) {
@@ -132,19 +136,19 @@ tasks.register('publishBuildkitImage', BuildkitBuild) {
     }
 
     if (project.hasProperty('isReleaseCandidate')) {
-        it.releaseCandidate = isReleaseCandidate.toBoolean()
+        releaseCandidate = isReleaseCandidate.toBoolean()
     }
 
     if (project.hasProperty('isNightly')) {
-        it.nightlyBuild = isNightly.toBoolean()
+        nightlyBuild = isNightly.toBoolean()
     }
 
     if (project.hasProperty('isPreTest')) {
-        it.preTest = isPreTest.toBoolean()
+        preTest = isPreTest.toBoolean()
     }
 
-    if (project.hasProperty('isDocker')) {
-        it.useDocker = isDocker.toBoolean()
+    if (project.hasProperty('publishToDockerDaemon')) {
+        useDockerDaemon = publishToDockerDaemon.toBoolean()
     }
 }
 

@@ -4,11 +4,11 @@ ARG BASE_IMAGE
 
 FROM ${BASE_IMAGE}
 
-ARG IMAGE_ENTRYPOINT="exec java -Dlog4j2.debug=false -Dlog4j.configurationFile=log4j2-console.xml -jar /opt/override/crypto.jar"
-ARG BUILD_PATH="/applications/workers/release/crypto-worker/build/tmp/publishOSGiImage/containerization/corda-crypto-worker-5.0.0.0-SNAPSHOT.jar"
-ARG JDBC_PATH="/applications/workers/release/crypto-worker/build/tmp/publishOSGiImage/jdbc-driver"
-ARG JAR_LOCATION="/opt/override/"
-ARG JDBC_DRIVER_LOCATION="/opt/jdbc-driver/"
+ARG IMAGE_ENTRYPOINT
+ARG BUILD_PATH
+ARG JDBC_PATH
+ARG JAR_LOCATION
+ARG JDBC_DRIVER_LOCATION
 
 ENV IMAGE_ENTRYPOINT_ENV=${IMAGE_ENTRYPOINT}
 ENV CORDA_BASE="/opt/override"

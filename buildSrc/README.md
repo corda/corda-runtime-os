@@ -521,3 +521,46 @@ Local Machine
 ```
 
 For information how to run Workers locally, please see [here](../applications/workers/release/deploy/README.md).
+
+## Creating Docker Images using Buildkit
+
+Another task have been provided to build docker images. The `publishBuildkitImage` task inherits most of it’s functionality and structure from `publishOSGiImage`, but also provides better caching and speed to the builds. It uses BuildKit to create and publish docker images to specified repositories. 
+
+Depending on which way the buildkit is used, the task can be run in two ways:
+
+### Docker buildx
+This version of buildkit has been integrated into docker and comes preinstalled with docker engine. This way is more favourable to developers as it requires no initial setup and provides most of the preferred functionality, mainly local caching of image layers.
+
+### Buildctl with dedicated buildkit daemon
+The standalone buildkit client buildctl provides the same functionality as buildx but also uses remote cache. The build is run through a buildkit daemon available on `eks-e2e` cluster. 
+
+To use standalone buildkit, it's client buildctl needs to be installed.
+
+For Mac the client can be installed using homebrew
+
+```
+brew install buildkit
+```
+
+Otherwise, it can be installed from source: 
+
+```
+git clone git@github.com:moby/buildkit.git buildkit
+cd buildkit
+make && sudo make install
+```
+
+The standalone buildkit requires a remote buildkit daemon to run. To connect to a buildkit daemon, developer has to log into `eke-e2e` cluster and port forward the daemon to port 3465.
+
+```
+aws --profile "${AWS_PROFILE}" eks update-kubeconfig --name eks-e2e
+kubectl port-forward deployment/buildkit 3476:3476
+```
+
+Only after buildctlis installed and buildkit daemon is connected, publishBuildkitImage task can be used with standalone buildkit by setting the  useBuildx parameter to false.
+
+```
+ gradlew publishBuildkitImage -PuseBuildkit=false
+```
+
+
