@@ -135,13 +135,6 @@ class Schemas {
             const val GATEWAY_TLS_CERTIFICATES = "gateway.tls.certs"
             const val GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC = "gateway.revocation.request"
             val GATEWAY_REVOCATION_CHECK_RESPONSE_TOPIC = getRPCResponseTopic(GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC)
-
-            /**
-             * Topics for (temporary) stub components.
-             */
-            const val CRYPTO_KEYS_TOPIC = "p2p.crypto.keys"
-            const val GROUP_POLICIES_TOPIC = "p2p.group.policies"
-            const val MEMBER_INFO_TOPIC = "p2p.members.info"
         }
     }
 
