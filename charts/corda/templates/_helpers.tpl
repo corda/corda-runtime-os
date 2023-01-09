@@ -146,7 +146,7 @@ securityContext:
 Container security context
 */}}
 {{- define "corda.containerSecurityContext" -}}
-{{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
+{{- if and ( not .Values.dumpHostPath ) ( or ( not .worker ) ( not ( get .Values.workers .worker ).profiling.enabled ) ) }}
 securityContext:
   runAsUser: 10001
   runAsGroup: 10002
