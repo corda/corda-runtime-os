@@ -11,6 +11,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.MEMBERS
@@ -26,6 +27,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType.ONE_WAY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
@@ -111,6 +113,7 @@ class TestUtils {
                             "$r3comCert"
                         ],
                         "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
                         "$TLS_VERSION": "$VERSION_1_3",
                         "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
                     },
@@ -140,6 +143,7 @@ class TestUtils {
                             "$r3comCert"
                         ],
                         "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
                         "$TLS_VERSION": "$VERSION_1_3",
                         "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
                     },
@@ -173,6 +177,7 @@ class TestUtils {
                             "$r3comCert"
                         ],
                         "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
                         "$TLS_VERSION": "$VERSION_1_3",
                         "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
                     },
@@ -199,6 +204,7 @@ class TestUtils {
                             "$r3comCert"
                         ],
                         "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
                         "$TLS_VERSION": "$VERSION_1_3",
                         "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
                     },
@@ -228,6 +234,7 @@ class TestUtils {
                             "$r3comCert"
                         ],
                         "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
                         "$TLS_VERSION": "$VERSION_1_3",
                         "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
                     },

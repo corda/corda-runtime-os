@@ -3,6 +3,7 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesSet
+import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -28,7 +29,7 @@ class ReconciliationContextTest {
             MemberX500Name.parse("O=Alice, C=GB, L=London"),
             UUID(0, 1).toString()
         ),
-        cpiIdentifier = CpiIdentifier("myCpi.cpi", "1.0", null),
+        cpiIdentifier = CpiIdentifier("myCpi.cpi", "1.0", TestRandom.secureHash()),
         vaultDmlConnectionId = UUID(1, 2),
         cryptoDmlConnectionId = UUID(2, 3),
         uniquenessDmlConnectionId = UUID(3, 4),

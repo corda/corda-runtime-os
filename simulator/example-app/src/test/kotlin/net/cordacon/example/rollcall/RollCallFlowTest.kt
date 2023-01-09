@@ -68,14 +68,8 @@ class RollCallFlowTest {
 
         val simulator = Simulator()
 
-        val bobsAbsentFlow = object: ResponderFlow {
-            override fun call(session: FlowSession) {
-                receiveAndSendResponse(session, "")
-            }
-        }
-
-        val bobsStillAbsentFlow = mock<ResponderFlow>()
-        whenever(bobsStillAbsentFlow.call(any())).then {
+        val bobsAbsentFlow = mock<ResponderFlow>()
+        whenever(bobsAbsentFlow.call(any())).then {
             receiveAndSendResponse(it.getArgument(0), "")
         }
 
@@ -88,7 +82,7 @@ class RollCallFlowTest {
         }
 
         simulator.createInstanceNode(bob, "roll-call", bobsAbsentFlow)
-        simulator.createInstanceNode(bob, "absence-call", bobsStillAbsentFlow)
+        simulator.createInstanceNode(bob, "absence-call", bobsAbsentFlow)
         simulator.createInstanceNode(truancyOffice, "truancy-record", truancyOfficeFlow)
 
         val aliceNode = simulator.createVirtualNode(alice, RollCallFlow::class.java)
@@ -100,7 +94,7 @@ class RollCallFlowTest {
             RollCallInitiationRequest(truancyOffice)
         ))
 
-        verify(bobsStillAbsentFlow, times(2)).call(any())
+        verify(bobsAbsentFlow, times(3)).call(any())
         assertThat(receivedRecord.absentees, `is`(listOf(bob)))
     }
 }

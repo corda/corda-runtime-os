@@ -30,6 +30,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.TimeoutException
 
 abstract class AbstractPersistenceClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -67,15 +68,7 @@ abstract class AbstractPersistenceClient(
         if(sender == null) {
             val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
             logger.warn(failureReason)
-            return MembershipPersistenceResponse(
-                MembershipResponseContext(
-                    context.requestTimestamp,
-                    context.requestId,
-                    clock.instant(),
-                    context.holdingIdentity
-                ),
-                PersistenceFailedResponse(failureReason)
-            )
+            return persistenceFailureResponse(failureReason)
         }
         logger.info("Sending membership persistence RPC request.")
 
@@ -100,28 +93,24 @@ abstract class AbstractPersistenceClient(
             }
             response
         } catch (e: IllegalArgumentException) {
-            MembershipPersistenceResponse(
-                MembershipResponseContext(
-                    context.requestTimestamp,
-                    context.requestId,
-                    clock.instant(),
-                    context.holdingIdentity
-                ),
-                PersistenceFailedResponse("Invalid response. ${e.message}")
-            )
-        }
-        catch (e: Exception) {
-            MembershipPersistenceResponse(
-                MembershipResponseContext(
-                    context.requestTimestamp,
-                    context.requestId,
-                    clock.instant(),
-                    context.holdingIdentity
-                ),
-                PersistenceFailedResponse("Exception occurred while sending RPC request. ${e.message}")
-            )
+            persistenceFailureResponse("Invalid response. ${e.message}")
+        } catch (e: TimeoutException) {
+            persistenceFailureResponse("Timeout waiting for response from membership persistence RPC request.")
+        } catch (e: Exception) {
+            persistenceFailureResponse("Exception occurred while sending RPC request. ${e.message}")
         }
     }
+
+    private fun MembershipPersistenceRequest.persistenceFailureResponse(message: String) =
+        MembershipPersistenceResponse(
+            MembershipResponseContext(
+                context.requestTimestamp,
+                context.requestId,
+                clock.instant(),
+                context.holdingIdentity
+            ),
+            PersistenceFailedResponse(message)
+        )
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP

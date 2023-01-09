@@ -18,6 +18,7 @@ import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -57,6 +58,7 @@ internal class TlsCertificatesPublisher(
                     GATEWAY_TLS_CERTIFICATES, id,
                     GatewayTlsCertificates(
                         identity.tlsTenantId,
+                        identity.holdingIdentity.toAvro(),
                         identity.tlsCertificates
                     )
                 )

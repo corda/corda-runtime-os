@@ -47,6 +47,21 @@ class ConsensualFinalityFlow(
 
         // TODO Check there is at least one state
 
+        val sessionPublicKeys = getSessionPublicKeys()
+        requireSessionsToSatisfySignatories(sessionPublicKeys)
+        persistUnverifiedTransaction()
+        val fullySignedTransaction = receiveSignaturesAndAddToTransaction(sessionPublicKeys)
+        persistFullySignedTransaction(fullySignedTransaction)
+        sendFullySignedTransactionToCounterparties(fullySignedTransaction)
+
+        if (sessions.isNotEmpty()) {
+            log.debug { "All sessions received and acknowledged storage of signed transaction ${signedTransaction.id}" }
+        }
+
+        return fullySignedTransaction
+    }
+
+    private fun getSessionPublicKeys(): Map<FlowSession, List<PublicKey>> {
         // Check if the sessions' counterparties are all available and have keys.
         val sessionPublicKeys = sessions.map { session ->
             val member = memberLookup.lookup(session.counterparty)
@@ -62,19 +77,31 @@ class ConsensualFinalityFlow(
             }
         }
 
+        return sessionPublicKeys
+    }
+
+    private fun requireSessionsToSatisfySignatories(sessionPublicKeys: Map<FlowSession, List<PublicKey>>) {
         // TODO [CORE-8655] Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
         val missingSignatories = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
         require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
             "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
+    }
 
+    @Suspendable
+    private fun persistUnverifiedTransaction() {
         persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
+        log.debug { "Recorded transaction with initial signatures ${signedTransaction.id}" }
+    }
 
-        // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
-
+    @Suspendable
+    private fun receiveSignaturesAndAddToTransaction(
+        sessionPublicKeys: Map<FlowSession, List<PublicKey>>
+    ): ConsensualSignedTransactionInternal {
         var signedByParticipantsTransaction = signedTransaction
 
+        // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
         sessions.forEach { session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
@@ -98,7 +125,7 @@ class ConsensualFinalityFlow(
 
             requireCorrectReceivedSigningKeys(
                 signatures,
-                missingSignatories,
+                signedTransaction.getMissingSignatories(),
                 ledgerKeys = sessionPublicKeys[session]!!,
                 session
             )
@@ -123,25 +150,6 @@ class ConsensualFinalityFlow(
             }
         }
 
-        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction ${signedTransaction.id}" }
-
-        // TODO Consider removing
-        for (session in sessions) {
-            // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            session.send(signedByParticipantsTransaction)
-            // Do we want a situation where a boolean can be received to execute some sort of failure logic?
-            // Or would that always be covered by an exception as it always indicates something wrong occurred.
-            // Returning a context map might be appropriate in case we want to do any sort of handling in the future
-            // without having to worry about backwards compatibility.
-            session.receive<Unit>()
-            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
-        }
-
-        if (sessions.isNotEmpty()) {
-            log.debug { "All sessions received and acknowledged storage of signed transaction ${signedTransaction.id}" }
-        }
-
         return signedByParticipantsTransaction
     }
 
@@ -158,6 +166,27 @@ class ConsensualFinalityFlow(
                 "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
                         "Expected: $expectedSigningKeys But received: $receivedSigningKeys"
             )
+        }
+    }
+
+    @Suspendable
+    private fun persistFullySignedTransaction(fullySignedTransaction: ConsensualSignedTransactionInternal) {
+        persistenceService.persist(fullySignedTransaction, TransactionStatus.VERIFIED)
+        log.debug { "Recorded signed transaction ${signedTransaction.id}" }
+    }
+
+    @Suspendable
+    private fun sendFullySignedTransactionToCounterparties(fullySignedTransaction: ConsensualSignedTransactionInternal) {
+        // TODO Consider removing
+        for (session in sessions) {
+            // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
+            session.send(fullySignedTransaction)
+            // Do we want a situation where a boolean can be received to execute some sort of failure logic?
+            // Or would that always be covered by an exception as it always indicates something wrong occurred.
+            // Returning a context map might be appropriate in case we want to do any sort of handling in the future
+            // without having to worry about backwards compatibility.
+            session.receive<Unit>()
+            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
         }
     }
 }

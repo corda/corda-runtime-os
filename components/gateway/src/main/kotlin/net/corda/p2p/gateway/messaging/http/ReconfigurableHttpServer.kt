@@ -12,7 +12,6 @@ import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
@@ -29,7 +28,6 @@ class ReconfigurableHttpServer(
     private val listener: HttpServerListener,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    signingMode: SigningMode,
     cryptoOpsClient: CryptoOpsClient
 ) : LifecycleWithDominoTile {
 
@@ -41,7 +39,6 @@ class ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
-        signingMode,
         cryptoOpsClient
     )
 
@@ -89,7 +86,7 @@ class ReconfigurableHttpServer(
                         val newServer = HttpServer(
                             listener,
                             newConfiguration,
-                            dynamicKeyStore.keyStore
+                            dynamicKeyStore.serverKeyStore
                         )
                         newServer.start()
                         resources.keep(newServer)
@@ -103,7 +100,7 @@ class ReconfigurableHttpServer(
                     val newServer = HttpServer(
                         listener,
                         newConfiguration,
-                        dynamicKeyStore.keyStore
+                        dynamicKeyStore.serverKeyStore
                     )
                     newServer.start()
                     resources.keep(newServer)

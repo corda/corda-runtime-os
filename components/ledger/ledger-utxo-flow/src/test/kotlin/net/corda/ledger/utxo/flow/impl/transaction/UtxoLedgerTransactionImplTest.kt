@@ -11,11 +11,9 @@ import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
@@ -30,20 +28,14 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
         val referenceStateAndRef = getUtxoInvalidStateAndRef()
         val referenceStateRef = referenceStateAndRef.ref
 
-        val mockSignedTxForInput = mock<UtxoSignedTransaction>()
-        val mockSignedTxForRef = mock<UtxoSignedTransaction>()
-
-        whenever(mockSignedTxForInput.outputStateAndRefs).thenReturn(listOf(inputStateAndRef))
-        whenever(mockSignedTxForRef.outputStateAndRefs).thenReturn(listOf(referenceStateAndRef))
-        whenever(mockUtxoLedgerPersistenceService.find(any(), any()))
-            .thenReturn(mockSignedTxForInput)
-            .thenReturn(mockSignedTxForRef)
+        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
+            .thenReturn(listOf(inputStateAndRef))
 
         val command = UtxoCommandExample()
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory, mockUtxoLedgerPersistenceService
+            utxoSignedTransactionFactory
         )
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)

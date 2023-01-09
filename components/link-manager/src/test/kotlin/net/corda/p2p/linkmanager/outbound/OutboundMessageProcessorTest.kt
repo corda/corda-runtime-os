@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkOutMessage
@@ -12,7 +13,6 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
@@ -237,7 +237,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 myIdentity.toAvro(),
                 localIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray())
         )
@@ -266,7 +267,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -301,7 +303,8 @@ class OutboundMessageProcessorTest {
                     "Invalid name",
                     remoteIdentity.groupId,
                 ),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -332,7 +335,8 @@ class OutboundMessageProcessorTest {
                     myIdentity.groupId,
                 ),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -360,7 +364,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.copy(groupId = "Group-other").toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -388,7 +393,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -411,8 +417,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if group info is not available`() {
-        val groupPolicyProvider = mock<LinkManagerGroupPolicyProvider> {
-            whenever(it.getGroupInfo(localIdentity)).thenReturn(null)
+        val groupPolicyProvider = mock<GroupPolicyProvider> {
+            on { getGroupPolicy(localIdentity) } doReturn null
         }
 
         val processor = OutboundMessageProcessor(
@@ -430,7 +436,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
                 myIdentity.toAvro(),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )
@@ -977,7 +984,8 @@ class OutboundMessageProcessorTest {
             UnauthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
-                "subsystem"
+                "subsystem",
+                "messageId",
             ),
             ByteBuffer.wrap(payload.toByteArray()),
         )

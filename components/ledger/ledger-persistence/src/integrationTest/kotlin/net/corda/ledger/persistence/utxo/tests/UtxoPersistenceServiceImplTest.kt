@@ -17,6 +17,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.orm.utils.transaction
@@ -39,9 +40,13 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -57,6 +62,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.math.BigDecimal
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -70,6 +76,7 @@ import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
+@Suppress("FunctionName")
 class UtxoPersistenceServiceImplTest {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -95,6 +102,8 @@ class UtxoPersistenceServiceImplTest {
                 it.initialize(512)
             }.genKeyPair().public
         private val notaryExample = Party(notaryX500Name, publicKeyExample)
+        private val transactionInputs = listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+        private val transactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
 
     @BeforeAll
@@ -196,15 +205,37 @@ class UtxoPersistenceServiceImplTest {
         val unconsumedStates = persistenceService.findUnconsumedRelevantStatesByType(stateClass)
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
-        val state = unconsumedStates.first()
-        val transactionId = state[0].decodeToString()
-        assertThat(transactionId).isEqualTo(transaction1.id.toString())
-        val leafIndex = state[1].decodeToString().toInt()
-        assertThat(leafIndex).isEqualTo(1)
-        val outputInfo = state[2]
-        assertThat(outputInfo).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][leafIndex])
-        val output = state[3]
-        assertThat(output).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][leafIndex])
+        val transactionOutput = unconsumedStates.first()
+        assertThat(transactionOutput.transactionId).isEqualTo(transaction1.id.toString())
+        assertThat(transactionOutput.leafIndex).isEqualTo(1)
+        assertThat(transactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(transactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+    }
+
+    @Test
+    fun `resolve staterefs`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transactions = listOf(
+            persistTransactionViaEntity(entityFactory),
+            persistTransactionViaEntity(entityFactory)
+        )
+
+        val stateRefs = listOf(
+            StateRef(transactions[0].id, 0),
+            StateRef(transactions[1].id, 1),
+        )
+        val stateAndRefs = persistenceService.resolveStateRefs(stateRefs)
+        assertThat(stateAndRefs).isNotNull
+        assertThat(stateAndRefs.size).isEqualTo(2)
+
+        for (i in 0..1) {
+            val transactionOutput = stateAndRefs[i]
+
+            assertThat(transactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
+            assertThat(transactionOutput.leafIndex).isEqualTo(i)
+            assertThat(transactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
+            assertThat(transactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
+        }
     }
 
     @Test
@@ -288,6 +319,43 @@ class UtxoPersistenceServiceImplTest {
                             )
                             assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
+                }
+
+            val dbTransactionSources = em.createNamedQuery("UtxoTransactionSourceEntity.findByTransactionId", entityFactory.utxoTransactionSource)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbTransactionSources).isNotNull
+                .hasSameSizeAs(transactionInputs)
+            dbTransactionSources
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(transactionInputs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionHash.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                    assertThat(dbInput.field<Boolean>("isRefInput")).isEqualTo(false)
+                }
+
+            val dbTransactionOutputs = em.createNamedQuery("UtxoTransactionOutputEntity.findByTransactionId", entityFactory.utxoTransactionOutput)
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbTransactionOutputs).isNotNull
+                .hasSameSizeAs(componentGroupLists.get(UtxoComponentGroup.OUTPUTS.ordinal))
+            dbTransactionOutputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(transactionOutputs)
+                .forEachIndexed { leafIndex, (dbInput, transactionOutput) ->
+                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("type")).isEqualTo(transactionOutput::class.java.canonicalName)
+                    assertThat(dbInput.field<String>("tokenType")).isNull()
+                    assertThat(dbInput.field<String>("tokenIssuerHash")).isNull()
+                    assertThat(dbInput.field<String>("tokenNotaryX500Name")).isNull()
+                    assertThat(dbInput.field<String>("tokenSymbol")).isNull()
+                    assertThat(dbInput.field<String>("tokenTag")).isNull()
+                    assertThat(dbInput.field<String>("tokenOwnerHash")).isNull()
+                    assertThat(dbInput.field<BigDecimal>("tokenAmount")).isNull()
                 }
 
             val dbRelevancyData = em.createNamedQuery("UtxoRelevantTransactionStateEntity.findByTransactionId", entityFactory.utxoRelevantTransactionState)
@@ -440,9 +508,9 @@ class UtxoPersistenceServiceImplTest {
             ),
             listOf("group4_component1".toByteArray()),
             listOf("group5_component1".toByteArray()),
-            listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1).toBytes()),
+            transactionInputs.map{ it.toBytes() },
             listOf("group7_component1".toByteArray()),
-            listOf(TestContractState1().toBytes(), TestContractState2().toBytes()),
+            transactionOutputs.map{ it.toBytes() },
             listOf("group9_component1".toByteArray())
 
         )
@@ -488,7 +556,10 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
 
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
-            TODO("Not yet implemented")
+            return listOf(
+                stateAndRef<TestContract>(TestContractState1(), id, 0),
+                stateAndRef<TestContract>(TestContractState2(), id, 1)
+            )
         }
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
@@ -497,6 +568,28 @@ class UtxoPersistenceServiceImplTest {
 
         override fun getConsumedStateRefs(): List<StateRef> {
             return listOf(StateRef(SecureHash("SHA-256", ByteArray(12)), 1))
+        }
+
+        private inline fun <reified C : Contract> stateAndRef(
+            state: ContractState,
+            transactionId: SecureHash,
+            index: Int
+        ): StateAndRef<ContractState> {
+            return StateAndRefImpl(
+                object : TransactionState<ContractState> {
+                    override val contractState: ContractState = state
+                    override val contractStateType: Class<out ContractState> = state::class.java
+                    override val contractType: Class<out Contract> = C::class.java
+                    override val notary: Party = notaryExample
+                    override val encumbrance: EncumbranceGroup? = null
+                },
+                StateRef(transactionId, index)
+            )
+        }
+    }
+
+    class TestContract : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
         }
     }
 

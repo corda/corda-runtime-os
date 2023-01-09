@@ -65,7 +65,7 @@ class CheckClusterRolesE2eTest {
             testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
                 val permProxy = permClient.start().proxy
                 val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
-                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(6)
+                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(8)
                 assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/virtualnode")
             }
         }
@@ -84,7 +84,7 @@ class CheckClusterRolesE2eTest {
             testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
                 val permProxy = permClient.start().proxy
                 val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
-                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(3)
+                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(2)
                 assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/maintenance/virtualnode/forcecpiupload")
             }
         }

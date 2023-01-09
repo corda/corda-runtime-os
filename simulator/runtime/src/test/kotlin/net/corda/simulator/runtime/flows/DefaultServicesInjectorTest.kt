@@ -51,7 +51,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(flow, member, it, contextProperties)
+            DefaultServicesInjector(mock()).injectServices(FlowAndProtocol(flow), member, it, contextProperties)
 
             // Then it should have constructed useful things for us
             assertNotNull(flow.flowEngine)
@@ -77,7 +77,7 @@ class DefaultServicesInjectorTest {
             // When we inject services into it
             // Then it should throw an exception
             assertThrows<NotImplementedError> {
-                DefaultServicesInjector(mock()).injectServices(flow, member, it, mock())
+                DefaultServicesInjector(mock()).injectServices(FlowAndProtocol(flow), member, it, mock())
             }
         }
     }
@@ -114,7 +114,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(config).injectServices(flow, member, it, mock())
+            DefaultServicesInjector(config).injectServices(FlowAndProtocol(flow), member, it, mock())
         }
 
         // Then the flow should have the overridden services
@@ -177,11 +177,15 @@ class DefaultServicesInjectorTest {
         val fiber = SimFiberBase()
         val contextProperties = SimFlowContextProperties(emptyMap())
         fiber.registerMember(member)
-        fiber.registerFlowInstance(member, "protocol", responder)
+        fiber.registerResponderInstance(member, "protocol", responder)
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(responder, member, it, contextProperties)
+            DefaultServicesInjector(mock()).injectServices(
+                FlowAndProtocol(responder, "protocol"),
+                member,
+                it,
+                contextProperties)
 
             // Then it should have constructed useful things for us
             assertNotNull(responder.flowMessaging)
@@ -231,11 +235,15 @@ class DefaultServicesInjectorTest {
         val fiber = SimFiberBase()
         val contextProperties = SimFlowContextProperties(emptyMap())
         fiber.registerMember(member)
-        fiber.registerFlowInstance(member, "protocol", flow)
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector(mock()).injectServices(flow, member, it, contextProperties)
+            DefaultServicesInjector(mock()).injectServices(
+                FlowAndProtocol(flow, "a protocol"),
+                member,
+                it,
+                contextProperties
+            )
 
             // Then it should have constructed useful things for us
             assertNotNull(flow.flowEngine)
@@ -271,7 +279,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             injector.injectServices(
-                flow,
+                FlowAndProtocol(flow),
                 MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB"),
                 it,
                 contextProperties

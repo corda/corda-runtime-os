@@ -56,12 +56,12 @@ import net.corda.processors.crypto.tests.infra.makeCryptoConfig
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
-import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.contextLogger
@@ -76,7 +76,6 @@ import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -184,6 +183,8 @@ class CryptoProcessorTests {
 
         private val cryptoConfig = makeCryptoConfig()
 
+        private lateinit var tracker: TestDependenciesTracker
+
         @JvmStatic
         @BeforeAll
         fun setup() {
@@ -202,7 +203,7 @@ class CryptoProcessorTests {
                 flowOpsResponsesSub.close()
             }
             cryptoProcessor.stop()
-            eventually { assertFalse(cryptoProcessor.isRunning) }
+            tracker.waitUntilStopped(Duration.ofSeconds(5))
         }
 
         private fun setupPrerequisites() {
@@ -318,7 +319,7 @@ class CryptoProcessorTests {
                     cpiIdentifier = CpiIdentifier(
                         name = "cpi",
                         version = "1",
-                        signerSummaryHash = null
+                        signerSummaryHash = TestRandom.secureHash()
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
                     uniquenessDmlConnectionId = UUID.randomUUID(),
@@ -329,21 +330,21 @@ class CryptoProcessorTests {
         }
 
         private fun startDependencies() {
-            hsmRegistrationClient.startAndWait()
-            cryptoProcessor.startAndWait(boostrapConfig)
-            stableDecryptor.startAndWait()
-            val tracker = TestDependenciesTracker(
-                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
-                coordinatorFactory,
-                lifecycleRegistry,
-                setOf(
-                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
-                    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
-                )
-            ).also { it.startAndWait() }
+            cryptoProcessor.start(boostrapConfig)
+            hsmRegistrationClient.start()
+            stableDecryptor.start()
+            tracker = TestDependenciesTracker(
+            coordinatorFactory,
+            lifecycleRegistry,
+            setOf(
+                LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
+            )
+            ).also {
+                it.start()
+            }
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
-            tracker.stop()
         }
 
         private fun waitForVirtualNodeInfoReady() {
@@ -355,7 +356,14 @@ class CryptoProcessorTests {
         }
 
         private fun assignHSMs() {
-            CryptoConsts.Categories.all.forEach {
+            val cryptoCategories = setOf(
+                CryptoConsts.Categories.CI,
+                CryptoConsts.Categories.LEDGER,
+                CryptoConsts.Categories.TLS,
+                CryptoConsts.Categories.SESSION_INIT,
+            )
+
+            cryptoCategories.forEach {
                 // cluster is assigned in the crypto processor
                 if (hsmRegistrationClient.findHSM(vnodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(vnodeId, it)

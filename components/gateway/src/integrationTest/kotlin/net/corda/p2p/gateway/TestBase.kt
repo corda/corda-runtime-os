@@ -6,7 +6,6 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
@@ -22,43 +21,34 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.TenantKeys
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.jce.PrincipalUtil
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import java.io.StringWriter
 import java.net.BindException
 import java.net.ServerSocket
+import java.net.URL
 import java.security.KeyStore
-import java.security.cert.X509Certificate
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.p2p.gateway.messaging.TlsType
-import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.testing.p2p.certificates.Certificates
-import java.net.URL
 
 open class TestBase {
     companion object {
@@ -220,49 +210,6 @@ open class TestBase {
         this.start()
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue
-        }
-    }
-
-    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
-        val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
-            val tenantId = "tenantId"
-            val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
-            val pems = certificateChain.map { certificate ->
-                StringWriter().use { str ->
-                    JcaPEMWriter(str).use { writer ->
-                        writer.writeObject(certificate)
-                    }
-                    str.toString()
-                }
-            }
-            val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
-            val certificateRecord = Record(
-                Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
-                name,
-                GatewayTlsCertificates(tenantId, pems)
-            )
-            val privateKey = keyStoreWithPassword
-                .keyStore
-                .getKey(alias,
-                    keyStoreWithPassword.password.toCharArray())
-                .toPem()
-
-            val keyPair = KeyPairEntry(
-                privateKey,
-            )
-            val keysRecord = Record(
-                CRYPTO_KEYS_TOPIC,
-                alias,
-                TenantKeys(
-                    tenantId,
-                    keyPair
-                )
-            )
-            listOf(certificateRecord, keysRecord)
-        }
-
-        publisher.publish(records).forEach {
-            it.join()
         }
     }
 }

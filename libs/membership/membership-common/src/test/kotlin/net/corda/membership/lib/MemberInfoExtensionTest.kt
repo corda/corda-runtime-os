@@ -42,7 +42,7 @@ class MemberInfoExtensionTest {
         ) doReturn cpiVersion
 
         whenever(
-            memberContext.parseOrNull(
+            memberContext.parse(
                 eq(MEMBER_CPI_SIGNER_HASH),
                 eq(String::class.java)
             )

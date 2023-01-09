@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager.inbound
 
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -23,8 +25,6 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -38,8 +38,8 @@ import org.slf4j.LoggerFactory
 
 internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
-    private val groups: LinkManagerGroupPolicyProvider,
-    private val members: LinkManagerMembershipGroupReader,
+    private val groupPolicyProvider: GroupPolicyProvider,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val clock: Clock
 ) :
@@ -68,6 +68,9 @@ internal class InboundMessageProcessor(
                     processSessionMessage(message)
                 }
                 is UnauthenticatedMessage -> {
+                    logger.debug {
+                        "Processing unauthenticated message ${payload.header.messageId}"
+                    }
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
@@ -228,8 +231,8 @@ internal class InboundMessageProcessor(
             ackSource,
             ackDest,
             session,
-            groups,
-            members,
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
         ) ?: return null
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,
@@ -250,8 +253,8 @@ internal class InboundMessageProcessor(
             ackSource,
             ackDest,
             session,
-            groups,
-            members
+            groupPolicyProvider,
+            membershipGroupReaderProvider
         ) ?: return null
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,

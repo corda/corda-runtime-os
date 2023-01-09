@@ -17,6 +17,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -32,6 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -78,7 +80,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
     )
-    private val cpiIdentifier = CpiIdentifier(TEST_CPI_NAME, TEST_CPI_VERSION, null)
+    private val cpiIdentifier = CpiIdentifier(TEST_CPI_NAME, TEST_CPI_VERSION, TestRandom.secureHash())
     private val virtualNodeInfo = VirtualNodeInfo(
         holdingIdentity,
         cpiIdentifier,
@@ -278,7 +280,8 @@ class MGMRegistrationMemberInfoHandlerTest {
             MEMBER_CPI_VERSION,
             SERIAL,
             URL_KEY.format(0),
-            PROTOCOL_VERSION.format(0)
+            PROTOCOL_VERSION.format(0),
+            MEMBER_CPI_SIGNER_HASH
         )
     }
 

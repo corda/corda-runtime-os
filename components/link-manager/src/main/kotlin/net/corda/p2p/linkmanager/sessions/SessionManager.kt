@@ -21,7 +21,6 @@ internal interface SessionManager : LifecycleWithDominoTile {
     ): List<Record<String, *>>
 
 
-
     data class SessionCounterparties(
         val ourId: HoldingIdentity,
         val counterpartyId: HoldingIdentity

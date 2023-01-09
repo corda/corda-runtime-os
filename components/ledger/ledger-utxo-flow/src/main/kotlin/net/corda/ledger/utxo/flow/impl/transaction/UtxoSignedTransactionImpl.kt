@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -78,7 +79,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.filter{
+        val appliedSignatories = signatures.filter {
             try {
                 transactionSignatureService.verifySignature(id, it)
                 true
@@ -86,31 +87,37 @@ data class UtxoSignedTransactionImpl(
                 false
             }
         }.map { it.by }.toSet()
-        return signatories.filter {
-            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-        }.toSet()
+
+        // isFulfilledBy() helps to make this working with CompositeKeys.
+        return signatories.filterNot { it.isFulfilledBy(appliedSignatories) }.toSet()
     }
 
     @Suspendable
     override fun verifySignatures() {
-        val appliedSignatories = signatures.filter{
+        val appliedSignatories = signatures.filter {
             try {
                 transactionSignatureService.verifySignature(id, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(id,
-                    "Failed to verify signature of ${it.signature}. " +
-                            "Message: ${e.message}", e
+                throw TransactionVerificationException(
+                    id,
+                    "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
+                    e
                 )
             }
         }.map { it.by }.toSet()
-        if (signatories.any {
-                !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
-            })
-        {
-            throw TransactionVerificationException(id, "There are missing signatures", null)
+
+        // isFulfilledBy() helps to make this working with CompositeKeys.
+        val missingSignatories = signatories.filterNot { it.isFulfilledBy(appliedSignatories) }.toSet()
+        if (missingSignatories.isNotEmpty()) {
+            throw TransactionMissingSignaturesException(
+                id,
+                missingSignatories,
+                "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+            )
         }
     }
+
     @Suspendable
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return utxoLedgerTransactionFactory.create(wireTransaction)

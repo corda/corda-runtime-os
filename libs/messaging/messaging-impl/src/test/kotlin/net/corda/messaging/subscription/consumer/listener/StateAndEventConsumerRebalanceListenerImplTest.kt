@@ -8,6 +8,7 @@ import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.factory.MapFactory
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -48,6 +49,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
         verify(stateConsumer, times(1)).assign(any())
         verify(stateAndEventListener, times(1)).onPartitionLost(any())
         verify(mapFactory, times(1)).destroyMap(any())
+        assertThat(partitionState.dirty).isTrue
     }
 
     @Test
@@ -75,6 +77,7 @@ class StateAndEventConsumerRebalanceListenerImplTest {
         verify(stateConsumer, times(1)).assign(any())
         verify(eventConsumer, times(1)).pause(any())
         verify(mapFactory, times(1)).createMap()
+        assertThat(partitionState.dirty).isTrue
     }
 
     @Test

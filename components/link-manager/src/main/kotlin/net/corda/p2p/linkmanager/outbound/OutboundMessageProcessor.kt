@@ -1,6 +1,8 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -10,12 +12,11 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
@@ -38,8 +39,8 @@ import java.time.Instant
 internal class OutboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val linkManagerHostingMap: LinkManagerHostingMap,
-    private val groups: LinkManagerGroupPolicyProvider,
-    private val members: LinkManagerMembershipGroupReader,
+    private val groupPolicyProvider: GroupPolicyProvider,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock
@@ -131,32 +132,41 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
+        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
         )
         if (discardReason != null) {
-            logger.warn("Dropping outbound unauthenticated message from ${message.header.source} to ${message.header.destination} as the " +
-                    discardReason)
+            logger.warn(
+                "Dropping outbound unauthenticated message ${message.header.messageId} " +
+                "from ${message.header.source} to ${message.header.destination} as the " +
+                discardReason
+            )
             return emptyList()
         }
 
-        val destMemberInfo = members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda())
+        val destMemberInfo = membershipGroupReaderProvider.lookup(
+            message.header.source.toCorda(),
+            message.header.destination.toCorda()
+        )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
-            val groupInfo = groups.getGroupInfo(source)
-            if (groupInfo == null) {
-                logger.warn("Could not find the group information in the GroupPolicyProvider for $source. The message was discarded.")
+            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
+            if (groupPolicy == null) {
+                logger.warn(
+                    "Could not find the group information in the GroupPolicyProvider for $source. " +
+                    "The message ${message.header.messageId} was discarded."
+                )
                 return emptyList()
             }
 
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupInfo)
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupPolicy)
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
-            logger.warn("Trying to send unauthenticated message from ${message.header.source.toCorda()} " +
+            logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
                     "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
             return emptyList()
         }
@@ -216,7 +226,7 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (members.getMemberInfo(source, destination) != null) {
+        } else if (membershipGroupReaderProvider.lookup(source, destination) != null) {
             val markers = if (isReplay) {
                 emptyList()
             } else {

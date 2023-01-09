@@ -11,13 +11,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.registry.LifecycleRegistry
-import net.corda.test.util.eventually
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 class TestDependenciesTracker(
-    coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,
     private val dependencies: Set<LifecycleCoordinatorName>
@@ -26,10 +26,13 @@ class TestDependenciesTracker(
         private val logger = contextLogger()
     }
 
-    @Volatile
     private var registrationHandle: RegistrationHandle? = null
 
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<TestDependenciesTracker>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
+
+    private val allDependenciesUp = CompletableFuture<LifecycleStatus>()
+    private val stopped = CompletableFuture<Unit>()
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -40,17 +43,20 @@ class TestDependenciesTracker(
     }
 
     override fun stop() {
-        logger.info("Stopping...")
-        coordinator.stop()
+        throw UnsupportedOperationException(
+            "TestDependenciesTracker is meant to be closed through underlying components"
+        )
+    }
+
+    private fun closeResourcesAndNotify() {
         registrationHandle?.close()
-        coordinator.close()
+        registrationHandle = null
+        stopped.complete(Unit)
     }
 
     fun waitUntilAllUp(duration: Duration) {
         try {
-            eventually(duration = duration) {
-                Assertions.assertTrue(coordinator.status == LifecycleStatus.UP)
-            }
+            Assertions.assertTrue(allDependenciesUp.getOrThrow(duration) == LifecycleStatus.UP)
         } catch (e: Throwable) {
             val downReport = lifecycleRegistry.componentStatus().values.filter {
                 it.status == LifecycleStatus.DOWN
@@ -67,6 +73,11 @@ class TestDependenciesTracker(
         logger.info("ALL DEPENDENCIES ARE UP!!!")
     }
 
+    // This will actually get called when any of the sub components has stopped
+    fun waitUntilStopped(duration: Duration) {
+        stopped.getOrThrow(duration)
+    }
+
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event $event.")
         when (event) {
@@ -75,15 +86,23 @@ class TestDependenciesTracker(
                 logger.info("Registered to follow $registrationHandle")
             }
             is StopEvent -> {
-                registrationHandle?.close()
-                registrationHandle = null
+                closeResourcesAndNotify()
             }
             is RegistrationStatusChangeEvent -> {
                 coordinator.updateStatus(event.status)
-                if(event.status == LifecycleStatus.UP) {
-                    logger.info("All required dependencies are UP...")
-                } else {
-                    logger.info("Some or all required dependencies are DOWN...")
+                when (event.status) {
+                    LifecycleStatus.UP -> {
+                        logger.info("All required dependencies are UP...")
+                        // This will only work the very first time this block gets executed
+                        allDependenciesUp.complete(LifecycleStatus.UP)
+                    }
+                    LifecycleStatus.DOWN -> {
+                        logger.info("Some or all required dependencies are DOWN...")
+                        closeResourcesAndNotify()
+                    }
+                    else -> {
+                        logger.info("Some or all required dependencies are ERROR...")
+                    }
                 }
             }
         }

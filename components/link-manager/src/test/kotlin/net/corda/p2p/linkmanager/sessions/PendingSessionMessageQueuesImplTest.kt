@@ -2,6 +2,9 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkOutMessage
@@ -9,6 +12,7 @@ import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.linkmanager.utilities.mockMembers
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -49,8 +53,18 @@ class PendingSessionMessageQueuesImplTest {
     }
     private val sessionCounterparties = SessionManager.SessionCounterparties(
         createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
-        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-2")
+        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
     )
+    private val members = mockMembers(listOf(sessionCounterparties.counterpartyId))
+    private val parameters = mock<GroupPolicy.P2PParameters> {
+        on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+    }
+    private val groupPolicy = mock<GroupPolicy> {
+        on { p2pParameters } doReturn parameters
+    }
+    private val groupPolicyProvider = mock<GroupPolicyProvider> {
+        on { getGroupPolicy(sessionCounterparties.ourId) } doReturn groupPolicy
+    }
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
 
@@ -76,7 +90,11 @@ class PendingSessionMessageQueuesImplTest {
             queue.queueMessage(it)
         }
 
+<<<<<<< HEAD
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
+=======
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session, groupPolicyProvider, members)
+>>>>>>> release/os/5.0
 
         assertThat(
             publishedRecords.firstValue

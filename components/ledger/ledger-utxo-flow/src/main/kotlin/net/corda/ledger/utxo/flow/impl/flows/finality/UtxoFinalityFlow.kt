@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -39,25 +40,44 @@ class UtxoFinalityFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-
         log.trace("Starting finality flow for transaction: $transactionId")
         verifyTransaction(initialTransaction)
+        persistUnverifiedTransaction()
+        sendTransactionAndBackchainToCounterparties()
+        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
+        persistTransactionWithCounterpartySignatures(transaction)
+        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+        val (notarizedTransaction, notarySignatures) = notarize(transaction)
+        persistNotarizedTransaction(notarizedTransaction)
+        sendNotarySignaturesToCounterparties(notarySignatures)
+        log.trace { "Finalisation of transaction $transactionId has been finished." }
+        return notarizedTransaction
+    }
 
+    @Suspendable
+    private fun persistUnverifiedTransaction() {
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with initial signatures $transactionId" }
+    }
 
+    @Suspendable
+    private fun sendTransactionAndBackchainToCounterparties() {
+        sessions.forEach {
+            it.send(initialTransaction)
+            flowEngine.subFlow(TransactionBackchainSenderFlow(it))
+        }
+    }
+
+    @Suppress("MaxLineLength")
+    @Suspendable
+    private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
         val signaturesPayloads = sessions.associateWith {
             try {
-                log.debug {
-                    "Requesting signatures from ${it.counterparty} for transaction $transactionId"
-                }
-                it.send(initialTransaction)
-                flowEngine.subFlow(TransactionBackchainSenderFlow(it))
+                log.debug { "Requesting signatures from ${it.counterparty} for transaction $transactionId" }
                 it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn(
-                    "Failed to receive signatures from ${it.counterparty} for transaction $transactionId"
-                )
+                log.warn("Failed to receive signatures from ${it.counterparty} for transaction $transactionId")
                 throw e
             }
         }
@@ -67,7 +87,7 @@ class UtxoFinalityFlow(
             val signatures = signaturesPayload.getOrThrow { failure ->
                 val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
-                log.debug { message }
+                log.warn(message)
                 CordaRuntimeException(message)
             }
 
@@ -82,13 +102,47 @@ class UtxoFinalityFlow(
             session to signatures
         }.toMap()
 
+        return transaction to signaturesReceivedFromSessions
+    }
+
+    private fun verifyAllReceivedSignatures(
+        transaction: UtxoSignedTransactionInternal,
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
+    ) {
         log.debug { "Verifying all signatures for transaction $transactionId." }
-        transaction.verifySignatures() // TODO CORE-8935 Add better logging if the transaction is not fully signed
+
+        try {
+            transaction.verifySignatures()
+        } catch (e: TransactionMissingSignaturesException) {
+            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
+                        signatures.map { it.by.encoded }
+            }
+            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+            } else {
+                "[]"
+            }
+            val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
+                    "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
+                    "the transaction: $counterpartiesToSignatoriesMessage"
+            log.warn(message)
+            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
+        }
+    }
+
+    @Suspendable
+    private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
         val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED, relevantStatesIndexes)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
+    }
 
-        // Distribute new signatures
+    @Suspendable
+    private fun sendUnseenSignaturesToCounterparties(
+        transaction: UtxoSignedTransactionInternal,
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
+    ) {
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
@@ -96,40 +150,53 @@ class UtxoFinalityFlow(
             }
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
+    }
 
+    @Suppress("ThrowsCount")
+    @Suspendable
+    private fun notarize(
+        transaction: UtxoSignedTransactionInternal
+    ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
+
         val notarySignatures = try {
             flowEngine.subFlow(notarisationFlow)
-        } catch (e: CordaRuntimeException){
+        } catch (e: CordaRuntimeException) {
             val message = "Notarization failed with ${e.message}."
             flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
             log.warn(message)
             throw e
         }
+
         if (notarySignatures.isEmpty()) {
             val message = "Notary has not returned any signatures."
             log.warn(message)
             flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
             throw CordaRuntimeException(message)
         }
+
+        var notarizedTransaction = transaction
         notarySignatures.forEach { signature ->
-            transaction = try{
-                verifyAndAddNotarySignature(transaction, signature)
-            } catch(e: Exception) {
+            notarizedTransaction = try {
+                verifyAndAddNotarySignature(notarizedTransaction, signature)
+            } catch (e: Exception) {
                 val message = e.message ?: "Notary signature verification failed."
                 flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
                 throw e
             }
         }
 
+        return notarizedTransaction to notarySignatures
+    }
+
+    @Suspendable
+    private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded verified (notarised) transaction $transactionId" }
+    }
 
-        // Distribute notary signatures
+    @Suspendable
+    private fun sendNotarySignaturesToCounterparties(notarySignatures: List<DigitalSignatureAndMetadata>) {
         flowMessaging.sendAll(Payload.Success(notarySignatures), sessions.toSet())
-
-        log.trace { "Finalisation of transaction $transactionId has been finished." }
-
-        return transaction
     }
 }

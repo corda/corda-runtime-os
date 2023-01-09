@@ -198,8 +198,7 @@ class StateAndEventConsumerImplTest {
         }, 200L, "test ")
         latch.countDown()
 
-        verify(eventConsumer, times(1)).assignment()
-        verify(eventConsumer, times(1)).paused()
+        verify(eventConsumer, times(2)).assignment()
         verify(eventConsumer, times(1)).pause(any())
         verify(eventConsumer, times(1)).resume(any())
         verify(stateConsumer, atLeast(1)).poll(any())
@@ -241,6 +240,47 @@ class StateAndEventConsumerImplTest {
         stateConsumerOrder.verify(stateConsumer, times(1)).poll(any())
         stateConsumerOrder.verify(stateConsumer, times(1))
             .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+    }
+
+    @Test
+    fun `test repartition during poll returns false`() {
+        val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
+        val consumer = StateAndEventConsumerImpl(
+            config, eventConsumer, stateConsumer, StateAndEventPartitionState
+                (mutableMapOf(), mutableMapOf(), true), stateAndEventListener
+        )
+
+        assertThat(consumer.resetPollInterval()).isFalse
+    }
+
+    @Test
+    fun usesCorrectPartitionAssignmentsWhenPausingAndResumingEventConsumerWhileWaitingForFutureToComplete() {
+        val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
+        val assignedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val assignedTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0))
+
+        whenever(eventConsumer.assignment())
+            .thenReturn(assignedTopicPartitions)
+            .thenReturn(assignedTopicPartitionsAfterRebalance)
+
+        val consumer = StateAndEventConsumerImpl(
+            config, eventConsumer, stateConsumer, StateAndEventPartitionState
+                (mutableMapOf(), mutableMapOf()), stateAndEventListener
+        )
+
+        val latch = CountDownLatch(1)
+        consumer.waitForFunctionToFinish({
+            while (latch.count > 0) {
+                Thread.sleep(10)
+            }
+        }, 200L, "test ")
+        latch.countDown()
+
+        verify(eventConsumer, times(2)).assignment()
+        verify(eventConsumer, times(1)).pause(assignedTopicPartitions)
+        verify(eventConsumer, times(1)).resume(assignedTopicPartitionsAfterRebalance)
+        verify(stateConsumer, atLeast(1)).poll(any())
+        verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }
 
     private fun setupMocks(): Mocks {

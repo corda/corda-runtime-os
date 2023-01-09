@@ -1,5 +1,6 @@
 package net.corda.applications.workers.p2p.gateway
 
+import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers
@@ -27,7 +28,9 @@ class GatewayWorker @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider
+    val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = ApplicationBanner::class)
+    val applicationBanner: ApplicationBanner,
 ) : Application {
 
     private companion object {
@@ -38,6 +41,8 @@ class GatewayWorker @Activate constructor(
         logger.info("P2P Gateway worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
+        applicationBanner.show("P2P Gateway Worker", platformInfoProvider)
+
         val params = WorkerHelpers.getParams(args, GatewayWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
@@ -47,7 +52,7 @@ class GatewayWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator()
         )
 
-        gatewayProcessor.start(config, !params.withoutStubs)
+        gatewayProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -60,8 +65,4 @@ class GatewayWorker @Activate constructor(
 private class GatewayWorkerParams {
     @CommandLine.Mixin
     var defaultParams = DefaultWorkerParams()
-
-    //This is used to test the gateway without Crypto component. It will be removed in CORE-5782.
-    @CommandLine.Option(names = ["--without-stubs"])
-    var withoutStubs = false
 }

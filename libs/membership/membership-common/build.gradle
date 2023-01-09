@@ -12,12 +12,14 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation "net.corda:corda-base"
+    implementation 'net.corda:corda-config-schema'
     api "net.corda:corda-avro-schema"
     api "net.corda:corda-membership"
     api project(":libs:membership:membership-datamodel")
     api project(":libs:virtual-node:virtual-node-info")
     implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:utilities")
+    implementation project(':libs:configuration:configuration-core')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

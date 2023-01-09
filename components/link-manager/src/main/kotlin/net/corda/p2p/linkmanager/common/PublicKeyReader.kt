@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.PEMParser
@@ -14,7 +13,7 @@ internal class PublicKeyReader {
             return when (this.algorithm) {
                 "EC", "ECDSA" -> KeyAlgorithm.ECDSA
                 "RSA" -> KeyAlgorithm.RSA
-                else -> throw UnsupportedAlgorithm(this)
+                else -> throw UnsupportedAlgorithm(this.algorithm)
             }
         }
 
@@ -40,4 +39,5 @@ internal class PublicKeyReader {
         } ?: throw InvalidPem(pem)
     }
     class InvalidPem(pem: String) : Exception("Invalid public key PEM: $pem")
+    class UnsupportedAlgorithm(algorithm: String) : Exception("Unsupported algorithm $algorithm")
 }

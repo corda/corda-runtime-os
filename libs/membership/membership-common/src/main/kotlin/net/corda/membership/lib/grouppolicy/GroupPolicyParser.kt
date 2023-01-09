@@ -68,6 +68,19 @@ interface GroupPolicyParser {
     ): GroupPolicy
 
     /**
+     * Parses a member GroupPolicy from [String] to [GroupPolicy].
+     * Returns null if the group policy is an MGM group policy.
+     *
+     * @param groupPolicy Group policy file as a Json String
+     *
+     * @throws [BadGroupPolicyException] if the input string is blank or cannot be parsed.
+     */
+    @Throws(BadGroupPolicyException::class)
+    fun parseMember(
+        groupPolicy: String,
+    ): MemberGroupPolicy?
+
+    /**
      * Constructs MGM [MemberInfo] from details specified in [GroupPolicy].
      *
      * @param holdingIdentity The holding identity which owns this group policy file. This is mostly important for when

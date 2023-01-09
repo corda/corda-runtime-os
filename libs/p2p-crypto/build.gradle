@@ -15,8 +15,8 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:crypto:crypto-utils")
 
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
     testImplementation project(':libs:crypto:cipher-suite')
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
