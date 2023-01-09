@@ -161,19 +161,21 @@ class CryptoOpsBusProcessorTests {
         return result
     }
 
+    private fun process2(request: Any): Any = process(request).response
+
     @Test
     fun `Should return empty list for unknown key id`() {
-        val result = process(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))))
-        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
-        assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
+        val response = process2(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))))
+        assertThat(response).isInstanceOf(CryptoSigningKeys::class.java)
+        assertEquals(0, (response as CryptoSigningKeys).keys.size)
     }
 
     @Test
     fun `Should return empty list for look up when the filter does not match`() {
         val l = KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
-        val result = process(KeysRpcQuery(0, 10, CryptoKeyOrderBy.NONE, l))
-        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
-        assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
+        val response = process2(KeysRpcQuery(0, 10, CryptoKeyOrderBy.NONE, l))
+        assertThat(response).isInstanceOf(CryptoSigningKeys::class.java)
+        assertEquals(0, (response as CryptoSigningKeys).keys.size)
     }
 
     @Test
@@ -190,9 +192,9 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val result2 = process(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
-        assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
-        val key = result2.response as CryptoSigningKeys
+        val response2 = process2(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        assertThat(response2).isInstanceOf(CryptoSigningKeys::class.java)
+        val key = response2 as CryptoSigningKeys
         assertEquals(1, key.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
         // lookup
