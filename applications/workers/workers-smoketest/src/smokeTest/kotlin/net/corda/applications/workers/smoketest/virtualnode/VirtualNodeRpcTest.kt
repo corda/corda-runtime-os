@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
+import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
 
 /**
  * Any 'unordered' tests are run *last*
@@ -467,6 +468,44 @@ class VirtualNodeRpcTest {
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
 
             runSimplePersistenceCheckFlow("Could persist Floaty")
+        }
+    }
+
+    @Test
+    @Order(93)
+    fun `can force upload the CPI with CPKs that have no changelogs`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
+
+            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }
+
+            eventually(Duration.ofSeconds(120)) {
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
+            }
+        }
+    }
+
+    @Test
+    @Order(94)
+    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
+            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
         }
     }
 
