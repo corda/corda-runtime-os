@@ -50,12 +50,12 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
     }
 
     override fun verify(
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        originalData: ByteArray,
         signature: DigitalSignature,
-        clearData: ByteArray
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
     ) {
-        verify(publicKey, signatureSpec, signature.bytes, clearData)
+        verify(publicKey, signatureSpec, signature.bytes, originalData)
     }
 
 }
