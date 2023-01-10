@@ -250,7 +250,7 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
     }
 
-    protected fun register(waitForFinalStatus: Boolean = false) {
+    protected fun register(waitForFinalStatus: Boolean = true) {
         val response = Unirest.post("/membership/$holdingId")
             .body(
                 mapOf(
