@@ -61,6 +61,18 @@ class OnBoardMember : Runnable, BaseOnboard() {
     )
     override var x500Name: String = "O=${UUID.randomUUID()}, L=London, C=GB"
 
+    @Option(
+        names = ["--pre-auth-token"],
+        description = ["Pre-auth token to use for registration."]
+    )
+    var preAuthToken: String? = null
+
+    @Option(
+        names = ["--wait"],
+        description = ["Wait until member gets approved/declined. False, by default."]
+    )
+    var waitForFinalStatus: Boolean = false
+
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
             return@lazy cpiHash!!
@@ -207,7 +219,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA",
             "corda.endpoints.0.connectionURL" to p2pUrl,
             "corda.endpoints.0.protocolVersion" to "1"
-        )
+        ) + if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
     }
     override fun run() {
         println("This sub command should only be used in for internal development")
@@ -220,9 +232,16 @@ class OnBoardMember : Runnable, BaseOnboard() {
         setupNetwork()
 
         disableClrChecks()
+        println("Provided registration context: ")
+        println(registrationContext)
 
-        register()
+        register(waitForFinalStatus)
 
-        println("Member $x500Name was onboarded")
+        if (waitForFinalStatus) {
+            println("Member $x500Name was onboarded.")
+        } else {
+            println("Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                    "MGM may need to approve your request manually.")
+        }
     }
 }

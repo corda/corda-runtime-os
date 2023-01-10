@@ -141,9 +141,13 @@ To decide which CPI to use, there are three options:
 * If you have the CPI file (for example, from the [package command](../package/README.md)), you can use it with the `--cpi-file` option.
 * If you have a CPB and a group policy file (from the `onboard mgm` command), you can use the `--cpb-file` and `--group-policy-file` option. This will create an unsigned CPI and save it in your home directory.
 
+If you want to wait until your request gets approved/declined you should use the `--wait` option. Although, this is only advised if you are sure your request will be finalized automatically.
+Default value is `false`, so we won't wait by default until your member is fully onboarded. Note that, the MGM might need to manually approve (or decline) your submitted registration to be fully onboarded by using the `registrationId`.
+
 Few examples of on-boarding a member can be:
 ```shell
 ./corda-cli.sh mgm onboard member demo-cluster-two --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb
+./corda-cli.sh mgm onboard member demo-cluster-two --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait
 ./corda-cli.sh mgm onboard member demo-cluster-one --cpi-file /tmp/calculator.cpi
 ./corda-cli.sh mgm onboard member --cpi-hash 200E86176EF2
 ```
