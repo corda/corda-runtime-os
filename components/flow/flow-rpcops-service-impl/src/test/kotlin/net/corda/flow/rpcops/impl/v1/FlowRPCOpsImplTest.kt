@@ -533,15 +533,4 @@ class FlowRPCOpsImplTest {
             flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
         }
     }
-
-    @Test
-    fun `get flow status throws illegal argument if clientRequestId is empty`() {
-        whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
-
-        val flowRPCOps = createFlowRpcOps()
-
-        assertThrows<java.lang.IllegalArgumentException> {
-            flowRPCOps.getFlowStatus(VALID_SHORT_HASH, "")
-        }
-    }
 }

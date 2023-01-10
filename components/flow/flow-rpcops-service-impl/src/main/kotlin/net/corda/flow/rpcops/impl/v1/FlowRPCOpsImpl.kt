@@ -201,8 +201,6 @@ class FlowRPCOpsImpl @Activate constructor(
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
-        validateClientRequestId(clientRequestId)
-
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
                 "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
