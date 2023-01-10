@@ -5,14 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.MutualTlsAllowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsDisallowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsListAllowedCertificateRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.data.membership.rpc.response.MutualTlsAllowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsDisallowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsListAllowedCertificatesResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -27,6 +21,8 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -40,6 +36,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -49,6 +46,7 @@ import org.slf4j.Logger
 import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
+@Suppress("LongParameterList")
 class MGMOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -60,6 +58,10 @@ class MGMOpsClientImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : MGMOpsClient {
 
     companion object {
@@ -143,7 +145,9 @@ class MGMOpsClientImpl @Activate constructor(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     )
                 )
             }
@@ -221,7 +225,7 @@ class MGMOpsClientImpl @Activate constructor(
     ) : InnerMGMOpsClient {
 
         @Suppress("ThrowsCount")
-        fun verifyMgm(holdingIdentityShortHash: ShortHash) {
+        fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                     ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
@@ -235,9 +239,10 @@ class MGMOpsClientImpl @Activate constructor(
             if (!filteredMembers.isMgm) {
                 throw MemberNotAnMgmException(holdingIdentityShortHash)
             }
+            return holdingIdentity
         }
         override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String {
-            verifyMgm(holdingIdentityShortHash)
+            mgmHoldingIdentity(holdingIdentityShortHash)
 
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
@@ -252,56 +257,31 @@ class MGMOpsClientImpl @Activate constructor(
         }
 
         override fun mutualTlsAllowClientCertificate(holdingIdentityShortHash: ShortHash, subject: MemberX500Name) {
-            verifyMgm(holdingIdentityShortHash)
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
 
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                MutualTlsAllowCertificateRequest(
-                    holdingIdentityShortHash.toString(),
-                    subject.toString()
-                )
-            )
-
-            request.sendRequest<MutualTlsAllowCertificateResponse>()
+            membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                mgmHoldingIdentity,
+                subject.toString(),
+            ).getOrThrow()
         }
 
         override fun mutualTlsDisallowClientCertificate(holdingIdentityShortHash: ShortHash, subject: MemberX500Name) {
-            verifyMgm(holdingIdentityShortHash)
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
 
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                MutualTlsDisallowCertificateRequest(
-                    holdingIdentityShortHash.toString(),
-                    subject.toString()
-                )
-            )
-
-            request.sendRequest<MutualTlsDisallowCertificateResponse>()
+            membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                mgmHoldingIdentity,
+                subject.toString(),
+            ).getOrThrow()
         }
 
         override fun mutualTlsListClientCertificate(holdingIdentityShortHash: ShortHash): Collection<MemberX500Name> {
-            verifyMgm(holdingIdentityShortHash)
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
 
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                MutualTlsListAllowedCertificateRequest(
-                    holdingIdentityShortHash.toString(),
-                )
-            )
-
-            return request.sendRequest<MutualTlsListAllowedCertificatesResponse>()
-                .subjects
+            return membershipQueryClient.mutualTlsListAllowedCertificates(
+                mgmHoldingIdentity,
+            ).getOrThrow()
                 .map {
-                    MemberX500Name.Companion.parse(it)
+                    MemberX500Name.parse(it)
                 }
         }
 

@@ -7,18 +7,12 @@ import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.MutualTlsAllowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsDisallowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsListAllowedCertificateRequest
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.MutualTlsAllowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsDisallowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
@@ -47,7 +41,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -72,7 +65,6 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
-    private val membershipPersistenceClient: MembershipPersistenceClient,
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
@@ -89,9 +81,6 @@ class MemberOpsServiceProcessor(
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
             RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
-            MutualTlsAllowCertificateRequest::class.java to { it.MutualTlsAllowCertificateRequestHandler() },
-            MutualTlsDisallowCertificateRequest::class.java to { it.MutualTlsDisallowCertificateRequestHandler() },
-            MutualTlsListAllowedCertificateRequest::class.java to { it.MutualTlsListAllowedCertificateRequestHandler() },
         )
 
         /**
@@ -196,60 +185,6 @@ class MemberOpsServiceProcessor(
             val details = response?.toAvro()
             return RegistrationStatusResponse(details)
         }
-    }
-
-    private inner class MutualTlsAllowCertificateRequestHandler: RpcHandler<MutualTlsAllowCertificateRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: MutualTlsAllowCertificateRequest) : Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
-            membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
-                mgmHoldingIdentity = holdingIdentity,
-                subject = request.subject,
-            ).getOrThrow()
-
-            return MutualTlsAllowCertificateResponse()
-        }
-
-    }
-    private inner class MutualTlsDisallowCertificateRequestHandler: RpcHandler<MutualTlsDisallowCertificateRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: MutualTlsDisallowCertificateRequest): Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
-            membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
-                mgmHoldingIdentity = holdingIdentity,
-                subject = request.subject,
-            ).getOrThrow()
-
-            return MutualTlsDisallowCertificateResponse()
-        }
-
-    }
-    private inner class MutualTlsListAllowedCertificateRequestHandler: RpcHandler<MutualTlsListAllowedCertificateRequest> {
-        override fun handle(
-            context: MembershipRpcRequestContext,
-            request: MutualTlsListAllowedCertificateRequest,
-        ): Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
-            val subjects = membershipQueryClient.mutualTlsListAllowedCertificates(
-                mgmHoldingIdentity = holdingIdentity,
-            ).getOrThrow()
-
-            return MutualTlsListAllowedCertificatesResponse(subjects.toList())
-        }
-
     }
 
     private inner class RegistrationStatusRequestHandler : RpcHandler<RegistrationStatusRpcRequest> {

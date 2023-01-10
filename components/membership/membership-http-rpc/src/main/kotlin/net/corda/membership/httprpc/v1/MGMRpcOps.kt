@@ -46,13 +46,13 @@ interface MGMRpcOps : RpcOps {
     ): String
 
     /**
-     * Adds client certificate subject to the mutual TLS allow client certificates.
+     * Adds client certificate subject to the mutual TLS allowed client certificates.
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
      * @param subject The certificate subject.
      */
     @HttpRpcPUT(
-        path = "{holdingIdentityShortHash}/mutual-tls/allow-client/{subject}",
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
         description = "This method allows a client certificate with a " +
             "given subject to be used in mutual TLS connections.",
     )
@@ -70,7 +70,7 @@ interface MGMRpcOps : RpcOps {
      * @param subject The certificate subject.
      */
     @HttpRpcDELETE(
-        path = "{holdingIdentityShortHash}/mutual-tls/allow-client/{subject}",
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
         description = "This method disallows a client certificate with a " +
                 "given subject to be used in mutual TLS connections.",
     )
@@ -88,7 +88,7 @@ interface MGMRpcOps : RpcOps {
      * @return List of the allowed client certificate subjects.
      */
     @HttpRpcGET(
-        path = "{holdingIdentityShortHash}/mutual-tls/allow-client/",
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/",
         description = "This method list the allowed  client certificates subjects " +
                 "to be used in mutual TLS connections.",
         responseDescription = "List of the allowed client certificate subjects",

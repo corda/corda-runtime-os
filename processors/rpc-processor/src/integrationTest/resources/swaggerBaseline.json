@@ -2029,11 +2029,11 @@
         }
       }
     },
-    "/mgm/{holdingidentityshorthash}/mutual-tls/allow-client" : {
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects" : {
       "get" : {
         "tags" : [ "MGM API" ],
         "description" : "This method list the allowed  client certificates subjects to be used in mutual TLS connections.",
-        "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allow_client",
+        "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
@@ -2072,11 +2072,11 @@
         }
       }
     },
-    "/mgm/{holdingidentityshorthash}/mutual-tls/allow-client/{subject}" : {
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}" : {
       "put" : {
         "tags" : [ "MGM API" ],
         "description" : "This method allows a client certificate with a given subject to be used in mutual TLS connections.",
-        "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allow_client__subject_",
+        "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
@@ -2115,7 +2115,7 @@
       "delete" : {
         "tags" : [ "MGM API" ],
         "description" : "This method disallows a client certificate with a given subject to be used in mutual TLS connections.",
-        "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allow_client__subject_",
+        "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",

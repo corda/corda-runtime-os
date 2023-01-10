@@ -6,9 +6,6 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.MutualTlsAllowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsDisallowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsListAllowedCertificateRequest
 import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
@@ -16,9 +13,6 @@ import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcReques
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.MutualTlsAllowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsDisallowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
@@ -47,8 +41,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.membership.lib.registration.RegistrationRequestStatus
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -167,14 +159,12 @@ class MemberOpsServiceProcessorTest {
     private val configurationGetService = mock<ConfigurationGetService> {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
 
     private var processor = MemberOpsServiceProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
-        membershipPersistenceClient,
         configurationGetService,
         clock,
     )
@@ -437,274 +427,5 @@ class MemberOpsServiceProcessorTest {
 
             assertThat(future).isCompletedExceptionally
         }
-    }
-
-
-    @Nested
-    inner class MutualTlsTests {
-        @Nested
-        inner class MutualTlsAllowCertificateRequestHandlerTests {
-            @Test
-            fun `should return MutualTlsAllowCertificateResponse when there is no error`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsAllowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.success())
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedWithValueMatching {
-                    it.response is MutualTlsAllowCertificateResponse
-                }
-            }
-
-            @Test
-            fun `should fail when virtual node can not be found`() {
-                whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash)).doReturn(null)
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsAllowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.success())
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-
-            @Test
-            fun `should fail when result is invalid`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsAllowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.Failure("Ooops"))
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-
-        }
-
-        @Nested
-        inner class MutualTlsDisallowCertificateRequestHandlerTests {
-            @Test
-            fun `should return MutualTlsDisallowCertificateResponse when there is no error`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsDisallowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.success())
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedWithValueMatching {
-                    it.response is MutualTlsDisallowCertificateResponse
-                }
-            }
-
-            @Test
-            fun `should fail when virtual node can not be found`() {
-                whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash)).doReturn(null)
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsDisallowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.success())
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-
-            @Test
-            fun `should fail when result is invalid`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsDisallowCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                        mgmX500Name.toString(),
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
-                        mgmHoldingIdentity,
-                        mgmX500Name.toString(),
-                    )
-                ).doReturn(MembershipPersistenceResult.Failure("Ooops"))
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-        }
-        @Nested
-        inner class MutualTlsListAllowedCertificateRequestHandler {
-            @Test
-            fun `should return the correct list`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsListAllowedCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipQueryClient.mutualTlsListAllowedCertificates(
-                        mgmHoldingIdentity,
-                    )
-                ).doReturn(MembershipQueryResult.Success(
-                    listOf(mgmX500Name.toString())
-                ))
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedWithValueMatching {
-                    (it.response as? MutualTlsListAllowedCertificatesResponse)
-                        ?.subjects
-                        ?.contains(mgmX500Name.toString()) == true
-                }
-            }
-
-            @Test
-            fun `should fail when virtual node can not be found`() {
-                whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash)).doReturn(null)
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsListAllowedCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipQueryClient.mutualTlsListAllowedCertificates(
-                        mgmHoldingIdentity,
-                    )
-                ).doReturn(MembershipQueryResult.Success(
-                    listOf(mgmX500Name.toString())
-                ))
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-
-            @Test
-            fun `should fail when result is invalid`() {
-                val requestTimestamp = now
-                val requestContext = MembershipRpcRequestContext(
-                    UUID(0, 1).toString(),
-                    requestTimestamp
-                )
-                val request = MembershipRpcRequest(
-                    requestContext,
-                    MutualTlsListAllowedCertificateRequest(
-                        mgmHoldingIdentity.shortHash.value,
-                    )
-                )
-                val future = CompletableFuture<MembershipRpcResponse>()
-                whenever(
-                    membershipQueryClient.mutualTlsListAllowedCertificates(
-                        mgmHoldingIdentity,
-                    )
-                ).doReturn(MembershipQueryResult.Failure(
-                    "oops"
-                ))
-
-                processor.onNext(request, future)
-
-                assertThat(future).isCompletedExceptionally
-            }
-
-        }
-
     }
 }

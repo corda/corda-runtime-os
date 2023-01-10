@@ -41,12 +41,10 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.data.membership.rpc.request.MutualTlsAllowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsDisallowCertificateRequest
-import net.corda.data.membership.rpc.request.MutualTlsListAllowedCertificateRequest
-import net.corda.data.membership.rpc.response.MutualTlsAllowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsDisallowCertificateResponse
-import net.corda.data.membership.rpc.response.MutualTlsListAllowedCertificatesResponse
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
@@ -224,13 +222,16 @@ class MGMOpsClientTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
-
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val membershipQueryClient = mock<MembershipQueryClient>()
     private val mgmOpsClient = MGMOpsClientImpl(
         lifecycleCoordinatorFactory,
         publisherFactory,
         configurationReadService,
         membershipGroupReaderProvider,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        membershipPersistenceClient,
+        membershipQueryClient,
     )
 
     private val messagingConfig: SmartConfig = mock()
@@ -458,9 +459,15 @@ class MGMOpsClientTest {
         startComponent()
 
         verify(coordinator).followStatusChangesByName(
-            eq(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()))
+            eq(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                    LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                )
+            )
         )
     }
 
@@ -578,9 +585,7 @@ class MGMOpsClientTest {
         @Test
         fun `it should fail when not an MGM`() {
             mgmOpsClient.start()
-            setUpRpcSender(
-                MutualTlsAllowCertificateResponse()
-            )
+            setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
                 on { mgmProvidedContext } doReturn mgmContext
@@ -598,18 +603,24 @@ class MGMOpsClientTest {
         @Test
         fun `it should send the correct request`() {
             mgmOpsClient.start()
-            setUpRpcSender(MutualTlsAllowCertificateResponse())
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                    holdingIdentity,
+                    mgmX500Name.toString(),
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
 
             mgmOpsClient.mutualTlsAllowClientCertificate(
                 shortHash,
                 mgmX500Name,
             )
 
-            assertThat(rpcRequest.firstValue.request).isEqualTo(
-                MutualTlsAllowCertificateRequest(
-                    shortHash.toString(),
-                    mgmX500Name.toString(),
-                )
+            verify(membershipPersistenceClient).mutualTlsAddCertificateToAllowedList(
+                holdingIdentity,
+                mgmX500Name.toString(),
             )
         }
     }
@@ -631,9 +642,7 @@ class MGMOpsClientTest {
         @Test
         fun `it should fail when not an MGM`() {
             mgmOpsClient.start()
-            setUpRpcSender(
-                MutualTlsDisallowCertificateResponse()
-            )
+            setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
                 on { mgmProvidedContext } doReturn mgmContext
@@ -651,18 +660,24 @@ class MGMOpsClientTest {
         @Test
         fun `it should send the correct request`() {
             mgmOpsClient.start()
-            setUpRpcSender(MutualTlsDisallowCertificateResponse())
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                    holdingIdentity,
+                    mgmX500Name.toString(),
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
 
             mgmOpsClient.mutualTlsDisallowClientCertificate(
                 shortHash,
                 mgmX500Name,
             )
 
-            assertThat(rpcRequest.firstValue.request).isEqualTo(
-                MutualTlsDisallowCertificateRequest(
-                    shortHash.toString(),
-                    mgmX500Name.toString(),
-                )
+            verify(membershipPersistenceClient).mutualTlsRemoveCertificateFromAllowedList(
+                holdingIdentity,
+                mgmX500Name.toString(),
             )
         }
     }
@@ -683,11 +698,7 @@ class MGMOpsClientTest {
         @Test
         fun `it should fail when not an MGM`() {
             mgmOpsClient.start()
-            setUpRpcSender(
-                MutualTlsListAllowedCertificatesResponse(
-                    listOf(mgmX500Name.toString())
-                )
-            )
+            setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
                 on { mgmProvidedContext } doReturn mgmContext
@@ -702,30 +713,13 @@ class MGMOpsClientTest {
         }
 
         @Test
-        fun `it should send the correct request`() {
-            mgmOpsClient.start()
-            setUpRpcSender(
-                MutualTlsListAllowedCertificatesResponse(
-                    listOf(mgmX500Name.toString())
-                )
-            )
-
-            mgmOpsClient.mutualTlsListClientCertificate(
-                shortHash,
-            )
-
-            assertThat(rpcRequest.firstValue.request).isEqualTo(
-                MutualTlsListAllowedCertificateRequest(
-                    shortHash.toString(),
-                )
-            )
-        }
-
-        @Test
         fun `it return the correct value`() {
             mgmOpsClient.start()
-            setUpRpcSender(
-                MutualTlsListAllowedCertificatesResponse(
+            setUpRpcSender(null)
+            whenever(
+                membershipQueryClient.mutualTlsListAllowedCertificates(holdingIdentity)
+            ).doReturn(
+                MembershipQueryResult.Success(
                     listOf(mgmX500Name.toString())
                 )
             )
