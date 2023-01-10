@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.helper
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.exception.CordaAPIConfigException
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 
 class MessageConfigHelperTest {
 
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory(emptyList()).createWithoutSecurityServices()
 
     @Test
     fun `messaging config correctly built from boot and messaging sections`() {

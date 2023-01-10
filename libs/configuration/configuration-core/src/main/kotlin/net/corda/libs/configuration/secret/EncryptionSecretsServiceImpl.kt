@@ -19,7 +19,7 @@ class EncryptionSecretsServiceImpl(
     private val encryptor: SecretEncryptor = SecretEncryptionUtil(),
     private val decryptor: SecretDecryptor = SecretEncryptionUtil(),
 ): EncryptionSecretsService {
-    override fun getValue(secretConfig: Config): String {
+    override fun getValue(secretConfig: Config):    String {
         if(!secretConfig.hasPath(SmartConfig.SECRET_KEY))
             throw SecretsConfigurationException("secretConfig is not a valid Secret Config Section: $secretConfig")
         if(!secretConfig.hasPath("${SmartConfig.SECRET_KEY}.${EncryptionSecretsService.SECRET_KEY}"))
