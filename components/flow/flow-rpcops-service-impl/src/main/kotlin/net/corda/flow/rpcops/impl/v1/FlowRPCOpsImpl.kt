@@ -87,7 +87,7 @@ class FlowRPCOpsImpl @Activate constructor(
 
     private fun validateClientRequestId(clientRequestId: String) {
         if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
-            throw IllegalArgumentException(
+            throw BadRequestException(
                 """Supplied Client Request ID "$clientRequestId" is invalid,""" +
                         """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
         }

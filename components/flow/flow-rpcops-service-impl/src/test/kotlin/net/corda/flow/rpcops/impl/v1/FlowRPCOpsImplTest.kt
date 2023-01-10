@@ -524,12 +524,12 @@ class FlowRPCOpsImplTest {
         verify(fatalErrorFunction, never()).invoke()
     }
     @Test
-    fun `start flow throws illegal argument if clientRequestId is empty`() {
+    fun `start flow throws bad request if clientRequestId is empty`() {
         val flowRPCOps = createFlowRpcOps()
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
-        assertThrows<java.lang.IllegalArgumentException> {
+        assertThrows<BadRequestException> {
             flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
         }
     }
