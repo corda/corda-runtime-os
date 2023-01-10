@@ -74,8 +74,6 @@ class ConsensualReceiveFinalityFlow(
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
-        acknowledgeFinalizedTransaction(transaction)
-
         return transaction
     }
 
@@ -158,11 +156,5 @@ class ConsensualReceiveFinalityFlow(
             }
 
         return signedTransaction
-    }
-
-    @Suspendable
-    private fun acknowledgeFinalizedTransaction(transaction: ConsensualSignedTransactionInternal) {
-        session.send(Unit)
-        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${transaction.id}" }
     }
 }
