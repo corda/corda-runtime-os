@@ -10,7 +10,6 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.certificates.RevocationChecker
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -34,7 +33,6 @@ class Gateway(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
-    signingMode: SigningMode,
     cryptoOpsClient: CryptoOpsClient,
     avroSchemaRegistry: AvroSchemaRegistry
 ) : LifecycleWithDominoTile {
@@ -45,7 +43,6 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
-        signingMode,
         cryptoOpsClient,
         avroSchemaRegistry
     )

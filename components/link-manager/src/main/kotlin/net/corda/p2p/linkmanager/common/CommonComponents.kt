@@ -1,37 +1,49 @@
 package net.corda.p2p.linkmanager.common
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.GroupParametersReaderService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     linkManagerHostingMap: LinkManagerHostingMap,
-    groups: LinkManagerGroupPolicyProvider,
-    members: LinkManagerMembershipGroupReader,
+    groupPolicyProvider: GroupPolicyProvider,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
     configurationReaderService: ConfigurationReadService,
-    linkManagerCryptoProcessor: CryptoProcessor,
+    cryptoOpsClient: CryptoOpsClient,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    cpiInfoReadService: CpiInfoReadService,
+    membershipQueryClient: MembershipQueryClient,
+    groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
 ) : LifecycleWithDominoTile {
+    private companion object {
+        const val LISTENER_NAME = "link.manager.group.policy.listener"
+    }
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
         Schemas.P2P.LINK_IN_TOPIC
@@ -44,9 +56,9 @@ internal class CommonComponents(
     )
 
     internal val sessionManager = SessionManagerImpl(
-        groups,
-        members,
-        linkManagerCryptoProcessor,
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        cryptoOpsClient,
         messagesPendingSession,
         publisherFactory,
         configurationReaderService,
@@ -63,7 +75,9 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
     ).also {
-        groups.registerListener(it)
+        groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
+            it.groupAdded(holdingIdentity, groupPolicy)
+        }
     }
 
     private val tlsCertificatesPublisher = TlsCertificatesPublisher(
@@ -75,28 +89,38 @@ internal class CommonComponents(
         linkManagerHostingMap.registerListener(it)
     }
 
+    private val externalDependencies = listOf(
+        NamedLifecycle.of(groupPolicyProvider),
+        NamedLifecycle.of(membershipGroupReaderProvider),
+        NamedLifecycle.of(cryptoOpsClient),
+    )
+
+    private val externalManagedDependencies = listOf(
+        NamedLifecycle.of(virtualNodeInfoReadService),
+        NamedLifecycle.of(cpiInfoReadService),
+        NamedLifecycle.of(membershipQueryClient),
+        NamedLifecycle.of(groupParametersReaderService)
+    ) + externalDependencies
+
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            groups.dominoTile.coordinatorName,
-            members.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName,
-            linkManagerCryptoProcessor.namedLifecycle.name,
             messagesPendingSession.dominoTile.coordinatorName,
             sessionManager.dominoTile.coordinatorName,
             trustStoresPublisher.dominoTile.coordinatorName,
             tlsCertificatesPublisher.dominoTile.coordinatorName,
-        ),
+        ) + externalDependencies.map {
+            it.name
+        },
         managedChildren = listOf(
-            groups.dominoTile.toNamedLifecycle(),
-            members.dominoTile.toNamedLifecycle(),
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
-            linkManagerCryptoProcessor.namedLifecycle,
             messagesPendingSession.dominoTile.toNamedLifecycle(),
             sessionManager.dominoTile.toNamedLifecycle(),
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
-        )
+        ) + externalManagedDependencies
     )
 }

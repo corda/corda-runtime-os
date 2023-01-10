@@ -1,38 +1,61 @@
 package net.corda.p2p.linkmanager.utilities
 
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
-import net.corda.p2p.linkmanager.grouppolicy.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.membership.LinkManagerMembershipGroupReader
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
+import java.security.PublicKey
 
 fun mockMembersAndGroups(
     vararg members: HoldingIdentity
-): Pair<LinkManagerMembershipGroupReader, LinkManagerGroupPolicyProvider> {
+): Pair<MembershipGroupReaderProvider, GroupPolicyProvider> {
     return mockMembers(members.toList()) to mockGroups(members.toList())
 }
-fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGroupReader {
-    val endpoint = "http://10.0.0.1/"
+
+fun mockMemberInfo(
+    holdingIdentity: HoldingIdentity,
+    endPoint: String,
+    publicKey: PublicKey,
+): MemberInfo {
+    val context = mock<MemberContext> {
+        on { parse(GROUP_ID, String::class.java) } doReturn holdingIdentity.groupId
+        on { parseList(ENDPOINTS, String::class.java) } doReturn listOf(endPoint)
+    }
+    return mock {
+        on { memberProvidedContext } doReturn context
+        on { name } doReturn holdingIdentity.x500Name
+        on { sessionInitiationKey } doReturn publicKey
+    }
+}
+
+fun mockMembers(members: Collection<HoldingIdentity>): MembershipGroupReaderProvider {
+    val endpoint = "https://10.0.0.1/"
 
     val provider = BouncyCastleProvider()
     val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
-    val identities = members.associateWith {
+    val identities = members.associateWith { holdingId ->
         val keyPair = keyPairGenerator.generateKeyPair()
-        LinkManagerMembershipGroupReader.MemberInfo(
-            it,
-            keyPair.public,
-            KeyAlgorithm.ECDSA,
+        mockMemberInfo(
+            holdingId,
             endpoint,
+            keyPair.public
         )
     }
     fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -41,39 +64,60 @@ fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGrou
         return digest()
     }
     val hashToInfo = identities.values.associateBy {
-        val publicKeyHash = messageDigest.hash(it.sessionPublicKey.encoded)
-        (publicKeyHash to it.holdingIdentity)
+        val publicKeyHash = PublicKeyHash.parse(messageDigest.hash(it.sessionInitiationKey.encoded))
+        publicKeyHash
     }
-    return object : LinkManagerMembershipGroupReader {
-        override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity):
-                LinkManagerMembershipGroupReader.MemberInfo? = identities[lookupIdentity]
+    return object : MembershipGroupReaderProvider {
+        override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader {
+            return mock {
+                on { lookup(any()) } doAnswer {
+                    val name = it.arguments[0] as MemberX500Name
+                    identities[HoldingIdentity(name, holdingIdentity.groupId)]
+                }
+                on { lookupBySessionKey(any()) } doAnswer {
+                    val key = it.arguments[0] as PublicKeyHash
+                    hashToInfo[key]
+                }
+            }
+        }
 
-        override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray)
-            = hashToInfo[publicKeyHashToLookup to requestingIdentity]
+        override val isRunning = true
 
-        override val dominoTile = mock<DominoTile>()
+        override fun start() {
+        }
+
+        override fun stop() {
+        }
+
     }
 }
 
-fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroupPolicyProvider {
-    return object : LinkManagerGroupPolicyProvider {
-        override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): GroupPolicyProvider {
+    return object : GroupPolicyProvider {
+
+        override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy? {
             return if (holdingIdentities.contains(holdingIdentity)) {
-                GroupPolicyListener.GroupInfo(
-                    holdingIdentity,
-                    NetworkType.CORDA_5,
-                    setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-                    emptyList(),
-                    GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
-                    null
-                )
+                val parameters = mock<GroupPolicy.P2PParameters> {
+                    on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+                }
+                mock {
+                    on { p2pParameters } doReturn parameters
+                }
+
             } else {
                 null
             }
         }
 
-        override fun registerListener(groupPolicyListener: GroupPolicyListener) {
+        override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         }
-        override val dominoTile = mock<DominoTile>()
+
+        override val isRunning = true
+
+        override fun start() {
+        }
+
+        override fun stop() {
+        }
     }
 }

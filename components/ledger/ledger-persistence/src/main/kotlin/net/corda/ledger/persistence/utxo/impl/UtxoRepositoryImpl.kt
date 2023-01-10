@@ -174,21 +174,17 @@ class UtxoRepositoryImpl(
 
     override fun markTransactionRelevantStatesConsumed(
         entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int
+        stateRefs: List<StateRef>
     ) {
         entityManager.createNativeQuery(
         """
             UPDATE {h-schema}utxo_relevant_transaction_state
             SET consumed = true
-            WHERE transaction_id = :transactionId
-            AND group_idx = :groupIndex
-            AND leaf_idx = :leafIndex"""
+            WHERE transaction_id in (:transactionIds)
+            AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
+            .setParameter("transactionIds", stateRefs.map { it.transactionHash.toString() })
+            .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
     }
 
