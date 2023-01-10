@@ -3,6 +3,7 @@ package net.corda.db.admin.impl
 import liquibase.Contexts
 import liquibase.LabelExpression
 import liquibase.Liquibase
+import liquibase.changelog.ChangeSet
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
@@ -31,10 +32,10 @@ class LiquibaseSchemaMigratorImpl(
                 .findCorrectDatabaseImplementation(JdbcConnection(connection))
         }
 ) : LiquibaseSchemaMigrator {
-    companion object {
+    private companion object {
         // default schema
         // NOTE: may need to become variable depending on the DB type
-        const val DEFAULT_DB_SCHEMA = "PUBLIC"
+        private const val DEFAULT_DB_SCHEMA = "PUBLIC"
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val liquibaseAccessLock = ReentrantLock()
     }
@@ -68,7 +69,7 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer) {
-        process(datasource, dbChange, sql, controlTablesSchema)
+        process(datasource, dbChange, sql, controlTablesSchema, null)
     }
 
     override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
@@ -82,16 +83,16 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
+            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map(ChangeSet::getFilePath)
         }
     }
 
     private fun process(
         datasource: Connection,
         dbChange: DbChange,
-        sql: Writer? = null,
+        sql: Writer?,
         liquibaseSchemaName: String,
-        tag: String? = null
+        tag: String?
     ) {
         liquibaseAccessLock.withLock {
             val database = databaseFactory(datasource)

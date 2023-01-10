@@ -16,7 +16,7 @@ class VaultNamedQueryParserImpl(
         val output = StringBuilder("")
         converter.convert(output, expression)
         return output.toString()
-            .replace("  ", " ")
+            .replace("\\s++".toRegex(), " ")
             .trim()
     }
 }

@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+}
+
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk2') {
+    throw new StopExecutionException('corda.java-library plugin is incompatible with building CPKs and CPBs')
+}
+
+configurations {
+    testArtifacts {
+        canBeResolved = false
+    }
+    testCompileOnly.extendsFrom compileOnly
+
+    integrationTestApi.extendsFrom testApi
+    integrationTestCompileOnly.extendsFrom testCompileOnly
+    integrationTestImplementation.extendsFrom testImplementation
+
+    configureEach {
+        resolutionStrategy {
+            dependencySubstitution {
+                substitute module('de.javakaffee:kryo-serializers') using project(':libs:serialization:kryo-serializers')
+            }
+        }
+    }
+}
+
+dependencies {
+    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+
+    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}

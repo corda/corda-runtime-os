@@ -8,6 +8,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.VirtualNodeLoader
+import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.VNODE_LOADER_NAME
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -23,7 +24,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 
 @Suppress("unused")
-@Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
+@Component(
+    name = VNODE_LOADER_NAME,
+    service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ]
+)
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class VirtualNodeLoaderImpl @Activate constructor(
     @Reference

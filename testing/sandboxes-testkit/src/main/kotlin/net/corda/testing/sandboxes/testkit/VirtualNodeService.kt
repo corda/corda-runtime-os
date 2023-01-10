@@ -5,6 +5,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.concurrent.CompletableFuture
 
 interface VirtualNodeService {
+    fun loadVirtualNodes(resourceName: String): Set<VirtualNodeInfo>
     fun loadVirtualNode(resourceName: String): VirtualNodeInfo
     fun releaseVirtualNode(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>?
     fun unloadVirtualNode(completion: CompletableFuture<*>)
