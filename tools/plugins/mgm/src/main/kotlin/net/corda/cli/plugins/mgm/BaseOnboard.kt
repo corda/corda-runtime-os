@@ -281,7 +281,7 @@ abstract class BaseOnboard : Runnable {
             if (registrationStatus == "APPROVED") {
                 return
             } else if (registrationStatus =="DECLINED") {
-                throw OnboardException("Registration got declined!")
+                throw OnboardException("Registration has been declined.")
             } else {
                 println("Status of $x500Name registration is $registrationStatus")
                 Thread.sleep(400)

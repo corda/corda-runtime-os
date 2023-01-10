@@ -238,7 +238,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         register(skipWaitingForFinalStatus)
 
         if (skipWaitingForFinalStatus) {
-            println("Member can be approved/declined by using it's registration ID.")
+            println("Registration request has been submitted. Wait for MGM manual approval to finalize registration.")
         } else {
             println("Member $x500Name was onboarded.")
         }
