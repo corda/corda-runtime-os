@@ -136,7 +136,7 @@ class ConsensualFinalityFlow(
     @Suspendable
     private fun persistTransactionWithCounterpartySignatures(transaction: ConsensualSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded transaction $transactionId" }
+        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
     @Suspendable

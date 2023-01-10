@@ -194,7 +194,7 @@ class UtxoFinalityFlow(
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded verified (notarised) transaction $transactionId" }
+        log.debug { "Recorded notarised transaction $transactionId" }
     }
 
     @Suspendable

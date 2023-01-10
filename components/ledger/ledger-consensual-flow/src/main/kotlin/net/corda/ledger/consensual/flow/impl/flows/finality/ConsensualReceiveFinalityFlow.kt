@@ -72,7 +72,7 @@ class ConsensualReceiveFinalityFlow(
         transaction.verifySignatures()
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction $transactionId" }
+        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
         acknowledgeFinalizedTransaction(transaction)
 
