@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "InitiatorHelloMessage",
-  "namespace": "net.corda.p2p.crypto",
+  "namespace": "net.corda.data.p2p.crypto",
   "fields": [
     {
       "name": "header",
-      "type": "net.corda.p2p.crypto.CommonHeader"
+      "type": "net.corda.data.p2p.crypto.CommonHeader"
     },
     {
       "name": "initiatorPublicKey",
@@ -15,12 +15,12 @@
       "name": "supportedModes",
       "type": {
         "type": "array",
-        "items": "net.corda.p2p.crypto.ProtocolMode"
+        "items": "net.corda.data.p2p.crypto.ProtocolMode"
       }
     },
     {
       "name": "source",
-      "type": "net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity"
+      "type": "net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity"
     }
   ]
 }

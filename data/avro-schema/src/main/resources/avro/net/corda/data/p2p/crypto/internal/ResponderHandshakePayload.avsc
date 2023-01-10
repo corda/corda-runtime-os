@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "ResponderHandshakePayload",
-  "namespace": "net.corda.p2p.crypto.internal",
+  "namespace": "net.corda.data.p2p.crypto.internal",
   "fields": [
     {
       "name": "responderEncryptedExtensions",
-      "type": "net.corda.p2p.crypto.internal.ResponderEncryptedExtensions"
+      "type": "net.corda.data.p2p.crypto.internal.ResponderEncryptedExtensions"
     },
     {
       "name": "responderPublicKeyHash",

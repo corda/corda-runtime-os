@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "ApplicationRejectedStaleMarker",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "fields": [],
   "doc": "The receiving application layer rejected the message because it is stale."
 }

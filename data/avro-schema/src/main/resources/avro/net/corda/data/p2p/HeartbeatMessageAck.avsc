@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "HeartbeatMessageAck",
-  "namespace": "net.corda.p2p",
-  "doc": "Sent between the receiving and sending Link Managers to acknowledge successful delivery of a {@link net.corda.p2p.HeartbeatMessage}.",
+  "namespace": "net.corda.data.p2p",
+  "doc": "Sent between the receiving and sending Link Managers to acknowledge successful delivery of a {@link net.corda.data.p2p.HeartbeatMessage}.",
   "fields": []
 }

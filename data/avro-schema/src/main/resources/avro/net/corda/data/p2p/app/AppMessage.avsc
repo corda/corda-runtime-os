@@ -1,14 +1,14 @@
 {
   "type": "record",
   "name": "AppMessage",
-  "namespace": "net.corda.p2p.app",
+  "namespace": "net.corda.data.p2p.app",
   "doc": "An application message to be transferred via the p2p layer. This is a wrapper over the different types of messages that can be transferred via the p2p layer.",
   "fields": [
       {
         "name": "message",
         "type": [
-          "net.corda.p2p.app.AuthenticatedMessage",
-          "net.corda.p2p.app.UnauthenticatedMessage"
+          "net.corda.data.p2p.app.AuthenticatedMessage",
+          "net.corda.data.p2p.app.UnauthenticatedMessage"
         ]
       }
   ]

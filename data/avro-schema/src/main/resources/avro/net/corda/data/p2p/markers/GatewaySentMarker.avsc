@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "GatewaySentMarker",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "fields": [],
   "doc": "The sending Gateway sent the message over HTTP and received an OK from the receiving Gateway."
 }

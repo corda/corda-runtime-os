@@ -1,8 +1,8 @@
 {
   "type": "record",
   "name": "AuthenticatedMessageAck",
-  "namespace": "net.corda.p2p",
-  "doc": "Sent between the receiving and sending Link Managers to acknowledge successful delivery of a {@link net.corda.p2p.app.AuthenticatedMessage}.",
+  "namespace": "net.corda.data.p2p",
+  "doc": "Sent between the receiving and sending Link Managers to acknowledge successful delivery of a {@link net.corda.data.p2p.app.AuthenticatedMessage}.",
   "fields": [
     {
       "name": "messageId",

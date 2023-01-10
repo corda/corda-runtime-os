@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "UnauthenticatedMessageHeader",
-  "namespace": "net.corda.p2p.app",
+  "namespace": "net.corda.data.p2p.app",
   "fields": [
     {
       "doc": "The destination identity for this message.",

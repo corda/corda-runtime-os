@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "TtlExpiredMarker",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "fields": [
     {
       "name": "component",
-      "type": "net.corda.p2p.markers.Component",
+      "type": "net.corda.data.p2p.markers.Component",
       "doc": "The component where the TTL timeout was detected."
     }
   ],

@@ -1,6 +1,6 @@
 {
   "type": "enum",
   "name": "MessageType",
-  "namespace": "net.corda.p2p.crypto",
+  "namespace": "net.corda.data.p2p.crypto",
   "symbols": [ "INITIATOR_HELLO", "RESPONDER_HELLO", "INITIATOR_HANDSHAKE", "RESPONDER_HANDSHAKE", "DATA" ]
 }

@@ -1,6 +1,6 @@
 {
   "type": "enum",
   "name": "Component",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "symbols": [ "LINK_MANAGER", "GATEWAY" ]
 }

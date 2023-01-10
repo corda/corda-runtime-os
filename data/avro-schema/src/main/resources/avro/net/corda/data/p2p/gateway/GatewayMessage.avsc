@@ -12,13 +12,13 @@
     {
       "name": "payload",
       "type": [
-        "net.corda.p2p.crypto.AuthenticatedDataMessage",
-        "net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage",
-        "net.corda.p2p.crypto.InitiatorHelloMessage",
-        "net.corda.p2p.crypto.InitiatorHandshakeMessage",
-        "net.corda.p2p.crypto.ResponderHelloMessage",
-        "net.corda.p2p.crypto.ResponderHandshakeMessage",
-        "net.corda.p2p.app.UnauthenticatedMessage"
+        "net.corda.data.p2p.crypto.AuthenticatedDataMessage",
+        "net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage",
+        "net.corda.data.p2p.crypto.InitiatorHelloMessage",
+        "net.corda.data.p2p.crypto.InitiatorHandshakeMessage",
+        "net.corda.data.p2p.crypto.ResponderHelloMessage",
+        "net.corda.data.p2p.crypto.ResponderHandshakeMessage",
+        "net.corda.data.p2p.app.UnauthenticatedMessage"
       ]
     }
   ]

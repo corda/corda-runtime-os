@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "GatewayTlsCertificates",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "fields": [
     {
       "doc": "The tenant ID under which the keys of the leaf certificate are stored",

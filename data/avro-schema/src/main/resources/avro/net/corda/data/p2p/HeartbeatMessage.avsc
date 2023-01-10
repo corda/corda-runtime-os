@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "HeartbeatMessage",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "doc": "A heartbeat message used to monitor the health of an outbound link session",
   "fields": []
 }

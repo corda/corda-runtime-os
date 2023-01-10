@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "CommonHeader",
-  "namespace": "net.corda.p2p.crypto",
+  "namespace": "net.corda.data.p2p.crypto",
   "fields": [
     {
       "name": "messageType",
-      "type": "net.corda.p2p.crypto.MessageType"
+      "type": "net.corda.data.p2p.crypto.MessageType"
     },
     {
       "name": "protocolVersion",

@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "HostedIdentityEntry",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "fields": [
     {
       "doc": "The Holding identity hosted in this node",

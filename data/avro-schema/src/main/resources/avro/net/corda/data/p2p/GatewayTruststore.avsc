@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "GatewayTruststore",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "fields": [
     {
       "doc": "The source identity (x500 name + group ID)",

@@ -1,6 +1,6 @@
 {
   "type": "enum",
   "name": "ProtocolMode",
-  "namespace": "net.corda.p2p.crypto",
+  "namespace": "net.corda.data.p2p.crypto",
   "symbols": [ "AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION" ]
 }

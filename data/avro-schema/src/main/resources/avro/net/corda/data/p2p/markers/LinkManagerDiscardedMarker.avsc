@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "LinkManagerDiscardedMarker",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "fields": [
     {
       "name": "message",
-      "type": "net.corda.p2p.AuthenticatedMessageAndKey",
+      "type": "net.corda.data.p2p.AuthenticatedMessageAndKey",
       "doc": "A copy of the original message in P2P_OUT_TOPIC."
     },
     {

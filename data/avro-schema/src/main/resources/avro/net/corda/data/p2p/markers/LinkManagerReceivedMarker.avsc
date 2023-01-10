@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "LinkManagerReceivedMarker",
-  "namespace": "net.corda.p2p.markers",
+  "namespace": "net.corda.data.p2p.markers",
   "fields": [],
   "doc": "The message was received by the recipient Link Manager."
 }

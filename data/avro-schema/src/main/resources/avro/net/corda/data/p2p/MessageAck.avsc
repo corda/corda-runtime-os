@@ -1,13 +1,13 @@
 {
   "type": "record",
   "name": "MessageAck",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "fields": [
     {
       "name": "ack",
       "type": [
-        "net.corda.p2p.AuthenticatedMessageAck",
-        "net.corda.p2p.HeartbeatMessageAck"
+        "net.corda.data.p2p.AuthenticatedMessageAck",
+        "net.corda.data.p2p.HeartbeatMessageAck"
       ]
     }
   ]

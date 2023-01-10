@@ -1,12 +1,12 @@
 {
   "type": "record",
   "name": "AuthenticatedMessage",
-  "namespace": "net.corda.p2p.app",
+  "namespace": "net.corda.data.p2p.app",
   "doc": "A message that will be delivered by the p2p layer over an end-to-end (authenticated and optionally encrypted) session.",
   "fields": [
     {
       "name": "header",
-      "type": "net.corda.p2p.app.AuthenticatedMessageHeader"
+      "type": "net.corda.data.p2p.app.AuthenticatedMessageHeader"
     },
     {
       "name": "payload",

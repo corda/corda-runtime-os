@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "LinkOutHeader",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.p2p",
   "fields": [
     {
       "doc": "The destination identity (x500 name + group ID)",
@@ -15,7 +15,7 @@
     },
     {
       "name": "destinationNetworkType",
-      "type": "net.corda.p2p.NetworkType"
+      "type": "net.corda.data.p2p.NetworkType"
     },
     {
       "name": "address",
