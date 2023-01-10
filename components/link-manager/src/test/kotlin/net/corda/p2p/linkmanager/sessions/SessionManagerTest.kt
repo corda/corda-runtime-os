@@ -20,7 +20,6 @@ import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
