@@ -68,10 +68,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
     var preAuthToken: String? = null
 
     @Option(
-        names = ["--ignore-status"],
-        description = ["Skip waiting until member gets approved/declined, this should be used in manual-approval mode. False, by default."]
+        names = ["--wait"],
+        description = ["Wait until member gets approved/declined. False, by default."]
     )
-    var skipWaitingForFinalStatus: Boolean = false
+    var waitForFinalStatus: Boolean = false
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
@@ -235,12 +235,13 @@ class OnBoardMember : Runnable, BaseOnboard() {
         println("Provided registration context: ")
         println(registrationContext)
 
-        register(skipWaitingForFinalStatus)
+        register(waitForFinalStatus)
 
-        if (skipWaitingForFinalStatus) {
-            println("Registration request has been submitted. Wait for MGM manual approval to finalize registration.")
-        } else {
+        if (waitForFinalStatus) {
             println("Member $x500Name was onboarded.")
+        } else {
+            println("Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                    "MGM may need to approve your request manually.")
         }
     }
 }

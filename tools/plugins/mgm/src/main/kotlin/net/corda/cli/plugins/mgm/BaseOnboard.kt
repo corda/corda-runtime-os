@@ -250,7 +250,7 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
     }
 
-    protected fun register(skipWaitingForFinalStatus: Boolean = false) {
+    protected fun register(waitForFinalStatus: Boolean = false) {
         val response = Unirest.post("/membership/$holdingId")
             .body(
                 mapOf(
@@ -268,7 +268,7 @@ abstract class BaseOnboard : Runnable {
         }
         val id = body.get("registrationId").toString()
         println("Registration ID of $x500Name is $id")
-        if (!skipWaitingForFinalStatus) {
+        if (waitForFinalStatus) {
             waitForFinalStatus(id)
         }
     }
