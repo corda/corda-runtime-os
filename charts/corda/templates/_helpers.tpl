@@ -143,10 +143,21 @@ securityContext:
 {{- end }}
 
 {{/*
-Container security context
+Container security context - may be called for bootstrap or worker containers
 */}}
 {{- define "corda.containerSecurityContext" -}}
-{{- if and ( not .Values.dumpHostPath ) ( or ( not .worker ) ( not ( get .Values.workers .worker ).profiling.enabled ) ) }}
+{{- if .Values.dumpHostPath }}
+{{-  $ignore := set . "addContainerSecurityContext" false }}
+{{- else if .worker }}
+{{-   if ( get .Values.workers .worker ).profiling.enabled }}
+{{-     $ignore := set . "addContainerSecurityContext" false }}
+{{-   else }}
+{{-     $ignore := set . "addContainerSecurityContext" true }}
+{{-   end }}
+{{- else }}
+{{-   $ignore := set . "addContainerSecurityContext" true }}
+{{- end }}
+{{- if .addContainerSecurityContext }}
 securityContext:
   runAsUser: 10001
   runAsGroup: 10002
