@@ -15,6 +15,7 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -51,7 +52,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
     private val vaultDmlConnectionId = UUID(0, 11)
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
-        CpiIdentifier("TEST_CPI", "1.0", null),
+        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
         vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         uniquenessDmlConnectionId = UUID(0, 0),

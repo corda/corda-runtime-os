@@ -21,69 +21,42 @@ class StreamResourceAccessorTest {
     }
     private val classLoaderResourceAccessor = mock<ResourceAccessor>
     {
-        on { openStreams(anyOrNull(), any()) } doReturn(mock())
+        on { getAll(anyOrNull()) } doReturn(mock())
     }
     private val sra = StreamResourceAccessor(
         "master.xml", dbChange, classLoaderResourceAccessor
     )
 
     @Test
-    fun `when openStreams with master changelog return composite`() {
-        val result = sra.openStreams(null, "master.xml")
+    fun `when getAll with master changelog return composite`() {
+        val result = sra.getAll( "master.xml")
 
-        assertThat(result.size()).isEqualTo(1)
-        assertThat(result.urIs[0].path).isEqualTo("master.xml")
-        val fileContent = result.single().bufferedReader().use { it.readText() }
+        assertThat(result.size).isEqualTo(1)
+        assertThat(result[0].uri.path).isEqualTo("master.xml")
+        val fileContent = result.single().openInputStream().bufferedReader().use { it.readText() }
         assertThat(fileContent).contains("include file=\"fred.xml\"")
         assertThat(fileContent).contains("include file=\"jon.xml\"")
     }
 
     @Test
-    fun `when openStreams with master changelog path and relativeTo throws`() {
-        assertThrows<UnsupportedOperationException> {
-            sra.openStreams("flintstone", "master.xml")
-        }
+    fun `when getAll with liquibase schema URL delegate`() {
+        sra.getAll("http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
+
+        verify(classLoaderResourceAccessor)
+            .getAll("http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
     }
 
     @Test
-    fun `when openStreams with liquibase schema URL delegate`() {
-        sra.openStreams(null, "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
-
-        verify(classLoaderResourceAccessor).openStreams(null, "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
-    }
-
-    @Test
-    fun `when openStreams with known changelog fetch it`() {
-        sra.openStreams(null, "fred.xml")
+    fun `when getAll with known changelog fetch it`() {
+        sra.getAll("fred.xml")
 
         verify(dbChange).fetch("fred.xml")
     }
 
     @Test
-    fun `when openStreams with known changelog and relative path throws`() {
+    fun `when getAll with null streamPath throw`() {
         assertThrows<UnsupportedOperationException> {
-            sra.openStreams("flintstone", "fred.xml")
-        }
-}
-
-    @Test
-    fun `when openStreams with null streamPath throw`() {
-        assertThrows<UnsupportedOperationException> {
-            sra.openStreams(null, null)
-        }
-    }
-
-    @Test
-    fun `when openStreams with null streamPath and non-null relativeTo throw`() {
-        assertThrows<UnsupportedOperationException> {
-            sra.openStreams("hello", null)
-        }
-    }
-
-    @Test
-    fun `when openStreams with  non-null relativeTo throw`() {
-        assertThrows<UnsupportedOperationException> {
-            sra.openStreams("hello", "bar.txt")
+            sra.getAll(null)
         }
     }
 

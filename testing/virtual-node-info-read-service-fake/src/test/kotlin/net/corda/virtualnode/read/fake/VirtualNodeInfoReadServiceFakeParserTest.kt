@@ -19,6 +19,7 @@ internal class VirtualNodeInfoReadServiceFakeParserTest {
           - cpiIdentifier:
               name: ${vnode.cpiIdentifier.name}
               version: ${vnode.cpiIdentifier.version}
+              signerSummaryHash: ${vnode.cpiIdentifier.signerSummaryHash}
             cryptoDmlConnectionId: ${vnode.cryptoDmlConnectionId}
             holdingIdentity:
               groupId: ${vnode.holdingIdentity.groupId}

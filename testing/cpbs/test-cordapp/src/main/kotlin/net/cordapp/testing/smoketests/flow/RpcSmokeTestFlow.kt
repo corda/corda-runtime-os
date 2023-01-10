@@ -103,7 +103,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val request = requestBody.getRequestBodyAs<RpcSmokeTestInput>(jsonMarshallingService)
-        return jsonMarshallingService.format(request.execute())
+        return jsonMarshallingService.format(execute(request))
     }
 
     private fun echo(input: RpcSmokeTestInput): String {
@@ -427,10 +427,11 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         return checkNotNull(this.data?.get(key)) { "Failed to find key '${key}' in the RPC input args" }
     }
 
-    private fun RpcSmokeTestInput.execute(): RpcSmokeTestOutput {
+    @Suspendable
+    private fun execute(input: RpcSmokeTestInput): RpcSmokeTestOutput {
         return RpcSmokeTestOutput(
-            checkNotNull(this.command) { "No smoke test command received" },
-            checkNotNull(commandMap[this.command]) { "command '${this.command}' not recognised" }.invoke(this)
+            checkNotNull(input.command) { "No smoke test command received" },
+            checkNotNull(commandMap[input.command]) { "command not recognised" }.invoke(input)
         )
     }
 

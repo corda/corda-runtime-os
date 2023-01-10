@@ -5,7 +5,7 @@ import net.corda.p2p.gateway.Gateway
 
 /** The processor for a [Gateway]. */
 interface GatewayProcessor {
-    fun start(bootConfig: SmartConfig, useStubComponents: Boolean)
+    fun start(bootConfig: SmartConfig)
 
     fun stop()
 }

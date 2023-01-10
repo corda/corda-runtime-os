@@ -14,13 +14,9 @@ interface UtxoPersistenceService {
 
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
 
-    fun persistTransaction(transaction: UtxoTransactionReader)
+    fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary>
 
-    fun persistTransactionIfDoesNotExist(
-        transaction: SignedTransactionContainer,
-        transactionStatus: TransactionStatus,
-        account: String
-    ): Pair<String?, List<CordaPackageSummary>>
+    fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 
     fun updateStatus(id: String, transactionStatus: TransactionStatus)
 }

@@ -1,8 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.gateway.GatewayMessage
@@ -24,7 +22,6 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -33,6 +30,8 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
+import java.nio.ByteBuffer
+import java.util.UUID
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -44,7 +43,6 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    signingMode: SigningMode,
     cryptoOpsClient: CryptoOpsClient,
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : HttpServerListener, LifecycleWithDominoTile {
@@ -78,7 +76,6 @@ internal class InboundMessageHandler(
         this,
         subscriptionFactory,
         messagingConfiguration,
-        signingMode,
         cryptoOpsClient
     )
     override val dominoTile = ComplexDominoTile(

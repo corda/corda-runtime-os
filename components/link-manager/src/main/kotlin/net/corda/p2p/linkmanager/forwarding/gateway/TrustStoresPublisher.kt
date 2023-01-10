@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -15,11 +16,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
-import net.corda.p2p.linkmanager.grouppolicy.GroupPolicyListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -30,7 +31,7 @@ internal class TrustStoresPublisher(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
-) : LifecycleWithDominoTile, GroupPolicyListener {
+) : LifecycleWithDominoTile {
 
     companion object {
         val logger = contextLogger()
@@ -39,7 +40,7 @@ internal class TrustStoresPublisher(
     }
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificate>>()
-    private val toPublish = ConcurrentLinkedQueue<GroupPolicyListener.GroupInfo>()
+    private val toPublish = ConcurrentLinkedQueue<GatewayTruststore>()
     private val ready = CompletableFuture<Unit>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -68,8 +69,13 @@ internal class TrustStoresPublisher(
         ready
     )
 
-    override fun groupAdded(groupInfo: GroupPolicyListener.GroupInfo) {
-        toPublish.offer(groupInfo)
+    fun groupAdded(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy) {
+        toPublish.offer(
+            GatewayTruststore(
+                holdingIdentity.toAvro(),
+                groupPolicy.p2pParameters.tlsTrustRoots.toList()
+            )
+        )
         publishQueueIfPossible()
     }
 
@@ -123,18 +129,21 @@ internal class TrustStoresPublisher(
     private fun publishQueueIfPossible() {
         while ((publisher.isRunning) && (ready.isDone)) {
             val groupInfo = toPublish.poll() ?: return
-            val certificates = groupInfo.trustedCertificates
-            publishGroupIfNeeded(groupInfo.holdingIdentity, certificates)
+            publishGroupIfNeeded(groupInfo)
         }
     }
 
-    private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificate>) {
+    private fun publishGroupIfNeeded(gatewayTruststore: GatewayTruststore) {
+        val holdingIdentity = gatewayTruststore.sourceIdentity.toCorda()
         publishedGroups.compute(holdingIdentity.toKafkaKey()) { _, publishedCertificates ->
             logger.info("Publishing trust roots for $holdingIdentity to the gateway.")
-            val certificatesSet = certificates.toSet()
+            val certificatesSet = gatewayTruststore.trustedCertificates.toSet()
             if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_TRUSTSTORES, holdingIdentity.toKafkaKey(),
-                    GatewayTruststore(holdingIdentity.toAvro(), certificates))
+                val record = Record(
+                    GATEWAY_TLS_TRUSTSTORES,
+                    holdingIdentity.toKafkaKey(),
+                    gatewayTruststore,
+                )
                 publisher.publish(
                     listOf(record)
                 ).forEach {

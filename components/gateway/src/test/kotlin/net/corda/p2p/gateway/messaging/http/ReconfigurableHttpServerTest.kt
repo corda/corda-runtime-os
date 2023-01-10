@@ -11,7 +11,6 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SigningMode
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -74,7 +73,6 @@ class ReconfigurableHttpServerTest {
         listener,
         mock(),
         mock(),
-        SigningMode.STUB,
         mock()
     )
 

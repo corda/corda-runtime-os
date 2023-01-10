@@ -5,6 +5,7 @@ import java.util.UUID
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
@@ -32,7 +33,7 @@ class VirtualNodeInfoRPCExtensionsTest {
                 MemberX500Name.parse("O=Alice, L=London, C=GB").toString(),
                 UUID.randomUUID().toString()
             ),
-            CpiIdentifier("TEST_CPI", "1.0", null),
+            CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
             timestamp = Instant.now(),
             vaultDmlConnectionId = UUID(30, 0),
             cryptoDmlConnectionId = UUID(0, 0),
