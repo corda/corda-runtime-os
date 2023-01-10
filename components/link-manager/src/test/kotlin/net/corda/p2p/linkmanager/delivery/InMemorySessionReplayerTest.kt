@@ -10,9 +10,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.linkmanager.sessions.SessionManager

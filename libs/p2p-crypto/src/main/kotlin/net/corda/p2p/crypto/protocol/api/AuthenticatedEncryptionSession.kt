@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.CommonHeader
-import net.corda.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.CommonHeader
+import net.corda.data.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.util.decrypt
