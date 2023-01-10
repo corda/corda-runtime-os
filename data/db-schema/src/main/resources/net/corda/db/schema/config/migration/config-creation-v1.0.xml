@@ -88,7 +88,7 @@
         </insert>
 
         <insert tableName="config" schemaName="${schema.name}">
-            <column name="section" value="corda.rpc"/>
+            <column name="section" value="corda.rest"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
             <column name="schema_version_minor" value="0"/>
