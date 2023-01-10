@@ -5,7 +5,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -24,7 +23,6 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
     private val signatureVerificationService: SignatureVerificationService
 ) : DigitalSignatureVerificationService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
 
-    @Suspendable
     override fun verify(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
@@ -34,7 +32,6 @@ class DigitalSignatureVerificationServiceImpl @Activate constructor(
         signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
     }
 
-    @Suspendable
     override fun verify(
         originalData: ByteArray,
         signature: DigitalSignature,
