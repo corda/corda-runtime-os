@@ -85,6 +85,14 @@ class FlowRPCOpsImpl @Activate constructor(
         return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
 
+    private fun validateClientRequestId(clientRequestId: String) {
+        if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
+            throw IllegalArgumentException(
+                """Supplied Client Request ID "$clientRequestId" is invalid,""" +
+                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
+        }
+    }
+
     @Suppress("SpreadOperator")
     override fun startFlow(
         holdingIdentityShortHash: String,
@@ -106,11 +114,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
-        if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
-            throw IllegalArgumentException(
-                """Supplied Client Request ID "$clientRequestId" is invalid,""" +
-                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
-        }
+        validateClientRequestId(clientRequestId)
 
         if (flowStatus != null) {
             throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
@@ -196,6 +200,8 @@ class FlowRPCOpsImpl @Activate constructor(
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holdingIdentityShortHash)
+
+        validateClientRequestId(clientRequestId)
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(

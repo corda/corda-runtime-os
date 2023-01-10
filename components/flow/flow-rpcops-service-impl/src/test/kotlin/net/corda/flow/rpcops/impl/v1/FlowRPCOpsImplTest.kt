@@ -167,7 +167,7 @@ class FlowRPCOpsImplTest {
     fun `get flow status`() {
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
         val flowRPCOps = createFlowRpcOps()
-        flowRPCOps.getFlowStatus(VALID_SHORT_HASH, "")
+        flowRPCOps.getFlowStatus(VALID_SHORT_HASH, clientRequestId)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -522,5 +522,15 @@ class FlowRPCOpsImplTest {
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(fatalErrorFunction, never()).invoke()
+    }
+    @Test
+    fun `start flow throws illegal argument if clientRequestId is empty`() {
+        val flowRPCOps = createFlowRpcOps()
+
+        whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
+
+        assertThrows<java.lang.IllegalArgumentException> {
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
     }
 }
