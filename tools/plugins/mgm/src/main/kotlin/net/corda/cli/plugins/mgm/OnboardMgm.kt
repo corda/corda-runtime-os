@@ -104,6 +104,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
+            "corda.group.tls.type" to "OneWay",
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",

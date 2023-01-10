@@ -1,7 +1,9 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -12,7 +14,8 @@ import net.corda.v5.base.versioning.Version
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val orderVerifier: OrderVerifier = OrderVerifier(),
-    private val p2pEndpointVerifier: P2pEndpointVerifier = P2pEndpointVerifier(orderVerifier)
+    private val p2pEndpointVerifier: P2pEndpointVerifier = P2pEndpointVerifier(orderVerifier),
+    private val configurationGetService: ConfigurationGetService,
 ) {
 
     private companion object {
@@ -82,6 +85,13 @@ internal class MGMRegistrationContextValidator(
         context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+        }
+        val contextRegistrationTlsType = context[TLS_TYPE]?.also { tlsType ->
+            TlsType.fromString(tlsType) ?: throw IllegalArgumentException("Invalid TLS type: $tlsType")
+        } ?: TlsType.ONE_WAY
+        val clusterTlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
+        if (contextRegistrationTlsType != clusterTlsType) {
+            throw IllegalArgumentException("A cluster with TLS type is $clusterTlsType can not register MGM with TLS type $contextRegistrationTlsType")
         }
     }
 }

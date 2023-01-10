@@ -256,6 +256,7 @@ class MGMRegistrationServiceTest {
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
+        "corda.group.tls.type" to "OneWay",
         "corda.group.pki.session" to "Standard",
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
@@ -407,6 +408,7 @@ class MGMRegistrationServiceTest {
                         "protocol.synchronisation"
                                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                         "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
+                        "corda.group.tls.type" to "OneWay",
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",

@@ -128,7 +128,7 @@ class MGMGroupPolicyImpl(
             // CORE-8860 - Verify this works
             TlsType.fromString(
                 getPersistedString(PropertyKeys.TLS_TYPE)
-            )
+            ) ?: TlsType.ONE_WAY
         }
     }
 

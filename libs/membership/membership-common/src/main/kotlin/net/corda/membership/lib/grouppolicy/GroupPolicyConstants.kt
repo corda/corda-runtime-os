@@ -207,10 +207,11 @@ class GroupPolicyConstants {
                             .getString(PolicyKeys.P2PParameters.TLS_TYPE)
                         return valueOf(tlsType)
                     }
-                    fun fromString(str: String?): TlsType = values()
+                    fun fromString(str: String?): TlsType? = values()
                         .firstOrNull {
-                        it.groupPolicyName.equals(str, ignoreCase = true)
-                    } ?: ONE_WAY
+                        it.groupPolicyName.equals(str, ignoreCase = true) ||
+                                it.name.equals(str, ignoreCase = true)
+                    }
                 }
 
                 class FailToReadClusterTlsTypeException(message: String)  : CordaRuntimeException(message)

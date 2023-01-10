@@ -15,3 +15,4 @@ internal const val TRUSTSTORE_SESSION = "${GROUP_POLICY_PREFIX}.truststore.sessi
 internal const val TRUSTSTORE_TLS = "${GROUP_POLICY_PREFIX}.truststore.tls.%s"
 internal const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
 internal const val ECDH_KEY_ID = "$ECDH_KEY.id"
+internal const val TLS_TYPE = "$GROUP_POLICY_PREFIX.tls.type"
