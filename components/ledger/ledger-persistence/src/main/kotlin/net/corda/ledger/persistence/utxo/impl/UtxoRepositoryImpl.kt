@@ -8,6 +8,8 @@ import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.orm.DatabaseType.HSQLDB
+import net.corda.orm.DatabaseTypeProvider
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
@@ -19,6 +21,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -45,12 +48,16 @@ class UtxoRepositoryImpl @Activate constructor(
     @Reference
     private val serializationService: SerializationService,
     @Reference
-    private val wireTransactionFactory: WireTransactionFactory
+    private val wireTransactionFactory: WireTransactionFactory,
+    @Reference(cardinality = OPTIONAL)
+    databaseTypeProvider: DatabaseTypeProvider?
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val databaseType = databaseTypeProvider?.databaseType
 
     override fun findTransaction(
         entityManager: EntityManager,
@@ -225,12 +232,21 @@ class UtxoRepositoryImpl @Activate constructor(
         account: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction AS ut
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP))
+                AS x(id, privacy_salt, account_id, created)
+            ON x.id = ut.id
+            WHEN NOT MATCHED THEN
+                INSERT (id, privacy_salt, account_id, created)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created)
             VALUES (:id, :privacySalt, :accountId, :createdAt)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
@@ -248,12 +264,21 @@ class UtxoRepositoryImpl @Activate constructor(
         hash: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_component AS utc
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash, CAST(:createdAt AS TIMESTAMP))
+                AS x(transaction_id, group_idx, leaf_idx, data, hash, created)
+            ON x.transaction_id = utc.transaction_id AND x.group_idx = utc.group_idx AND x.leaf_idx = utc.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, data, hash, created)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash, x.created)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
             VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -269,14 +294,24 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         fileChecksums: Collection<String>
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_cpk AS utc
+            USING (SELECT :transactionId, file_checksum
+                   FROM {h-schema}utxo_cpk
+                   WHERE file_checksum IN (:fileChecksums)) AS x(transaction_id, file_checksum)
+            ON x.transaction_id = utc.transaction_id AND x.file_checksum = utc.file_checksum
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, file_checksum)
+                VALUES (x.transaction_id, x.file_checksum)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_cpk
             SELECT :transactionId, file_checksum
             FROM {h-schema}utxo_cpk
             WHERE file_checksum in (:fileChecksums)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("fileChecksums", fileChecksums)
             .executeUpdate()
@@ -298,8 +333,20 @@ class UtxoRepositoryImpl @Activate constructor(
         tokenAmount: BigDecimal?,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_output AS uto
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
+                          :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:createdAt AS TIMESTAMP))
+                AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                     token_symbol, token_tag, token_owner_hash, token_amount, created)
+            ON uto.transaction_id = x.transaction_id AND uto.group_idx = x.group_idx AND uto.leaf_idx = x.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                        token_symbol, token_tag, token_owner_hash, token_amount, created)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash, x.token_notary_x500_name,
+                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                 token_symbol, token_tag, token_owner_hash, token_amount, created)
@@ -307,7 +354,8 @@ class UtxoRepositoryImpl @Activate constructor(
                 :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
                 :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -336,8 +384,17 @@ class UtxoRepositoryImpl @Activate constructor(
         customRepresentation: CustomRepresentation,
         timestamp: Instant,
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_visible_transaction_state AS uvts
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:custom_representation as JSONB),
+                          CAST(:createdAt AS TIMESTAMP), ${if (consumed) "CAST(:consumedAt AS TIMESTAMP)" else "null"})
+                AS x(transaction_id, group_idx, leaf_idx, custom_representation, created, consumed)
+            ON uvts.transaction_id = x.transaction_id AND uvts.group_idx = x.group_idx AND uvts.leaf_idx = x.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, custom_representation, created, consumed)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.custom_representation, x.created, x.consumed)"""
+            else -> """
             INSERT INTO {h-schema}utxo_visible_transaction_state(
                 transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
             )
@@ -350,7 +407,8 @@ class UtxoRepositoryImpl @Activate constructor(
                 ${if (consumed) ":consumedAt" else "null"}
             )
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -368,14 +426,24 @@ class UtxoRepositoryImpl @Activate constructor(
         signature: DigitalSignatureAndMetadata,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_signature AS uts
+            USING (VALUES :transactionId, CAST(:signatureIdx AS INT), CAST(:signature AS VARBINARY(1048576)),
+                          :publicKeyHash, CAST(:createdAt AS TIMESTAMP))
+                AS x(transaction_id, signature_idx, signature, pub_key_hash, created)
+            ON uts.transaction_id = x.transaction_id AND uts.signature_idx = x.signature_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, signature_idx, signature, pub_key_hash, created)
+                VALUES (x.transaction_id, x.signature_idx, x.signature, x.pub_key_hash, x.created)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_signature(
                 transaction_id, signature_idx, signature, pub_key_hash, created)
             VALUES (
                 :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
@@ -395,14 +463,24 @@ class UtxoRepositoryImpl @Activate constructor(
         isRefInput: Boolean,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_sources AS uts
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT),
+                          :refTransactionId, CAST(:refLeafIndex AS INT), CAST(:isRefInput AS BOOLEAN), CAST(:createdAt AS TIMESTAMP))
+                AS x(transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
+            ON uts.transaction_id = x.transaction_id AND uts.group_idx = x.group_idx AND uts.leaf_idx = x.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.ref_transaction_id, x.ref_leaf_idx, x.is_ref_input, x.created)"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_sources(
                 transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
             VALUES(
                 :transactionId, :groupIndex, :leafIndex, :refTransactionId, :refLeafIndex, :isRefInput, :createdAt)
             ON CONFLICT DO NOTHING"""
-        )
+        }.trimIndent()
+        entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -420,15 +498,25 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
-        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
-        val rowsUpdated = entityManager.createNativeQuery(
-            """
+        val nativeSQL = when(databaseType) {
+            HSQLDB -> """
+            MERGE INTO {h-schema}utxo_transaction_status AS uts
+            USING (VALUES :transactionId, :status, CAST(:updatedAt AS TIMESTAMP)) AS x(transaction_id, status, updated)
+            ON uts.transaction_id = x.transaction_id
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, status, updated)
+                VALUES (x.transaction_id, x.status, x.updated)
+            WHEN MATCHED AND (uts.status = x.status OR uts.status = '$UNVERIFIED') THEN
+                UPDATE SET status = x.status, updated = x.updated"""
+            else -> """
             INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
             VALUES (:transactionId, :status, :updatedAt)
             ON CONFLICT(transaction_id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
                 WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
-        )
+        }.trimIndent()
+        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        val rowsUpdated = entityManager.createNativeQuery(nativeSQL)
             .setParameter("transactionId", transactionId)
             .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)

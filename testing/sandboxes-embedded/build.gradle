@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'API for embedded Corda'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-avro-schema'
+    api 'net.corda:corda-base'
+}

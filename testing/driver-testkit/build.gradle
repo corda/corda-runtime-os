@@ -1,0 +1,80 @@
+import static org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'corda.java-library'
+}
+
+description 'An embedded Corda Virtual Node for testing CPBs.'
+
+configurations {
+    cpbs {
+        attributes {
+            attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
+        }
+        canBeConsumed = false
+        visible = false
+    }
+}
+
+dependencies {
+    constraints {
+        // We must use a single version of ASM exposed through the system
+        // bundle, and rely on ASM's own backwards-compatibility.
+        implementation('org.ow2.asm:asm') {
+            version {
+                require asmVersion
+            }
+        }
+    }
+
+    compileOnly 'org.osgi:osgi.core'
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-base'
+    api project(':libs:virtual-node:virtual-node-info')
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    implementation 'net.corda:corda-avro-schema'
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:packaging:packaging')
+    implementation project(':libs:packaging:packaging-core')
+    implementation project(':testing:sandboxes-testkit')
+    implementation("biz.aQute.bnd:biz.aQute.bndlib:$bndVersion") {
+        transitive = false
+    }
+    implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
+
+    runtimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    runtimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension") {
+        transitive = false
+    }
+
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.service.log:$osgiServiceLogVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    runtimeOnly "com.google.code.findbugs:jsr305:3.0.2"
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    cpbs project(':testing:cpbs:extendable-cpb')
+    cpbs project(':testing:cpbs:mandelbrot')
+    testRuntimeOnly files(configurations.cpbs)
+}
+
+tasks.withType(Test).configureEach {
+    enableAssertions = false
+    doFirst {
+        systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', 'info'
+        systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
+        systemProperty 'org.slf4j.simpleLogger.showDateTime', true
+        systemProperty 'org.slf4j.simpleLogger.showShortLogName', true
+        systemProperty 'org.slf4j.simpleLogger.showThreadName', false
+    }
+}

@@ -4,7 +4,21 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_LOCAL_IDENTITY_PID
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_LOCAL_TENANCY_PID
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_MEMBER_COUNT
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_MEMBER_PUBLIC_KEY
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_MEMBER_X500_NAME
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_MEMBERSHIP_PID
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_MEMBER_PRIVATE_KEY
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_TENANT
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_TENANT_COUNT
+import net.corda.testing.sandboxes.SandboxSetup.Companion.CORDA_TENANT_MEMBER
+import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentContext
@@ -16,6 +30,8 @@ import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.security.KeyPair
+import java.security.PublicKey
 import java.util.Collections.unmodifiableSet
 import java.util.Deque
 import java.util.Hashtable
@@ -39,7 +55,8 @@ class SandboxSetupImpl @Activate constructor(
     private val componentContext: ComponentContext
 ) : SandboxSetup {
     companion object {
-        const val INSTALLER_NAME = "installer"
+        const val INSTALLER_NAME = "corda.installer"
+        const val VNODE_LOADER_NAME = "corda.virtual.node.loader"
         private const val WAIT_MILLIS = 100L
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
@@ -65,10 +82,9 @@ class SandboxSetupImpl @Activate constructor(
             "org.jetbrains.kotlin.osgi-bundle",
             "slf4j.api"
         ))
-
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
     private val cleanups: Deque<AutoCloseable> = LinkedList()
 
     override fun configure(
@@ -155,5 +171,53 @@ class SandboxSetupImpl @Activate constructor(
 
     override fun withCleanup(closeable: AutoCloseable) {
         cleanups.addFirst(closeable)
+    }
+
+    override fun setMembershipGroup(network: Map<MemberX500Name, PublicKey>) {
+        configAdmin.getConfiguration(CORDA_MEMBERSHIP_PID)?.also { config ->
+            val properties = Hashtable<String, Any>()
+            properties[CORDA_MEMBER_COUNT] = network.size
+            network.entries.forEachIndexed { idx, entry ->
+                properties["$CORDA_MEMBER_X500_NAME.$idx"] = entry.key.toString()
+                properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] = entry.value.encoded
+            }
+            config.update(properties)
+        }
+    }
+
+    override fun setLocalIdentities(localMembers: Set<MemberX500Name>, localKeys: Map<MemberX500Name, KeyPair>) {
+        if (localMembers.isNotEmpty()) {
+            configAdmin.getConfiguration(CORDA_LOCAL_IDENTITY_PID, null)?.also { config ->
+                val properties = Hashtable<String, Any>()
+                properties[CORDA_MEMBER_COUNT] = localMembers.size
+                localMembers.forEachIndexed { idx, localMember ->
+                    properties["$CORDA_MEMBER_X500_NAME.$idx"] = localMember.toString()
+                    localKeys[localMember]?.also { keyPair ->
+                        properties["$CORDA_MEMBER_PRIVATE_KEY.$idx"] = keyPair.private.encoded
+                        properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] = keyPair.public.encoded
+                    }
+                }
+                config.update(properties)
+            }
+        }
+    }
+
+    override fun configureLocalTenants(timeout: Long) {
+        val localTenants = fetchService<VirtualNodeInfoReadService>("(component.name=$VNODE_LOADER_NAME)", timeout).getAll()
+            .map(VirtualNodeInfo::holdingIdentity)
+            .associate { hid ->
+                hid.shortHash.value to hid.x500Name
+            }
+        if (localTenants.isNotEmpty()) {
+            configAdmin.getConfiguration(CORDA_LOCAL_TENANCY_PID, null)?.also { config ->
+                val properties = Hashtable<String, Any>()
+                properties[CORDA_TENANT_COUNT] = localTenants.size
+                localTenants.entries.forEachIndexed { idx, entry ->
+                    properties["$CORDA_TENANT.$idx"] = entry.key
+                    properties["$CORDA_TENANT_MEMBER.$idx"] = entry.value.toString()
+                }
+                config.update(properties)
+            }
+        }
     }
 }

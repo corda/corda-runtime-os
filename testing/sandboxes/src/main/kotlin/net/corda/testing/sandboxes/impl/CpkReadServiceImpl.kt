@@ -19,6 +19,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.io.InputStream
+import java.net.URL
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -56,8 +57,12 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     private fun getInputStream(resourceName: String): InputStream {
-        return testBundle.getResource(resourceName)?.openStream()
-            ?: throw FileNotFoundException("No such resource: '$resourceName'")
+        val resource = if (resourceName.startsWith("file:")) {
+            URL(resourceName)
+        } else {
+            testBundle.getResource(resourceName)
+        }
+        return resource?.openStream() ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
     override fun loadCPI(resourceName: String): Cpi {

@@ -26,21 +26,50 @@ class VirtualNodeServiceImpl @Activate constructor(
 
     @Reference
     private val sandboxGroupContextComponent: SandboxGroupContextComponent
-) : VirtualNodeService {
+) : VirtualNodeService, LocalMembership {
     private companion object {
-        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+        private const val DEFAULT_X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
         private val ONE_SECOND = ofSeconds(1)
-
-        private fun generateHoldingIdentity()
-            = HoldingIdentity(MemberX500Name.parse(X500_NAME), UUID.randomUUID().toString())
     }
+
+    private val localMemberNames = linkedSetOf(MemberX500Name.parse(DEFAULT_X500_NAME))
+    private val cpiGroups = mutableMapOf<String, String>()
 
     init {
         sandboxGroupContextComponent.initCaches(1)
     }
 
+    private fun generateHoldingIdentity(memberName: MemberX500Name, resourceName: String): HoldingIdentity {
+        val groupId = cpiGroups.computeIfAbsent(resourceName) {
+            UUID.randomUUID().toString()
+        }
+        return HoldingIdentity(memberName, groupId)
+    }
+
+    override fun setLocalMembers(localMembers: Set<MemberX500Name>) {
+        synchronized(localMemberNames) {
+            localMemberNames.clear()
+            localMemberNames += localMembers
+        }
+    }
+
+    override fun getLocalMembers(): Set<MemberX500Name> {
+        return synchronized(localMemberNames) {
+            LinkedHashSet(localMemberNames)
+        }
+    }
+
+    override fun loadVirtualNodes(resourceName: String): Set<VirtualNodeInfo> {
+        return getLocalMembers().mapTo(linkedSetOf()) { memberName ->
+            virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(memberName, resourceName))
+        }
+    }
+
     override fun loadVirtualNode(resourceName: String): VirtualNodeInfo {
-        return virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
+        val localMemberName = synchronized(localMemberNames) {
+            localMemberNames.single()
+        }
+        return virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(localMemberName, resourceName))
     }
 
     override fun releaseVirtualNode(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {

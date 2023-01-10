@@ -1,0 +1,115 @@
+import static org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'TestKit for Embedded Flow Sandboxes.'
+
+configurations {
+    cpbs {
+        attributes {
+            attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, 'cpb'))
+        }
+        canBeConsumed = false
+        visible = false
+    }
+
+    cpks {
+        canBeConsumed = false
+        transitive = false
+        visible = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    api project(':testing:driver-testkit')
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-topic-schema'
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:crypto:crypto-persistence')
+    implementation project(':components:crypto:crypto-service-impl')
+    implementation project(':components:crypto:crypto-softhsm-impl')
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:flow:flow-mapper-service')
+    implementation project(':components:flow:flow-p2p-filter-service')
+    implementation project(':components:flow:flow-service')
+    implementation project(':components:ledger:ledger-persistence')
+    implementation project(':components:persistence:persistence-service-common')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-impl')
+    implementation project(':libs:crypto:crypto-serialization-impl')
+    implementation project(':libs:db:db-admin')
+    implementation project(':libs:flows:flow-mapper')
+    implementation project(':libs:flows:utils')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':testing:sandboxes-testkit')
+    implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    implementation 'org.slf4j:slf4j-api'
+
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':components:ledger:ledger-consensual-flow')
+    //runtimeOnly project(':components:ledger:ledger-utxo-flow')
+    runtimeOnly project(':components:ledger:notary-worker-selection-impl')
+    runtimeOnly project(':libs:application:application-impl')
+    runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':libs:db:db-admin-impl')
+    runtimeOnly project(':libs:flows:external-event-responses-impl')
+    runtimeOnly project(':libs:flows:flow-mapper-impl')
+    runtimeOnly project(':libs:flows:session-manager-impl')
+    runtimeOnly project(':libs:messaging:db-message-bus-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:serialization:serialization-kryo')
+    runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
+    runtimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    cpks project(':testing:cpbs:ledger-consensual-demo-app')
+    cpks project(':testing:cpbs:ledger-utxo-demo-app')
+    cpks project(':testing:cpbs:mandelbrot')
+    testImplementation files(configurations.cpks)
+    testRuntimeOnly files(configurations.archives.artifacts.files)
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    cpbs project(':testing:cpbs:extendable-cpb')
+    cpbs project(':testing:cpbs:ledger-consensual-demo-app')
+    cpbs project(':testing:cpbs:ledger-utxo-demo-app')
+    cpbs project(':testing:cpbs:mandelbrot')
+    testRuntimeOnly files(configurations.cpbs)
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Import-Package: \
+    !net.corda.testing.driver,\
+    !net.corda.testing.driver.impl,\
+    *
+'''
+    }
+}
+
+tasks.withType(Test).configureEach {
+    enableAssertions = false
+    doFirst {
+        //systemProperty 'co.paralleluniverse.fibers.verifyInstrumentation', true
+        systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', 'info'
+        systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
+        systemProperty 'org.slf4j.simpleLogger.showDateTime', true
+        systemProperty 'org.slf4j.simpleLogger.showShortLogName', true
+        systemProperty 'org.slf4j.simpleLogger.showThreadName', false
+        systemProperty 'org.slf4j.simpleLogger.log.org.apache.aries.spifly.BaseActivator', 'OFF'
+    }
+}
