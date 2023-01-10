@@ -71,6 +71,7 @@ internal class MGMRegistrationContextValidator(
     }
 
     @Throws(IllegalArgumentException::class)
+    @Suppress("ThrowsCount")
     private fun validateContext(context: Map<String, String>) {
         for (key in errorMessageMap.keys) {
             context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
@@ -86,12 +87,15 @@ internal class MGMRegistrationContextValidator(
             require(isNotEmpty()) { "No TLS trust store was provided." }
             require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
         }
-        val contextRegistrationTlsType = context[TLS_TYPE]?.also { tlsType ->
+        val contextRegistrationTlsType = context[TLS_TYPE]?.let { tlsType ->
             TlsType.fromString(tlsType) ?: throw IllegalArgumentException("Invalid TLS type: $tlsType")
         } ?: TlsType.ONE_WAY
         val clusterTlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
         if (contextRegistrationTlsType != clusterTlsType) {
-            throw IllegalArgumentException("A cluster with TLS type is $clusterTlsType can not register MGM with TLS type $contextRegistrationTlsType")
+            throw IllegalArgumentException(
+                "A cluster with TLS type is $clusterTlsType can not register " +
+                "MGM with TLS type $contextRegistrationTlsType"
+            )
         }
     }
 }

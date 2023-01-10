@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -74,6 +75,8 @@ class MGMRegistrationService @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -156,7 +159,8 @@ class MGMRegistrationService @Activate constructor(
     private inner class ActiveImpl : InnerRegistrationService {
 
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
-            membershipSchemaValidatorFactory
+            membershipSchemaValidatorFactory,
+            configurationGetService = configurationGetService,
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,

@@ -1,6 +1,5 @@
 package net.corda.membership.service.impl
 
-import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -18,7 +17,6 @@ import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -49,7 +47,6 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
-import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -152,20 +149,12 @@ class MemberOpsServiceProcessorTest {
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
     }
-    private val gatewayConfiguration = mock<SmartConfig> {
-        on { getConfig("sslConfig") } doReturn mock
-        on { getString("tlsType") } doReturn "ONE_WAY"
-    }
-    private val configurationGetService = mock<ConfigurationGetService> {
-        on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
-    }
 
     private var processor = MemberOpsServiceProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
-        configurationGetService,
         clock,
     )
 
@@ -265,6 +254,36 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"$CIPHER_SUITE\"")
             it.assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"OneWay\"")
         }
+    }
+
+    @Test
+    fun `should parse TLS type if present`() {
+        val testPropertiesWithMutualTls = testProperties +
+                (PropertyKeys.TLS_TYPE to "mutual")
+        val testPersistedGroupPolicyEntries =
+            LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
+        whenever(
+            membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        val requestTimestamp = now
+        val requestContext = MembershipRpcRequestContext(
+            UUID.randomUUID().toString(),
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            MGMGroupPolicyRequest(
+                mgmHoldingIdentity.shortHash.value
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+        processor.onNext(request, future)
+
+        val result = future.get()
+
+        val response = result.response as? MGMGroupPolicyResponse
+        val groupPolicy = response?.groupPolicy
+        assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"Mutual\"")
     }
 
     @Nested

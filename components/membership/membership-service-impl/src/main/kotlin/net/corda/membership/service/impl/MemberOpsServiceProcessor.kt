@@ -242,7 +242,7 @@ class MemberOpsServiceProcessor(
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
             val tlsType = TlsType.fromString(
-                persistedGroupPolicyProperties.parse(PropertyKeys.TLS_TYPE)
+                persistedGroupPolicyProperties.parseOrNull(PropertyKeys.TLS_TYPE, String::class.java)
             ) ?: TlsType.ONE_WAY
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
