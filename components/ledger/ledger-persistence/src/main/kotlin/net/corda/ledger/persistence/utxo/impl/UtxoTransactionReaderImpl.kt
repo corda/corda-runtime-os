@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistTransaction
+import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
@@ -28,15 +29,41 @@ import net.corda.v5.ledger.utxo.StateRef
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
     private val externalEventContext: ExternalEventContext,
-    private val transaction: PersistTransaction
+    transaction: ByteArray,
+    override val status: TransactionStatus,
+    override val relevantStatesIndexes: List<Int>
 ) : UtxoTransactionReader {
+
+    constructor(
+        sandbox: SandboxGroupContext,
+        externalEventContext: ExternalEventContext,
+        transaction: PersistTransaction
+    ) : this (
+        sandbox,
+        externalEventContext,
+        transaction.transaction.array(),
+        transaction.status.toTransactionStatus(),
+        transaction.relevantStatesIndexes
+    )
+
+    constructor(
+        sandbox: SandboxGroupContext,
+        externalEventContext: ExternalEventContext,
+        transaction: PersistTransactionIfDoesNotExist
+    ) : this (
+        sandbox,
+        externalEventContext,
+        transaction.transaction.array(),
+        transaction.status.toTransactionStatus(),
+        emptyList()
+    )
 
     private companion object {
         const val CORDA_ACCOUNT = "corda.account"
     }
 
     private val serializer = sandbox.getSerializationService()
-    private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction.transaction.array())
+    private val signedTransaction = serializer.deserialize<SignedTransactionContainer>(transaction)
     private val wrappedWireTransaction = WrappedUtxoWireTransaction(signedTransaction.wireTransaction, serializer)
 
     override val id: SecureHash
@@ -45,9 +72,6 @@ class UtxoTransactionReaderImpl(
     override val account: String
         get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
             ?: throw NullParameterException("Flow external event context property '${CORDA_ACCOUNT}' not set")
-
-    override val status: TransactionStatus
-        get() = transaction.status.toTransactionStatus()
 
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt
@@ -60,9 +84,6 @@ class UtxoTransactionReaderImpl(
 
     override val cpkMetadata: List<CordaPackageSummary>
         get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
-
-    override val relevantStatesIndexes: List<Int>
-        get() = transaction.relevantStatesIndexes ?: emptyList()
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
         val relevantStatesSet = relevantStatesIndexes.toSet()

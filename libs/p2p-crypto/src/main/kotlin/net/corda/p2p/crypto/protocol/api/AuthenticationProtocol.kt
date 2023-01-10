@@ -1,8 +1,8 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_NONCE_SIZE_BYTES

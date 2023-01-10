@@ -3,10 +3,10 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.test.util.identity.createTestHoldingIdentity

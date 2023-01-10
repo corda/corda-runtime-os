@@ -5,7 +5,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.membership.p2p.helpers.TtlIdsFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 

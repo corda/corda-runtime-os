@@ -2,7 +2,7 @@ package net.corda.flow.dummy.link
 
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
+import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas
 
 /**
