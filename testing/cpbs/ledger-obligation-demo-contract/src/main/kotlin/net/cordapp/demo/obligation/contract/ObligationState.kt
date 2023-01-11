@@ -6,6 +6,9 @@ import java.math.BigDecimal
 import java.security.PublicKey
 import java.util.UUID
 
+/**
+ * Represents a basic obligation
+ */
 @BelongsToContract(ObligationContract::class)
 data class ObligationState(
     val issuer: PublicKey,

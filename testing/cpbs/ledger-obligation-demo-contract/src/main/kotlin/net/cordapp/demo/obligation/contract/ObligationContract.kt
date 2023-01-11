@@ -5,21 +5,48 @@ import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.math.BigDecimal
 
+/**
+ * Represents the contract that governs obligation state transitions on a UTXO ledger.
+ */
 class ObligationContract : Contract {
 
+    /**
+     * Verifies the specified transaction associated with the current contract.
+     *
+     * @param transaction The transaction to verify.
+     */
     override fun verify(transaction: UtxoLedgerTransaction) {
-        val command = transaction.getCommands(TestUtxoContractCommand::class.java).singleOrNull()
-            ?: throw IllegalArgumentException("Expected a single command of type: ${TestUtxoContractCommand::class.java}.")
+        val command = transaction.getCommands(ObligationContractCommand::class.java).singleOrNull()
+            ?: throw IllegalArgumentException("Expected a single command of type: ${ObligationContractCommand::class.java}.")
 
-        command.verify(transaction)
+        /**
+         * Verification logic for each command has been separated out into its own method/function as this leads to
+         * increased readability and maintainability. This also better enables subclass verification for contract
+         * hierarchies that derive from a contract superclass.
+         */
+        when (command) {
+            is Create -> verifyCreate(transaction)
+            is Update -> verifyUpdate(transaction)
+            is Delete -> verifyDelete(transaction)
+        }
     }
 
-    private interface TestUtxoContractCommand : Command {
-        fun verify(transaction: UtxoLedgerTransaction)
-    }
+    /**
+     * Defines a [Command] type to be used specifically within the current [ObligationContract].
+     */
+    private interface ObligationContractCommand : Command
 
-    class Create : TestUtxoContractCommand {
-
+    /**
+     * Represents the create command, which is executed when obligations are created on a UTXO ledger.
+     *
+     * The [Create] command's companion object contains string constants which define the contract constraints as
+     * human-readable text. Compared to using string literals directly within the contract verification logic, this
+     * adds value in that the constant strings can be accessed from contract tests, leading to fewer repetitions.
+     *
+     * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
+     * associated tests within the same package.
+     */
+    class Create : ObligationContractCommand {
         companion object {
 
             internal const val CONTRACT_RULE_INPUTS =
@@ -36,28 +63,20 @@ class ObligationContract : Contract {
 
             internal const val CONTRACT_RULE_SIGNATORIES =
                 "On state creating, the issuer must sign the transaction."
-
-        }
-
-        override fun verify(transaction: UtxoLedgerTransaction) {
-
-            // TODO : The generic variants of this don't work properly!
-            val inputs = transaction.getInputStates(ObligationState::class.java)
-            val outputs = transaction.getOutputStates(ObligationState::class.java)
-
-            require(inputs.isEmpty()) { CONTRACT_RULE_INPUTS }
-            require(outputs.size == 1) { CONTRACT_RULE_OUTPUTS }
-
-            val output = outputs.single()
-
-            require(output.issuer != output.holder) { CONTRACT_RULE_PARTICIPANTS }
-            require(output.amount > BigDecimal.ZERO) { CONTRACT_RULE_AMOUNT }
-            require(output.issuer in transaction.signatories) { CONTRACT_RULE_SIGNATORIES }
         }
     }
 
-    class Update : TestUtxoContractCommand {
-
+    /**
+     * Represents the update command, which is executed when obligations are updated on a UTXO ledger.
+     *
+     * The [Update] command's companion object contains string constants which define the contract constraints as
+     * human-readable text. Compared to using string literals directly within the contract verification logic, this
+     * adds value in that the constant strings can be accessed from contract tests, leading to fewer repetitions.
+     *
+     * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
+     * associated tests within the same package.
+     */
+    class Update : ObligationContractCommand {
         companion object {
 
             internal const val CONTRACT_RULE_INPUTS =
@@ -82,27 +101,22 @@ class ObligationContract : Contract {
                 "On state updating, the holder must sign the transaction."
 
         }
-
-        override fun verify(transaction: UtxoLedgerTransaction) {
-            val inputs = transaction.getInputStates(ObligationState::class.java)
-            val outputs = transaction.getOutputStates(ObligationState::class.java)
-
-            require(inputs.size == 1) { CONTRACT_RULE_INPUTS }
-            require(outputs.size == 1) { CONTRACT_RULE_OUTPUTS }
-
-            val input = inputs.single()
-            val output = outputs.single()
-
-            require(input.issuer == output.issuer) { CONTRACT_RULE_ISSUER }
-            require(input.holder == output.holder) { CONTRACT_RULE_HOLDER }
-            require(input.amount > output.amount) { CONTRACT_RULE_AMOUNT_CONSERVATION }
-            require(output.amount >= BigDecimal.ZERO) { CONTRACT_RULE_AMOUNT_OUTPUT }
-            require(output.holder in transaction.signatories) { CONTRACT_RULE_SIGNATORIES }
-        }
     }
 
-    class Delete : TestUtxoContractCommand {
-
+    /**
+     * Represents the delete command, which is executed when obligations are deleted from a UTXO ledger.
+     *
+     * Due to the immutable nature of the UTXO ledger, contract states are never actually deleted; rather they are
+     * marked as consumed and can no longer be used as inputs in subsequent transactions.
+     *
+     * The [Delete] command's companion object contains string constants which define the contract constraints as
+     * human-readable text. Compared to using string literals directly within the contract verification logic, this
+     * adds value in that the constant strings can be accessed from contract tests, leading to fewer repetitions.
+     *
+     * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
+     * associated tests within the same package.
+     */
+    class Delete : ObligationContractCommand {
         companion object {
 
             internal const val CONTRACT_RULE_INPUTS =
@@ -118,18 +132,65 @@ class ObligationContract : Contract {
                 "On state deleting, the issuer and the holder must sign the transaction."
 
         }
+    }
 
-        override fun verify(transaction: UtxoLedgerTransaction) {
-            val inputs = transaction.getInputStates(ObligationState::class.java)
-            val outputs = transaction.getOutputStates(ObligationState::class.java)
+    /**
+     * Verifies the current [ObligationContract] in the context of a [Create] command.
+     *
+     * @param transaction The transaction to verify.
+     */
+    private fun verifyCreate(transaction: UtxoLedgerTransaction) {
+        // TODO : The generic variants of this don't work properly!
+        val inputs = transaction.getInputStates(ObligationState::class.java)
+        val outputs = transaction.getOutputStates(ObligationState::class.java)
 
-            require(inputs.size == 1) { CONTRACT_RULE_INPUTS }
-            require(outputs.isEmpty()) { CONTRACT_RULE_OUTPUTS }
+        require(inputs.isEmpty()) { Create.CONTRACT_RULE_INPUTS }
+        require(outputs.size == 1) { Create.CONTRACT_RULE_OUTPUTS }
 
-            val input = inputs.single()
+        val output = outputs.single()
 
-            require(input.amount == BigDecimal.ZERO) { CONTRACT_RULE_AMOUNT }
-            require(input.participants.all { it in transaction.signatories }) { CONTRACT_RULE_SIGNATORIES }
-        }
+        require(output.issuer != output.holder) { Create.CONTRACT_RULE_PARTICIPANTS }
+        require(output.amount > BigDecimal.ZERO) { Create.CONTRACT_RULE_AMOUNT }
+        require(output.issuer in transaction.signatories) { Create.CONTRACT_RULE_SIGNATORIES }
+    }
+
+    /**
+     * Verifies the current [ObligationContract] in the context of an [Update] command.
+     *
+     * @param transaction The transaction to verify.
+     */
+    private fun verifyUpdate(transaction: UtxoLedgerTransaction) {
+        val inputs = transaction.getInputStates(ObligationState::class.java)
+        val outputs = transaction.getOutputStates(ObligationState::class.java)
+
+        require(inputs.size == 1) { Update.CONTRACT_RULE_INPUTS }
+        require(outputs.size == 1) { Update.CONTRACT_RULE_OUTPUTS }
+
+        val input = inputs.single()
+        val output = outputs.single()
+
+        require(input.issuer == output.issuer) { Update.CONTRACT_RULE_ISSUER }
+        require(input.holder == output.holder) { Update.CONTRACT_RULE_HOLDER }
+        require(input.amount > output.amount) { Update.CONTRACT_RULE_AMOUNT_CONSERVATION }
+        require(output.amount >= BigDecimal.ZERO) { Update.CONTRACT_RULE_AMOUNT_OUTPUT }
+        require(output.holder in transaction.signatories) { Update.CONTRACT_RULE_SIGNATORIES }
+    }
+
+    /**
+     * Verifies the current [ObligationContract] in the context of a [Delete] command.
+     *
+     * @param transaction The transaction to verify.
+     */
+    private fun verifyDelete(transaction: UtxoLedgerTransaction) {
+        val inputs = transaction.getInputStates(ObligationState::class.java)
+        val outputs = transaction.getOutputStates(ObligationState::class.java)
+
+        require(inputs.size == 1) { Delete.CONTRACT_RULE_INPUTS }
+        require(outputs.isEmpty()) { Delete.CONTRACT_RULE_OUTPUTS }
+
+        val input = inputs.single()
+
+        require(input.amount == BigDecimal.ZERO) { Delete.CONTRACT_RULE_AMOUNT }
+        require(input.participants.all { it in transaction.signatories }) { Delete.CONTRACT_RULE_SIGNATORIES }
     }
 }
