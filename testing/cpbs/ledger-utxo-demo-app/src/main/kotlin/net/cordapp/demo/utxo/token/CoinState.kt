@@ -11,7 +11,6 @@ import java.security.PublicKey
 class CoinState(
     val issuer: SecureHash,
     val currency: String,
-    val owner: PublicKey,
     val value: BigDecimal,
     override val participants: List<PublicKey>,
     val tag: String? = null,
@@ -25,7 +24,6 @@ class CoinState(
         return  "issuer: $issuer, " +
                 "currency: $currency, " +
                 "issuer: $issuer, " +
-                "owner: $owner, " +
                 "value: $value, " +
                 "participants: $participants, " +
                 "tag: $tag, " +

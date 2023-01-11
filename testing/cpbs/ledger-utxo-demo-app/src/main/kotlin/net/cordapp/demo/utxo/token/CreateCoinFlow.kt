@@ -70,7 +70,6 @@ class CreateCoinFlow : RPCStartableFlow {
                 CoinState(
                     issuer = bankX500.toSecureHash(),
                     currency = creationRequest.currency,
-                    owner = me.ledgerKeys.first(),
                     value = BigDecimal(creationRequest.valueOfCoin),
                     participants = participants,
                     tag = creationRequest.tag,

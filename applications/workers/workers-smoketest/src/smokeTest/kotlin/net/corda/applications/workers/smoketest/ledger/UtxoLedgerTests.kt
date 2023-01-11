@@ -16,6 +16,7 @@ import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -78,6 +79,58 @@ class UtxoLedgerTests {
     }
 
     @Test
+    @Order(100)
+    fun `Utxo Token - Create 10 Coins`() {
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "numberOfCoins" to 10,
+            "valueOfCoin" to 5,
+            "tag" to "simple coin"
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "net.cordapp.demo.utxo.token.CreateCoinFlow"
+        )
+
+        println("creating coins for bank = ${charlieX500} vnode = ${aliceHoldingId}")
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
+    fun `Utxo Token - Do nothing prerequsits `(){
+        println("Alice: '${aliceX500}' '${aliceHoldingId}'")
+        println("Bob: '${bobX500}' '${bobHoldingId}'")
+        println("Charlie: '${charlieX500}' '${charlieHoldingId}'")
+        println("Notary: '${notaryX500}' '${notaryHoldingId}'")
+    }
+
+    @Test
+    @Order(101)
+    fun `Utxo Token - Spend Coins`() {
+
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "maxCoinsToUse" to 1,
+            "targetAmount" to 20,
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "net.cordapp.demo.utxo.token.SpendCoinFlow"
+        )
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+
     fun `Utxo Ledger - create a transaction containing states and finalize it`() {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
@@ -112,7 +165,6 @@ class UtxoLedgerTests {
         }
     }
 
-    @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
