@@ -2,17 +2,19 @@ package net.corda.libs.platform.impl
 
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.base.util.contextLogger
+import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.util.jar.Manifest
 
 @Component(service = [PlatformInfoProvider::class])
 class PlatformInfoProviderImpl internal constructor(
-    private val classLoader: ClassLoader
+    private val classLoader: ClassLoader,
+    private val bundleContext: BundleContext
 ) : PlatformInfoProvider {
 
     @Activate
-    public constructor() : this(PlatformInfoProvider::class.java.classLoader)
+    constructor(bundleContext: BundleContext) : this(PlatformInfoProvider::class.java.classLoader, bundleContext)
 
     internal companion object {
         val logger = contextLogger()
@@ -26,7 +28,10 @@ class PlatformInfoProviderImpl internal constructor(
 
     /** Temporary stub values **/
     override val activePlatformVersion = STUB_PLATFORM_VERSION
-    override val localWorkerPlatformVersion = STUB_PLATFORM_VERSION
+
+    override val localWorkerPlatformVersion by lazy {
+        bundleContext.getProperty("net.corda.platform.version").toInt()
+    }
 
     override val localWorkerSoftwareVersion by lazy {
         bundleManifest?.mainAttributes?.getValue(BUNDLE_VERSION)

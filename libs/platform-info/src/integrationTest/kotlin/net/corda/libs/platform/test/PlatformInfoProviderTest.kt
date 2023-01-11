@@ -24,13 +24,10 @@ class PlatformInfoProviderTest {
         assertThat(platformVersion).isEqualTo(EXPECTED_STUB_PLATFORM_VERSION)
     }
 
-    @Test
-    fun `Service returns expected stub value for local worker platform version`() {
-        val platformVersion = assertDoesNotThrow {
-            platformInfoProvider.localWorkerPlatformVersion
-        }
-        assertThat(platformVersion).isEqualTo(EXPECTED_STUB_PLATFORM_VERSION)
-    }
+    // Note: We aren't testing for local worker platform version here because the bundleContext for integration
+    // tests is different to that for a running worker.  We can still mock in the unit test, though.
+    //@Test
+    //fun `Service returns expected stub value for local worker platform version`() {
 
     @Test
     fun `Service returns expected value from bundle manifest for local worker software version`() {

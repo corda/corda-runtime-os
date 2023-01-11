@@ -17,5 +17,6 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

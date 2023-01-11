@@ -3,7 +3,10 @@ package net.corda.libs.platform.impl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import org.osgi.framework.BundleContext
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.URL
@@ -13,7 +16,14 @@ import java.util.jar.Manifest
 
 class PlatformInfoProviderImplTest {
 
-    private val platformVersionService = PlatformInfoProviderImpl()
+    companion object {
+        const val PLATFORM_VERSION = "999"
+    }
+
+    private val bundleContext = mock<BundleContext>().also {
+        whenever(it.getProperty(eq("net.corda.platform.version"))).thenReturn(PLATFORM_VERSION)
+    }
+    private val platformVersionService = PlatformInfoProviderImpl(bundleContext)
 
     /**
      * Temporary test until real implementation is added.
@@ -28,17 +38,9 @@ class PlatformInfoProviderImplTest {
         )
     }
 
-    /**
-     * Temporary test until real implementation is added.
-     * Stub value and this can be removed once real implementation is available.
-     */
     @Test
     fun `local worker platform version returns stub value`() {
-        assertThat(
-            platformVersionService.localWorkerPlatformVersion
-        ).isEqualTo(
-            PlatformInfoProviderImpl.STUB_PLATFORM_VERSION
-        )
+        assertThat(platformVersionService.localWorkerPlatformVersion).isEqualTo(PLATFORM_VERSION.toInt())
     }
 
     @Test
@@ -58,7 +60,7 @@ class PlatformInfoProviderImplTest {
                     )
                 )
         }
-        val platformVersionService = PlatformInfoProviderImpl(classLoader)
+        val platformVersionService = PlatformInfoProviderImpl(classLoader, bundleContext)
 
         assertThat(
             platformVersionService.localWorkerSoftwareVersion
