@@ -4,14 +4,14 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -31,7 +31,7 @@ class ConfigProcessorTest {
     @Captor
     val eventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)
 
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
         on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
@@ -132,6 +132,6 @@ class ConfigProcessorTest {
     }
 
     private fun String.toSmartConfig(): SmartConfig {
-        return SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(this))
+        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(this))
     }
 }

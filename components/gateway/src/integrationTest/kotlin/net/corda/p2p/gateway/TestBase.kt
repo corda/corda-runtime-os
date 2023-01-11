@@ -47,6 +47,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.p2p.gateway.messaging.TlsType
@@ -126,7 +127,7 @@ open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
 
-    protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    protected val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 

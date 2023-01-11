@@ -15,7 +15,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -53,7 +53,6 @@ import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.lang.RuntimeException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -101,7 +100,7 @@ class MessageBusIntegrationTests {
 
         val logger = contextLogger()
 
-        val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

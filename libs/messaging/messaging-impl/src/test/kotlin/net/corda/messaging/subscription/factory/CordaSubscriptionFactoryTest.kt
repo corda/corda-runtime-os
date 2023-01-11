@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -32,7 +33,7 @@ class CordaSubscriptionFactoryTest {
     @BeforeEach
     fun setup() {
         doReturn(cordaAvroSerializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(any())
-        smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+        smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
         config = smartConfigFactory.create(ConfigFactory.load("config/test.conf"))
         factory = CordaSubscriptionFactory(
             cordaAvroSerializationFactory,

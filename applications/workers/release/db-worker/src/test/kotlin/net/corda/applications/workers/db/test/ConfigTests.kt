@@ -7,6 +7,7 @@ import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -41,7 +42,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList())
+            ApplicationBanner(DummyStartupBanner(), emptyList()),
+            SmartConfigFactoryFactory(emptyList())
         )
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
@@ -80,7 +82,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList())
+            ApplicationBanner(DummyStartupBanner(), emptyList()),
+            SmartConfigFactoryFactory(emptyList())
         )
 
         val args = arrayOf(
@@ -111,7 +114,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList())
+            ApplicationBanner(DummyStartupBanner(), emptyList()),
+            SmartConfigFactoryFactory(emptyList())
         )
 
         val args = arrayOf<String>()
@@ -141,7 +145,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList())
+            ApplicationBanner(DummyStartupBanner(), emptyList()),
+            SmartConfigFactoryFactory(emptyList())
         )
 
         val args = arrayOf(
@@ -165,7 +170,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList())
+            ApplicationBanner(DummyStartupBanner(), emptyList()),
+            SmartConfigFactoryFactory(emptyList())
         )
         val args = arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
