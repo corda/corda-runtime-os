@@ -47,7 +47,9 @@ abstract class CommonLedgerIntegrationTest {
     open val testingCpb = "/META-INF/ledger-common-empty-app.cpb"
 
     private lateinit var flowSandboxService: FlowSandboxService
-    lateinit var sandboxGroupContext: SandboxGroupContext
+    private val _sandboxGroupContext = mutableListOf<SandboxGroupContext>()
+    val sandboxGroupContext: SandboxGroupContext
+        get() = _sandboxGroupContext.single()
     lateinit var jsonMarshallingService: JsonMarshallingService
     lateinit var jsonValidator: JsonValidator
     lateinit var wireTransactionFactory: WireTransactionFactory
@@ -66,7 +68,7 @@ abstract class CommonLedgerIntegrationTest {
         baseDirectory: Path
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
-        lifecycle.accept(sandboxSetup) { initialize(it) }
+        lifecycle.accept(sandboxSetup, ::initialize)
     }
 
     open fun initialize(setup: SandboxSetup) {
@@ -76,8 +78,12 @@ abstract class CommonLedgerIntegrationTest {
         val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
 
         flowSandboxService = setup.fetchService(TIMEOUT_MILLIS)
-        sandboxGroupContext = flowSandboxService.get(virtualNodeInfo.holdingIdentity)
-        setup.withCleanup { virtualNode.unloadSandbox(sandboxGroupContext) }
+        _sandboxGroupContext += flowSandboxService.get(virtualNodeInfo.holdingIdentity)
+        setup.withCleanup {
+            val virtualNodeContext = sandboxGroupContext.virtualNodeContext
+            _sandboxGroupContext.clear()
+            virtualNode.releaseVirtualNode(virtualNodeContext)
+        }
         currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         currentSandboxGroupContext.set(sandboxGroupContext)
 

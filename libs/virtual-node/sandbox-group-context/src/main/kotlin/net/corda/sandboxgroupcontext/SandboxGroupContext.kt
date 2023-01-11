@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext
 
+import java.util.concurrent.CompletableFuture
 import net.corda.sandbox.SandboxGroup
 
 /**
@@ -26,4 +27,9 @@ interface SandboxGroupContext : SandboxGroupContextData {
      * @return null if it doesn't exist.
      */
     fun <T : Any> get(key: String, valueType: Class<out T>): T?
+
+    /**
+     * This completes when this [SandboxGroupContext] is ready to destroy.
+     */
+    val completion: CompletableFuture<Boolean>
 }

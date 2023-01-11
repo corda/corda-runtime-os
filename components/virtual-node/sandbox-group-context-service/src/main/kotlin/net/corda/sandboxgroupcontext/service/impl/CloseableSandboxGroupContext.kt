@@ -4,6 +4,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -34,6 +35,9 @@ internal class CloseableSandboxGroupContextImpl(
 
     override val sandboxGroup: SandboxGroup
         get() = sandboxGroupContext.sandboxGroup
+
+    override val completion: CompletableFuture<Boolean>
+        get() = sandboxGroupContext.completion
 
     override fun <T : Any> get(key: String, valueType: Class<out T>): T? = sandboxGroupContext.get(key, valueType)
 
