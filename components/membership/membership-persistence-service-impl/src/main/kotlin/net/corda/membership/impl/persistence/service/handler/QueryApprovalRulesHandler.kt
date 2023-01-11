@@ -16,7 +16,7 @@ internal class QueryApprovalRulesHandler(
             val root = queryBuilder.from(ApprovalRulesEntity::class.java)
             val query = queryBuilder
                 .select(root)
-                .where(em.criteriaBuilder.equal(root.get<String>("ruleType"), request.ruleType))
+                .where(em.criteriaBuilder.equal(root.get<String>("ruleType"), request.ruleType.name))
 
             val approvalRules = em.createQuery(query)
                 .resultList

@@ -7,6 +7,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -14,6 +15,7 @@ import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificat
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignature
@@ -954,6 +956,109 @@ class MembershipQueryClientImplTest {
             )
 
             assertThat(response).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class QueryApprovalRulesTests {
+        @Test
+        fun `getApprovalRules returns the correct list of rules`() {
+            val rules = listOf("^*", "corda.*")
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        ApprovalRulesQueryResponse(rules)
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.getApprovalRules(
+                ourHoldingIdentity,
+                ApprovalRuleType.STANDARD,
+            )
+
+            assertThat(result.getOrThrow()).isEqualTo(rules)
+        }
+
+        @Test
+        fun `getApprovalRules returns error in case of failure`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PersistenceFailedResponse("oops")
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.getApprovalRules(ourHoldingIdentity, ApprovalRuleType.STANDARD)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `getApprovalRules returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        GroupPolicyQueryResponse()
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.getApprovalRules(ourHoldingIdentity, ApprovalRuleType.STANDARD)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `getApprovalRules returns an error when the result not right`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp, requestId, clock.instant(), holdingIdentity
+                    )
+                }
+                val response = mock<MembershipPersistenceResponse> {
+                    on { context } doReturn myContext
+                    on { payload } doReturn null
+                }
+                CompletableFuture.completedFuture(response)
+            }
+
+            val result = membershipQueryClient.getApprovalRules(ourHoldingIdentity, ApprovalRuleType.STANDARD)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
     }
 }

@@ -4,6 +4,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 
 internal class DeleteApprovalRuleHandler(
@@ -15,7 +16,7 @@ internal class DeleteApprovalRuleHandler(
             val rule = em.find(
                 ApprovalRulesEntity::class.java,
                 request.ruleId
-            )
+            ) ?: throw MembershipPersistenceException("Approval rule with ID '${request.ruleId}' does not exist.")
             em.remove(rule)
             DeleteApprovalRuleResponse()
         }

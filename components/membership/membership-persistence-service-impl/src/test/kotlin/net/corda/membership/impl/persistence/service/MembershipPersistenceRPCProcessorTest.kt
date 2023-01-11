@@ -6,23 +6,31 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
+import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
+import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
+import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -54,6 +62,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
+import javax.persistence.criteria.Root
 
 class MembershipPersistenceRPCProcessorTest {
 
@@ -92,10 +105,30 @@ class MembershipPersistenceRPCProcessorTest {
     }
 
     private val entityTransaction: EntityTransaction = mock()
+    private val ruleTypePath = mock<Path<String>>()
+    private val root = mock<Root<ApprovalRulesEntity>> {
+        on { get<String>("ruleType") } doReturn ruleTypePath
+    }
+    private val predicate = mock<Predicate>()
+    private val query = mock<CriteriaQuery<ApprovalRulesEntity>> {
+        on { from(ApprovalRulesEntity::class.java) } doReturn root
+        on { select(root) } doReturn mock
+        on { where(predicate) } doReturn mock
+    }
+    private val criteriaBuilder = mock<CriteriaBuilder> {
+        on { createQuery(ApprovalRulesEntity::class.java) } doReturn query
+        on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
+        on { and(predicate, predicate) } doReturn predicate
+    }
+    private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
+        on { resultList } doReturn emptyList()
+    }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
         on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
         on { createQuery(any(), eq(GroupPolicyEntity::class.java)) } doReturn groupPolicyQuery
+        on { criteriaBuilder } doReturn criteriaBuilder
+        on { createQuery(query) } doReturn approvalRulesQuery
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -336,6 +369,77 @@ class MembershipPersistenceRPCProcessorTest {
         with(responseFuture.get()) {
             assertThat(payload).isNotNull
             assertThat(payload).isInstanceOf(GroupPolicyQueryResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `persist approval rule returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            PersistApprovalRule("^*", ApprovalRuleType.STANDARD, "label")
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(PersistApprovalRuleResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `delete approval rule returns success`() {
+        val ruleId = "rule-id"
+        whenever(entityManager.find(ApprovalRulesEntity::class.java, ruleId)).thenReturn(mock())
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            DeleteApprovalRule(ruleId)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(DeleteApprovalRuleResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `query approval rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            QueryApprovalRules(ApprovalRuleType.STANDARD)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(ApprovalRulesQueryResponse::class.java)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

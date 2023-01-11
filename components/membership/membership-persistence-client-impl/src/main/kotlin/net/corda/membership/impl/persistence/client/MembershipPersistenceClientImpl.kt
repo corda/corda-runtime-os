@@ -310,7 +310,7 @@ class MembershipPersistenceClientImpl(
         return when (val payload = result.payload) {
             is PersistApprovalRuleResponse -> MembershipPersistenceResult.Success(payload.ruleId)
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
-            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
         }
     }
 

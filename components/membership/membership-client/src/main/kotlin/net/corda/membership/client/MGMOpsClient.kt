@@ -56,7 +56,7 @@ interface MGMOpsClient : Lifecycle {
         rule: String,
         ruleType: ApprovalRuleTypeDto,
         label: String? = null
-    ): String?
+    ): String
 
     /**
      * Retrieves all approval rules of the specified [ruleType] currently configured for the group.

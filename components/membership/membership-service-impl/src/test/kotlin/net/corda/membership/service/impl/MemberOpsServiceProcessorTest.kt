@@ -1,7 +1,11 @@
 package net.corda.membership.service.impl
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.rpc.request.AddApprovalRuleRequest
+import net.corda.data.membership.rpc.request.DeleteApprovalRuleRequest
+import net.corda.data.membership.rpc.request.GetApprovalRulesRequest
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -9,6 +13,9 @@ import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
+import net.corda.data.membership.rpc.response.AddApprovalRuleResponse
+import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
+import net.corda.data.membership.rpc.response.GetApprovalRulesResponse
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
@@ -39,6 +46,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -148,6 +157,11 @@ class MemberOpsServiceProcessorTest {
     private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries)
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
+        on { getApprovalRules(any(), any()) } doReturn MembershipQueryResult.Success(listOf("rule"))
+    }
+    private val membershipPersistenceClient: MembershipPersistenceClient = mock {
+        on { addApprovalRule(any(), any(), any(), any()) } doReturn MembershipPersistenceResult.Success("rule-id")
+        on { deleteApprovalRule(any(), any()) } doReturn MembershipPersistenceResult.success()
     }
 
     private var processor = MemberOpsServiceProcessor(
@@ -155,6 +169,7 @@ class MemberOpsServiceProcessorTest {
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        membershipPersistenceClient,
         clock,
     )
 
@@ -284,6 +299,83 @@ class MemberOpsServiceProcessorTest {
         val response = result.response as? MGMGroupPolicyResponse
         val groupPolicy = response?.groupPolicy
         assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"Mutual\"")
+    }
+
+    @Test
+    fun `should successfully submit add approval rule request`() {
+        val requestTimestamp = now
+        val requestId = UUID(0, 1).toString()
+        val requestContext = MembershipRpcRequestContext(
+            requestId,
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            AddApprovalRuleRequest(
+                mgmHoldingIdentity.shortHash.value,
+                "test-regex",
+                ApprovalRuleType.STANDARD,
+                "test-label"
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+
+        processor.onNext(request, future)
+        val result = future.get()
+
+        with(result.response) {
+            assertThat(this).isInstanceOf(AddApprovalRuleResponse::class.java)
+            assertThat((this as AddApprovalRuleResponse).ruleId).isNotNull
+        }
+        assertResponseContext(requestContext, result.responseContext)
+    }
+
+    @Test
+    fun `should successfully submit get approval rules request`() {
+        val requestTimestamp = now
+        val requestId = UUID(0, 1).toString()
+        val requestContext = MembershipRpcRequestContext(
+            requestId,
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            GetApprovalRulesRequest(
+                mgmHoldingIdentity.shortHash.value,
+                ApprovalRuleType.STANDARD,
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+
+        processor.onNext(request, future)
+        val result = future.get()
+
+        assertThat(result.response).isInstanceOf(GetApprovalRulesResponse::class.java)
+        assertResponseContext(requestContext, result.responseContext)
+    }
+
+    @Test
+    fun `should successfully submit delete approval rule request`() {
+        val requestTimestamp = now
+        val requestId = UUID(0, 1).toString()
+        val requestContext = MembershipRpcRequestContext(
+            requestId,
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            DeleteApprovalRuleRequest(
+                mgmHoldingIdentity.shortHash.value,
+                "rule-id",
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+
+        processor.onNext(request, future)
+        val result = future.get()
+
+        assertThat(result.response).isInstanceOf(DeleteApprovalRuleResponse::class.java)
+        assertResponseContext(requestContext, result.responseContext)
     }
 
     @Nested

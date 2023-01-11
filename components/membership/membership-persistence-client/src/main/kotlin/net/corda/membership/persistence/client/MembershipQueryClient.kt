@@ -1,7 +1,7 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.rpc.request.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap

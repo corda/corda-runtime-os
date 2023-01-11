@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.AddApprovalRule
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
@@ -31,13 +30,12 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.impl.persistence.service.handler.PersistApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsAddToAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsListAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsRemoveFromAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
-import net.corda.membership.impl.persistence.service.handler.QueryApprovalRulesHandler
+import net.corda.membership.impl.persistence.service.handler.PersistApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersInitialSnapshotHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupPolicyHandler
@@ -45,6 +43,7 @@ import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHa
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
+import net.corda.membership.impl.persistence.service.handler.QueryApprovalRulesHandler
 import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler

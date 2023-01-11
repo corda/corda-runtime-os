@@ -1,8 +1,8 @@
 package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.rpc.request.ApprovalRuleType
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

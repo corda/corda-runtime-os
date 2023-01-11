@@ -6,6 +6,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
@@ -37,6 +38,7 @@ class MemberOpsServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock()
     private val membershipQueryClient: MembershipQueryClient = mock()
+    private val membershipPersistenceClient: MembershipPersistenceClient = mock()
 
     private val messagingConfig: SmartConfig = mock()
     private val bootConfig: SmartConfig = mock {
@@ -157,6 +159,7 @@ class MemberOpsServiceTest {
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
                 membershipQueryClient,
+                membershipPersistenceClient,
             )
         }
     }

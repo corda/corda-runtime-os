@@ -177,7 +177,7 @@ interface MGMRpcOps : RpcOps {
     fun deleteGroupApprovalRule(
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group")
         holdingIdentityShortHash: String,
-        @HttpRpcRequestBodyParameter(description = "The ID of the group approval rule to be deleted")
+        @HttpRpcPathParameter(description = "The ID of the group approval rule to be deleted")
         ruleId: String
     )
 }

@@ -14,7 +14,7 @@ internal class PersistApprovalRuleHandler(
         logger.info("Persisting approval rule.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val ruleId = UUID.randomUUID().toString()
-            em.merge(
+            em.persist(
                 ApprovalRulesEntity(
                     ruleId,
                     request.rule,

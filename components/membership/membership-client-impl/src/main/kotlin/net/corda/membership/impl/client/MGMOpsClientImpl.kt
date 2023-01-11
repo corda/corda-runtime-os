@@ -10,6 +10,7 @@ import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.AddApprovalRuleResponse
+import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
 import net.corda.data.membership.rpc.response.GetApprovalRulesResponse
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
@@ -102,7 +103,7 @@ class MGMOpsClientImpl @Activate constructor(
             rule: String,
             ruleType: ApprovalRuleTypeDto,
             label: String?
-        ): String?
+        ): String
 
         fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto): Collection<String>
 
@@ -329,9 +330,9 @@ class MGMOpsClientImpl @Activate constructor(
 
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleTypeDto, label: String?
-        ): String? {
+        ): String {
+            mgmHoldingIdentity(holdingIdentityShortHash)
             try {
-                mgmHoldingIdentity(holdingIdentityShortHash)
                 val request = MembershipRpcRequest(
                     MembershipRpcRequestContext(
                         newId, clock.instant()
@@ -347,15 +348,15 @@ class MGMOpsClientImpl @Activate constructor(
                 return response.ruleId
             } catch (e: Exception) {
                 logger.warn("Something went wrong while adding the approval rule. Reason: ${e.message}")
-                return null
+                throw e
             }
         }
 
         override fun getApprovalRules(
             holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto
         ): Collection<String> {
+            mgmHoldingIdentity(holdingIdentityShortHash)
             try {
-                mgmHoldingIdentity(holdingIdentityShortHash)
                 val request = MembershipRpcRequest(
                     MembershipRpcRequestContext(
                         newId, clock.instant()
@@ -369,13 +370,13 @@ class MGMOpsClientImpl @Activate constructor(
                 return response.rules
             } catch (e: Exception) {
                 logger.warn("Something went wrong while retrieving the approval rules. Reason: ${e.message}")
-                return emptyList()
+                throw e
             }
         }
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) {
+            mgmHoldingIdentity(holdingIdentityShortHash)
             try {
-                mgmHoldingIdentity(holdingIdentityShortHash)
                 val request = MembershipRpcRequest(
                     MembershipRpcRequestContext(
                         newId, clock.instant()
@@ -385,9 +386,10 @@ class MGMOpsClientImpl @Activate constructor(
                         ruleId
                     )
                 )
-                request.sendRequest()
+                request.sendRequest<DeleteApprovalRuleResponse>()
             } catch (e: Exception) {
                 logger.warn("Something went wrong while adding the approval rule. Reason: ${e.message}")
+                throw e
             }
         }
 
