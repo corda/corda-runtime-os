@@ -84,7 +84,7 @@ class CryptoOpsBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: KeyAlreadyExistsException) {
-            logger.trace("Key alias ${e.alias} already exists in tenant ${e.tenantId}; returning error rather than recreating")
+            logger.info("Key alias ${e.alias} already exists in tenant ${e.tenantId}; returning error rather than recreating")
             respFuture.completeExceptionally(e)
         } catch (e: Throwable) {
             logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
