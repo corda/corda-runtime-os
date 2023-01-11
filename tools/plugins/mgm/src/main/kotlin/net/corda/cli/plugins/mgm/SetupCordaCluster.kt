@@ -94,6 +94,7 @@ class SetupCordaCluster : Runnable {
             kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
         }
 
+
         try {
             kubectl(
                 "create", "secret", "docker-registry", "docker-registry-cred",
@@ -112,7 +113,11 @@ class SetupCordaCluster : Runnable {
             "install", "prereqs", "oci://corda-os-docker.software.r3.com/helm-charts/corda-dev",
             "-f", prereqsYaml.absolutePath,
             "-f", prereqsEksYaml.absolutePath,
-            "--set", "kafka.replicaCount=$kafkaReplicas,kafka.zookeeper.replicaCount=$zooKeeperReplicas,kafka.auth.clientProtocol=tls",
+            "--set", "kafka.replicaCount=$kafkaReplicas," +
+                "kafka.zookeeper.replicaCount=$zooKeeperReplicas," +
+                "kafka.auth.clientProtocol=tls," +
+                "kafka.offsetsTopicReplicationFactor=1," +
+                "kafka.transactionStateLogReplicationFactor=1",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
 
