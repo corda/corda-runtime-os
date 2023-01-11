@@ -15,22 +15,24 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.DataMessagePayload
-import net.corda.p2p.HeartbeatMessage
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.CommonHeader
-import net.corda.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.crypto.ResponderHandshakeMessage
-import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.DataMessagePayload
+import net.corda.data.p2p.HeartbeatMessage
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.CommonHeader
+import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.ResponderHandshakeMessage
+import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -50,6 +52,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMemberInfo
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -95,7 +98,7 @@ import java.util.concurrent.CompletableFuture
 
 class SessionManagerTest {
 
-    companion object {
+    private companion object {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
@@ -1179,8 +1182,6 @@ class SessionManagerTest {
                 sessionManager,
                 SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
-                groupPolicyProvider,
-                membershipGroupReaderProvider
             )
     }
 
@@ -1897,4 +1898,70 @@ class SessionManagerTest {
 
     }
 
+    @Test
+    fun `recordsForSessionEstablished returns empty list if the message convertor can not create the link out message`() {
+        val session = mock<Session> {
+            on { sessionId } doReturn "sessionId"
+        }
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        sessionManager.processOutboundMessage(message)
+
+        val records = sessionManager.recordsForSessionEstablished(session, message)
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `recordsForSessionEstablished returns marker and message`() {
+        whenever(authenticatedSession.sessionId).doReturn("sessionId")
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        val header = CommonHeader(
+            MessageType.RESPONDER_HANDSHAKE,
+            1,
+            "sessionId",
+            4,
+            300,
+        )
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(authenticatedSession.createMac(any())).doReturn(
+            AuthenticationResult(
+                header,
+                byteArrayOf(1, 4),
+            )
+        )
+        sessionManager.processOutboundMessage(message)
+
+        val records = sessionManager.recordsForSessionEstablished(authenticatedSession, message)
+
+        assertThat(records)
+            .hasSize(2)
+            .anySatisfy { record ->
+                assertThat(record.topic).isEqualTo(LINK_OUT_TOPIC)
+                assertThat(record.value).isInstanceOf(LinkOutMessage::class.java)
+                val msg = record.value as? LinkOutMessage
+
+                assertThat(msg?.payload).isInstanceOf(AuthenticatedDataMessage::class.java)
+                val payload = msg?.payload as? AuthenticatedDataMessage
+                assertThat(payload?.header).isEqualTo(header)
+                assertThat(payload?.authTag?.array()).isEqualTo(byteArrayOf(1, 4))
+
+                assertThat(msg?.header?.destinationIdentity).isEqualTo(PEER_PARTY.toAvro())
+                assertThat(msg?.header?.sourceIdentity).isEqualTo(OUR_PARTY.toAvro())
+                assertThat(msg?.header?.destinationNetworkType).isEqualTo(NetworkType.CORDA_5)
+                assertThat(msg?.header?.address).isEqualTo("http://bob.com")
+            }.anySatisfy { record ->
+                assertThat(record.topic).isEqualTo(P2P_OUT_MARKERS)
+                assertThat(record.key).isEqualTo("messageId")
+                assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
+            }
+    }
 }

@@ -13,7 +13,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger

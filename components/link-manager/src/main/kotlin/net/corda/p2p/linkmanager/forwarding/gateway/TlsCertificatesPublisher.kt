@@ -14,7 +14,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.GatewayTlsCertificates
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.virtualnode.HoldingIdentity

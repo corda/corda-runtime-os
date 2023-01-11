@@ -1,9 +1,9 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.markers.GatewaySentMarker
-import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.GatewaySentMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn

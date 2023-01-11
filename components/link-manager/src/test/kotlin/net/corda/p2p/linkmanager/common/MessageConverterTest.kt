@@ -1,11 +1,11 @@
 package net.corda.p2p.linkmanager.common
 
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
-import net.corda.p2p.crypto.CommonHeader
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
