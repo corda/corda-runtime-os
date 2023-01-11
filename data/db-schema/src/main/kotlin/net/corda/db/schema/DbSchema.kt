@@ -6,7 +6,7 @@ package net.corda.db.schema
  * For more information, please see [here](https://docs.liquibase.com/concepts/advanced/liquibase-schema-name-parameter.html).
  */
 object DbSchema {
-    const val REST_RBAC = "REST_RBAC"
+    const val RBAC = "RBAC"
 
     const val CONFIG = "CONFIG"
     const val CONFIG_TABLE = "config"
