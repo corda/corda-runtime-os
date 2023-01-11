@@ -8,9 +8,10 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -59,7 +60,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
-        ConsensualTransactionVerification.verifyMetadata(metadata)
+        ConsensualTransactionMetadataVerifier(metadata).verify()
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
@@ -145,7 +146,8 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     }
 
     private fun verifyTransaction(wireTransaction: WireTransaction){
-        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
-        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        ConsensualLedgerTransactionVerifier(
+            ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        ).verify()
     }
 }

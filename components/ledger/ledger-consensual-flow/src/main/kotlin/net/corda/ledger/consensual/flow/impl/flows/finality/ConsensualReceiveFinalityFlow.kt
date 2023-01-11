@@ -1,14 +1,13 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -18,7 +17,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 
@@ -49,7 +47,6 @@ class ConsensualReceiveFinalityFlow(
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
-        // TODO [CORE-5982] Verify already added signatures.
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction)
@@ -104,8 +101,7 @@ class ConsensualReceiveFinalityFlow(
     }
 
     private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction) {
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable

@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -45,9 +46,7 @@ class ConsensualFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
-
-        // TODO Check there is at least one state
-
+        verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
@@ -59,6 +58,10 @@ class ConsensualFinalityFlow(
         }
 
         return transaction
+    }
+
+    private fun verifyTransaction(signedTransaction: ConsensualSignedTransactionInternal) {
+        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable
