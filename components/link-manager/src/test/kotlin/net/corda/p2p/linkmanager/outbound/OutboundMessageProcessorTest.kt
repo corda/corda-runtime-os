@@ -11,7 +11,6 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
@@ -22,7 +21,6 @@ import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
@@ -58,7 +56,9 @@ class OutboundMessageProcessorTest {
         on { getCurrentlyAssignedPartitions() } doReturn setOf(1)
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
-    private val sessionManager = mock<SessionManager>()
+    private val sessionManager = mock<SessionManager> {
+        on { recordsForSessionEstablished(any(), any()) } doReturn emptyList()
+    }
     private val messagesPendingSession = mock<PendingSessionMessageQueues>()
     private val authenticationResult = mock<AuthenticationResult> {
         on { mac } doReturn byteArrayOf()
@@ -719,54 +719,59 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces a LinkOutMessage and a LinkManagerProcessedMarker per message if SessionEstablished`() {
+    fun `onNext produces a LinkManagerProcessedMarker per message if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val messageIds = (1..3).map { i ->
             "Id$i"
         }
         val messages = messageIds.map { id ->
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, id, "trace-id", "system-1"
+                ),
+                ByteBuffer.wrap(id.toByteArray())
+            )
+        }
+        val eventLogRecords = messages.map { message ->
             EventLogRecord(
                 Schemas.P2P.P2P_OUT_TOPIC,
                 "key",
                 AppMessage(
-                    AuthenticatedMessage(
-                        AuthenticatedMessageHeader(
-                            remoteIdentity.toAvro(),
-                            myIdentity.toAvro(),
-                            null, id, "trace-id", "system-1"
-                        ),
-                        ByteBuffer.wrap(id.toByteArray())
-                    )
+                    message
                 ),
                 0, 0
             )
         }
 
-        val records = processor.onNext(messages)
+        val records = processor.onNext(eventLogRecords)
 
-        assertSoftly { softly ->
-            softly.assertThat(records).hasSize(9)
+        assertThat(records)
+            .hasSize(3)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+            }.allSatisfy {
+                val marker =  (it.value as? AppMessageMarker)?.marker
+                assertThat(marker).isInstanceOf(LinkManagerProcessedMarker::class.java)
+            }
 
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(messages.size)
-                .extracting<LinkOutMessage> { it.value as LinkOutMessage }
-                .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
+        messages.forEach { message ->
+            verify(sessionManager).recordsForSessionEstablished(
+                state.session,
+                AuthenticatedMessageAndKey(
+                    message,
+                    "key",
+                )
+            )
 
-            val markers = records.filter { it.value is AppMessageMarker }
-                softly.assertThat(markers).hasSize(6)
-                softly.assertThat(markers.map { it.value as AppMessageMarker }
-                    .filter { it.marker is LinkManagerProcessedMarker }).hasSize(3)
-                softly.assertThat(markers.map { it.value as AppMessageMarker }
-                    .filter { it.marker is LinkManagerSentMarker }).hasSize(3)
-                softly.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
-
-        verify(sessionManager, times(messages.size)).dataMessageSent(state.session)
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and SentMarker and doesn't queue messages if SessionEstablished`() {
+    fun `processReplayedAuthenticatedMessage call to recordsForSessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMsg = AuthenticatedMessage(
@@ -782,21 +787,9 @@ class OutboundMessageProcessorTest {
             "key"
         )
 
-        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+        processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertSoftly { softly ->
-            softly.assertThat(records).hasSize(2)
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(1)
-                .extracting<LinkOutMessage> { it.value as LinkOutMessage }
-                .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(1)
-                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                .allSatisfy {
-                    assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java)
-                }
-        }
-
-        verify(sessionManager, times(1)).dataMessageSent(state.session)
+        verify(sessionManager, times(1)).recordsForSessionEstablished(state.session, authenticatedMessageAndKey)
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 

@@ -1,16 +1,11 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.schema.Schemas
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
@@ -18,8 +13,13 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
-    fun dataMessageSent(session: Session)
     fun messageAcknowledged(sessionId: String)
+
+    fun recordsForSessionEstablished(
+        session: Session,
+        messageAndKey: AuthenticatedMessageAndKey,
+    ): List<Record<String, *>>
+
 
     data class SessionCounterparties(
         val ourId: HoldingIdentity,
@@ -38,24 +38,4 @@ internal interface SessionManager : LifecycleWithDominoTile {
         data class Outbound(val counterparties: SessionCounterparties, val session: Session) : SessionDirection()
         object NoSession : SessionDirection()
     }
-
-}
-internal fun SessionManager.recordsForSessionEstablished(
-    groupPolicyProvider: GroupPolicyProvider,
-    membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    session: Session,
-    messageAndKey: AuthenticatedMessageAndKey
-): List<Record<String, *>> {
-    val records = mutableListOf<Record<String, *>>()
-    val key = LinkManager.generateKey()
-    dataMessageSent(session)
-    MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
-        messageAndKey,
-        session,
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-    )?.let {
-        records.add(Record(Schemas.P2P.LINK_OUT_TOPIC, key, it))
-    }
-    return records
 }
