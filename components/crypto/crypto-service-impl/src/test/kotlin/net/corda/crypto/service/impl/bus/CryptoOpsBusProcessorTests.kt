@@ -212,16 +212,8 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate key pair and be able to find and lookup and then sign with parameterised signature params`() {
-        val signatureSpec4 = ParameterizedSignatureSpec(
-            "RSASSA-PSS",
-            PSSParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                32,
-                1
-            )
-        )
+        val spec4 = PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
+        val signatureSpec4 = ParameterizedSignatureSpec("RSASSA-PSS", spec4)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -244,8 +236,8 @@ class CryptoOpsBusProcessorTests {
         // sign
         val encKey4 = ByteBuffer.wrap(factory.schemeMetadata.encodeAsByteArray(publicKey))
         val params4 = factory.schemeMetadata.serialize(signatureSpec4.params)
-        val parameterSpec = ByteBuffer.wrap(CryptoSignatureParameterSpec(params4.clazz, ByteBuffer.wrap(params4.bytes)))
-        val cryptoSignatureSpec4 = CryptoSignatureSpec(signatureSpec4.signatureName, null, parameterSpec))
+        val parameterSpec = CryptoSignatureParameterSpec(params4.clazz, ByteBuffer.wrap(params4.bytes))
+        val cryptoSignatureSpec4 = CryptoSignatureSpec(signatureSpec4.signatureName, null, parameterSpec)
         val signatureCommand = SignRpcCommand(encKey4, cryptoSignatureSpec4, ByteBuffer.wrap(data), emptyContext)
         val signature4 = process<CryptoSignatureWithKey>(signatureCommand)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature4.publicKey.array()))
