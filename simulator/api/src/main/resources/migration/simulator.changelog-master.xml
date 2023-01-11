@@ -39,4 +39,51 @@
                        tableName="consensual_transaction_signature"/>
     </changeSet>
 
+    <changeSet author="R3.Corda" id="utxo-signed-transaction-entity-v1.0">
+        <createTable tableName="utxo_transaction">
+            <column name="id" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true" unique="true"/>
+            </column>
+            <column name="state_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="utxo_transaction_signature">
+            <column name="transaction_id" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_signature" references="utxo_transaction(id)"/>
+            </column>
+            <column name="signature_idx" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="transaction_id, signature_idx"
+                       constraintName="utxo_transaction_signature_pkey"
+                       tableName="utxo_transaction_signature"/>
+        <createTable tableName="utxo_transaction_output">
+            <column name="id" type="VARCHAR(512)">
+<!--                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_output" references="utxo_transaction(id)"/>-->
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="index" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="id, index"
+                       constraintName="utxo_transaction_utxo_pkey"
+                       tableName="utxo_transaction_output"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -3,7 +3,9 @@ package net.corda.simulator.runtime.flows
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.ledger.SimConsensualLedgerService
+import net.corda.simulator.runtime.ledger.utxo.SimUtxoLedgerService
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.notary.NotaryLookupFactory
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
@@ -23,7 +25,10 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 
 /**
@@ -86,6 +91,12 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
                 fiber
             )
         }
+        doInject(member, flow, UtxoLedgerService::class.java){
+            createUtxoLedgerService(member, fiber)
+        }
+        doInject(member, flow, NotaryLookup::class.java){
+            createNotaryLookup(fiber)
+        }
 
         injectOtherCordaServices(flow, member)
     }
@@ -131,6 +142,19 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
     ): ConsensualLedgerService {
         log.info("Injecting ${ConsensualLedgerService::class.java.simpleName}")
         return SimConsensualLedgerService(member, fiber, configuration)
+    }
+
+    private fun createUtxoLedgerService(
+        member: MemberX500Name,
+        fiber: SimFiber
+    ): UtxoLedgerService{
+        log.info("Injecting ${UtxoLedgerService::class.java.simpleName}")
+        return SimUtxoLedgerService(member, fiber, configuration)
+    }
+
+    private fun createNotaryLookup(fiber: SimFiber): NotaryLookup{
+        log.info("Injecting ${NotaryLookup::class.java.simpleName}")
+        return fiber.createNotaryLookup()
     }
 
     private fun createVerificationService(): DigitalSignatureVerificationService {

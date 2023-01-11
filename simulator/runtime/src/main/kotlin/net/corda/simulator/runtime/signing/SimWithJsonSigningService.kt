@@ -51,7 +51,12 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
     }
 
     override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        TODO("Not yet implemented")
+        val keyMap = HashMap<PublicKey, PublicKey>()
+        keys.forEach {
+            if(keyStore.getParameters(it) !=null)
+                keyMap[it] = it
+        }
+        return keyMap
     }
 
 }

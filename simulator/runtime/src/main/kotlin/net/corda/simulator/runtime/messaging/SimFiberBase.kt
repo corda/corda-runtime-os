@@ -4,6 +4,9 @@ import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
+import net.corda.simulator.runtime.notary.BaseNotaryInfo
+import net.corda.simulator.runtime.notary.BaseNotaryLookupFactory
+import net.corda.simulator.runtime.notary.NotaryLookupFactory
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
 import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
@@ -18,7 +21,9 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import java.security.PublicKey
 import java.util.concurrent.ConcurrentHashMap
 
@@ -37,13 +42,19 @@ class SimFiberBase(
     private val signingServiceFactory: SigningServiceFactory = signingServiceFactoryBase(),
     private val keystoreFactory: KeyStoreFactory = keystoreFactoryBase(),
     private val flowMessagingFactory: FlowMessagingFactory = BaseFlowMessagingFactory(),
-    private val flowRegistry: FlowRegistry = BaseFlowRegistry()
+    private val flowRegistry: FlowRegistry = BaseFlowRegistry(),
+    private val notaryLookupFactory: NotaryLookupFactory = BaseNotaryLookupFactory()
 ) : SimFiber, FlowRegistry by flowRegistry {
 
     private val persistenceServices = ConcurrentHashMap<MemberX500Name, CloseablePersistenceService>()
     private val memberInfos = ConcurrentHashMap<MemberX500Name, BaseMemberInfo>()
     private val keyStores = ConcurrentHashMap<MemberX500Name, SimKeyStore>()
+    private val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
+    private lateinit var notaryInfo: NotaryInfo
 
+    init {
+        registerNotary()
+    }
     override val members : Map<MemberX500Name, MemberInfo>
         get() = memberInfos
 
@@ -59,6 +70,12 @@ class SimFiberBase(
 
     override fun createSigningService(member: MemberX500Name): SigningService {
         val keyStore = keyStores[member] ?: error("KeyStore not registered for $member; this should never happen")
+        return signingServiceFactory.createSigningService(keyStore)
+    }
+
+    override fun createNotarySigningService(): SigningService {
+        val keyStore = keyStores[notaryX500] ?:
+        error("KeyStore not registered for $notaryX500; this should never happen")
         return signingServiceFactory.createSigningService(keyStore)
     }
 
@@ -81,6 +98,24 @@ class SimFiberBase(
         }
         memberInfos[member] = memberInfo.copy(ledgerKeys = memberInfo.ledgerKeys.plus(key))
         return key
+    }
+
+    override fun createNotaryLookup(): NotaryLookup {
+        return notaryLookupFactory.createNotaryLookup(this, notaryInfo)
+    }
+
+    private fun registerNotary(){
+        memberInfos.putIfAbsent(notaryX500, BaseMemberInfo(notaryX500, memberContext = hashMapOf(
+            "corda.notary.service.name" to notaryX500.toString()
+        )))
+        val keyStore = keyStores.putIfAbsent(notaryX500, keystoreFactory.createKeyStore())
+        if(keyStore == null){
+            val key = keyStores[notaryX500]!!.generateKey(
+                "simulated-notary", HsmCategory.LEDGER, "any-scheme")
+            notaryInfo = BaseNotaryInfo(notaryX500, "", key)
+            val memberInfo = memberInfos[notaryX500]
+            memberInfos[notaryX500] =  memberInfo!!.copy(ledgerKeys = memberInfo.ledgerKeys.plus(key))
+        }
     }
 
     override fun createFlowMessaging(

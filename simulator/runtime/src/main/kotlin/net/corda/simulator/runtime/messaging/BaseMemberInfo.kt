@@ -1,9 +1,11 @@
 package net.corda.simulator.runtime.messaging
 
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import java.lang.reflect.InvocationTargetException
 import java.security.PublicKey
 
 /**
@@ -15,31 +17,50 @@ import java.security.PublicKey
  * @param ledgerKeys Ledger keys generated for this member.
  */
 data class BaseMemberInfo(
-    private val name: MemberX500Name,
-    private val ledgerKeys: List<PublicKey> = listOf()
+    override val name: MemberX500Name,
+    override val ledgerKeys: List<PublicKey> = listOf(),
+    private val memberContext: Map<String, String> = mapOf()
 ) : MemberInfo {
 
-    override fun getName() = name
-    override fun getLedgerKeys() = ledgerKeys
-    override fun isActive() = true
+    override val isActive: Boolean = true
+    override val memberProvidedContext: MemberContext
+        get() {
+            val layeredPropertyMap = SimLayeredPropertyMap(memberContext)
+            return SimMemberContext(layeredPropertyMap)
+        }
+    override val mgmProvidedContext: MGMContext
+        get() { TODO("Not yet implemented") }
+    override val platformVersion: Int
+        get() { TODO("Not yet implemented") }
+    override val serial: Long
+        get() { TODO("Not yet implemented") }
+    override val sessionInitiationKey: PublicKey
+        get() { TODO("Not yet implemented") }
+}
 
-    override fun getMemberProvidedContext(): MemberContext {
+class SimMemberContext(
+    private val map: LayeredPropertyMap
+) : LayeredPropertyMap by map, MemberContext
+
+class SimLayeredPropertyMap(
+    private val properties: Map<String, String?>,
+): LayeredPropertyMap {
+    override val entries: Set<Map.Entry<String, String?>>
+        get() = TODO("Not yet implemented")
+
+    override fun get(key: String): String? {
+        return properties[key]
+    }
+    override fun <T> parse(key: String, clazz: Class<out T>): T {
         TODO("Not yet implemented")
     }
-
-    override fun getMgmProvidedContext(): MGMContext {
+    override fun <T> parseList(itemKeyPrefix: String, clazz: Class<out T>): List<T> {
         TODO("Not yet implemented")
     }
-
-    override fun getPlatformVersion(): Int {
+    override fun <T> parseOrNull(key: String, clazz: Class<out T>): T? {
         TODO("Not yet implemented")
     }
-
-    override fun getSerial(): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun getSessionInitiationKey(): PublicKey {
+    override fun <T> parseSet(itemKeyPrefix: String, clazz: Class<out T>): Set<T> {
         TODO("Not yet implemented")
     }
 }
