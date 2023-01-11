@@ -83,7 +83,7 @@ class UtxoFinalityFlowTest {
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
     private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotaryVNode1, byteArrayOf(1, 2, 6))
-    private val invalidNotarySignature = digitalSignatureAndMetadata(invalidNotaryVNodeKey, byteArrayOf(1, 2, 3))
+    private val invalidNotarySignature = digitalSignatureAndMetadata(invalidNotaryVNodeKey, byteArrayOf(1, 2, 7))
 
     private val metadata = mock<TransactionMetadata>()
 
