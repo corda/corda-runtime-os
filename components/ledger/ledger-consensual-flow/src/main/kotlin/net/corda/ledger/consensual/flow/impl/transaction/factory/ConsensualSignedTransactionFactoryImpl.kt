@@ -121,19 +121,19 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
             .sorted()
             .map { componentGroupIndex ->
                 when (componentGroupIndex) {
-                    ConsensualComponentGroup.METADATA ->
+                    ConsensualComponentGroup.METADATA -> {
                         listOf(metadataBytes)
-
-                    ConsensualComponentGroup.TIMESTAMP ->
+                    }
+                    ConsensualComponentGroup.TIMESTAMP -> {
                         listOf(serializationService.serialize(Instant.now()).bytes)
-
-                    ConsensualComponentGroup.SIGNATORIES ->
+                    }
+                    ConsensualComponentGroup.SIGNATORIES -> {
                         requiredSigningKeys.map { serializationService.serialize(it).bytes }
-
-                    ConsensualComponentGroup.OUTPUT_STATES ->
+                    }
+                    ConsensualComponentGroup.OUTPUT_STATES -> {
                         consensualTransactionBuilder.states.map { serializationService.serialize(it).bytes }
-
-                    ConsensualComponentGroup.OUTPUT_STATE_TYPES ->
+                    }
+                    ConsensualComponentGroup.OUTPUT_STATE_TYPES -> {
                         consensualTransactionBuilder.states.map {
                             serializationService.serialize(
                                 currentSandboxGroup.getEvolvableTag(
@@ -141,6 +141,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                                 )
                             ).bytes
                         }
+                    }
                 }
             }
     }
