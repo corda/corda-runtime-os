@@ -1,7 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.time.Instant
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
@@ -54,6 +52,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class FlowRPCOpsImplTest {
@@ -67,6 +67,7 @@ class FlowRPCOpsImplTest {
     private lateinit var permissionValidationService: PermissionValidationService
     private lateinit var permissionValidator: PermissionValidator
     private lateinit var fatalErrorFunction: () -> Unit
+    private val clientRequestId = UUID.randomUUID().toString()
 
     private companion object {
         val loginName = "${FlowRPCOpsImplTest::class.java.simpleName}-User"
@@ -166,7 +167,7 @@ class FlowRPCOpsImplTest {
     fun `get flow status`() {
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
         val flowRPCOps = createFlowRpcOps()
-        flowRPCOps.getFlowStatus(VALID_SHORT_HASH, "")
+        flowRPCOps.getFlowStatus(VALID_SHORT_HASH, clientRequestId)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -181,7 +182,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = createFlowRpcOps()
 
         assertThrows<ResourceNotFoundException> {
-            flowRPCOps.getFlowStatus(VALID_SHORT_HASH, "")
+            flowRPCOps.getFlowStatus(VALID_SHORT_HASH, clientRequestId)
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -256,7 +257,7 @@ class FlowRPCOpsImplTest {
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
-        flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+        flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
@@ -273,7 +274,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = createFlowRpcOps(false)
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
@@ -292,7 +293,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = createFlowRpcOps()
 
         assertThrows<BadRequestException> {
-            flowRPCOps.startFlow(invalidShortHash, StartFlowParameters("", "", TestJsonObject()))
+            flowRPCOps.startFlow(invalidShortHash, StartFlowParameters(clientRequestId, "", TestJsonObject()))
         }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
@@ -310,7 +311,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = createFlowRpcOps()
 
         assertThrows<ResourceNotFoundException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", "", TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, "", TestJsonObject()))
         }
 
         verify(flowStatusCacheService, never()).getStatus(any(), any())
@@ -327,7 +328,7 @@ class FlowRPCOpsImplTest {
 
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
         assertThrows<ResourceAlreadyExistsException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -366,7 +367,7 @@ class FlowRPCOpsImplTest {
 
         doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).publish(any())
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -388,7 +389,7 @@ class FlowRPCOpsImplTest {
         }))
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -406,7 +407,7 @@ class FlowRPCOpsImplTest {
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -421,7 +422,7 @@ class FlowRPCOpsImplTest {
         // attempting to start the flow
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -443,7 +444,7 @@ class FlowRPCOpsImplTest {
         }))
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -458,7 +459,7 @@ class FlowRPCOpsImplTest {
         // attempting to start the flow
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -480,7 +481,7 @@ class FlowRPCOpsImplTest {
 
         val flowRPCOps = createFlowRpcOps()
 
-        flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, "")
+        flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, VALID_SHORT_HASH, clientRequestId)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
@@ -497,7 +498,7 @@ class FlowRPCOpsImplTest {
 
         val flowRPCOps = createFlowRpcOps()
 
-        flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", "")
+        flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", clientRequestId)
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
@@ -517,9 +518,20 @@ class FlowRPCOpsImplTest {
         ).thenReturn(false)
 
         assertThrows<ForbiddenException> {
-            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(fatalErrorFunction, never()).invoke()
+    }
+
+    @Test
+    fun `start flow throws bad request if clientRequestId is empty`() {
+        val flowRPCOps = createFlowRpcOps()
+
+        whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
+
+        assertThrows<BadRequestException> {
+            flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
+        }
     }
 }
