@@ -22,11 +22,11 @@ import net.corda.v5.base.types.MemberX500Name
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RPCStartableFlow {
+ * class MyFlow : RestStartableFlow {
  *    @CordaInject
  *    lateinit var flowMessaging: FlowMessaging
  *
- *    override fun call(requestBody: RPCRequestData): String {
+ *    override fun call(requestBody: RestRequestBody): String {
  *        val counterparty = parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
  *
  *        val session = flowMessaging.initiateFlow(counterparty)
@@ -43,13 +43,13 @@ import net.corda.v5.base.types.MemberX500Name
  * - Java:
  *
  * ```java
- * class MyFlow implements RPCStartableFlow {
+ * class MyFlow implements RestStartableFlow {
  *
  *    @CordaInject
  *    public FlowMessaging flowMessaging;
  *
  *    @Override
- *    public String call(RPCRequestData requestBody) {
+ *    public String call(RestRequestBody requestBody) {
  *        MemberX500Name counterparty = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB");
  *        FlowSession session = flowMessaging.initiateFlow(counterparty);
  *

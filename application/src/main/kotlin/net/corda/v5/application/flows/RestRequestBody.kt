@@ -4,16 +4,16 @@ package net.corda.v5.application.flows
 import net.corda.v5.application.marshalling.MarshallingService
 
 /**
- * [RPCRequestData] wraps the `requestData` parameter of the HTTP call that triggered a [RPCStartableFlow].
+ * [RestRequestBody] wraps the `requestData` parameter of the HTTP call that triggered a [RestStartableFlow].
  *
- * A [RPCStartableFlow] receives an instance of this interface, which can be used to retrieve the request body.
+ * A [RestStartableFlow] receives an instance of this interface, which can be used to retrieve the request body.
  *
- * @see RPCStartableFlow
+ * @see RestStartableFlow
  */
-interface RPCRequestData {
+interface RestRequestBody {
 
     /**
-     * Gets the request body for the [RPCStartableFlow].
+     * Gets the request body for the [RestStartableFlow].
      *
      * @return The request body.
      */
@@ -53,7 +53,7 @@ interface RPCRequestData {
  *
  * @return An instance of the class populated by the provided input data.
  */
-inline fun <reified T> RPCRequestData.getRequestBodyAs(marshallingService: MarshallingService) : T {
+inline fun <reified T> RestRequestBody.getRequestBodyAs(marshallingService: MarshallingService) : T {
     return getRequestBodyAs(marshallingService, T::class.java)
 }
 
@@ -66,6 +66,6 @@ inline fun <reified T> RPCRequestData.getRequestBodyAs(marshallingService: Marsh
  *
  * @return A list of instances of the class populated by the provided input data.
  */
-inline fun <reified T> RPCRequestData.getRequestBodyAsList(marshallingService: MarshallingService) : List<T> {
+inline fun <reified T> RestRequestBody.getRequestBodyAsList(marshallingService: MarshallingService) : List<T> {
     return getRequestBodyAsList(marshallingService, T::class.java)
 }

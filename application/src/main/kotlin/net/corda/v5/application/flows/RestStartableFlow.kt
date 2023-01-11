@@ -4,9 +4,9 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
 /**
- * [RPCStartableFlow] is a [Flow] that is started via RPC.
+ * [RestStartableFlow] is a [Flow] that is started via RPC.
  *
- * [RPCStartableFlow.call] takes in a [RPCRequestData], containing the body of the RPC request that started the flow.
+ * [RestStartableFlow.call] takes in a [RestRequestBody], containing the body of the RPC request that started the flow.
  *
  * The string return type is treated by the platform as a JSON encoded string to return to the RPC
  * service, and will appear in the RPC flow status when the flow completes. To assist in returning valid JSON, the
@@ -20,13 +20,13 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RPCStartableFlow {
+ * class MyFlow : RestStartableFlow {
  *
  *     @CordaInject
  *     lateinit var jsonMarshallingService: JsonMarshallingService
  *
  *     @Suspendable
- *     override fun call(requestBody: RPCRequestData): String {
+ *     override fun call(requestBody: RestRequestBody): String {
  *         val parameters = requestBody.getRequestBodyAs<MyFlowParameters>(jsonMarshallingService)
  *         ...
  *         return jsonMarshallingService.format(parameters)
@@ -37,14 +37,14 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * - Java:
  *
  * ```java
- * public class MyFlow implements RPCStartableFlow {
+ * public class MyFlow implements RestStartableFlow {
  *
  *     @CordaInject
  *     public JsonMarshallingService jsonMarshallingService;
  *
  *     @Suspendable
  *     @Override
- *     public String call(RPCRequestData requestBody) {
+ *     public String call(RestRequestBody requestBody) {
  *         MyFlowParameters parameters = requestBody.getRequestBodyAs(jsonMarshallingService, MyFlowParameters.class);
  *         ...
  *         return jsonMarshallingService.format(parameters);
@@ -52,7 +52,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * }
  * ```
  */
-interface RPCStartableFlow : Flow {
+interface RestStartableFlow : Flow {
 
     /**
      * The business logic for this flow should be written here.
@@ -65,5 +65,5 @@ interface RPCStartableFlow : Flow {
      * @return A JSON encoded string to be supplied to the flow status on flow completion as the result.
      */
     @Suspendable
-    fun call(requestBody: RPCRequestData) : String
+    fun call(requestBody: RestRequestBody) : String
 }

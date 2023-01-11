@@ -12,7 +12,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RPCStartableFlow {
+ * class MyFlow : RestStartableFlow {
  *
  *     @CordaInject
  *     lateinit var flowEngine: FlowEngine
@@ -21,7 +21,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  *     lateinit var flowMessaging: FlowMessaging
  *
  *     @Suspendable
- *     override fun call(requestBody: RPCRequestData): String {
+ *     override fun call(requestBody: RestRequestBody): String {
  *         ...
  *     }
  * }
@@ -30,7 +30,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  * - Java:
  *
  * ```java
- * class MyFlow implements RPCStartableFlow {
+ * class MyFlow implements RestStartableFlow {
  *
  *     @CordaInject
  *     public FlowEngine flowEngine;
@@ -40,7 +40,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  *
  *     @Suspendable
  *     @Override
- *     public String call(RPCRequestData requestBody) {
+ *     public String call(RestRequestBody requestBody) {
  *         ...
  *     }
  * }

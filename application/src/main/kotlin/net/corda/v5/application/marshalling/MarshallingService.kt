@@ -2,7 +2,7 @@
 
 package net.corda.v5.application.marshalling
 
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**
@@ -11,7 +11,7 @@ import net.corda.v5.base.annotations.DoNotImplement
  * formats.
  *
  * Example usage:
- * @see RPCStartableFlow
+ * @see RestStartableFlow
  */
 @DoNotImplement
 interface MarshallingService {

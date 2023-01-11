@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.utxo.token.selection;
 
 import net.corda.v5.application.flows.CordaInject;
-import net.corda.v5.application.flows.RPCRequestData;
-import net.corda.v5.application.flows.RPCStartableFlow;
+import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.RestStartableFlow;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.utxo.StateRef;
@@ -14,13 +14,13 @@ import java.util.List;
 /**
  * This tests validates the code example in the KDoc comments will compile
  */
-public class TokenCacheFlowJavaExample implements RPCStartableFlow {
+public class TokenCacheFlowJavaExample implements RestStartableFlow {
     @CordaInject
     public TokenSelection tokenCache;
 
     @Override
     @NotNull
-    public String call(@NotNull RPCRequestData requestBody) {
+    public String call(@NotNull RestRequestBody requestBody) {
 
         // Create a criteria describing the tokens to be selected and
         // the target amount to be claimed.
