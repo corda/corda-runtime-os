@@ -81,6 +81,7 @@ class FlowRPCOpsImpl @Activate constructor(
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config)
     }
+
     private fun regexMatch(input: String, regex: String): Boolean {
         return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
@@ -93,7 +94,6 @@ class FlowRPCOpsImpl @Activate constructor(
         }
     }
 
-    @Suppress("SpreadOperator")
     override fun startFlow(
         holdingIdentityShortHash: String,
         startFlow: StartFlowParameters

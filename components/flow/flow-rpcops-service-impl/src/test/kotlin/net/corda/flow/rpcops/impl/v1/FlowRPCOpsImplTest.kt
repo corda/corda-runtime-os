@@ -523,6 +523,7 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(fatalErrorFunction, never()).invoke()
     }
+
     @Test
     fun `start flow throws bad request if clientRequestId is empty`() {
         val flowRPCOps = createFlowRpcOps()
