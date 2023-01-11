@@ -16,11 +16,11 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.LinkOutHeader
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.NetworkType
-import net.corda.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.LinkOutHeader
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo

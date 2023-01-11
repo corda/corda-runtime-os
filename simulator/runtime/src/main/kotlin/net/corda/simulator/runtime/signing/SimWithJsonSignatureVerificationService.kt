@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.signing
 
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import java.security.PublicKey
@@ -46,6 +47,15 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
         if (!clearData.contentEquals(wrapper.clearData)) {
             throw CryptoSignatureException("Clear data did not match")
         }
+    }
+
+    override fun verify(
+        originalData: ByteArray,
+        signature: DigitalSignature,
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec
+    ) {
+        verify(publicKey, signatureSpec, signature.bytes, originalData)
     }
 
 }

@@ -4,9 +4,9 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.utilities.time.Clock

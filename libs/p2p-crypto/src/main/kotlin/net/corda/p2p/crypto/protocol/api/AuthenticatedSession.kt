@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.CommonHeader
-import net.corda.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.CommonHeader
+import net.corda.data.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.v5.base.exceptions.CordaRuntimeException

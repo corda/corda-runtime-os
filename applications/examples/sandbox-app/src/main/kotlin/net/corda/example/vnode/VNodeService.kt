@@ -1,5 +1,7 @@
 package net.corda.example.vnode
 
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -16,7 +18,9 @@ interface VNodeService {
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
     fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext
     fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
-    fun flushSandboxCache()
+    fun flushSandboxCache(): CompletableFuture<*>
+    @Throws(InterruptedException::class)
+    fun waitForSandboxCache(completion: CompletableFuture<*>, duration: Duration): Boolean
 }
 
 @Suppress("unused")
@@ -50,14 +54,18 @@ class VNodeServiceImpl @Activate constructor(
         virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
         virtualNodeLoader.forgetCPI(cpiMetadata.cpiId)
         cpiLoader.removeCpiMetadata(cpiMetadata.cpiId)
-        flushSandboxCache()
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {
         return flowSandboxService.get(holdingIdentity)
     }
 
-    override fun flushSandboxCache() {
-        sandboxGroupContextComponent.flushCache()
+    override fun flushSandboxCache(): CompletableFuture<*> {
+        return sandboxGroupContextComponent.flushCache()
+    }
+
+    @Throws(InterruptedException::class)
+    override fun waitForSandboxCache(completion: CompletableFuture<*>, duration: Duration): Boolean {
+        return sandboxGroupContextComponent.waitFor(completion, duration)
     }
 }

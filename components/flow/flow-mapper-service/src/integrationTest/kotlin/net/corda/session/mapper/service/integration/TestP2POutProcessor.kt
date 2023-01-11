@@ -2,7 +2,7 @@ package net.corda.session.mapper.service.integration
 
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
+import net.corda.data.p2p.app.AppMessage
 import org.junit.jupiter.api.fail
 import java.util.concurrent.CountDownLatch
 

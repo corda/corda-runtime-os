@@ -12,7 +12,7 @@ val exceptionFactories = mapOf<String, (String, Throwable) -> Throwable>(
     IllegalStateException::class.java.name to { m, e -> IllegalStateException(m, e) },
     CryptoSignatureException::class.java.name to { m, e -> CryptoSignatureException(m, e) },
     CryptoRetryException::class.java.name to { m, e -> CryptoRetryException(m, e) },
-    KeyAlreadyExistsException::class.java.name to { m, _ -> KeyAlreadyExistsException(m) },
+    KeyAlreadyExistsException::class.java.name to { m, _ -> KeyAlreadyExistsException(m, "", "") },
     InvalidParamsException::class.java.name to { m, _ -> InvalidParamsException(m) },
 )
 

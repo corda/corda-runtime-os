@@ -13,7 +13,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
+import net.corda.data.p2p.app.AppMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro

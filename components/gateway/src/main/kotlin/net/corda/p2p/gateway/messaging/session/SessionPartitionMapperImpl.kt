@@ -10,7 +10,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.SessionPartitions
+import net.corda.data.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.utilities.VisibleForTesting
 import java.util.concurrent.CompletableFuture

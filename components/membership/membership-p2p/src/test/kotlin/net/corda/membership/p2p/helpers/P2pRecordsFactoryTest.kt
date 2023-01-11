@@ -7,7 +7,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
-import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock

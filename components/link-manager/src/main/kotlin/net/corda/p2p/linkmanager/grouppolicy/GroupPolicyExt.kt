@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager.grouppolicy
 
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.p2p.NetworkType
-import net.corda.p2p.crypto.ProtocolMode
 
 internal val GroupPolicy.networkType: NetworkType
     get() {

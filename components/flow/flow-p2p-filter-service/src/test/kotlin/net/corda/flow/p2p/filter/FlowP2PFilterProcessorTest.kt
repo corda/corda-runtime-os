@@ -9,9 +9,9 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat

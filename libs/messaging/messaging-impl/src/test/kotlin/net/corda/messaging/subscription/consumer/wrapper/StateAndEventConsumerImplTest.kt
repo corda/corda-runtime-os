@@ -13,7 +13,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
@@ -208,38 +207,38 @@ class StateAndEventConsumerImplTest {
     @Test
     fun testResetPollPosition() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
+
+        val assignedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val assignedEventTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0))
+        whenever(eventConsumer.assignment())
+            .thenReturn(assignedEventTopicPartitions)
+            .thenReturn(assignedEventTopicPartitionsAfterRebalance)
+
+        val assignedStateTopicPartitions = setOf(CordaTopicPartition(TOPIC, 2), CordaTopicPartition(TOPIC, 4))
+        val assignedStateTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 2))
+        whenever(stateConsumer.assignment())
+            .thenReturn(assignedStateTopicPartitions)
+            .thenReturn(assignedStateTopicPartitionsAfterRebalance)
+
         val consumer = StateAndEventConsumerImpl(
             config, eventConsumer, stateConsumer, StateAndEventPartitionState
                 (mutableMapOf(), mutableMapOf()), stateAndEventListener
         )
-
-        val assignedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
-        val pausedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 1))
-        whenever(eventConsumer.assignment()).thenReturn(assignedTopicPartitions)
-        whenever(eventConsumer.paused()).thenReturn(pausedTopicPartitions)
-
         consumer.resetPollInterval()
 
         val eventConsumerOrder = inOrder(eventConsumer)
-
-        verify(eventConsumer, times(1)).assignment()
-        verify(eventConsumer, times(1)).paused()
-
-        eventConsumerOrder.verify(eventConsumer, times(1))
-            .pause(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).pause(assignedEventTopicPartitions)
         eventConsumerOrder.verify(eventConsumer, times(1)).poll(any())
-        eventConsumerOrder.verify(eventConsumer, times(1))
-            .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).resume(assignedEventTopicPartitionsAfterRebalance)
 
         val stateConsumerOrder = inOrder(stateConsumer)
-
-        verify(stateConsumer, times(1)).assignment()
-        verify(stateConsumer, times(1)).paused()
-        stateConsumerOrder.verify(stateConsumer, times(1))
-            .pause(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).pause(assignedStateTopicPartitions)
         stateConsumerOrder.verify(stateConsumer, times(1)).poll(any())
-        stateConsumerOrder.verify(stateConsumer, times(1))
-            .resume(argThat { contains(CordaTopicPartition(TOPIC, 0)) && size == 1 })
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).resume(assignedStateTopicPartitionsAfterRebalance)
     }
 
     @Test

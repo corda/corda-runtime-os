@@ -10,7 +10,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize

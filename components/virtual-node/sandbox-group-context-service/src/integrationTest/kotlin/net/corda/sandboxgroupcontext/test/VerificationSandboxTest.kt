@@ -30,7 +30,7 @@ import java.security.AccessControlException
 @Suppress("FunctionName")
 class VerificationSandboxTest {
     companion object {
-        private const val TIMEOUT_MILLIS = 1000L
+        private const val TIMEOUT_MILLIS = 10000L
         private const val CPB1 = "META-INF/sandbox-security-manager-one.cpb"
         private const val CPK1_FLOWS_PACKAGE = "com.example.securitymanager.one.flows"
         private const val CPK1_ENVIRONMENT_FLOW = "$CPK1_FLOWS_PACKAGE.EnvironmentFlow"
@@ -46,7 +46,7 @@ class VerificationSandboxTest {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -55,7 +55,7 @@ class VerificationSandboxTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 1000)
+            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 

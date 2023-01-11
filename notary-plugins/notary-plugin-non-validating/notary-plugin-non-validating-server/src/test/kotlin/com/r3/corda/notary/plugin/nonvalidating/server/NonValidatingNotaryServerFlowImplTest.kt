@@ -82,7 +82,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val mockSigVerifier = mock<DigitalSignatureVerificationService> {
             // Do nothing
-            on { verify(any(), any(), any(), any()) } doAnswer { }
+            on { verify(any(), any(), any<ByteArray>(), any()) } doAnswer { }
         }
     }
 
@@ -94,7 +94,7 @@ class NonValidatingNotaryServerFlowImplTest {
     @Test
     fun `Non-validating notary plugin server should respond with error if request signature is invalid`() {
         val mockSigVerifierError = mock<DigitalSignatureVerificationService> {
-            on { verify(any(), any(), any(), any()) } doThrow IllegalArgumentException("Sig error")
+            on { verify(any(), any(), any<ByteArray>(), any()) } doThrow IllegalArgumentException("Sig error")
         }
 
         createAndCallServer(mockSuccessfulUniquenessClientService(), sigVerifier = mockSigVerifierError) {

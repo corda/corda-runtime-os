@@ -65,11 +65,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
