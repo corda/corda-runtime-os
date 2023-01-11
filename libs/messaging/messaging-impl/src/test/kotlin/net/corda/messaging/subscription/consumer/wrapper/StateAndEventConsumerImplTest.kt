@@ -209,13 +209,13 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
 
         val assignedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
-        val assignedEventTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val assignedEventTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0))
         whenever(eventConsumer.assignment())
             .thenReturn(assignedEventTopicPartitions)
             .thenReturn(assignedEventTopicPartitionsAfterRebalance)
 
         val assignedStateTopicPartitions = setOf(CordaTopicPartition(TOPIC, 2), CordaTopicPartition(TOPIC, 4))
-        val assignedStateTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 2), CordaTopicPartition(TOPIC, 4))
+        val assignedStateTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 2))
         whenever(stateConsumer.assignment())
             .thenReturn(assignedStateTopicPartitions)
             .thenReturn(assignedStateTopicPartitionsAfterRebalance)
