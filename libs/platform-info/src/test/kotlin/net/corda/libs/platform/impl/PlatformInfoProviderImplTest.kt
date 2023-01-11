@@ -2,26 +2,26 @@ package net.corda.libs.platform.impl
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.net.URL
-import java.util.Collections
-import java.util.jar.Attributes
-import java.util.jar.Manifest
+import org.osgi.framework.Version
 
 class PlatformInfoProviderImplTest {
 
     companion object {
         const val PLATFORM_VERSION = "999"
+        const val SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 
+    private val bundle = mock<Bundle>().also {
+        whenever(it.version).thenReturn(Version(SOFTWARE_VERSION))
+    }
     private val bundleContext = mock<BundleContext>().also {
         whenever(it.getProperty(eq("net.corda.platform.version"))).thenReturn(PLATFORM_VERSION)
+        whenever(it.bundle).thenReturn(bundle)
     }
     private val platformVersionService = PlatformInfoProviderImpl(bundleContext)
 
@@ -45,41 +45,6 @@ class PlatformInfoProviderImplTest {
 
     @Test
     fun `local worker software version returns software version from bundle manifest`() {
-        val urlOne = urlFromManifest(emptyMap())
-        val urlTwo = urlFromManifest(mapOf("Bundle-SymbolicName" to "non"))
-        val urlThree = urlFromManifest(mapOf("Bundle-Version" to "non"))
-        val urlFour = urlFromManifest(mapOf("Bundle-Version" to "version", "Bundle-SymbolicName" to "net.corda.platform-info"))
-        val classLoader = mock<ClassLoader> {
-            on { getResources("META-INF/MANIFEST.MF") } doReturn
-                Collections.enumeration(
-                    listOf(
-                        urlOne,
-                        urlTwo,
-                        urlThree,
-                        urlFour,
-                    )
-                )
-        }
-        val platformVersionService = PlatformInfoProviderImpl(classLoader, bundleContext)
-
-        assertThat(
-            platformVersionService.localWorkerSoftwareVersion
-        ).isEqualTo(
-            "version"
-        )
-    }
-
-    private fun urlFromManifest(manifest: Map<String, String>): URL {
-        val jarManifest = Manifest()
-        jarManifest.mainAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0")
-        manifest.entries.forEach { (key, value) ->
-            jarManifest.mainAttributes.putValue(key, value)
-        }
-        val output = ByteArrayOutputStream()
-        jarManifest.write(output)
-        val input = ByteArrayInputStream(output.toByteArray())
-        return mock {
-            on { openStream() } doReturn input
-        }
+        assertThat(platformVersionService.localWorkerSoftwareVersion).isEqualTo(SOFTWARE_VERSION)
     }
 }
