@@ -71,7 +71,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        verifyTransaction(utxoLedgerTransactionFactory.create(wireTransaction), utxoTransactionBuilder.notary!!)
+        UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
 
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
@@ -172,11 +172,5 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 }
             }
         }
-    }
-
-    private fun verifyTransaction(ledgerTransactionToCheck: UtxoLedgerTransaction, notary: Party){
-        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
-        verifier.verifyPlatformChecks(notary)
-        verifier.verifyContracts()
     }
 }

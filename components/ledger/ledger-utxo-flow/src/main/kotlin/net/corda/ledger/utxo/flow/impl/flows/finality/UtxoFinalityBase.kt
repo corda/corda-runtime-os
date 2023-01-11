@@ -94,10 +94,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
-        verifier.verifyPlatformChecks(signedTransaction.notary)
-        verifier.verifyContracts()
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify(signedTransaction.notary)
     }
 
 }

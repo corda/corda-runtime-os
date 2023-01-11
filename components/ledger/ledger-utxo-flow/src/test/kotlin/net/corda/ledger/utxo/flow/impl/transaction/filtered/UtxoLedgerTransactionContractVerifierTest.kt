@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionContractVerifier
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class UtxoLedgerTransactionVerifierTest {
+class UtxoLedgerTransactionContractVerifierTest {
 
     private companion object {
         val TX_ID_1 = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
@@ -47,7 +47,7 @@ class UtxoLedgerTransactionVerifierTest {
         val validContractCState2 = stateAndRef<MyValidContractC>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, validContractCState1))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        UtxoLedgerTransactionVerifier(transaction).verifyContracts()
+        UtxoLedgerTransactionContractVerifier(transaction).verify()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractC.EXECUTION_COUNT).isEqualTo(1)
@@ -61,7 +61,7 @@ class UtxoLedgerTransactionVerifierTest {
         val invalidContractBState = stateAndRef<MyInvalidContractB>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, invalidContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { UtxoLedgerTransactionVerifier(transaction).verifyContracts() }
+        assertThatThrownBy { UtxoLedgerTransactionContractVerifier(transaction).verify() }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
