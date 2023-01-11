@@ -15,6 +15,7 @@ import java.io.File
 
 private val caPath = "build${File.separator}tmp${File.separator}e2eTestCa"
 const val TLS_CERT_ALIAS = "p2p-tls-cert"
+const val SESSION_CERT_ALIAS = "p2p-session"
 
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
     .createFileSystemLocalAuthority(
@@ -36,16 +37,22 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
 
 fun E2eCluster.generateCsr(
     member: E2eClusterMember,
-    tlsKeyId: String
+    keyId: String,
+    addHostToSubjectAlternativeNames: Boolean = false
 ): String {
+    val subjectAlternativeNames = if (addHostToSubjectAlternativeNames) {
+        listOf(clusterConfig.p2pHost)
+    } else {
+        null
+    }
     return clusterHttpClientFor(CertificatesRpcOps::class.java)
         .use { client ->
             client.start().proxy.generateCsr(
-                P2P_TENANT_ID,
-                tlsKeyId,
-                member.name,
-                listOf(clusterConfig.p2pHost),
-                null
+                tenantId = P2P_TENANT_ID,
+                keyId = keyId,
+                x500Name = member.name,
+                subjectAlternativeNames = subjectAlternativeNames,
+                contextMap = null
             )
         }
 }
@@ -61,6 +68,23 @@ fun E2eCluster.uploadTlsCertificate(
                 HttpFileUpload(
                     certificatePem.byteInputStream(),
                     "$TLS_CERT_ALIAS.pem"
+                )
+            )
+        )
+    }
+}
+
+fun E2eCluster.uploadSessionCertificate(
+    certificatePem: String
+) {
+    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+        client.start().proxy.importCertificateChain(
+            usage = "p2p-session",
+            alias = SESSION_CERT_ALIAS,
+            certificates = listOf(
+                HttpFileUpload(
+                    certificatePem.byteInputStream(),
+                    "$SESSION_CERT_ALIAS.pem"
                 )
             )
         )

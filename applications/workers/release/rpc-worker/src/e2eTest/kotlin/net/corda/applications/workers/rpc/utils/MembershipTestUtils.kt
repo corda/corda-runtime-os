@@ -75,10 +75,11 @@ fun createStaticMemberGroupPolicyJson(
 }
 
 fun createMgmRegistrationContext(
-    tlsTrustRoot: String,
+    caTrustRoot: String,
     sessionKeyId: String,
     ecdhKeyId: String,
     p2pUrl: String,
+    sessionPkiMode: String = "NoPKI"
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
@@ -88,12 +89,13 @@ fun createMgmRegistrationContext(
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
     "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
     "corda.group.key.session.policy" to "Distinct",
-    "corda.group.pki.session" to "NoPKI",
+    "corda.group.pki.session" to sessionPkiMode,
     "corda.group.pki.tls" to "Standard",
     "corda.group.tls.version" to "1.3",
     "corda.endpoints.0.connectionURL" to p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1",
-    "corda.group.truststore.tls.0" to tlsTrustRoot,
+    "corda.group.truststore.tls.0" to caTrustRoot,
+    "corda.group.truststore.session.0" to caTrustRoot,
 )
 
 fun createMemberRegistrationContext(
