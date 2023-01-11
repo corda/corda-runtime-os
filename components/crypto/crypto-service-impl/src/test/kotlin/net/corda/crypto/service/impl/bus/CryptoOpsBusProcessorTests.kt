@@ -151,17 +151,14 @@ class CryptoOpsBusProcessorTests {
         assertEquals(category, operationContextMap[CRYPTO_CATEGORY])
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> process(request: Any): T {
+    private inline fun <reified T> process(request: Any): T {
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(RpcOpsRequest(context, request), future)
-        val result = future.get() ?: throw UnsupportedOperationException()
+        val result = future.get()!!
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
-        val response = (result.response) as? T
-        assertNotNull(response)
-        return response
+        return (result.response) as T
     }
 
     @Test
