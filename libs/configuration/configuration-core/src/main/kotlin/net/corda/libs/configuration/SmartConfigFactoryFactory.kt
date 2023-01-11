@@ -29,6 +29,18 @@ class SmartConfigFactoryFactory
 
     companion object {
         private val logger = contextLogger()
+
+        /**
+         * Create a [SmartConfigFactory] that doesn't support secrets.
+         *
+         */
+        fun createWithoutSecurityServices() = SmartConfigFactoryImpl(
+            MaskedSecretsLookupService(),
+            object : SecretsCreateService {
+                override fun createValue(plainText: String): Config {
+                    throw SecretsConfigurationException("This SmartConfigFactory does not support creating secrets.")
+                }
+            })
     }
 
     /**
@@ -56,16 +68,4 @@ class SmartConfigFactoryFactory
 
         return createWithoutSecurityServices()
     }
-
-    /**
-     * Create a [SmartConfigFactory] that doesn't support secrets.
-     *
-     */
-    fun createWithoutSecurityServices() = SmartConfigFactoryImpl(
-        MaskedSecretsLookupService(),
-        object : SecretsCreateService {
-            override fun createValue(plainText: String): Config {
-                throw SecretsConfigurationException("This SmartConfigFactory does not support creating secrets.")
-            }
-        })
 }

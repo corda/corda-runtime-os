@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 
 class MessageConfigHelperTest {
 
-    private val smartConfigFactory = SmartConfigFactoryFactory(emptyList()).createWithoutSecurityServices()
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     @Test
     fun `messaging config correctly built from boot and messaging sections`() {

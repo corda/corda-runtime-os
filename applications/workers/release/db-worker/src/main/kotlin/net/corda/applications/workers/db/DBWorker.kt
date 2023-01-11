@@ -10,6 +10,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.logge
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -42,6 +43,8 @@ class DBWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
+    @Reference(service = SmartConfigFactoryFactory::class)
+    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
 ) : Application {
 
     private companion object {
@@ -63,6 +66,7 @@ class DBWorker @Activate constructor(
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val config = getBootstrapConfig(
+            smartConfigFactoryFactory,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig)
