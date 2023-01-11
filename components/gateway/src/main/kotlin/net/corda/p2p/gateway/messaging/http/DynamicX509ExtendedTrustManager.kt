@@ -10,6 +10,7 @@ import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedTrustManager
+import javax.net.ssl.X509TrustManager
 
 internal class DynamicX509ExtendedTrustManager(
     private val trustStoresMap: TrustStoresMap,
@@ -23,7 +24,7 @@ internal class DynamicX509ExtendedTrustManager(
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
         val exceptionMessages = mutableSetOf<String>()
-        trustStoresMap.getTrustStores().flatMap { it.x509ExtendedTrustManager() }.forEach {
+        getAllX509TrustManagers().forEach {
             if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType, socket) }) {
                 return
             }
@@ -33,7 +34,7 @@ internal class DynamicX509ExtendedTrustManager(
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
         val exceptionMessages = mutableSetOf<String>()
-        trustStoresMap.getTrustStores().flatMap { it.x509ExtendedTrustManager() }.forEach {
+        getAllX509TrustManagers().forEach {
             if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType, engine) }) {
                 return
             }
@@ -43,7 +44,7 @@ internal class DynamicX509ExtendedTrustManager(
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
         val exceptionMessages = mutableSetOf<String>()
-        trustStoresMap.getTrustStores().flatMap { it.x509ExtendedTrustManager() }.forEach {
+        getAllX509TrustManagers().forEach {
             if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType) }) {
                 return
             }
@@ -65,11 +66,7 @@ internal class DynamicX509ExtendedTrustManager(
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
         // We assume here that all the trust stores were issued by the same CA.
-         return trustStoresMap.getTrustStores().flatMap {
-             it.x509ExtendedTrustManager() }
-         .map {
-             it.acceptedIssuers.toList()
-         }.flatten().toTypedArray()
+         return getAllX509TrustManagers().map { it.acceptedIssuers.toList() }.flatten().toTypedArray()
     }
 
     private fun doesNotThrowCertificateException(exceptionMessages: MutableSet<String>, function : (() -> Unit)): Boolean {
@@ -87,4 +84,7 @@ internal class DynamicX509ExtendedTrustManager(
         trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
         return trustManagerFactory.trustManagers.filterIsInstance<X509ExtendedTrustManager>()
     }
+
+    private fun getAllX509TrustManagers(): List<X509ExtendedTrustManager> =
+        trustStoresMap.getTrustStores().flatMap { it.x509ExtendedTrustManager() }
 }

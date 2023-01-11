@@ -11,6 +11,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.net.Socket
 import java.security.KeyStore
 import java.security.cert.CertificateException
@@ -44,7 +45,7 @@ class DynamicX509ExtendedTrustManagerTest {
 
     @Test
     fun `if any inner X509ExtendedTrustManager does not throw a CertificateException then checkClientTrusted succeeds`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
         doNothing().`when`(secondMockX509ExtendedTrustManager).checkClientTrusted(any(), any())
 
         dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "")
@@ -52,7 +53,7 @@ class DynamicX509ExtendedTrustManagerTest {
 
     @Test
     fun `if any inner X509ExtendedTrustManager does not throw a CertificateException then checkClientTrusted with Socket succeeds`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
         doNothing().`when`(secondMockX509ExtendedTrustManager).checkClientTrusted(any(), any(), any<Socket>())
 
         dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "", mock<Socket>())
@@ -60,7 +61,7 @@ class DynamicX509ExtendedTrustManagerTest {
 
     @Test
     fun `if any inner X509ExtendedTrustManager does not throw a CertificateException then checkClientTrusted with SSLEngine succeeds`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
         doNothing().`when`(secondMockX509ExtendedTrustManager).checkClientTrusted(any(), any(), any<SSLEngine>())
 
         dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "", mock<SSLEngine>())
@@ -68,16 +69,16 @@ class DynamicX509ExtendedTrustManagerTest {
 
     @Test
     fun `if all inner X509ExtendedTrustManager throw a CertificateException then checkClientTrusted throws`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
-        `when`(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
+        whenever(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any())).thenThrow(CertificateException())
 
         assertThrows<CertificateException> { dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "") }
     }
 
     @Test
     fun `if all inner X509ExtendedTrustManager throw a CertificateException then checkClientTrusted with Socket throws`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
-        `when`(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
+        whenever(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<Socket>())).thenThrow(CertificateException())
 
         assertThrows<CertificateException> {
             dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "", mock<Socket>())
@@ -86,8 +87,8 @@ class DynamicX509ExtendedTrustManagerTest {
 
     @Test
     fun `if all inner X509ExtendedTrustManager throw a CertificateException then checkClientTrusted with SSLEngine throws`() {
-        `when`(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
-        `when`(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
+        whenever(mockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
+        whenever(secondMockX509ExtendedTrustManager.checkClientTrusted(any(), any(), any<SSLEngine>())).thenThrow(CertificateException())
 
         assertThrows<CertificateException> {
             dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(mock()), "", mock<SSLEngine>())
