@@ -10,7 +10,6 @@ import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedTrustManager
-import javax.net.ssl.X509TrustManager
 
 internal class DynamicX509ExtendedTrustManager(
     private val trustStoresMap: TrustStoresMap,
