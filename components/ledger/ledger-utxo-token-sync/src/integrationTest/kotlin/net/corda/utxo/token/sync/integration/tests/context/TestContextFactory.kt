@@ -1,20 +1,20 @@
-package net.corda.utxo.token.sync.integration.tests
+package net.corda.utxo.token.sync.integration.tests.context
 
 import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.db.testkit.TestDbConnectionManager
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.utxo.token.sync.integration.tests.context.TestContext
+import net.corda.utxo.token.sync.integration.tests.entities.UtxoRelevantTransactionState
 import net.corda.utxo.token.sync.integration.tests.entities.UtxoTransactionComponentEntity
 import net.corda.utxo.token.sync.integration.tests.entities.UtxoTransactionEntity
 import net.corda.utxo.token.sync.integration.tests.entities.UtxoTransactionOutputEntity
+import net.corda.utxo.token.sync.integration.tests.fakes.TestDbConnectionManager
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -77,8 +77,7 @@ class TestContextFactory {
         tokenIssuerHash: String,
         tokenNotaryX500Name: String,
         tokenSymbol: String,
-        lastModified: Instant,
-        isConsumed:Boolean = false
+        lastModified: Instant
     ) {
 
         val component = UtxoTransactionComponentEntity(
@@ -102,14 +101,21 @@ class TestContextFactory {
             tokenAmount = BigDecimal(100),
             tokenOwnerHash = "o1",
             tokenTag = "t1",
-            isConsumed = isConsumed,
             created = lastModified,
-            lastModified = lastModified
+        )
+
+        val relevancy = UtxoRelevantTransactionState(
+            transactionId = txId,
+            groupIdx = UtxoComponentGroup.OUTPUTS.ordinal,
+            leafIdx = leafIdx,
+            consumed = false,
+            created = lastModified,
         )
 
         getEntityManagerFactory(vNode.holdingIdentity).transaction {
             it.persist(component)
             it.persist(output)
+            it.persist(relevancy)
         }
     }
 
@@ -139,7 +145,8 @@ class TestContextFactory {
                 setOf(
                     UtxoTransactionEntity::class.java,
                     UtxoTransactionComponentEntity::class.java,
-                    UtxoTransactionOutputEntity::class.java
+                    UtxoTransactionOutputEntity::class.java,
+                    UtxoRelevantTransactionState::class.java
                 )
             )
         )

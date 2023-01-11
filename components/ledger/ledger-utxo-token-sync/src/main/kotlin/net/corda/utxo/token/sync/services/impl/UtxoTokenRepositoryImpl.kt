@@ -3,8 +3,8 @@ package net.corda.utxo.token.sync.services.impl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.utxo.token.sync.converters.DbRecordConverter
 import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.GROUP_INDEX
-import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.IS_CONSUMED
-import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.LAST_MODIFIED
+import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.CONSUMED
+import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.CREATED
 import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.LEAF_INDEX
 import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.TOKEN_AMOUNT
 import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.TOKEN_ISSUER_HASH
@@ -17,7 +17,6 @@ import net.corda.utxo.token.sync.converters.UtxoTransactionOutputDbFields.TRANSA
 import net.corda.utxo.token.sync.entities.TokenPoolKeyRecord
 import net.corda.utxo.token.sync.entities.TokenRecord
 import net.corda.utxo.token.sync.entities.TokenRefRecord
-import net.corda.utxo.token.sync.services.SyncConfiguration
 import net.corda.utxo.token.sync.services.UtxoTokenRepository
 import net.corda.v5.ledger.utxo.StateRef
 import java.time.Instant
@@ -49,12 +48,12 @@ class UtxoTokenRepositoryImpl(
                    tx.$TOKEN_OWNER_HASH,
                    tx.$TOKEN_TAG,
                    tx.$TOKEN_AMOUNT,
-                   tx.$LAST_MODIFIED
+                   tx.$CREATED
             FROM {h-schema}utxo_transaction_output tx
             INNER JOIN criteria 
             ON    tx.transaction_id = criteria.transaction_id 
             AND   tx.leaf_idx = criteria.leaf_idx
-            WHERE tx.$IS_CONSUMED = TRUE
+            WHERE tx.$CONSUMED = TRUE
             AND   tx.$GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
             """,
             Tuple::class.java
@@ -71,21 +70,25 @@ class UtxoTokenRepositoryImpl(
         return entityManager.createNativeQuery(
             """
             SELECT TOP ${maxRecordsToReturn}
-                   $TRANSACTION_ID, 
-                   $LEAF_INDEX,
-                   $TOKEN_TYPE, 
-                   $TOKEN_ISSUER_HASH, 
-                   $TOKEN_NOTARY_X500_NAME, 
-                   $TOKEN_SYMBOL,
-                   $TOKEN_OWNER_HASH,
-                   $TOKEN_TAG,
-                   $TOKEN_AMOUNT,
-                   $LAST_MODIFIED
-            FROM {h-schema}utxo_transaction_output
-            WHERE    $IS_CONSUMED = FALSE
-            AND      $GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
-            AND      $LAST_MODIFIED>= (:lastModified)
-            ORDER BY $LAST_MODIFIED
+                   txo.$TRANSACTION_ID, 
+                   txo.$LEAF_INDEX,
+                   txo.$TOKEN_TYPE, 
+                   txo.$TOKEN_ISSUER_HASH, 
+                   txo.$TOKEN_NOTARY_X500_NAME, 
+                   txo.$TOKEN_SYMBOL,
+                   txo.$TOKEN_OWNER_HASH,
+                   txo.$TOKEN_TAG,
+                   txo.$TOKEN_AMOUNT,
+                   txo.$CREATED
+            FROM {h-schema}utxo_transaction_output txo
+            INNER JOIN {h-schema}utxo_relevant_transaction_state txr
+            ON  txo.$TRANSACTION_ID = txr.$TRANSACTION_ID
+            AND txo.$LEAF_INDEX = txr.$LEAF_INDEX
+            AND txo.$GROUP_INDEX = txr.$GROUP_INDEX
+            WHERE    txr.$CONSUMED = FALSE
+            AND      txr.$GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
+            AND      txr.$CREATED>= (:lastModified)
+            ORDER BY txr.$CREATED
             """,
             Tuple::class.java
         )
@@ -103,18 +106,22 @@ class UtxoTokenRepositoryImpl(
         return entityManager.createNativeQuery(
             """
             SELECT  TOP ${maxRecordsToReturn}
-                    $TRANSACTION_ID, 
-                    $LEAF_INDEX, 
-                    $LAST_MODIFIED
-            FROM {h-schema}utxo_transaction_output
-            WHERE    $IS_CONSUMED = FALSE
-            AND      $GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
-            AND      $TOKEN_TYPE = (:tokenType)
-            AND      $TOKEN_ISSUER_HASH = (:issuerHash)
-            AND      $TOKEN_NOTARY_X500_NAME = (:notaryX500Name)
-            AND      $TOKEN_SYMBOL = (:symbol)
-            AND      $LAST_MODIFIED >= (:lastModified)
-            ORDER BY $LAST_MODIFIED
+                    txo.$TRANSACTION_ID, 
+                    txo.$LEAF_INDEX, 
+                    txr.$CREATED
+            FROM {h-schema}utxo_transaction_output txo
+            INNER JOIN {h-schema}utxo_relevant_transaction_state txr
+            ON  txo.$TRANSACTION_ID = txr.$TRANSACTION_ID
+            AND txo.$LEAF_INDEX = txr.$LEAF_INDEX
+            AND txo.$GROUP_INDEX = txr.$GROUP_INDEX
+            WHERE    txr.$CONSUMED = FALSE
+            AND      txo.$GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
+            AND      txo.$TOKEN_TYPE = (:tokenType)
+            AND      txo.$TOKEN_ISSUER_HASH = (:issuerHash)
+            AND      txo.$TOKEN_NOTARY_X500_NAME = (:notaryX500Name)
+            AND      txo.$TOKEN_SYMBOL = (:symbol)
+            AND      txr.$CREATED >= (:lastModified)
+            ORDER BY txr.$CREATED
             """,
             Tuple::class.java
         )
@@ -130,13 +137,17 @@ class UtxoTokenRepositoryImpl(
 
         return entityManager.createNativeQuery(
             """
-            SELECT DISTINCT  $TOKEN_TYPE, 
-                             $TOKEN_ISSUER_HASH, 
-                             $TOKEN_NOTARY_X500_NAME, 
-                             $TOKEN_SYMBOL
-            FROM {h-schema}utxo_transaction_output
-            WHERE    $IS_CONSUMED = FALSE
-            AND      $GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
+            SELECT DISTINCT  txo.$TOKEN_TYPE, 
+                             txo.$TOKEN_ISSUER_HASH, 
+                             txo.$TOKEN_NOTARY_X500_NAME, 
+                             txo.$TOKEN_SYMBOL
+            FROM {h-schema}utxo_transaction_output txo
+            INNER JOIN {h-schema}utxo_relevant_transaction_state txr
+            ON  txo.$TRANSACTION_ID = txr.$TRANSACTION_ID
+            AND txo.$LEAF_INDEX = txr.$LEAF_INDEX
+            AND txo.$GROUP_INDEX = txr.$GROUP_INDEX
+            WHERE    txr.$CONSUMED = FALSE
+            AND      txr.$GROUP_INDEX = ${UtxoComponentGroup.OUTPUTS.ordinal}
             """,
             Tuple::class.java
         ).convertTuple { dbRecordConverter.convertTokenKey(it) }

@@ -1,33 +1,32 @@
-package net.corda.db.testkit
+package net.corda.utxo.token.sync.integration.tests.fakes
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.base.util.loggerFor
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.propertytypes.ServiceRanking
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
-import kotlin.NoSuchElementException
 
+/**
+ * If you think this class looks familiar that's because there are quite test/fake implementaions of DBConnectionManager
+ * floating around, I did have a go at unifying them, but it got too complex due to how they were being used.
+ * I've had to cut and paste this one with a couple of minor changes to unblock my work but there is tech debt ticket
+ * to come back and clean this up (CORE-8960)
+ */
 @Suppress("unused", "TooManyFunctions")
-@Component(service = [DbConnectionManager::class, TestDbConnectionManagerAdmin::class])
-@ServiceRanking(Int.MAX_VALUE)
-class TestDbConnectionManager @Activate constructor(
-    @Reference
+class TestDbConnectionManager (
     private val emff: EntityManagerFactoryFactory,
-) : DbConnectionManager, TestDbConnectionManagerAdmin {
+) : DbConnectionManager {
     private val logger = loggerFor<TestDbConnectionManager>()
 
     private val createdDataSources = mutableListOf<CloseableDataSource>()
@@ -48,7 +47,7 @@ class TestDbConnectionManager @Activate constructor(
         logger.info("Stopped")
     }
 
-    override fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
+    fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
         val connectionConfiguration = connectionConfigurations.computeIfAbsent(id) { dbId ->
             NamedDataSourceConfiguration(
                 id = dbId,

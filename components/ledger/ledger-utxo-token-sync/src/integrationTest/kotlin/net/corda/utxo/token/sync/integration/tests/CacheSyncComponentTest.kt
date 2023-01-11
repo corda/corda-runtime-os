@@ -13,6 +13,7 @@ import net.corda.data.ledger.utxo.token.selection.state.TokenSyncState
 import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_SYNC_EVENT
 import net.corda.schema.configuration.LedgerConfig
+import net.corda.utxo.token.sync.integration.tests.context.TestContextFactory
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -44,7 +45,7 @@ class CacheSyncComponentTest {
          *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
          *     uncomment the line below
          */
-        // System.setProperty("postgresPort", "5432")
+         // System.setProperty("postgresPort", "5432")
 
         // Add the virtual nodes for the cluster
         testContextFactory.addVirtualNodes(
@@ -234,7 +235,7 @@ class CacheSyncComponentTest {
 
         // And then for the second pass we expect to get the next block of records.
         // As described above this will include the last record of the first block.
-        context.clearPublishedRecords(TOKEN_CACHE_SYNC_EVENT)
+        context.clearPublishedRecords(TOKEN_CACHE_EVENT)
         context.publishEvent(
             TOKEN_CACHE_SYNC_EVENT,
             BOB_SHORT_ID,
@@ -287,7 +288,7 @@ class CacheSyncComponentTest {
 
         // And then for the second pass we expect to get a set of two records, the last record from the first
         // block and the remaining 4th record for bob
-        context.clearPublishedRecords(TOKEN_CACHE_SYNC_EVENT)
+        context.clearPublishedRecords(TOKEN_CACHE_EVENT)
         context.publishEvent(
             TOKEN_CACHE_SYNC_EVENT,
             BOB_SHORT_ID,

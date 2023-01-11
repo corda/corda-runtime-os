@@ -11,6 +11,6 @@ object UtxoTransactionOutputDbFields{
     const val TOKEN_TAG = "token_tag"
     const val TOKEN_OWNER_HASH = "token_owner_hash"
     const val TOKEN_AMOUNT = "token_amount"
-    const val LAST_MODIFIED = "last_modified"
-    const val IS_CONSUMED = "is_consumed"
+    const val CREATED = "created"
+    const val CONSUMED = "consumed"
 }

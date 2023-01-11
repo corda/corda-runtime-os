@@ -47,12 +47,6 @@ class UtxoTransactionOutputEntity(
     @Column(name = "token_amount", nullable = false)
     val tokenAmount: BigDecimal,
 
-    @Column(name = "is_consumed", nullable = false)
-    val isConsumed: Boolean,
-
     @Column(name = "created", nullable = false)
     val created: Instant,
-
-    @Column(name = "last_modified", nullable = false)
-    val lastModified: Instant
 ):Serializable

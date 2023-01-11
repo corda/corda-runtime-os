@@ -4,25 +4,20 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-application"
-    implementation "net.corda:corda-config-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-config-schema'
     implementation "net.corda:corda-db-schema"
-
-    implementation project(":components:db:db-connection-manager")
     implementation project(":testing:test-utilities")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:db:db-admin")
     implementation project(":libs:db:db-admin-impl")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }
 
 description 'Database Internal Testkit'

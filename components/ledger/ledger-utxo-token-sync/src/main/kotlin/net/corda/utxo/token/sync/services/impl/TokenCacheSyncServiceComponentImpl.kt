@@ -14,10 +14,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utxo.token.sync.TokenCacheSyncServiceComponent
-import net.corda.utxo.token.sync.entities.SendSyncWakeUpEvent
-import net.corda.utxo.token.sync.services.TokenCacheSyncSubscriptionHandler
 import net.corda.utxo.token.sync.services.SyncConfiguration
 import net.corda.utxo.token.sync.services.SyncWakeUpScheduler
+import net.corda.utxo.token.sync.services.TokenCacheSyncSubscriptionHandler
 import net.corda.utxo.token.sync.services.WakeUpGeneratorService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -35,7 +34,6 @@ class TokenCacheSyncServiceComponentImpl @Activate constructor(
 ) : TokenCacheSyncServiceComponent {
 
     companion object {
-        private const val SYNC_WAKEUP_TIMER_KEY = "SYNC_WAKEUP_TIMER_KEY"
         private val logger = contextLogger()
         private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
     }
@@ -82,13 +80,7 @@ class TokenCacheSyncServiceComponentImpl @Activate constructor(
                 syncWakeUpScheduler.onConfigChange(config)
                 tokenCacheSubscriptionHandler.onConfigChange(config)
 
-                if (wakeUpGeneratorService.isWakeUpRequired()) {
-                    coordinator.setTimer(SYNC_WAKEUP_TIMER_KEY, 0) { SendSyncWakeUpEvent(it, 1) }
-                }
-            }
-
-            is SendSyncWakeUpEvent -> {
-               sendSyncWakeUpEvent(event)
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {
@@ -109,26 +101,5 @@ class TokenCacheSyncServiceComponentImpl @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    private fun sendSyncWakeUpEvent(event:SendSyncWakeUpEvent){
-        try {
-            wakeUpGeneratorService.generateWakeUpEvents()
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } catch (e: Exception) {
-            if (event.attempts >= syncConfiguration.sendWakeUpMaxRetryAttempts) {
-                logger.error("Failed to send token sync wake-ups after ${event.attempts} attempts.", e)
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            } else {
-                logger.warn(
-                    "Failed to send token sync wake-ups attempt ${event.attempts} of " +
-                            "${syncConfiguration.sendWakeUpMaxRetryAttempts}."
-                )
-                coordinator.setTimer(
-                    SYNC_WAKEUP_TIMER_KEY,
-                    syncConfiguration.sendWakeUpMaxRetryDelay
-                ) { SendSyncWakeUpEvent(it, event.attempts + 1) }
-            }
-        }
     }
 }

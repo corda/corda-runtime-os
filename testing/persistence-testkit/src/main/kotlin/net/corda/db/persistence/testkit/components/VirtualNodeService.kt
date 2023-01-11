@@ -3,7 +3,6 @@ package net.corda.db.persistence.testkit.components
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.TestDbConnectionManagerAdmin
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -15,13 +14,13 @@ import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-@Component(service = [VirtualNodeService::class])
+@Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
     @Reference
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference
-    private val dataSourceAdmin: TestDbConnectionManagerAdmin,
+    private val dataSourceAdmin: DataSourceAdmin,
 
     @Reference
     private val liquibaseSchemaMigrator: LiquibaseSchemaMigrator,
@@ -49,21 +48,15 @@ class VirtualNodeService @Activate constructor(
         val dbConnectionId = virtualNodeInfo.vaultDmlConnectionId
 
         // migrate DB schema
-        val vaultSchema = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    DbSchema::class.java.packageName,
-                    listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
-                    DbSchema::class.java.classLoader
-                )
+        val vaultSchema = ClassloaderChangeLog(linkedSetOf(
+            ClassloaderChangeLog.ChangeLogResourceFiles(
+                DbSchema::class.java.packageName,
+                listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+                DbSchema::class.java.classLoader
             )
-        )
+        ))
 
-        val dataSource = dataSourceAdmin.getOrCreateDataSource(
-            dbConnectionId,
-            "connection-${connectionCounter.incrementAndGet()}"
-        )
-
+        val dataSource = dataSourceAdmin.getOrCreateDataSource(dbConnectionId, "connection-${connectionCounter.incrementAndGet()}")
         liquibaseSchemaMigrator.updateDb(dataSource.connection, vaultSchema)
         return virtualNodeInfo
     }

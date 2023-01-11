@@ -64,7 +64,7 @@ class SyncRequestProcessor constructor(
                 checkNotNull(tokenSyncEvent.holdingIdentity) { "No holding Identity set '${tokenSyncEvent}'" }
             this.mode = TokenSyncMode.PERIODIC_CHECK
             this.fullSyncState = null
-            this.periodcSyncstate = listOf()
+            this.periodicSyncState = listOf()
             this.nextWakeup = Instant.EPOCH
             this.transientFailureCount = 0
         }

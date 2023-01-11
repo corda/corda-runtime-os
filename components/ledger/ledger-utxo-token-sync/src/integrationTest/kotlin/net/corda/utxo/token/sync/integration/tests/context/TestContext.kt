@@ -13,7 +13,6 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenSyncEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenSyncMode
 import net.corda.data.ledger.utxo.token.selection.state.TokenSyncState
-import net.corda.db.testkit.TestDbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -29,16 +28,13 @@ import net.corda.utxo.token.sync.integration.tests.fakes.PublisherFactoryFake
 import net.corda.utxo.token.sync.integration.tests.fakes.StateAndEventSubscriptionFake
 import net.corda.utxo.token.sync.integration.tests.fakes.SubscriptionFactoryFake
 import net.corda.utxo.token.sync.integration.tests.fakes.TestConfigurationReadService
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utxo.token.sync.integration.tests.fakes.TestDbConnectionManager
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions.*
-import org.assertj.core.api.Fail
-import org.junit.jupiter.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant
-import kotlin.math.exp
 
 class TestContext(
     vNodes: List<VirtualNodeInfo>,
@@ -225,7 +221,7 @@ class TestContext(
 
         assertFullSyncState(state.fullSyncState, expectedFullSyncState)
 
-        assertPeriodicSyncState(state.periodcSyncstate, expectedPeriodicState)
+        assertPeriodicSyncState(state.periodicSyncState, expectedPeriodicState)
 
         assertThat(state.nextWakeup)
             .isEqualTo(expectedNextWakeup)

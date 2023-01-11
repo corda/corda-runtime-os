@@ -30,14 +30,14 @@ class DbRecordConverterImpl : DbRecordConverter {
             amount = record.get(UtxoTransactionOutputDbFields.TOKEN_AMOUNT) as BigDecimal,
             ownerHash = record.get(UtxoTransactionOutputDbFields.TOKEN_OWNER_HASH) as String?,
             tag = record.get(UtxoTransactionOutputDbFields.TOKEN_TAG) as String?,
-            lastModified = record.getInstant(UtxoTransactionOutputDbFields.LAST_MODIFIED)
+            lastModified = record.getInstant(UtxoTransactionOutputDbFields.CREATED)
         )
     }
 
     override fun convertToTokenRef(record: Tuple): TokenRefRecord {
         return TokenRefRecord(
             stateRef = getStateRefString(record),
-            lastModified = record.getInstant(UtxoTransactionOutputDbFields.LAST_MODIFIED)
+            lastModified = record.getInstant(UtxoTransactionOutputDbFields.CREATED)
         )
     }
 
