@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
 import kotlin.concurrent.thread
+import kotlin.math.min
 
 @Command(
     name = "setupCluster",
@@ -109,6 +110,7 @@ class SetupCordaCluster : Runnable {
 
         val prereqsYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "prereqs.yaml")
         val prereqsEksYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "prereqs-eks.yaml")
+        val replicationFactor = min(kafkaReplicas, 3)
         helm(
             "install", "prereqs", "oci://corda-os-docker.software.r3.com/helm-charts/corda-dev",
             "-f", prereqsYaml.absolutePath,
@@ -116,8 +118,8 @@ class SetupCordaCluster : Runnable {
             "--set", "kafka.replicaCount=$kafkaReplicas," +
                 "kafka.zookeeper.replicaCount=$zooKeeperReplicas," +
                 "kafka.auth.clientProtocol=tls," +
-                "kafka.offsetsTopicReplicationFactor=1," +
-                "kafka.transactionStateLogReplicationFactor=1",
+                "kafka.offsetsTopicReplicationFactor=$replicationFactor," +
+                "kafka.transactionStateLogReplicationFactor=$replicationFactor",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
 
