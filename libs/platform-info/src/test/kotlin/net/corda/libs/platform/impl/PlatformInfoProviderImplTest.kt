@@ -39,12 +39,12 @@ class PlatformInfoProviderImplTest {
     }
 
     @Test
-    fun `local worker platform version returns stub value`() {
+    fun `local worker platform version returns platform version from bundle context`() {
         assertThat(platformVersionService.localWorkerPlatformVersion).isEqualTo(PLATFORM_VERSION.toInt())
     }
 
     @Test
-    fun `local worker software version returns software version from bundle manifest`() {
+    fun `local worker software version returns software version from bundle context`() {
         assertThat(platformVersionService.localWorkerSoftwareVersion).isEqualTo(SOFTWARE_VERSION)
     }
 }
