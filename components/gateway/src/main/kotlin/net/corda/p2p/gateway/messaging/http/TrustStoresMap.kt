@@ -59,6 +59,8 @@ internal class TrustStoresMap(
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
 
+    fun getTrustStores() = trustRootsPerHoldingIdentity.values.mapNotNull { it.trustStore }
+
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
