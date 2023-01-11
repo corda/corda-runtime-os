@@ -32,7 +32,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         names = ["--cpb-file"],
         description = [
             "Location of a CPB file (Use either cpi-file, cpb-file or cpi-hash).",
-            "Usage of --cpi-file or --cpi-hash is recommended. The CPI wil be sign with default options."
+            "Usage of --cpi-file or --cpi-hash is recommended. The CPI will be signed with default options."
         ]
     )
     var cpbFile: File? = null
