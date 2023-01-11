@@ -121,6 +121,8 @@ tasks.register('smokeTest', Test) {
 
     systemProperty "combinedWorkerHealthHttp",
             project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
+
+    outputs.upToDateWhen { false }
 }
 
 
