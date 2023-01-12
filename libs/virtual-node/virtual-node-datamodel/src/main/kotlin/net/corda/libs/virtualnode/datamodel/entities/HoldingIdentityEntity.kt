@@ -17,10 +17,6 @@ import javax.persistence.Table
  * @param holdingIdentityFullHash The full hash of the holding identity.
  * @param x500Name The X.500 name of the holding identity.
  * @param mgmGroupId The MGM group of the holding identity.
- * @param vaultDDLConnectionId A pointer to the holding identity's vault DDL details in the DB connection table.
- * @param cryptoDDLConnectionId A pointer to the holding identity's crypto DDL details in the DB connection table.
- * @param vaultDMLConnectionId A pointer to the holding identity's vault DML details in the DB connection table.
- * @param cryptoDMLConnectionId A pointer to the holding identity's crypto DML details in the DB connection table.
  * @param hsmConnectionId A pointer to the holding identity's entry in the HSM connection table.
  */
 @Entity

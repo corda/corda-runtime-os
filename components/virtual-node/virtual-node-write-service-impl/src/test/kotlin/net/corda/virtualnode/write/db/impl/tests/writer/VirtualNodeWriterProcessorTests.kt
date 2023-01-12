@@ -117,7 +117,7 @@ class VirtualNodeWriterProcessorTests {
             connectionId,
             connectionId,
             connectionId,
-            OperationalStatus.ACTIVE.name,
+            null,
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,

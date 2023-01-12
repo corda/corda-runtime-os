@@ -33,6 +33,16 @@ import javax.persistence.Version
  * @param cpiName The name of the CPI the virtual node is created for.
  * @param cpiVersion The version of the CPI the virtual node is created for.
  * @param cpiSignerSummaryHash The signer summary hash of the CPI the virtual node is created for.
+ * @param vaultDDLConnectionId A pointer to the virtual node's vault DDL details in the DB connection table.
+ * @param vaultDMLConnectionId A pointer to the virtual node's vault DML details in the DB connection table.
+ * @param cryptoDDLConnectionId A pointer to the virtual node's crypto DDL details in the DB connection table.
+ * @param cryptoDMLConnectionId A pointer to the virtual node's crypto DML details in the DB connection table.
+ * @param uniquenessDDLConnectionId A pointer to the virtual node's crypto DDL details in the DB connection table.
+ * @param flowP2pOperationalStatus  The virtual node's ability to communicate with peers, both inbound and outbound.
+ * @param flowStartOperationalStatus The virtual node's ability to start new flows, from both the REST endpoint and start flow events arriving to the flow mapper.
+ * @param flowOperationalStatus The virtual node's ability to run flows, to have checkpoints, to continue in-progress flows.
+ * @param vaultDbOperationalStatus The virtual node's ability to perform persistence operations on the virtual node's vault.
+ * @param operationInProgress Details of the current operation in progress.
  */
 @Entity
 @Table(name = VNODE_INSTANCE_DB_TABLE, schema = CONFIG)

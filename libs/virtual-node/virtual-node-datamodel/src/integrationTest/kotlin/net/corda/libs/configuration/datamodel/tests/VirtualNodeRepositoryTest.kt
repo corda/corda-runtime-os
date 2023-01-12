@@ -2,14 +2,12 @@ package net.corda.libs.configuration.datamodel.tests
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -172,38 +170,6 @@ class VirtualNodeRepositoryTest {
         assertThat(putEntity!!.holdingIdentity).isEqualTo(hi)
         assertThat(putEntity.cpiIdentifier).isEqualTo(cpiId)
     }
-
-//    @Test
-//    fun put() {
-//        val hash = TestRandom.secureHash()
-//        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
-//
-//        val hi = vnode.holdingIdentity.toHoldingIdentity()
-//        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
-//
-//        entityManagerFactory.createEntityManager().transaction { em ->
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.cryptoDMLConnectionId!!, DbPrivilege.DML))
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.vaultDDLConnectionId!!, DbPrivilege.DDL))
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.vaultDMLConnectionId!!, DbPrivilege.DML))
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-//            em.persist(VNodeTestUtils.newDbConnection(vnode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
-//        }
-//
-//        entityManagerFactory.createEntityManager().transaction {
-//            VirtualNodeRepositoryImpl().put(
-//                it,
-//                hi,
-//                cpiId,
-//                vnode.vaultDDLConnectionId,
-//                vnode.vaultDMLConnectionId!!,
-//                vnode.cryptoDDLConnectionId,
-//                vnode.cryptoDMLConnectionId!!,
-//                vnode.uniquenessDDLConnectionId,
-//                vnode.uniquenessDMLConnectionId,
-//            )
-//        }
-//    }
 
     @Test
     fun `put throws when Holding Identity does not exist`() {
