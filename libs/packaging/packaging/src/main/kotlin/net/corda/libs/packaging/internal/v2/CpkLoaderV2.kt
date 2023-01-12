@@ -22,8 +22,6 @@ import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.libs.packaging.internal.v1.CpkLoaderV1
-import net.corda.libs.packaging.internal.v1.SignatureCollector
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.utilities.time.Clock
@@ -35,6 +33,8 @@ import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
+
+internal const val CPK_TYPE = "Corda-CPK-Type"
 
 class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
@@ -79,7 +79,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         // Read manifest
         val cordappManifest = CordappManifest.fromManifest(manifest)
         val cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(manifest)))
-        val cpkType = manifest.mainAttributes.getValue(CpkLoaderV1.CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
+        val cpkType = manifest.mainAttributes.getValue(CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
 
         // Calculate file hash
         val fileChecksum = calculateFileHash(cpkBytes)

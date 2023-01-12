@@ -43,8 +43,7 @@ class VirtualNodeRpcTest {
             "Holding id could not be created - this test needs to be run on a clean cluster."
 
         // Server side messages
-        private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Unexpected exception when unpacking CPI.  " +
-                "Summary Hash cannot be null. There must be at least one valid signature"
+        private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
         private val testRunUniqueId = UUID.randomUUID()
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"

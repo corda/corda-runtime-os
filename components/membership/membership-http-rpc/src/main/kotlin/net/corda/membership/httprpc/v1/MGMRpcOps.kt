@@ -1,7 +1,9 @@
 package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
@@ -42,4 +44,57 @@ interface MGMRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
         holdingIdentityShortHash: String
     ): String
+
+    /**
+     * Adds client certificate subject to the mutual TLS allowed client certificates.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param subject The certificate subject.
+     */
+    @HttpRpcPUT(
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
+        description = "This method allows a client certificate with a " +
+            "given subject to be used in mutual TLS connections.",
+    )
+    fun mutualTlsAllowClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(description = "The certificate subject.")
+        subject: String,
+    )
+
+    /**
+     * Remove client certificate subject from the mutual TLS group allowed client certificates.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param subject The certificate subject.
+     */
+    @HttpRpcDELETE(
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
+        description = "This method disallows a client certificate with a " +
+                "given subject to be used in mutual TLS connections.",
+    )
+    fun mutualTlsDisallowClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(description = "The certificate subject.")
+        subject: String,
+    )
+
+    /**
+     * List the allowed client certificate subjects for mutual TLS.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @return List of the allowed client certificate subjects.
+     */
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects",
+        description = "This method list the allowed  client certificates subjects " +
+                "to be used in mutual TLS connections.",
+        responseDescription = "List of the allowed client certificate subjects",
+    )
+    fun mutualTlsListClientCertificate(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String,
+    ): Collection<String>
 }

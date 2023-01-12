@@ -259,6 +259,24 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun mutualTlsAddCertificateToAllowedList(
+                mgmHoldingIdentity: HoldingIdentity,
+                subject: String,
+            ) = safeCall {
+                membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                    mgmHoldingIdentity, subject
+                )
+            }
+
+            override fun mutualTlsRemoveCertificateFromAllowedList(
+                mgmHoldingIdentity: HoldingIdentity,
+                subject: String,
+            ) = safeCall {
+                membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                    mgmHoldingIdentity, subject
+                )
+            }
+
             fun <T> safeCall(func: () -> T): T {
                 return eventually {
                     assertDoesNotThrow {

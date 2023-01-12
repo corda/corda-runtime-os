@@ -1,28 +1,31 @@
 package net.corda.cli.plugins.packaging
 
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_1
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
+import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
+import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
+import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
+import net.corda.utilities.exists
+import net.corda.utilities.inputStream
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
+import picocli.CommandLine.Help
+import java.io.ByteArrayInputStream
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
-import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_1
-import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2
-import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
-import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
-import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder
-import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
-import net.corda.utilities.exists
-import org.junit.jupiter.api.Assertions.assertFalse
-import picocli.CommandLine.Help
-import java.io.ByteArrayInputStream
-import java.io.File
 
 class CreateCpiTest {
 
@@ -40,7 +43,7 @@ class CreateCpiTest {
         private val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPB_SIGNER_NAME, SIGNING_KEY_1)
     }
 
-    private lateinit var app: CreateCpi
+    private lateinit var app: CreateCpiV2
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
     private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
@@ -50,13 +53,13 @@ class CreateCpiTest {
 
     @BeforeEach
     fun setup() {
-        app = CreateCpi()
+        app = CreateCpiV2()
         testCpb = createCpb()
     }
 
     private fun createCpb(): Path {
         val cpbFile = Path.of(tempDir.toString(), "test.cpb")
-        val cpbStream = TestCpbV1Builder()
+        val cpbStream = TestCpbV2Builder()
             .signers(CPB_SIGNER)
             .build()
             .inputStream()
@@ -72,6 +75,17 @@ class CreateCpiTest {
 
     private fun tmpOutputFile() = Path.of(tempDir.toString(), "output.cpi")
 
+    private val testCpbExpectedFilenames = setOf(
+        "META-INF/CPI-SIG.SF",
+        "META-INF/CPI-SIG.EC",
+        "META-INF/GroupPolicy.json",
+        "test.cpb",
+        "test.cpb/META-INF/CORDAPP.SF",
+        "test.cpb/META-INF/CORDAPP.EC",
+        "test.cpb/testCpk1-1.0.0.0.jar",
+        "test.cpb/testCpk2-2.0.0.0.jar"
+    )
+
     @Test
     fun buildCpiLongParameterNames() {
         val outputFile = tmpOutputFile()
@@ -84,14 +98,16 @@ class CreateCpiTest {
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
                 "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
+                "--sig-file=$CPI_SIGNER_NAME",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 
         // Expect output to be silent on success
         assertEquals("", errText)
 
-        checkCpi(outputFile)
+        checkCpi(outputFile, testCpbExpectedFilenames)
     }
 
     @Test
@@ -106,14 +122,16 @@ class CreateCpiTest {
                 "-s=${testKeyStore}",
                 "-p=keystore password",
                 "-k=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
+                "--sig-file=$CPI_SIGNER_NAME",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 
         // Expect output to be silent on success
         assertEquals("", errText)
 
-        checkCpi(outputFile)
+        checkCpi(outputFile, testCpbExpectedFilenames)
     }
 
     @Test
@@ -128,7 +146,9 @@ class CreateCpiTest {
                 "-s=${testKeyStore}",
                 "-p=keystore password",
                 "-k=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
+                "--sig-file=$CPI_SIGNER_NAME",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 
@@ -136,7 +156,17 @@ class CreateCpiTest {
         assertEquals("", errText)
 
         val outputFile = Path.of(tempDir.toString(), "DefaultOutputFilename.cpi")
-        checkCpi(outputFile)
+        val expectedFilenames = setOf(
+            "META-INF/CPI-SIG.SF",
+            "META-INF/CPI-SIG.EC",
+            "META-INF/GroupPolicy.json",
+            "DefaultOutputFilename.cpb",
+            "DefaultOutputFilename.cpb/META-INF/CORDAPP.SF",
+            "DefaultOutputFilename.cpb/META-INF/CORDAPP.EC",
+            "DefaultOutputFilename.cpb/testCpk1-1.0.0.0.jar",
+            "DefaultOutputFilename.cpb/testCpk2-2.0.0.0.jar"
+        )
+        checkCpi(outputFile, expectedFilenames)
     }
 
     @Test
@@ -156,56 +186,56 @@ class CreateCpiTest {
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
                 "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
+                "--sig-file=$CPI_SIGNER_NAME",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 
         System.setIn(systemIn)
         // Expect output to be silent on success
         assertEquals("", errText)
-        checkCpi(outputFile)
+        checkCpi(outputFile, testCpbExpectedFilenames)
     }
 
-    private fun checkCpi(outputFile: Path) {
+    private fun checkCpi(outputFile: Path, expectedFilenames: Set<String>) {
         // Check files are present
-        var groupPolicyPresent = false
         var manifestPresent = false
-        var cpk1Present = false
-        var cpk2Present = false
-        var cpiSignaturePresent = false
-        var cpbSignaturePresent = false
-        JarInputStream(Files.newInputStream(outputFile), true).use {
+        val fileNames = JarInputStream(outputFile.inputStream(), true).use { cpi ->
 
             // Check manifest
-            if (it.manifest.entries.isNotEmpty())
+            if (cpi.manifest.entries.isNotEmpty())
                 manifestPresent = true
 
             // Check other files
-            var entry = it.nextJarEntry
-            while (entry != null) {
-                when (entry.name) {
-                    "META-INF/GroupPolicy.json" -> groupPolicyPresent = true
-                    "testCpk1-1.0.0.0.cpk" -> cpk1Present = true
-                    "testCpk2-2.0.0.0.cpk" -> cpk2Present = true
-                    "META-INF/CPI-SIG.SF" -> cpiSignaturePresent = true
-                    "META-INF/CORDAPP.SF" -> cpbSignaturePresent = true
+            generateSequence { cpi.nextJarEntry }
+                .flatMap { cpiEntry ->
+                    if (cpiEntry.name.endsWith(".cpb")) {
+                        // This entry is a CPB. Read the filenames inside.
+                        //
+                        // We do not close the CPB JarInputStream because it would close the CPI JarInputStream and we
+                        // need that open to continue reading the CPI.
+                        readCpbFilenames(cpi, cpiEntry)
+                    } else {
+                        sequenceOf(cpiEntry.name)
+                    }
                 }
-
-                entry = it.nextJarEntry
-            }
+                .toSet()
         }
 
         // Check we saw all the files we expected to
         Assertions.assertAll(
-            { assertTrue(groupPolicyPresent, "groupPolicyPresent") },
             { assertTrue(manifestPresent, "manifestPresent") },
-            { assertTrue(cpk1Present, "cpk1Present") },
-            { assertTrue(cpk2Present, "cpk2Present") },
-            { assertTrue(cpiSignaturePresent, "cpiSignaturePresent") },
-            { assertTrue(cpbSignaturePresent, "cpbSignaturePresent") },
+            { assertEquals(expectedFilenames, fileNames) }
         )
     }
 
+    private fun readCpbFilenames(cpi: JarInputStream, cpiEntry: JarEntry): Sequence<String> =
+        JarInputStream(cpi, true).let { cpb ->
+            val cpbFilename = cpiEntry.name
+            val filesInsideCpb = generateSequence { cpb.nextJarEntry }.map { "$cpbFilename/${it.name}" }
+            sequenceOf(cpbFilename).plus(filesInsideCpb)
+        }
 
     @Test
     @Suppress("MaxLineLength")
@@ -217,33 +247,39 @@ class CreateCpiTest {
                 .execute("")
         }
 
-        assertEquals("""Missing required options: '--cpb=<cpbFileName>', '--group-policy=<groupPolicyFileName>', '--keystore=<keyStoreFileName>', '--storepass=<keyStorePass>', '--key=<keyAlias>'
-Usage: create -c=<cpbFileName> [-f=<outputFileName>] -g=<groupPolicyFileName>
-              -k=<keyAlias> -p=<keyStorePass> -s=<keyStoreFileName>
-              [--sig-file=<_sigFile>] [-t=<tsaUrl>]
-Creates a CPI from a CPB and GroupPolicy.json file.
-  -c, --cpb=<cpbFileName>   CPB file to convert into CPI
+        assertEquals("""Missing required options: '--group-policy=<groupPolicyFileName>', '--cpi-name=<cpiName>', '--cpi-version=<cpiVersion>', '--keystore=<keyStoreFileName>', '--storepass=<keyStorePass>', '--key=<keyAlias>'
+Usage: create-cpi [-c=<cpbFileName>] --cpi-name=<cpiName>
+                  --cpi-version=<cpiVersion> [-f=<outputFileName>]
+                  -g=<groupPolicyFileName> -k=<keyAlias> -p=<keyStorePass>
+                  -s=<keyStoreFileName> [--sig-file=<_sigFile>] [-t=<tsaUrl>]
+                  [--upgrade=<cpiUpgrade>]
+Creates a CPI v2 from a CPB and GroupPolicy.json file.
+  -c, --cpb=<cpbFileName>    CPB file to convert into CPI
+      --cpi-name=<cpiName>   CPI name (manifest attribute)
+      --cpi-version=<cpiVersion>
+                             CPI version (manifest attribute)
   -f, --file=<outputFileName>
-                            Output file
-                            If omitted, the CPB filename with .cpi as a
-                              filename extension is used
+                             Output file
+                             If omitted, the CPB filename with .cpi as a
+                               filename extension is used
   -g, --group-policy=<groupPolicyFileName>
-                            Group policy to include in CPI
-                            Use "-" to read group policy from standard input
-  -k, --key=<keyAlias>      Key alias
+                             Group policy to include in CPI
+                             Use "-" to read group policy from standard input
+  -k, --key=<keyAlias>       Key alias
   -p, --password, --storepass=<keyStorePass>
-                            Keystore password
+                             Keystore password
   -s, --keystore=<keyStoreFileName>
-                            Keystore holding signing keys
-      --sig-file=<_sigFile> Base file name for signature related files
-  -t, --tsa=<tsaUrl>        Time Stamping Authority (TSA) URL
+                             Keystore holding signing keys
+      --sig-file=<_sigFile>  Base file name for signature related files
+  -t, --tsa=<tsaUrl>         Time Stamping Authority (TSA) URL
+      --upgrade=<cpiUpgrade> Allow upgrade without flow draining
 """, errText)
     }
 
     @Test
     fun `cpi create tool aborts if its not a cpb before packing it into a cpi`() {
         // Attempt to pack a Cpk into a Cpi - should fail since it's not a Cpb
-        val cpkBuilder = TestCpkV1Builder()
+        val cpkBuilder = TestCpkV2Builder()
         val cpkStream = cpkBuilder
             .signers(CPK_SIGNER).build().inputStream()
         val cpkPath = Path.of(tempDir.toString(), cpkBuilder.name)
@@ -263,18 +299,16 @@ Creates a CPI from a CPB and GroupPolicy.json file.
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
                 "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=${CPI_SIGNER_NAME}"
+                "--sig-file=${CPI_SIGNER_NAME}",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 
         assertFalse(cpiOutputFile.exists())
-        assertTrue(outText.contains("java.lang.IllegalArgumentException: Cpb is invalid"))
-        assertTrue(
-            outText.contains(
-                "net.corda.libs.packaging.core.exception.CordappManifestException: " +
-                        "Manifest is missing required attribute \"Corda-CPB-Name\""
-            )
-        )
+        assertThat(outText).contains("java.lang.IllegalArgumentException: Cpb is invalid")
+        assertThat(outText).contains("net.corda.libs.packaging.core.exception.CordappManifestException: " +
+                "Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
     }
 
     @Test
@@ -289,7 +323,9 @@ Creates a CPI from a CPB and GroupPolicy.json file.
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
                 "--key=$SIGNING_KEY_2_ALIAS",
-                "--sig-file=$CPI_SIGNER_NAME"
+                "--sig-file=$CPI_SIGNER_NAME",
+                "--cpi-name=cpi name",
+                "--cpi-version=1.2.3"
             )
         }
 

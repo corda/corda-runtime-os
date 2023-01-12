@@ -6,6 +6,8 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
+import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
@@ -252,6 +254,42 @@ class MembershipPersistenceClientImpl(
         return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
             null -> MembershipPersistenceResult.success()
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
+        }
+    }
+
+    override fun mutualTlsAddCertificateToAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            MutualTlsAddToAllowedCertificates(
+                subject
+            )
+        ).execute()
+
+        return when (val payload = result.payload) {
+            null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun mutualTlsRemoveCertificateFromAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            MutualTlsRemoveFromAllowedCertificates(
+                subject
+            )
+        ).execute()
+
+        return when (val payload = result.payload) {
+            null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }
     }
 }
