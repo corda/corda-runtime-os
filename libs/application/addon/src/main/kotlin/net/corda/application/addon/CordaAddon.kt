@@ -15,3 +15,4 @@ interface CordaAddon {
             return "UNKNOWN"
         }
 }
+
