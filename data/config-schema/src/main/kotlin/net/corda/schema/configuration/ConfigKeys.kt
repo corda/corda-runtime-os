@@ -32,6 +32,7 @@ object ConfigKeys {
     const val RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS = "websocket.idleTimeoutMs"
 
     // Secrets Service
+    const val SECRETS_TYPE = "type"
     const val SECRETS_PASSPHRASE = "passphrase"
     const val SECRETS_SALT = "salt"
 
