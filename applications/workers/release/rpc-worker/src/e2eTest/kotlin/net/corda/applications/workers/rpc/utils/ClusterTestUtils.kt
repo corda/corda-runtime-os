@@ -351,7 +351,7 @@ fun E2eCluster.onboardMembers(
 
         if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
             val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
-            val memberTlsCsr = generateCsr(member, memberTlsKeyId, P2P_TENANT_ID)
+            val memberTlsCsr = generateCsr(member, memberTlsKeyId)
             val memberTlsCert = getCa().generateCert(memberTlsCsr)
             uploadTlsCertificate(memberTlsCert)
         }
@@ -436,7 +436,7 @@ fun E2eCluster.onboardMgm(
 
     if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
         val mgmTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
-        val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId, P2P_TENANT_ID)
+        val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId)
         val mgmTlsCert = getCa().generateCert(mgmTlsCsr)
         uploadTlsCertificate(mgmTlsCert)
     }

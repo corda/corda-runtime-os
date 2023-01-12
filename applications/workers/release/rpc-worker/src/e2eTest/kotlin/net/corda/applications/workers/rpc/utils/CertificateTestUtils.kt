@@ -15,7 +15,7 @@ import java.io.File
 
 
 private val caPath = "build${File.separator}tmp${File.separator}e2eTestCa"
-const val TLS_CERT_ALIAS = "p2p-tls-cert"
+const val TLS_CERT_ALIAS = "p2p-tls"
 const val SESSION_CERT_ALIAS = "p2p-session"
 
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
@@ -33,15 +33,13 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     }?.also {
         assertThat(it).isInstanceOf(PKCS10CertificationRequest::class.java)
     }
-    val cert = signCsr(request as PKCS10CertificationRequest).toPem()
-    save()
-    return cert
+    return signCsr(request as PKCS10CertificationRequest).also{ save() }.toPem()
 }
 
 fun E2eCluster.generateCsr(
     member: E2eClusterMember,
     keyId: String,
-    tenantId: String,
+    tenantId: String = P2P_TENANT_ID,
     addHostToSubjectAlternativeNames: Boolean = true
 ): String {
     val subjectAlternativeNames = if (addHostToSubjectAlternativeNames) {
@@ -63,34 +61,28 @@ fun E2eCluster.generateCsr(
 
 fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
-) {
-    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
-        client.start().proxy.importCertificateChain(
-            usage = "p2p-tls",
-            alias = TLS_CERT_ALIAS,
-            certificates = listOf(
-                HttpFileUpload(
-                    certificatePem.byteInputStream(),
-                    "$TLS_CERT_ALIAS.pem"
-                )
-            )
-        )
-    }
-}
+) = this.uploadCertificate("p2p-tls", certificatePem, null)
 
 fun E2eCluster.uploadSessionCertificate(
     certificatePem: String,
     holdingIdentityId: String
+) = this.uploadCertificate("p2p-session", certificatePem, holdingIdentityId)
+
+fun E2eCluster.uploadCertificate(
+    usage: String,
+    certificatePem: String,
+    holdingIdentityId: String?,
 ) {
     clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+        val fileName = holdingIdentityId?. let { "$usage-it.pem"  } ?: "$usage.pem"
         client.start().proxy.importCertificateChain(
-            usage = "p2p-session",
-            alias = SESSION_CERT_ALIAS,
+            usage = usage,
+            alias = usage,
             holdingIdentityId = holdingIdentityId,
             certificates = listOf(
                 HttpFileUpload(
                     certificatePem.byteInputStream(),
-                    "$SESSION_CERT_ALIAS-$holdingIdentityId.pem"
+                    fileName
                 )
             )
         )
