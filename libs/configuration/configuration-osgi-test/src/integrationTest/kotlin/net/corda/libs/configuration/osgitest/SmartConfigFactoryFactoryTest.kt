@@ -4,8 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.MaskedSecretsLookupService
-import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -18,11 +16,11 @@ import org.osgi.test.junit5.service.ServiceExtension
 // dummy SecretsServiceFactory to test the discovery of multiple factories.
 @Component(service = [SecretsServiceFactory::class])
 class MI5Factory : SecretsServiceFactory {
-    override fun create(config: Config): SecretsService? {
-        if(!config.hasPath("spy"))
-            return null
+    override val type: String
+        get() = "MI5"
 
-        return MI5(config.getString("spy"))
+    override fun create(secretsServiceConfig: Config): SecretsService {
+        return MI5(secretsServiceConfig.getString("spy"))
     }
 
     class MI5(private val spy: String): SecretsService {
@@ -49,7 +47,7 @@ class SmartConfigFactoryFactoryTest {
     }
 
     @Test
-    fun `when config supplies salt and passphrase, use EncryptionSecretsService`() {
+    fun `when config only supplies salt and passphrase, use EncryptionSecretsService`() {
         val secretsConfig = mapOf(
             EncryptionSecretsServiceFactory.SECRET_SALT_KEY to "salt",
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
@@ -68,8 +66,8 @@ class SmartConfigFactoryFactoryTest {
     }
 
     @Test
-    fun `when config supplies spy, use dummy secrets service`() {
-        val secretsConfig = mapOf("spy" to "007")
+    fun `when config supplies type MI5, use dummy secrets service`() {
+        val secretsConfig = mapOf(SmartConfigFactoryFactory.SECRET_SERVICE_TYPE to "MI5", "spy" to "007")
         val configFactory = smartConfigFactoryFactory.create(ConfigFactory.parseMap(secretsConfig))
         val secretConfig = configFactory.makeSecret("bond")
 
@@ -80,29 +78,5 @@ class SmartConfigFactoryFactoryTest {
         // do the reverse
         val smartConfig = configFactory.create(typeSafeConfig.atKey("foo"))
         assertThat(smartConfig.getString("foo")).isEqualTo("bond")
-    }
-
-    @Test
-    fun `when no suitable secrets service is found, fall back on the default`() {
-        val secretsConfig = emptyMap<String, String>()
-        val configFactory = smartConfigFactoryFactory.create(ConfigFactory.parseMap(secretsConfig))
-
-        val typeSafeConfig = ConfigFactory.parseMap(mapOf(
-            "configSecret" to mapOf(
-                "fred" to "john"
-            )
-        ))
-
-        val smartConfig = configFactory.create(typeSafeConfig.atKey("foo"))
-
-        assertThat(smartConfig.getString("foo")).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
-
-        // regular assertThrows doesn't work in OSGi test. I assume because of a classloader issue.
-        val exception = try {
-            configFactory.makeSecret("foo")
-        } catch (e: Throwable) {
-            e
-        }
-        assertThat(exception.javaClass.name).isEqualTo(SecretsConfigurationException::class.java.name)
     }
 }

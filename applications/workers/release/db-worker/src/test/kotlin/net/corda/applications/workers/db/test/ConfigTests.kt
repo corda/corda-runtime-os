@@ -9,6 +9,7 @@ import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -31,6 +32,8 @@ import org.osgi.framework.Bundle
  */
 class ConfigTests {
 
+    val defaultArgs = listOf("-spassphrase=password", "-ssalt=salt")
+
     @Test
     @Suppress("MaxLineLength")
     fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
@@ -43,16 +46,16 @@ class ConfigTests {
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(emptyList())
+            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
         )
-        val args = arrayOf(
+        val args = defaultArgs + arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE"
         )
 
-        dbWorker.startup(args)
+        dbWorker.startup(args.toTypedArray())
         val config = dbProcessor.config!!
 
         val expectedKeys = setOf(
@@ -83,14 +86,14 @@ class ConfigTests {
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(emptyList())
+            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
         )
 
-        val args = arrayOf(
+        val args = defaultArgs + arrayOf(
             FLAG_DISABLE_MONITOR,
             FLAG_MONITOR_PORT, "9999"
         )
-        dbWorker.startup(args)
+        dbWorker.startup(args.toTypedArray())
         val config = dbProcessor.config!!
 
         // Instance ID and topic prefix are always present, with default values if none are provided.
@@ -115,11 +118,10 @@ class ConfigTests {
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(emptyList())
+            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
         )
 
-        val args = arrayOf<String>()
-        dbWorker.startup(args)
+        dbWorker.startup(defaultArgs.toTypedArray())
         val config = dbProcessor.config!!
 
         val expectedKeys = setOf(
@@ -146,14 +148,14 @@ class ConfigTests {
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(emptyList())
+            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
         )
 
-        val args = arrayOf(
+        val args = defaultArgs + arrayOf(
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
             FLAG_MSG_PARAM, "$MSG_KEY_TWO=$MSG_VAL_TWO"
         )
-        dbWorker.startup(args)
+        dbWorker.startup(args.toTypedArray())
         val config = dbProcessor.config!!
 
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
@@ -171,13 +173,13 @@ class ConfigTests {
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(emptyList())
+            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
         )
-        val args = arrayOf(
+        val args = defaultArgs + arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
             FLAG_DB_PARAM, "$DB_KEY_TWO=$DB_VAL_TWO"
         )
-        dbWorker.startup(args)
+        dbWorker.startup(args.toTypedArray())
         val config = dbProcessor.config!!
 
         assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))

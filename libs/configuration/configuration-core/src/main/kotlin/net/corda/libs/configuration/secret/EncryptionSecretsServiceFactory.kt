@@ -18,15 +18,15 @@ class EncryptionSecretsServiceFactory : SecretsServiceFactory {
 
     override val type = TYPE
 
-    override fun create(config: Config): EncryptionSecretsService {
-        if (!config.hasPath(SECRET_PASSPHRASE_KEY) || !config.hasPath(SECRET_SALT_KEY)) {
-            logger.debug { "Configuration not suitable for EncryptionSecretsService: ${config.root().render()}}" }
+    override fun create(secretsServiceConfig: Config): EncryptionSecretsService {
+        if (!secretsServiceConfig.hasPath(SECRET_PASSPHRASE_KEY) || !secretsServiceConfig.hasPath(SECRET_SALT_KEY)) {
+            logger.debug { "Configuration not suitable for EncryptionSecretsService: ${secretsServiceConfig.root().render()}}" }
             throw SecretsConfigurationException("Could not create EncryptionSecretsService with the given configuration. " +
                     "Ensure `$SECRET_PASSPHRASE_KEY` and `$SECRET_SALT_KEY` has been provided.")
         }
 
-        val passphrase = config.getString(SECRET_PASSPHRASE_KEY)
-        val salt = config.getString(SECRET_SALT_KEY)
+        val passphrase = secretsServiceConfig.getString(SECRET_PASSPHRASE_KEY)
+        val salt = secretsServiceConfig.getString(SECRET_SALT_KEY)
         if (passphrase.isBlank() || salt.isBlank())
             throw SecretsConfigurationException("Passphrase and Salt must not be blank or empty.")
         return EncryptionSecretsServiceImpl(

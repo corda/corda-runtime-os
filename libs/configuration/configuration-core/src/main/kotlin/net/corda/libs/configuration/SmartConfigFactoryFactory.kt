@@ -7,7 +7,6 @@ import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,20 +46,20 @@ class SmartConfigFactoryFactory
 
     /**
      * Create a [SmartConfigFactory] that is initialized with the [SecretsService] that is relevant based on the
-     * [config] that is passed in.
+     * [secretsServiceConfig] that is passed in.
      *
      * Falls back on the [MaskedSecretsLookupService] in case no relevant [SecretsServiceFactory] can be found.
      *
-     * @param config Typesafe config object that defines which [secretsService] should be used.
+     * @param secretsServiceConfig Typesafe config object that defines which [secretsService] should be used.
      */
-    fun create(config: Config): SmartConfigFactory {
+    fun create(secretsServiceConfig: Config): SmartConfigFactory {
         // select type from the config, and fall back on the EncryptionSecretsServiceFactory
-        val type = config.getStringOrDefault(SECRET_SERVICE_TYPE, EncryptionSecretsServiceFactory.TYPE)
+        val type = secretsServiceConfig.getStringOrDefault(SECRET_SERVICE_TYPE, EncryptionSecretsServiceFactory.TYPE)
 
         val secretsServiceFactory = secretsServiceFactories
             .singleOrNull { it.type == type }
                 ?: throw SecretsConfigurationException("SecretsServiceFactory of type $type is not available.")
 
-        return SmartConfigFactoryImpl(secretsServiceFactory.create(config))
+        return SmartConfigFactoryImpl(secretsServiceFactory.create(secretsServiceConfig))
     }
 }
