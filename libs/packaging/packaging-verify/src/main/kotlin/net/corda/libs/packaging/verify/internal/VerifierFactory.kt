@@ -1,19 +1,16 @@
 package net.corda.libs.packaging.verify.internal
 
-import net.corda.libs.packaging.verify.PackageType
-import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.core.exception.CordappManifestException
+import net.corda.libs.packaging.verify.JarReader
+import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.Verifier
-import net.corda.libs.packaging.verify.internal.cpb.CpbV1Verifier
 import net.corda.libs.packaging.verify.internal.cpb.CpbV2Verifier
 import net.corda.libs.packaging.verify.internal.cpb.CpbVerifier
-import net.corda.libs.packaging.verify.internal.cpi.CpiV1Verifier
 import net.corda.libs.packaging.verify.internal.cpi.CpiV2Verifier
 import net.corda.libs.packaging.verify.internal.cpi.CpiVerifier
-import net.corda.libs.packaging.verify.internal.cpk.CpkV1Verifier
 import net.corda.libs.packaging.verify.internal.cpk.CpkV2Verifier
 import net.corda.libs.packaging.verify.internal.cpk.CpkVerifier
 import java.io.InputStream
@@ -23,7 +20,6 @@ import java.security.cert.X509Certificate as X509Certificate1
  * Creates CPx verifier
  */
 object VerifierFactory {
-    const val FORMAT_1 = "1.0"
     const val FORMAT_2 = "2.0"
 
     fun createCpVerifier(type: PackageType, format: String?, jarReader: JarReader): Verifier =
@@ -36,14 +32,13 @@ object VerifierFactory {
     /** Creates CPK verifier for format specified in the Manifest of the package */
     fun createCpkVerifier(name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpkVerifier {
         val jarReader = JarReader(name, inputStream, trustedCerts)
-        val format = jarReader.manifest.mainAttributes.getValue(CPK_FORMAT_ATTRIBUTE) ?: FORMAT_1
+        val format = jarReader.manifest.mainAttributes.getValue(CPK_FORMAT_ATTRIBUTE)
         return createCpkVerifier(format, jarReader)
     }
 
     /** Creates CPK verifier for specified format */
     fun createCpkVerifier(format: String?, jarReader: JarReader): CpkVerifier {
         return when (format) {
-            FORMAT_1 -> CpkV1Verifier(jarReader)
             FORMAT_2 -> CpkV2Verifier(jarReader)
             else -> throw CordappManifestException("Unsupported CPK format \"$format\"")
         }
@@ -67,7 +62,6 @@ object VerifierFactory {
     /** Creates CPB verifier for specified format */
     fun createCpbVerifier(format: String?, jarReader: JarReader): CpbVerifier {
         return when (format) {
-            null, FORMAT_1 -> CpbV1Verifier(jarReader)
             FORMAT_2 -> CpbV2Verifier(jarReader)
             else -> throw CordappManifestException("Unsupported CPB format \"$format\"")
         }
@@ -90,7 +84,6 @@ object VerifierFactory {
     /** Creates CPI verifier for specified format */
     fun createCpiVerifier(format: String?, jarReader: JarReader): CpiVerifier {
         return when (format) {
-            null, FORMAT_1 -> CpiV1Verifier(jarReader)
             FORMAT_2 -> CpiV2Verifier(jarReader)
             else -> throw CordappManifestException("Unsupported CPI format \"$format\"")
         }
