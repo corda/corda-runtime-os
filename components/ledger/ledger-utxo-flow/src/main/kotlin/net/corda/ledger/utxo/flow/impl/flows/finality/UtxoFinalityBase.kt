@@ -14,6 +14,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
@@ -41,14 +42,13 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         transactionId: SecureHash,
         signature: DigitalSignatureAndMetadata,
         onFailure: ((message: String) -> Unit)? = null
-    ){
+    ) {
         try {
-            log.debug("Verifying signature($signature) of transaction: $transactionId")
             transactionSignatureService.verifySignature(transactionId, signature)
+            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transactionId" }
         } catch (e: Exception) {
-            val message =
-                "Failed to verify transaction's signature($signature) from session: ${signature.by} for transaction " +
-                        "${transactionId}. Message: ${e.message}"
+            val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+                    "transaction ${transactionId}. Message: ${e.message}"
             log.warn(message)
             if (onFailure != null)
                 onFailure(message)
@@ -60,7 +60,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     protected fun verifyAndAddSignature(
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
-    ):UtxoSignedTransactionInternal {
+    ): UtxoSignedTransactionInternal {
         verifySignature(transaction.id, signature)
         return transaction.addSignature(signature)
     }
@@ -69,20 +69,22 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     protected fun verifyAndAddNotarySignature(
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
-    ):UtxoSignedTransactionInternal {
+    ): UtxoSignedTransactionInternal {
         try {
-            log.debug("Verifying signature($signature) of transaction: ${transaction.id}")
             if (transaction.notary.owningKey != signature.by) {
-                throw CordaRuntimeException("Notary's signature has not been created by the transaction's notary. " +
-                    "Notary's public key: ${transaction.notary.owningKey} " +
-                    "Notary signature's key: ${signature.by}"
+                throw CordaRuntimeException(
+                    "Notary's signature has not been created by the transaction's notary. " +
+                            "Notary's public key: ${transaction.notary.owningKey} " +
+                            "Notary signature's key: ${signature.by}"
                 )
             }
             transactionSignatureService.verifyNotarySignature(transaction.id, signature)
+            log.debug {
+                "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction ${transaction.id}"
+            }
         } catch (e: Exception) {
-            val message =
-                "Failed to verify transaction's signature($signature) from session: ${signature.by} for transaction " +
-                        "${transaction.id}. Message: ${e.message}"
+            val message ="Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
+                    "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             throw e
         }
@@ -92,10 +94,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
-        verifier.verifyPlatformChecks(signedTransaction.notary)
-        verifier.verifyContracts()
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify(signedTransaction.notary)
     }
 
 }
