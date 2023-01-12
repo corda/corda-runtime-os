@@ -21,6 +21,7 @@
         "net.corda.data.membership.db.response.query.PersistenceFailedResponse",
         "net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse",
         "net.corda.data.membership.db.response.query.MemberSignatureQueryResponse",
+        "net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse",
         "net.corda.data.membership.db.response.query.GroupPolicyQueryResponse"
       ],
       "doc": "Response payload which depends on the requested operation."
