@@ -4,8 +4,10 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
@@ -18,6 +20,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -62,6 +65,7 @@ class ConsensualFinalityFlowTest {
 
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
     private val updatedSignedTransaction = mock<ConsensualSignedTransactionInternal>()
+    private val ledgerTransaction = mock<ConsensualLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
@@ -77,8 +81,11 @@ class ConsensualFinalityFlowTest {
         whenever(signedTransaction.id).thenReturn(TX_ID)
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
         whenever(signedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
+        whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
+        whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
