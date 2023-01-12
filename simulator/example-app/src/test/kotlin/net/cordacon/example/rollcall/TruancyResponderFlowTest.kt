@@ -7,8 +7,8 @@ import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.factories.SerializationServiceFactory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.crypto.SignatureSpec
@@ -31,7 +31,7 @@ class TruancyResponderFlowTest {
         val simulator = Simulator()
         val serializationService = SerializationServiceFactory.create()
 
-        val initiatingFlow = object: RPCStartableFlow {
+        val initiatingFlow = object: RestStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
 
@@ -41,7 +41,7 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
 
                 val absentees = listOf(bob)
@@ -73,7 +73,7 @@ class TruancyResponderFlowTest {
 
         val simulator = Simulator()
 
-        val initiatingFlow = object: RPCStartableFlow {
+        val initiatingFlow = object: RestStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
 
@@ -83,7 +83,7 @@ class TruancyResponderFlowTest {
             @CordaInject
             lateinit var memberLookup: MemberLookup
 
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val session = flowMessaging.initiateFlow(charlie)
 
                 session.send(TruancyRecord(listOf(bob), signingService.sign(

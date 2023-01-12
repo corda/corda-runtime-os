@@ -16,7 +16,7 @@ import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.fiber.RestStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
@@ -29,8 +29,8 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
@@ -55,7 +55,7 @@ class FlowRunnerImplTest {
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
-    private var rpcFlow = mock<RPCStartableFlow>()
+    private var rpcFlow = mock<RestStartableFlow>()
     private var initiatedFlow = mock<ResponderFlow>()
 
     private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
@@ -99,9 +99,9 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
-        val rpcRequestData = mock<RPCRequestData>()
-        whenever(rpcRequestData.getRequestBody()).thenReturn(startArgs)
-        val logicAndArgs = RPCStartedFlow(rpcFlow, rpcRequestData)
+        val restRequestBody = mock<RestRequestBody>()
+        whenever(restRequestBody.getRequestBody()).thenReturn(startArgs)
+        val logicAndArgs = RestStartedFlow(rpcFlow, restRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)

@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.flows
 
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 
@@ -18,9 +18,9 @@ interface FlowFactory {
      * @return An instance of the given flow class.
      *
      * @throws [net.corda.simulator.exceptions.UnrecognizedFlowClassException] if the class does not extend
-     * [RPCStartableFlow].
+     * [RestStartableFlow].
      */
-    fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RPCStartableFlow
+    fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RestStartableFlow
 
     /**
      * Creates a responding flow from the given class name.

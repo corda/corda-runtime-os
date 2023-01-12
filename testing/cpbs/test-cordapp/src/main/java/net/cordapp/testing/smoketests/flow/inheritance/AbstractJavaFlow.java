@@ -1,8 +1,8 @@
 package net.cordapp.testing.smoketests.flow.inheritance;
 
 import net.corda.v5.application.flows.CordaInject;
-import net.corda.v5.application.flows.RPCRequestData;
-import net.corda.v5.application.flows.RPCStartableFlow;
+import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.RestStartableFlow;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.membership.MemberLookup;
 import net.corda.v5.base.annotations.Suspendable;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 
-public abstract class AbstractJavaFlow implements RPCStartableFlow, JavaMemberResolver {
+public abstract class AbstractJavaFlow implements RestStartableFlow, JavaMemberResolver {
     private final static Logger logger = LoggerFactory.getLogger(AbstractJavaFlow.class);
 
     abstract String buildOutput(MemberInfo memberInfo);
@@ -29,7 +29,7 @@ public abstract class AbstractJavaFlow implements RPCStartableFlow, JavaMemberRe
     @NotNull
     @Override
     @Suspendable
-    public String call(@NotNull RPCRequestData requestBody) {
+    public String call(@NotNull RestRequestBody requestBody) {
         logger.info("Executing Flow...");
 
         try {

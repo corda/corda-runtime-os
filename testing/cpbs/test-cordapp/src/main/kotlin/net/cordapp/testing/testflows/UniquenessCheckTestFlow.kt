@@ -3,8 +3,8 @@ package net.cordapp.testing.testflows
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
@@ -22,7 +22,7 @@ import java.util.*
 
 @Suppress("unused")
 @InitiatingFlow(protocol = "uniqueness_protocol")
-class UniquenessCheckTestFlow : RPCStartableFlow {
+class UniquenessCheckTestFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -48,7 +48,7 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
     private val random = Random(0)
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
 
         val issueTxId = newRandomSecureHash()
 

@@ -1,12 +1,12 @@
 package net.corda.simulator.runtime
 
 import net.corda.simulator.RequestData
-import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.MarshallingService
 
 /**
  * Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted by Corda into
- * an RPCRequestData interface. This class represents the equivalent for Simulator.
+ * an RestRequestBody interface. This class represents the equivalent for Simulator.
  *
  * @clientRequestId the id which uniquely identifies a request
  * @flowClassName the name of the flow class to run
@@ -19,10 +19,10 @@ data class RPCRequestDataWrapper(
     : RequestData {
 
     /**
-     * Converts this into Corda's RPCRequestData.
+     * Converts this into Corda's RestRequestBody.
      */
-    override fun toRPCRequestData() : RPCRequestData {
-        return object : RPCRequestData {
+    override fun toRPCRequestData() : RestRequestBody {
+        return object : RestRequestBody {
             override fun getRequestBody(): String {
                 return requestBody
             }

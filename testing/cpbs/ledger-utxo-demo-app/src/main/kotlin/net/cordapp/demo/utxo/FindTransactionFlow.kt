@@ -1,8 +1,8 @@
 package net.cordapp.demo.utxo
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -41,7 +41,7 @@ data class FindTransactionResponse(
     val errorMessage: String?
 )
 
-class FindTransactionFlow : RPCStartableFlow {
+class FindTransactionFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -54,7 +54,7 @@ class FindTransactionFlow : RPCStartableFlow {
     lateinit var marshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Utxo find transaction flow starting...")
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId

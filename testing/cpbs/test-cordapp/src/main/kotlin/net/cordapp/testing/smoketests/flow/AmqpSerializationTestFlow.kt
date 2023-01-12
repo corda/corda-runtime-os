@@ -1,12 +1,12 @@
 package net.cordapp.testing.smoketests.flow
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 
-class AmqpSerializationTestFlow : RPCStartableFlow {
+class AmqpSerializationTestFlow : RestStartableFlow {
 
     @CordaInject
     lateinit var serializationService: SerializationService
@@ -14,7 +14,7 @@ class AmqpSerializationTestFlow : RPCStartableFlow {
     @CordaSerializable
     data class SerializableClass(val pair: Pair<String, String>)
 
-    override fun call(requestBody: RPCRequestData): String = try {
+    override fun call(requestBody: RestRequestBody): String = try {
         val pair = SerializableClass(Pair("A", "B"))
 
         val serializedBytes = serializationService.serialize(pair)

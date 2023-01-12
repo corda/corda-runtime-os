@@ -8,8 +8,8 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
@@ -36,7 +36,7 @@ import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
-class RpcSmokeTestFlow : RPCStartableFlow {
+class RpcSmokeTestFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -101,7 +101,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     lateinit var signatureSpecService: SignatureSpecService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val request = requestBody.getRequestBodyAs<RpcSmokeTestInput>(jsonMarshallingService)
         return jsonMarshallingService.format(execute(request))
     }

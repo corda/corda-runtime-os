@@ -1,8 +1,8 @@
 package net.cordapp.testing.smoketests.virtualnode
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
@@ -13,7 +13,7 @@ import net.cordapp.testing.bundles.fish.Owner
 import java.util.UUID
 
 @Suppress("unused")
-class SimplePersistenceCheckFlow : RPCStartableFlow {
+class SimplePersistenceCheckFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -26,7 +26,7 @@ class SimplePersistenceCheckFlow : RPCStartableFlow {
     lateinit var persistenceService: PersistenceService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val fish = Fish(UUID.randomUUID(), "Floaty", "Black", Owner(UUID.randomUUID(), "alice", 22))
 
         try {

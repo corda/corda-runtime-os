@@ -12,8 +12,8 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -204,7 +204,7 @@ class DefaultServicesInjectorTest {
     fun `should inject services to instance initiating flows`() {
 
         // Given an instance flow
-        val flow = object : RPCStartableFlow {
+        val flow = object : RestStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
             @CordaInject
@@ -225,7 +225,7 @@ class DefaultServicesInjectorTest {
             lateinit var signatureVerificationService: DigitalSignatureVerificationService
 
             @Suspendable
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 return ""
             }
         }

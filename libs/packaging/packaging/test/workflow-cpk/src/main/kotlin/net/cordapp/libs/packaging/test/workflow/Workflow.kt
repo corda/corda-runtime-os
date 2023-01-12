@@ -2,17 +2,17 @@ package net.cordapp.libs.packaging.test.workflow
 
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 
 @InitiatingFlow(protocol = "packaging-test")
-class PackagingTestFlow : RPCStartableFlow {
+class PackagingTestFlow : RestStartableFlow {
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData) : String {
+    override fun call(requestBody: RestRequestBody) : String {
         return ""
     }
 }

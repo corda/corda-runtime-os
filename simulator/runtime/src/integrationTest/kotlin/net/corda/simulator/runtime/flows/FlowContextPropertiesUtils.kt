@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.flows
 
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 
 /**
  * Converts [FlowContextProperties] to [String]
@@ -14,7 +14,7 @@ fun convertFlowContextPropertiesToString(flowContextProperties: FlowContextPrope
 }
 
 /**
- * Build a response string from a map of [String] to [FlowContextProperties] to return from a [RPCStartableFlow]
+ * Build a response string from a map of [String] to [FlowContextProperties] to return from a [RestStartableFlow]
  */
 fun buildResponseString(keys: List<String>, contextPropertiesMap: Map<String, FlowContextProperties>): String {
 

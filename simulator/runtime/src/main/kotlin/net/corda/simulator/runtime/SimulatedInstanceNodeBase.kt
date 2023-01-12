@@ -10,7 +10,7 @@ import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -34,8 +34,8 @@ class SimulatedInstanceNodeBase(
         fiber.registerMember(member)
         if (ResponderFlow::class.java.isInstance(flow)) {
             fiber.registerResponderInstance(member, protocol, flow as ResponderFlow)
-        } else if (!RPCStartableFlow::class.java.isInstance(flow)){
-            error("The flow provided to this node was neither a `ResponderFlow` nor an `RPCStartableFlow`.")
+        } else if (!RestStartableFlow::class.java.isInstance(flow)){
+            error("The flow provided to this node was neither a `ResponderFlow` nor an `RestStartableFlow`.")
         }
     }
 
@@ -48,10 +48,10 @@ class SimulatedInstanceNodeBase(
     }
 
     override fun callInstanceFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String {
-        if (flow !is RPCStartableFlow) {
+        if (flow !is RestStartableFlow) {
             error(
                 "The flow provided to the instance node for member \"$member\" and protocol $protocol " +
-                        "was not an RPCStartableFlow"
+                        "was not an RestStartableFlow"
             )
         }
         log.info(

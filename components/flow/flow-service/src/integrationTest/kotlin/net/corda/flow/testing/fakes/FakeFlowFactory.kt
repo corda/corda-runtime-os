@@ -4,7 +4,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.fiber.RestStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.FlowContextProperties
@@ -19,7 +19,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeFlowFactory : FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        return RPCStartedFlow(FakeFlow(), FakeRPCRequestData())
+        return RestStartedFlow(FakeFlow(), FakeRestRequestBody())
     }
 
     override fun createInitiatedFlow(

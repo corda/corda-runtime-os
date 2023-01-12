@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.flows
 
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.SubFlow
 
 /**
@@ -17,7 +17,7 @@ interface FlowManager {
      * @param flow The flow to call.
      * @return The result of the flow.
      */
-    fun call(requestData: RPCRequestData, flow: RPCStartableFlow) : String
+    fun call(requestData: RestRequestBody, flow: RestStartableFlow) : String
 
     /**
      * Calls the provided subflow.

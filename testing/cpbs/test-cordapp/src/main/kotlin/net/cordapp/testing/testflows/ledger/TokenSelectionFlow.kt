@@ -1,8 +1,8 @@
 package net.cordapp.testing.testflows.ledger
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -16,7 +16,7 @@ import net.cordapp.testing.testflows.messages.TokenSelectionRequest
 import net.cordapp.testing.testflows.messages.TokenSelectionResponse
 import java.math.BigDecimal
 
-class TokenSelectionFlow : RPCStartableFlow {
+class TokenSelectionFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -29,7 +29,7 @@ class TokenSelectionFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Starting Token Selection Flow...")
         try {
             val inputs = requestBody.getRequestBodyAs<TokenSelectionRequest>(jsonMarshallingService)

@@ -5,8 +5,8 @@ import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.assertThrows
 class SigningTest {
 
     companion object {
-        class SigningFlow : RPCStartableFlow {
+        class SigningFlow : RestStartableFlow {
             @CordaInject
             private lateinit var signingService: SigningService
 
@@ -30,7 +30,7 @@ class SigningTest {
             private lateinit var memberLookup: MemberLookup
 
             @Suspendable
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val keyHolder = requestBody.getRequestBodyAs(jsonMarshallingService, MemberX500Name::class.java)
                 val publicKey = memberLookup.lookup(keyHolder)?.ledgerKeys?.get(0)
                 checkNotNull(publicKey)

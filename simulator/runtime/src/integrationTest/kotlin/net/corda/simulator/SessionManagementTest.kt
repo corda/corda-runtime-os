@@ -5,8 +5,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
@@ -24,12 +24,12 @@ class SessionManagementTest {
         val charlie =createMember("Charlie")
 
         @InitiatingFlow("send-receive")
-        class InitiatingSendingFlow: RPCStartableFlow {
+        class InitiatingSendingFlow: RestStartableFlow {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging
 
             @Suspendable
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val session = flowMessaging.initiateFlow(bob)
                 session.send(Unit)
                 return ""

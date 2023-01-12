@@ -3,8 +3,8 @@ package net.corda.flow.pipeline.sandbox
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
@@ -218,7 +218,7 @@ interface CustomFlowInterface {
     fun method(): String
 }
 
-abstract class AbstractParentFlow : RPCStartableFlow, CustomFlowInterface {
+abstract class AbstractParentFlow : RestStartableFlow, CustomFlowInterface {
     @CordaInject
     lateinit var service1: Service1
 
@@ -238,12 +238,12 @@ class ConcreteChildFlow : AbstractParentFlow() {
         return sharedService.get()
     }
 
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         return method()
     }
 }
 
-class DoubleInjectedFlow : RPCStartableFlow {
+class DoubleInjectedFlow : RestStartableFlow {
 
     @CordaInject
     lateinit var service1: Service1
@@ -251,7 +251,7 @@ class DoubleInjectedFlow : RPCStartableFlow {
     @CordaInject
     lateinit var service1Again: Service1
 
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         return ""
     }
 

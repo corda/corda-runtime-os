@@ -7,7 +7,7 @@ import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.testutils.createMember
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -37,7 +37,7 @@ class SimulatedInstanceNodeTest {
     fun `should inject services into instance flow and call flow`() {
         // Given a virtual node with dependencies
         val flowManager = mock<FlowManager>()
-        val flow = mock<RPCStartableFlow>()
+        val flow = mock<RestStartableFlow>()
 
         val virtualNode = SimulatedInstanceNodeBase(
             holdingId,

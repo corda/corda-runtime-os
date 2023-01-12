@@ -41,7 +41,7 @@ data class CordappManifest(
 
         const val CORDAPP_CONTRACTS = "Corda-Contract-Classes"
         const val CORDAPP_FLOWS = "Corda-Flow-Classes"
-        const val CORDAPP_RPC_STARTABLE_FLOWS = "Corda-RPCStartableFlow-Classes"
+        const val CORDAPP_REST_STARTABLE_FLOWS = "Corda-RestStartableFlow-Classes"
         const val CORDAPP_INITIATED_FLOWS = "Corda-InitiatedFlow-Classes"
         const val CORDAPP_SUBFLOW_FLOWS = "Corda-Subflow-Classes"
         const val CORDAPP_SCHEMAS = "Corda-MappedSchema-Classes"
@@ -170,7 +170,7 @@ data class CordappManifest(
 
     val contracts: Set<String> get() = parseSet(CORDAPP_CONTRACTS)
     val flows: Set<String> get() = parseSet(CORDAPP_FLOWS)
-    val rpcStartableFlows: Set<String> get() = parseSet(CORDAPP_RPC_STARTABLE_FLOWS)
+    val restStartableFlows: Set<String> get() = parseSet(CORDAPP_REST_STARTABLE_FLOWS)
     val initiatedFlows: Set<String> get() = parseSet(CORDAPP_INITIATED_FLOWS)
     val subflows: Set<String> get() = parseSet(CORDAPP_SUBFLOW_FLOWS)
     val schemas: Set<String> get() = parseSet(CORDAPP_SCHEMAS)

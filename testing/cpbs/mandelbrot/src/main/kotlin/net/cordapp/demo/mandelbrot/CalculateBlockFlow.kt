@@ -1,14 +1,14 @@
 package net.cordapp.demo.mandelbrot
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-class CalculateBlockFlow : RPCStartableFlow {
+class CalculateBlockFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -277,7 +277,7 @@ class CalculateBlockFlow : RPCStartableFlow {
 
     @Suppress("NestedBlockDepth")
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Starting mandelbrot calc...")
 
         try {

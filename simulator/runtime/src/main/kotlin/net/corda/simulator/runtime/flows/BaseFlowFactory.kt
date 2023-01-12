@@ -4,7 +4,7 @@ import net.corda.simulator.exceptions.FlowClassNotFoundException
 import net.corda.simulator.exceptions.NoDefaultConstructorException
 import net.corda.simulator.exceptions.UnrecognizedFlowClassException
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 
@@ -15,14 +15,14 @@ import net.corda.v5.base.types.MemberX500Name
  */
 class BaseFlowFactory : FlowFactory {
 
-    override fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RPCStartableFlow {
+    override fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RestStartableFlow {
         val flowClass = Class.forName(flowClassName)
             ?: throw FlowClassNotFoundException(flowClassName)
 
-        if (RPCStartableFlow::class.java.isAssignableFrom(flowClass)) {
+        if (RestStartableFlow::class.java.isAssignableFrom(flowClass)) {
             return createFlow(flowClass)
         } else {
-            throw UnrecognizedFlowClassException(flowClass, listOf(RPCStartableFlow::class.java))
+            throw UnrecognizedFlowClassException(flowClass, listOf(RestStartableFlow::class.java))
         }
 
     }

@@ -1,12 +1,12 @@
 package net.corda.flow.fiber
 
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class RPCStartedFlowTest {
+class RestStartedFlowTest {
 
     private companion object {
         private const val REQUEST_BODY = "request body"
@@ -14,12 +14,12 @@ class RPCStartedFlowTest {
 
     @Test
     fun `invoking an rpc started flow passes the arguments correctly`() {
-        val rpcStartedFlow = RPCStartedFlow(TestFlow(), TestRPCRequestData())
-        val output = rpcStartedFlow.invoke()
+        val restStartedFlow = RestStartedFlow(TestFlow(), TestRPCRequestData())
+        val output = restStartedFlow.invoke()
         assertEquals(REQUEST_BODY, output)
     }
 
-    private class TestRPCRequestData : RPCRequestData {
+    private class TestRPCRequestData : RestRequestBody {
         override fun getRequestBody(): String {
             return REQUEST_BODY
         }
@@ -33,8 +33,8 @@ class RPCStartedFlowTest {
         }
     }
 
-    private class TestFlow : RPCStartableFlow {
-        override fun call(requestBody: RPCRequestData): String {
+    private class TestFlow : RestStartableFlow {
+        override fun call(requestBody: RestRequestBody): String {
             return requestBody.getRequestBody()
         }
     }

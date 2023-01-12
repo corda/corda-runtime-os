@@ -4,8 +4,8 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -27,7 +27,7 @@ import java.security.PublicKey
  * A flow to ensure that everyone living in a building gets the new door code before it's changed.
  */
 @InitiatingFlow("door-code")
-class DoorCodeChangeFlow : RPCStartableFlow {
+class DoorCodeChangeFlow : RestStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -46,7 +46,7 @@ class DoorCodeChangeFlow : RPCStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val changeRequest = requestBody.getRequestBodyAs(jsonMarshallingService, DoorCodeChangeRequest::class.java)
         val participants = changeRequest.participants
         val newDoorCode = changeRequest.newDoorCode
@@ -116,7 +116,7 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
     }
 }
 
-class DoorCodeQueryFlow : RPCStartableFlow {
+class DoorCodeQueryFlow : RestStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
@@ -130,7 +130,7 @@ class DoorCodeQueryFlow : RPCStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val txId = requestBody.getRequestBodyAs<DoorCodeQuery>(jsonMarshallingService).txId
         val tx = consensualLedgerService.findSignedTransaction(txId)
 

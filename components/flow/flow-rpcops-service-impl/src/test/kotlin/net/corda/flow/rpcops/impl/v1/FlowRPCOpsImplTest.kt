@@ -77,7 +77,7 @@ class FlowRPCOpsImplTest {
     private fun getMockCPIMeta(): CpiMetadata {
 
         val mockManifest = mock<CordappManifest>().also {
-            whenever(it.rpcStartableFlows).thenReturn(setOf(FLOW1, "flow2"))
+            whenever(it.restStartableFlows).thenReturn(setOf(FLOW1, "flow2"))
         }
         val mockCPKMetadata = mock<CpkMetadata>().also {
             whenever(it.cordappManifest).thenReturn(mockManifest)

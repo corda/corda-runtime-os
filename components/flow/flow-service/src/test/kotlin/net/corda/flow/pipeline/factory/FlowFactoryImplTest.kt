@@ -9,7 +9,7 @@ import net.corda.flow.SESSION_ID_1
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.fiber.RestStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.flow.pipeline.factory.sample.flows.ExampleJavaFlow
@@ -17,8 +17,8 @@ import net.corda.flow.pipeline.factory.sample.flows.NoDefaultConstructorJavaFlow
 import net.corda.flow.pipeline.factory.sample.flows.PrivateConstructorJavaFlow
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -57,7 +57,7 @@ class FlowFactoryImplTest {
             startContext = flowStartContext
             flowStartArgs = "flow-argument-2"
         }
-        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", RPCStartableFlow::class.java))
+        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", RestStartableFlow::class.java))
             .thenThrow(IllegalStateException())
 
         assertThatThrownBy {
@@ -83,7 +83,7 @@ class FlowFactoryImplTest {
         val testFlowClassName = flowClass.name
         flowStartContext.flowClassName = testFlowClassName
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
 
         assertThatThrownBy {
             flowFactory.createFlow(
@@ -102,7 +102,7 @@ class FlowFactoryImplTest {
         val testFlowClassName = flowClass.name
         flowStartContext.flowClassName = testFlowClassName
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
 
         assertThatThrownBy {
             flowFactory.createFlow(
@@ -157,9 +157,9 @@ class FlowFactoryImplTest {
             flowStartArgs = "flow-argument-2"
         }
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RPCStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
 
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RPCStartedFlow
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RestStartedFlow
         assertThat(result.logic).isInstanceOf(flowClass)
         assertThat(result.invoke()).isEqualTo(flowClass.simpleName)
     }
@@ -179,33 +179,33 @@ class FlowFactoryImplTest {
         assertThat(result.logic).isInstanceOf(flowClass)
     }
 
-    class ExampleFlow : RPCStartableFlow, ResponderFlow {
+    class ExampleFlow : RestStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
         }
 
-        override fun call(requestBody: RPCRequestData): String {
+        override fun call(requestBody: RestRequestBody): String {
             return ExampleFlow::class.java.simpleName
         }
     }
 
-    class PrivateConstructorFlow private constructor() : RPCStartableFlow, ResponderFlow {
+    class PrivateConstructorFlow private constructor() : RestStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
             throw IllegalStateException("Should not reach this point")
         }
 
         @Suspendable
-        override fun call(requestBody: RPCRequestData): String {
+        override fun call(requestBody: RestRequestBody): String {
             throw IllegalStateException("Should not reach this point")
         }
     }
 
-    class NoDefaultConstructorFlow(private val message: String) : RPCStartableFlow, ResponderFlow {
+    class NoDefaultConstructorFlow(private val message: String) : RestStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
             throw IllegalStateException(message)
         }
 
         @Suspendable
-        override fun call(requestBody: RPCRequestData): String {
+        override fun call(requestBody: RestRequestBody): String {
             throw IllegalStateException(message)
         }
     }

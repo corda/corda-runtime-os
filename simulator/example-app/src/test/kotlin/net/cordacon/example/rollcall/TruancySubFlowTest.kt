@@ -4,8 +4,8 @@ import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RestStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.cordacon.example.utils.createMember
@@ -30,11 +30,11 @@ class TruancySubFlowTest {
             mock()
         )
 
-        val initiatingFlow = object: RPCStartableFlow {
+        val initiatingFlow = object: RestStartableFlow {
             @CordaInject
             private lateinit var flowEngine: FlowEngine
 
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 return flowEngine.subFlow(TruancySubFlow(charlie, truancyRecord))
             }
         }
