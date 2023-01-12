@@ -137,6 +137,16 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
+    override fun mutualTlsAddCertificateToAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+    override fun mutualTlsRemoveCertificateFromAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 
