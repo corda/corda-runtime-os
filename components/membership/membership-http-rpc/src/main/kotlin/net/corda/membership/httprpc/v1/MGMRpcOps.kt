@@ -88,7 +88,7 @@ interface MGMRpcOps : RpcOps {
      * @return List of the allowed client certificate subjects.
      */
     @HttpRpcGET(
-        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/",
+        path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects",
         description = "This method list the allowed  client certificates subjects " +
                 "to be used in mutual TLS connections.",
         responseDescription = "List of the allowed client certificate subjects",
