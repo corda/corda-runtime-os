@@ -20,7 +20,7 @@ object ConfigKeys {
     const val MEMBERSHIP_CONFIG = "corda.membership"
     const val SECURITY_CONFIG = "corda.security"
 
-    //  RPC
+    //  REST
     const val REST_ADDRESS = "address"
     const val REST_CONTEXT_DESCRIPTION = "context.description"
     const val REST_CONTEXT_TITLE = "context.title"
