@@ -54,6 +54,24 @@ internal class VirtualNodeEntity(
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
 
+    @Column(name = "vault_ddl_connection_id")
+    var vaultDDLConnectionId: UUID? = null,
+
+    @Column(name = "vault_dml_connection_id")
+    var vaultDMLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_ddl_connection_id")
+    var cryptoDDLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_dml_connection_id")
+    var cryptoDMLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_ddl_connection_id")
+    var uniquenessDDLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_dml_connection_id")
+    var uniquenessDMLConnectionId: UUID? = null,
+
     @Enumerated(value = EnumType.STRING)
     @Column(name = "flow_p2p_operational_status", nullable = false)
     var flowP2pOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
@@ -73,24 +91,6 @@ internal class VirtualNodeEntity(
     @OneToOne(cascade = [CascadeType.MERGE], fetch = FetchType.LAZY)
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
-
-    @Column(name = "vault_ddl_connection_id")
-    var vaultDDLConnectionId: UUID? = null,
-
-    @Column(name = "vault_dml_connection_id")
-    var vaultDMLConnectionId: UUID? = null,
-
-    @Column(name = "crypto_ddl_connection_id")
-    var cryptoDDLConnectionId: UUID? = null,
-
-    @Column(name = "crypto_dml_connection_id")
-    var cryptoDMLConnectionId: UUID? = null,
-
-    @Column(name = "uniqueness_ddl_connection_id")
-    var uniquenessDDLConnectionId: UUID? = null,
-
-    @Column(name = "uniqueness_dml_connection_id")
-    var uniquenessDMLConnectionId: UUID? = null,
 
     @Column(name = "insert_ts", insertable = false)
     var insertTimestamp: Instant? = null,

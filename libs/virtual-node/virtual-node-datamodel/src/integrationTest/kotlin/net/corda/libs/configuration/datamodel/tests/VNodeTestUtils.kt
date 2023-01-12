@@ -9,7 +9,6 @@ import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
@@ -30,13 +29,12 @@ internal object VNodeTestUtils {
             name,
             version,
             hash,
-            VirtualNodeInfo.DEFAULT_INITIAL_STATE,
-            vaultDDLConnectionId = UUID.randomUUID(),
-            vaultDMLConnectionId = UUID.randomUUID(),
-            cryptoDDLConnectionId = UUID.randomUUID(),
-            cryptoDMLConnectionId = UUID.randomUUID(),
-            uniquenessDDLConnectionId = UUID.randomUUID(),
-            uniquenessDMLConnectionId = UUID.randomUUID()
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID()
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
