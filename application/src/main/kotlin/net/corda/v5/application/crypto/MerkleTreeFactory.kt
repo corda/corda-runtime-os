@@ -30,6 +30,20 @@ interface MerkleTreeFactory {
      *
      * @param merkleTreeHashDigestProviderName name of the hash digest provider class
      * @param digestAlgorithmName name of the base hash algorithm
+     *
+     * @return A new [MerkleTreeHashDigest] instance.
+     */
+    @Suspendable
+    fun createHashDigest(
+        merkleTreeHashDigestProviderName: String,
+        digestAlgorithmName: DigestAlgorithmName,
+    ) : MerkleTreeHashDigest
+
+    /**
+     * Creates a [MerkleTreeHashDigest].
+     *
+     * @param merkleTreeHashDigestProviderName name of the hash digest provider class
+     * @param digestAlgorithmName name of the base hash algorithm
      * @param options Hash digest provider specific options
      *
      * @return A new [MerkleTreeHashDigest] instance.
@@ -38,6 +52,6 @@ interface MerkleTreeFactory {
     fun createHashDigest(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
-        options: Map<String, Any> = emptyMap(),
+        options: Map<String, Any>,
     ) : MerkleTreeHashDigest
 }
