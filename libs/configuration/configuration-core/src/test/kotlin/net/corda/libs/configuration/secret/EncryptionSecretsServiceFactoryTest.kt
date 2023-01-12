@@ -21,9 +21,10 @@ class EncryptionSecretsServiceFactoryTest {
     }
 
     @Test
-    fun `when create with no secrets config, return null`() {
-        val encryptionSecretsServiceFactory = EncryptionSecretsServiceFactory().create(ConfigFactory.empty())
-        assertThat(encryptionSecretsServiceFactory).isNull()
+    fun `when create with no secrets config throw`() {
+        assertThrows<SecretsConfigurationException> {
+            EncryptionSecretsServiceFactory().create(ConfigFactory.empty())
+        }
     }
 
     @ParameterizedTest

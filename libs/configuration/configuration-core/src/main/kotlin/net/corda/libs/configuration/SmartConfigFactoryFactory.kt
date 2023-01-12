@@ -1,10 +1,12 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,7 +30,7 @@ class SmartConfigFactoryFactory
     ) {
 
     companion object {
-        private val logger = contextLogger()
+        const val SECRET_SERVICE_TYPE = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_TYPE}"
 
         /**
          * Create a [SmartConfigFactory] that doesn't support secrets.
@@ -52,20 +54,13 @@ class SmartConfigFactoryFactory
      * @param config Typesafe config object that defines which [secretsService] should be used.
      */
     fun create(config: Config): SmartConfigFactory {
-        secretsServiceFactories.forEach {
-            val secretsServiceFactory = it.create(config)
-            if(null !== secretsServiceFactory) return SmartConfigFactoryImpl(secretsServiceFactory)
-        }
+        // select type from the config, and fall back on the EncryptionSecretsServiceFactory
+        val type = config.getStringOrDefault(SECRET_SERVICE_TYPE, EncryptionSecretsServiceFactory.TYPE)
 
-        // if none could be resolved, fall back to MaskedSecretsLookupService
-        logger.info("Secrets Provider not found from config: ${config.root()?.render()}. " +
-                "Available factories: ${secretsServiceFactories.map { it.javaClass.simpleName }}")
-        logger.warn( "Falling back on MaskedSecretsLookupService. " +
-                "This means secrets configuration will not be supported and all configuration" +
-                "values that are marked as \"${SmartConfig.SECRET_KEY}\" will return " +
-                "\"${MaskedSecretsLookupService.MASK_VALUE}\" when resolved.")
+        val secretsServiceFactory = secretsServiceFactories
+            .singleOrNull { it.type == type }
+                ?: throw SecretsConfigurationException("SecretsServiceFactory of type $type is not available.")
 
-
-        return createWithoutSecurityServices()
+        return SmartConfigFactoryImpl(secretsServiceFactory.create(config))
     }
 }
