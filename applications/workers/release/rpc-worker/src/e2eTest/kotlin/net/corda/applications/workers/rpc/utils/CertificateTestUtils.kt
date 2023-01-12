@@ -15,7 +15,7 @@ import java.io.File
 
 
 private val caPath = "build${File.separator}tmp${File.separator}e2eTestCa"
-const val TLS_CERT_ALIAS = "p2p-tls"
+const val TLS_CERT_ALIAS = "p2p-tls-cert"
 const val SESSION_CERT_ALIAS = "p2p-session"
 
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
@@ -61,15 +61,16 @@ fun E2eCluster.generateCsr(
 
 fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
-) = this.uploadCertificate("p2p-tls", certificatePem, null)
+) = this.uploadCertificate("p2p-tls", TLS_CERT_ALIAS, certificatePem, null)
 
 fun E2eCluster.uploadSessionCertificate(
     certificatePem: String,
     holdingIdentityId: String
-) = this.uploadCertificate("p2p-session", certificatePem, holdingIdentityId)
+) = this.uploadCertificate("p2p-session", SESSION_CERT_ALIAS, certificatePem, holdingIdentityId)
 
 fun E2eCluster.uploadCertificate(
     usage: String,
+    alias: String,
     certificatePem: String,
     holdingIdentityId: String?,
 ) {
@@ -77,7 +78,7 @@ fun E2eCluster.uploadCertificate(
         val fileName = holdingIdentityId?. let { "$usage-it.pem"  } ?: "$usage.pem"
         client.start().proxy.importCertificateChain(
             usage = usage,
-            alias = usage,
+            alias = alias,
             holdingIdentityId = holdingIdentityId,
             certificates = listOf(
                 HttpFileUpload(
