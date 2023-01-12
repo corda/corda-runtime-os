@@ -37,7 +37,7 @@ import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
-const val LINK_MANAGER_CONFIG = "corda.p2p.linkmanager"
+const val LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
 const val P2P_TENANT_ID = "p2p"
 const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
@@ -267,16 +267,18 @@ fun E2eCluster.generateGroupPolicy(
 fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
     sessionKeyId: String,
-    useClusterLevelSessionKeyAndCert: Boolean? = null
+    useClusterLevelSessionKeyAndCert: Boolean? = null,
+    sessionCertificateChainAlias: String? = null
 ) {
     clusterHttpClientFor(NetworkRpcOps::class.java).use { client ->
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
-                TLS_CERT_ALIAS,
-                true,
-                useClusterLevelSessionKeyAndCert,
-                sessionKeyId
+                p2pTlsCertificateChainAlias = TLS_CERT_ALIAS,
+                useClusterLevelTlsCertificateAndKey = true,
+                useClusterLevelSessionCertificateAndKey = useClusterLevelSessionKeyAndCert,
+                sessionKeyId = sessionKeyId,
+                sessionCertificateChainAlias = sessionCertificateChainAlias
             )
         )
     }
@@ -349,27 +351,27 @@ fun E2eCluster.onboardMembers(
 
         if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
             val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
-            val memberTlsCsr = generateCsr(member, memberTlsKeyId)
-            val memberTlsCert = getCa().generateCert(memberTlsCsr)
+            val memberTlsCsr = generateCsr(member, memberTlsKeyId, P2P_TENANT_ID)
+            val memberTlsCert = CertificateTestUtils.ca.generateCert(memberTlsCsr)
             uploadTlsCertificate(memberTlsCert)
         }
 
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
 
         if (useSessionCertificate) {
-            val memberSessionCsr = generateCsr(member, memberSessionKeyId, addHostToSubjectAlternativeNames = false)
-            val memberSessionCert = getCa().generateCert(memberSessionCsr)
-            uploadSessionCertificate(memberSessionCert)
+            val memberSessionCsr = generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
+            val memberSessionCert = CertificateTestUtils.ca.generateCert(memberSessionCsr)
+            uploadSessionCertificate(memberSessionCert, member.holdingId)
         }
 
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
-        val useClusterLevelSessionKeyAndCert = if (useSessionCertificate) {
-            true
+        if (useSessionCertificate) {
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
         } else {
-            null
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
         }
-        setUpNetworkIdentity(member.holdingId, memberSessionKeyId, useClusterLevelSessionKeyAndCert)
+
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
@@ -406,11 +408,11 @@ fun E2eCluster.onboardMgm(
     val mgmECDHKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_PRE_AUTH)
 
     val mgmRegistrationContext = if (useSessionCertificate) {
-        val memberSessionCsr = generateCsr(mgm, mgmSessionKeyId, addHostToSubjectAlternativeNames = false)
-        val memberSessionCert = getCa().generateCert(memberSessionCsr)
-        uploadSessionCertificate(memberSessionCert)
+        val mgmSessionCsr = generateCsr(mgm, mgmSessionKeyId, mgm.holdingId, addHostToSubjectAlternativeNames = false)
+        val mgmSessionCert = CertificateTestUtils.ca.generateCert(mgmSessionCsr)
+        uploadSessionCertificate(mgmSessionCert, mgm.holdingId)
         createMgmRegistrationContext(
-            caTrustRoot = getCa().caCertificate.toPem(),
+            caTrustRoot = CertificateTestUtils.ca.caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl,
@@ -418,7 +420,7 @@ fun E2eCluster.onboardMgm(
         )
     } else {
         createMgmRegistrationContext(
-            caTrustRoot = getCa().caCertificate.toPem(),
+            caTrustRoot = CertificateTestUtils.ca.caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl
@@ -434,12 +436,16 @@ fun E2eCluster.onboardMgm(
 
     if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
         val mgmTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
-        val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId)
-        val mgmTlsCert = getCa().generateCert(mgmTlsCsr)
+        val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId, P2P_TENANT_ID)
+        val mgmTlsCert =CertificateTestUtils.ca.generateCert(mgmTlsCsr)
         uploadTlsCertificate(mgmTlsCert)
     }
 
-    setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    if (useSessionCertificate) {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+    } else {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    }
 }
 
 fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {

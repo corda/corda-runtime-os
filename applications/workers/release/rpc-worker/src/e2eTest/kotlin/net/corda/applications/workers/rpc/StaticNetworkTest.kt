@@ -1,11 +1,11 @@
 package net.corda.applications.workers.rpc
 
+import net.corda.applications.workers.rpc.utils.CertificateTestUtils
 import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rpc.utils.assertP2pConnectivity
 import net.corda.applications.workers.rpc.utils.createStaticMemberGroupPolicyJson
-import net.corda.applications.workers.rpc.utils.getCa
 import net.corda.applications.workers.rpc.utils.onboardStaticMembers
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
@@ -54,7 +54,7 @@ class StaticNetworkTest {
     private fun onboardStaticGroup(tempDir: Path): String {
         val groupId = UUID.randomUUID().toString()
         val groupPolicy = createStaticMemberGroupPolicyJson(
-            getCa(),
+            CertificateTestUtils.ca,
             groupId,
             cordaCluster
         )
