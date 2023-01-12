@@ -9,16 +9,20 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [SecretsServiceFactory::class])
 class EncryptionSecretsServiceFactory : SecretsServiceFactory {
     companion object {
+        const val TYPE = "encryption"
         const val SECRET_PASSPHRASE_KEY = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_PASSPHRASE}"
         const val SECRET_SALT_KEY = "${ConfigKeys.SECRETS_CONFIG}.${ConfigKeys.SECRETS_SALT}"
 
         private val logger = contextLogger()
     }
 
-    override fun create(config: Config): EncryptionSecretsService? {
+    override val type = TYPE
+
+    override fun create(config: Config): EncryptionSecretsService {
         if (!config.hasPath(SECRET_PASSPHRASE_KEY) || !config.hasPath(SECRET_SALT_KEY)) {
             logger.debug { "Configuration not suitable for EncryptionSecretsService: ${config.root().render()}}" }
-            return null
+            throw SecretsConfigurationException("Could not create EncryptionSecretsService with the given configuration. " +
+                    "Ensure `$SECRET_PASSPHRASE_KEY` and `$SECRET_SALT_KEY` has been provided.")
         }
 
         val passphrase = config.getString(SECRET_PASSPHRASE_KEY)
