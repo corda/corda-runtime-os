@@ -24,6 +24,7 @@ dependencies {
 
     integrationTestImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 
+    integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
