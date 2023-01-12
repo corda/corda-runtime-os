@@ -37,6 +37,7 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -107,8 +108,7 @@ class VirtualNodeWriterProcessorTests {
      */
     private val clock = TestClock(Instant.now())
 
-    private val vnodeInfo =
-        VirtualNodeInfo(
+    private val vnodeInfo = VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
             connectionId,
@@ -117,8 +117,11 @@ class VirtualNodeWriterProcessorTests {
             connectionId,
             connectionId,
             connectionId,
-            null,
-            "ACTIVE",
+            OperationalStatus.ACTIVE.name,
+            OperationalStatus.ACTIVE.name,
+            OperationalStatus.ACTIVE.name,
+            OperationalStatus.ACTIVE.name,
+            OperationalStatus.ACTIVE.name,
             -1,
             clock.instant()
         )
