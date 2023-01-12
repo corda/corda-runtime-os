@@ -4,7 +4,6 @@ import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -13,7 +12,6 @@ import java.util.jar.JarInputStream
 
 class CpkReader {
     companion object {
-        private val version1 = CpkFormatVersion(1, 0)
         private val version2 = CpkFormatVersion(2, 0)
 
         fun readCpk(
@@ -35,7 +33,6 @@ class CpkReader {
 
             // Choose correct implementation to read this version
             return when (formatVersion) {
-                version1 -> CpkLoaderV1.loadCPK(buffer, cacheDir, cpkLocation, verifySignature, cpkFileName)
                 version2 -> CpkLoaderV2().loadCPK(buffer, cacheDir, cpkLocation, verifySignature, cpkFileName)
                 else -> throw UnknownFormatVersionException("Unknown Corda-CPK-Format - \"$formatVersion\"")
             }

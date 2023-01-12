@@ -1,5 +1,7 @@
 package net.corda.flow.testing.fakes
 
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
@@ -69,7 +71,15 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         TODO("Not yet implemented")
     }
 
-    override fun flushCache() {
+    override fun flushCache(): CompletableFuture<*> {
+        TODO("Not yet implemented")
+    }
+
+    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         TODO("Not yet implemented")
     }
 
@@ -96,6 +106,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
             RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE to FakeSerializationService(),
             FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE to makeProtocolStore()
         )
+
+        override val completion: CompletableFuture<Boolean> = CompletableFuture()
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
             return cache[key]?.let(valueType::cast)

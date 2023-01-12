@@ -3,6 +3,7 @@ package net.corda.sandboxgroupcontext.service.impl
 
 import java.security.AccessControlContext
 import java.security.AccessControlException
+import java.time.Duration
 import java.util.Collections.singleton
 import java.util.Collections.unmodifiableSet
 import java.util.Deque
@@ -10,6 +11,7 @@ import java.util.Hashtable
 import java.util.LinkedList
 import java.util.SortedMap
 import java.util.TreeMap
+import java.util.concurrent.CompletableFuture
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
@@ -32,7 +34,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.sandboxgroupcontext.service.CacheConfiguration
+import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
@@ -79,7 +81,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     @Reference
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext
-) : SandboxGroupContextService, CacheConfiguration {
+) : SandboxGroupContextService, CacheControl {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
         private const val CORDA_UNINJECTABLE_FILTER = "(corda.uninjectable=*)"
@@ -130,7 +132,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             override fun resize(newCapacity: Long): SandboxGroupContextCache {
                 return SandboxGroupContextCacheImpl(newCapacity)
             }
-            override fun flush() {}
+
+            override fun waitFor(completion: CompletableFuture<*>, duration: Duration) = true
+            override fun flush() = CompletableFuture.completedFuture(true)
             override fun close() {}
         }
     }
@@ -146,12 +150,17 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         }
     }
 
-    override fun flushCache() {
-        cache.flush()
+    override fun flushCache(): CompletableFuture<*> {
+        return cache.flush()
     }
 
-    fun remove(virtualNodeContext: VirtualNodeContext) {
-        cache.remove(virtualNodeContext)
+    @Throws(InterruptedException::class)
+    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
+        return cache.waitFor(completion, duration)
+    }
+
+    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
+        return cache.remove(virtualNodeContext)
     }
 
     override fun getOrCreate(

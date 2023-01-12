@@ -23,7 +23,7 @@ interface FlowEventHandler<T> {
      *
      * It is assumed that the flow is initialised in the checkpoint after the event handler has been executed. For most
      * handlers, this will be true on input and no action is required. When handling events that represent a request to
-     * start a flow, the flow state inside the checkpoint object must be initiatlised before [preProcess] returns.
+     * start a flow, the flow state inside the checkpoint object must be initialised before [preProcess] returns.
      *
      * @param context The [FlowEventContext] that should be modified within this processing step.
      *

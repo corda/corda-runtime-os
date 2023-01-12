@@ -9,6 +9,8 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.loggerFor
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 internal class SandboxGroupContextCacheImpl private constructor(
@@ -21,10 +23,12 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     private companion object {
         private val logger = loggerFor<SandboxGroupContextCache>()
+        private const val WAIT_MILLIS = 100L
     }
 
     private class ToBeClosed(
         val cacheKey: VirtualNodeContext,
+        val completion: CompletableFuture<Boolean>,
         val sandboxGroupContextToClose: AutoCloseable,
         sandboxGroupContext: SandboxGroupContextWrapper,
         referenceQueue: ReferenceQueue<SandboxGroupContextWrapper>
@@ -64,26 +68,23 @@ internal class SandboxGroupContextCacheImpl private constructor(
         // that has already been garbage-collected.
         while (true) {
             val head = expiryQueue.poll() as? ToBeClosed ?: break
+            val vnc = head.cacheKey
 
             if (!toBeClosed.remove(head)) {
-                logger.warn("Reaped unexpected sandboxGroup context for {}", head.cacheKey)
+                logger.warn("Reaped unexpected sandboxGroup context for {}", vnc)
             }
 
             try {
-                logger.info(
-                    "Closing {} sandbox for {} [UNUSED]",
-                    head.cacheKey.sandboxGroupType,
-                    head.cacheKey.holdingIdentity.x500Name
-                )
+                logger.info("Closing {} sandbox for {}", vnc.sandboxGroupType, vnc.holdingIdentity.x500Name)
 
                 head.sandboxGroupContextToClose.close()
+                head.completion.complete(true)
             } catch (exception: Exception) {
                 logger.warn(
-                    "Error closing {} sandbox for {}",
-                    head.cacheKey.sandboxGroupType,
-                    head.cacheKey.holdingIdentity.x500Name,
+                    "Error closing ${vnc.sandboxGroupType} sandbox for ${vnc.holdingIdentity.x500Name}",
                     exception
                 )
+                head.completion.completeExceptionally(exception)
             }
         }
     }
@@ -98,11 +99,11 @@ internal class SandboxGroupContextCacheImpl private constructor(
             .removalListener { key, context, cause ->
                 purgeExpiryQueue()
                 (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                    toBeClosed += ToBeClosed(key!!, autoCloseable, context, expiryQueue)
+                    toBeClosed += ToBeClosed(key!!, context.completion, autoCloseable, context, expiryQueue)
                 }
 
                 logger.info(
-                    "Closing {} sandbox for {} [{}]",
+                    "Evicting {} sandbox for {} [{}]",
                     key!!.sandboxGroupType,
                     key.holdingIdentity.x500Name,
                     cause.name
@@ -110,16 +111,47 @@ internal class SandboxGroupContextCacheImpl private constructor(
             }
     )
 
-    override fun flush() {
-        contexts.invalidateAll()
-        contexts.cleanUp()
+    override fun flush(): CompletableFuture<*> {
         purgeExpiryQueue()
+        val map = HashMap(contexts.asMap())
+        contexts.invalidateAll(map.keys)
+        contexts.cleanUp()
+        return when (map.size) {
+            0 -> CompletableFuture.completedFuture(true)
+            1 -> map.values.first().completion
+            else -> {
+                @Suppress("SpreadOperator")
+                CompletableFuture.allOf(*map.values.map(SandboxGroupContext::completion).toTypedArray())
+            }
+        }
     }
 
-    override fun remove(virtualNodeContext: VirtualNodeContext) {
-        contexts.invalidate(virtualNodeContext)
-        contexts.cleanUp()
+    @Throws(InterruptedException::class)
+    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
+        val endTime = System.nanoTime() + duration.toNanos()
+        var remaining = duration.toMillis()
+        while (remaining >= 0) {
+            purgeExpiryQueue()
+            if (completion.isDone) {
+                return true
+            }
+            val waiting = ((endTime - System.nanoTime()) / 1000).coerceAtMost(WAIT_MILLIS)
+            if (waiting <= 0) {
+                break
+            }
+            Thread.sleep(waiting)
+            remaining -= waiting
+        }
+        return false
+    }
+
+    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
         purgeExpiryQueue()
+        return contexts.getIfPresent(virtualNodeContext)?.let { ctx ->
+            contexts.invalidate(virtualNodeContext)
+            contexts.cleanUp()
+            ctx.completion
+        }
     }
 
     override fun get(
@@ -141,6 +173,8 @@ internal class SandboxGroupContextCacheImpl private constructor(
     }
 
     override fun close() {
-        flush()
+        purgeExpiryQueue()
+        contexts.invalidateAll()
+        contexts.cleanUp()
     }
 }
