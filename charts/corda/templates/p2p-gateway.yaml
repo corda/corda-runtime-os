@@ -72,26 +72,7 @@ spec:
         {{- end }}
           - name: monitor
             containerPort: 7000
-        {{- if not .Values.workers.p2pGateway.debug.enabled }}
-        readinessProbe:
-          httpGet:
-            path: /status
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        livenessProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        startupProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 5
-          failureThreshold: 20
-        {{- end }}
+        {{- include "corda.workerProbes" . | nindent 8 }}
       initContainers:
       {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:
