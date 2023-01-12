@@ -352,7 +352,7 @@ fun E2eCluster.onboardMembers(
         if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
             val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
             val memberTlsCsr = generateCsr(member, memberTlsKeyId, P2P_TENANT_ID)
-            val memberTlsCert = CertificateTestUtils.ca.generateCert(memberTlsCsr)
+            val memberTlsCert = getCa().generateCert(memberTlsCsr)
             uploadTlsCertificate(memberTlsCert)
         }
 
@@ -360,7 +360,7 @@ fun E2eCluster.onboardMembers(
 
         if (useSessionCertificate) {
             val memberSessionCsr = generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
-            val memberSessionCert = CertificateTestUtils.ca.generateCert(memberSessionCsr)
+            val memberSessionCert = getCa().generateCert(memberSessionCsr)
             uploadSessionCertificate(memberSessionCert, member.holdingId)
         }
 
@@ -409,10 +409,10 @@ fun E2eCluster.onboardMgm(
 
     val mgmRegistrationContext = if (useSessionCertificate) {
         val mgmSessionCsr = generateCsr(mgm, mgmSessionKeyId, mgm.holdingId, addHostToSubjectAlternativeNames = false)
-        val mgmSessionCert = CertificateTestUtils.ca.generateCert(mgmSessionCsr)
+        val mgmSessionCert = getCa().generateCert(mgmSessionCsr)
         uploadSessionCertificate(mgmSessionCert, mgm.holdingId)
         createMgmRegistrationContext(
-            caTrustRoot = CertificateTestUtils.ca.caCertificate.toPem(),
+            caTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl,
@@ -420,7 +420,7 @@ fun E2eCluster.onboardMgm(
         )
     } else {
         createMgmRegistrationContext(
-            caTrustRoot = CertificateTestUtils.ca.caCertificate.toPem(),
+            caTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl
@@ -437,7 +437,7 @@ fun E2eCluster.onboardMgm(
     if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
         val mgmTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
         val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId, P2P_TENANT_ID)
-        val mgmTlsCert =CertificateTestUtils.ca.generateCert(mgmTlsCsr)
+        val mgmTlsCert = getCa().generateCert(mgmTlsCsr)
         uploadTlsCertificate(mgmTlsCert)
     }
 

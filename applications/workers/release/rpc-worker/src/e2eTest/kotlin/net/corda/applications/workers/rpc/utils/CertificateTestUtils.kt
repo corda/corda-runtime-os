@@ -17,17 +17,14 @@ import java.io.File
 private val caPath = "build${File.separator}tmp${File.separator}e2eTestCa"
 const val TLS_CERT_ALIAS = "p2p-tls-cert"
 const val SESSION_CERT_ALIAS = "p2p-session"
-class CertificateTestUtils {
-    companion object{
-    val ca: FileSystemCertificatesAuthority by lazy {
-        CertificateAuthorityFactory
-            .createFileSystemLocalAuthority(
-                RSA_TEMPLATE.toFactoryDefinitions(),
-                File(caPath)
-            ).also { it.save() }
-        }
-    }
-}
+
+fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
+    .createFileSystemLocalAuthority(
+        RSA_TEMPLATE.toFactoryDefinitions(),
+        File(caPath)
+    ).also { it.save() }
+
+
 fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     val request = csrPem.reader().use { reader ->
         PEMParser(reader).use { parser ->
