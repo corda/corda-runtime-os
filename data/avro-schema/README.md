@@ -9,6 +9,10 @@ For details on what records you can define using Avro see:
 - [Getting Started](https://avro.apache.org/docs/current/gettingstartedjava.html)
 - [Specification](https://avro.apache.org/docs/current/spec.html)
 
+For details on Schema Evolution (or adding/removing from a message across versions) see:
+
+ - [Schema Resolution](https://avro.apache.org/docs/1.11.1/specification/#schema-resolution)
+
 ## Generating Avro Code
 
 In order to create any new classes for Avro messaging you will need to invoke

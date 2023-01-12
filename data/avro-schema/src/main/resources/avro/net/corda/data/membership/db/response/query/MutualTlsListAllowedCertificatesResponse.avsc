@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "MutualTlsListAllowedCertificatesResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for the mutual TLS allowed certificates",
+  "fields": [
+    {
+      "name": "subjects",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The certificates subjects."
+    }
+  ]
+}
