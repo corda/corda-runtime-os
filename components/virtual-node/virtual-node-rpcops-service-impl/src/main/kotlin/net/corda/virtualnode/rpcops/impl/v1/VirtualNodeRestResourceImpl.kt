@@ -40,6 +40,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -241,7 +242,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                         uniquenessDdlConnectionId,
                         uniquenessDmlConnectionId,
                         hsmConnectionId,
-                        virtualNodeState
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
                     )
                 }
             }
@@ -314,7 +318,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             uniquenessDdlConnectionId?.toString(),
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId.toString(),
-            state.name
+            flowP2pOperationalStatus,
+            flowStartOperationalStatus,
+            flowOperationalStatus,
+            vaultDbOperationalStatus,
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

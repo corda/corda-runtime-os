@@ -4,7 +4,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
+import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 
@@ -12,7 +12,17 @@ import javax.persistence.EntityManager
 interface VirtualNodeRepository {
     fun findAll(entityManager: EntityManager): Stream<VirtualNodeInfo>
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
-    fun put(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier)
-    fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: VirtualNodeState): VirtualNodeInfo
+    fun put(
+        entityManager: EntityManager,
+        holdingId: HoldingIdentity,
+        cpiId: CpiIdentifier,
+        vaultDDLConnectionId: UUID?,
+        vaultDMLConnectionId: UUID,
+        cryptoDDLConnectionId: UUID?,
+        cryptoDMLConnectionId: UUID,
+        uniquenessDDLConnectionId: UUID?,
+        uniquenessDMLConnectionId: UUID?
+    )
+    fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: String): VirtualNodeInfo
 }
 

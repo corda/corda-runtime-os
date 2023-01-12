@@ -3,21 +3,26 @@ package net.corda.libs.virtualnode.datamodel.entities
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.datamodel.VirtualNodeOperationEntity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
+import net.corda.virtualnode.OperationalStatus
 import java.io.Serializable
 import java.time.Instant
-import java.util.Objects
+import java.util.*
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
+import javax.persistence.Enumerated
+import javax.persistence.EnumType
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
+import javax.persistence.MapsId
+import javax.persistence.OneToOne
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -31,29 +36,63 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = VNODE_INSTANCE_DB_TABLE, schema = CONFIG)
-@IdClass(VirtualNodeEntityKey::class)
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
-    @ManyToOne(
+    @OneToOne(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.PERSIST, CascadeType.MERGE]
     )
     @JoinColumn(name = "holding_identity_id")
     val holdingIdentity: HoldingIdentityEntity,
-    @Id
+
     @Column(name = "cpi_name", nullable = false)
     var cpiName: String,
-    @Id
+
     @Column(name = "cpi_version", nullable = false)
     var cpiVersion: String,
-    @Id
+
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
 
-    @Column(name = "state", nullable = false)
-    var virtualNodeState: String,
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_p2p_operational_status", nullable = false)
+    var flowP2pOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @Column(name = "insert_ts", insertable = false, updatable = true)
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_start_operational_status", nullable = false)
+    var flowStartOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "flow_operational_status", nullable = false)
+    var flowOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "vault_db_operational_status", nullable = false)
+    var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
+
+    @OneToOne(cascade = [CascadeType.MERGE], fetch = FetchType.LAZY)
+    @JoinColumn(name = "operation_in_progress")
+    var operationInProgress: VirtualNodeOperationEntity? = null,
+
+    @Column(name = "vault_ddl_connection_id")
+    var vaultDDLConnectionId: UUID? = null,
+
+    @Column(name = "vault_dml_connection_id")
+    var vaultDMLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_ddl_connection_id")
+    var cryptoDDLConnectionId: UUID? = null,
+
+    @Column(name = "crypto_dml_connection_id")
+    var cryptoDMLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_ddl_connection_id")
+    var uniquenessDDLConnectionId: UUID? = null,
+
+    @Column(name = "uniqueness_dml_connection_id")
+    var uniquenessDMLConnectionId: UUID? = null,
+
+    @Column(name = "insert_ts", insertable = false)
     var insertTimestamp: Instant? = null,
 
     @Column(name = "is_deleted", nullable = false)
@@ -62,7 +101,7 @@ internal class VirtualNodeEntity(
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0,
-) {
+) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -76,33 +115,52 @@ internal class VirtualNodeEntity(
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(
-            holdingIdentity,
-            cpiName,
-            cpiVersion,
-            cpiSignerSummaryHash)
-    }
-
-    fun update(newState: String) {
-        virtualNodeState = newState
+        return holdingIdentity.hashCode()
     }
 
     fun toVirtualNodeInfo(): VirtualNodeInfo {
         return VirtualNodeInfo(
             holdingIdentity.toHoldingIdentity(),
             CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)),
-            holdingIdentity.vaultDDLConnectionId,
-            holdingIdentity.vaultDMLConnectionId!!,
-            holdingIdentity.cryptoDDLConnectionId,
-            holdingIdentity.cryptoDMLConnectionId!!,
-            holdingIdentity.uniquenessDDLConnectionId,
-            holdingIdentity.uniquenessDMLConnectionId!!,
+            this.vaultDDLConnectionId,
+            this.vaultDMLConnectionId!!,
+            this.cryptoDDLConnectionId,
+            this.cryptoDMLConnectionId!!,
+            this.uniquenessDDLConnectionId,
+            this.uniquenessDMLConnectionId!!,
             holdingIdentity.hsmConnectionId,
-            VirtualNodeState.valueOf(virtualNodeState),
+            this.flowP2pOperationalStatus,
+            this.flowStartOperationalStatus,
+            this.flowOperationalStatus,
+            this.vaultDbOperationalStatus,
             entityVersion,
             insertTimestamp!!,
             isDeleted
         )
+    }
+
+    fun update(
+        flowP2pOperationalStatus: OperationalStatus = this.flowP2pOperationalStatus,
+        flowStartOperationalStatus: OperationalStatus = this.flowStartOperationalStatus,
+        flowOperationalStatus: OperationalStatus = this.flowOperationalStatus,
+        vaultDbOperationalStatus: OperationalStatus = this.vaultDbOperationalStatus,
+        vaultDDLConnectionId: UUID? = this.vaultDDLConnectionId,
+        vaultDMLConnectionId: UUID? = this.vaultDMLConnectionId,
+        cryptoDDLConnectionId: UUID? = this.vaultDDLConnectionId,
+        cryptoDMLConnectionId: UUID? = this.cryptoDMLConnectionId,
+        uniquenessDDLConnectionId: UUID? = this.uniquenessDDLConnectionId,
+        uniquenessDMLConnectionId: UUID? = this.uniquenessDMLConnectionId
+    ) {
+        this.flowP2pOperationalStatus = flowP2pOperationalStatus
+        this.flowStartOperationalStatus = flowStartOperationalStatus
+        this.flowOperationalStatus = flowOperationalStatus
+        this.vaultDbOperationalStatus = vaultDbOperationalStatus
+        this.vaultDDLConnectionId = vaultDDLConnectionId
+        this.vaultDMLConnectionId = vaultDMLConnectionId
+        this.cryptoDDLConnectionId = cryptoDDLConnectionId
+        this.cryptoDMLConnectionId = cryptoDMLConnectionId
+        this.uniquenessDDLConnectionId = uniquenessDDLConnectionId
+        this.uniquenessDMLConnectionId = uniquenessDMLConnectionId
     }
 }
 

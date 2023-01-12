@@ -55,37 +55,69 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
      * @param holdingId Holding identity
      * @param cpiId CPI identifier
      */
-    override fun put(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
+    override fun put(
+        entityManager: EntityManager,
+        holdingId: HoldingIdentity,
+        cpiId: CpiIdentifier,
+        vaultDDLConnectionId: UUID?,
+        vaultDMLConnectionId: UUID,
+        cryptoDDLConnectionId: UUID?,
+        cryptoDMLConnectionId: UUID,
+        uniquenessDDLConnectionId: UUID?,
+        uniquenessDMLConnectionId: UUID?
+    ) {
         val signerSummaryHash = cpiId.signerSummaryHash.toString()
         val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value)
             ?: throw CordaRuntimeException("Could not find holding identity")
 
         val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
-        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey)
-        if (foundVNode == null) {
-            entityManager.persist(
-                VirtualNodeEntity(
-                    hie,
-                    cpiId.name,
-                    cpiId.version,
-                    signerSummaryHash,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
-                )
+        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey).apply {
+            this.update(
+                vaultDDLConnectionId = vaultDDLConnectionId,
+                vaultDMLConnectionId = vaultDMLConnectionId,
+                cryptoDDLConnectionId = cryptoDDLConnectionId,
+                cryptoDMLConnectionId = cryptoDMLConnectionId,
+                uniquenessDDLConnectionId = uniquenessDDLConnectionId,
+                uniquenessDMLConnectionId = uniquenessDMLConnectionId
             )
-        }
+        } ?: VirtualNodeEntity(
+            hie,
+            cpiId.name,
+            cpiId.version,
+            signerSummaryHash,
+            vaultDDLConnectionId = vaultDDLConnectionId,
+            vaultDMLConnectionId = vaultDMLConnectionId,
+            cryptoDDLConnectionId = cryptoDDLConnectionId,
+            cryptoDMLConnectionId = cryptoDMLConnectionId,
+            uniquenessDDLConnectionId = uniquenessDDLConnectionId,
+            uniquenessDMLConnectionId = uniquenessDMLConnectionId,
+        )
+
+        entityManager.persist(foundVNode)
     }
 
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        newState: VirtualNodeState
+        newState: String
     ): VirtualNodeInfo {
         entityManager.transaction {
             // Lookup virtual node and grab the latest one based on the cpi Version.
             val latestVirtualNodeInstance = findEntity(entityManager, holdingIdentityShortHash)
                 ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+
+            var operationalStatus = OperationalStatus.ACTIVE
+            if (newState == "maintenance") {
+                operationalStatus = OperationalStatus.INACTIVE
+            }
+
             val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
-                update(newState.name)
+                update(
+                    operationalStatus,
+                    operationalStatus,
+                    operationalStatus,
+                    operationalStatus
+                )
             }
             return it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()
         }

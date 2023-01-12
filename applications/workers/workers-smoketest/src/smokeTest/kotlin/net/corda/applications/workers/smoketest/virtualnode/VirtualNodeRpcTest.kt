@@ -340,7 +340,7 @@ class VirtualNodeRpcTest {
             }
 
             val (vnodeId, oldState) = vnodesWithStates.last()
-            val newState = "IN_MAINTENANCE"
+            val newState = "maintenance"
 
             updateVirtualNodeState(vnodeId, newState)
 

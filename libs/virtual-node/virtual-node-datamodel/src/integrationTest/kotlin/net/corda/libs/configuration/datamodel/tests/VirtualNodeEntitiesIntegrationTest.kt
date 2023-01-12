@@ -15,7 +15,6 @@ import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
-import net.corda.virtualnode.VirtualNodeState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -76,12 +75,6 @@ class VirtualNodeEntitiesIntegrationTest {
             "OU=LLC, O=Bob, L=Dublin, C=IE",
             "${random.nextInt()}",
             null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -104,19 +97,19 @@ class VirtualNodeEntitiesIntegrationTest {
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
         val entity = VNodeTestUtils.newHoldingIdentityEntity("test")
 
+        val virtualNode = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash)
+
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(entity.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(entity.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(entity.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(entity.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(entity.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(entity.uniquenessDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.cryptoDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.cryptoDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.vaultDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.vaultDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
         }
 
         val holdingIdentityEntity = entityManagerFactory.createEntityManager()
             .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, entity.holdingIdentityShortHash) }
-
-        val virtualNode = VirtualNodeEntity(entity, name, version, hash, VirtualNodeState.ACTIVE.name)
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
@@ -137,13 +130,15 @@ class VirtualNodeEntitiesIntegrationTest {
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
         val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
 
+        val virtualNode = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash)
+
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(holdingIdentityEntity.uniquenessDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.cryptoDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.cryptoDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.vaultDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.vaultDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(VNodeTestUtils.newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
         }
 
         // Persist holding identity...
@@ -151,7 +146,6 @@ class VirtualNodeEntitiesIntegrationTest {
 
         // Now persist the virtual node but use the merge operation because we've
         // already persisted the holding identity (i.e. REST end-point - "create holding identity")
-        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash, VirtualNodeState.ACTIVE.name)
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
             em.merge(virtualNode)

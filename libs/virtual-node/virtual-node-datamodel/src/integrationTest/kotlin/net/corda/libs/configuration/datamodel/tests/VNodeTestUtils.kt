@@ -9,7 +9,7 @@ import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeState
+import net.corda.virtualnode.VirtualNodeInfo
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
@@ -25,15 +25,21 @@ internal object VNodeTestUtils {
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(name)
-        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, VirtualNodeState.ACTIVE.name)
+        val virtualNode = VirtualNodeEntity(
+            holdingIdentity,
+            name,
+            version,
+            hash,
+            VirtualNodeInfo.DEFAULT_INITIAL_STATE,
+            vaultDDLConnectionId = UUID.randomUUID(),
+            vaultDMLConnectionId = UUID.randomUUID(),
+            cryptoDDLConnectionId = UUID.randomUUID(),
+            cryptoDMLConnectionId = UUID.randomUUID(),
+            uniquenessDDLConnectionId = UUID.randomUUID(),
+            uniquenessDMLConnectionId = UUID.randomUUID()
+        )
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(newDbConnection(holdingIdentity.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(newDbConnection(holdingIdentity.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(newDbConnection(holdingIdentity.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.uniquenessDMLConnectionId!!, DbPrivilege.DML))
             em.persist(holdingIdentity)
         }
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
@@ -59,12 +65,6 @@ internal object VNodeTestUtils {
             holdingIdentityFullHash = hi.fullHash,
             x500Name = hi.x500Name.toString(),
             mgmGroupId = hi.groupId,
-            vaultDDLConnectionId = UUID.randomUUID(),
-            vaultDMLConnectionId = UUID.randomUUID(),
-            cryptoDDLConnectionId = UUID.randomUUID(),
-            cryptoDMLConnectionId = UUID.randomUUID(),
-            uniquenessDDLConnectionId = UUID.randomUUID(),
-            uniquenessDMLConnectionId = UUID.randomUUID(),
             hsmConnectionId = UUID.randomUUID()
         )
     }
