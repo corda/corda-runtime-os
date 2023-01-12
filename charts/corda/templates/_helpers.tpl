@@ -131,6 +131,32 @@ Worker image
 {{- end }}
 
 {{/*
+Worker probes
+*/}}
+{{- define "corda.workerProbes" -}}
+{{- if not ( get .Values.workers .worker ).debug.enabled }}
+readinessProbe:
+  httpGet:
+    path: /status
+    port: monitor
+  periodSeconds: 10
+  failureThreshold: 3
+livenessProbe:
+  httpGet:
+    path: /isHealthy
+    port: monitor
+  periodSeconds: 10
+  failureThreshold: 3
+startupProbe:
+  httpGet:
+    path: /isHealthy
+    port: monitor
+  periodSeconds: 5
+  failureThreshold: 20
+{{- end }}
+{{- end }}
+
+{{/*
 Pod security context
 */}}
 {{- define "corda.podSecurityContext" -}}
