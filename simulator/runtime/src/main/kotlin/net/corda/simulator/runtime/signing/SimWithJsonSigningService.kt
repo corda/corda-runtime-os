@@ -50,4 +50,8 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
         return DigitalSignature.WithKey(publicKey, opaqueBytes, mapOf())
     }
 
+    override fun getMyKeys(keys: Set<PublicKey>): Set<PublicKey> {
+        TODO("Not yet implemented")
+    }
+
 }
