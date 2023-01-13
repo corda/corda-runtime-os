@@ -47,6 +47,7 @@ topics:
     name: p2p.hosted.identities
     consumers:
       - link-manager
+      - membership
     producers:
       - rpc # Dynamic Network registration
       - membership # Static Network registration
